@@ -6,6 +6,7 @@ using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 using WindowsServicePlugin.CVWinSMS;
 
 namespace WindowsServicePlugin.ServiceManager
@@ -28,7 +29,11 @@ namespace WindowsServicePlugin.ServiceManager
 
         public ObservableCollection<ServiceEntry> Services { get; set; } = [];
 
-        public MySqlServiceHelper MySqlHelper { get; set; } = new MySqlServiceHelper();
+        public MySqlServiceManager MySqlManager { get; } = new MySqlServiceManager();
+
+        public MqttServiceManager MqttManager { get; } = new MqttServiceManager();
+
+        public MySqlServiceHelper MySqlHelper => MySqlManager.Helper;
 
         public string LogText { get => _LogText; set { _LogText = value; OnPropertyChanged(); } }
         private string _LogText = string.Empty;
@@ -47,47 +52,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public string ProgressText { get => _ProgressText; set { _ProgressText = value; OnPropertyChanged(); } }
         private string _ProgressText = string.Empty;
-
-        // MySQL状态
-        public string MySqlServiceName { get => _MySqlServiceName; set { _MySqlServiceName = value; OnPropertyChanged(); } }
-        private string _MySqlServiceName = "MySQL";
-        public string MySqlStatus { get => _MySqlStatus; set { _MySqlStatus = value; OnPropertyChanged(); } }
-        private string _MySqlStatus = "未知";
-        public bool IsMySqlInstalled { get => _IsMySqlInstalled; set { _IsMySqlInstalled = value; OnPropertyChanged(); } }
-        private bool _IsMySqlInstalled;
-        public bool IsMySqlRunning { get => _IsMySqlRunning; set { _IsMySqlRunning = value; OnPropertyChanged(); } }
-        private bool _IsMySqlRunning;
-        public string MySqlVersion { get => _MySqlVersion; set { _MySqlVersion = value; OnPropertyChanged(); } }
-        private string _MySqlVersion = string.Empty;
-        public string MySqlExePath { get => _MySqlExePath; set { _MySqlExePath = value; OnPropertyChanged(); } }
-        private string _MySqlExePath = string.Empty;
-
-        // MQTT状态
-        public string MqttServiceName { get => _MqttServiceName; set { _MqttServiceName = value; OnPropertyChanged(); } }
-        private string _MqttServiceName = "mosquitto";
-        public string MqttStatus { get => _MqttStatus; set { _MqttStatus = value; OnPropertyChanged(); } }
-        private string _MqttStatus = "未知";
-        public bool IsMqttInstalled { get => _IsMqttInstalled; set { _IsMqttInstalled = value; OnPropertyChanged(); } }
-        private bool _IsMqttInstalled;
-        public bool IsMqttRunning { get => _IsMqttRunning; set { _IsMqttRunning = value; OnPropertyChanged(); } }
-        private bool _IsMqttRunning;
-        public string MqttExePath { get => _MqttExePath; set { _MqttExePath = value; OnPropertyChanged(); } }
-        private string _MqttExePath = string.Empty;
-
-        public string MySqlRootPassword { get => _MySqlRootPassword; set { _MySqlRootPassword = value; OnPropertyChanged(); } }
-        private string _MySqlRootPassword = string.Empty;
-
-        public string MySqlRootNewPassword { get => _MySqlRootNewPassword; set { _MySqlRootNewPassword = value; OnPropertyChanged(); } }
-        private string _MySqlRootNewPassword = string.Empty;
-
-        public string MySqlAppUser { get => _MySqlAppUser; set { _MySqlAppUser = value; OnPropertyChanged(); } }
-        private string _MySqlAppUser = string.Empty;
-
-        public string MySqlAppPassword { get => _MySqlAppPassword; set { _MySqlAppPassword = value; OnPropertyChanged(); } }
-        private string _MySqlAppPassword = string.Empty;
-
-        public string MySqlDatabaseName { get => _MySqlDatabaseName; set { _MySqlDatabaseName = value; OnPropertyChanged(); } }
-        private string _MySqlDatabaseName = string.Empty;
 
         public string LegacyConfigPath => GetLegacyAppConfigPath() ?? string.Empty;
         public bool HasLegacyConfig => !string.IsNullOrWhiteSpace(LegacyConfigPath) && File.Exists(LegacyConfigPath);
@@ -123,6 +87,7 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand MySqlCreateOrUpdateUserCommand { get; }
         public RelayCommand MySqlDeleteUserCommand { get; }
         public RelayCommand MySqlGenerateRandomRootPasswordCommand { get; }
+        public RelayCommand CheckDatabaseConfigCommand { get; }
 
         public ServiceManagerViewModel()
         {
@@ -140,22 +105,23 @@ namespace WindowsServicePlugin.ServiceManager
             OpenMqttConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MQTT.config"));
             OpenLog4NetConfigCommand = new RelayCommand(a => OpenServiceLog4Net(a as ServiceEntry));
             OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
-            MqttStartCommand = new RelayCommand(a => _ = Task.Run(() => { ExecuteShellCommand("net start mosquitto", true); RefreshMqttStatus(); }), a => !IsBusy && IsMqttInstalled && !IsMqttRunning);
-            MqttStopCommand = new RelayCommand(a => _ = Task.Run(() => { ExecuteShellCommand("net stop mosquitto", true); RefreshMqttStatus(); }), a => !IsBusy && IsMqttRunning);
+            MqttStartCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Start(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsInstalled && !MqttManager.Config.IsRunning);
+            MqttStopCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Stop(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsRunning);
 
             MySqlInstallZipCommand = new RelayCommand(a => _ = MySqlInstallZipAsync(), a => !IsBusy);
-            MySqlStartCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlHelper.Start(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && IsMySqlInstalled && !IsMySqlRunning);
-            MySqlStopCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlHelper.Stop(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && IsMySqlRunning);
-            MySqlUninstallCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlHelper.Uninstall(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && IsMySqlInstalled);
-            MySqlBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlBackup()), a => !IsBusy && IsMySqlRunning);
-            MySqlRestoreCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlRestore()), a => !IsBusy && IsMySqlRunning);
-            MySqlRunScriptCommand = new RelayCommand(a => _ = Task.Run(() => DoRunSqlScript()), a => !IsBusy && IsMySqlRunning);
+            MySqlStartCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Start(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
+            MySqlStopCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Stop(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlUninstallCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Uninstall(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsInstalled);
+            MySqlBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlBackup()), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlRestoreCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlRestore()), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlRunScriptCommand = new RelayCommand(a => _ = Task.Run(() => DoRunSqlScript()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlBrowseCommand = new RelayCommand(a => BrowseMySqlPath());
-            MySqlSetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoSetRootPassword()), a => !IsBusy && IsMySqlRunning);
+            MySqlSetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoSetRootPassword()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlForceResetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoForceResetRootPassword()), a => !IsBusy);
-            MySqlCreateOrUpdateUserCommand = new RelayCommand(a => _ = Task.Run(() => DoCreateOrUpdateUser()), a => !IsBusy && IsMySqlRunning);
-            MySqlDeleteUserCommand = new RelayCommand(a => _ = Task.Run(() => DoDeleteUser()), a => !IsBusy && IsMySqlRunning);
+            MySqlCreateOrUpdateUserCommand = new RelayCommand(a => _ = Task.Run(() => DoCreateOrUpdateUser()), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlDeleteUserCommand = new RelayCommand(a => _ = Task.Run(() => DoDeleteUser()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlGenerateRandomRootPasswordCommand = new RelayCommand(a => GenerateRandomRootPassword());
+            CheckDatabaseConfigCommand = new RelayCommand(a => _ = Task.Run(() => DoCheckDatabaseConfig()), a => !IsBusy && MySqlManager.Config.IsRunning);
 
             Initialize();
         }
@@ -178,20 +144,8 @@ namespace WindowsServicePlugin.ServiceManager
                 Config.ReadFromCVWinSMSConfig(CVWinSMSConfig.Instance.CVWinSMSPath);
             }
 
-            // 检测MySQL
-            MySqlHelper.DetectFromRegistry();
-            MySqlHelper.Port = GetConfiguredMySqlPort();
-
-            var dbCfg = MySqlSetting.Instance.MySqlConfig;
-            MySqlAppUser = dbCfg.UserName;
-            MySqlAppPassword = dbCfg.UserPwd;
-            MySqlDatabaseName = dbCfg.Database;
-
-            var rootCfg = MySqlSetting.Instance.FindProfile(MySqlSetting.RootProfileName);
-            if (rootCfg != null)
-            {
-                MySqlRootPassword = rootCfg.UserPwd;
-            }
+            MySqlManager.Initialize(Config.MySqlPort);
+            MqttManager.Initialize();
 
             RefreshAll();
         }
@@ -214,6 +168,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
             RefreshMySqlStatus();
             RefreshMqttStatus();
+            CommandManager.InvalidateRequerySuggested();
 
             // 获取当前版本
             var rcService = Services.FirstOrDefault(s => s.ServiceName == "RegistrationCenterService");
@@ -225,17 +180,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                MySqlHelper.Port = GetConfiguredMySqlPort();
-                MySqlServiceName = MySqlHelper.ServiceName;
-                IsMySqlInstalled = MySqlHelper.IsInstalled;
-                IsMySqlRunning = MySqlHelper.IsRunning;
-                MySqlStatus = IsMySqlRunning ? "运行中" : (IsMySqlInstalled ? "已停止" : "未安装");
-                MySqlExePath = MySqlHelper.MysqldExePath;
-                if (IsMySqlInstalled)
-                {
-                    var ver = WinServiceHelper.GetFileVersion(MySqlHelper.MysqldExePath);
-                    MySqlVersion = ver?.ToString() ?? "";
-                }
+                MySqlManager.RefreshStatus(Services, Config.MySqlPort);
             });
         }
 
@@ -243,13 +188,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                MqttServiceName = "mosquitto";
-                IsMqttInstalled = WinServiceHelper.IsServiceExisted(MqttServiceName);
-                IsMqttRunning = IsMqttInstalled && WinServiceHelper.IsServiceRunning(MqttServiceName);
-                MqttStatus = IsMqttRunning ? "运行中" : (IsMqttInstalled ? "已停止" : "未安装");
-
-                var mqttEntry = Services.FirstOrDefault(s => s.ServiceName == MqttServiceName);
-                MqttExePath = mqttEntry?.ExePath ?? string.Empty;
+                MqttManager.RefreshStatus(Services);
             });
         }
 

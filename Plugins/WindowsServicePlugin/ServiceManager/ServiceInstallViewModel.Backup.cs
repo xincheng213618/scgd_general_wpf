@@ -13,22 +13,15 @@ namespace WindowsServicePlugin.ServiceManager
         {
             try
             {
-                var helper = new MySqlServiceHelper();
-                helper.DetectFromRegistry();
-                if (!helper.IsRunning)
+                var mySqlManager = ServiceManagerViewModel.Instance.MySqlManager;
+                mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, ServiceManagerViewModel.Instance.Config.MySqlPort);
+                if (!mySqlManager.Config.IsRunning)
                 {
                     AddLog("MySQL 未运行，跳过备份");
                     return;
                 }
 
-                var mySqlConfig = ColorVision.Database.MySqlSetting.Instance.MySqlConfig;
-                string timestamp = DateTime.Now.ToString("yyyyMMdd'T'HHmmss");
-                string backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
-                Directory.CreateDirectory(backupDir);
-                string bakFile = Path.Combine(backupDir, $"color_vision_{timestamp}.sql");
-
-                helper.BackupDatabase(mySqlConfig.UserName, mySqlConfig.UserPwd, mySqlConfig.Database, bakFile, AddLog);
-                AddLog($"数据库备份完成: {bakFile}");
+                mySqlManager.BackupDatabase(AddLog);
             }
             catch (Exception ex)
             {
@@ -55,17 +48,15 @@ namespace WindowsServicePlugin.ServiceManager
 
             try
             {
-                var helper = new MySqlServiceHelper();
-                helper.DetectFromRegistry();
-                if (!helper.IsRunning)
+                var mySqlManager = ServiceManagerViewModel.Instance.MySqlManager;
+                mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, ServiceManagerViewModel.Instance.Config.MySqlPort);
+                if (!mySqlManager.Config.IsRunning)
                 {
                     AddLog("MySQL 未运行，无法恢复");
                     return;
                 }
 
-                var mySqlConfig = ColorVision.Database.MySqlSetting.Instance.MySqlConfig;
-                helper.RestoreDatabase(mySqlConfig.UserName, mySqlConfig.UserPwd, mySqlConfig.Database, filePath, AddLog);
-                AddLog($"数据库恢复完成: {filePath}");
+                mySqlManager.RestoreDatabase(filePath, AddLog);
             }
             catch (Exception ex)
             {

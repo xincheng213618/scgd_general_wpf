@@ -1,4 +1,3 @@
-using ColorVision.Database;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -57,35 +56,12 @@ namespace WindowsServicePlugin.ServiceManager
                     if (InstallMySqlChecked && !string.IsNullOrWhiteSpace(MySqlPackagePath) && File.Exists(MySqlPackagePath))
                     {
                         SetProgress(progress += 15, "安装 MySQL...");
-                        string mysqlTarget = Path.Combine(Directory.GetParent(basePath)?.FullName ?? basePath, "Mysql");
                         var serviceManager = ServiceManagerViewModel.Instance;
-                        var credentials = serviceManager.CreateFreshMySqlInstallCredentials();
-                        var helper = new MySqlServiceHelper
-                        {
-                            Port = serviceManager.GetConfiguredMySqlPort()
-                        };
-                        bool mysqlInstalled = helper.InstallFromZipAsync(
-                            MySqlPackagePath,
-                            mysqlTarget,
-                            AddLog,
-                            credentials.RootPassword,
-                            credentials.AppUser,
-                            credentials.AppPassword,
-                            credentials.Database).GetAwaiter().GetResult();
+                        bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipAsync(MySqlPackagePath, basePath, AddLog).GetAwaiter().GetResult();
                         if (!mysqlInstalled)
                         {
                             throw new InvalidOperationException("MySQL 安装失败");
                         }
-
-                        serviceManager.ApplyInstalledMySqlCredentials(
-                            credentials.RootPassword,
-                            credentials.AppUser,
-                            credentials.AppPassword,
-                            credentials.Database,
-                            helper.BasePath);
-                        AddLog($"MySQL root 密码: {credentials.RootPassword}");
-                        AddLog($"MySQL 业务账号: {credentials.AppUser}");
-                        AddLog($"MySQL 业务密码: {credentials.AppPassword}");
                     }
 
                     // 4. 安装 MQTT
@@ -284,18 +260,8 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void InstallMqttFromExe(string exeFile)
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = exeFile,
-                Verb = "runas",
-                UseShellExecute = true
-            };
-
-            var process = Process.Start(startInfo);
-            process?.WaitForExit();
-
-            ColorVision.Common.Utilities.Tool.ExecuteCommandAsAdmin("net start mosquitto");
-            AddLog("MQTT 服务已启动");
+            ServiceManagerViewModel.Instance.MqttManager.InstallFromExe(exeFile, AddLog);
+            Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
         }
 
         private void StopPackagedServices()
@@ -410,30 +376,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private bool ExecuteColorVisionAllSql(string basePath)
         {
-            string? sqlFilePath = ResolveColorVisionAllSqlPath(basePath);
-            if (string.IsNullOrWhiteSpace(sqlFilePath))
-            {
-                AddLog("未找到 color_vision_all.sql，跳过数据库初始化脚本执行");
-                return true;
-            }
-
-            var serviceManager = ServiceManagerViewModel.Instance;
-            serviceManager.MySqlHelper.Port = serviceManager.GetConfiguredMySqlPort();
-            if (!File.Exists(serviceManager.MySqlHelper.MysqlExePath))
-            {
-                serviceManager.MySqlHelper.DetectFromRegistry();
-            }
-
-            var rootCfg = MySqlSetting.Instance.FindProfile(MySqlSetting.RootProfileName);
-            string rootPassword = rootCfg?.UserPwd ?? serviceManager.MySqlRootPassword;
-            if (string.IsNullOrWhiteSpace(rootPassword))
-            {
-                AddLog("未找到 root 密码，无法执行 color_vision_all.sql");
-                return false;
-            }
-
-            AddLog($"执行 SQL: {Path.GetFileName(sqlFilePath)}");
-            return serviceManager.MySqlHelper.ExecuteSqlFile("root", rootPassword, null, sqlFilePath, AddLog);
+            return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, AddLog);
         }
 
         private string? ResolveColorVisionAllSqlPath(string basePath)

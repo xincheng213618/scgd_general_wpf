@@ -1,6 +1,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using log4net;
+using MySqlConnector;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -92,6 +93,8 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     LastGeneratedRootPassword = string.Empty;
 
+                    DetectExistingInstallation(targetPath);
+
                     // 1. 若旧服务存在，先停止并移除
                     if (WinServiceHelper.IsServiceExisted(ServiceName))
                     {
@@ -108,6 +111,9 @@ namespace WindowsServicePlugin.ServiceManager
                         else
                             WinServiceHelper.UninstallService(ServiceName);
                     }
+
+                    EnsureAllMySqlProcessesStopped(logCallback);
+                    CleanupExistingInstallation(targetPath, logCallback);
 
                     // 2. 解压
                     logCallback("正在解压 MySQL...");
@@ -162,6 +168,7 @@ namespace WindowsServicePlugin.ServiceManager
             logCallback("正在初始化 MySQL (--initialize-insecure)...");
             if (!RunProcessAdmin(MysqldExePath, "--initialize-insecure", binDir))
             {
+                LogInitializationDirectoryState(logCallback);
                 logCallback("MySQL 初始化失败");
                 return false;
             }
@@ -375,6 +382,60 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 logCallback($"执行 SQL 失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        public bool TestConnection(string? host, int port, string userName, string password, string? database, Action<string>? logCallback = null)
+        {
+            string effectiveHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
+            int effectivePort = port > 0 ? port : (Port > 0 ? Port : 3306);
+
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                logCallback?.Invoke("用户名为空，无法校验数据库配置");
+                return false;
+            }
+
+            try
+            {
+                var builder = new MySqlConnectionStringBuilder
+                {
+                    Server = effectiveHost,
+                    Port = (uint)effectivePort,
+                    UserID = userName,
+                    Password = password ?? string.Empty,
+                    Database = database ?? string.Empty,
+                    CharacterSet = "utf8",
+                    ConnectionTimeout = 5,
+                    SslMode = MySqlSslMode.None,
+                    Pooling = true,
+                    AllowLoadLocalInfile = true
+                };
+
+                using var connection = new MySqlConnection(builder.ConnectionString);
+                connection.Open();
+
+                logCallback?.Invoke($"数据库配置可用: {userName}@{effectiveHost}:{effectivePort}{(string.IsNullOrWhiteSpace(database) ? string.Empty : $"/{database}")}");
+                return true;
+            }
+            catch (MySqlException ex)
+            {
+                string detailMsg = ex.Number switch
+                {
+                    1045 => "账号或密码错误",
+                    1049 => "指定的数据库不存在",
+                    2003 => "无法连接到 MySQL 服务器，可能是端口未打开或网络不可达",
+                    _ => $"MySqlException 错误码: {ex.Number}，错误信息: {ex.Message}"
+                };
+                log.Error($"数据库连接失败: {detailMsg}", ex);
+                logCallback?.Invoke(detailMsg);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Error("测试 MySQL 连接失败", ex);
+                logCallback?.Invoke($"测试 MySQL 连接失败: {ex.Message}");
                 return false;
             }
         }
@@ -621,6 +682,96 @@ namespace WindowsServicePlugin.ServiceManager
             logCallback("检测到 mysqld 进程未退出，正在强制结束...");
             WinServiceHelper.KillProcessByName("mysqld");
             Thread.Sleep(1500);
+        }
+
+        private void EnsureAllMySqlProcessesStopped(Action<string> logCallback)
+        {
+            EnsureMySqlStopped(logCallback);
+
+            var mysqlProcesses = Process.GetProcessesByName("mysql");
+            if (mysqlProcesses.Length <= 0)
+            {
+                return;
+            }
+
+            logCallback($"检测到 {mysqlProcesses.Length} 个 mysql 客户端进程未退出，正在结束...");
+            foreach (var process in mysqlProcesses)
+            {
+                try
+                {
+                    process.Kill();
+                    process.WaitForExit(3000);
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        private void DetectExistingInstallation(string targetPath)
+        {
+            if (DetectFromRegistry())
+            {
+                return;
+            }
+
+            if (!Directory.Exists(targetPath))
+            {
+                return;
+            }
+
+            string? existingDir = Directory.GetDirectories(targetPath, "mysql-*", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(path => path)
+                .FirstOrDefault(dir => File.Exists(Path.Combine(dir, "bin", "mysqld.exe")));
+            if (!string.IsNullOrWhiteSpace(existingDir))
+            {
+                BasePath = existingDir;
+            }
+        }
+
+        private static void CleanupExistingInstallation(string targetPath, Action<string> logCallback)
+        {
+            if (!Directory.Exists(targetPath))
+            {
+                Directory.CreateDirectory(targetPath);
+                return;
+            }
+
+            string[] existingDirs = Directory.GetDirectories(targetPath, "mysql-*", SearchOption.TopDirectoryOnly);
+            foreach (string existingDir in existingDirs)
+            {
+                try
+                {
+                    logCallback($"清理旧 MySQL 目录: {existingDir}");
+                    Directory.Delete(existingDir, true);
+                }
+                catch (Exception ex)
+                {
+                    throw new IOException($"清理旧 MySQL 目录失败: {existingDir}. {ex.Message}", ex);
+                }
+            }
+        }
+
+        private void LogInitializationDirectoryState(Action<string> logCallback)
+        {
+            try
+            {
+                string dataDir = Path.Combine(BasePath, "data");
+                if (Directory.Exists(dataDir))
+                {
+                    int fileCount = Directory.GetFiles(dataDir, "*", SearchOption.AllDirectories).Length;
+                    logCallback($"初始化失败时 data 目录已存在，文件数: {fileCount}");
+                }
+
+                if (File.Exists(MyIniPath))
+                {
+                    logCallback($"初始化使用的 my.ini: {MyIniPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("记录 MySQL 初始化目录状态失败", ex);
+            }
         }
 
         private string BuildManualStartupArguments(string extraArguments)

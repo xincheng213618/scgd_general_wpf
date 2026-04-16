@@ -1,6 +1,4 @@
 using ColorVision.Common.Utilities;
-using ColorVision.Database;
-using ColorVision.UI;
 using System.IO;
 using System.Windows;
 
@@ -27,35 +25,13 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
-            string targetDir = Path.Combine(Directory.GetParent(basePath)?.FullName ?? basePath, "Mysql");
-
-            var credentials = CreateFreshMySqlInstallCredentials();
-
             SetBusy(true, "正在安装 MySQL...");
             try
             {
-                MySqlHelper.Port = GetConfiguredMySqlPort();
-                bool result = await MySqlHelper.InstallFromZipAsync(
-                    dlg.FileName,
-                    targetDir,
-                    AddLog,
-                    credentials.RootPassword,
-                    credentials.AppUser,
-                    credentials.AppPassword,
-                    credentials.Database);
-
+                bool result = await MySqlManager.InstallFromZipAsync(dlg.FileName, basePath, AddLog);
                 if (result)
                 {
                     AddLog("MySQL 安装成功");
-                    ApplyInstalledMySqlCredentials(
-                        credentials.RootPassword,
-                        credentials.AppUser,
-                        credentials.AppPassword,
-                        credentials.Database,
-                        MySqlHelper.BasePath);
-                    AddLog($"MySQL root 密码: {credentials.RootPassword}");
-                    AddLog($"MySQL 业务账号: {credentials.AppUser}");
-                    AddLog($"MySQL 业务密码: {credentials.AppPassword}");
                     SyncAllConfigs(false);
                     RefreshAll();
                 }
@@ -72,12 +48,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void DoMySqlBackup()
         {
-            var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-            string timestamp = DateTime.Now.ToString("yyyyMMdd'T'HHmmss");
-            string backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
-            string bakFile = Path.Combine(backupDir, $"color_vision_{timestamp}.sql");
-
-            MySqlHelper.BackupDatabase(mySqlConfig.UserName, mySqlConfig.UserPwd, mySqlConfig.Database, bakFile, AddLog);
+            MySqlManager.BackupDatabase(AddLog);
         }
 
         private void DoMySqlRestore()
@@ -96,8 +67,7 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (string.IsNullOrEmpty(filePath)) return;
 
-            var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-            MySqlHelper.RestoreDatabase(mySqlConfig.UserName, mySqlConfig.UserPwd, mySqlConfig.Database, filePath, AddLog);
+            MySqlManager.RestoreDatabase(filePath, AddLog);
         }
 
         private void DoRunSqlScript()
@@ -116,25 +86,15 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (string.IsNullOrEmpty(filePath)) return;
 
-            var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-            MySqlHelper.ExecuteSqlFile(mySqlConfig.UserName, mySqlConfig.UserPwd, mySqlConfig.Database, filePath, AddLog);
+            MySqlManager.ExecuteSqlFile(filePath, AddLog);
         }
 
         private void DoSetRootPassword()
         {
-            if (string.IsNullOrWhiteSpace(MySqlRootNewPassword))
+            if (MySqlManager.SetRootPassword(AddLog))
             {
-                AddLog("请先输入新 root 密码");
-                return;
-            }
-
-            bool ok = MySqlHelper.TrySetRootPassword(MySqlRootPassword, MySqlRootNewPassword, AddLog);
-            if (ok)
-            {
-                MySqlRootPassword = MySqlRootNewPassword;
-                PersistRootConfig(MySqlRootPassword, MySqlSetting.Instance.MySqlConfig.Host, GetConfiguredMySqlPort(), MySqlSetting.Instance.MySqlConfig.Database);
-                SaveMySqlSetting();
                 SyncLegacyAppConfig();
+                RefreshMySqlStatus();
             }
         }
 
@@ -147,18 +107,8 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(MySqlRootNewPassword))
+            if (MySqlManager.ForceResetRootPassword(AddLog))
             {
-                AddLog("请先输入新 root 密码");
-                return;
-            }
-
-            bool ok = MySqlHelper.ForceResetRootPassword(MySqlRootNewPassword, AddLog);
-            if (ok)
-            {
-                MySqlRootPassword = MySqlRootNewPassword;
-                PersistRootConfig(MySqlRootPassword, MySqlSetting.Instance.MySqlConfig.Host, GetConfiguredMySqlPort(), MySqlSetting.Instance.MySqlConfig.Database);
-                SaveMySqlSetting();
                 SyncLegacyAppConfig();
                 RefreshMySqlStatus();
             }
@@ -166,120 +116,144 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void DoCreateOrUpdateUser()
         {
-            if (string.IsNullOrWhiteSpace(MySqlAppUser) || string.IsNullOrWhiteSpace(MySqlAppPassword) || string.IsNullOrWhiteSpace(MySqlDatabaseName))
+            if (MySqlManager.CreateOrUpdateUser(AddLog))
             {
-                AddLog("请填写用户、密码、数据库");
-                return;
+                SyncLegacyAppConfig();
+                SyncAllConfigs(false);
+                AddLog("业务用户配置已更新到 MySqlServiceConfig");
             }
-
-            bool ok = MySqlHelper.CreateAppUser(MySqlRootPassword, MySqlAppUser, MySqlAppPassword, MySqlDatabaseName, AddLog);
-            if (!ok)
-            {
-                AddLog("创建/更新业务用户失败，请确认 root 密码是否正确");
-                return;
-            }
-
-            var cfg = MySqlSetting.Instance.MySqlConfig;
-            cfg.Port = GetConfiguredMySqlPort();
-            cfg.UserName = MySqlAppUser;
-            cfg.UserPwd = MySqlAppPassword;
-            cfg.Database = MySqlDatabaseName;
-            SaveMySqlSetting();
-            SyncLegacyAppConfig();
-            SyncAllConfigs(false);
-            AddLog("业务用户配置已更新到当前系统配置");
         }
 
-        public (string RootPassword, string AppUser, string AppPassword, string Database) CreateFreshMySqlInstallCredentials()
+        private void DoCheckDatabaseConfig()
         {
-            var dbCfg = MySqlSetting.Instance.MySqlConfig;
-            string database = !string.IsNullOrWhiteSpace(MySqlDatabaseName)
-                ? MySqlDatabaseName.Trim()
-                : (!string.IsNullOrWhiteSpace(dbCfg.Database) ? dbCfg.Database.Trim() : "color_vision");
-            string appUser = !string.IsNullOrWhiteSpace(MySqlAppUser) && !string.Equals(MySqlAppUser, "root", StringComparison.OrdinalIgnoreCase)
-                ? MySqlAppUser.Trim()
-                : "cv";
-
-            return (
-                MySqlServiceHelper.GenerateRandomPassword(),
-                appUser,
-                MySqlServiceHelper.GenerateRandomPassword(),
-                database);
-        }
-
-        public void ApplyInstalledMySqlCredentials(string rootPassword, string appUser, string appPassword, string database, string? installedBasePath = null)
-        {
-            Application.Current?.Dispatcher.Invoke(() =>
+            SetBusy(true, "正在检查数据库配置...");
+            try
             {
-                MySqlRootPassword = rootPassword;
-                MySqlRootNewPassword = string.Empty;
-                MySqlAppUser = appUser;
-                MySqlAppPassword = appPassword;
-                MySqlDatabaseName = database;
-            });
+                var current = MySqlManager.Config;
+                var legacy = ReadLegacyMySqlProfile();
 
-            MySqlHelper.Port = GetConfiguredMySqlPort();
-            if (!MySqlHelper.DetectFromRegistry() && !string.IsNullOrWhiteSpace(installedBasePath))
-            {
-                MySqlHelper.BasePath = installedBasePath;
+                bool currentAppOk = MySqlManager.TestConnection(current.Host, current.Port, current.AppUser, current.AppPassword, current.Database);
+                bool currentRootOk = !string.IsNullOrWhiteSpace(current.RootPassword)
+                    && MySqlManager.TestConnection(current.Host, current.Port, "root", current.RootPassword, null);
+
+                bool legacyAppOk = legacy != null
+                    && !string.IsNullOrWhiteSpace(legacy.AppUser)
+                    && MySqlManager.TestConnection(legacy.Host, legacy.Port, legacy.AppUser, legacy.AppPassword, legacy.Database);
+                bool legacyRootOk = legacy != null
+                    && !string.IsNullOrWhiteSpace(legacy.RootPassword)
+                    && MySqlManager.TestConnection(legacy.Host, legacy.Port, "root", legacy.RootPassword, null);
+
+                AddLog($"当前配置业务账号校验: {(currentAppOk ? "成功" : "失败")}");
+                AddLog($"旧版配置业务账号校验: {(legacyAppOk ? "成功" : "失败")}");
+
+                if (currentAppOk && !legacyAppOk)
+                {
+                    SyncManagedServiceConfigs();
+                    if (legacy != null)
+                    {
+                        SyncLegacyMySqlProfileSafely(CreateLegacyProfileFromCurrent(), true);
+                        MessageBox.Show(Application.Current.GetActiveWindow(),"当前服务管理器中的数据库配置可用，已同步旧版配置。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "当前服务管理器中的数据库配置可用，且未检测到旧版配置文件。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    RefreshAll();
+                    return;
+                }
+
+                if (!currentAppOk && legacyAppOk && legacy != null)
+                {
+                    string resolvedRootPassword = string.IsNullOrWhiteSpace(legacy.RootPassword) ? current.RootPassword : legacy.RootPassword;
+                    MySqlManager.UpdateStoredCredentials(legacy.Host, legacy.Port, resolvedRootPassword, legacy.AppUser, legacy.AppPassword, legacy.Database);
+                    SyncManagedServiceConfigs();
+                    RefreshAll();
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "旧版 App.config 中的数据库配置可用，已同步当前服务管理器配置。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                if (currentAppOk && legacyAppOk)
+                {
+                    string message = legacy != null &&
+                        current.AppUser == legacy.AppUser &&
+                        current.AppPassword == legacy.AppPassword &&
+                        current.Database == legacy.Database
+                        ? "当前配置和旧版配置都可用，且账号信息一致。"
+                        : "当前配置和旧版配置都可用，但账号信息并不完全一致，未自动覆盖。";
+                    MessageBox.Show(Application.Current.GetActiveWindow(), message, "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "当前配置和旧版配置的业务账号都无法连接数据库，是否尝试重置业务账号并同步配置？", "数据库配置检查", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+
+                if (!currentRootOk && legacyRootOk && legacy != null)
+                {
+                    MySqlManager.UpdateStoredCredentials(current.Host, current.Port, legacy.RootPassword, current.AppUser, current.AppPassword, current.Database);
+                    currentRootOk = true;
+                    AddLog("已采用旧版配置中的 root 密码进行重置");
+                }
+
+                if (!currentRootOk)
+                {
+                    if (!Tool.IsAdministrator())
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "业务账号重置需要 root 密码；当前未匹配到可用 root 密码，且强制重置 root 需要管理员权限。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(current.RootNewPassword))
+                    {
+                        current.RootNewPassword = MySqlServiceHelper.GenerateRandomPassword();
+                        AddLog($"已生成新的 root 密码: {current.RootNewPassword}");
+                    }
+
+                    if (!MySqlManager.ForceResetRootPassword(AddLog))
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "强制重置 root 密码失败，未能完成业务账号修复。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
+                if (!MySqlManager.CreateOrUpdateUser(AddLog))
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "业务账号重置失败，请检查 root 密码和 MySQL 服务状态。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                SyncManagedServiceConfigs();
+                if (legacy != null || HasLegacyConfig)
+                {
+                    SyncLegacyMySqlProfileSafely(CreateLegacyProfileFromCurrent(), true);
+                    MessageBox.Show(Application.Current.GetActiveWindow(),"数据库业务账号已重置并同步到两边配置。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库业务账号已重置，当前服务配置已更新，未检测到旧版配置文件。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                RefreshAll();
             }
-
-            PersistMySqlConfiguration(rootPassword, appUser, appPassword, database);
-            SyncLegacyAppConfig();
-            RefreshMySqlStatus();
-            AddLog("MySQL 账号信息已持久化并回填到界面");
+            finally
+            {
+                SetBusy(false);
+            }
         }
 
         public int GetConfiguredMySqlPort()
         {
-            int port = Config.MySqlPort;
-            if (port <= 0)
-            {
-                port = MySqlSetting.Instance.MySqlConfig.Port;
-            }
-            return port > 0 ? port : 3306;
-        }
-
-        private void PersistMySqlConfiguration(string rootPassword, string appUser, string appPassword, string database)
-        {
-            var setting = MySqlSetting.Instance;
-            string host = string.IsNullOrWhiteSpace(setting.MySqlConfig.Host) ? "127.0.0.1" : setting.MySqlConfig.Host;
-            int port = GetConfiguredMySqlPort();
-
-            setting.ApplyBusinessConfig(host, port, appUser, appPassword, database);
-            PersistRootConfig(rootPassword, host, port, database);
-            SaveMySqlSetting();
-        }
-
-        private void SaveMySqlSetting()
-        {
-            ConfigHandler.GetInstance().Save<MySqlSetting>();
-        }
-
-        private static void PersistRootConfig(string rootPassword, string? host, int port, string? database)
-        {
-            string effectiveHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host;
-            int effectivePort = port > 0 ? port : 3306;
-            string effectiveDatabase = string.IsNullOrWhiteSpace(database) ? MySqlSetting.Instance.MySqlConfig.Database : database;
-            MySqlSetting.Instance.ApplyRootConfig(effectiveHost, effectivePort, rootPassword, effectiveDatabase);
+            return MySqlManager.GetConfiguredPort(Config.MySqlPort);
         }
 
         private void DoDeleteUser()
         {
-            if (string.IsNullOrWhiteSpace(MySqlAppUser))
-            {
-                AddLog("请先填写要删除的用户名");
-                return;
-            }
-            bool ok = MySqlHelper.DeleteAppUser(MySqlRootPassword, MySqlAppUser, AddLog);
-            if (ok)
-                AddLog($"用户 {MySqlAppUser} 已删除");
+            MySqlManager.DeleteUser(AddLog);
         }
 
         private void GenerateRandomRootPassword()
         {
-            MySqlRootNewPassword = MySqlServiceHelper.GenerateRandomPassword();
-            AddLog($"已生成随机 root 密码: {MySqlRootNewPassword}");
+            MySqlManager.GenerateRandomRootPassword(AddLog);
         }
 
         private void BrowseMySqlPath()
@@ -291,14 +265,23 @@ namespace WindowsServicePlugin.ServiceManager
             };
             if (dlg.ShowDialog() == true)
             {
-                var dir = Directory.GetParent(dlg.FileName)?.Parent?.FullName;
-                if (!string.IsNullOrEmpty(dir))
-                {
-                    MySqlHelper.BasePath = dir;
-                    MySqlExePath = dlg.FileName;
-                    RefreshMySqlStatus();
-                }
+                MySqlManager.SetManualBasePath(dlg.FileName);
+                RefreshMySqlStatus();
             }
+        }
+
+        private LegacyMySqlProfile CreateLegacyProfileFromCurrent()
+        {
+            var current = MySqlManager.Config;
+            return new LegacyMySqlProfile
+            {
+                Host = current.Host,
+                Port = current.Port,
+                AppUser = current.AppUser,
+                AppPassword = current.AppPassword,
+                RootPassword = current.RootPassword,
+                Database = current.Database
+            };
         }
     }
 }
