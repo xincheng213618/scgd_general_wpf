@@ -15,6 +15,30 @@ using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
+    public class ViewHanlePOIXZYFile : IResultHandleBase
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_XYZ_File, ViewResultAlgType.POI_Y_File, ViewResultAlgType.POI_CIE_File };
+
+        public override void SideSave(ViewResultAlg result, string selectedPath)
+        {
+        }
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
+        {
+            if (result.ViewResults == null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>();
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
+            }
+        }
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
+        {
+            if (File.Exists(result.FilePath))
+                ctx.ImageView.OpenImage(result.FilePath);
+        }
+    }
+
+
     public class ViewHanlePOIXZY : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));

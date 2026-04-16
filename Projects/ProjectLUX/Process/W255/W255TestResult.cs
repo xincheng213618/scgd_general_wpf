@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using System.ComponentModel; // PoiPointResultModel
 
 namespace ProjectLUX.Process.W255
 {
@@ -22,6 +23,8 @@ namespace ProjectLUX.Process.W255
         /// <summary>
         /// 对角线视场角(°) 测试项
         /// </summary>
+        /// 
+        [Browsable(false)]
         public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; } = new ObjectiveTestItem() { Name = "Diagonal_Field_of_View_Angle", Unit = "degree" };
 
 
@@ -75,7 +78,7 @@ namespace ProjectLUX.Process.W255
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem() { Name = "Luminance_Uniformity(min_max_100)" };
+        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem() { Name = "Luminance_Uniformity(min_max_100)", Unit = "%" };
 
         /// <summary>
         /// 色彩均匀性 测试项

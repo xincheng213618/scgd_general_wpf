@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ProjectARVRPro.Recipe;
 
 namespace ProjectARVRPro.Process.W255
 {
@@ -32,12 +33,14 @@ namespace ProjectARVRPro.Process.W255
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem() { Name = "Luminance_Uniformity(min/max*100%)" };
+        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem() { Name = "Luminance_Uniformity(min/max*100%)" ,Unit ="%"};
 
         /// <summary>
         /// 色彩均匀性 测试项
         /// </summary>
         public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Color_Uniformity(△u'v'max)" };
+
+        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new ObjectiveTestItem() { Name = "Center_Correlated_Color_Temperature", Unit = "K" };
 
         /// <summary>
         /// 中心点亮度

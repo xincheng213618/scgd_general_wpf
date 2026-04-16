@@ -164,6 +164,8 @@ namespace ProjectARVRPro.LegacyARVR
             legacy.LuminanceUniformity = Convert(src.W255TestResult?.LuminanceUniformity);
             legacy.ColorUniformity = Convert(src.W255TestResult?.ColorUniformity);
             legacy.CenterLuminace = Convert(src.W255TestResult?.CenterLunimance);
+            legacy.CenterCorrelatedColorTemperature = Convert(src.W255TestResult?.CenterCorrelatedColorTemperature);
+
 
             // W25 → White1CenterLuminace
             legacy.White1CenterLuminace = Convert(src.W25TestResult?.CenterLunimance);

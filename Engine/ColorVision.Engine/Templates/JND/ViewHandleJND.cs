@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates.JND
 {
     public class ViewHandleJND : IResultHandleBase
     {
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Compliance_Math_JND, ViewResultAlgType.OLED_JND_CalVas};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Compliance_Math_JND, ViewResultAlgType.JND_CalVas };
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
