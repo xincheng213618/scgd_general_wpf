@@ -40,6 +40,37 @@
                     <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
 
+                    <Border Margin="0,0,8,0" Padding="10,6" CornerRadius="4" BorderThickness="1">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#FFFDECC8"/>
+                                <Setter Property="BorderBrush" Value="#FFE0B84D"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsAdministratorMode}" Value="True">
+                                        <Setter Property="Background" Value="#FFE7F6EA"/>
+                                        <Setter Property="BorderBrush" Value="#FF63B36D"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding AdministratorModeText}" FontWeight="SemiBold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#FF9A6700"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsAdministratorMode}" Value="True">
+                                            <Setter Property="Foreground" Value="#FF237A3B"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+
+                    <Button Content="以管理员模式重启" Command="{Binding RestartAsAdministratorCommand}" Margin="0,0,8,0" Padding="12,6"
+                            Visibility="{Binding NeedsAdministratorRestart, Converter={StaticResource BoolToVis}}"
+                            ToolTip="重新以管理员权限启动当前程序，用于需要提权的操作"/>
+
 
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
@@ -257,6 +288,9 @@
 
         <!-- 状态栏 -->
         <StatusBar Grid.Row="4">
+            <StatusBarItem>
+                <TextBlock Text="{Binding AdministratorModeText}"/>
+            </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="{Binding ProgressText}"/>
             </StatusBarItem>

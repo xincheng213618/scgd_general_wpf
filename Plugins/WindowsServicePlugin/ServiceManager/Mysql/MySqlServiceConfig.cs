@@ -41,8 +41,8 @@ namespace WindowsServicePlugin.ServiceManager
         public string AppPassword { get => _appPassword; set { _appPassword = value ?? string.Empty; OnPropertyChanged(); } }
         private string _appPassword = string.Empty;
 
-        public string Database { get => _database; set { _database = string.IsNullOrWhiteSpace(value) ? "color_vision" : value.Trim(); OnPropertyChanged(); } }
-        private string _database = "color_vision";
+        public string Database { get => _database; set { _database = string.IsNullOrWhiteSpace(value) ? "color_vision_4xx" : value.Trim(); OnPropertyChanged(); } }
+        private string _database = "color_vision_4xx";
 
         public string InstallBasePath { get => _installBasePath; set { _installBasePath = value ?? string.Empty; OnPropertyChanged(); } }
         private string _installBasePath = string.Empty;

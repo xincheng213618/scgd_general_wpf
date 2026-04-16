@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -30,7 +31,7 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     Task.Run(() =>
                     {
-                        ExecuteShellCommand("net stop RegistrationCenterService && net start RegistrationCenterService", true);
+                        ExecuteShellCommand("net stop RegistrationCenterService & net start RegistrationCenterService", true);
                         AddLog("注册中心服务已重启");
                         Application.Current?.Dispatcher.Invoke(() => RefreshAll());
                     });
@@ -89,6 +90,12 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void UpdateMysqlCfgFile(string configPath)
         {
+            MySqlSetting.Instance.MySqlConfig.Host = MySqlServiceConfig.Instance.Host;
+            MySqlSetting.Instance.MySqlConfig.Port = MySqlServiceConfig.Instance.Port;
+            MySqlSetting.Instance.MySqlConfig.UserName = MySqlServiceConfig.Instance.AppUser;
+            MySqlSetting.Instance.MySqlConfig.UserPwd = MySqlServiceConfig.Instance.AppPassword;
+            MySqlSetting.Instance.MySqlConfig.Database = MySqlServiceConfig.Instance.Database;
+
             if (!File.Exists(configPath)) return;
             try
             {
@@ -96,7 +103,7 @@ namespace WindowsServicePlugin.ServiceManager
                 var settings = doc.Element("configuration")?.Element("appSettings")?.Elements("add");
                 if (settings == null) return;
 
-                var mySqlConfig = MySqlManager.Config;
+                var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
                 foreach (var setting in settings)
                 {
                     var key = setting.Attribute("key")?.Value;
@@ -105,8 +112,8 @@ namespace WindowsServicePlugin.ServiceManager
                     {
                         "Host" => mySqlConfig.Host,
                         "Port" => mySqlConfig.Port.ToString(),
-                        "User" => mySqlConfig.AppUser,
-                        "Password" => mySqlConfig.AppPassword,
+                        "User" => mySqlConfig.UserName,
+                        "Password" => mySqlConfig.UserPwd   ,
                         "Database" => mySqlConfig.Database,
                         _ => null
                     };

@@ -4,6 +4,7 @@ using ColorVision.Database;
 using ColorVision.UI;
 using log4net;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -53,6 +54,10 @@ namespace WindowsServicePlugin.ServiceManager
         public string ProgressText { get => _ProgressText; set { _ProgressText = value; OnPropertyChanged(); } }
         private string _ProgressText = string.Empty;
 
+        public bool IsAdministratorMode => Tool.IsAdministrator();
+        public bool NeedsAdministratorRestart => !IsAdministratorMode;
+        public string AdministratorModeText => IsAdministratorMode ? "权限: 管理员模式" : "权限: 普通模式";
+
         public string LegacyConfigPath => GetLegacyAppConfigPath() ?? string.Empty;
         public bool HasLegacyConfig => !string.IsNullOrWhiteSpace(LegacyConfigPath) && File.Exists(LegacyConfigPath);
 
@@ -70,6 +75,7 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand OpenMqttConfigCommand { get; }
         public RelayCommand OpenLog4NetConfigCommand { get; }
         public RelayCommand OpenLegacyConfigCommand { get; }
+        public RelayCommand RestartAsAdministratorCommand { get; }
         public RelayCommand MqttStartCommand { get; }
         public RelayCommand MqttStopCommand { get; }
 
@@ -105,6 +111,7 @@ namespace WindowsServicePlugin.ServiceManager
             OpenMqttConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MQTT.config"));
             OpenLog4NetConfigCommand = new RelayCommand(a => OpenServiceLog4Net(a as ServiceEntry));
             OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
+            RestartAsAdministratorCommand = new RelayCommand(a => RestartAsAdministrator(), a => !IsBusy && NeedsAdministratorRestart);
             MqttStartCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Start(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsInstalled && !MqttManager.Config.IsRunning);
             MqttStopCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Stop(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsRunning);
 
@@ -152,6 +159,9 @@ namespace WindowsServicePlugin.ServiceManager
 
         public void RefreshAll()
         {
+            OnPropertyChanged(nameof(IsAdministratorMode));
+            OnPropertyChanged(nameof(NeedsAdministratorRestart));
+            OnPropertyChanged(nameof(AdministratorModeText));
             OnPropertyChanged(nameof(LegacyConfigPath));
             OnPropertyChanged(nameof(HasLegacyConfig));
 
@@ -219,6 +229,44 @@ namespace WindowsServicePlugin.ServiceManager
                 Progress = value;
                 if (!string.IsNullOrEmpty(text)) ProgressText = text;
             });
+        }
+
+        private void RestartAsAdministrator()
+        {
+            if (IsAdministratorMode)
+            {
+                return;
+            }
+
+            string? processPath = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(processPath))
+            {
+                processPath = Process.GetCurrentProcess().MainModule?.FileName;
+            }
+
+            if (string.IsNullOrWhiteSpace(processPath) || !File.Exists(processPath))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "无法确定当前程序路径，不能以管理员模式重启。", "管理员模式", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = processPath,
+                    WorkingDirectory = Environment.CurrentDirectory,
+                    UseShellExecute = true,
+                    Verb = "runas"
+                });
+
+                Application.Current?.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                log.Error("以管理员模式重启失败", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"无法以管理员模式重新启动程序：{ex.Message}", "管理员模式", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
     }
 }
