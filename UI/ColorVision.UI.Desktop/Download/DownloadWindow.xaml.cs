@@ -300,7 +300,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             if (DownloadListView.SelectedItem is DownloadTask task)
             {
-                Clipboard.SetText(task.Url);
+                Common.NativeMethods.Clipboard.SetText(task.Url);
             }
         }
 

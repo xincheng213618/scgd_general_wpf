@@ -7,9 +7,10 @@ namespace ColorVision.UI.Desktop.Download
         public override int Order => 50;
         public override string Name => nameof(DownloadInitializer);
 
-        public override async Task InitializeAsync()
+        public override Task InitializeAsync()
         {
-            await Task.Run(() => Aria2cDownloadManager.GetInstance().AutoRestartIncompleteDownloads());
+            Aria2cDownloadManager.GetInstance().AutoRestartIncompleteDownloadsAsync();
+            return Task.CompletedTask;
         }
     }
 }
