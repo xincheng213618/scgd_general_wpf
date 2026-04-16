@@ -15,7 +15,7 @@
 		<None Remove="ROADMAP.md" />
 	</ItemGroup>
 
-	<ItemGroup>ss
+	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\Engine\FlowEngineLib\FlowEngineLib.csproj')">
 			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>

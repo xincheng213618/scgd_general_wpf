@@ -49,6 +49,7 @@ class BackendClientTests(unittest.TestCase):
             "COLORVISION_UPLOAD_URL": os.environ.get("COLORVISION_UPLOAD_URL"),
             "COLORVISION_UPLOAD_USERNAME": os.environ.get("COLORVISION_UPLOAD_USERNAME"),
             "COLORVISION_UPLOAD_PASSWORD": os.environ.get("COLORVISION_UPLOAD_PASSWORD"),
+            "COLORVISION_UPLOAD_USE_SYSTEM_PROXY": os.environ.get("COLORVISION_UPLOAD_USE_SYSTEM_PROXY"),
         }
 
     def tearDown(self):
@@ -78,6 +79,42 @@ class BackendClientTests(unittest.TestCase):
     def test_resolve_upload_base_url_uses_environment(self):
         os.environ["COLORVISION_UPLOAD_URL"] = "http://example.com:9998/"
         self.assertEqual(backend_client.resolve_upload_base_url(), "http://example.com:9998")
+
+    def test_create_http_session_disables_system_proxy_by_default(self):
+        class FakeSession:
+            def __init__(self):
+                self.trust_env = True
+                self.proxies = {"http": "http://127.0.0.1:10808"}
+
+        class FakeRequests:
+            @staticmethod
+            def Session():
+                return FakeSession()
+
+        os.environ.pop("COLORVISION_UPLOAD_USE_SYSTEM_PROXY", None)
+
+        session = backend_client.create_http_session(requests_module=FakeRequests)
+
+        self.assertFalse(session.trust_env)
+        self.assertEqual(session.proxies, {})
+
+    def test_create_http_session_can_reenable_system_proxy_from_environment(self):
+        class FakeSession:
+            def __init__(self):
+                self.trust_env = True
+                self.proxies = {"http": "http://127.0.0.1:10808"}
+
+        class FakeRequests:
+            @staticmethod
+            def Session():
+                return FakeSession()
+
+        os.environ["COLORVISION_UPLOAD_USE_SYSTEM_PROXY"] = "1"
+
+        session = backend_client.create_http_session(requests_module=FakeRequests)
+
+        self.assertTrue(session.trust_env)
+        self.assertEqual(session.proxies, {"http": "http://127.0.0.1:10808"})
 
     def test_build_upload_url_normalizes_windows_separators(self):
         url = backend_client.build_upload_url(
