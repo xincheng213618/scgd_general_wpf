@@ -75,13 +75,13 @@ namespace WindowsServicePlugin.ServiceManager
         public bool IsRunning => WinServiceHelper.IsServiceRunning(ServiceName);
 
         /// <summary>
-        /// ZIP全安装: 停止/删除旧服务 → 解压 → 初始化 → 安装服务 → 启动 → 创建业务用户 → 设置随机 root 密码
-        /// 参考 CVWinSMS.CVMysqlServiceManager.DoMysqlInstallZip
+        /// ZIP全安装: 停止/删除旧服务 → 解压 → 初始化 → 安装服务 → 启动 → 设置随机 root 密码 → 创建业务用户
         /// </summary>
         public async Task<bool> InstallFromZipAsync(
             string zipFilePath,
             string targetPath,
             Action<string> logCallback,
+            string rootPassword = "",
             string appUser = "",
             string appPassword = "",
             string database = "color_vision")
@@ -90,6 +90,8 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 try
                 {
+                    LastGeneratedRootPassword = string.Empty;
+
                     // 1. 若旧服务存在，先停止并移除
                     if (WinServiceHelper.IsServiceExisted(ServiceName))
                     {
@@ -121,7 +123,7 @@ namespace WindowsServicePlugin.ServiceManager
                     BasePath = mysqlDirs[0];
                     logCallback($"MySQL 目录: {BasePath}");
 
-                    return DoFullInstall(logCallback, appUser, appPassword, database);
+                    return DoFullInstall(logCallback, rootPassword, appUser, appPassword, database);
                 }
                 catch (Exception ex)
                 {
@@ -133,11 +135,11 @@ namespace WindowsServicePlugin.ServiceManager
         }
 
         /// <summary>
-        /// 完整安装流程：初始化 → 安装服务 → 启动 → 创建业务用户 → 设置随机 root 密码
-        /// 参考 CVWinSMS.CVMysqlServiceManager.DoMysqlInitInstall
+        /// 完整安装流程：初始化 → 安装服务 → 启动 → 设置 root 密码 → 创建业务用户
         /// </summary>
         public bool DoFullInstall(
             Action<string> logCallback,
+            string rootPassword = "",
             string appUser = "",
             string appPassword = "",
             string database = "color_vision")
@@ -149,18 +151,35 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             string binDir = Path.GetDirectoryName(MysqldExePath)!;
+            string effectiveRootPassword = string.IsNullOrWhiteSpace(rootPassword) ? GenerateRandomPassword() : rootPassword;
+            string effectiveAppUser = string.IsNullOrWhiteSpace(appUser) ? "cv" : appUser.Trim();
+            string effectiveAppPassword = string.IsNullOrWhiteSpace(appPassword) ? GenerateRandomPassword() : appPassword;
+            string effectiveDatabase = string.IsNullOrWhiteSpace(database) ? "color_vision" : database.Trim();
+
+            LastGeneratedRootPassword = string.Empty;
 
             // 1. 初始化 (--initialize-insecure → root初始密码为空)
             logCallback("正在初始化 MySQL (--initialize-insecure)...");
-            RunProcessAdmin(MysqldExePath, "--initialize-insecure", binDir);
+            if (!RunProcessAdmin(MysqldExePath, "--initialize-insecure", binDir))
+            {
+                logCallback("MySQL 初始化失败");
+                return false;
+            }
 
             // 2. 安装 Windows 服务 (需要管理员)
             logCallback($"正在安装 MySQL 服务 ({ServiceName})...");
-            RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", binDir);
+            if (!RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", binDir))
+            {
+                logCallback("MySQL 服务安装失败");
+                return false;
+            }
 
             // 3. 启动服务
-            logCallback("正在启动 MySQL 服务...");
-            Tool.ExecuteCommandAsAdmin($"net start {ServiceName}");
+            logCallback("已生成随机 root 密码，正在启动 MySQL 服务...");
+            if (!Start(logCallback))
+            {
+                return false;
+            }
 
             // 等待启动
             bool started = false;
@@ -180,25 +199,24 @@ namespace WindowsServicePlugin.ServiceManager
                 return false;
             }
 
-            // 4. 创建业务用户 (此时 root 密码为空)
-            if (!string.IsNullOrWhiteSpace(appUser) && !string.IsNullOrWhiteSpace(appPassword))
+            // 4. 使用空 root 密码初始化为随机密码
+            logCallback("正在设置随机 root 密码...");
+            if (!SetRootPasswordViaAdmin("", effectiveRootPassword))
             {
-                logCallback($"正在创建业务用户 {appUser}...");
-                CreateAppUser("", appUser, appPassword, database, logCallback);
+                logCallback("root 密码设置失败");
+                return false;
             }
+            LastGeneratedRootPassword = effectiveRootPassword;
+            logCallback("root 密码设置成功");
 
-            // 5. 为 root 生成随机密码并设置 (使用 mysqladmin，参考 CVWinSMS.doMysqlRootPwdset)
-            string newRootPwd = GenerateRandomPassword();
-            logCallback($"正在设置随机 root 密码...");
-            bool pwdOk = SetRootPasswordViaAdmin("", newRootPwd);
-            if (pwdOk)
+            // 5. 使用新 root 密码创建业务用户
+            if (!string.IsNullOrWhiteSpace(effectiveAppUser))
             {
-                LastGeneratedRootPassword = newRootPwd;
-                logCallback($"root 密码已设置 (请保存): {newRootPwd}");
-            }
-            else
-            {
-                logCallback("root 密码设置失败，当前 root 密码为空，请手动设置");
+                if (!CreateAppUser(effectiveRootPassword, effectiveAppUser, effectiveAppPassword, effectiveDatabase, logCallback))
+                {
+                    logCallback($"业务用户 {effectiveAppUser} 创建失败");
+                    return false;
+                }
             }
 
             return true;

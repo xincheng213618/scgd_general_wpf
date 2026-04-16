@@ -180,6 +180,7 @@ namespace WindowsServicePlugin.ServiceManager
 
             // 检测MySQL
             MySqlHelper.DetectFromRegistry();
+            MySqlHelper.Port = GetConfiguredMySqlPort();
 
             var dbCfg = MySqlSetting.Instance.MySqlConfig;
             MySqlAppUser = dbCfg.UserName;
@@ -224,6 +225,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                MySqlHelper.Port = GetConfiguredMySqlPort();
                 MySqlServiceName = MySqlHelper.ServiceName;
                 IsMySqlInstalled = MySqlHelper.IsInstalled;
                 IsMySqlRunning = MySqlHelper.IsRunning;

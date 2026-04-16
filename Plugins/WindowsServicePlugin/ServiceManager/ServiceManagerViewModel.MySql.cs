@@ -1,5 +1,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.UI;
 using System.IO;
 using System.Windows;
 
@@ -28,38 +29,45 @@ namespace WindowsServicePlugin.ServiceManager
 
             string targetDir = Path.Combine(Directory.GetParent(basePath)?.FullName ?? basePath, "Mysql");
 
-            // 读取当前业务用户配置
-            var dbCfg = MySqlSetting.Instance.MySqlConfig;
-            string appUser = string.IsNullOrWhiteSpace(MySqlAppUser) ? dbCfg.UserName : MySqlAppUser;
-            string appPassword = string.IsNullOrWhiteSpace(MySqlAppPassword) ? dbCfg.UserPwd : MySqlAppPassword;
-            string database = string.IsNullOrWhiteSpace(MySqlDatabaseName) ? dbCfg.Database : MySqlDatabaseName;
+            var credentials = CreateFreshMySqlInstallCredentials();
 
             SetBusy(true, "正在安装 MySQL...");
-            bool result = await MySqlHelper.InstallFromZipAsync(dlg.FileName, targetDir, AddLog, appUser, appPassword, database);
-            if (result)
+            try
             {
-                AddLog("MySQL 安装成功");
+                MySqlHelper.Port = GetConfiguredMySqlPort();
+                bool result = await MySqlHelper.InstallFromZipAsync(
+                    dlg.FileName,
+                    targetDir,
+                    AddLog,
+                    credentials.RootPassword,
+                    credentials.AppUser,
+                    credentials.AppPassword,
+                    credentials.Database);
 
-                // 持久化自动生成的 root 密码
-                if (!string.IsNullOrWhiteSpace(MySqlHelper.LastGeneratedRootPassword))
+                if (result)
                 {
-                    MySqlRootPassword = MySqlHelper.LastGeneratedRootPassword;
-                    PersistRootConfig(MySqlRootPassword);
-                    AddLog($"请保存 root 密码: {MySqlRootPassword}");
+                    AddLog("MySQL 安装成功");
+                    ApplyInstalledMySqlCredentials(
+                        credentials.RootPassword,
+                        credentials.AppUser,
+                        credentials.AppPassword,
+                        credentials.Database,
+                        MySqlHelper.BasePath);
+                    AddLog($"MySQL root 密码: {credentials.RootPassword}");
+                    AddLog($"MySQL 业务账号: {credentials.AppUser}");
+                    AddLog($"MySQL 业务密码: {credentials.AppPassword}");
+                    SyncAllConfigs(false);
+                    RefreshAll();
                 }
-
-                // 更新业务用户配置
-                dbCfg.UserName = appUser;
-                dbCfg.UserPwd = appPassword;
-                dbCfg.Database = database;
-                MySqlAppUser = appUser;
-                MySqlAppPassword = appPassword;
-                MySqlDatabaseName = database;
-
-                SyncLegacyAppConfig();
-                RefreshMySqlStatus();
+                else
+                {
+                    AddLog("MySQL 安装失败");
+                }
             }
-            SetBusy(false);
+            finally
+            {
+                SetBusy(false);
+            }
         }
 
         private void DoMySqlBackup()
@@ -124,7 +132,8 @@ namespace WindowsServicePlugin.ServiceManager
             if (ok)
             {
                 MySqlRootPassword = MySqlRootNewPassword;
-                PersistRootConfig(MySqlRootPassword);
+                PersistRootConfig(MySqlRootPassword, MySqlSetting.Instance.MySqlConfig.Host, GetConfiguredMySqlPort(), MySqlSetting.Instance.MySqlConfig.Database);
+                SaveMySqlSetting();
                 SyncLegacyAppConfig();
             }
         }
@@ -148,7 +157,8 @@ namespace WindowsServicePlugin.ServiceManager
             if (ok)
             {
                 MySqlRootPassword = MySqlRootNewPassword;
-                PersistRootConfig(MySqlRootPassword);
+                PersistRootConfig(MySqlRootPassword, MySqlSetting.Instance.MySqlConfig.Host, GetConfiguredMySqlPort(), MySqlSetting.Instance.MySqlConfig.Database);
+                SaveMySqlSetting();
                 SyncLegacyAppConfig();
                 RefreshMySqlStatus();
             }
@@ -170,14 +180,85 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             var cfg = MySqlSetting.Instance.MySqlConfig;
+            cfg.Port = GetConfiguredMySqlPort();
             cfg.UserName = MySqlAppUser;
             cfg.UserPwd = MySqlAppPassword;
             cfg.Database = MySqlDatabaseName;
+            SaveMySqlSetting();
             SyncLegacyAppConfig();
+            SyncAllConfigs(false);
             AddLog("业务用户配置已更新到当前系统配置");
         }
 
-        private static void PersistRootConfig(string rootPassword)
+        public (string RootPassword, string AppUser, string AppPassword, string Database) CreateFreshMySqlInstallCredentials()
+        {
+            var dbCfg = MySqlSetting.Instance.MySqlConfig;
+            string database = !string.IsNullOrWhiteSpace(MySqlDatabaseName)
+                ? MySqlDatabaseName.Trim()
+                : (!string.IsNullOrWhiteSpace(dbCfg.Database) ? dbCfg.Database.Trim() : "color_vision");
+            string appUser = !string.IsNullOrWhiteSpace(MySqlAppUser) && !string.Equals(MySqlAppUser, "root", StringComparison.OrdinalIgnoreCase)
+                ? MySqlAppUser.Trim()
+                : "cv";
+
+            return (
+                MySqlServiceHelper.GenerateRandomPassword(),
+                appUser,
+                MySqlServiceHelper.GenerateRandomPassword(),
+                database);
+        }
+
+        public void ApplyInstalledMySqlCredentials(string rootPassword, string appUser, string appPassword, string database, string? installedBasePath = null)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                MySqlRootPassword = rootPassword;
+                MySqlRootNewPassword = string.Empty;
+                MySqlAppUser = appUser;
+                MySqlAppPassword = appPassword;
+                MySqlDatabaseName = database;
+            });
+
+            MySqlHelper.Port = GetConfiguredMySqlPort();
+            if (!MySqlHelper.DetectFromRegistry() && !string.IsNullOrWhiteSpace(installedBasePath))
+            {
+                MySqlHelper.BasePath = installedBasePath;
+            }
+
+            PersistMySqlConfiguration(rootPassword, appUser, appPassword, database);
+            SyncLegacyAppConfig();
+            RefreshMySqlStatus();
+            AddLog("MySQL 账号信息已持久化并回填到界面");
+        }
+
+        public int GetConfiguredMySqlPort()
+        {
+            int port = Config.MySqlPort;
+            if (port <= 0)
+            {
+                port = MySqlSetting.Instance.MySqlConfig.Port;
+            }
+            return port > 0 ? port : 3306;
+        }
+
+        private void PersistMySqlConfiguration(string rootPassword, string appUser, string appPassword, string database)
+        {
+            var cfg = MySqlSetting.Instance.MySqlConfig;
+            cfg.Host = string.IsNullOrWhiteSpace(cfg.Host) ? "127.0.0.1" : cfg.Host;
+            cfg.Port = GetConfiguredMySqlPort();
+            cfg.UserName = appUser;
+            cfg.UserPwd = appPassword;
+            cfg.Database = database;
+
+            PersistRootConfig(rootPassword, cfg.Host, cfg.Port, database);
+            SaveMySqlSetting();
+        }
+
+        private void SaveMySqlSetting()
+        {
+            ConfigHandler.GetInstance().Save<MySqlSetting>();
+        }
+
+        private static void PersistRootConfig(string rootPassword, string? host, int port, string? database)
         {
             var rootCfg = MySqlSetting.Instance.MySqlConfigs.FirstOrDefault(a => a.Name == "RootPath");
             if (rootCfg == null)
@@ -185,17 +266,16 @@ namespace WindowsServicePlugin.ServiceManager
                 rootCfg = new MySqlConfig
                 {
                     Name = "RootPath",
-                    Host = MySqlSetting.Instance.MySqlConfig.Host,
-                    UserName = "root",
-                    Database = MySqlSetting.Instance.MySqlConfig.Database,
-                    UserPwd = rootPassword
+                    UserName = "root"
                 };
                 MySqlSetting.Instance.MySqlConfigs.Add(rootCfg);
             }
-            else
-            {
-                rootCfg.UserPwd = rootPassword;
-            }
+
+            rootCfg.Host = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host;
+            rootCfg.Port = port > 0 ? port : 3306;
+            rootCfg.UserName = "root";
+            rootCfg.Database = string.IsNullOrWhiteSpace(database) ? MySqlSetting.Instance.MySqlConfig.Database : database;
+            rootCfg.UserPwd = rootPassword;
         }
 
         private void DoDeleteUser()

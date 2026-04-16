@@ -57,8 +57,34 @@ namespace WindowsServicePlugin.ServiceManager
                     {
                         SetProgress(progress += 15, "安装 MySQL...");
                         string mysqlTarget = Path.Combine(Directory.GetParent(basePath)?.FullName ?? basePath, "Mysql");
-                        var helper = new MySqlServiceHelper();
-                        helper.InstallFromZipAsync(MySqlPackagePath, mysqlTarget, AddLog).GetAwaiter().GetResult();
+                        var serviceManager = ServiceManagerViewModel.Instance;
+                        var credentials = serviceManager.CreateFreshMySqlInstallCredentials();
+                        var helper = new MySqlServiceHelper
+                        {
+                            Port = serviceManager.GetConfiguredMySqlPort()
+                        };
+                        bool mysqlInstalled = helper.InstallFromZipAsync(
+                            MySqlPackagePath,
+                            mysqlTarget,
+                            AddLog,
+                            credentials.RootPassword,
+                            credentials.AppUser,
+                            credentials.AppPassword,
+                            credentials.Database).GetAwaiter().GetResult();
+                        if (!mysqlInstalled)
+                        {
+                            throw new InvalidOperationException("MySQL 安装失败");
+                        }
+
+                        serviceManager.ApplyInstalledMySqlCredentials(
+                            credentials.RootPassword,
+                            credentials.AppUser,
+                            credentials.AppPassword,
+                            credentials.Database,
+                            helper.BasePath);
+                        AddLog($"MySQL root 密码: {credentials.RootPassword}");
+                        AddLog($"MySQL 业务账号: {credentials.AppUser}");
+                        AddLog($"MySQL 业务密码: {credentials.AppPassword}");
                     }
 
                     // 4. 安装 MQTT

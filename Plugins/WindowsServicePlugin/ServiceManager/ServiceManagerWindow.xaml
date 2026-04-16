@@ -40,12 +40,6 @@
                     <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
 
-                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
-                        <TextBlock Text="版本" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding CurrentVersion, Mode=OneWay}" Width="100" Margin="4,0" IsReadOnly="True" VerticalAlignment="Center"/>
-                    </StackPanel>
 
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
