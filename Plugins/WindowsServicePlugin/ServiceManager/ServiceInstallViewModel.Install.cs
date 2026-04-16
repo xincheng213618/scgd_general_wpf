@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -133,13 +134,9 @@ namespace WindowsServicePlugin.ServiceManager
                     if (AutoUpdateDatabase)
                     {
                         SetProgress(progress += 15, "执行数据库脚本...");
-                        string sqlDir = Path.Combine(basePath, "SQL");
-                        if (Directory.Exists(sqlDir))
+                        if (!ExecuteColorVisionAllSql(basePath))
                         {
-                            foreach (var sqlFile in Directory.GetFiles(sqlDir, "*.sql").OrderBy(f => f))
-                            {
-                                AddLog($"执行 SQL: {Path.GetFileName(sqlFile)}");
-                            }
+                            throw new InvalidOperationException("执行 color_vision_all.sql 失败");
                         }
                     }
 
@@ -409,6 +406,47 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             return basePath;
+        }
+
+        private bool ExecuteColorVisionAllSql(string basePath)
+        {
+            string? sqlFilePath = ResolveColorVisionAllSqlPath(basePath);
+            if (string.IsNullOrWhiteSpace(sqlFilePath))
+            {
+                AddLog("未找到 color_vision_all.sql，跳过数据库初始化脚本执行");
+                return true;
+            }
+
+            var serviceManager = ServiceManagerViewModel.Instance;
+            serviceManager.MySqlHelper.Port = serviceManager.GetConfiguredMySqlPort();
+            if (!File.Exists(serviceManager.MySqlHelper.MysqlExePath))
+            {
+                serviceManager.MySqlHelper.DetectFromRegistry();
+            }
+
+            var rootCfg = MySqlSetting.Instance.FindProfile(MySqlSetting.RootProfileName);
+            string rootPassword = rootCfg?.UserPwd ?? serviceManager.MySqlRootPassword;
+            if (string.IsNullOrWhiteSpace(rootPassword))
+            {
+                AddLog("未找到 root 密码，无法执行 color_vision_all.sql");
+                return false;
+            }
+
+            AddLog($"执行 SQL: {Path.GetFileName(sqlFilePath)}");
+            return serviceManager.MySqlHelper.ExecuteSqlFile("root", rootPassword, null, sqlFilePath, AddLog);
+        }
+
+        private string? ResolveColorVisionAllSqlPath(string basePath)
+        {
+            string installRoot = ResolveServiceInstallRoot(basePath);
+            string[] candidates =
+            [
+                Path.Combine(installRoot, "SQL", "color_vision_all.sql"),
+                Path.Combine(basePath, "SQL", "color_vision_all.sql"),
+                Path.Combine(basePath, "CVWindowsService", "SQL", "color_vision_all.sql")
+            ];
+
+            return candidates.FirstOrDefault(File.Exists);
         }
 
         private static bool IsLogPath(string fullPath, string rootPath)

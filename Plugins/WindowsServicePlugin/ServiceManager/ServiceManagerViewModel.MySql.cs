@@ -117,7 +117,7 @@ namespace WindowsServicePlugin.ServiceManager
             if (string.IsNullOrEmpty(filePath)) return;
 
             var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-            MySqlHelper.ExecuteSqlFile(mySqlConfig.UserPwd, mySqlConfig.Database, filePath, AddLog);
+            MySqlHelper.ExecuteSqlFile(mySqlConfig.UserName, mySqlConfig.UserPwd, mySqlConfig.Database, filePath, AddLog);
         }
 
         private void DoSetRootPassword()
@@ -242,14 +242,12 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void PersistMySqlConfiguration(string rootPassword, string appUser, string appPassword, string database)
         {
-            var cfg = MySqlSetting.Instance.MySqlConfig;
-            cfg.Host = string.IsNullOrWhiteSpace(cfg.Host) ? "127.0.0.1" : cfg.Host;
-            cfg.Port = GetConfiguredMySqlPort();
-            cfg.UserName = appUser;
-            cfg.UserPwd = appPassword;
-            cfg.Database = database;
+            var setting = MySqlSetting.Instance;
+            string host = string.IsNullOrWhiteSpace(setting.MySqlConfig.Host) ? "127.0.0.1" : setting.MySqlConfig.Host;
+            int port = GetConfiguredMySqlPort();
 
-            PersistRootConfig(rootPassword, cfg.Host, cfg.Port, database);
+            setting.ApplyBusinessConfig(host, port, appUser, appPassword, database);
+            PersistRootConfig(rootPassword, host, port, database);
             SaveMySqlSetting();
         }
 
@@ -260,22 +258,10 @@ namespace WindowsServicePlugin.ServiceManager
 
         private static void PersistRootConfig(string rootPassword, string? host, int port, string? database)
         {
-            var rootCfg = MySqlSetting.Instance.MySqlConfigs.FirstOrDefault(a => a.Name == "RootPath");
-            if (rootCfg == null)
-            {
-                rootCfg = new MySqlConfig
-                {
-                    Name = "RootPath",
-                    UserName = "root"
-                };
-                MySqlSetting.Instance.MySqlConfigs.Add(rootCfg);
-            }
-
-            rootCfg.Host = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host;
-            rootCfg.Port = port > 0 ? port : 3306;
-            rootCfg.UserName = "root";
-            rootCfg.Database = string.IsNullOrWhiteSpace(database) ? MySqlSetting.Instance.MySqlConfig.Database : database;
-            rootCfg.UserPwd = rootPassword;
+            string effectiveHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host;
+            int effectivePort = port > 0 ? port : 3306;
+            string effectiveDatabase = string.IsNullOrWhiteSpace(database) ? MySqlSetting.Instance.MySqlConfig.Database : database;
+            MySqlSetting.Instance.ApplyRootConfig(effectiveHost, effectivePort, rootPassword, effectiveDatabase);
         }
 
         private void DoDeleteUser()

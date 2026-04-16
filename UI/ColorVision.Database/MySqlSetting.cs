@@ -4,6 +4,7 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Database
@@ -56,6 +57,9 @@ namespace ColorVision.Database
 
     public class MySqlSetting : ViewModelBase , IConfigSecure
     {
+        public const string RootProfileName = "RootPath";
+        public const string BusinessProfileName = "CVPath";
+
         public static MySqlSetting Instance  => ConfigService.Instance.GetRequiredService<MySqlSetting>();
 
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
@@ -72,6 +76,44 @@ namespace ColorVision.Database
         /// </summary>
         public MySqlConfig MySqlConfig { get; set; } = new MySqlConfig();
         public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; } = new ObservableCollection<MySqlConfig>();
+
+        public MySqlConfig? FindProfile(string profileName)
+        {
+            return MySqlConfigs.FirstOrDefault(a => a.Name == profileName);
+        }
+
+        public MySqlConfig GetOrCreateProfile(string profileName)
+        {
+            var profile = FindProfile(profileName);
+            if (profile != null)
+            {
+                return profile;
+            }
+
+            profile = new MySqlConfig { Name = profileName };
+            MySqlConfigs.Add(profile);
+            return profile;
+        }
+
+        public void ApplyBusinessConfig(string host, int port, string userName, string userPwd, string database)
+        {
+            MySqlConfig.Name = BusinessProfileName;
+            MySqlConfig.Host = host;
+            MySqlConfig.Port = port;
+            MySqlConfig.UserName = userName;
+            MySqlConfig.UserPwd = userPwd;
+            MySqlConfig.Database = database;
+        }
+
+        public void ApplyRootConfig(string host, int port, string rootPwd, string database)
+        {
+            var rootProfile = GetOrCreateProfile(RootProfileName);
+            rootProfile.Host = host;
+            rootProfile.Port = port;
+            rootProfile.UserName = "root";
+            rootProfile.UserPwd = rootPwd;
+            rootProfile.Database = database;
+        }
 
 
         public const string ConfigAESKey = "ColorVision";

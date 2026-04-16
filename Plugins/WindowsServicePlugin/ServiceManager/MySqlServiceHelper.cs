@@ -294,7 +294,7 @@ namespace WindowsServicePlugin.ServiceManager
         /// <summary>
         /// 执行 SQL 脚本文件
         /// </summary>
-        public bool ExecuteSqlFile(string rootPwd, string database, string sqlFilePath, Action<string> logCallback)
+        public bool ExecuteSqlFile(string userName, string password, string? database, string sqlFilePath, Action<string> logCallback)
         {
             if (!File.Exists(sqlFilePath))
             {
@@ -304,8 +304,71 @@ namespace WindowsServicePlugin.ServiceManager
             try
             {
                 logCallback($"正在执行 SQL 脚本: {Path.GetFileName(sqlFilePath)}...");
-                string command = $"\"{MysqlExePath}\" -u root -p{rootPwd} {database} < \"{sqlFilePath}\"";
-                Tool.ExecuteCommandUI(command);
+                string mysqlPath = File.Exists(MysqlExePath)
+                    ? MysqlExePath
+                    : MySqlLocalConfig.Instance.MysqlPath;
+
+                if (string.IsNullOrWhiteSpace(mysqlPath) || !File.Exists(mysqlPath))
+                {
+                    logCallback("找不到 mysql 客户端");
+                    return false;
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = mysqlPath,
+                    WorkingDirectory = Path.GetDirectoryName(mysqlPath) ?? BasePath,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                psi.ArgumentList.Add("-P");
+                psi.ArgumentList.Add(Port.ToString());
+                psi.ArgumentList.Add("-u");
+                psi.ArgumentList.Add(userName);
+                if (!string.IsNullOrEmpty(password))
+                {
+                    psi.ArgumentList.Add($"-p{password}");
+                }
+                psi.ArgumentList.Add("--default-character-set=utf8mb4");
+                if (!string.IsNullOrWhiteSpace(database))
+                {
+                    psi.ArgumentList.Add(database);
+                }
+
+                using var process = Process.Start(psi);
+                if (process == null)
+                {
+                    logCallback("无法启动 mysql 客户端");
+                    return false;
+                }
+
+                using (var reader = File.OpenText(sqlFilePath))
+                {
+                    process.StandardInput.Write(reader.ReadToEnd());
+                }
+                process.StandardInput.Close();
+
+                string stdout = process.StandardOutput.ReadToEnd();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit(600000);
+
+                if (!string.IsNullOrWhiteSpace(stdout))
+                {
+                    logCallback(stdout.Trim());
+                }
+                if (process.ExitCode != 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(stderr))
+                    {
+                        logCallback(stderr.Trim());
+                    }
+                    logCallback($"SQL 脚本执行失败，退出码: {process.ExitCode}");
+                    return false;
+                }
+
                 logCallback("SQL 脚本执行完成");
                 return true;
             }

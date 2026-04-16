@@ -187,7 +187,7 @@ namespace WindowsServicePlugin.ServiceManager
             MySqlAppPassword = dbCfg.UserPwd;
             MySqlDatabaseName = dbCfg.Database;
 
-            var rootCfg = MySqlSetting.Instance.MySqlConfigs.FirstOrDefault(a => a.Name == "RootPath");
+            var rootCfg = MySqlSetting.Instance.FindProfile(MySqlSetting.RootProfileName);
             if (rootCfg != null)
             {
                 MySqlRootPassword = rootCfg.UserPwd;
