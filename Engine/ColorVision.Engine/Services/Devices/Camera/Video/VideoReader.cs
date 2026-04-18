@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _IsCalArtculation = true;
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
-        private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
+        private FocusAlgorithm  _EvaFunc = FocusAlgorithm .VarianceOfLaplacian;
 
         [JsonIgnore]
         public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
@@ -186,8 +186,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     }
                     if (Config.IsUseCacheFile)
                     {
+						int bytesPerChannel = Math.Max(1, bpp / 8);
+						int stride = height > 0 && len % height == 0 ? len / height : width * channels * bytesPerChannel;
                         // 直接从帧数据构造 HImage，无需内存拷贝
-                        if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp / 8)
+                        if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp || _calculationHImage.Value.stride != stride)
                         {
                             _calculationHImage?.Dispose(); // 释放旧的
                             _calculationHImage = new HImage
@@ -195,7 +197,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                 rows = height,
                                 cols = width,
                                 channels = channels,
-                                depth = bpp / 8,
+                                depth = bpp,
+								stride = stride,
                                 pData = Marshal.AllocHGlobal(buffer.Length) // 分配新的非托管内存
                             };
                             log.Info("Allocated new HImage for calculation.");
@@ -215,7 +218,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                     Thread task = new Thread(() =>
                                     {
                                         // 在后台线程执行计算
-                                        double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, new RoiRect(rect));
+										double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, Config.EvaFunc, new RoiRect(rect));
                                         Application.Current?.Dispatcher.Invoke(() =>
                                         {
                                             DVText.Attribute.Text = $"Articulation: {articulation:F5}";

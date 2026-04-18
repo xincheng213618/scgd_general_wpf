@@ -7,127 +7,211 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <cmath>
 #include <combaseapi.h>
 
 using json = nlohmann::json;
 
+namespace
+{
+cv::Mat CreateMatView(const HImage& img)
+{
+	if (img.pData == nullptr || img.rows <= 0 || img.cols <= 0 || img.channels <= 0) {
+		return cv::Mat();
+	}
+
+	switch (img.depth) {
+	case 8:
+	case 16:
+	case 32:
+	case 64:
+		break;
+	default:
+		return cv::Mat();
+	}
+
+	const size_t step = img.stride > 0 ? static_cast<size_t>(img.stride) : 0;
+	return cv::Mat(img.rows, img.cols, img.type(), img.pData, step);
+}
+
+cv::Mat ClipToRoi(const cv::Mat& mat, const RoiRect& roi)
+{
+	if (mat.empty()) {
+		return mat;
+	}
+
+	const cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+	const cv::Rect requested(roi.x, roi.y, roi.width, roi.height);
+	const cv::Rect clipped = requested & imageRect;
+
+	if (clipped.width > 0 && clipped.height > 0) {
+		return mat(clipped);
+	}
+
+	return mat;
+}
+
+bool TryBuildGrayFocusInput(const HImage& img, const RoiRect& roi, cv::Mat& grayMat)
+{
+	cv::Mat mat = ClipToRoi(CreateMatView(img), roi);
+	if (mat.empty() || mat.data == nullptr) {
+		return false;
+	}
+
+	switch (mat.channels())
+	{
+	case 1:
+		grayMat = mat;
+		break;
+	case 3:
+		cv::cvtColor(mat, grayMat, cv::COLOR_BGR2GRAY);
+		break;
+	case 4:
+		cv::cvtColor(mat, grayMat, cv::COLOR_BGRA2GRAY);
+		break;
+	default:
+		cv::extractChannel(mat, grayMat, 0);
+		break;
+	}
+
+	if (grayMat.empty()) {
+		return false;
+	}
+
+	switch (grayMat.depth())
+	{
+	case CV_8U:
+		grayMat.convertTo(grayMat, CV_32F, 1.0 / 255.0);
+		break;
+	case CV_16U:
+		grayMat.convertTo(grayMat, CV_32F, 1.0 / 65535.0);
+		break;
+	case CV_32F:
+		break;
+	case CV_64F:
+		grayMat.convertTo(grayMat, CV_32F);
+		break;
+	default:
+		return false;
+	}
+
+	cv::patchNaNs(grayMat, 0.0f);
+	return true;
+}
+
+inline double Square(double value)
+{
+	return value * value;
+}
+}
+
 
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
-
+	if (data != nullptr) {
+		CoTaskMemFree(data);
+	}
 }
 
 COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, RoiRect roi)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty() || mat.data == nullptr) {
-		return -1.0; 
-	}
+	try {
+		cv::Mat gray_mat;
+		if (!TryBuildGrayFocusInput(img, roi, gray_mat)) {
+			return -1.0;
+		}
 
-	// Apply ROI if specified
-	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
-	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
-	mat = use_roi ? mat(mroi) : mat;
+		double value = -1.0;
+		cv::Mat mean;
+		cv::Mat stddev;
+		cv::Mat laplacian_mat;
+		cv::Mat grad_x;
+		cv::Mat grad_y;
+		cv::Mat gradient_mat;
 
-	cv::Mat gray_mat;
-	if (mat.channels() == 3 || mat.channels() == 4)
-	{
-		cv::cvtColor(mat, gray_mat, cv::COLOR_BGRA2GRAY);
-	}
-	else
-	{
-		gray_mat = mat;
-	}
+		switch (type)
+		{
+		case Variance:
+			cv::meanStdDev(gray_mat, mean, stddev);
+			value = Square(stddev.at<double>(0, 0));
+			break;
 
-	double value = -1.0;
-	cv::Mat mean, stddev;
-	cv::Mat laplacian_mat;
-	cv::Mat grad_x, grad_y;
-	cv::Mat abs_grad_x, abs_grad_y;
-	cv::Mat gradient_mat;
+		case StandardDeviation:
+			cv::meanStdDev(gray_mat, mean, stddev);
+			value = stddev.at<double>(0, 0);
+			break;
 
-	switch (type)
-	{
-	case Variance:
-		cv::meanStdDev(gray_mat, mean, stddev);
-		value = stddev.at<double>(0, 0) * stddev.at<double>(0, 0);
-		break; // ����� break!
+		case Tenengrad:
+			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
+				return 0.0;
+			}
+			cv::Sobel(gray_mat, grad_x, CV_32F, 1, 0, 3);
+			cv::Sobel(gray_mat, grad_y, CV_32F, 0, 1, 3);
+			cv::magnitude(grad_x, grad_y, gradient_mat);
+			value = cv::mean(gradient_mat)[0];
+			break;
 
-	case StandardDeviation:
-		cv::meanStdDev(gray_mat, mean, stddev);
-		value = stddev.at<double>(0, 0);
-		break;
+		case Laplacian:
+			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
+				return 0.0;
+			}
+			cv::Laplacian(gray_mat, laplacian_mat, CV_32F, 3);
+			cv::absdiff(laplacian_mat, cv::Scalar::all(0), gradient_mat);
+			value = cv::mean(gradient_mat)[0];
+			break;
 
-	case Tenengrad:
-		cv::Sobel(gray_mat, grad_x, CV_64F, 1, 0, 3);
-		cv::Sobel(gray_mat, grad_y, CV_64F, 0, 1, 3);
-		cv::pow(grad_x, 2, grad_x);
-		cv::pow(grad_y, 2, grad_y);
-		cv::add(grad_x, grad_y, gradient_mat);
-		cv::sqrt(gradient_mat, gradient_mat);
-		value = cv::mean(gradient_mat)[0];
-		break;
+		case VarianceOfLaplacian:
+			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
+				return 0.0;
+			}
+			cv::Laplacian(gray_mat, laplacian_mat, CV_32F, 3);
+			cv::meanStdDev(laplacian_mat, mean, stddev);
+			value = Square(stddev.at<double>(0, 0));
+			break;
 
-	case Laplacian:
-		cv::Laplacian(gray_mat, laplacian_mat, CV_8UC1);
-		value = cv::mean(cv::abs(laplacian_mat))[0];
-		break;
+		case EnergyOfGradient:
+			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
+				return 0.0;
+			}
+			cv::subtract(gray_mat(cv::Rect(1, 0, gray_mat.cols - 1, gray_mat.rows)), gray_mat(cv::Rect(0, 0, gray_mat.cols - 1, gray_mat.rows)), grad_x, cv::noArray(), CV_32F);
+			cv::subtract(gray_mat(cv::Rect(0, 1, gray_mat.cols, gray_mat.rows - 1)), gray_mat(cv::Rect(0, 0, gray_mat.cols, gray_mat.rows - 1)), grad_y, cv::noArray(), CV_32F);
+			cv::multiply(grad_x, grad_x, grad_x);
+			cv::multiply(grad_y, grad_y, grad_y);
+			value = cv::mean(grad_x)[0] + cv::mean(grad_y)[0];
+			break;
 
-	case VarianceOfLaplacian: // �Ƽ����ǳ�³�����㷨
-		cv::Laplacian(gray_mat, laplacian_mat, CV_8UC1);
-		cv::meanStdDev(laplacian_mat, mean, stddev);
-		value = stddev.at<double>(0, 0) * stddev.at<double>(0, 0);
-		break;
+		case SpatialFrequency:
+		{
+			if (gray_mat.rows < 2 || gray_mat.cols < 2) {
+				return 0.0;
+			}
 
-	case EnergyOfGradient:
-		// ͨ����ȥ��λ��������������ݶ�
-		gray_mat.convertTo(gradient_mat, CV_64F);
-		cv::subtract(gradient_mat(cv::Rect(1, 0, gradient_mat.cols - 1, gradient_mat.rows)), gradient_mat(cv::Rect(0, 0, gradient_mat.cols - 1, gradient_mat.rows)), grad_x);
-		cv::subtract(gradient_mat(cv::Rect(0, 1, gradient_mat.cols, gradient_mat.rows - 1)), gradient_mat(cv::Rect(0, 0, gradient_mat.cols, gradient_mat.rows - 1)), grad_y);
-		cv::pow(grad_x, 2, grad_x);
-		cv::pow(grad_y, 2, grad_y);
-		value = cv::mean(grad_x)[0] + cv::mean(grad_y)[0];
-		break;
+			double RF = 0.0;
+			double CF = 0.0;
+			cv::Mat diff_x;
+			cv::Mat diff_y;
 
-	case SpatialFrequency:
-	{
-		// ȷ�� gray_mat ��Ϊ����������2x2�Ĵ�С
-		if (gray_mat.rows < 2 || gray_mat.cols < 2) {
-			value = 0; // ͼ��̫С�޷�����
+			cv::subtract(gray_mat.colRange(1, gray_mat.cols), gray_mat.colRange(0, gray_mat.cols - 1), diff_x, cv::noArray(), CV_32F);
+			cv::subtract(gray_mat.rowRange(1, gray_mat.rows), gray_mat.rowRange(0, gray_mat.rows - 1), diff_y, cv::noArray(), CV_32F);
+			cv::multiply(diff_x, diff_x, diff_x);
+			cv::multiply(diff_y, diff_y, diff_y);
+			RF = std::sqrt(cv::mean(diff_x)[0]);
+			CF = std::sqrt(cv::mean(diff_y)[0]);
+			value = std::sqrt(RF * RF + CF * CF);
+			break;
+		}
+		default:
+			cv::meanStdDev(gray_mat, mean, stddev);
+			value = Square(stddev.at<double>(0, 0));
 			break;
 		}
 
-		double RF = 0, CF = 0;
-		cv::Mat diff_x, diff_y;
-
-		// --- Row frequency (��Ƶ) ---
-		// ����ˮƽ�����������صĲ�ֵ
-		cv::subtract(gray_mat.colRange(1, gray_mat.cols), gray_mat.colRange(0, gray_mat.cols - 1), diff_x, cv::noArray(), CV_64F);
-		// �Բ�ֵ��ƽ��
-		cv::pow(diff_x, 2, diff_x);
-		// �����ֵ���ٶԾ�ֵ�������
-		RF = std::sqrt(cv::mean(diff_x)[0]);
-
-		// --- Column frequency (��Ƶ) ---
-		// ���㴹ֱ�����������صĲ�ֵ
-		cv::subtract(gray_mat.rowRange(1, gray_mat.rows), gray_mat.rowRange(0, gray_mat.rows - 1), diff_y, cv::noArray(), CV_64F);
-		// �Բ�ֵ��ƽ��
-		cv::pow(diff_y, 2, diff_y);
-		// �����ֵ���ٶԾ�ֵ������� (������)
-		CF = std::sqrt(cv::mean(diff_y)[0]);
-
-		// ���տռ�Ƶ������Ƶ����Ƶ��ƽ���͵�ƽ����
-		value = std::sqrt(RF * RF + CF * CF);
-		break;
+		return std::isfinite(value) ? value : -1.0;
 	}
-	default: // Ĭ����Ϊ
-		cv::meanStdDev(gray_mat, mean, stddev);
-		value = stddev.at<double>(0, 0) * stddev.at<double>(0, 0); // Ĭ��ʹ�÷���
-		break;
+	catch (const cv::Exception&) {
+		return -1.0;
 	}
-
-		return value;
-	}
+}
 
 	COLORVISIONCORE_API int FreeResult(char* result) {
 		delete[] result;

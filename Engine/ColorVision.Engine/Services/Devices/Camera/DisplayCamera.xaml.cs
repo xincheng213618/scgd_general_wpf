@@ -883,13 +883,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         /// <summary>
         /// Checks if HImage needs reallocation based on new image dimensions
         /// </summary>
-        private bool NeedsHImageReallocation(int width, int height, int channels, int bpp)
+        private bool NeedsHImageReallocation(int width, int height, int channels, int bpp, int stride)
         {
             return _calculationHImage == null
                 || _calculationHImage.Value.cols != width
                 || _calculationHImage.Value.rows != height
                 || _calculationHImage.Value.channels != channels
-                || _calculationHImage.Value.depth != bpp / 8;
+                || _calculationHImage.Value.depth != bpp
+                || _calculationHImage.Value.stride != stride;
         }
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
@@ -897,14 +898,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (VideoConfig.IsUseCacheFile)
                 {
-                    if (NeedsHImageReallocation(width, height, channels, bpp))
+                    int stride = lss > 0 ? lss : width * channels * Math.Max(1, bpp / 8);
+                    if (NeedsHImageReallocation(width, height, channels, bpp, stride))
                     {
                         _calculationHImage = new HImage
                         {
                             rows = height,
                             cols = width,
                             channels = channels,
-                            depth = bpp / 8,
+							depth = bpp,
+							stride = stride,
                             pData = pData
                         };
                         logger.Info($"Allocated new HImage for video callback: {width}x{height}, bpp={bpp}, channels={channels}");
@@ -915,6 +918,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     {
                         HImage hImage = _calculationHImage.Value;
                         hImage.pData = pData;
+						hImage.stride = stride;
                         Rect rect = DVRectangleText.Rect;
 
                         // Calculate articulation (accuracy) if enabled - using Task for proper lifecycle management
