@@ -1,9 +1,9 @@
-using ColorVision.Adorners;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -64,7 +64,7 @@ namespace ColorVision.UI
         private readonly TimedButtonOperationOptions _options;
         private readonly DispatcherTimer _timer;
         private readonly Stopwatch _stopwatch = new Stopwatch();
-        private TimedButtonProgressAdorner? _adorner;
+        private readonly TimedButtonProgressHost _progressHost;
         private string _runningText = string.Empty;
         private double _expectedDurationMs;
         private bool _isRunning;
@@ -82,6 +82,7 @@ namespace ColorVision.UI
 
             _button = button;
             _options = options;
+            _progressHost = new TimedButtonProgressHost(button, options.ProgressForeground);
             _timer = new DispatcherTimer(DispatcherPriority.Background, button.Dispatcher)
             {
                 Interval = TimeSpan.FromMilliseconds(16)
@@ -138,9 +139,12 @@ namespace ColorVision.UI
             _expectedDurationMs = ResolveExpectedDuration(expectedDurationMs);
             _runningText = runningText ?? _options.RunningText ?? _button.Content?.ToString() ?? string.Empty;
 
-            _adorner ??= new TimedButtonProgressAdorner(_button, _options.ProgressForeground);
-            _adorner.UpdateProgress(0, _runningText);
-            _adorner.Show();
+            _progressHost.Show();
+            _progressHost.UpdateProgress(0, _runningText);
+            if (_progressHost.IsHosted)
+            {
+                _button.Visibility = Visibility.Hidden;
+            }
 
             _stopwatch.Restart();
             _timer.Start();
@@ -156,7 +160,8 @@ namespace ColorVision.UI
 
             _timer.Stop();
             _stopwatch.Stop();
-            _adorner?.Hide();
+            _button.Visibility = Visibility.Visible;
+            _progressHost.Remove();
 
             if (_options.DisableButtonWhileRunning)
             {
@@ -208,15 +213,14 @@ namespace ColorVision.UI
                 ? 99
                 : Math.Min(99, (elapsedMilliseconds / _expectedDurationMs) * 100);
 
-            _adorner?.UpdateProgress(progress, _runningText);
+            _progressHost.UpdateProgress(progress, _runningText);
         }
 
         public void Dispose()
         {
             _timer.Tick -= Timer_Tick;
             _timer.Stop();
-            _adorner?.Detach();
-            _adorner = null;
+            _progressHost.Dispose();
             GC.SuppressFinalize(this);
         }
     }
@@ -348,28 +352,37 @@ namespace ColorVision.UI
         }
     }
 
-    internal sealed class TimedButtonProgressAdorner : UIElementAdornerBase
+    internal sealed class TimedButtonProgressHost : IDisposable
     {
+        private readonly Button _button;
+        private readonly Brush? _progressForeground;
+        private readonly Grid _host = new Grid();
         private readonly Border _overlay;
         private readonly ProgressBar _progressBar;
         private readonly TextBlock _textBlock;
+        private bool _isHosted;
+        private bool _overlayInserted;
 
-        public TimedButtonProgressAdorner(Button adornedElement, Brush? progressForeground) : base(adornedElement)
+        public bool IsHosted => _isHosted;
+
+        public TimedButtonProgressHost(Button button, Brush? progressForeground)
         {
-            IsHitTestVisible = false;
-            AdornerVisual.IsHitTestVisible = false;
+            _button = button;
+            _progressForeground = progressForeground;
+            _isHosted = TryCreateHost();
 
             _overlay = new Border
             {
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(2),
-                Opacity = 0.96,
-                Visibility = Visibility.Collapsed
+                Opacity = 0.96
             };
             _overlay.SetResourceReference(Border.BackgroundProperty, "GlobalBackground");
             _overlay.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+            _overlay.IsHitTestVisible = false;
 
             Grid layoutRoot = new Grid();
+            layoutRoot.IsHitTestVisible = false;
 
             _progressBar = new ProgressBar
             {
@@ -379,7 +392,8 @@ namespace ColorVision.UI
                 Value = 0
             };
             _progressBar.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            _progressBar.Foreground = progressForeground ?? Brushes.Red;
+            _progressBar.Foreground = _progressForeground ?? Brushes.Red;
+            _progressBar.IsHitTestVisible = false;
 
             _textBlock = new TextBlock
             {
@@ -389,27 +403,116 @@ namespace ColorVision.UI
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
             _textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            _textBlock.IsHitTestVisible = false;
 
             layoutRoot.Children.Add(_progressBar);
             layoutRoot.Children.Add(_textBlock);
             _overlay.Child = layoutRoot;
-            AdornerVisual.Children.Add(_overlay);
         }
 
         public void Show()
         {
-            _overlay.Visibility = Visibility.Visible;
+            if (!_isHosted)
+            {
+                return;
+            }
+
+            if (!_overlayInserted)
+            {
+                _host.Children.Add(_overlay);
+                _overlayInserted = true;
+            }
         }
 
-        public void Hide()
+        public void Remove()
         {
-            _overlay.Visibility = Visibility.Collapsed;
+            if (_overlayInserted)
+            {
+                _host.Children.Remove(_overlay);
+                _overlayInserted = false;
+            }
         }
 
         public void UpdateProgress(double progressValue, string? text)
         {
             _progressBar.Value = Math.Max(0, Math.Min(99, progressValue));
             _textBlock.Text = text ?? string.Empty;
+        }
+
+        private bool TryCreateHost()
+        {
+            if (_button.Parent == _host)
+            {
+                return true;
+            }
+
+            CopyLayoutProperties(_button, _host);
+            PrepareButtonForHost(_button);
+
+            switch (_button.Parent)
+            {
+                case Panel panel:
+                    int childIndex = panel.Children.IndexOf(_button);
+                    if (childIndex < 0)
+                    {
+                        return false;
+                    }
+
+                    panel.Children.RemoveAt(childIndex);
+                    _host.Children.Add(_button);
+                    panel.Children.Insert(childIndex, _host);
+                    return true;
+
+                case Decorator decorator when ReferenceEquals(decorator.Child, _button):
+                    decorator.Child = null;
+                    _host.Children.Add(_button);
+                    decorator.Child = _host;
+                    return true;
+
+                case ContentControl contentControl when ReferenceEquals(contentControl.Content, _button):
+                    contentControl.Content = null;
+                    _host.Children.Add(_button);
+                    contentControl.Content = _host;
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        private static void PrepareButtonForHost(Button button)
+        {
+            button.Margin = new Thickness(0);
+            button.HorizontalAlignment = HorizontalAlignment.Stretch;
+            button.VerticalAlignment = VerticalAlignment.Stretch;
+            button.ClearValue(FrameworkElement.WidthProperty);
+            button.ClearValue(FrameworkElement.HeightProperty);
+        }
+
+        private static void CopyLayoutProperties(FrameworkElement source, FrameworkElement target)
+        {
+            target.Margin = source.Margin;
+            target.HorizontalAlignment = source.HorizontalAlignment;
+            target.VerticalAlignment = source.VerticalAlignment;
+            target.Width = source.Width;
+            target.Height = source.Height;
+            target.MinWidth = source.MinWidth;
+            target.MinHeight = source.MinHeight;
+            target.MaxWidth = source.MaxWidth;
+            target.MaxHeight = source.MaxHeight;
+
+            Grid.SetRow(target, Grid.GetRow(source));
+            Grid.SetColumn(target, Grid.GetColumn(source));
+            Grid.SetRowSpan(target, Grid.GetRowSpan(source));
+            Grid.SetColumnSpan(target, Grid.GetColumnSpan(source));
+            DockPanel.SetDock(target, DockPanel.GetDock(source));
+            Panel.SetZIndex(target, Panel.GetZIndex(source));
+        }
+
+        public void Dispose()
+        {
+            Remove();
+            GC.SuppressFinalize(this);
         }
     }
 }

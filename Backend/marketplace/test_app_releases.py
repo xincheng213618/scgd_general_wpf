@@ -211,6 +211,49 @@ class AppReleasesTests(unittest.TestCase):
         self.assertTrue(old_release.exists())
         self.assertEqual(move_mock.call_count, 3)
 
+    def test_reconcile_app_release_history_does_not_duplicate_existing_archive_copy(self):
+        self._create_release("1.0.0.2")
+        old_release = self._create_release("1.0.0.1", size=5)
+        archive_dir = app_releases.app_release_history_dir(self.storage, "1.0.0.1")
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        archived_copy = archive_dir / "ColorVision-1.0.0.1-20260418114222.zip"
+        archived_copy.write_bytes(b"x" * 5)
+
+        real_unlink = Path.unlink
+
+        def flaky_unlink(path_obj: Path, *args, **kwargs):
+            if path_obj == old_release:
+                raise PermissionError(13, "access denied")
+            return real_unlink(path_obj, *args, **kwargs)
+
+        with mock.patch("pathlib.Path.unlink", autospec=True, side_effect=flaky_unlink):
+            moved = app_releases.reconcile_app_release_history(self.storage, keep_latest=1)
+
+        self.assertEqual(moved, [])
+        self.assertTrue(old_release.exists())
+        self.assertTrue(archived_copy.exists())
+        self.assertEqual(len(list(archive_dir.glob("ColorVision-1.0.0.1*.zip"))), 1)
+
+    def test_reconcile_app_release_history_treats_partial_archive_move_as_nonfatal(self):
+        self._create_release("1.0.0.2")
+        old_release = self._create_release("1.0.0.1", size=5)
+        archive_dir = app_releases.app_release_history_dir(self.storage, "1.0.0.1")
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        (archive_dir / old_release.name).write_bytes(b"y" * 7)
+
+        def partial_move(source_path: Path, target_path: Path):
+            target_path.write_bytes(source_path.read_bytes())
+            raise PermissionError(13, "access denied")
+
+        with mock.patch("app_releases._move_file_with_retry", side_effect=partial_move):
+            moved = app_releases.reconcile_app_release_history(self.storage, keep_latest=1)
+
+        stamped_copies = list(archive_dir.glob("ColorVision-1.0.0.1-*.zip"))
+        self.assertEqual(moved, [])
+        self.assertTrue(old_release.exists())
+        self.assertEqual(len(stamped_copies), 1)
+        self.assertEqual(stamped_copies[0].read_bytes(), b"x" * 5)
+
 
 if __name__ == "__main__":
     unittest.main()

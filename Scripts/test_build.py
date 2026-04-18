@@ -247,7 +247,6 @@ class BuildScriptTests(unittest.TestCase):
             setup_files_dir=self.root,
             changelog_src=self.root / "CHANGELOG.md",
             wechat_target_directory=self.root,
-            baidu_target_directory=self.root,
         )
 
         with (
@@ -289,7 +288,6 @@ class BuildScriptTests(unittest.TestCase):
             setup_files_dir=self.root,
             changelog_src=changelog_path,
             wechat_target_directory=self.root,
-            baidu_target_directory=self.root,
         )
 
         captured_settings = {}

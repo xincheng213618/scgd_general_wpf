@@ -157,6 +157,24 @@ def _move_file_with_retry(source_path: Path, target_path: Path) -> None:
             time.sleep(delay)
 
 
+def _same_file_size(first_path: Path, second_path: Path) -> bool:
+    try:
+        return first_path.is_file() and second_path.is_file() and first_path.stat().st_size == second_path.stat().st_size
+    except OSError:
+        return False
+
+
+def _find_equivalent_release_copy(target_dir: Path, source_path: Path) -> Path | None:
+    exact_target = target_dir / source_path.name
+    candidates = [exact_target]
+    candidates.extend(sorted(target_dir.glob(f"{source_path.stem}-*{source_path.suffix}")))
+
+    for candidate in candidates:
+        if _same_file_size(candidate, source_path):
+            return candidate
+    return None
+
+
 def extract_release_version(name: str) -> str | None:
     canonical = _APP_RELEASE_CANONICAL_RE.match(name)
     if canonical:
@@ -464,20 +482,26 @@ def reconcile_app_release_history(
         target_dir.mkdir(parents=True, exist_ok=True)
         target_path = target_dir / source_path.name
 
-        if target_path.exists():
+        existing_copy = _find_equivalent_release_copy(target_dir, source_path)
+        if existing_copy:
             try:
-                if target_path.stat().st_size == source_path.stat().st_size:
-                    source_path.unlink(missing_ok=True)
-                    moved.append(
-                        {
-                            "from": source_path.name,
-                            "to": target_path.relative_to(storage).as_posix(),
-                        }
-                    )
-                    continue
-            except OSError:
-                pass
+                source_path.unlink(missing_ok=True)
+                moved.append(
+                    {
+                        "from": source_path.name,
+                        "to": existing_copy.relative_to(storage).as_posix(),
+                    }
+                )
+            except OSError as exc:
+                _logger.warning(
+                    "Archived release already exists but source cleanup failed: %s -> %s (%s)",
+                    source_path,
+                    existing_copy,
+                    exc,
+                )
+            continue
 
+        if target_path.exists():
             stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
             target_path = target_dir / f"{source_path.stem}-{stamp}{source_path.suffix}"
 
@@ -489,15 +513,24 @@ def reconcile_app_release_history(
                     "to": target_path.relative_to(storage).as_posix(),
                 }
             )
-        except PermissionError as exc:
-            if not _is_windows_file_lock_error(exc):
-                raise
-            _logger.warning(
-                "Skip moving locked release file: %s -> %s",
-                source_path,
-                target_path,
-            )
-            continue
+        except OSError as exc:
+            existing_copy = _find_equivalent_release_copy(target_dir, source_path)
+            if existing_copy:
+                _logger.warning(
+                    "Release archive copy exists but source cleanup failed: %s -> %s (%s)",
+                    source_path,
+                    existing_copy,
+                    exc,
+                )
+                continue
+            if isinstance(exc, PermissionError) and _is_windows_file_lock_error(exc):
+                _logger.warning(
+                    "Skip moving locked release file: %s -> %s",
+                    source_path,
+                    target_path,
+                )
+                continue
+            raise
 
     if moved and on_changed:
         on_changed("History")
