@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -68,6 +69,23 @@ namespace ColorVision.UI
         public Dictionary<string, TimedButtonOperationStats> Records { get; set; } = new Dictionary<string, TimedButtonOperationStats>();
     }
 
+    public sealed class TimedButtonOperationStatsEntry
+    {
+        public string OperationKey { get; set; } = string.Empty;
+        public TimedButtonOperationStats Stats { get; set; } = new TimedButtonOperationStats();
+    }
+
+    public sealed class TimedButtonOperationStatsChangedEventArgs : EventArgs
+    {
+        public TimedButtonOperationStatsChangedEventArgs(string? operationKey)
+        {
+            OperationKey = string.IsNullOrWhiteSpace(operationKey) ? null : operationKey.Trim();
+        }
+
+        public string? OperationKey { get; }
+        public bool IsGlobalChange => string.IsNullOrWhiteSpace(OperationKey);
+    }
+
     public sealed class TimedButtonOperationOptions
     {
         public string OperationKey { get; set; } = string.Empty;
@@ -85,6 +103,7 @@ namespace ColorVision.UI
 
     public sealed class TimedButtonOperation : IDisposable
     {
+        private const string StatsContextMenuTag = "TimedButtonOperation.OpenStatsWindow";
         private readonly Button _button;
         private readonly TimedButtonOperationOptions _options;
         private readonly DispatcherTimer _timer;
@@ -93,6 +112,7 @@ namespace ColorVision.UI
         private string _runningText = string.Empty;
         private double _expectedDurationMs;
         private bool _isRunning;
+        private bool _statsShortcutAttached;
         private bool _buttonWasEnabled;
 
         public TimedButtonOperation(Button button, TimedButtonOperationOptions options)
@@ -113,6 +133,8 @@ namespace ColorVision.UI
                 Interval = TimeSpan.FromMilliseconds(16)
             };
             _timer.Tick += Timer_Tick;
+            TimedButtonOperationStatsManager.StatsChanged += TimedButtonOperationStatsManager_StatsChanged;
+            EnsureStatsShortcutAttached();
 
             RefreshIdleState();
         }
@@ -123,6 +145,8 @@ namespace ColorVision.UI
 
         public void RefreshIdleState()
         {
+            EnsureStatsShortcutAttached();
+
             if (_isRunning)
             {
                 return;
@@ -204,6 +228,8 @@ namespace ColorVision.UI
                     _options.TreatFirstSuccessAsWarmup,
                     _options.PersistStatsImmediately);
 
+                TimedButtonOperationStatsManager.NotifyStatsChanged(_options.OperationKey);
+
                 if (!recordResult.WasWarmup)
                 {
                     _options.OnSuccessfulCompletion?.Invoke(elapsedMilliseconds);
@@ -264,8 +290,72 @@ namespace ColorVision.UI
             _progressHost.UpdateProgress(progress, _runningText);
         }
 
+        private void EnsureStatsShortcutAttached()
+        {
+            if (_statsShortcutAttached)
+            {
+                return;
+            }
+
+            ITimedButtonOperationStatsWindowLauncher? launcher = TimedButtonOperationStatsWindowLauncherProvider.GetLauncher();
+            if (launcher == null || !launcher.CanOpen)
+            {
+                return;
+            }
+
+            ContextMenu contextMenu = _button.ContextMenu ?? new ContextMenu();
+            bool alreadyExists = contextMenu.Items
+                .OfType<MenuItem>()
+                .Any(item => string.Equals(item.Tag as string, StatsContextMenuTag, StringComparison.Ordinal));
+
+            if (alreadyExists)
+            {
+                _button.ContextMenu = contextMenu;
+                _statsShortcutAttached = true;
+                return;
+            }
+
+            if (contextMenu.Items.Count > 0)
+            {
+                contextMenu.Items.Add(new Separator());
+            }
+
+            MenuItem menuItem = new MenuItem
+            {
+                Header = "查看耗时统计",
+                Tag = StatsContextMenuTag
+            };
+            menuItem.Click += (_, _) => launcher.OpenWindow(_options.OperationKey);
+
+            contextMenu.Items.Add(menuItem);
+            _button.ContextMenu = contextMenu;
+            _statsShortcutAttached = true;
+        }
+
+        private void TimedButtonOperationStatsManager_StatsChanged(object? sender, TimedButtonOperationStatsChangedEventArgs e)
+        {
+            if (_isRunning)
+            {
+                return;
+            }
+
+            if (!e.IsGlobalChange && !string.Equals(e.OperationKey, _options.OperationKey, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (_button.Dispatcher.CheckAccess())
+            {
+                RefreshIdleState();
+                return;
+            }
+
+            _button.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RefreshIdleState));
+        }
+
         public void Dispose()
         {
+            TimedButtonOperationStatsManager.StatsChanged -= TimedButtonOperationStatsManager_StatsChanged;
             _timer.Tick -= Timer_Tick;
             _timer.Stop();
             _progressHost.Dispose();
@@ -345,6 +435,11 @@ namespace ColorVision.UI
                 lines.Add("本次软件启动的首轮样本按预热处理，不参与平均。");
             }
 
+            if (TimedButtonOperationStatsWindowLauncherProvider.GetLauncher()?.CanOpen == true)
+            {
+                lines.Add("右键按钮可打开统计窗口。\n");
+            }
+
             lines.Add(BuildTrendText(stats));
             return string.Join("\n", lines);
         }
@@ -386,7 +481,16 @@ namespace ColorVision.UI
     public interface ITimedButtonOperationStatsRepository
     {
         TimedButtonOperationStats? Get(string operationKey);
+        IReadOnlyList<TimedButtonOperationStatsEntry> GetAll();
         TimedButtonOperationRecordResult Record(string operationKey, double elapsedMilliseconds, bool treatAsWarmupSample, bool persistImmediately);
+        bool Delete(string operationKey);
+        int Clear();
+    }
+
+    public interface ITimedButtonOperationStatsWindowLauncher
+    {
+        bool CanOpen { get; }
+        void OpenWindow(string? operationKey = null);
     }
 
     public readonly struct TimedButtonOperationRecordResult
@@ -438,6 +542,92 @@ namespace ColorVision.UI
                 return true;
             }
         }
+
+        public static void Reset(string operationKey)
+        {
+            if (string.IsNullOrWhiteSpace(operationKey))
+            {
+                return;
+            }
+
+            lock (SyncRoot)
+            {
+                WarmedOperationKeys.Remove(operationKey.Trim());
+            }
+        }
+
+        public static void Clear()
+        {
+            lock (SyncRoot)
+            {
+                WarmedOperationKeys.Clear();
+            }
+        }
+    }
+
+    public static class TimedButtonOperationStatsManager
+    {
+        public static event EventHandler<TimedButtonOperationStatsChangedEventArgs>? StatsChanged;
+
+        public static IReadOnlyList<TimedButtonOperationStatsEntry> GetAll()
+        {
+            return TimedButtonOperationStatsRepositoryProvider.GetRepository().GetAll();
+        }
+
+        public static bool Delete(string operationKey)
+        {
+            bool deleted = TimedButtonOperationStatsRepositoryProvider.GetRepository().Delete(operationKey);
+            if (!deleted)
+            {
+                return false;
+            }
+
+            TimedButtonOperationWarmupSession.Reset(operationKey);
+            NotifyStatsChanged(operationKey);
+            return true;
+        }
+
+        public static int Clear()
+        {
+            int cleared = TimedButtonOperationStatsRepositoryProvider.GetRepository().Clear();
+            if (cleared <= 0)
+            {
+                return 0;
+            }
+
+            TimedButtonOperationWarmupSession.Clear();
+            NotifyStatsChanged(null);
+            return cleared;
+        }
+
+        internal static void NotifyStatsChanged(string? operationKey)
+        {
+            StatsChanged?.Invoke(null, new TimedButtonOperationStatsChangedEventArgs(operationKey));
+        }
+    }
+
+    public static class TimedButtonOperationStatsWindowLauncherProvider
+    {
+        private static readonly object SyncRoot = new object();
+        private static ITimedButtonOperationStatsWindowLauncher? _launcher;
+
+        public static void SetLauncher(ITimedButtonOperationStatsWindowLauncher launcher)
+        {
+            ArgumentNullException.ThrowIfNull(launcher);
+
+            lock (SyncRoot)
+            {
+                _launcher = launcher;
+            }
+        }
+
+        public static ITimedButtonOperationStatsWindowLauncher? GetLauncher()
+        {
+            lock (SyncRoot)
+            {
+                return _launcher;
+            }
+        }
     }
 
     public static class TimedButtonOperationStatsRepositoryProvider
@@ -479,6 +669,22 @@ namespace ColorVision.UI
             return stats?.Clone();
         }
 
+        public IReadOnlyList<TimedButtonOperationStatsEntry> GetAll()
+        {
+            TimedButtonOperationStatsConfig config = ConfigHandler.GetInstance().GetRequiredService<TimedButtonOperationStatsConfig>();
+            config.Records ??= new Dictionary<string, TimedButtonOperationStats>();
+
+            return config.Records
+                .Select(item => new TimedButtonOperationStatsEntry
+                {
+                    OperationKey = item.Key,
+                    Stats = item.Value.Clone()
+                })
+                .OrderByDescending(item => item.Stats.LastCompletedAt)
+                .ThenBy(item => item.OperationKey, StringComparer.Ordinal)
+                .ToList();
+        }
+
         public TimedButtonOperationRecordResult Record(string operationKey, double elapsedMilliseconds, bool treatAsWarmupSample, bool persistImmediately)
         {
             TimedButtonOperationStatsConfig config = ConfigHandler.GetInstance().GetRequiredService<TimedButtonOperationStatsConfig>();
@@ -499,6 +705,41 @@ namespace ColorVision.UI
             }
 
             return new TimedButtonOperationRecordResult(stats.Clone(), treatAsWarmupSample);
+        }
+
+        public bool Delete(string operationKey)
+        {
+            if (string.IsNullOrWhiteSpace(operationKey))
+            {
+                return false;
+            }
+
+            TimedButtonOperationStatsConfig config = ConfigHandler.GetInstance().GetRequiredService<TimedButtonOperationStatsConfig>();
+            config.Records ??= new Dictionary<string, TimedButtonOperationStats>();
+
+            bool removed = config.Records.Remove(operationKey.Trim());
+            if (removed)
+            {
+                ConfigHandler.GetInstance().Save<TimedButtonOperationStatsConfig>();
+            }
+
+            return removed;
+        }
+
+        public int Clear()
+        {
+            TimedButtonOperationStatsConfig config = ConfigHandler.GetInstance().GetRequiredService<TimedButtonOperationStatsConfig>();
+            config.Records ??= new Dictionary<string, TimedButtonOperationStats>();
+
+            int count = config.Records.Count;
+            if (count == 0)
+            {
+                return 0;
+            }
+
+            config.Records.Clear();
+            ConfigHandler.GetInstance().Save<TimedButtonOperationStatsConfig>();
+            return count;
         }
     }
 

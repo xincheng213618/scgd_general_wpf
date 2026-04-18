@@ -1,6 +1,7 @@
 using ColorVision.UI;
 using SqlSugar;
 using System.IO;
+using System.Linq;
 
 namespace ColorVision.UI.Desktop.TimedButtons
 {
@@ -73,6 +74,22 @@ namespace ColorVision.UI.Desktop.TimedButtons
             return null;
         }
 
+        public IReadOnlyList<TimedButtonOperationStatsEntry> GetAll()
+        {
+            lock (_syncRoot)
+            {
+                return _cache
+                    .Select(item => new TimedButtonOperationStatsEntry
+                    {
+                        OperationKey = item.Key,
+                        Stats = item.Value.Clone()
+                    })
+                    .OrderByDescending(item => item.Stats.LastCompletedAt)
+                    .ThenBy(item => item.OperationKey, StringComparer.Ordinal)
+                    .ToList();
+            }
+        }
+
         public TimedButtonOperationRecordResult Record(string operationKey, double elapsedMilliseconds, bool treatAsWarmupSample, bool persistImmediately)
         {
             _ = persistImmediately;
@@ -94,6 +111,45 @@ namespace ColorVision.UI.Desktop.TimedButtons
                 stats.Record(elapsedMilliseconds, treatAsWarmupSample);
                 WriteToDatabase(normalizedKey, stats);
                 return new TimedButtonOperationRecordResult(stats.Clone(), treatAsWarmupSample);
+            }
+        }
+
+        public bool Delete(string operationKey)
+        {
+            string normalizedKey = NormalizeKey(operationKey);
+            if (string.IsNullOrEmpty(normalizedKey))
+            {
+                return false;
+            }
+
+            lock (_syncRoot)
+            {
+                bool removedFromCache = _cache.Remove(normalizedKey);
+
+                using SqlSugarClient db = CreateDbClient();
+                int deleted = db.Deleteable<TimedButtonOperationStatRecord>()
+                    .Where(it => it.OperationKey == normalizedKey)
+                    .ExecuteCommand();
+
+                return removedFromCache || deleted > 0;
+            }
+        }
+
+        public int Clear()
+        {
+            lock (_syncRoot)
+            {
+                int count = _cache.Count;
+                if (count == 0)
+                {
+                    return 0;
+                }
+
+                _cache.Clear();
+
+                using SqlSugarClient db = CreateDbClient();
+                db.Deleteable<TimedButtonOperationStatRecord>().ExecuteCommand();
+                return count;
             }
         }
 
