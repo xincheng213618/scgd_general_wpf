@@ -437,7 +437,7 @@ namespace ColorVision.UI
 
             if (TimedButtonOperationStatsWindowLauncherProvider.GetLauncher()?.CanOpen == true)
             {
-                lines.Add("右键按钮可打开统计窗口。\n");
+                lines.Add("右键按钮可打开统计窗口。");
             }
 
             lines.Add(BuildTrendText(stats));

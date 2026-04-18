@@ -148,7 +148,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
             LoadEntries();
         }
 
-        public void ApplySearchFilter(string? operationKey)
+          public void ApplySearchFilter(string? operationKey)
         {
             SearchTextBox.Text = operationKey?.Trim() ?? string.Empty;
             LoadEntries();
