@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.HDR;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
@@ -122,6 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private VideoFrameProcessor? _localFrameProcessor;
         private TimedButtonOperation? _takePhotoOperation;
         private TimedButtonOperation? _openOperation;
+        private TimedButtonOperation? _videoOperation;
         private TimedButtonOperation? _closeOperation;
         private TimedButtonOperation? _localVideoOperation;
         private bool _visualsAdded = false;
@@ -169,6 +171,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     DisplayCameraConfig.OpenTime = elapsed;
                     SaveDisplayConfig();
                 });
+
+            _videoOperation = CreateTimedButtonOperation(
+                VideoButton,
+                "video-open",
+                Properties.Resources.Video,
+                "视频模式",
+                Brushes.Red);
 
             _closeOperation = CreateTimedButtonOperation(
                 CloseButton,
@@ -658,17 +667,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (port > 0)
                     {
                         MsgRecord msgRecord = DService.OpenVideo(host, port);
+                        TimedButtonOperationScope? videoScope = _videoOperation?.Begin();
                         msgRecord.MsgRecordStateChanged += (s, e) =>
                         {
-                            if (e == MsgRecordState.Fail)
+                            if (!IsTerminalMsgRecordState(e))
                             {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
-                                Device.CameraVideoControl.Close();
-                                DService.Close();
-                                DService.IsVideoOpen = false;
+                                return;
                             }
-                            else
+
+                            if (e == MsgRecordState.Success)
                             {
+                                videoScope?.CompleteSuccess();
                                 DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msgRecord.MsgReturn.Data));
                                 string mapName = Device.Code;
                                 if (pm_live.IsLocal) mapName = pm_live.MapName;
@@ -684,7 +693,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 ButtonOpen.Visibility = Visibility.Collapsed;
                                 ButtonClose.Visibility = Visibility.Visible;
                                 StackPanelOpen.Visibility = Visibility.Visible;
+                                return;
                             }
+
+                            videoScope?.Complete(false);
+                            if (e == MsgRecordState.Fail)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
+                            }
+                            else if (e == MsgRecordState.Timeout)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "视频模式打开超时，请检查日志", "ColorVision");
+                            }
+
+                            Device.CameraVideoControl.Close();
+                            DService.Close();
+                            DService.IsVideoOpen = false;
                         };
                         ServicesHelper.SendCommand(button, msgRecord);
                     }
@@ -697,6 +721,28 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
+        private async Task<(bool isSuccess, string errorMessage)> CloseLocalVideoInternalAsync(VideoFrameProcessor? frameProcessor)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    if (m_hCamHandle != IntPtr.Zero)
+                    {
+                        cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
+                        cvCameraCSLib.CM_Close(m_hCamHandle);
+                    }
+
+                    frameProcessor?.Dispose();
+                    return (true, string.Empty);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex);
+                    return (false, ex.Message);
+                }
+            });
+        }
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
@@ -722,7 +768,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (Device.PhyCamera == null)
-            {
+                            {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
@@ -899,6 +945,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _localFrameProcessor = null;
             _takePhotoOperation?.Dispose();
             _openOperation?.Dispose();
+            _videoOperation?.Dispose();
             _closeOperation?.Dispose();
             _localVideoOperation?.Dispose();
             GC.SuppressFinalize(this);
@@ -960,6 +1007,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 OperationKey = BuildButtonOperationKey(actionKey),
                 RunningText = buttonLabel,
                 ProgressForeground = progressForeground,
+                TreatFirstSuccessAsWarmup = true,
                 ExpectedDurationProvider = expectedDurationProvider,
                 OnSuccessfulCompletion = onSuccessfulCompletion,
                 ContentFactory = resolvedContentFactory,
@@ -988,7 +1036,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             Application.Current?.Dispatcher.Invoke(new Action(() =>
             {
-                bool enablePseudo = Device.View.ImageView.Config.IsPseudo;
+                if (!Device.DisplayConfig.IsLocalVideoOpen)
+                {
+                    return;
+                }
+
+                var pseudoColorService = Device.View.ImageView.PseudoColorService;
+                bool enablePseudo = pseudoColorService.IsEnabled;
                 bool enableArticulation = VideoConfig.IsCalArtculation;
                 bool shouldProcess = VideoConfig.IsUseCacheFile && (enablePseudo || enableArticulation);
 
@@ -1002,16 +1056,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
 
                     int frameBytes = width * height * channels * Math.Max(1, bpp / 8);
+                    PseudoColorFrameRequest? pseudoColorRequest = null;
+                    if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
+                    {
+                        pseudoColorRequest = capturedRequest;
+                    }
+
                     var request = new VideoFrameProcessingRequest
                     {
                         EnableArticulation = enableArticulation,
                         FocusAlgorithm = VideoConfig.EvaFunc,
                         Roi = new RoiRect(rect),
-                        EnablePseudoColor = enablePseudo,
-                        PseudoMin = enablePseudo ? (uint)Device.View.ImageView.PseudoSlider.ValueStart : 0,
-                        PseudoMax = enablePseudo ? (uint)Device.View.ImageView.PseudoSlider.ValueEnd : 0,
-                        ColormapTypes = Device.View.ImageView.Config.ColormapTypes,
-                        PseudoChannel = 0
+                        PseudoColor = pseudoColorRequest
                     };
                     _localFrameProcessor?.SubmitFrame(pData, frameBytes, width, height, channels, bpp, width * channels * Math.Max(1, bpp / 8), request);
                 }
@@ -1093,13 +1149,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (Device.DisplayConfig.IsLocalVideoOpen)
             {
                 TimedButtonOperationScope? localVideoCloseScope = _localVideoOperation?.Begin(runningText: "Close Video");
+                bool closeSucceeded = false;
+                string closeError = string.Empty;
+                VideoFrameProcessor? frameProcessor = _localFrameProcessor;
+                _localFrameProcessor = null;
+
                 try
                 {
-                    await Dispatcher.Yield(DispatcherPriority.Background);
-                    cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
-                    cvCameraCSLib.CM_Close(m_hCamHandle);
-                    _localFrameProcessor?.Dispose();
-                    _localFrameProcessor = null;
                     Device.DisplayConfig.IsLocalVideoOpen = false;
                     fpsTimer.Stop();
                     Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
@@ -1110,11 +1166,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
                         _visualsAdded = false;
                     }
+
+                    (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync(frameProcessor);
                 }
                 finally
                 {
                     localVideoCloseScope?.Complete(false);
                     _localVideoOperation?.RefreshIdleState();
+                }
+
+                if (!closeSucceeded && !string.IsNullOrWhiteSpace(closeError))
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), closeError, "ColorVision");
                 }
 
                 return;
@@ -1291,9 +1354,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 if (result.PseudoImage is HImage pseudoImage)
                 {
-                    if (Device.View.ImageView.Config.IsPseudo)
+                    if (Device.View.ImageView.PseudoColorService.IsEnabled)
                     {
-                        VideoFrameUiHelper.ApplyPseudoImage(Device.View.ImageView, pseudoImage);
+                        VideoFrameUiHelper.ApplyPseudoImage(Device.View.ImageView.PseudoColorService, pseudoImage);
                         if (first)
                         {
                             first = false;

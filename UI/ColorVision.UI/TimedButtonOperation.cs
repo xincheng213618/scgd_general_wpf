@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -12,18 +11,28 @@ namespace ColorVision.UI
     public sealed class TimedButtonOperationStats
     {
         public int SuccessCount { get; set; }
+        public int WarmupCount { get; set; }
+        public double WarmupElapsedMs { get; set; }
         public double LastElapsedMs { get; set; }
         public double AverageElapsedMs { get; set; }
         public double BestElapsedMs { get; set; }
         public double WorstElapsedMs { get; set; }
         public DateTime LastCompletedAt { get; set; }
 
-        public void Record(double elapsedMilliseconds)
+        public void Record(double elapsedMilliseconds, bool treatAsWarmupSample)
         {
             elapsedMilliseconds = Math.Max(0, elapsedMilliseconds);
+            LastCompletedAt = DateTime.Now;
+
+            if (treatAsWarmupSample)
+            {
+                WarmupCount++;
+                WarmupElapsedMs = elapsedMilliseconds;
+                return;
+            }
+
             SuccessCount++;
             LastElapsedMs = elapsedMilliseconds;
-            LastCompletedAt = DateTime.Now;
 
             if (SuccessCount == 1)
             {
@@ -36,6 +45,21 @@ namespace ColorVision.UI
             AverageElapsedMs = ((AverageElapsedMs * (SuccessCount - 1)) + elapsedMilliseconds) / SuccessCount;
             BestElapsedMs = Math.Min(BestElapsedMs, elapsedMilliseconds);
             WorstElapsedMs = Math.Max(WorstElapsedMs, elapsedMilliseconds);
+        }
+
+        public TimedButtonOperationStats Clone()
+        {
+            return new TimedButtonOperationStats
+            {
+                SuccessCount = SuccessCount,
+                WarmupCount = WarmupCount,
+                WarmupElapsedMs = WarmupElapsedMs,
+                LastElapsedMs = LastElapsedMs,
+                AverageElapsedMs = AverageElapsedMs,
+                BestElapsedMs = BestElapsedMs,
+                WorstElapsedMs = WorstElapsedMs,
+                LastCompletedAt = LastCompletedAt
+            };
         }
     }
 
@@ -53,6 +77,7 @@ namespace ColorVision.UI
         public Action<double>? OnSuccessfulCompletion { get; set; }
         public string? RunningText { get; set; }
         public Brush? ProgressForeground { get; set; }
+        public bool TreatFirstSuccessAsWarmup { get; set; }
         public bool DisableButtonWhileRunning { get; set; } = true;
         public bool PersistStatsImmediately { get; set; } = true;
         public double MinimumExpectedDurationMs { get; set; } = 500;
@@ -173,8 +198,16 @@ namespace ColorVision.UI
 
             if (success)
             {
-                TimedButtonOperationStatsStore.Record(_options.OperationKey, elapsedMilliseconds, _options.PersistStatsImmediately);
-                _options.OnSuccessfulCompletion?.Invoke(elapsedMilliseconds);
+                TimedButtonOperationRecordResult recordResult = TimedButtonOperationStatsStore.Record(
+                    _options.OperationKey,
+                    elapsedMilliseconds,
+                    _options.TreatFirstSuccessAsWarmup,
+                    _options.PersistStatsImmediately);
+
+                if (!recordResult.WasWarmup)
+                {
+                    _options.OnSuccessfulCompletion?.Invoke(elapsedMilliseconds);
+                }
             }
 
             RefreshIdleState();
@@ -187,19 +220,34 @@ namespace ColorVision.UI
                 return Math.Max(_options.MinimumExpectedDurationMs, expectedDurationMs.Value);
             }
 
+            TimedButtonOperationStats? stats = CurrentStats;
+            if (TimedButtonOperationWarmupSession.NeedsWarmup(_options.OperationKey, _options.TreatFirstSuccessAsWarmup)
+                && stats?.WarmupCount > 0
+                && stats.WarmupElapsedMs > 0)
+            {
+                return Math.Max(_options.MinimumExpectedDurationMs, stats.WarmupElapsedMs);
+            }
+
             double configuredDuration = _options.ExpectedDurationProvider?.Invoke() ?? 0;
             if (configuredDuration > 0)
             {
                 return Math.Max(_options.MinimumExpectedDurationMs, configuredDuration);
             }
 
-            TimedButtonOperationStats? stats = CurrentStats;
             if (stats != null)
             {
-                double historicalDuration = stats.SuccessCount > 1 ? stats.AverageElapsedMs : stats.LastElapsedMs;
-                if (historicalDuration > 0)
+                if (stats.SuccessCount > 0)
                 {
-                    return Math.Max(_options.MinimumExpectedDurationMs, historicalDuration);
+                    double historicalDuration = stats.SuccessCount > 1 ? stats.AverageElapsedMs : stats.LastElapsedMs;
+                    if (historicalDuration > 0)
+                    {
+                        return Math.Max(_options.MinimumExpectedDurationMs, historicalDuration);
+                    }
+                }
+
+                if (stats.WarmupCount > 0 && stats.WarmupElapsedMs > 0)
+                {
+                    return Math.Max(_options.MinimumExpectedDurationMs, stats.WarmupElapsedMs);
                 }
             }
 
@@ -262,22 +310,43 @@ namespace ColorVision.UI
     {
         public static object BuildCompactContent(string label, TimedButtonOperationStats? stats)
         {
-            if (stats == null || stats.SuccessCount == 0)
-            {
-                return label;
-            }
-
-            return $"{label} ({FormatDuration(stats.LastElapsedMs)})";
+            return label;
         }
 
         public static string BuildTooltip(string label, TimedButtonOperationStats? stats)
         {
-            if (stats == null || stats.SuccessCount == 0)
+            if (stats == null || (stats.SuccessCount == 0 && stats.WarmupCount == 0))
             {
-                return $"{label}\n首次执行，暂无历史耗时。";
+                return $"{label}\n暂无历史耗时。";
             }
 
-            return $"{label}\n上次: {FormatDuration(stats.LastElapsedMs)}\n平均: {FormatDuration(stats.AverageElapsedMs)}\n最快: {FormatDuration(stats.BestElapsedMs)}\n最慢: {FormatDuration(stats.WorstElapsedMs)}\n成功次数: {stats.SuccessCount}\n{BuildTrendText(stats)}";
+            List<string> lines = new List<string> { label };
+
+            if (stats.WarmupCount > 0)
+            {
+                lines.Add($"预热: {FormatDuration(stats.WarmupElapsedMs)}");
+            }
+
+            if (stats.SuccessCount == 0)
+            {
+                lines.Add("稳定样本暂无记录。");
+                lines.Add("本次软件启动的首轮样本按预热处理，不参与平均。");
+                return string.Join("\n", lines);
+            }
+
+            lines.Add($"上次: {FormatDuration(stats.LastElapsedMs)}");
+            lines.Add($"平均: {FormatDuration(stats.AverageElapsedMs)}");
+            lines.Add($"最快: {FormatDuration(stats.BestElapsedMs)}");
+            lines.Add($"最慢: {FormatDuration(stats.WorstElapsedMs)}");
+            lines.Add($"稳定样本: {stats.SuccessCount}");
+
+            if (stats.WarmupCount > 0)
+            {
+                lines.Add("本次软件启动的首轮样本按预热处理，不参与平均。");
+            }
+
+            lines.Add(BuildTrendText(stats));
+            return string.Join("\n", lines);
         }
 
         public static string FormatDuration(double elapsedMilliseconds)
@@ -294,7 +363,7 @@ namespace ColorVision.UI
         {
             if (stats.SuccessCount <= 1)
             {
-                return "当前只有第一次样本，后续可观察是否继续下降。";
+                return "稳定样本仍然较少，继续执行后会更准确。";
             }
 
             if (stats.AverageElapsedMs <= 0)
@@ -314,9 +383,90 @@ namespace ColorVision.UI
         }
     }
 
-    internal static class TimedButtonOperationStatsStore
+    public interface ITimedButtonOperationStatsRepository
     {
-        public static TimedButtonOperationStats? Get(string operationKey)
+        TimedButtonOperationStats? Get(string operationKey);
+        TimedButtonOperationRecordResult Record(string operationKey, double elapsedMilliseconds, bool treatAsWarmupSample, bool persistImmediately);
+    }
+
+    public readonly struct TimedButtonOperationRecordResult
+    {
+        public TimedButtonOperationRecordResult(TimedButtonOperationStats stats, bool wasWarmup)
+        {
+            Stats = stats;
+            WasWarmup = wasWarmup;
+        }
+
+        public TimedButtonOperationStats Stats { get; }
+        public bool WasWarmup { get; }
+    }
+
+    public static class TimedButtonOperationWarmupSession
+    {
+        private static readonly object SyncRoot = new object();
+        private static readonly HashSet<string> WarmedOperationKeys = new HashSet<string>(StringComparer.Ordinal);
+
+        public static bool NeedsWarmup(string operationKey, bool enabled)
+        {
+            if (!enabled || string.IsNullOrWhiteSpace(operationKey))
+            {
+                return false;
+            }
+
+            lock (SyncRoot)
+            {
+                return !WarmedOperationKeys.Contains(operationKey.Trim());
+            }
+        }
+
+        public static bool ConsumeWarmup(string operationKey, bool enabled)
+        {
+            if (!enabled || string.IsNullOrWhiteSpace(operationKey))
+            {
+                return false;
+            }
+
+            string normalizedKey = operationKey.Trim();
+            lock (SyncRoot)
+            {
+                if (WarmedOperationKeys.Contains(normalizedKey))
+                {
+                    return false;
+                }
+
+                WarmedOperationKeys.Add(normalizedKey);
+                return true;
+            }
+        }
+    }
+
+    public static class TimedButtonOperationStatsRepositoryProvider
+    {
+        private static readonly object SyncRoot = new object();
+        private static ITimedButtonOperationStatsRepository? _repository;
+
+        public static void SetRepository(ITimedButtonOperationStatsRepository repository)
+        {
+            ArgumentNullException.ThrowIfNull(repository);
+
+            lock (SyncRoot)
+            {
+                _repository = repository;
+            }
+        }
+
+        internal static ITimedButtonOperationStatsRepository GetRepository()
+        {
+            lock (SyncRoot)
+            {
+                return _repository ??= new TimedButtonOperationConfigStatsRepository();
+            }
+        }
+    }
+
+    internal sealed class TimedButtonOperationConfigStatsRepository : ITimedButtonOperationStatsRepository
+    {
+        public TimedButtonOperationStats? Get(string operationKey)
         {
             if (string.IsNullOrWhiteSpace(operationKey))
             {
@@ -326,10 +476,10 @@ namespace ColorVision.UI
             TimedButtonOperationStatsConfig config = ConfigHandler.GetInstance().GetRequiredService<TimedButtonOperationStatsConfig>();
             config.Records ??= new Dictionary<string, TimedButtonOperationStats>();
             config.Records.TryGetValue(operationKey.Trim(), out TimedButtonOperationStats? stats);
-            return stats;
+            return stats?.Clone();
         }
 
-        public static TimedButtonOperationStats Record(string operationKey, double elapsedMilliseconds, bool persistImmediately)
+        public TimedButtonOperationRecordResult Record(string operationKey, double elapsedMilliseconds, bool treatAsWarmupSample, bool persistImmediately)
         {
             TimedButtonOperationStatsConfig config = ConfigHandler.GetInstance().GetRequiredService<TimedButtonOperationStatsConfig>();
             config.Records ??= new Dictionary<string, TimedButtonOperationStats>();
@@ -341,14 +491,28 @@ namespace ColorVision.UI
                 config.Records[normalizedKey] = stats;
             }
 
-            stats.Record(elapsedMilliseconds);
+            stats.Record(elapsedMilliseconds, treatAsWarmupSample);
 
             if (persistImmediately)
             {
                 ConfigHandler.GetInstance().Save<TimedButtonOperationStatsConfig>();
             }
 
-            return stats;
+            return new TimedButtonOperationRecordResult(stats.Clone(), treatAsWarmupSample);
+        }
+    }
+
+    internal static class TimedButtonOperationStatsStore
+    {
+        public static TimedButtonOperationStats? Get(string operationKey)
+        {
+            return TimedButtonOperationStatsRepositoryProvider.GetRepository().Get(operationKey);
+        }
+
+        public static TimedButtonOperationRecordResult Record(string operationKey, double elapsedMilliseconds, bool treatFirstSuccessAsWarmup, bool persistImmediately)
+        {
+            bool treatAsWarmupSample = TimedButtonOperationWarmupSession.ConsumeWarmup(operationKey, treatFirstSuccessAsWarmup);
+            return TimedButtonOperationStatsRepositoryProvider.GetRepository().Record(operationKey, elapsedMilliseconds, treatAsWarmupSample, persistImmediately);
         }
     }
 
@@ -358,10 +522,15 @@ namespace ColorVision.UI
         private readonly Brush? _progressForeground;
         private readonly Grid _host = new Grid();
         private readonly Border _overlay;
-        private readonly ProgressBar _progressBar;
-        private readonly TextBlock _textBlock;
+        private readonly Grid _layoutRoot;
+        private readonly Border _progressTrack;
+        private readonly Border _progressFill;
+        private readonly TextBlock _baseTextBlock;
+        private readonly TextBlock _filledTextBlock;
+        private readonly RectangleGeometry _filledTextClip = new RectangleGeometry();
         private bool _isHosted;
         private bool _overlayInserted;
+        private double _progressValue;
 
         public bool IsHosted => _isHosted;
 
@@ -375,39 +544,65 @@ namespace ColorVision.UI
             {
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(2),
-                Opacity = 0.96
+                Opacity = 0.98,
+                SnapsToDevicePixels = true,
+                UseLayoutRounding = true
             };
             _overlay.SetResourceReference(Border.BackgroundProperty, "GlobalBackground");
             _overlay.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
             _overlay.IsHitTestVisible = false;
+            _overlay.SizeChanged += Overlay_SizeChanged;
 
-            Grid layoutRoot = new Grid();
-            layoutRoot.IsHitTestVisible = false;
-
-            _progressBar = new ProgressBar
+            _layoutRoot = new Grid
             {
-                Minimum = 0,
-                Maximum = 100,
-                Background = Brushes.Transparent,
-                Value = 0
+                IsHitTestVisible = false,
+                ClipToBounds = true
             };
-            _progressBar.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            _progressBar.Foreground = _progressForeground ?? Brushes.Red;
-            _progressBar.IsHitTestVisible = false;
 
-            _textBlock = new TextBlock
+            _progressTrack = new Border
             {
-                HorizontalAlignment = HorizontalAlignment.Center,
+                CornerRadius = new CornerRadius(2),
+                Background = new SolidColorBrush(Color.FromArgb(24, 0, 0, 0))
+            };
+            _progressTrack.IsHitTestVisible = false;
+
+            _progressFill = new Border
+            {
+                CornerRadius = new CornerRadius(2),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Width = 0,
+                Background = _progressForeground ?? Brushes.Red
+            };
+            _progressFill.IsHitTestVisible = false;
+
+            _baseTextBlock = CreateCenteredTextBlock(_progressForeground ?? Brushes.Red);
+            _filledTextBlock = CreateCenteredTextBlock(Brushes.White);
+            _filledTextBlock.Clip = _filledTextClip;
+
+            _layoutRoot.Children.Add(_progressTrack);
+            _layoutRoot.Children.Add(_progressFill);
+            _layoutRoot.Children.Add(_baseTextBlock);
+            _layoutRoot.Children.Add(_filledTextBlock);
+            _overlay.Child = _layoutRoot;
+        }
+
+        private TextBlock CreateCenteredTextBlock(Brush foreground)
+        {
+            TextBlock textBlock = new TextBlock
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(8, 0, 8, 0),
+                Margin = new Thickness(0),
+                TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
-            _textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-            _textBlock.IsHitTestVisible = false;
-
-            layoutRoot.Children.Add(_progressBar);
-            layoutRoot.Children.Add(_textBlock);
-            _overlay.Child = layoutRoot;
+            textBlock.Foreground = foreground;
+            textBlock.FontSize = _button.FontSize;
+            textBlock.FontWeight = _button.FontWeight;
+            textBlock.FontFamily = _button.FontFamily;
+            textBlock.IsHitTestVisible = false;
+            return textBlock;
         }
 
         public void Show()
@@ -435,8 +630,27 @@ namespace ColorVision.UI
 
         public void UpdateProgress(double progressValue, string? text)
         {
-            _progressBar.Value = Math.Max(0, Math.Min(99, progressValue));
-            _textBlock.Text = text ?? string.Empty;
+            _progressValue = Math.Max(0, Math.Min(99, progressValue));
+
+            string resolvedText = text ?? string.Empty;
+            _baseTextBlock.Text = resolvedText;
+            _filledTextBlock.Text = resolvedText;
+            UpdateProgressVisual();
+        }
+
+        private void Overlay_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateProgressVisual();
+        }
+
+        private void UpdateProgressVisual()
+        {
+            double availableWidth = Math.Max(0, _layoutRoot.ActualWidth);
+            double availableHeight = Math.Max(0, _layoutRoot.ActualHeight);
+            double filledWidth = availableWidth * (_progressValue / 100d);
+
+            _progressFill.Width = filledWidth;
+            _filledTextClip.Rect = new Rect(0, 0, filledWidth, availableHeight);
         }
 
         private bool TryCreateHost()
@@ -512,6 +726,7 @@ namespace ColorVision.UI
         public void Dispose()
         {
             Remove();
+            _overlay.SizeChanged -= Overlay_SizeChanged;
             GC.SuppressFinalize(this);
         }
     }

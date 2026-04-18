@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using iText.Kernel.Crypto.Securityhandler;
@@ -299,7 +300,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return false;
             }
 
-            bool enablePseudo = Image.Config.IsPseudo;
+            var pseudoColorService = Image.PseudoColorService;
+            bool enablePseudo = pseudoColorService.IsEnabled;
             bool enableArticulation = Config.IsCalArtculation;
             if (!enablePseudo && !enableArticulation)
             {
@@ -312,16 +314,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 rect = new Rect(0, 0, width, height);
             }
 
+            PseudoColorFrameRequest? pseudoColorRequest = null;
+            if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
+            {
+                pseudoColorRequest = capturedRequest;
+            }
+
             request = new VideoFrameProcessingRequest
             {
                 EnableArticulation = enableArticulation,
                 FocusAlgorithm = Config.EvaFunc,
                 Roi = new RoiRect(rect),
-                EnablePseudoColor = enablePseudo,
-                PseudoMin = enablePseudo ? (uint)Image.PseudoSlider.ValueStart : 0,
-                PseudoMax = enablePseudo ? (uint)Image.PseudoSlider.ValueEnd : 0,
-                ColormapTypes = Image.Config.ColormapTypes,
-                PseudoChannel = 0
+                PseudoColor = pseudoColorRequest
             };
             return true;
         }
@@ -347,9 +351,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
                 if (result.PseudoImage is HImage pseudoImage)
                 {
-                    if (Image.Config.IsPseudo)
+                    if (Image.PseudoColorService.IsEnabled)
                     {
-                        VideoFrameUiHelper.ApplyPseudoImage(Image, pseudoImage);
+                        VideoFrameUiHelper.ApplyPseudoImage(Image.PseudoColorService, pseudoImage);
                     }
                     else
                     {

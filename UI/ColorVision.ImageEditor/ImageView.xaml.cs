@@ -1,19 +1,17 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using log4net;
-using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,39 +21,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
-    public static class ColormapExtension
-    {
-        public static Dictionary<ColormapTypes, string> GetColormapHDictionary()
-        {
-            var colormapDictionary = new Dictionary<ColormapTypes, string>
-        {
-            { ColormapTypes.COLORMAP_AUTUMN, "Assets/Colormap/colorscale_autumn.jpg" },
-            { ColormapTypes.COLORMAP_BONE, "Assets/Colormap/colorscale_bone.jpg" },
-            { ColormapTypes.COLORMAP_JET, "Assets/Colormap/colorscale_jet.jpg" },
-            { ColormapTypes.COLORMAP_WINTER, "Assets/Colormap/colorscale_winter.jpg" },
-            { ColormapTypes.COLORMAP_RAINBOW, "Assets/Colormap/colorscale_rainbow.jpg" },
-            { ColormapTypes.COLORMAP_OCEAN, "Assets/Colormap/colorscale_ocean.jpg" },
-            { ColormapTypes.COLORMAP_SUMMER, "Assets/Colormap/colorscale_summer.jpg" },
-            { ColormapTypes.COLORMAP_SPRING, "Assets/Colormap/colorscale_spring.jpg" },
-            { ColormapTypes.COLORMAP_COOL, "Assets/Colormap/colorscale_cool.jpg" },
-            { ColormapTypes.COLORMAP_HSV, "Assets/Colormap/colorscale_hsv.jpg" },
-            { ColormapTypes.COLORMAP_PINK, "Assets/Colormap/colorscale_pink.jpg" },
-            { ColormapTypes.COLORMAP_HOT, "Assets/Colormap/colorscale_hot.jpg" },
-            { ColormapTypes.COLORMAP_PARULA, "Assets/Colormap/colorscale_parula.jpg" },
-            { ColormapTypes.COLORMAP_MAGMA, "Assets/Colormap/colorscale_magma.jpg" },
-            { ColormapTypes.COLORMAP_INFERNO, "Assets/Colormap/colorscale_inferno.jpg" },
-            { ColormapTypes.COLORMAP_PLASMA, "Assets/Colormap/colorscale_plasma.jpg" },
-            { ColormapTypes.COLORMAP_VIRIDIS, "Assets/Colormap/colorscale_viridis.jpg" },
-            { ColormapTypes.COLORMAP_CIVIDIS, "Assets/Colormap/colorscale_cividis.jpg" },
-            { ColormapTypes.COLORMAP_TWILIGHT, "Assets/Colormap/colorscale_twilight.jpg" },
-            { ColormapTypes.COLORMAP_TWILIGHT_SHIFTED, "Assets/Colormap/colorscale_twilight_shifted.jpg" },
-            { ColormapTypes.COLORMAP_TURBO, "Assets/Colormap/colorscale_turbo.jpg" },
-            { ColormapTypes.COLORMAP_DEEPGREEN, "Assets/Colormap/colorscale_deepgreen.jpg" }
-        };
-            return colormapDictionary;
-        }
-    }
-
     /// <summary>
     /// ImageShow.xaml 的交互逻辑
     /// </summary>
@@ -64,6 +29,7 @@ namespace ColorVision.ImageEditor
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         public ImageViewModel ImageViewModel { get; set; }
         public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
+        public IPseudoColorService PseudoColorService => EditorContext.GetRequiredService<IPseudoColorService>();
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
 
@@ -89,8 +55,7 @@ namespace ColorVision.ImageEditor
             this.Focus();
 
             Config.Cleared += Config_Cleared;
-            Config.ColormapTypesChanged += Config_ColormapTypesChanged;
-            Config.AutoSetRangeChanged += Config_AutoSetRangeChanged;
+            InitializePseudoColor();
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
@@ -133,9 +98,6 @@ namespace ColorVision.ImageEditor
                 }
             };
 
-
-            ComColormapTypes.ItemsSource = ColormapExtension.GetColormapHDictionary();
-
             // Setup commands for file operations
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
@@ -165,6 +127,7 @@ namespace ColorVision.ImageEditor
         private void Config_Cleared(object? sender, EventArgs e)
         {
             Config.IsPseudo = false;
+            InvalidatePseudoColorRender();
             FunctionImage = null;
             if (_hImageCache != null)
             {
@@ -177,28 +140,6 @@ namespace ColorVision.ImageEditor
         public void SetBackGround(SolidColorBrush color)
         {
             ZoomGrid.Background = color;
-        }
-
-        private void Config_ColormapTypesChanged(object? sender, EventArgs e)
-        {
-            var ColormapTypes = ColormapExtension.GetColormapHDictionary().First(x => x.Key == Config.ColormapTypes);
-            string valuepath = ColormapTypes.Value;
-            if (ColormapTypesImage.Dispatcher.CheckAccess())
-                ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
-            else
-                ColormapTypesImage.Source = ColormapTypesImage.Dispatcher.Invoke(() => new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative)));
-            
-            uint min = (uint)PseudoSlider.ValueStart;
-            uint max = (uint)PseudoSlider.ValueEnd;
-            int channel = ComboBoxLayers.SelectedIndex - 1;
-            bool isPseudoChecked = Pseudo.IsChecked == true;
-            bool isAutoRange = Config.IsAutoSetRange;
-            uint dataMin = Config.DataMin;
-            uint dataMax = Config.DataMax;
-            TaskConflator.RunOrUpdate("PseudoSlider", () =>
-            {
-                RenderPseudoLogic(min, max, channel, isPseudoChecked, isAutoRange, dataMin, dataMax);
-            });
         }
         /// <summary>
         /// 
@@ -325,6 +266,7 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            InvalidatePseudoColorRender();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
             Config.ClearProperties();
             FunctionImage = null;
@@ -513,6 +455,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource)
         {
+            InvalidatePseudoColorRender();
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
@@ -577,30 +520,7 @@ namespace ColorVision.ImageEditor
                 Config.AddProperties("Stride", stride);
                 Config.AddProperties("DpiX", writeableBitmap.DpiX);
                 Config.AddProperties("DpiY", writeableBitmap.DpiY);
-
-
-                if (depth == 16)
-                {
-                    Config.AddProperties("Max", 65535);
-                    PseudoSlider.SmallChange = 255;
-                    PseudoSlider.LargeChange = 2550;
-                    PseudoSlider.Maximum = 65535;
-                    PseudoSlider.ValueEnd = 65535;
-                }
-                else
-                {
-                    Config.AddProperties("Max", 255);
-                    PseudoSlider.SmallChange = 1;
-                    PseudoSlider.LargeChange = 10;
-                    PseudoSlider.Maximum = 255;
-                    PseudoSlider.ValueEnd = 255;
-
-                }
-
-                if (Config.IsAutoSetRange)
-                {
-                    ApplyAutoRange();
-                }
+                ConfigurePseudoColorForImage();
 
                 Config.AddProperties("PixelFormat", writeableBitmap.Format);
             }
@@ -618,196 +538,6 @@ namespace ColorVision.ImageEditor
 
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
-
-        private void ApplyAutoRange()
-        {
-            if (HImageCache == null) return;
-
-            int channel = ComboBoxLayers.SelectedIndex - 1;
-            int ret = OpenCVMediaHelper.M_GetMinMax((HImage)HImageCache, out uint minVal, out uint maxVal, channel);
-            if (ret != 0) return;
-
-            if (minVal >= maxVal)
-            {
-                int depth = Config.GetProperties<int>("Depth");
-                maxVal = (depth == 16) ? Math.Min(minVal + 1, (uint)65535) : Math.Min(minVal + 1, 255u);
-            }
-
-            Config.DataMin = minVal;
-            Config.DataMax = maxVal;
-
-            PseudoSlider.Minimum = minVal;
-            PseudoSlider.Maximum = maxVal;
-            PseudoSlider.ValueStart = minVal;
-            PseudoSlider.ValueEnd = maxVal;
-        }
-
-        private void ResetSliderRange()
-        {
-            int depth = Config.GetProperties<int>("Depth");
-            Config.DataMin = 0;
-            Config.DataMax = 0;
-            PseudoSlider.Minimum = 0;
-            if (depth == 16)
-            {
-                PseudoSlider.Maximum = 65535;
-                PseudoSlider.ValueEnd = 65535;
-            }
-            else
-            {
-                PseudoSlider.Maximum = 255;
-                PseudoSlider.ValueEnd = 255;
-            }
-            PseudoSlider.ValueStart = 0;
-        }
-
-        private void AutoSetRange_Click(object sender, RoutedEventArgs e)
-        {
-            TryApplyAutoRange();
-        }
-
-        private void Config_AutoSetRangeChanged(object? sender, EventArgs e)
-        {
-            if (!IsInitialized) return;
-            TryApplyAutoRange();
-        }
-
-        private void TryApplyAutoRange()
-        {
-            if (Config.IsAutoSetRange)
-            {
-                ApplyAutoRange();
-            }
-            else
-            {
-                ResetSliderRange();
-            }
-        }
-
-        private void ToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-            uint min = (uint)PseudoSlider.ValueStart;
-            uint max = (uint)PseudoSlider.ValueEnd;
-            int channel = ComboBoxLayers.SelectedIndex - 1;
-            bool isPseudoChecked = Pseudo.IsChecked == true;
-            bool isAutoRange = Config.IsAutoSetRange;
-            uint dataMin = Config.DataMin;
-            uint dataMax = Config.DataMax;
-            TaskConflator.RunOrUpdate("PseudoSlider", () =>
-            {
-                RenderPseudoLogic(min, max, channel, isPseudoChecked, isAutoRange, dataMin, dataMax);
-            });
-        }
-
-
-        private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
-        {
-            if (!IsInitialized) return;
-            uint min = (uint)PseudoSlider.ValueStart;
-            uint max = (uint)PseudoSlider.ValueEnd;
-            int channel = ComboBoxLayers.SelectedIndex - 1;
-            bool isPseudoChecked = Pseudo.IsChecked == true;
-            bool isAutoRange = Config.IsAutoSetRange;
-            uint dataMin = Config.DataMin;
-            uint dataMax = Config.DataMax;
-            TaskConflator.RunOrUpdate("PseudoSlider", () =>
-            {
-                RenderPseudoLogic(min, max, channel, isPseudoChecked, isAutoRange, dataMin, dataMax);
-            }, 100);
-        }
-        private async Task RenderPseudoLogic(uint min, uint max, int channel, bool isPseudoChecked, bool isAutoRange = false, uint dataMin = 0, uint dataMax = 0)
-        {
-            // 检查是否取消显示
-            if (!isPseudoChecked)
-            {
-                // 简单的 UI 操作切回 UI 线程即可
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ImageShow.Source = ViewBitmapSource;
-                    FunctionImage = null; // 此时 FunctionImage 可能正在被占用，直接置空需谨慎，但在赋值 Source 后通常安全
-                });
-                return;
-            }
-
-            if (HImageCache == null) return;
-
-            Stopwatch sw = Stopwatch.StartNew();
-
-            // ---------------------------------------------------------
-            // 步骤 1: 算法处理 (后台线程 - 耗时)
-            // ---------------------------------------------------------
-
-            // 注意：假设 M_PseudoColor 内部是线程安全的，且只读取 HImageCache
-            // 最好检查 M_PseudoColor 是否支持并行调用
-            int ret;
-            HImage hImageProcessed;
-            if (isAutoRange && dataMin < dataMax)
-            {
-                ret = OpenCVMediaHelper.M_PseudoColorAutoRange((HImage)HImageCache, out hImageProcessed, min, max, Config.ColormapTypes, channel, dataMin, dataMax);
-            }
-            else
-            {
-                ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out hImageProcessed, min, max, Config.ColormapTypes, channel);
-            }
-
-            double algoMs = sw.Elapsed.TotalMilliseconds;
-
-            if (ret != 0)
-            {
-                hImageProcessed.Dispose();
-                return;
-            }
-
-            // ---------------------------------------------------------
-            // 步骤 2: 图像渲染 (切换回 UI 线程 - 耗时优化)
-            // ---------------------------------------------------------
-
-            // 使用 InvokeAsync 而不是 Invoke，避免阻塞 TaskConflator 的线程
-            await Application.Current.Dispatcher.InvokeAsync(async () =>
-            {
-                // 再次检查开关状态，防止计算过程中用户关掉了开关
-                if (Pseudo.IsChecked == false)
-                {
-                    hImageProcessed.Dispose();
-                    return;
-                }
-
-                // 尝试复用现有的 WriteableBitmap
-                bool updateSuccess = false;
-
-                // 如果 FunctionImage 存在，尝试更新
-                if (FunctionImage is WriteableBitmap validBitmap)
-                {
-                    // 使用之前优化过的 Async 方法
-                    updateSuccess = await HImageExtension.UpdateWriteableBitmapAsync(validBitmap, hImageProcessed);
-                }
-
-                // 如果更新失败（尺寸变了，或者 FunctionImage 为空），则创建新的
-                if (!updateSuccess)
-                {
-                    // 使用之前优化过的 Async 方法创建
-                    var newBitmap = await hImageProcessed.ToWriteableBitmapAsync();
-                    FunctionImage = newBitmap;
-                    hImageProcessed.Dispose(); // 创建新图后，源数据可以释放（UpdateWriteableBitmapAsync 内部也释放了，这里要注意 API 统一）
-                }
-
-                // 绑定显示
-                if (ImageShow.Source != FunctionImage)
-                {
-                    ImageShow.Source = FunctionImage;
-                }
-
-                sw.Stop();
-
-                // 日志记录
-                if (log.IsInfoEnabled)
-                {
-                    double totalMs = sw.Elapsed.TotalMilliseconds;
-                    log.Info($"Algo: {algoMs:F2}ms | Render: {totalMs - algoMs:F2}ms | Total: {totalMs:F2}ms | Range: {min}-{max}");
-                }
-            });
-
-        }
 
         public void AddVisual(Visual visual) => ImageShow.AddVisualCommand(visual);
 
@@ -875,6 +605,7 @@ namespace ColorVision.ImageEditor
 
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
+            InvalidatePseudoColorRender();
             if (FunctionImage is WriteableBitmap writeableBitmap)
             {
                 ViewBitmapSource = writeableBitmap;
@@ -886,6 +617,7 @@ namespace ColorVision.ImageEditor
 
         private void Reload_Click(object sender, RoutedEventArgs e)
         {
+            InvalidatePseudoColorRender();
             string filepath = Config.FilePath;
             Config.ClearProperties();
             OpenImage(filepath);
@@ -942,6 +674,7 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
+            DisposePseudoColor();
             Clear();
             ImageViewModel.Dispose();
             Config.Cleared -= Config_Cleared;

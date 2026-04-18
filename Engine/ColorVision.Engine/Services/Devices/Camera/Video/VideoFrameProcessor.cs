@@ -1,6 +1,7 @@
 using ColorVision.Core;
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -13,13 +14,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public bool EnableArticulation { get; init; }
         public FocusAlgorithm FocusAlgorithm { get; init; }
         public RoiRect Roi { get; init; }
-        public bool EnablePseudoColor { get; init; }
-        public uint PseudoMin { get; init; }
-        public uint PseudoMax { get; init; }
-        public ColormapTypes ColormapTypes { get; init; }
-        public int PseudoChannel { get; init; }
+        public PseudoColorFrameRequest? PseudoColor { get; init; }
 
-        public bool NeedsProcessing => EnableArticulation || EnablePseudoColor;
+        public bool NeedsProcessing => EnableArticulation || PseudoColor.HasValue;
     }
 
     internal sealed class VideoFrameProcessingResult
@@ -145,12 +142,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 articulation = OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi);
             }
 
-            if (request.EnablePseudoColor)
+            if (request.PseudoColor is PseudoColorFrameRequest pseudoColor)
             {
-                int ret = OpenCVMediaHelper.M_PseudoColor(frame, out HImage processedImage, request.PseudoMin, request.PseudoMax, request.ColormapTypes, request.PseudoChannel);
-                if (ret == 0)
+                int ret;
+                if (pseudoColor.HasValidAutoRange)
                 {
-                    pseudoImage = processedImage;
+                    ret = OpenCVMediaHelper.M_PseudoColorAutoRange(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel, pseudoColor.DataMin, pseudoColor.DataMax);
+                    if (ret == 0)
+                    {
+                        pseudoImage = processedImage;
+                    }
+                }
+                else
+                {
+                    ret = OpenCVMediaHelper.M_PseudoColor(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel);
+                    if (ret == 0)
+                    {
+                        pseudoImage = processedImage;
+                    }
                 }
             }
 
@@ -223,19 +232,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
     internal static class VideoFrameUiHelper
     {
-        public static void ApplyPseudoImage(ImageView imageView, HImage pseudoImage)
+        public static void ApplyPseudoImage(IPseudoColorService pseudoColorService, HImage pseudoImage)
         {
-            if (!HImageExtension.UpdateWriteableBitmap(imageView.FunctionImage, pseudoImage))
-            {
-                var image = pseudoImage.ToWriteableBitmap();
-                pseudoImage.Dispose();
-                imageView.FunctionImage = image;
-            }
-
-            if (imageView.Config.IsPseudo)
-            {
-                imageView.ImageShow.Source = imageView.FunctionImage;
-            }
+            pseudoColorService.ApplyProcessedImage(pseudoImage);
         }
     }
 }
