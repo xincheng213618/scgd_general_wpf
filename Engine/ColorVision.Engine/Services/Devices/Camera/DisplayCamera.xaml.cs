@@ -120,6 +120,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private DVRectangleText DVRectangleText { get; set; }
         private DVText DVText { get; set; }
         private VideoFrameProcessor? _localFrameProcessor;
+        private TimedButtonOperation? _takePhotoOperation;
+        private TimedButtonOperation? _openOperation;
+        private TimedButtonOperation? _closeOperation;
+        private TimedButtonOperation? _localVideoOperation;
         private bool _visualsAdded = false;
         private bool _isOpeningLocalVideo;
 
@@ -139,20 +143,64 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DVText = new DVText(VideoConfig.TextProperties);
         }
 
-        ButtonProgressBar ButtonProgressBarGetData { get; set; }
-        ButtonProgressBar ButtonProgressBarOpen { get; set; }
-        ButtonProgressBar ButtonProgressBarClose { get; set; }
-        ButtonProgressBar ButtonProgressBarLocalVideo { get; set; }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
             this.AddViewConfig(View, DisPlayName);
-            ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);
-            ButtonProgressBarOpen = new ButtonProgressBar(ProgressBarOpen, OpenButton);
-            ButtonProgressBarClose = new ButtonProgressBar(ProgressBarClose, CloseButton);
-            ButtonProgressBarLocalVideo = new ButtonProgressBar(ProgressBarLocalVideo, LocalVideoButton);
-            UpdateLocalVideoButtonState();
+            _takePhotoOperation = CreateTimedButtonOperation(
+                TakePhotoButton,
+                "take-photo",
+                Properties.Resources.Capture,
+                "取图",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay),
+                onSuccessfulCompletion: elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime),
+                persistStatsImmediately: false);
+
+            _openOperation = CreateTimedButtonOperation(
+                OpenButton,
+                "open",
+                Properties.Resources.Open,
+                "打开相机",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.OpenTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.OpenTime = elapsed;
+                    SaveDisplayConfig();
+                });
+
+            _closeOperation = CreateTimedButtonOperation(
+                CloseButton,
+                "close",
+                Properties.Resources.Close,
+                "关闭相机",
+                Brushes.Green,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.CloseTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.CloseTime = elapsed;
+                    SaveDisplayConfig();
+                });
+
+            _localVideoOperation = CreateTimedButtonOperation(
+                LocalVideoButton,
+                "local-video-open",
+                "LocalVideo",
+                "本地视频",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.LocalVideoOpenTime = elapsed;
+                    SaveDisplayConfig();
+                },
+                contentFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    ? "Close Video"
+                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats),
+                tooltipFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    ? "关闭本地视频"
+                    : TimedButtonOperationTextFormatter.BuildTooltip("本地视频", stats));
 
             void UpdateTemplate()
             {
@@ -265,7 +313,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     HideAllButtons();
                     SetVisibility(StackPanelOpen, Visibility.Visible);
                     SetVisibility(ButtonClose, Visibility.Visible);
-                    TakePhotoButton.Visibility = Visibility.Visible;
                     break;
                 default:
                     break;
@@ -289,14 +336,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is Button button)
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
-                ButtonProgressBarOpen.Start();
-                ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.OpenTime;
+                TimedButtonOperationScope? openScope = _openOperation?.Begin();
                 ServicesHelper.SendCommand(button, msgRecord);
 
                 msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
-                    ButtonProgressBarOpen.Stop();
-                    DisplayCameraConfig.OpenTime = ButtonProgressBarOpen.Elapsed;
+                    if (!IsTerminalMsgRecordState(e))
+                    {
+                        return;
+                    }
+
+                    openScope?.Complete(e == MsgRecordState.Success);
                     if (e == MsgRecordState.Success)
                     {
                         ButtonOpen.Visibility = Visibility.Collapsed;
@@ -479,18 +529,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
-            TakePhotoButton.Visibility = Visibility.Hidden;
 
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
-
-            ButtonProgressBarGetData.Start();
-            ButtonProgressBarGetData.TargetTime = Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay;
+            TimedButtonOperationScope? takePhotoScope = _takePhotoOperation?.Begin();
             logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
+
+            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
             msgRecord.MsgRecordStateChanged += (s, e) =>
             {
-                ButtonProgressBarGetData.Stop();
-                DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.DisplayConfig.ExpTime;
+                if (!IsTerminalMsgRecordState(e))
+                {
+                    return;
+                }
+
+                takePhotoScope?.Complete(e == MsgRecordState.Success);
                 if (e == MsgRecordState.Timeout)
                 {
                     if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration == null)
@@ -508,15 +561,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试", "ColorVisoin");
                 }
             };
-            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
 
         }
 
         public MsgRecord? TakePhoto(double exp = 0)
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
-
-            TakePhotoButton.Visibility = Visibility.Hidden;
 
             if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
             {
@@ -744,12 +794,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Device.CameraVideoControl.Close();
 
             MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
-            ButtonProgressBarClose.Start();
-            ButtonProgressBarClose.TargetTime = DisplayCameraConfig.CloseTime;
             if (msgRecord != null)
             {
+                TimedButtonOperationScope? closeScope = _closeOperation?.Begin();
                 msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
+                    if (!IsTerminalMsgRecordState(e))
+                    {
+                        return;
+                    }
+
+                    closeScope?.Complete(e == MsgRecordState.Success);
                     if (e == MsgRecordState.Timeout)
                     {
                         MessageBox.Show("关闭相机超时,请查看日志并排查问题");
@@ -760,8 +815,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     ButtonOpen.Visibility = Visibility.Visible;
                     ButtonClose.Visibility = Visibility.Collapsed;
                     StackPanelOpen.Visibility = Visibility.Collapsed;
-                    ButtonProgressBarClose.Stop();
-                    DisplayCameraConfig.CloseTime = ButtonProgressBarClose.Elapsed;
                 };
             }
         }
@@ -844,6 +897,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
             _localFrameProcessor?.Dispose();
             _localFrameProcessor = null;
+            _takePhotoOperation?.Dispose();
+            _openOperation?.Dispose();
+            _closeOperation?.Dispose();
+            _localVideoOperation?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private void CBFilp1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -882,39 +940,47 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private void UpdateLocalVideoButtonState()
+        private TimedButtonOperation CreateTimedButtonOperation(
+            Button button,
+            string actionKey,
+            string buttonLabel,
+            string tooltipLabel,
+            Brush progressForeground,
+            Func<double>? expectedDurationProvider = null,
+            Action<double>? onSuccessfulCompletion = null,
+            Func<TimedButtonOperationStats?, object>? contentFactory = null,
+            Func<TimedButtonOperationStats?, string?>? tooltipFactory = null,
+            bool persistStatsImmediately = true)
         {
-            if (Device.DisplayConfig.IsLocalVideoOpen)
-            {
-                LocalVideoButton.Content = "Close Video";
-                LocalVideoButton.ToolTip = "关闭本地视频";
-                return;
-            }
+            Func<TimedButtonOperationStats?, object> resolvedContentFactory = contentFactory ?? new Func<TimedButtonOperationStats?, object>(stats => TimedButtonOperationTextFormatter.BuildCompactContent(buttonLabel, stats));
+            Func<TimedButtonOperationStats?, string?> resolvedTooltipFactory = tooltipFactory ?? new Func<TimedButtonOperationStats?, string?>(stats => TimedButtonOperationTextFormatter.BuildTooltip(tooltipLabel, stats));
 
-            LocalVideoButton.Content = BuildLocalVideoButtonText(Device.DisplayConfig.LocalVideoOpenTime);
-            LocalVideoButton.ToolTip = Device.DisplayConfig.LocalVideoOpenTime > 0
-                ? $"上次打开耗时: {FormatDuration(Device.DisplayConfig.LocalVideoOpenTime)}"
-                : "打开本地视频";
+            return new TimedButtonOperation(button, new TimedButtonOperationOptions
+            {
+                OperationKey = BuildButtonOperationKey(actionKey),
+                RunningText = buttonLabel,
+                ProgressForeground = progressForeground,
+                ExpectedDurationProvider = expectedDurationProvider,
+                OnSuccessfulCompletion = onSuccessfulCompletion,
+                ContentFactory = resolvedContentFactory,
+                ToolTipFactory = resolvedTooltipFactory,
+                PersistStatsImmediately = persistStatsImmediately
+            });
         }
 
-        private static string BuildLocalVideoButtonText(double elapsedMilliseconds)
+        private string BuildButtonOperationKey(string actionKey)
         {
-            if (elapsedMilliseconds <= 0)
-            {
-                return "LocalVideo";
-            }
-
-            return $"LocalVideo ({FormatDuration(elapsedMilliseconds)})";
+            return $"camera:{Device.Config.Code}:{actionKey}";
         }
 
-        private static string FormatDuration(double elapsedMilliseconds)
+        private void SaveDisplayConfig()
         {
-            if (elapsedMilliseconds < 1000)
-            {
-                return $"{elapsedMilliseconds:F0} ms";
-            }
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+        }
 
-            return $"{elapsedMilliseconds / 1000:F1} s";
+        private static bool IsTerminalMsgRecordState(MsgRecordState state)
+        {
+            return state == MsgRecordState.Success || state == MsgRecordState.Fail || state == MsgRecordState.Timeout;
         }
 
         double articulation;
@@ -1026,24 +1092,30 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is not Button button) return;
             if (Device.DisplayConfig.IsLocalVideoOpen)
             {
-                cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
-                cvCameraCSLib.CM_Close(m_hCamHandle);
-                _localFrameProcessor?.Dispose();
-                _localFrameProcessor = null;
-                Device.DisplayConfig.IsLocalVideoOpen = false;
-                fpsTimer.Stop();
-                // Unsubscribe from pseudo-color changes
-                Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
-
-                // Cleanup visuals
-                if (_visualsAdded)
+                TimedButtonOperationScope? localVideoCloseScope = _localVideoOperation?.Begin(runningText: "Close Video");
+                try
                 {
-                    Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
-                    Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
-                    _visualsAdded = false;
-                }
+                    await Dispatcher.Yield(DispatcherPriority.Background);
+                    cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
+                    cvCameraCSLib.CM_Close(m_hCamHandle);
+                    _localFrameProcessor?.Dispose();
+                    _localFrameProcessor = null;
+                    Device.DisplayConfig.IsLocalVideoOpen = false;
+                    fpsTimer.Stop();
+                    Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
 
-                UpdateLocalVideoButtonState();
+                    if (_visualsAdded)
+                    {
+                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
+                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
+                        _visualsAdded = false;
+                    }
+                }
+                finally
+                {
+                    localVideoCloseScope?.Complete(false);
+                    _localVideoOperation?.RefreshIdleState();
+                }
 
                 return;
             }
@@ -1054,9 +1126,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _isOpeningLocalVideo = true;
-            button.IsEnabled = false;
-            ButtonProgressBarLocalVideo.TargetTime = Math.Max(500, Device.DisplayConfig.LocalVideoOpenTime);
-            ButtonProgressBarLocalVideo.Start();
+            TimedButtonOperationScope? localVideoScope = _localVideoOperation?.Begin();
             logger.Info("初始化视频模式");
             bool localVideoOpened = false;
 
@@ -1104,15 +1174,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             finally
             {
-                ButtonProgressBarLocalVideo.Stop();
-                if (localVideoOpened)
-                {
-                    Device.DisplayConfig.LocalVideoOpenTime = ButtonProgressBarLocalVideo.Elapsed;
-                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-                }
-
-                UpdateLocalVideoButtonState();
-                button.IsEnabled = true;
+                localVideoScope?.Complete(localVideoOpened);
+                _localVideoOperation?.RefreshIdleState();
                 _isOpeningLocalVideo = false;
             }
         }
