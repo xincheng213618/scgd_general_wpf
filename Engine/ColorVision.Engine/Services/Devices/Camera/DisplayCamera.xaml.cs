@@ -51,6 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public double OpenTime { get; set; } = 10;
         public double CloseTime { get; set; } = 10;
+        public double LocalVideoOpenTime { get; set; } = 3000;
 
         public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
@@ -141,6 +142,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         ButtonProgressBar ButtonProgressBarGetData { get; set; }
         ButtonProgressBar ButtonProgressBarOpen { get; set; }
         ButtonProgressBar ButtonProgressBarClose { get; set; }
+        ButtonProgressBar ButtonProgressBarLocalVideo { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -149,6 +151,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);
             ButtonProgressBarOpen = new ButtonProgressBar(ProgressBarOpen, OpenButton);
             ButtonProgressBarClose = new ButtonProgressBar(ProgressBarClose, CloseButton);
+            ButtonProgressBarLocalVideo = new ButtonProgressBar(ProgressBarLocalVideo, LocalVideoButton);
+            UpdateLocalVideoButtonState();
 
             void UpdateTemplate()
             {
@@ -877,6 +881,42 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     : System.Windows.Media.PixelFormats.Gray8;
             }
         }
+
+        private void UpdateLocalVideoButtonState()
+        {
+            if (Device.DisplayConfig.IsLocalVideoOpen)
+            {
+                LocalVideoButton.Content = "Close Video";
+                LocalVideoButton.ToolTip = "关闭本地视频";
+                return;
+            }
+
+            LocalVideoButton.Content = BuildLocalVideoButtonText(Device.DisplayConfig.LocalVideoOpenTime);
+            LocalVideoButton.ToolTip = Device.DisplayConfig.LocalVideoOpenTime > 0
+                ? $"上次打开耗时: {FormatDuration(Device.DisplayConfig.LocalVideoOpenTime)}"
+                : "打开本地视频";
+        }
+
+        private static string BuildLocalVideoButtonText(double elapsedMilliseconds)
+        {
+            if (elapsedMilliseconds <= 0)
+            {
+                return "LocalVideo";
+            }
+
+            return $"LocalVideo ({FormatDuration(elapsedMilliseconds)})";
+        }
+
+        private static string FormatDuration(double elapsedMilliseconds)
+        {
+            if (elapsedMilliseconds < 1000)
+            {
+                return $"{elapsedMilliseconds:F0} ms";
+            }
+
+            return $"{elapsedMilliseconds / 1000:F1} s";
+        }
+
         double articulation;
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
@@ -988,9 +1028,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                 cvCameraCSLib.CM_Close(m_hCamHandle);
-            _localFrameProcessor?.Dispose();
-            _localFrameProcessor = null;
-                button.Content = "LocalVideo";
+                _localFrameProcessor?.Dispose();
+                _localFrameProcessor = null;
                 Device.DisplayConfig.IsLocalVideoOpen = false;
                 fpsTimer.Stop();
                 // Unsubscribe from pseudo-color changes
@@ -1004,6 +1043,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     _visualsAdded = false;
                 }
 
+                UpdateLocalVideoButtonState();
+
                 return;
             }
 
@@ -1014,7 +1055,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             _isOpeningLocalVideo = true;
             button.IsEnabled = false;
+            ButtonProgressBarLocalVideo.TargetTime = Math.Max(500, Device.DisplayConfig.LocalVideoOpenTime);
+            ButtonProgressBarLocalVideo.Start();
             logger.Info("初始化视频模式");
+            bool localVideoOpened = false;
 
             try
             {
@@ -1054,11 +1098,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Interlocked.Exchange(ref frameCount, 0);
                 lastFps = 0;
                 fpsTimer.Restart();
-                logger.Info("视频模式初始化结束");
                 Device.DisplayConfig.IsLocalVideoOpen = true;
+                localVideoOpened = true;
+                logger.Info("视频模式初始化结束");
             }
             finally
             {
+                ButtonProgressBarLocalVideo.Stop();
+                if (localVideoOpened)
+                {
+                    Device.DisplayConfig.LocalVideoOpenTime = ButtonProgressBarLocalVideo.Elapsed;
+                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+                }
+
+                UpdateLocalVideoButtonState();
                 button.IsEnabled = true;
                 _isOpeningLocalVideo = false;
             }

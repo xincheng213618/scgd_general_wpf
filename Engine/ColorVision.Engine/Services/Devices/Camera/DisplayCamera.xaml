@@ -380,7 +380,10 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
-                        <Button  Content="LocalVideo"  Click="Video1_Click"/>
+                        <Grid>
+                            <ProgressBar Name="ProgressBarLocalVideo" Background="Transparent" Value="1" Foreground="Red" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=LocalVideoButton,Path=Content}" MaxWidth="400" Visibility="Collapsed"/>
+                            <Button x:Name="LocalVideoButton" Content="LocalVideo" Click="Video1_Click"/>
+                        </Grid>
 
                     </DockPanel>
                     <StackPanel Visibility="{Binding DisplayConfig.IsLocalVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
