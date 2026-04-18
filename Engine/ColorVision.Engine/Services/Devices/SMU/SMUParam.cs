@@ -93,5 +93,25 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private double _LmtVal;
         private int _Number;
         private bool _IsSourceV;
+
+        private bool _IsAutoRng = true;
+        public bool IsAutoRng
+        {
+            set { SetProperty(ref _IsAutoRng, value); }
+            get => GetValue(_IsAutoRng);
+        }
+        private double _SrcRng;
+        public double SrcRng
+        {
+            set { SetProperty(ref _SrcRng, value); }
+            get => GetValue(_SrcRng);
+        }
+
+        private double _LmtRng;
+        public double LmtRng
+        {
+            set { SetProperty(ref _LmtRng, value); }
+            get => GetValue(_LmtRng);
+        }
     }
 }

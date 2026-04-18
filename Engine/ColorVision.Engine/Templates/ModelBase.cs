@@ -30,6 +30,17 @@ namespace ColorVision.Engine.Templates
 
         public ConcurrentDictionary<int, SysDictionaryModDetaiModel> Cache { get; set; } = new ConcurrentDictionary<int, SysDictionaryModDetaiModel>();
 
+        public void Reload()
+        {
+            Cache.Clear();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            Db.Queryable<SysDictionaryModDetaiModel>().ToList().ForEach(item =>
+            {
+                Cache.TryAdd(item.Id, item);
+            });
+        }
+
         public SymbolCache()
         {
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
