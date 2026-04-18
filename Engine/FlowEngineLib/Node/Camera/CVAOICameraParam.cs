@@ -6,10 +6,10 @@ public class CVAOICameraParam : CommCameraData
 
 	public CVTemplateParam AlgParamTemplate { get; set; }
 
-	public bool IsSaveRawImg { get; set; }
+	public int ImageSaveBpp { get; set; }
 
-	public CVAOICameraParam(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, string algParamType, string algTempName, bool isHDR, bool isSaveRawImg)
-		: base(camTempName, isWithND, isAutoExpTime, autoExpTempName, caliTempName, string.Empty, string.Empty, string.Empty, string.Empty, isHDR)
+	public CVAOICameraParam(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, string algParamType, string algTempName, int imgSaveBit)
+		: base(camTempName, isWithND, isAutoExpTime, autoExpTempName, caliTempName, string.Empty, string.Empty, string.Empty, string.Empty)
 	{
 		AlgParamType = algParamType;
 		AlgParamTemplate = new CVTemplateParam
@@ -17,6 +17,6 @@ public class CVAOICameraParam : CommCameraData
 			ID = -1,
 			Name = algTempName
 		};
-		IsSaveRawImg = isSaveRawImg;
+		ImageSaveBpp = imgSaveBit;
 	}
 }

@@ -4,8 +4,6 @@ namespace FlowEngineLib.Node.Algorithm;
 
 public class AlgorithmImageConvertParam : AlgorithmImageParam
 {
-	public int Channel { get; set; }
-
 	public ImageFormatType ResultImageFormat { get; set; }
 
 	public string ResultDataFileName { get; set; }
@@ -14,6 +12,6 @@ public class AlgorithmImageConvertParam : AlgorithmImageParam
 	{
 		ResultDataFileName = outputImgFile;
 		ResultImageFormat = _ImageFormat;
-		Channel = channel;
+		base.Channel = (CVOLED_Channel)channel;
 	}
 }

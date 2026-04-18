@@ -44,7 +44,7 @@ public class AlgComplianceJudgmentNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		ComplianceJudgmentParam complianceJudgmentParam = new ComplianceJudgmentParam();
+		ComplianceJudgmentParam complianceJudgmentParam = new ComplianceJudgmentParam(_IsBreak);
 		getPreStepParam(start, complianceJudgmentParam);
 		return complianceJudgmentParam;
 	}

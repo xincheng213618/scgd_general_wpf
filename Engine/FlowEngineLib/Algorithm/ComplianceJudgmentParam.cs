@@ -2,13 +2,11 @@ namespace FlowEngineLib.Algorithm;
 
 public class ComplianceJudgmentParam : AlgorithmParam
 {
-	public ComplianceJudgmentParam()
-		: this(-1)
-	{
-	}
+	public bool IsBreak { get; set; }
 
-	public ComplianceJudgmentParam(int masterId)
+	public ComplianceJudgmentParam(bool isBreak)
 	{
-		base.MasterId = masterId;
+		IsBreak = isBreak;
+		base.MasterId = -1;
 	}
 }

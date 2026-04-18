@@ -1,4 +1,3 @@
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 
@@ -9,13 +8,13 @@ public class AlgorithmImageConvertNode : CVBaseServerNode
 {
 	private ImageFormatType _ImageFormat;
 
-	private CVOLED_COLOR _Color;
+	private CVOLED_Channel _Channel;
 
 	private string _OutputFileName;
 
 	private STNodeEditText<ImageFormatType> m_ctrl_type;
 
-	private STNodeEditText<CVOLED_COLOR> m_ctrl_color;
+	private STNodeEditText<CVOLED_Channel> m_ctrl_channel;
 
 	[STNodeProperty("图像格式", "图像格式", true)]
 	public ImageFormatType ImageFormat
@@ -44,17 +43,17 @@ public class AlgorithmImageConvertNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("颜色", "颜色", true)]
-	public CVOLED_COLOR Color
+	[STNodeProperty("通道", "通道", true)]
+	public CVOLED_Channel Channel
 	{
 		get
 		{
-			return _Color;
+			return _Channel;
 		}
 		set
 		{
-			_Color = value;
-			m_ctrl_color.Value = value;
+			_Channel = value;
+			m_ctrl_channel.Value = value;
 		}
 	}
 
@@ -63,21 +62,21 @@ public class AlgorithmImageConvertNode : CVBaseServerNode
 	{
 		operatorCode = "Image.Convert";
 		_OutputFileName = "";
-		_Color = CVOLED_COLOR.GREEN;
+		_Channel = CVOLED_Channel.GREEN;
 		base.Height += 25;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_type = CreateControl(typeof(STNodeEditText<ImageFormatType>), m_custom_item, "图像格式", _ImageFormat);
+		m_ctrl_type = CreateControl(typeof(STNodeEditText<ImageFormatType>), m_custom_item, "图像格式:", _ImageFormat);
 		m_custom_item.Y += 25;
-		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_COLOR>), m_custom_item, "颜色", _Color);
+		m_ctrl_channel = CreateControl(typeof(STNodeEditText<CVOLED_Channel>), m_custom_item, "通道:", _Channel);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmImageConvertParam algorithmImageConvertParam = new AlgorithmImageConvertParam(_OutputFileName, _ImageFormat, (int)_Color);
+		AlgorithmImageConvertParam algorithmImageConvertParam = new AlgorithmImageConvertParam(_OutputFileName, _ImageFormat, (int)_Channel);
 		BuildImageParam(algorithmImageConvertParam);
 		getPreStepParam(start, algorithmImageConvertParam);
 		return algorithmImageConvertParam;

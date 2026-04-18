@@ -1,5 +1,6 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using FlowEngineLib.Node.Algorithm;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
@@ -10,9 +11,24 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDRebuildPixelsNode));
 
+	private CVOLED_Channel _Channel;
+
 	private string _OutputTemplateName;
 
 	private STNodeEditText<string> m_ctrl_outtemp;
+
+	[STNodeProperty("通道", "通道", true)]
+	public CVOLED_Channel Channel
+	{
+		get
+		{
+			return _Channel;
+		}
+		set
+		{
+			_Channel = value;
+		}
+	}
 
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
@@ -62,6 +78,7 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 		m_in_text = "IN_IMG";
 		m_in2_text = "IN_POI";
 		_OutputTemplateName = string.Empty;
+		_Channel = CVOLED_Channel.GREEN;
 		_ImgFileName = string.Empty;
 		base.Height += 25;
 	}
@@ -69,15 +86,15 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_outtemp = CreateStringControl(m_custom_item, "输出:", _OutputTemplateName);
-		m_custom_item.Y += 25;
 		CreateTempControl(m_custom_item);
+		m_custom_item.Y += 25;
+		m_ctrl_outtemp = CreateStringControl(m_custom_item, "输出:", _OutputTemplateName);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		OLEDRebuildPixelsParam oLEDRebuildPixelsParam = new OLEDRebuildPixelsParam(_OutputTemplateName);
+		OLEDRebuildPixelsParam oLEDRebuildPixelsParam = new OLEDRebuildPixelsParam(_Channel, _OutputTemplateName);
 		getPreStepParam(0, oLEDRebuildPixelsParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		oLEDRebuildPixelsParam.POI_MasterId = algorithmPreStepParam.MasterId;

@@ -1,7 +1,7 @@
 namespace FlowEngineLib.Node.Algorithm;
 
-public enum ImageFormatType
+public enum ParticlesMode
 {
-	CSV,
-	TIF
+	Black,
+	SelfCheck
 }

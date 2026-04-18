@@ -9,21 +9,15 @@ namespace FlowEngineLib.Node.Camera;
 [STNode("/02 相机")]
 public class CVAOICameraNode : CVBaseServerNode
 {
-	protected bool _IsHDR;
-
 	private string _CamTempName;
 
-	private bool _IsSaveRawImg;
+	private ImgSaveBppMode _ImgSaveMode;
 
 	protected CVImageFlipMode _FlipMode;
 
 	protected bool _IsAutoExp;
 
 	private bool _IsWithND;
-
-	protected bool _IsAutoFocus;
-
-	private string _FocusTempName;
 
 	protected string _CalibTempName;
 
@@ -41,21 +35,6 @@ public class CVAOICameraNode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_img;
 
-	[STNodeProperty("HDR", "HDR", true)]
-	public bool IsHDR
-	{
-		get
-		{
-			return _IsHDR;
-		}
-		set
-		{
-			_IsHDR = value;
-			CamTempName = string.Empty;
-			setTempValue();
-		}
-	}
-
 	[STNodeProperty("相机模板", "相机参数模板", true)]
 	public string CamTempName
 	{
@@ -70,16 +49,16 @@ public class CVAOICameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("保存原图", "是否保存原图", true)]
-	public bool IsSaveRawImg
+	[STNodeProperty("保存原图", "保存原图", true)]
+	public ImgSaveBppMode ImgSaveMode
 	{
 		get
 		{
-			return _IsSaveRawImg;
+			return _ImgSaveMode;
 		}
 		set
 		{
-			_IsSaveRawImg = value;
+			_ImgSaveMode = value;
 			setImgValue();
 		}
 	}
@@ -197,9 +176,8 @@ public class CVAOICameraNode : CVBaseServerNode
 		_CalibTempName = "";
 		_FlipMode = CVImageFlipMode.None;
 		_IsWithND = false;
-		_IsAutoFocus = false;
-		_IsSaveRawImg = false;
-		_FocusTempName = string.Empty;
+		_IsAutoExp = false;
+		_ImgSaveMode = ImgSaveBppMode.Bit16;
 		base.Width = 180;
 		m_custom_item.Width += 30;
 		base.Height += 100;
@@ -218,7 +196,7 @@ public class CVAOICameraNode : CVBaseServerNode
 
 	private string GetCameraTempDis()
 	{
-		return string.Format("{0}:{1}", _IsHDR ? "HDR" : "Nor", _CamTempName);
+		return $"{_CamTempName}";
 	}
 
 	private void setImgValue()
@@ -233,7 +211,7 @@ public class CVAOICameraNode : CVBaseServerNode
 
 	private string GetImgTempDis()
 	{
-		return string.Format("{0}:{1}", _IsSaveRawImg ? "T" : "F", _FlipMode.ToString());
+		return $"{_ImgSaveMode.ToString()}/{_FlipMode.ToString()}";
 	}
 
 	private void initCtrl()
@@ -258,6 +236,6 @@ public class CVAOICameraNode : CVBaseServerNode
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		string algParamType = "FindLed";
-		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, _IsHDR, _IsSaveRawImg);
+		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, (int)_ImgSaveMode);
 	}
 }

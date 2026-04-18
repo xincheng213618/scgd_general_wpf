@@ -1,5 +1,6 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using FlowEngineLib.Node.Algorithm;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
@@ -8,6 +9,8 @@ namespace FlowEngineLib.Node.OLED;
 public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDRebuildPixelsPosNode));
+
+	private CVOLED_Channel _Channel;
 
 	private string _OutputTemplateName;
 
@@ -39,6 +42,19 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 		}
 	}
 
+	[STNodeProperty("通道", "通道", true)]
+	public CVOLED_Channel Channel
+	{
+		get
+		{
+			return _Channel;
+		}
+		set
+		{
+			_Channel = value;
+		}
+	}
+
 	[STNodeProperty("输出模板", "输出模板", true)]
 	public string OutputTemplateName
 	{
@@ -60,6 +76,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 		m_in_text = "IN_IMG";
 		m_in2_text = "IN_POI";
 		_OutputTemplateName = string.Empty;
+		_Channel = CVOLED_Channel.GREEN;
 		_ImgFileName = string.Empty;
 		base.Height += 25;
 	}
@@ -75,7 +92,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		OLEDRebuildPixelsParam oLEDRebuildPixelsParam = new OLEDRebuildPixelsParam(_OutputTemplateName);
+		OLEDRebuildPixelsParam oLEDRebuildPixelsParam = new OLEDRebuildPixelsParam(_Channel, _OutputTemplateName);
 		getPreStepParam(0, oLEDRebuildPixelsParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		oLEDRebuildPixelsParam.POI_MasterId = algorithmPreStepParam.MasterId;
