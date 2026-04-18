@@ -148,5 +148,10 @@ namespace ColorVision.Engine.Services
         {
             new FlowEngineToolWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
+
+        private void ButtonCacheSetting_Click(object sender, RoutedEventArgs e)
+        {
+            new CacheSettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
     }
 }
