@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
 
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger) && PhyCamera !=null);
-            DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
+            DisplayLazy = new Lazy<DisplayCalibration>(() => new DisplayCalibration(this));
             if (PhyCamera != null)
             {
                 PhyCamera.ConfigChanged += PhyCameraConfigChanged;
@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public override UserControl GetDeviceInfo() => new InfoCalibration(this);
 
-        readonly Lazy<DisplayCalibrationControl> DisplayLazy;
+        readonly Lazy<DisplayCalibration> DisplayLazy;
 
         public override UserControl GetDisplayControl() => DisplayLazy.Value;
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -393,6 +394,209 @@ namespace ColorVision.UI
         public void Dispose()
         {
             Complete(false);
+        }
+    }
+
+    public sealed class TimedButtonOperationRegistry : IDisposable
+    {
+        private readonly FrameworkElement _owner;
+        private readonly Func<string, string> _operationKeyBuilder;
+        private readonly Dictionary<Button, TimedButtonOperation> _operations = new Dictionary<Button, TimedButtonOperation>();
+        private bool _isDisposed;
+
+        internal TimedButtonOperationRegistry(FrameworkElement owner, Func<string, string> operationKeyBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(owner);
+            ArgumentNullException.ThrowIfNull(operationKeyBuilder);
+
+            _owner = owner;
+            _operationKeyBuilder = operationKeyBuilder;
+            _owner.Unloaded += Owner_Unloaded;
+        }
+
+        internal bool IsDisposed => _isDisposed;
+
+        public TimedButtonOperation Register(
+            Button button,
+            string actionKey,
+            string buttonLabel,
+            string tooltipLabel,
+            Brush progressForeground,
+            Func<double>? expectedDurationProvider = null,
+            Action<double>? onSuccessfulCompletion = null,
+            Func<TimedButtonOperationStats?, object>? contentFactory = null,
+            Func<TimedButtonOperationStats?, string?>? tooltipFactory = null,
+            bool persistStatsImmediately = true,
+            bool treatFirstSuccessAsWarmup = true,
+            bool disableButtonWhileRunning = true,
+            double minimumExpectedDurationMs = 500)
+        {
+            Func<TimedButtonOperationStats?, object> resolvedContentFactory = contentFactory
+                ?? new Func<TimedButtonOperationStats?, object>(stats => TimedButtonOperationTextFormatter.BuildCompactContent(buttonLabel, stats));
+            Func<TimedButtonOperationStats?, string?> resolvedTooltipFactory = tooltipFactory
+                ?? new Func<TimedButtonOperationStats?, string?>(stats => TimedButtonOperationTextFormatter.BuildTooltip(tooltipLabel, stats));
+
+            return Register(button, new TimedButtonOperationOptions
+            {
+                OperationKey = _operationKeyBuilder(actionKey),
+                RunningText = buttonLabel,
+                ProgressForeground = progressForeground,
+                TreatFirstSuccessAsWarmup = treatFirstSuccessAsWarmup,
+                ExpectedDurationProvider = expectedDurationProvider,
+                OnSuccessfulCompletion = onSuccessfulCompletion,
+                ContentFactory = resolvedContentFactory,
+                ToolTipFactory = resolvedTooltipFactory,
+                PersistStatsImmediately = persistStatsImmediately,
+                DisableButtonWhileRunning = disableButtonWhileRunning,
+                MinimumExpectedDurationMs = minimumExpectedDurationMs
+            });
+        }
+
+        public TimedButtonOperation Register(Button button, TimedButtonOperationOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(button);
+            ArgumentNullException.ThrowIfNull(options);
+            ThrowIfDisposed();
+
+            if (_operations.TryGetValue(button, out TimedButtonOperation? existingOperation))
+            {
+                return existingOperation;
+            }
+
+            TimedButtonOperation operation = new TimedButtonOperation(button, options);
+            _operations.Add(button, operation);
+            return operation;
+        }
+
+        public bool Contains(Button button)
+        {
+            ArgumentNullException.ThrowIfNull(button);
+            return !_isDisposed && _operations.ContainsKey(button);
+        }
+
+        public TimedButtonOperation? Get(Button button)
+        {
+            ArgumentNullException.ThrowIfNull(button);
+            if (_isDisposed)
+            {
+                return null;
+            }
+
+            _operations.TryGetValue(button, out TimedButtonOperation? operation);
+            return operation;
+        }
+
+        public TimedButtonOperationScope? Begin(Button button, double? expectedDurationMs = null, string? runningText = null)
+        {
+            return Get(button)?.Begin(expectedDurationMs, runningText);
+        }
+
+        public void RefreshIdleState(Button? button = null)
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            if (button != null)
+            {
+                Get(button)?.RefreshIdleState();
+                return;
+            }
+
+            foreach (TimedButtonOperation operation in _operations.Values)
+            {
+                operation.RefreshIdleState();
+            }
+        }
+
+        private void Owner_Unloaded(object sender, RoutedEventArgs e)
+        {
+            Dispose();
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(TimedButtonOperationRegistry));
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+            _owner.Unloaded -= Owner_Unloaded;
+
+            foreach (TimedButtonOperation operation in _operations.Values)
+            {
+                operation.Dispose();
+            }
+
+            _operations.Clear();
+            GC.SuppressFinalize(this);
+        }
+    }
+
+    public static class TimedButtonOperationRegistryExtensions
+    {
+        private static readonly ConditionalWeakTable<FrameworkElement, TimedButtonOperationRegistry> Registries = new ConditionalWeakTable<FrameworkElement, TimedButtonOperationRegistry>();
+
+        public static TimedButtonOperationRegistry? TryGetTimedButtonOperations(this FrameworkElement owner)
+        {
+            ArgumentNullException.ThrowIfNull(owner);
+
+            if (!Registries.TryGetValue(owner, out TimedButtonOperationRegistry? existingRegistry))
+            {
+                return null;
+            }
+
+            if (!existingRegistry.IsDisposed)
+            {
+                return existingRegistry;
+            }
+
+            Registries.Remove(owner);
+            return null;
+        }
+
+        public static TimedButtonOperationRegistry GetTimedButtonOperations(this FrameworkElement owner, Func<string, string>? operationKeyBuilder = null)
+        {
+            ArgumentNullException.ThrowIfNull(owner);
+
+            TimedButtonOperationRegistry? existingRegistry = owner.TryGetTimedButtonOperations();
+            if (existingRegistry != null)
+            {
+                return existingRegistry;
+            }
+
+            if (operationKeyBuilder == null)
+            {
+                throw new InvalidOperationException("TimedButtonOperationRegistry has not been initialized for the current owner.");
+            }
+
+            TimedButtonOperationRegistry registry = new TimedButtonOperationRegistry(owner, operationKeyBuilder);
+            Registries.Add(owner, registry);
+            return registry;
+        }
+
+        public static void DisposeTimedButtonOperations(this FrameworkElement owner)
+        {
+            ArgumentNullException.ThrowIfNull(owner);
+
+            TimedButtonOperationRegistry? registry = owner.TryGetTimedButtonOperations();
+            if (registry == null)
+            {
+                return;
+            }
+
+            registry.Dispose();
+            Registries.Remove(owner);
         }
     }
 

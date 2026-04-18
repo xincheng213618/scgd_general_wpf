@@ -121,11 +121,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private DVRectangleText DVRectangleText { get; set; }
         private DVText DVText { get; set; }
         private VideoFrameProcessor? _localFrameProcessor;
-        private TimedButtonOperation? _takePhotoOperation;
-        private TimedButtonOperation? _openOperation;
-        private TimedButtonOperation? _videoOperation;
-        private TimedButtonOperation? _closeOperation;
-        private TimedButtonOperation? _localVideoOperation;
         private bool _visualsAdded = false;
         private bool _isOpeningLocalVideo;
 
@@ -149,67 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DataContext = Device;
             this.AddViewConfig(View, DisPlayName);
-            _takePhotoOperation = CreateTimedButtonOperation(
-                TakePhotoButton,
-                "take-photo",
-                Properties.Resources.Capture,
-                "取图",
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay),
-                onSuccessfulCompletion: elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime),
-                persistStatsImmediately: false);
-
-            _openOperation = CreateTimedButtonOperation(
-                OpenButton,
-                "open",
-                Properties.Resources.Open,
-                "打开相机",
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.OpenTime),
-                onSuccessfulCompletion: elapsed =>
-                {
-                    DisplayCameraConfig.OpenTime = elapsed;
-                    SaveDisplayConfig();
-                });
-
-            _videoOperation = CreateTimedButtonOperation(
-                VideoButton,
-                "video-open",
-                Properties.Resources.Video,
-                "视频模式",
-                Brushes.Red);
-
-            _closeOperation = CreateTimedButtonOperation(
-                CloseButton,
-                "close",
-                Properties.Resources.Close,
-                "关闭相机",
-                Brushes.Green,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.CloseTime),
-                onSuccessfulCompletion: elapsed =>
-                {
-                    DisplayCameraConfig.CloseTime = elapsed;
-                    SaveDisplayConfig();
-                });
-
-            _localVideoOperation = CreateTimedButtonOperation(
-                LocalVideoButton,
-                "local-video-open",
-                "LocalVideo",
-                "本地视频",
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime),
-                onSuccessfulCompletion: elapsed =>
-                {
-                    DisplayCameraConfig.LocalVideoOpenTime = elapsed;
-                    SaveDisplayConfig();
-                },
-                contentFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
-                    ? "Close Video"
-                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats),
-                tooltipFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
-                    ? "关闭本地视频"
-                    : TimedButtonOperationTextFormatter.BuildTooltip("本地视频", stats));
+            EnsureTimedButtonOperations();
 
             void UpdateTemplate()
             {
@@ -344,19 +279,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (sender is Button button)
             {
+                EnsureTimedButtonOperations();
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
-                TimedButtonOperationScope? openScope = _openOperation?.Begin();
-                ServicesHelper.SendCommand(button, msgRecord);
-
-                msgRecord.MsgRecordStateChanged += (s, e) =>
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                 {
-                    if (!IsTerminalMsgRecordState(e))
-                    {
-                        return;
-                    }
-
-                    openScope?.Complete(e == MsgRecordState.Success);
-                    if (e == MsgRecordState.Success)
+                    if (state == MsgRecordState.Success)
                     {
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
@@ -364,9 +291,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                     else
                     {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
                     }
-                };
+                });
 
                 RotateTransform rotateTransform1 = new() { Angle = 0 };
                 View.ImageView.ImageShow.RenderTransform = rotateTransform1;
@@ -378,154 +305,143 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
-
-            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-            {
-                if (param.Id != -1)
-                {
-                    if (Device.PhyCamera == null)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "物理相机未配置", "ColorVision");
-                        return;
-                    }
-
-                    if (Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
-                        return;
-                    }
-
-                    var groupResource = Device.PhyCamera.VisualChildren.OfType<GroupResource>().FirstOrDefault(a => a.Name == param.CalibrationMode);
-
-                    if (groupResource == null)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "校正组不存在", "ColorVision");
-                        return;
-                    }
-
-                    bool isSelected =
-                        (param.Normal?.DarkNoise?.IsSelected ?? false) ||
-                        (param.Normal?.DefectPoint?.IsSelected ?? false) ||
-                        (param.Normal?.Distortion?.IsSelected ?? false) ||
-                        (param.Normal?.DSNU?.IsSelected ?? false) ||
-                        (param.Normal?.ColorShift?.IsSelected ?? false) ||
-                        (param.Normal?.Uniformity?.IsSelected ?? false) ||
-                        (param.Normal?.LineArity?.IsSelected ?? false) ||
-                        (param.Normal?.ColorDiff?.IsSelected ?? false) ||
-                        (param.Color?.Luminance?.IsSelected ?? false) ||
-                        (param.Color?.LumOneColor?.IsSelected ?? false) ||
-                        (param.Color?.LumFourColor?.IsSelected ?? false) ||
-                        (param.Color?.LumMultiColor?.IsSelected ?? false);
-
-                    if (!isSelected)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板,需要确认校正文件已经配置", "ColorVision");
-                        return;
-                    }
-
-                    // 文件有效性验证
-                    if (param.Normal?.DarkNoise?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.DarkNoise?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DarkNoise?.FilePath ?? "DarkNoise文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.DefectPoint?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.DefectPoint?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DefectPoint?.FilePath ?? "DefectPoint文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.Distortion?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.Distortion?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Distortion?.FilePath ?? "Distortion文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.DSNU?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.DSNU?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DSNU?.FilePath ?? "DSNU文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.ColorShift?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.ColorShift?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorShift?.FilePath ?? "ColorShift文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.Uniformity?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.Uniformity?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Uniformity?.FilePath ?? "Uniformity文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.LineArity?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LineArity?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LineArity?.FilePath ?? "LineArity文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.ColorDiff?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.ColorDiff?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorDiff?.FilePath ?? "ColorDiff文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.Luminance?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.Luminance?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Luminance?.FilePath ?? "Luminance文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.LumOneColor?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LumOneColor?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumOneColor?.FilePath ?? "LumOneColor文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.LumFourColor?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LumFourColor?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumFourColor?.FilePath ?? "LumFourColor文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.LumMultiColor?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LumMultiColor?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumMultiColor?.FilePath ?? "LumMultiColor文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-
-                }
-            }
-            else
+            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param)
             {
                 param = new CalibrationParam() { Id = -1, Name = "Empty" };
+            }
+            else if (param.Id != -1)
+            {
+                if (Device.PhyCamera == null)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), "物理相机未配置", "ColorVision");
+                    return;
+                }
+
+                if (Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                    return;
+                }
+
+                var groupResource = Device.PhyCamera.VisualChildren
+                    .OfType<GroupResource>()
+                    .FirstOrDefault(resource => resource.Name == param.CalibrationMode);
+                groupResource?.SetCalibrationResource();
+                bool isSelected = (param.Normal?.DarkNoise?.IsSelected ?? false) ||
+                    (param.Normal?.DefectPoint?.IsSelected ?? false) ||
+                    (param.Normal?.Distortion?.IsSelected ?? false) ||
+                    (param.Normal?.DSNU?.IsSelected ?? false) ||
+                    (param.Normal?.ColorShift?.IsSelected ?? false) ||
+                    (param.Normal?.Uniformity?.IsSelected ?? false) ||
+                    (param.Normal?.LineArity?.IsSelected ?? false) ||
+                    (param.Normal?.ColorDiff?.IsSelected ?? false) ||
+                    (param.Color?.Luminance?.IsSelected ?? false) ||
+                    (param.Color?.LumOneColor?.IsSelected ?? false) ||
+                    (param.Color?.LumFourColor?.IsSelected ?? false) ||
+                    (param.Color?.LumMultiColor?.IsSelected ?? false);
+
+                if (groupResource == null || !isSelected)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板,需要确认校正文件已经配置", "ColorVision");
+                    return;
+                }
+
+                if (param.Normal?.DarkNoise?.IsSelected ?? false)
+                {
+                    if (!(groupResource.DarkNoise?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DarkNoise?.FilePath ?? "DarkNoise文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.DefectPoint?.IsSelected ?? false)
+                {
+                    if (!(groupResource.DefectPoint?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DefectPoint?.FilePath ?? "DefectPoint文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.Distortion?.IsSelected ?? false)
+                {
+                    if (!(groupResource.Distortion?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Distortion?.FilePath ?? "Distortion文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.DSNU?.IsSelected ?? false)
+                {
+                    if (!(groupResource.DSNU?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DSNU?.FilePath ?? "DSNU文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.ColorShift?.IsSelected ?? false)
+                {
+                    if (!(groupResource.ColorShift?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorShift?.FilePath ?? "ColorShift文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.Uniformity?.IsSelected ?? false)
+                {
+                    if (!(groupResource.Uniformity?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Uniformity?.FilePath ?? "Uniformity文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.LineArity?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LineArity?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LineArity?.FilePath ?? "LineArity文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.ColorDiff?.IsSelected ?? false)
+                {
+                    if (!(groupResource.ColorDiff?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorDiff?.FilePath ?? "ColorDiff文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.Luminance?.IsSelected ?? false)
+                {
+                    if (!(groupResource.Luminance?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Luminance?.FilePath ?? "Luminance文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.LumOneColor?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LumOneColor?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumOneColor?.FilePath ?? "LumOneColor文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.LumFourColor?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LumFourColor?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumFourColor?.FilePath ?? "LumFourColor文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.LumMultiColor?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LumMultiColor?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumMultiColor?.FilePath ?? "LumMultiColor文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
             }
 
             double[] expTime = null;
@@ -539,21 +455,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
 
+            EnsureTimedButtonOperations();
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
-            TimedButtonOperationScope? takePhotoScope = _takePhotoOperation?.Begin();
             logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
 
-            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
-            msgRecord.MsgRecordStateChanged += (s, e) =>
+            ServicesHelper.SendTimedCommand(this, TakePhotoButton, msgRecord, onTerminalStateChanged: (record, state) =>
             {
-                if (!IsTerminalMsgRecordState(e))
-                {
-                    return;
-                }
-
-                takePhotoScope?.Complete(e == MsgRecordState.Success);
-                if (e == MsgRecordState.Timeout)
+                if (state == MsgRecordState.Timeout)
                 {
                     if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration == null)
                     {
@@ -564,12 +473,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         MessageBox1.Show("取图超时,请重设超时时间");
                     }
                 }
-                if (e == MsgRecordState.Fail)
+                if (state == MsgRecordState.Fail)
                 {
                     View.SearchAll();
-                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试", "ColorVisoin");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), record.MsgReturn.Message + Environment.NewLine + "重启服务试试", "ColorVisoin");
                 }
-            };
+            });
 
         }
 
@@ -667,18 +576,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (port > 0)
                     {
                         MsgRecord msgRecord = DService.OpenVideo(host, port);
-                        TimedButtonOperationScope? videoScope = _videoOperation?.Begin();
-                        msgRecord.MsgRecordStateChanged += (s, e) =>
+                        EnsureTimedButtonOperations();
+                        ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                         {
-                            if (!IsTerminalMsgRecordState(e))
+                            if (state == MsgRecordState.Success)
                             {
-                                return;
-                            }
-
-                            if (e == MsgRecordState.Success)
-                            {
-                                videoScope?.CompleteSuccess();
-                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msgRecord.MsgReturn.Data));
+                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(record.MsgReturn.Data));
                                 string mapName = Device.Code;
                                 if (pm_live.IsLocal) mapName = pm_live.MapName;
                                 if (string.IsNullOrEmpty(mapName))
@@ -696,12 +599,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 return;
                             }
 
-                            videoScope?.Complete(false);
-                            if (e == MsgRecordState.Fail)
+                            if (state == MsgRecordState.Fail)
                             {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
+                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
                             }
-                            else if (e == MsgRecordState.Timeout)
+                            else if (state == MsgRecordState.Timeout)
                             {
                                 MessageBox.Show(Application.Current.GetActiveWindow(), "视频模式打开超时，请检查日志", "ColorVision");
                             }
@@ -709,8 +611,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             Device.CameraVideoControl.Close();
                             DService.Close();
                             DService.IsVideoOpen = false;
-                        };
-                        ServicesHelper.SendCommand(button, msgRecord);
+                        });
                     }
                     else
                     {
@@ -839,19 +740,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (DService.IsVideoOpen)
                 Device.CameraVideoControl.Close();
 
-            MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
-            if (msgRecord != null)
+            if (sender is Button button)
             {
-                TimedButtonOperationScope? closeScope = _closeOperation?.Begin();
-                msgRecord.MsgRecordStateChanged += (s, e) =>
+                EnsureTimedButtonOperations();
+                MsgRecord msgRecord = DService.Close();
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (_, state) =>
                 {
-                    if (!IsTerminalMsgRecordState(e))
-                    {
-                        return;
-                    }
-
-                    closeScope?.Complete(e == MsgRecordState.Success);
-                    if (e == MsgRecordState.Timeout)
+                    if (state == MsgRecordState.Timeout)
                     {
                         MessageBox.Show("关闭相机超时,请查看日志并排查问题");
                         return;
@@ -861,7 +756,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     ButtonOpen.Visibility = Visibility.Visible;
                     ButtonClose.Visibility = Visibility.Collapsed;
                     StackPanelOpen.Visibility = Visibility.Collapsed;
-                };
+                });
             }
         }
 
@@ -943,11 +838,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
             _localFrameProcessor?.Dispose();
             _localFrameProcessor = null;
-            _takePhotoOperation?.Dispose();
-            _openOperation?.Dispose();
-            _videoOperation?.Dispose();
-            _closeOperation?.Dispose();
-            _localVideoOperation?.Dispose();
+            this.DisposeTimedButtonOperations();
             GC.SuppressFinalize(this);
         }
 
@@ -987,33 +878,72 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private TimedButtonOperation CreateTimedButtonOperation(
-            Button button,
-            string actionKey,
-            string buttonLabel,
-            string tooltipLabel,
-            Brush progressForeground,
-            Func<double>? expectedDurationProvider = null,
-            Action<double>? onSuccessfulCompletion = null,
-            Func<TimedButtonOperationStats?, object>? contentFactory = null,
-            Func<TimedButtonOperationStats?, string?>? tooltipFactory = null,
-            bool persistStatsImmediately = true)
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
-            Func<TimedButtonOperationStats?, object> resolvedContentFactory = contentFactory ?? new Func<TimedButtonOperationStats?, object>(stats => TimedButtonOperationTextFormatter.BuildCompactContent(buttonLabel, stats));
-            Func<TimedButtonOperationStats?, string?> resolvedTooltipFactory = tooltipFactory ?? new Func<TimedButtonOperationStats?, string?>(stats => TimedButtonOperationTextFormatter.BuildTooltip(tooltipLabel, stats));
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
+            operations.Register(
+                TakePhotoButton,
+                "take-photo",
+                Properties.Resources.Capture,
+                "取图",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay),
+                onSuccessfulCompletion: elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime),
+                persistStatsImmediately: false);
 
-            return new TimedButtonOperation(button, new TimedButtonOperationOptions
-            {
-                OperationKey = BuildButtonOperationKey(actionKey),
-                RunningText = buttonLabel,
-                ProgressForeground = progressForeground,
-                TreatFirstSuccessAsWarmup = true,
-                ExpectedDurationProvider = expectedDurationProvider,
-                OnSuccessfulCompletion = onSuccessfulCompletion,
-                ContentFactory = resolvedContentFactory,
-                ToolTipFactory = resolvedTooltipFactory,
-                PersistStatsImmediately = persistStatsImmediately
-            });
+            operations.Register(
+                OpenButton,
+                "open",
+                Properties.Resources.Open,
+                "打开相机",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.OpenTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.OpenTime = elapsed;
+                    SaveDisplayConfig();
+                });
+
+            operations.Register(
+                VideoButton,
+                "video-open",
+                Properties.Resources.Video,
+                "视频模式",
+                Brushes.Red);
+
+            operations.Register(
+                CloseButton,
+                "close",
+                Properties.Resources.Close,
+                "关闭相机",
+                Brushes.Green,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.CloseTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.CloseTime = elapsed;
+                    SaveDisplayConfig();
+                });
+
+            operations.Register(
+                LocalVideoButton,
+                "local-video-open",
+                "LocalVideo",
+                "本地视频",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.LocalVideoOpenTime = elapsed;
+                    SaveDisplayConfig();
+                },
+                contentFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    ? "Close Video"
+                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats),
+                tooltipFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    ? "关闭本地视频"
+                    : TimedButtonOperationTextFormatter.BuildTooltip("本地视频", stats));
+
+            return operations;
         }
 
         private string BuildButtonOperationKey(string actionKey)
@@ -1024,11 +954,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void SaveDisplayConfig()
         {
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-        }
-
-        private static bool IsTerminalMsgRecordState(MsgRecordState state)
-        {
-            return state == MsgRecordState.Success || state == MsgRecordState.Fail || state == MsgRecordState.Timeout;
         }
 
         double articulation;
@@ -1146,9 +1071,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button) return;
+            TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             if (Device.DisplayConfig.IsLocalVideoOpen)
             {
-                TimedButtonOperationScope? localVideoCloseScope = _localVideoOperation?.Begin(runningText: "Close Video");
+                TimedButtonOperationScope? localVideoCloseScope = operations.Begin(LocalVideoButton, runningText: "Close Video");
                 bool closeSucceeded = false;
                 string closeError = string.Empty;
                 VideoFrameProcessor? frameProcessor = _localFrameProcessor;
@@ -1172,7 +1098,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 finally
                 {
                     localVideoCloseScope?.Complete(false);
-                    _localVideoOperation?.RefreshIdleState();
+                    operations.RefreshIdleState(LocalVideoButton);
                 }
 
                 if (!closeSucceeded && !string.IsNullOrWhiteSpace(closeError))
@@ -1189,7 +1115,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _isOpeningLocalVideo = true;
-            TimedButtonOperationScope? localVideoScope = _localVideoOperation?.Begin();
+            TimedButtonOperationScope? localVideoScope = operations.Begin(LocalVideoButton);
             logger.Info("初始化视频模式");
             bool localVideoOpened = false;
 
@@ -1238,7 +1164,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             finally
             {
                 localVideoScope?.Complete(localVideoOpened);
-                _localVideoOperation?.RefreshIdleState();
+                operations.RefreshIdleState(LocalVideoButton);
                 _isOpeningLocalVideo = false;
             }
         }

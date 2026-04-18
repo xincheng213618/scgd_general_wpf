@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
+using ColorVision.UI;
 using ColorVision.Themes.Controls;
 using System;
 using System.Globalization;
@@ -68,6 +69,54 @@ namespace ColorVision.Engine.Services
             var temp = button.Content;
             button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
             msgRecord.MsgRecordStateChanged += (s,e) => button.Content = temp;
+        }
+
+        public static TimedButtonOperationScope? SendTimedCommand(
+            FrameworkElement owner,
+            Button button,
+            MsgRecord msgRecord,
+            string? runningText = null,
+            Action<MsgRecord, MsgRecordState>? onTerminalStateChanged = null)
+        {
+            ArgumentNullException.ThrowIfNull(owner);
+            ArgumentNullException.ThrowIfNull(button);
+            ArgumentNullException.ThrowIfNull(msgRecord);
+
+            TimedButtonOperationScope? operationScope = owner.GetTimedButtonOperations().Begin(button, runningText: runningText);
+
+            msgRecord.MsgRecordStateChanged += (_, state) =>
+            {
+                if (state != MsgRecordState.Success && state != MsgRecordState.Fail && state != MsgRecordState.Timeout)
+                {
+                    return;
+                }
+
+                operationScope?.Complete(state == MsgRecordState.Success);
+                onTerminalStateChanged?.Invoke(msgRecord, state);
+            };
+
+            SendCommand(button, msgRecord);
+            return operationScope;
+        }
+
+        public static MsgRecord? SendTimedCommand(
+            FrameworkElement owner,
+            object sender,
+            Func<MsgRecord> action,
+            string? runningText = null,
+            Action<MsgRecord, MsgRecordState>? onTerminalStateChanged = null)
+        {
+            ArgumentNullException.ThrowIfNull(owner);
+            ArgumentNullException.ThrowIfNull(action);
+
+            if (sender is not Button button)
+            {
+                return null;
+            }
+
+            MsgRecord msgRecord = action.Invoke();
+            SendTimedCommand(owner, button, msgRecord, runningText, onTerminalStateChanged);
+            return msgRecord;
         }
 
         public static bool IsInvalidPath(string Path, string Hint = "名称")
