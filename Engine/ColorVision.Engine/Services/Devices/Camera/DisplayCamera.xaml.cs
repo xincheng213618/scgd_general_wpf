@@ -928,7 +928,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 if (token.IsCancellationRequested) return;
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
-                                    DVText.Attribute.Text = $"fps:{lastFps} Articulation: {articulation:F5}";
+                                    DVText.Attribute.Text = $"fps:{lastFps:F1} Articulation: {articulation:F5}";
                                 });
                                 logger.Info($"Video Articulation: {articulation}");
                             }, token);

@@ -254,13 +254,13 @@
                               Width="120" SelectionChanged="GroupSelector_SelectionChanged"/>
                 </StackPanel>
             </StatusBarItem>
-            <StatusBarItem>
+            <StatusBarItem Visibility="Collapsed">
                 <Button x:Name="ThunderbirdConnectionStatusText" Foreground="Gray" Content="雷鸟: 未连接" Click="OpenThunderbirdSerialDebug_Click" Padding="10,2"/>
             </StatusBarItem>
-            <StatusBarItem>
+            <StatusBarItem Visibility="Collapsed">
                 <Button x:Name="RelayServerStatusButton" Foreground="Gray" Content="中转: 未启动" Click="OpenSocketRelay_Click" Padding="10,2"/>
             </StatusBarItem>
-            <StatusBarItem>
+            <StatusBarItem Visibility="Collapsed">
                 <Button Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,5"/>
             </StatusBarItem>
         </StatusBar>
