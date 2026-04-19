@@ -1,0 +1,268 @@
+<Window x:Class="CaptchaOCR.CaptchaWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="验证码识别" Height="700" Width="900"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+
+    <Window.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#1976D2"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1565C0"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#0D47A1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#424242"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#616161"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ResultText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="32"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="Foreground" Value="#1976D2"/>
+        </Style>
+
+        <Style x:Key="ConfidenceBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="Background" Value="#E3F2FD"/>
+            <Setter Property="Foreground" Value="#1976D2"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <Grid>
+                                <Rectangle x:Name="PART_Track" Fill="Transparent"/>
+                                <Rectangle x:Name="PART_Indicator" Fill="{TemplateBinding Foreground}"
+                                          RadiusX="4" RadiusY="4"
+                                          HorizontalAlignment="Left"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标题栏 -->
+        <Border Grid.Row="0" Background="#1976D2" Padding="20,14">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#128269;" FontSize="24" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock Text="验证码识别" FontSize="20" FontWeight="SemiBold"
+                          Foreground="White" VerticalAlignment="Center"/>
+                <TextBlock x:Name="ModelStatusText" Text="模型加载中..." FontSize="12"
+                          Foreground="#BBDEFB" VerticalAlignment="Center" Margin="20,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 主内容 -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20">
+
+                <!-- 生成区域 -->
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="&#9881; 验证码生成" FontSize="16" FontWeight="SemiBold"
+                                  Margin="0,0,0,12" Foreground="#333"/>
+
+                        <Border Grid.Row="1" Background="#FAFAFA" CornerRadius="6"
+                               BorderBrush="#E0E0E0" BorderThickness="1"
+                               HorizontalAlignment="Center" Margin="0,0,0,12">
+                            <Image x:Name="GeneratedImage" Width="160" Height="160" Stretch="None" />
+                        </Border>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button x:Name="BtnGenerate" Content="&#128260; 生成新验证码"
+                                   Style="{StaticResource PrimaryButton}" Click="BtnGenerate_Click"/>
+                            <Button x:Name="BtnRecognize" Content="&#128269; 识别此验证码"
+                                   Style="{StaticResource SecondaryButton}" Margin="12,0,0,0"
+                                   Click="BtnRecognize_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 识别结果 -->
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="&#128221; 识别结果" FontSize="16" FontWeight="SemiBold"
+                                  Margin="0,0,0,12" Foreground="#333"/>
+
+                        <Border Grid.Row="1" Background="#E3F2FD" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                            <TextBlock x:Name="ResultText" Text="--" Style="{StaticResource ResultText}"
+                                      HorizontalAlignment="Center"/>
+                        </Border>
+
+                        <Grid Grid.Row="2" Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="平均置信度:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ProgressBar Grid.Column="1" x:Name="AvgConfidenceBar" Value="0" Maximum="1"
+                                        Style="{StaticResource ConfidenceBar}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" x:Name="AvgConfidenceText" Text="0%"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Grid.Row="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="4">
+                                <TextBlock x:Name="Char1Text" Text="-" HorizontalAlignment="Center"
+                                          FontWeight="Bold" FontSize="18" Foreground="#1976D2"/>
+                                <ProgressBar x:Name="Char1Bar" Value="0" Maximum="1" Height="6"
+                                            Style="{StaticResource ConfidenceBar}" Margin="0,4"/>
+                                <TextBlock x:Name="Char1Conf" Text="0%" HorizontalAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="4">
+                                <TextBlock x:Name="Char2Text" Text="-" HorizontalAlignment="Center"
+                                          FontWeight="Bold" FontSize="18" Foreground="#1976D2"/>
+                                <ProgressBar x:Name="Char2Bar" Value="0" Maximum="1" Height="6"
+                                            Style="{StaticResource ConfidenceBar}" Margin="0,4"/>
+                                <TextBlock x:Name="Char2Conf" Text="0%" HorizontalAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Margin="4">
+                                <TextBlock x:Name="Char3Text" Text="-" HorizontalAlignment="Center"
+                                          FontWeight="Bold" FontSize="18" Foreground="#1976D2"/>
+                                <ProgressBar x:Name="Char3Bar" Value="0" Maximum="1" Height="6"
+                                            Style="{StaticResource ConfidenceBar}" Margin="0,4"/>
+                                <TextBlock x:Name="Char3Conf" Text="0%" HorizontalAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Margin="4">
+                                <TextBlock x:Name="Char4Text" Text="-" HorizontalAlignment="Center"
+                                          FontWeight="Bold" FontSize="18" Foreground="#1976D2"/>
+                                <ProgressBar x:Name="Char4Bar" Value="0" Maximum="1" Height="6"
+                                            Style="{StaticResource ConfidenceBar}" Margin="0,4"/>
+                                <TextBlock x:Name="Char4Conf" Text="0%" HorizontalAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- 从文件识别 -->
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="&#128194; 从文件识别" FontSize="16" FontWeight="SemiBold"
+                                  Margin="0,0,0,12" Foreground="#333"/>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBox x:Name="FilePathText" IsReadOnly="True"
+                                    Background="#FAFAFA" BorderBrush="#E0E0E0"
+                                    Padding="8,6" FontSize="13" Width="500"
+                                    VerticalContentAlignment="Center"/>
+                            <Button Content="&#128194; 浏览..." Style="{StaticResource SecondaryButton}"
+                                   Margin="8,0,0,0" Click="BtnBrowse_Click"/>
+                        </StackPanel>
+
+                        <Button Grid.Row="2" x:Name="BtnRecognizeFile" Content="&#128269; 识别文件"
+                               Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
+                               Click="BtnRecognizeFile_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- 批量测试 -->
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="&#9889; 批量测试" FontSize="16" FontWeight="SemiBold"
+                                  Margin="0,0,0,12" Foreground="#333"/>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="测试数量:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Slider x:Name="TestCountSlider" Minimum="10" Maximum="1000" Value="100"
+                                   Width="200" VerticalAlignment="Center" TickFrequency="10"/>
+                            <TextBlock x:Name="TestCountText" Text="100" VerticalAlignment="Center"
+                                      Margin="8,0,20,0" FontWeight="SemiBold"/>
+                            <Button Content="&#9654; 开始批量测试" Style="{StaticResource PrimaryButton}"
+                                   Click="BtnBatchTest_Click"/>
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="2" x:Name="BatchResultText" Text="" FontSize="14"
+                                  Foreground="#666" TextWrapping="Wrap"/>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

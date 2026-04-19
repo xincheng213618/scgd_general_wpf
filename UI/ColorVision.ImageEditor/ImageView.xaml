@@ -92,7 +92,7 @@
                                 <Image Margin="-5" Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Style="{StaticResource ToolBarImage}" />
                             </ToggleButton>
                             <ToggleButton x:Name="AutoSetRange" Margin="0,0,0,2" Padding="3" HorizontalAlignment="Stretch" Click="AutoSetRange_Click" Content="A" FontSize="9" IsChecked="{Binding Config.IsAutoSetRange}" ToolTip="Auto Range" Visibility="{Binding Config.IsPseudo, Converter={StaticResource bool2VisibilityConverter}}" />
-                            <Grid Height="200" Visibility="{Binding Config.IsPseudo, Converter={StaticResource bool2VisibilityConverter}}">
+                            <Grid Height="120" Visibility="{Binding Config.IsPseudo, Converter={StaticResource bool2VisibilityConverter}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
@@ -108,7 +108,7 @@
                                     </Grid.RowDefinitions>
                                     <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0" />
                                     <Border Grid.Row="1" Background="Transparent">
-                                        <Image x:Name="ColormapTypesImage" VerticalAlignment="Top" Source="/ColorVision.ImageEditor;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" />
+                                        <Image x:Name="ColormapTypesImage" VerticalAlignment="Top" Stretch="Fill" />
                                     </Border>
                                     <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 " />
                                 </Grid>
