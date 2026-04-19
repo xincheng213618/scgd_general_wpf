@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <VersionPrefix>1.0.4</VersionPrefix>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,7 +24,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="captcha_model.onnx">
+    <None Update="common.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="common_old.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="models.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="models\ddddocr\common.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="models\ddddocr\common_old.onnx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="CHANGELOG.md">
@@ -40,7 +51,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Condition="'$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'" Command="set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25&quot; (mkdir &quot;%25DebugPluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25&quot; (mkdir &quot;%25ReleasePluginsDir%25&quot;)&#xD;&#xA;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)manifest.json&quot; (&#xD;&#xA;    copy &quot;$(OutDir)manifest.json&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)manifest.json&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)ReadMe.md&quot; (&#xD;&#xA;    copy &quot;$(OutDir)ReadMe.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)ReadMe.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)Changelog.md&quot; (&#xD;&#xA;    copy &quot;$(OutDir)Changelog.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)Changelog.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)captcha_model.onnx&quot; (&#xD;&#xA;    copy &quot;$(OutDir)captcha_model.onnx&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)captcha_model.onnx&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)" />
+    <Exec Condition="'$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'" Command="set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25&quot; (mkdir &quot;%25DebugPluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25&quot; (mkdir &quot;%25ReleasePluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25\models\ddddocr&quot; (mkdir &quot;%25DebugPluginsDir%25\models\ddddocr&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25\models\ddddocr&quot; (mkdir &quot;%25ReleasePluginsDir%25\models\ddddocr&quot;)&#xD;&#xA;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)manifest.json&quot; (&#xD;&#xA;    copy &quot;$(OutDir)manifest.json&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)manifest.json&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)models.json&quot; (&#xD;&#xA;    copy &quot;$(OutDir)models.json&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)models.json&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)ReadMe.md&quot; (&#xD;&#xA;    copy &quot;$(OutDir)ReadMe.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)ReadMe.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)Changelog.md&quot; (&#xD;&#xA;    copy &quot;$(OutDir)Changelog.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)Changelog.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)captcha_model.onnx&quot; (&#xD;&#xA;    copy &quot;$(OutDir)captcha_model.onnx&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)captcha_model.onnx&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)models\ddddocr\common.onnx&quot; (&#xD;&#xA;    copy &quot;$(OutDir)models\ddddocr\common.onnx&quot; &quot;%25DebugPluginsDir%25\models\ddddocr&quot;&#xD;&#xA;    copy &quot;$(OutDir)models\ddddocr\common.onnx&quot; &quot;%25ReleasePluginsDir%25\models\ddddocr&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)models\ddddocr\common_old.onnx&quot; (&#xD;&#xA;    copy &quot;$(OutDir)models\ddddocr\common_old.onnx&quot; &quot;%25DebugPluginsDir%25\models\ddddocr&quot;&#xD;&#xA;    copy &quot;$(OutDir)models\ddddocr\common_old.onnx&quot; &quot;%25ReleasePluginsDir%25\models\ddddocr&quot;&#xD;&#xA;)" />
   </Target>
 
 </Project>

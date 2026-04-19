@@ -1,28 +1,51 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Linq;
 
 namespace CaptchaOCR
 {
-    /// <summary>
-    /// 验证码生成器 - 生成带干扰的验证码图片
-    /// </summary>
+    public enum CharacterMode
+    {
+        Alphanumeric,
+        DigitsOnly,
+        LettersOnly
+    }
+
     public class CaptchaGenerator
     {
-        private const string Charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private static readonly Random Random = new();
 
         public int Width { get; set; } = 160;
         public int Height { get; set; } = 60;
-        public int Length { get; set; } = 4;
-        public int FontSize { get; set; } = 36;
+        public int FontSize { get; set; } = 32;
 
-        /// <summary>
-        /// 生成验证码
-        /// </summary>
-        /// <returns>(图片, 文本)</returns>
+        // 生成规则
+        private int _length = 4;
+        public int Length
+        {
+            get => _length;
+            set => _length = Math.Clamp(value, 1, 16);
+        }
+
+        public CharacterMode Mode { get; set; } = CharacterMode.Alphanumeric;
+
+        private int _digitCount = -1; // -1 表示自动（混合模式默认行为）
+        public int DigitCount
+        {
+            get => _digitCount;
+            set => _digitCount = value < 0 ? -1 : Math.Clamp(value, 0, Length);
+        }
+
+        private static readonly string Digits = "0123456789";
+        private static readonly string LowerLetters = "abcdefghijklmnopqrstuvwxyz";
+        private static readonly string UpperLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        private static readonly string AllLetters = LowerLetters + UpperLetters;
+        private static readonly string Alphanumeric = Digits + AllLetters;
+
         public (Bitmap Image, string Text) Generate()
         {
             var text = GenerateText();
@@ -32,149 +55,170 @@ namespace CaptchaOCR
 
         private string GenerateText()
         {
-            var chars = new char[Length];
-            for (int i = 0; i < Length; i++)
+            int digitCount = GetEffectiveDigitCount();
+            int letterCount = Length - digitCount;
+
+            var chars = new List<char>(Length);
+
+            for (int i = 0; i < digitCount; i++)
+                chars.Add(Digits[Random.Next(Digits.Length)]);
+
+            for (int i = 0; i < letterCount; i++)
+                chars.Add(AllLetters[Random.Next(AllLetters.Length)]);
+
+            // 随机打乱
+            Shuffle(chars);
+
+            return new string(chars.ToArray());
+        }
+
+        private int GetEffectiveDigitCount()
+        {
+            switch (Mode)
             {
-                chars[i] = Charset[Random.Next(Charset.Length)];
+                case CharacterMode.DigitsOnly:
+                    return Length;
+                case CharacterMode.LettersOnly:
+                    return 0;
+                case CharacterMode.Alphanumeric:
+                default:
+                    // 如果 DigitCount 未设置或超出范围，随机分配
+                    if (_digitCount < 0 || _digitCount > Length)
+                        return Random.Next(0, Length + 1);
+                    return _digitCount;
             }
-            return new string(chars);
+        }
+
+        private static void Shuffle<T>(List<T> list)
+        {
+            int n = list.Count;
+            for (int i = n - 1; i > 0; i--)
+            {
+                int j = Random.Next(i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
         }
 
         private Bitmap DrawCaptcha(string text)
         {
-            var bitmap = new Bitmap(Width, Height);
-            using var g = Graphics.FromImage(bitmap);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.AntiAlias;
+            int scale = 2;
+            var largeBitmap = new Bitmap(Width * scale, Height * scale);
 
-            // 白色背景
-            g.Clear(Color.White);
+            using (var g = Graphics.FromImage(largeBitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-            // 绘制干扰线
-            DrawNoiseLines(g);
+                g.Clear(Color.White);
+                DrawNoiseLines(g, Width * scale, Height * scale);
+                DrawText(g, text, Width * scale, Height * scale);
+                DrawNoisePoints(largeBitmap);
+            }
 
-            // 绘制噪点
-            DrawNoisePoints(bitmap);
+            var finalBitmap = new Bitmap(Width, Height);
+            using (var g = Graphics.FromImage(finalBitmap))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(largeBitmap, 0, 0, Width, Height);
+            }
 
-            // 绘制文字
-            DrawText(g, text);
-
-            // 扭曲效果
-            bitmap = Distort(bitmap);
-
-            return bitmap;
+            largeBitmap.Dispose();
+            return finalBitmap;
         }
 
-        private void DrawText(Graphics g, string text)
+        private void DrawText(Graphics g, string text, int canvasWidth, int canvasHeight)
         {
-            var charWidth = Width / Length;
+            int charCount = text.Length;
+            int charWidth = canvasWidth / charCount;
 
-            // 尝试使用系统字体
             Font? font = null;
-            string[] fontNames = { "Arial", "Microsoft YaHei", "SimSun", "Consolas", "Segoe UI" };
+            string[] fontNames = { "Arial", "Microsoft YaHei", "SimHei", "Consolas", "Segoe UI" };
             foreach (var name in fontNames)
             {
                 try
                 {
-                    font = new Font(name, FontSize, FontStyle.Bold);
+                    font = new Font(name, FontSize * 2, FontStyle.Bold, GraphicsUnit.Pixel);
                     break;
                 }
                 catch { }
             }
-            font ??= new Font(FontFamily.GenericSansSerif, FontSize, FontStyle.Bold);
+            font ??= new Font(FontFamily.GenericSansSerif, FontSize * 2, FontStyle.Bold, GraphicsUnit.Pixel);
+
+            var originalTransform = g.Transform;
 
             for (int i = 0; i < text.Length; i++)
             {
-                var color = RandomDarkColor();
+                var color = GetRandomDarkColor();
                 using var brush = new SolidBrush(color);
 
-                // 随机位置偏移
-                int x = i * charWidth + Random.Next(5, Math.Max(6, charWidth - FontSize - 5));
-                int y = Random.Next(5, Math.Max(6, Height - FontSize - 5));
+                float baseX = i * charWidth + charWidth / 2f;
+                float baseY = canvasHeight / 2f;
 
-                // 随机旋转
-                g.TranslateTransform(x + FontSize / 2, y + FontSize / 2);
-                g.RotateTransform(Random.Next(-15, 15));
-                g.DrawString(text[i].ToString(), font, brush, -FontSize / 2, -FontSize / 2);
+                float offsetX = Random.Next(-10, 10);
+                float offsetY = Random.Next(-8, 8);
+                float angle = Random.Next(-20, 21);
+
+                g.TranslateTransform(baseX + offsetX, baseY + offsetY);
+                g.RotateTransform(angle);
+
+                var charStr = text[i].ToString();
+                var size = g.MeasureString(charStr, font);
+                g.DrawString(charStr, font, brush, -size.Width / 2, -size.Height / 2);
+
                 g.ResetTransform();
             }
 
             font.Dispose();
         }
 
-        private void DrawNoiseLines(Graphics g)
+        private void DrawNoiseLines(Graphics g, int width, int height)
         {
-            int numLines = Random.Next(3, 6);
+            int numLines = Random.Next(4, 8);
             for (int i = 0; i < numLines; i++)
             {
-                var color = RandomColor(100, 200);
-                using var pen = new Pen(color, 1);
-                int x1 = Random.Next(0, Width / 2);
-                int y1 = Random.Next(0, Height);
-                int x2 = Random.Next(Width / 2, Width);
-                int y2 = Random.Next(0, Height);
-                g.DrawLine(pen, x1, y1, x2, y2);
+                var color = GetRandomLightColor();
+                using var pen = new Pen(color, 2);
+
+                int x1 = Random.Next(0, width / 3);
+                int y1 = Random.Next(0, height);
+                int cx1 = Random.Next(width / 4, width / 2);
+                int cy1 = Random.Next(0, height);
+                int cx2 = Random.Next(width / 2, width * 3 / 4);
+                int cy2 = Random.Next(0, height);
+                int x2 = Random.Next(width * 2 / 3, width);
+                int y2 = Random.Next(0, height);
+
+                g.DrawBezier(pen, x1, y1, cx1, cy1, cx2, cy2, x2, y2);
             }
         }
 
         private void DrawNoisePoints(Bitmap bitmap)
         {
-            int numPoints = (int)(Width * Height * 0.02);
+            int numPoints = (int)(bitmap.Width * bitmap.Height * 0.005);
             for (int i = 0; i < numPoints; i++)
             {
-                int x = Random.Next(0, Width);
-                int y = Random.Next(0, Height);
-                bitmap.SetPixel(x, y, RandomColor(0, 150));
+                int x = Random.Next(0, bitmap.Width);
+                int y = Random.Next(0, bitmap.Height);
+                bitmap.SetPixel(x, y, GetRandomLightColor());
             }
         }
 
-        private Bitmap Distort(Bitmap source)
+        private Color GetRandomLightColor()
         {
-            var result = new Bitmap(Width, Height);
-            using var g = Graphics.FromImage(result);
-            g.Clear(Color.White);
-
-            double angle = Random.NextDouble() * 6 - 3; // -3 to 3 degrees
-            double radians = angle * Math.PI / 180;
-            double cos = Math.Cos(radians);
-            double sin = Math.Sin(radians);
-
-            int centerX = Width / 2;
-            int centerY = Height / 2;
-
-            for (int y = 0; y < Height; y++)
-            {
-                for (int x = 0; x < Width; x++)
-                {
-                    // 反向旋转
-                    int srcX = (int)((x - centerX) * cos - (y - centerY) * sin + centerX);
-                    int srcY = (int)((x - centerX) * sin + (y - centerY) * cos + centerY);
-
-                    if (srcX >= 0 && srcX < Width && srcY >= 0 && srcY < Height)
-                    {
-                        result.SetPixel(x, y, source.GetPixel(srcX, srcY));
-                    }
-                }
-            }
-
-            source.Dispose();
-            return result;
+            int r = Random.Next(150, 220);
+            int g = Random.Next(150, 220);
+            int b = Random.Next(150, 220);
+            return Color.FromArgb(r, g, b);
         }
 
-        private static Color RandomColor(int minVal, int maxVal)
+        private Color GetRandomDarkColor()
         {
-            return Color.FromArgb(
-                Random.Next(minVal, maxVal),
-                Random.Next(minVal, maxVal),
-                Random.Next(minVal, maxVal));
-        }
-
-        private static Color RandomDarkColor()
-        {
-            return Color.FromArgb(
-                Random.Next(50, 150),
-                Random.Next(50, 150),
-                Random.Next(50, 150));
+            int r = Random.Next(30, 140);
+            int g = Random.Next(30, 140);
+            int b = Random.Next(30, 140);
+            return Color.FromArgb(r, g, b);
         }
     }
 }

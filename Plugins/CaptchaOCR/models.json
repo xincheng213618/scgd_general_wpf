@@ -1,0 +1,46 @@
+{
+  "models": [
+    {
+      "id": "specialized",
+      "name": "专用模型",
+      "path": "captcha_model.onnx",
+      "modelType": "LengthAndChars",
+      "charset": "Alphanumeric62",
+      "inputChannels": 3,
+      "inputHeight": 60,
+      "inputWidth": 160,
+      "variableWidth": false,
+      "minLength": 3,
+      "maxLength": 6,
+      "enabled": true
+    },
+    {
+      "id": "dddd-beta",
+      "name": "ddddocr Beta",
+      "path": "models\\ddddocr\\common.onnx",
+      "modelType": "CtcSequence",
+      "charset": "DdddBeta",
+      "inputChannels": 1,
+      "inputHeight": 64,
+      "inputWidth": 0,
+      "variableWidth": true,
+      "minLength": 1,
+      "maxLength": 16,
+      "enabled": true
+    },
+    {
+      "id": "dddd-old",
+      "name": "ddddocr Old",
+      "path": "models\\ddddocr\\common_old.onnx",
+      "modelType": "CtcSequence",
+      "charset": "DdddOld",
+      "inputChannels": 1,
+      "inputHeight": 64,
+      "inputWidth": 0,
+      "variableWidth": true,
+      "minLength": 1,
+      "maxLength": 16,
+      "enabled": true
+    }
+  ]
+}
