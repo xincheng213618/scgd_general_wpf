@@ -78,8 +78,17 @@ namespace ProjectLUX
             _db.CodeFirst.InitTables<ProjectLUXReuslt>();
             LoadAll(Config.Count);
 
-            if (!Directory.Exists(Config.CsvSavePath))
-                Directory.CreateDirectory(Config.CsvSavePath);
+            try
+            {
+                if (!Directory.Exists(Config.CsvSavePath))
+                    Directory.CreateDirectory(Config.CsvSavePath);
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+
         }
 
 

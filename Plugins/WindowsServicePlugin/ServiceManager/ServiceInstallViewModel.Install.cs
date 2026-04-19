@@ -56,9 +56,12 @@ namespace WindowsServicePlugin.ServiceManager
                     if (InstallMySqlChecked && !string.IsNullOrWhiteSpace(MySqlPackagePath) && File.Exists(MySqlPackagePath))
                     {
                         SetProgress(progress += 15, "安装 MySQL...");
-                        string mysqlTarget = Path.Combine(Directory.GetParent(basePath)?.FullName ?? basePath, "Mysql");
-                        var helper = new MySqlServiceHelper();
-                        helper.InstallFromZipAsync(MySqlPackagePath, mysqlTarget, AddLog).GetAwaiter().GetResult();
+                        var serviceManager = ServiceManagerViewModel.Instance;
+                        bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipAsync(MySqlPackagePath, basePath, AddLog).GetAwaiter().GetResult();
+                        if (!mysqlInstalled)
+                        {
+                            throw new InvalidOperationException("MySQL 安装失败");
+                        }
                     }
 
                     // 4. 安装 MQTT
@@ -107,13 +110,9 @@ namespace WindowsServicePlugin.ServiceManager
                     if (AutoUpdateDatabase)
                     {
                         SetProgress(progress += 15, "执行数据库脚本...");
-                        string sqlDir = Path.Combine(basePath, "SQL");
-                        if (Directory.Exists(sqlDir))
+                        if (!ExecuteColorVisionAllSql(basePath))
                         {
-                            foreach (var sqlFile in Directory.GetFiles(sqlDir, "*.sql").OrderBy(f => f))
-                            {
-                                AddLog($"执行 SQL: {Path.GetFileName(sqlFile)}");
-                            }
+                            throw new InvalidOperationException("执行 color_vision_all.sql 失败");
                         }
                     }
 
@@ -261,18 +260,8 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void InstallMqttFromExe(string exeFile)
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = exeFile,
-                Verb = "runas",
-                UseShellExecute = true
-            };
-
-            var process = Process.Start(startInfo);
-            process?.WaitForExit();
-
-            ColorVision.Common.Utilities.Tool.ExecuteCommandAsAdmin("net start mosquitto");
-            AddLog("MQTT 服务已启动");
+            ServiceManagerViewModel.Instance.MqttManager.InstallFromExe(exeFile, AddLog);
+            Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
         }
 
         private void StopPackagedServices()
@@ -383,6 +372,24 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             return basePath;
+        }
+
+        private bool ExecuteColorVisionAllSql(string basePath)
+        {
+            return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, AddLog);
+        }
+
+        private string? ResolveColorVisionAllSqlPath(string basePath)
+        {
+            string installRoot = ResolveServiceInstallRoot(basePath);
+            string[] candidates =
+            [
+                Path.Combine(installRoot, "SQL", "color_vision_all.sql"),
+                Path.Combine(basePath, "SQL", "color_vision_all.sql"),
+                Path.Combine(basePath, "CVWindowsService", "SQL", "color_vision_all.sql")
+            ];
+
+            return candidates.FirstOrDefault(File.Exists);
         }
 
         private static bool IsLogPath(string fullPath, string rootPath)

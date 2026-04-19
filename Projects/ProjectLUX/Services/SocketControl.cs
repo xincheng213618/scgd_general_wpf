@@ -61,8 +61,17 @@ namespace ProjectLUX.Services
                     {
                         log.Info("光谱测量执行");
 
-                        if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
-                            Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
+                        try
+                        {
+                            if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
+                                Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
+                        }
+                        catch(Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+
+
 
                         string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"D_{sn}.csv");
                         DeviceSpectrum deviceSprectrm = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();

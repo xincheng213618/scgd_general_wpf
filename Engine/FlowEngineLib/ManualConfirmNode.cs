@@ -1,5 +1,6 @@
 using System.Windows.Forms;
 using FlowEngineLib.Base;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
@@ -7,6 +8,8 @@ namespace FlowEngineLib;
 [STNode("/01 运算")]
 public class ManualConfirmNode : CVCommonNodeHub
 {
+	public static readonly ILog logger = LogManager.GetLogger(typeof(ManualConfirmNode));
+
 	private string _MessageText;
 
 	[STNodeProperty("MessageText", "MessageText")]
@@ -46,11 +49,19 @@ public class ManualConfirmNode : CVCommonNodeHub
 					if (((CVStartCFC)e.TargetOption.Data).FlowStatus == StatusTypeEnum.Runing)
 					{
 						MessageBox.Show(_MessageText, "手动确认", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						if (logger.IsInfoEnabled)
+						{
+							logger.Info("Manual Next Step");
+						}
 					}
 				}
 				else
 				{
 					MessageBox.Show(_MessageText, "手动确认", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					if (logger.IsInfoEnabled)
+					{
+						logger.Info("Manual Next Step");
+					}
 				}
 			}
 		}

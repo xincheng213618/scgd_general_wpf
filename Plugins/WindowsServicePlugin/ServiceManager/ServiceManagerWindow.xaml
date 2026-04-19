@@ -40,17 +40,43 @@
                     <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
 
-                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
+                    <Border Margin="0,0,8,0" Padding="10,6" CornerRadius="4" BorderThickness="1">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#FFFDECC8"/>
+                                <Setter Property="BorderBrush" Value="#FFE0B84D"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsAdministratorMode}" Value="True">
+                                        <Setter Property="Background" Value="#FFE7F6EA"/>
+                                        <Setter Property="BorderBrush" Value="#FF63B36D"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding AdministratorModeText}" FontWeight="SemiBold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#FF9A6700"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsAdministratorMode}" Value="True">
+                                            <Setter Property="Foreground" Value="#FF237A3B"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
 
-                    <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
-                        <TextBlock Text="版本" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding CurrentVersion, Mode=OneWay}" Width="100" Margin="4,0" IsReadOnly="True" VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <Button Content="以管理员模式重启" Command="{Binding RestartAsAdministratorCommand}" Margin="0,0,8,0" Padding="12,6"
+                            Visibility="{Binding NeedsAdministratorRestart, Converter={StaticResource BoolToVis}}"
+                            ToolTip="重新以管理员权限启动当前程序，用于需要提权的操作"/>
+
 
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
                     <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                        <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
+                    <Button Content="检查数据库配置" Command="{Binding CheckDatabaseConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                    <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
                             Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
                     <Button Content="更新" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
                             Style="{StaticResource ButtonPrimary}" ToolTip="打开服务安装管理器，检查更新并安装"/>
@@ -129,17 +155,17 @@
                         <StackPanel>
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="服务名" Width="80" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding MySqlServiceName}" Width="120" Margin="4,0" IsReadOnly="True"/>
+                                <TextBox Text="{Binding MySqlManager.Config.ServiceName}" Width="120" Margin="4,0" IsReadOnly="True"/>
                                 <TextBlock Text="状态" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Text" Value="{Binding MySqlStatus}"/>
+                                            <Setter Property="Text" Value="{Binding MySqlManager.Config.Status}"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsMySqlRunning}" Value="True">
+                                                <DataTrigger Binding="{Binding MySqlManager.Config.IsRunning}" Value="True">
                                                     <Setter Property="Foreground" Value="Green"/>
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsMySqlRunning}" Value="False">
+                                                <DataTrigger Binding="{Binding MySqlManager.Config.IsRunning}" Value="False">
                                                     <Setter Property="Foreground" Value="Red"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -150,22 +176,22 @@
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="路径" Width="80" VerticalAlignment="Center"/>
                                 <Button DockPanel.Dock="Right" Content="浏览" Command="{Binding MySqlBrowseCommand}" Padding="8,2" Margin="4,0,0,0"/>
-                                <TextBox Text="{Binding MySqlExePath}" IsReadOnly="True"/>
+                                <TextBox Text="{Binding MySqlManager.Config.ExePath}" IsReadOnly="True"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="root旧密码" Width="80" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding MySqlRootPassword, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlManager.Config.RootPassword, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="4,0,0,0"/>
                                 <TextBlock Text="root新密码" Width="80" VerticalAlignment="Center" Margin="12,0,0,0"/>
                                 <Button DockPanel.Dock="Right" Content="随机生成" Command="{Binding MySqlGenerateRandomRootPasswordCommand}" Padding="8,2" Margin="4,0,0,0"/>
-                                <TextBox Text="{Binding MySqlRootNewPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlManager.Config.RootNewPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="业务用户" Width="80" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding MySqlAppUser, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlManager.Config.AppUser, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
                                 <TextBlock Text="业务密码" Width="70" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                                <TextBox Text="{Binding MySqlAppPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlManager.Config.AppPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
                                 <TextBlock Text="数据库" Width="52" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                                <TextBox Text="{Binding MySqlDatabaseName, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlManager.Config.Database, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -202,17 +228,17 @@
                         <StackPanel>
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="服务名" Width="80" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding MqttServiceName}" Width="180" Margin="4,0" IsReadOnly="True"/>
+                                <TextBox Text="{Binding MqttManager.Config.ServiceName}" Width="180" Margin="4,0" IsReadOnly="True"/>
                                 <TextBlock Text="状态" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Text" Value="{Binding MqttStatus}"/>
+                                            <Setter Property="Text" Value="{Binding MqttManager.Config.Status}"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsMqttRunning}" Value="True">
+                                                <DataTrigger Binding="{Binding MqttManager.Config.IsRunning}" Value="True">
                                                     <Setter Property="Foreground" Value="Green"/>
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsMqttRunning}" Value="False">
+                                                <DataTrigger Binding="{Binding MqttManager.Config.IsRunning}" Value="False">
                                                     <Setter Property="Foreground" Value="Red"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -222,7 +248,7 @@
                             </DockPanel>
                             <DockPanel>
                                 <TextBlock Text="路径" Width="80" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding MqttExePath}" IsReadOnly="True"/>
+                                <TextBox Text="{Binding MqttManager.Config.ExePath}" IsReadOnly="True"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -262,6 +288,9 @@
 
         <!-- 状态栏 -->
         <StatusBar Grid.Row="4">
+            <StatusBarItem>
+                <TextBlock Text="{Binding AdministratorModeText}"/>
+            </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="{Binding ProgressText}"/>
             </StatusBarItem>

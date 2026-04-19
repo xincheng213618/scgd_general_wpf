@@ -1,3 +1,4 @@
+using ColorVision.Common.NativeMethods;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Templates.Jsons;
@@ -5,7 +6,9 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
+using SqlSugar;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -31,14 +34,44 @@ namespace ProjectARVRPro.Process.OLED.AOI
                     ctx.Result.FileName = values[0].FileUrl;
 
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                foreach (var master in masters.Where(m => m.ImgFileType == ViewResultAlgType.MTF && m.version == "2.0"))
-                {
-                    var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
-                    if (details.Count == 1)
-                    {
-                    }
 
+
+                foreach (var master in masters)
+                {
+                    if (master.ImgFileType == ViewResultAlgType.ImageConvert)
+                    {
+                        log.Info("正在复制 " + master.ResultImagFile);
+
+                        string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                        if (!Directory.Exists(Dir))
+                        {
+                            Directory.CreateDirectory(Dir);
+                        }
+                        string ResultImagFile = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
+                        File.Copy(master.ResultImagFile, ResultImagFile, true);
+
+                        string ImgFile = Path.Combine(Dir, Path.GetFileName(master.ImgFile));
+                        File.Copy(master.ImgFile, ImgFile, true);
+
+                    }
+                    if (master.ImgFileType == ViewResultAlgType.OLED_CombineQuaterImages)
+                    {
+                        log.Info("正在复制 " + master.ResultImagFile);
+
+                        string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                        if (!Directory.Exists(Dir))
+                        {
+                            Directory.CreateDirectory(Dir);
+                        }
+                        string imgPath = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
+                        File.Copy(master.ResultImagFile, imgPath, true);
+                    }
                 }
+
+
+
+
+
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
 

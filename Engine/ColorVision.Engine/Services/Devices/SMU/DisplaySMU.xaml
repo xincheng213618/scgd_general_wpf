@@ -7,7 +7,7 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
-             d:DesignHeight="450" d:DesignWidth="300" Width="300"  ContextMenu="{Binding ContextMenu}"  Initialized="UserControl_Initialized">
+             d:DesignWidth="300" ContextMenu="{Binding ContextMenu}"  Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -82,8 +82,8 @@
                         </DockPanel>
 
                         <UniformGrid  Columns="3"  Margin="0,0,0,3">
-                            <Button Content="{x:Static properties:Resources.Ignite}" Click="MeasureData_Click"/>
-                            <Button Content="{x:Static properties:Resources.Settings}" Click="StepMeasureData_Click"/>
+                            <Button x:Name="MeasureDataButton" Content="{x:Static properties:Resources.Ignite}" Click="MeasureData_Click"/>
+                            <Button x:Name="StepMeasureDataButton" Content="{x:Static properties:Resources.Settings}" Click="StepMeasureData_Click"/>
                             <Button Content="{x:Static properties:Resources.Extinguish}" Click="MeasureDataClose_Click" />
                         </UniformGrid>
                         <UniformGrid Columns="2"  Margin="0,0,0,3">
@@ -129,7 +129,7 @@
                         </UniformGrid>
 
                         <DockPanel >
-                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Scan}" Click="VIScan_Click" Margin="5,0,0,0" />
+                            <Button x:Name="VIScanButton" DockPanel.Dock="Right" Content="{x:Static properties:Resources.Scan}" Click="VIScan_Click" Margin="5,0,0,0" />
                             <Grid Width="20" Margin="5,0,0,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                 <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SMUParam" Click="MenuItem_Template"/>

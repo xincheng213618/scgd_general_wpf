@@ -10,11 +10,20 @@ public class SMUData
 
 	public double LimitValue { get; set; }
 
-	public SMUData(SMUChannelType channel, bool isSourceV, double measureValue, double limitValue)
+	public bool IsAutoRng { get; set; }
+
+	public double SrcRng { get; set; }
+
+	public double LmtRng { get; set; }
+
+	public SMUData(SMUChannelType channel, bool isSourceV, double measureValue, double limitValue, bool isAutoRng, double srcRng, double lmtRng)
 	{
 		IsSourceV = isSourceV;
 		Channel = channel;
 		MeasureValue = measureValue;
 		LimitValue = limitValue;
+		IsAutoRng = isAutoRng;
+		SrcRng = srcRng;
+		LmtRng = lmtRng;
 	}
 }

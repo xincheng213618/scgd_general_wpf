@@ -46,6 +46,11 @@ namespace ProjectLUX
                     var testItem = (ObjectiveTestItem)property.GetValue(obj);
                     if (testItem != null)
                     {
+                        var BrowsableAttribute = property.GetCustomAttribute<BrowsableAttribute>();
+                        if (BrowsableAttribute != null && !BrowsableAttribute.Browsable)
+                        {
+                            continue;
+                        }
                         rows.Add(FormatCsvRow(testScreenName, testItem));
                     }
                 }

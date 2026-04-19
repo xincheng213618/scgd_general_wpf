@@ -15,7 +15,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                /// <summary>
         /// 焦点算法
         /// </summary>
-        public FocusAlgorithm FocusAlgorithm { get; set; } = FocusAlgorithm.Laplacian;
+        public FocusAlgorithm FocusAlgorithm { get; set; } = FocusAlgorithm.VarianceOfLaplacian;
     }
 
     /// <summary>

@@ -101,6 +101,11 @@ namespace ProjectARVRPro.Process.W255
                                     Value = poi.v,
                                     TestValue = poi.v.ToString("F4")
                                 };
+                                testResult.CenterCorrelatedColorTemperature.Value = poi.CCT * fixConfig.CenterCorrelatedColorTemperature;
+                                testResult.CenterCorrelatedColorTemperature.LowLimit = recipeConfig.CenterCorrelatedColorTemperature.Min;
+                                testResult.CenterCorrelatedColorTemperature.UpLimit = recipeConfig.CenterCorrelatedColorTemperature.Max;
+
+                                testResult.CenterCorrelatedColorTemperature.TestValue = testResult.CenterCorrelatedColorTemperature.Value.ToString("F4") + " K";
 
                                 ctx.Result.Result &= testResult.CenterLunimance.TestResult;
                                 ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
@@ -276,6 +281,7 @@ namespace ProjectARVRPro.Process.W255
 
             outtext += $"Luminance_uniformity:{testResult.LuminanceUniformity.TestValue} LowLimit:{testResult.LuminanceUniformity.LowLimit}  UpLimit:{testResult.LuminanceUniformity.UpLimit},Rsult{(testResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"Color_uniformity:{testResult.ColorUniformity.TestValue} LowLimit:{testResult.ColorUniformity.LowLimit} UpLimit:{testResult.ColorUniformity.UpLimit},Rsult{(testResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"CenterCorrelatedColorTemperature:{testResult.CenterCorrelatedColorTemperature.TestValue} LowLimit:{testResult.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{testResult.CenterCorrelatedColorTemperature.UpLimit},Rsult{(testResult.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
             outtext += $"HorizontalFieldOfViewAngle:{testResult.HorizontalFieldOfViewAngle.TestValue} LowLimit:{testResult.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{testResult.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(testResult.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"VerticalFieldOfViewAngle:{testResult.VerticalFieldOfViewAngle.TestValue} LowLimit:{testResult.VerticalFieldOfViewAngle.LowLimit} UpLimit:{testResult.VerticalFieldOfViewAngle.UpLimit},Rsult{(testResult.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";

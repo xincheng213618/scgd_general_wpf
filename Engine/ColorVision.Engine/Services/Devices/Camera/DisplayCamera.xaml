@@ -9,7 +9,7 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
-             d:DesignHeight="800" d:DesignWidth="300" Width="300" ContextMenu="{Binding ContextMenu}" Initialized="UserControl_Initialized">
+             d:DesignWidth="300" ContextMenu="{Binding ContextMenu}" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -112,9 +112,8 @@
                 </DockPanel>
                 <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
                 <DockPanel x:Name="ButtonOpen"  Margin="0,0,0,3">
-                    <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
+                    <Button x:Name="VideoButton" DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
                     <Grid>
-                        <ProgressBar Grid.Column="1" Name="ProgressBarOpen" Background="Transparent" Value="1" Foreground="Red" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=OpenButton,Path=Content}"  MaxWidth="400" Visibility="Collapsed"/>
                         <Button x:Name="OpenButton"  Grid.Column="0" Content="{x:Static properties:Resources.Open}"  Click="Open_Click" />
                     </Grid>
 
@@ -137,7 +136,6 @@
                         </TextBlock>
                     </Button>
                     <Grid>
-                        <ProgressBar Grid.Column="1" Name="ProgressBarClose" Background="Transparent" Value="1" Foreground="Green" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=CloseButton,Path=Content}"  MaxWidth="400" Visibility="Collapsed"/>
                         <Button x:Name="CloseButton"  Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Click="Close_Click" />
                     </Grid>
                 </DockPanel>
@@ -303,7 +301,6 @@
                                         <ComboBox x:Name="ComboxCalibrationTemplate" d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding CalibrationTemplateIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                                     </DockPanel>
                                 </StackPanel>
-                                <ProgressBar Grid.Column="1" Name="ProgressBar" Background="Transparent" Value="10" Foreground="Red" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=TakePhotoButton,Path=Content}"  FontSize="15" FontWeight="Bold" Height="42"  MaxWidth="100" Visibility="Collapsed"/>
                                 <Button x:Name="TakePhotoButton" Grid.Column="1" Content="{x:Static properties:Resources.Capture}" FontSize="15" FontWeight="Bold" Click="GetData_Click" />
                             </Grid>
                         </StackPanel>
@@ -380,7 +377,7 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
-                        <Button  Content="LocalVideo"  Click="Video1_Click"/>
+                        <Button x:Name="LocalVideoButton" Content="LocalVideo" Click="Video1_Click"/>
 
                     </DockPanel>
                     <StackPanel Visibility="{Binding DisplayConfig.IsLocalVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">

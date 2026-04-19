@@ -8,7 +8,7 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("/03_2 Algorithm")]
 public class AlgorithmFindLEDNode : CVBaseServerNode
 {
-	private CVOLED_COLOR _Color;
+	private CVOLED_Channel _Color;
 
 	private CVOLED_FDAType _FDAType;
 
@@ -18,10 +18,10 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 
 	private string _ImgPosResultFile;
 
-	private STNodeEditText<CVOLED_COLOR> m_ctrl_color;
+	private STNodeEditText<CVOLED_Channel> m_ctrl_color;
 
 	[STNodeProperty("颜色", "颜色", true)]
-	public CVOLED_COLOR Color
+	public CVOLED_Channel Color
 	{
 		get
 		{
@@ -116,6 +116,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		: base("LED定位", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "FindLED";
+		_Color = CVOLED_Channel.GREEN;
 		_ImgPosResultFile = "ImgPos.tif";
 		_OutputFileName = "pos.csv";
 		_FixedLEDPoint = new PointFloat[4]
@@ -149,7 +150,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		base.OnCreate();
 		CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
-		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_COLOR>), m_custom_item, "颜色:", _Color);
+		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_Channel>), m_custom_item, "颜色:", _Color);
 	}
 
 	private void SetFDAType(CVOLED_FDAType newValue)

@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
@@ -16,6 +17,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
@@ -32,20 +34,19 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     }
 
     /// <summary>
-    /// DisplayCalibrationControl.xaml 的交互逻辑
+    /// DisplayCalibration.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayCalibrationControl : UserControl, IDisPlayControl,IDisposable
+    public partial class DisplayCalibration : UserControl, IDisPlayControl,IDisposable
     {
 
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
 
-        public DisplayCalibrationControl(DeviceCalibration device)
+        public DisplayCalibration(DeviceCalibration device)
         {
             Device = device;
             InitializeComponent();
-            DeviceService.MsgReturnReceived += Service_OnCalibrationEvent;
 
         }
 
@@ -53,6 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            EnsureTimedButtonOperations();
 
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
@@ -66,15 +68,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
                 ComboxCalibrationTemplate.SelectedIndex = 0;
             };
-
-            void UpdateCB_SourceImageFiles()
-            {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
-                CB_SourceImageFiles.SelectedIndex = 0;
-            }
-            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-            UpdateCB_SourceImageFiles();
-
             this.AddViewConfig(View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -131,53 +124,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private void Service_OnCalibrationEvent(MsgReturn msg)
-        {
-            if (msg.DeviceCode !=  Device.Code) return;
-
-            switch (msg.EventName)
-            {
-                case MQTTFileServerEventEnum.Event_File_List_All:
-                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(msg.Data));
-                    switch (data.FileExtType)
-                    {
-                        case FileExtType.Raw:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                data.Files.Reverse();
-                                CB_RawImageFiles.ItemsSource = data.Files;
-                                CB_RawImageFiles.SelectedIndex = 0;
-                            });
-                            break;
-                        case FileExtType.Src:
-                            break;
-                        case FileExtType.CIE:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                //CB_CIEImageFiles.ItemsSource = Data.Files;
-                                //CB_CIEImageFiles.SelectedIndex = 0;
-                            });
-                            break;
-                        case FileExtType.Calibration:
-                            break;
-                        case FileExtType.Tif:
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(msg.Data));
-                    if (pm_dl != null)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            View.ImageView.OpenImage(pm_dl.FileName);
-                        });
-                    }
-                    break;
-            }
-        }
 
         private void Calibration_Click(object sender, RoutedEventArgs e)
         {
@@ -189,6 +135,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             if (sender is Button button)
             {
+                EnsureTimedButtonOperations();
 
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
@@ -201,17 +148,34 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                         var pm = Device.PhyCamera.CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
 
                         MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.DisplayConfig.ExpTimeR, (float)Device.DisplayConfig.ExpTimeG, (float)Device.DisplayConfig.ExpTimeB);
-                        ServicesHelper.SendCommand(button, msgRecord);
-                        msgRecord.MsgRecordStateChanged += (s,e) =>
+                        this.SendTimedCommand(button, msgRecord, onTerminalStateChanged: state =>
                         {
-                            if (e == MsgRecordState.Fail)
+                            if (state == MsgRecordState.Fail)
                             {
                                 MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                             }
-                        };
+                        });
                     }
                 }
             }
+        }
+
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
+        {
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
+            operations.Register(
+                CalibrationButton,
+                "calibration",
+                Properties.Resources.Calculate,
+                "校正",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTimeR + Device.DisplayConfig.ExpTimeG + Device.DisplayConfig.ExpTimeB));
+            return operations;
+        }
+
+        private string BuildButtonOperationKey(string actionKey)
+        {
+            return $"calibration:{Device.Config.Code}:{actionKey}";
         }
 
         private void Open_File(object sender, RoutedEventArgs e)
@@ -254,17 +218,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private void ImageFile_TextChanged(object sender, TextChangedEventArgs e) => UpdateFileExposureInfo(ImageFile.Text);
 
-        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-
-            DeviceService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
-        }
-
-
-
-        public TemplateControl TemplateControl { get; set; }
-
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (Device.PhyCamera == null)
@@ -299,30 +252,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private bool GetSN(ref string sn, ref string imgFileName, ref FileExtType fileExtType)
         {
-            bool? isSN = AlgBatchSelect.IsSelected;
-            bool? isRaw = AlgRawSelect.IsSelected;
-            if (isSN.HasValue && isSN.Value)
-            {
-                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
-                    return false;
-                }
-                sn = AlgBatchCode.Text;
-                imgFileName = string.Empty;
-            }
-            else if (isRaw.HasValue && isRaw.Value)
-            {
-                imgFileName = CB_RawImageFiles.Text;
-                fileExtType = FileExtType.Raw;
-                sn = string.Empty;
-            }
-            else
-            {
-                imgFileName = ImageFile.Text;
-                fileExtType = FileExtType.Tif;
-                sn = string.Empty;
-            }
+            imgFileName = ImageFile.Text;
+            fileExtType = FileExtType.Tif;
+            sn = string.Empty;
+
             if (string.IsNullOrWhiteSpace(sn) && string.IsNullOrWhiteSpace(imgFileName))
             {
                 MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
@@ -352,11 +285,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
-        private void Button_Click_Open(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                DeviceService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
-        }
 
         private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
         {
@@ -372,6 +300,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
             ImageFile.TextChanged -= ImageFile_TextChanged;
+            GC.SuppressFinalize(this);
         }
     }
 }

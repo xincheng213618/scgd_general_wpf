@@ -486,7 +486,7 @@ namespace ProjectLUX.Process.W255AR
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
 
                                 view.PoiAnalysisResult.result.Value *= fixConfig.LuminanceUniformity;
-                                testResult.LuminanceUniformity.Value = view.PoiAnalysisResult.result.Value;
+                                testResult.LuminanceUniformity.Value = view.PoiAnalysisResult.result.Value *100;
                                 testResult.LuminanceUniformity.TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%";
                                 testResult.LuminanceUniformity.LowLimit = recipeConfig.LuminanceUniformity.Min;
                                 testResult.LuminanceUniformity.UpLimit = recipeConfig.LuminanceUniformity.Max;

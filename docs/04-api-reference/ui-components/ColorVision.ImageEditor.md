@@ -62,8 +62,14 @@
 - **贝塞尔曲线**: 复杂路径绘制
 - **测量工具**: 距离和角度测量
 
-### 5. 3D 可视化
-- **3D 图像视图**: 立体数据展示
+### 5. 3D 可视化 (v2.0+ 优化)
+- **3D 图像视图**: 将图像作为高度图进行三维可视化
+- **智能网格缓存**: 三角索引和纹理坐标只构建一次，高度缩放时仅更新顶点位置（大幅提升性能）
+- **伪彩色映射**: 支持 24 种颜色映射（jet、viridis、plasma、inferno、magma、cividis 等）
+- **实时高度缩放**: 通过 +/- 按钮或键盘快捷键实时调整高度比例
+- **相机控制**: 支持位置移动（L/T/R/B）和视角方向调整（A/C/D/F）
+- **重置视角**: 一键恢复初始相机位置和方向（Home 键）
+- **截图导出**: 将当前3D视口保存为 PNG/JPG/BMP
 - **CIE 色彩空间**: 色彩科学分析工具
 - **深度数据处理**: 点云和深度图支持
 
@@ -280,9 +286,17 @@ histogramView.DataSource = histogram;
 ### 6. 3D 可视化
 
 ```csharp
-// 启用3D视图
-imageView.Enable3DView = true;
-imageView.View3D.SetViewAngle(45, 30);
+// 打开3D视图（从当前 WriteableBitmap 创建）
+var window3D = new Window3D(writeableBitmap);
+window3D.Show();
+
+// 3D视图内部特性：
+// - 自动下采样到目标分辨率（默认 512x512）
+// - 支持 24 种伪彩色映射
+// - 实时高度缩放（+/- 按钮或键盘）
+// - 相机位置/视角控制
+// - Home 键重置视角
+// - 截图导出功能
 ```
 
 ## 视频播放使用指南
@@ -361,6 +375,12 @@ public class CustomImageProcessor : IImageProcessor
 3. **UI更新节流**: 进度条每10帧更新是正常优化行为
 4. **并行拷贝**: 8K视频使用多线程内存拷贝
 
+### 3D 视图
+1. **合理设置分辨率**: 默认 512x512 适合大多数场景，4K 图像可使用 256x256 提升流畅度
+2. **高度缩放缓存**: 网格顶点位置缓存，高度缩放时只更新 Z 坐标，避免重建整个 Mesh
+3. **冻结资源**: 颜色映射纹理在加载时 Freeze，减少 UI 线程开销
+4. **及时释放**: 关闭窗口时正确清理 Viewport3D 和 Mesh 资源
+
 ## 最佳实践
 
 1. **MVVM模式**: 使用数据绑定和命令模式
@@ -418,6 +438,14 @@ public class CustomImageProcessor : IImageProcessor
 - [ColorVision.ImageEditor 改进建议](../../UI/ColorVision.ImageEditor/改进建议.md) - 详细的改进方案和代码示例
 
 ## 更新日志
+
+### v2.0.x (2026-04)
+- ✅ 3D 视图性能优化：网格缓存，高度缩放时仅更新顶点位置
+- ✅ 修复 3D 视图相机控制语义错误（Position 返回 LookDirection 的问题）
+- ✅ 3D 视图新增截图导出功能（PNG/JPG/BMP）
+- ✅ 3D 视图新增重置视角按钮和 Home 快捷键
+- ✅ 补齐 3D 视图缺失的键盘快捷键（T/D/F/C）
+- ✅ 3D 视图事件处理器重命名，提升可维护性
 
 ### v1.5.1.1 (2026-02)
 - ✅ 新增视频播放功能（MP4/AVI/MKV/MOV/WMV/FLV/WebM）

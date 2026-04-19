@@ -41,6 +41,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            EnsureTimedButtonOperations();
 
             // When switching between voltage and current modes, swap the source and limit values so that the numbers follow the semantic meaning instead of the textbox position
             if (Device.DisplayConfig is INotifyPropertyChanged npc)
@@ -126,6 +127,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 default:
                     break;
             }
+
+            this.TryGetTimedButtonOperations()?.RefreshIdleState(ButtonSourceMeter1);
         }
 
         public event RoutedEventHandler Selected;
@@ -138,47 +141,50 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             if (sender is Button button)
             {
+                EnsureTimedButtonOperations();
                 if (DService.DeviceStatus != DeviceStatusType.Opened)
                 {
                     MsgRecord msgRecord = DService.Open(Config.IsNet, Config.DevName);
-                    ServicesHelper.SendCommand(button, msgRecord);
-                    msgRecord.MsgRecordStateChanged += (s,e) =>
+                    ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                     {
-                        if (e == MsgRecordState.Fail)
+                        if (state == MsgRecordState.Fail)
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
                         }
-                    };
+                    });
 
                 }
                 else
                 {
 
                     MsgRecord msgRecord = DService.Close();
-                    ServicesHelper.SendCommand(button, DService.Close());
-                    msgRecord.MsgRecordStateChanged += (s,e) =>
+                    ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                     {
-                        if (e == MsgRecordState.Fail)
+                        if (state == MsgRecordState.Fail)
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
                         }
-                    };
+                    });
                 }
             }
         }
 
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
-            if(msgRecord != null)
+            if (sender is Button button)
             {
-                msgRecord.MsgRecordStateChanged += (s,e) =>
+                EnsureTimedButtonOperations();
+                MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
+                if(msgRecord != null)
                 {
-                    if (e == MsgRecordState.Fail)
+                    ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
-                    }
-                };
+                        if (state == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
+                        }
+                    });
+                }
             }
 
         }
@@ -205,36 +211,78 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.Scan(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.StartMeasureVal, Device.DisplayConfig.StopMeasureVal, Device.DisplayConfig.LimitVal, Device.DisplayConfig.Number, Device.DisplayConfig.Channel);
-            if (msgRecord != null)
+            if (sender is Button button)
             {
-                msgRecord.MsgRecordStateChanged += async (s,e) =>
+                EnsureTimedButtonOperations();
+                MsgRecord msgRecord = DService.Scan(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.StartMeasureVal, Device.DisplayConfig.StopMeasureVal, Device.DisplayConfig.LimitVal, Device.DisplayConfig.Number, Device.DisplayConfig.Channel);
+                if (msgRecord != null)
                 {
-                    if (e == MsgRecordState.Success)
+                    ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: async (record, state) =>
                     {
-                        if (msgRecord.MsgReturn.Code != 0)
+                        if (state == MsgRecordState.Success)
                         {
-                            DService.CloseOutput();
-                            MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                            if (record.MsgReturn.Code != 0)
+                            {
+                                DService.CloseOutput();
+                                MessageBox.Show($"GetData Eorr Code{record.MsgReturn.Code}");
+                            }
+                            else
+                            {
+                                log.Info("DelyaClose1000");
+                                await Task.Delay(1000);
+                                DService.CloseOutput();
+                                Device.DisplayConfig.V = null;
+                                Device.DisplayConfig.I = null;
+                                log.Info("DelyaClose1000 1");
+                                await Task.Delay(1000);
+                            }
                         }
                         else
                         {
-                            log.Info("DelyaClose1000");
-                            await Task.Delay(1000);
-                            DService.CloseOutput();
-                            Device.DisplayConfig.V = null;
-                            Device.DisplayConfig.I = null;
-                            log.Info("DelyaClose1000 1");
-                            await Task.Delay(1000);
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
                         }
-                    }
-                    else
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
-                    }
-                };
+                    });
+                }
             }
 
+        }
+
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
+        {
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
+            operations.Register(
+                ButtonSourceMeter1,
+                "open-close",
+                Properties.Resources.Open,
+                "源表开关",
+                System.Windows.Media.Brushes.Red,
+                contentFactory: stats => DService.DeviceStatus == DeviceStatusType.Opened
+                    ? ColorVision.Engine.Properties.Resources.Close
+                    : TimedButtonOperationTextFormatter.BuildCompactContent(ColorVision.Engine.Properties.Resources.Open, stats),
+                tooltipFactory: stats => DService.DeviceStatus == DeviceStatusType.Opened
+                    ? "关闭源表"
+                    : TimedButtonOperationTextFormatter.BuildTooltip("打开源表", stats));
+
+            operations.Register(
+                MeasureDataButton,
+                "measure-data",
+                Properties.Resources.Ignite,
+                "点亮测量",
+                System.Windows.Media.Brushes.Red);
+
+            operations.Register(
+                VIScanButton,
+                "vi-scan",
+                Properties.Resources.Scan,
+                "VI 扫描",
+                System.Windows.Media.Brushes.Red);
+
+            return operations;
+        }
+
+        private string BuildButtonOperationKey(string actionKey)
+        {
+            return $"smu:{Device.Config.Code}:{actionKey}";
         }
 
 

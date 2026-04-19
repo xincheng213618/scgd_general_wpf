@@ -1,3 +1,9 @@
+using FlowEngineLib.Algorithm;
+using FlowEngineLib.MQTT;
+using FlowEngineLib.Node.Algorithm;
+using log4net;
+using Newtonsoft.Json;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,11 +12,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FlowEngineLib.Algorithm;
-using FlowEngineLib.MQTT;
-using log4net;
-using Newtonsoft.Json;
-using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Base;
 
@@ -208,20 +209,37 @@ public class CVBaseServerNode : CVCommonNode
 		BuildTemp(_param);
 	}
 
-	public void BuildImageParam(string _ImgFileName, AlgorithmImageParam _param)
-	{
-		BuildImageParam(_ImgFileName, CVOLED_COLOR.GREEN, _param);
-	}
+    public void BuildImageParam(string _ImgFileName, CVOLED_Channel channel, AlgorithmImageParam _param)
+    {
+        _param.Channel = channel;
+        if (!string.IsNullOrEmpty(_ImgFileName))
+        {
+            _param.ImgFileName = _ImgFileName;
+            _param.FileType = GetImageFileType(_ImgFileName);
+        }
+        BuildTemp(_param);
+    }
 
-	public void BuildImageParam(AlgorithmImageParam _param)
-	{
-		BuildImageParam(_ImgFileName, CVOLED_COLOR.GREEN, _param);
-	}
+    public void BuildImageParam(string _ImgFileName, AlgorithmImageParam _param)
+    {
+        BuildImageParam(_ImgFileName, CVOLED_COLOR.GREEN, _param);
+    }
 
-	public void BuildImageParam(CVOLED_COLOR _Color, AlgorithmImageParam _param)
-	{
-		BuildImageParam(_ImgFileName, _Color, _param);
-	}
+    public void BuildImageParam(AlgorithmImageParam _param)
+    {
+        BuildImageParam(_ImgFileName, CVOLED_COLOR.GREEN, _param);
+    }
+
+    public void BuildImageParam(CVOLED_COLOR _Color, AlgorithmImageParam _param)
+    {
+        BuildImageParam(_ImgFileName, _Color, _param);
+    }
+
+    public void BuildImageParam(CVOLED_Channel channel, AlgorithmImageParam _param)
+    {
+        BuildImageParam(_ImgFileName, channel, _param);
+    }
+
 
 	protected void setTempName(string name)
 	{

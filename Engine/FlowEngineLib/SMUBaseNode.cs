@@ -31,6 +31,12 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 
 	protected bool m_IsCloseOutput;
 
+	protected bool _IsAutoRng;
+
+	protected double _SrcRng;
+
+	protected double _LmtRng;
+
 	protected float m_begin_val;
 
 	protected float m_end_val;
@@ -76,6 +82,45 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		}
 	}
 
+	[STNodeProperty("自动量程", "自动量程", true)]
+	public bool IsAutoRng
+	{
+		get
+		{
+			return _IsAutoRng;
+		}
+		set
+		{
+			_IsAutoRng = value;
+		}
+	}
+
+	[STNodeProperty("源量程", "源量程", true)]
+	public double SrcRng
+	{
+		get
+		{
+			return _SrcRng;
+		}
+		set
+		{
+			_SrcRng = value;
+		}
+	}
+
+	[STNodeProperty("限量程", "限量程", true)]
+	public double LmtRng
+	{
+		get
+		{
+			return _LmtRng;
+		}
+		set
+		{
+			_LmtRng = value;
+		}
+	}
+
 	private string DisTypeString => $"{_channel.ToString()}/{_source.ToString()}";
 
 	public SMUBaseNode(string title, string nodeType, string nodeName, string deviceCode)
@@ -85,6 +130,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		m_has_svr_item = false;
 		m_IsCloseOutput = false;
 		IsStarted = false;
+		_IsAutoRng = true;
 		operatorCode = "GetData";
 		srcValues = null;
 		_source = SourceType.Voltage_V;
@@ -220,7 +266,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 	{
 		CVStartCFC trans_action = trans.trans_action;
 		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(_channel, _source == SourceType.Voltage_V, m_cur_src_val, _limitVal), token, base.ZIndex);
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(_channel, _source == SourceType.Voltage_V, m_cur_src_val, _limitVal, _IsAutoRng, _SrcRng, _LmtRng), token, base.ZIndex);
 		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
@@ -266,7 +312,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 			{
 				m_op_end.TransferData(null);
 				m_step_idx = 0;
-				result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(_channel, _source == SourceType.Voltage_V, m_cur_src_val, _limitVal), GetToken(), base.ZIndex);
+				result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(_channel, _source == SourceType.Voltage_V, m_cur_src_val, _limitVal, _IsAutoRng, _SrcRng, _LmtRng), GetToken(), base.ZIndex);
 				IsStarted = true;
 				m_step_idx++;
 				updateUI();

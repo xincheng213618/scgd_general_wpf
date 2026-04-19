@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using iText.Kernel.Crypto.Securityhandler;
@@ -32,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _IsCalArtculation = true;
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
-        private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
+        private FocusAlgorithm  _EvaFunc = FocusAlgorithm .VarianceOfLaplacian;
 
         [JsonIgnore]
         public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
@@ -127,7 +128,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 Config.IsUseCacheFile = true;
         }
 
-        HImage? _calculationHImage;
+    private VideoFrameProcessor? _frameProcessor;
 
         public void Close()
         {
@@ -145,7 +146,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private async Task StartupAsync()
         {
-            fpsTimer.Start();
+            fpsTimer.Restart();
+            Interlocked.Exchange(ref frameCount, 0);
+            lastFps = 0;
+            _frameProcessor ??= new VideoFrameProcessor(HandleProcessedFrame);
             while (openVideo)
             {
                 byte[] buffer = null;
@@ -184,89 +188,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         await Task.Delay(1);
                         continue;
                     }
-                    if (Config.IsUseCacheFile)
+                    if (TryBuildFrameProcessingRequest(width, height, out VideoFrameProcessingRequest? request))
                     {
-                        // 直接从帧数据构造 HImage，无需内存拷贝
-                        if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp / 8)
-                        {
-                            _calculationHImage?.Dispose(); // 释放旧的
-                            _calculationHImage = new HImage
-                            {
-                                rows = height,
-                                cols = width,
-                                channels = channels,
-                                depth = bpp / 8,
-                                pData = Marshal.AllocHGlobal(buffer.Length) // 分配新的非托管内存
-                            };
-                            log.Info("Allocated new HImage for calculation.");
-                            Application.Current?.Dispatcher.Invoke(() =>
-                            {
-                                DVRectangleText.Rect = new Rect(0, 0, width, height);
-                            });
-                        }
-                        if (_calculationHImage != null)
-                        {
-                            Marshal.Copy(buffer, 0, _calculationHImage.Value.pData, buffer.Length);
-                            if (_calculationHImage is HImage hImage)
-                            {
-                                Rect rect = DVRectangleText.Rect;
-                                if (Config.IsCalArtculation)
-                                {
-                                    Thread task = new Thread(() =>
-                                    {
-                                        // 在后台线程执行计算
-                                        double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, new RoiRect(rect));
-                                        Application.Current?.Dispatcher.Invoke(() =>
-                                        {
-                                            DVText.Attribute.Text = $"Articulation: {articulation:F5}";
-                                        });
-                                        log.Info($"Image Articulation: {articulation}");
-                                    });
-                                    task.Start();
-                                }
-                                if (Image == null)
-                                {
-                                    return;
-                                }
-                                if (Image.Config.IsPseudo)
-                                {
-                                    Application.Current?.Dispatcher.Invoke(() =>
-                                    {
-
-                                        uint min = (uint)Image.PseudoSlider.ValueStart;
-                                        uint max = (uint)Image.PseudoSlider.ValueEnd;
-
-                                        log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
-
-                                        Thread task1 = new Thread(() =>
-                                        {
-                                            int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, min, max, Image.Config.ColormapTypes, 0);
-                                            Application.Current.Dispatcher.Invoke(() =>
-                                            {
-                                                if (ret == 0)
-                                                {
-                                                    if (!HImageExtension.UpdateWriteableBitmap(Image.FunctionImage, hImageProcessed))
-                                                    {
-                                                        var image = hImageProcessed.ToWriteableBitmap();
-                                                        hImageProcessed.Dispose();
-
-                                                        Image.FunctionImage = image;
-                                                    }
-                                                    if (Image.Config.IsPseudo == true)
-                                                    {
-                                                        Image.ImageShow.Source = Image.FunctionImage;
-                                                    }
-                                                }
-                                            });
-                                        });
-                                        task1.Start();
-                                    });
-
-                                }
- 
-                            }
-                        }
-
+                        int bytesPerChannel = Math.Max(1, bpp / 8);
+                        int stride = height > 0 && len % height == 0 ? len / height : width * channels * bytesPerChannel;
+                        _frameProcessor?.SubmitFrame(buffer, len, width, height, channels, bpp, stride, request);
                     }
 
                     // 渲染逻辑调度到UI线程
@@ -362,8 +288,79 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             memoryMappedViewStream?.Dispose();
             memoryMappedFile?.Dispose();
 
-            _calculationHImage?.Dispose();
-            _calculationHImage = null;
+            _frameProcessor?.Dispose();
+            _frameProcessor = null;
+        }
+
+        private bool TryBuildFrameProcessingRequest(int width, int height, out VideoFrameProcessingRequest? request)
+        {
+            request = null;
+            if (!Config.IsUseCacheFile || Image == null)
+            {
+                return false;
+            }
+
+            var pseudoColorService = Image.PseudoColorService;
+            bool enablePseudo = pseudoColorService.IsEnabled;
+            bool enableArticulation = Config.IsCalArtculation;
+            if (!enablePseudo && !enableArticulation)
+            {
+                return false;
+            }
+
+            Rect rect = DVRectangleText.Rect;
+            if (rect.Width <= 0 || rect.Height <= 0)
+            {
+                rect = new Rect(0, 0, width, height);
+            }
+
+            PseudoColorFrameRequest? pseudoColorRequest = null;
+            if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
+            {
+                pseudoColorRequest = capturedRequest;
+            }
+
+            request = new VideoFrameProcessingRequest
+            {
+                EnableArticulation = enableArticulation,
+                FocusAlgorithm = Config.EvaFunc,
+                Roi = new RoiRect(rect),
+                PseudoColor = pseudoColorRequest
+            };
+            return true;
+        }
+
+        private void HandleProcessedFrame(VideoFrameProcessingResult result)
+        {
+            Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!openVideo || Image == null)
+                {
+                    if (result.PseudoImage is HImage staleImage)
+                    {
+                        staleImage.Dispose();
+                    }
+                    return;
+                }
+
+                if (result.Articulation is double articulation)
+                {
+                    DVText.Attribute.Text = $"Articulation: {articulation:F5}";
+                    log.Info($"Image Articulation: {articulation}");
+                }
+
+                if (result.PseudoImage is HImage pseudoImage)
+                {
+                    if (Image.PseudoColorService.IsEnabled)
+                    {
+                        VideoFrameUiHelper.ApplyPseudoImage(Image.PseudoColorService, pseudoImage);
+                    }
+                    else
+                    {
+                        pseudoImage.Dispose();
+                    }
+                }
+            }));
         }
 
         private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)

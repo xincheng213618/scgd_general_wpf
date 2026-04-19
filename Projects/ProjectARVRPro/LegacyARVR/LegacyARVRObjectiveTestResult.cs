@@ -164,6 +164,8 @@ namespace ProjectARVRPro.LegacyARVR
             legacy.LuminanceUniformity = Convert(src.W255TestResult?.LuminanceUniformity);
             legacy.ColorUniformity = Convert(src.W255TestResult?.ColorUniformity);
             legacy.CenterLuminace = Convert(src.W255TestResult?.CenterLunimance);
+            legacy.CenterCorrelatedColorTemperature = Convert(src.W255TestResult?.CenterCorrelatedColorTemperature);
+
 
             // W25 → White1CenterLuminace
             legacy.White1CenterLuminace = Convert(src.W25TestResult?.CenterLunimance);
@@ -199,7 +201,7 @@ namespace ProjectARVRPro.LegacyARVR
             legacy.MTF_V_LeftUp_0_5F = Convert(FindDynamic(src, "MTFV", "MTF_V_LeftUp_0_5F"));
             legacy.MTF_V_RightUp_0_5F = Convert(FindDynamic(src, "MTFV", "MTF_V_RightUp_0_5F"));
             legacy.MTF_V_RightDown_0_5F = Convert(FindDynamic(src, "MTFV", "MTF_V_RightDown_0_5F"));
-            legacy.MTF_V_LeftDown_0_5F = Convert(FindDynamic(src, "MTFV", "MTF_V_LeftDown_0_5F"));
+            legacy.MTF_V_LeftDown_0_5F = Convert(FindDynamic(src, "MTFV", "MTF_V_LeftDown_0_5F")); 
             legacy.MTF_V_LeftUp_0_8F = Convert(FindDynamic(src, "MTFV", "MTF_V_LeftUp_0_8F"));
             legacy.MTF_V_RightUp_0_8F = Convert(FindDynamic(src, "MTFV", "MTF_V_RightUp_0_8F"));
             legacy.MTF_V_RightDown_0_8F = Convert(FindDynamic(src, "MTFV", "MTF_V_RightDown_0_8F"));
@@ -211,11 +213,7 @@ namespace ProjectARVRPro.LegacyARVR
             legacy.Rotation = Convert(src.OpticCenterTestResult?.OptCenterRotation ?? src.OpticCenterTestResult?.OptCenterRotation);
 
             // Ghost: 新版无此数据
-            legacy.Ghost = null;
-
             // CenterCorrelatedColorTemperature: 新版无此数据
-            legacy.CenterCorrelatedColorTemperature = null;
-            legacy.White1CenterCorrelatedColorTemperature = null;
 
             // TotalResult
             legacy.TotalResult = src.TotalResult;

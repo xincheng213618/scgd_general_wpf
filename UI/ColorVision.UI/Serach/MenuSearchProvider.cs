@@ -8,27 +8,7 @@ namespace ColorVision.UI.Serach
 
         public IEnumerable<ISearch> GetSearchItems()
         {
-            List<IMenuItem> MenuItems = new List<IMenuItem>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
-                    {
-                        MenuItems.Add(iMenuItem);
-                    }
-                }
-
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IMenuItemProvider itemProvider)
-                    {
-                        MenuItems.AddRange(itemProvider.GetMenuItems());
-                    }
-                }
-            }
-
-            foreach (var item in MenuItems)
+            foreach (var item in MenuManager.GetInstance().GetAllMenuItemsFiltered())
             {
                 if (item.Header !=null && item.Command !=null)
                 {

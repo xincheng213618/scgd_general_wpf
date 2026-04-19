@@ -2,5 +2,6 @@ namespace FlowEngineLib.Node.Algorithm;
 
 public enum ImageFormatType
 {
-	CSV
+	CSV,
+	TIF
 }

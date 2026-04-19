@@ -212,14 +212,17 @@ def publish_primary_release(
         print(f"The current version ({current_version}) is up to date.")
         return False
 
+    print(f"Uploading primary release package: {latest_file.name}")
     if not upload_func(latest_file, remote_settings):
-        print("Primary release publish failed; LATEST_RELEASE will not be updated.")
+        print("Primary release package upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
         return False
 
     if changelog_src.exists():
+        print(f"Uploading release changelog: {changelog_src.name}")
         if not backend_upload_file(changelog_src, remote_settings):
             print("Warning: CHANGELOG.md upload failed.")
 
+    print("Uploading release marker: LATEST_RELEASE")
     if not backend_upload_content(latest_version, "LATEST_RELEASE", remote_settings):
         print("Warning: LATEST_RELEASE upload failed.")
         return False

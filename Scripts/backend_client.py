@@ -15,6 +15,7 @@ DEFAULT_CONNECT_TIMEOUT = 10
 DEFAULT_READ_TIMEOUT = 1800
 DEFAULT_UPLOAD_RETRIES = 3
 DEFAULT_UPLOAD_CHUNK_SIZE = 1024 * 1024
+DEFAULT_USE_SYSTEM_PROXY = False
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,30 @@ def get_requests_module():
     except ImportError:
         return None
     return requests
+
+
+def _parse_env_flag(name: str, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def resolve_use_system_proxy() -> bool:
+    return _parse_env_flag("COLORVISION_UPLOAD_USE_SYSTEM_PROXY", DEFAULT_USE_SYSTEM_PROXY)
+
+
+def create_http_session(*, requests_module=None):
+    requests = requests_module or get_requests_module()
+    if requests is None:
+        raise RuntimeError("The requests package is required for backend API calls.")
+
+    session = requests.Session()
+    if not resolve_use_system_proxy():
+        # Upload calls should not silently inherit WinINET/Win11 system proxy settings.
+        session.trust_env = False
+        session.proxies.clear()
+    return session
 
 
 def resolve_upload_credentials(
@@ -97,7 +122,7 @@ def preflight_remote_upload(
         print("Remote upload preflight requires the requests package. Please install it first.")
         return False
 
-    http_client = session or requests.Session()
+    http_client = session or create_http_session(requests_module=requests)
     timeout = (settings.connect_timeout, min(settings.read_timeout, 15))
     health_url = f"{settings.base_url.rstrip('/')}/api/health"
     ready_url = f"{settings.base_url.rstrip('/')}/api/ready"
@@ -162,7 +187,7 @@ def upload_file(
     file_path = Path(file_path)
     file_size = file_path.stat().st_size
     upload_url = build_upload_url(settings.base_url, settings.folder_name, file_path.name)
-    http_client = session or requests.Session()
+    http_client = session or create_http_session(requests_module=requests)
     auth = resolve_auth_tuple(settings)
     last_error = ""
 
@@ -242,7 +267,7 @@ def post_multipart_with_auth(
     if requests is None:
         raise RuntimeError("The requests package is required for backend API calls.")
 
-    http_client = session or requests
+    http_client = session or create_http_session(requests_module=requests)
     return http_client.post(
         url,
         data=data,
@@ -269,7 +294,7 @@ def upload_content(
         content = content.encode("utf-8")
 
     upload_url = build_upload_url(settings.base_url, settings.folder_name, remote_filename)
-    http_client = session or requests.Session()
+    http_client = session or create_http_session(requests_module=requests)
     auth = resolve_auth_tuple(settings)
 
     try:
@@ -302,7 +327,7 @@ def fetch_latest_version(
         return "0.0.0.0"
 
     url = f"{settings.base_url.rstrip('/')}/api/app/latest-version"
-    http_client = session or requests.Session()
+    http_client = session or create_http_session(requests_module=requests)
 
     try:
         response = http_client.get(

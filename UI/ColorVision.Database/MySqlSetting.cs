@@ -4,6 +4,7 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Database
@@ -56,6 +57,7 @@ namespace ColorVision.Database
 
     public class MySqlSetting : ViewModelBase , IConfigSecure
     {
+
         public static MySqlSetting Instance  => ConfigService.Instance.GetRequiredService<MySqlSetting>();
 
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
@@ -72,7 +74,6 @@ namespace ColorVision.Database
         /// </summary>
         public MySqlConfig MySqlConfig { get; set; } = new MySqlConfig();
         public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; } = new ObservableCollection<MySqlConfig>();
-
 
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "ColorVision";

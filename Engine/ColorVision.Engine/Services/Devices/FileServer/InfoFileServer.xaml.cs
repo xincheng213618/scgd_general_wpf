@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.UI;
+using System;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.FileServer
@@ -8,17 +9,17 @@ namespace ColorVision.Engine.Services.Devices.FileServer
     /// </summary>
     public partial class InfoFileServer : UserControl
     {
-        public DeviceFileServer DeviceFileServer { get; set; }
-        public MQTTFileServer DService { get => DeviceFileServer.DService; }
+        public DeviceFileServer Device { get; set; }
         public InfoFileServer(DeviceFileServer device)
         {
-            DeviceFileServer = device;
+            Device = device;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            DataContext = DeviceFileServer;
+            DataContext = Device;
+            PropertyEditorHelper.GenCommand(Device, CommandGrid);
         }
     }
 }

@@ -16,7 +16,7 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.UI.Desktop.Marketplace
 {
     public class PluginInfoVM:ViewModelBase
-    {
+    {  
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginInfoVM));
 
         public ContextMenu ContextMenu { get; set; }

@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.ImageEditor.Window3D"
+<Window x:Class="ColorVision.ImageEditor.Window3D"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -37,6 +37,12 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="ActionBtn" TargetType="Button" BasedOn="{StaticResource ToolBtn}">
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#99FFFFFF"/>
             <Setter Property="FontSize" Value="11"/>
@@ -62,8 +68,8 @@
                     <DockPanel>
                         <TextBlock Text="高度缩放" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Style="{StaticResource ToolBtn}" Content="+" ToolTip="增加高度 (Num+)" Click="Button_Click"/>
-                            <Button Style="{StaticResource ToolBtn}" Content="-" ToolTip="减少高度 (Num-)" Click="Button_Click_1"/>
+                            <Button Style="{StaticResource ToolBtn}" Content="+" ToolTip="增加高度 (Num+ / +)" Click="HeightScaleIncrease_Click"/>
+                            <Button Style="{StaticResource ToolBtn}" Content="-" ToolTip="减少高度 (Num- / -)" Click="HeightScaleDecrease_Click"/>
                         </StackPanel>
                     </DockPanel>
 
@@ -78,10 +84,10 @@
                         <Grid.RowDefinitions>
                             <RowDefinition/><RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="◀" ToolTip="左移 (L)" Click="L_Click"/>
-                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▲" ToolTip="前进 (T)" Click="T_Click"/>
-                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="▶" ToolTip="右移 (R)" Click="R_Click"/>
-                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▼" ToolTip="后退 (B)" Click="B_Click"/>
+                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左移 (L)" Click="CameraMoveLeft_Click"/>
+                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="前进 (T)" Click="CameraMoveForward_Click"/>
+                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右移 (R)" Click="CameraMoveRight_Click"/>
+                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="后退 (B)" Click="CameraMoveBack_Click"/>
                     </Grid>
 
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
@@ -95,10 +101,10 @@
                         <Grid.RowDefinitions>
                             <RowDefinition/><RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="◀" ToolTip="左看 (D)" Click="D_Click"/>
-                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▲" ToolTip="上看 (A)" Click="A_Click"/>
-                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="▶" ToolTip="右看 (F)" Click="F_Click"/>
-                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▼" ToolTip="下看 (C)" Click="C_Click"/>
+                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左看 (D)" Click="LookLeft_Click"/>
+                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="上看 (A)" Click="LookUp_Click"/>
+                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右看 (F)" Click="LookRight_Click"/>
+                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="下看 (C)" Click="LookDown_Click"/>
                     </Grid>
 
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
@@ -123,10 +129,10 @@
 
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                    <!-- Settings Button -->
-                    <Button Style="{StaticResource ToolBtn}" Width="Auto" Height="26"
-                            Content="⚙ 设置" ToolTip="渲染分辨率设置" Click="Settings_Click"
-                            HorizontalContentAlignment="Center" Margin="2"/>
+                    <!-- Action Buttons -->
+                    <Button Style="{StaticResource ActionBtn}" Content="&#x21BB; 重置视角" ToolTip="重置相机视角 (Home)" Click="ResetViewButton_Click"/>
+                    <Button Style="{StaticResource ActionBtn}" Content="&#x1F4F7; 截图" ToolTip="保存当前3D视图为图片" Click="ScreenshotButton_Click"/>
+                    <Button Style="{StaticResource ActionBtn}" Content="&#x2699; 设置" ToolTip="渲染分辨率设置" Click="SettingsButton_Click"/>
                 </StackPanel>
             </Border>
 
@@ -146,6 +152,17 @@
                         <Button Content="应用并刷新" Click="ApplySettings_Click" Padding="8,4"
                                 HorizontalAlignment="Stretch"/>
                     </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- Hover Info Popup -->
+            <Popup x:Name="HoverInfoPopup" Placement="RelativePoint"
+                   PlacementTarget="{Binding ElementName=ContentGrid}"
+                   AllowsTransparency="True">
+                <Border Background="#D0000000" CornerRadius="4" Padding="8,4"
+                        BorderBrush="#40FFFFFF" BorderThickness="1">
+                    <TextBlock x:Name="HoverInfoText" Foreground="White" FontSize="11"
+                               LineHeight="16" LineStackingStrategy="BlockLineHeight"/>
                 </Border>
             </Popup>
         </Grid>

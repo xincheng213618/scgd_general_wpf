@@ -4,6 +4,5 @@
   "name": "\u56fe\u5361\u751f\u6210\u5de5\u5177",
   "version": "1.0",
   "description": "\u56fe\u5361\u751f\u6210\u5de5\u5177",
-  "dllpath": "Pattern.dll",
-
+  "dllpath": "Pattern.dll"
 }

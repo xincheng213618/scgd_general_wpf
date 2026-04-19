@@ -65,7 +65,7 @@ namespace ProjectLUX.Process.W255AR
         /// <summary>
         /// 色彩均匀性 测试项
         /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Color_Uniformity(uv_max)" };
+        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Color_Uniformity(uv_max)", Unit ="%" };
 
         /// <summary>
         /// 中心点亮度

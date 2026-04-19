@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.HDR;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
@@ -51,6 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public double OpenTime { get; set; } = 10;
         public double CloseTime { get; set; } = 10;
+        public double LocalVideoOpenTime { get; set; } = 3000;
 
         public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
@@ -118,9 +120,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private VideoReaderConfig VideoConfig { get; set; }
         private DVRectangleText DVRectangleText { get; set; }
         private DVText DVText { get; set; }
-        private HImage? _calculationHImage;
+        private VideoFrameProcessor? _localFrameProcessor;
         private bool _visualsAdded = false;
-        private CancellationTokenSource _videoCancellationTokenSource;
+        private bool _isOpeningLocalVideo;
 
         public DisplayCamera(DeviceCamera device)
         {
@@ -138,17 +140,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DVText = new DVText(VideoConfig.TextProperties);
         }
 
-        ButtonProgressBar ButtonProgressBarGetData { get; set; }
-        ButtonProgressBar ButtonProgressBarOpen { get; set; }
-        ButtonProgressBar ButtonProgressBarClose { get; set; }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
             this.AddViewConfig(View, DisPlayName);
-            ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);
-            ButtonProgressBarOpen = new ButtonProgressBar(ProgressBarOpen, OpenButton);
-            ButtonProgressBarClose = new ButtonProgressBar(ProgressBarClose, CloseButton);
+            EnsureTimedButtonOperations();
 
             void UpdateTemplate()
             {
@@ -261,7 +257,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     HideAllButtons();
                     SetVisibility(StackPanelOpen, Visibility.Visible);
                     SetVisibility(ButtonClose, Visibility.Visible);
-                    TakePhotoButton.Visibility = Visibility.Visible;
                     break;
                 default:
                     break;
@@ -284,16 +279,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (sender is Button button)
             {
+                EnsureTimedButtonOperations();
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
-                ButtonProgressBarOpen.Start();
-                ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.OpenTime;
-                ServicesHelper.SendCommand(button, msgRecord);
-
-                msgRecord.MsgRecordStateChanged += (s, e) =>
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                 {
-                    ButtonProgressBarOpen.Stop();
-                    DisplayCameraConfig.OpenTime = ButtonProgressBarOpen.Elapsed;
-                    if (e == MsgRecordState.Success)
+                    if (state == MsgRecordState.Success)
                     {
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
@@ -301,9 +291,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                     else
                     {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
                     }
-                };
+                });
 
                 RotateTransform rotateTransform1 = new() { Angle = 0 };
                 View.ImageView.ImageShow.RenderTransform = rotateTransform1;
@@ -315,154 +305,143 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
-
-            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-            {
-                if (param.Id != -1)
-                {
-                    if (Device.PhyCamera == null)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "物理相机未配置", "ColorVision");
-                        return;
-                    }
-
-                    if (Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
-                        return;
-                    }
-
-                    var groupResource = Device.PhyCamera.VisualChildren.OfType<GroupResource>().FirstOrDefault(a => a.Name == param.CalibrationMode);
-
-                    if (groupResource == null)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "校正组不存在", "ColorVision");
-                        return;
-                    }
-
-                    bool isSelected =
-                        (param.Normal?.DarkNoise?.IsSelected ?? false) ||
-                        (param.Normal?.DefectPoint?.IsSelected ?? false) ||
-                        (param.Normal?.Distortion?.IsSelected ?? false) ||
-                        (param.Normal?.DSNU?.IsSelected ?? false) ||
-                        (param.Normal?.ColorShift?.IsSelected ?? false) ||
-                        (param.Normal?.Uniformity?.IsSelected ?? false) ||
-                        (param.Normal?.LineArity?.IsSelected ?? false) ||
-                        (param.Normal?.ColorDiff?.IsSelected ?? false) ||
-                        (param.Color?.Luminance?.IsSelected ?? false) ||
-                        (param.Color?.LumOneColor?.IsSelected ?? false) ||
-                        (param.Color?.LumFourColor?.IsSelected ?? false) ||
-                        (param.Color?.LumMultiColor?.IsSelected ?? false);
-
-                    if (!isSelected)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板,需要确认校正文件已经配置", "ColorVision");
-                        return;
-                    }
-
-                    // 文件有效性验证
-                    if (param.Normal?.DarkNoise?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.DarkNoise?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DarkNoise?.FilePath ?? "DarkNoise文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.DefectPoint?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.DefectPoint?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DefectPoint?.FilePath ?? "DefectPoint文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.Distortion?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.Distortion?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Distortion?.FilePath ?? "Distortion文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.DSNU?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.DSNU?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DSNU?.FilePath ?? "DSNU文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.ColorShift?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.ColorShift?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorShift?.FilePath ?? "ColorShift文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.Uniformity?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.Uniformity?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Uniformity?.FilePath ?? "Uniformity文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.LineArity?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LineArity?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LineArity?.FilePath ?? "LineArity文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Normal?.ColorDiff?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.ColorDiff?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorDiff?.FilePath ?? "ColorDiff文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.Luminance?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.Luminance?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Luminance?.FilePath ?? "Luminance文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.LumOneColor?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LumOneColor?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumOneColor?.FilePath ?? "LumOneColor文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.LumFourColor?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LumFourColor?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumFourColor?.FilePath ?? "LumFourColor文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-                    if (param.Color?.LumMultiColor?.IsSelected ?? false)
-                    {
-                        if (!(groupResource.LumMultiColor?.IsValid ?? false))
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumMultiColor?.FilePath ?? "LumMultiColor文件路径"} 不存在", "ColorVision");
-                            return;
-                        }
-                    }
-
-                }
-            }
-            else
+            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param)
             {
                 param = new CalibrationParam() { Id = -1, Name = "Empty" };
+            }
+            else if (param.Id != -1)
+            {
+                if (Device.PhyCamera == null)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), "物理相机未配置", "ColorVision");
+                    return;
+                }
+
+                if (Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                    return;
+                }
+
+                var groupResource = Device.PhyCamera.VisualChildren
+                    .OfType<GroupResource>()
+                    .FirstOrDefault(resource => resource.Name == param.CalibrationMode);
+                groupResource?.SetCalibrationResource();
+                bool isSelected = (param.Normal?.DarkNoise?.IsSelected ?? false) ||
+                    (param.Normal?.DefectPoint?.IsSelected ?? false) ||
+                    (param.Normal?.Distortion?.IsSelected ?? false) ||
+                    (param.Normal?.DSNU?.IsSelected ?? false) ||
+                    (param.Normal?.ColorShift?.IsSelected ?? false) ||
+                    (param.Normal?.Uniformity?.IsSelected ?? false) ||
+                    (param.Normal?.LineArity?.IsSelected ?? false) ||
+                    (param.Normal?.ColorDiff?.IsSelected ?? false) ||
+                    (param.Color?.Luminance?.IsSelected ?? false) ||
+                    (param.Color?.LumOneColor?.IsSelected ?? false) ||
+                    (param.Color?.LumFourColor?.IsSelected ?? false) ||
+                    (param.Color?.LumMultiColor?.IsSelected ?? false);
+
+                if (groupResource == null || !isSelected)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板,需要确认校正文件已经配置", "ColorVision");
+                    return;
+                }
+
+                if (param.Normal?.DarkNoise?.IsSelected ?? false)
+                {
+                    if (!(groupResource.DarkNoise?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DarkNoise?.FilePath ?? "DarkNoise文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.DefectPoint?.IsSelected ?? false)
+                {
+                    if (!(groupResource.DefectPoint?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DefectPoint?.FilePath ?? "DefectPoint文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.Distortion?.IsSelected ?? false)
+                {
+                    if (!(groupResource.Distortion?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Distortion?.FilePath ?? "Distortion文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.DSNU?.IsSelected ?? false)
+                {
+                    if (!(groupResource.DSNU?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DSNU?.FilePath ?? "DSNU文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.ColorShift?.IsSelected ?? false)
+                {
+                    if (!(groupResource.ColorShift?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorShift?.FilePath ?? "ColorShift文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.Uniformity?.IsSelected ?? false)
+                {
+                    if (!(groupResource.Uniformity?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Uniformity?.FilePath ?? "Uniformity文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.LineArity?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LineArity?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LineArity?.FilePath ?? "LineArity文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Normal?.ColorDiff?.IsSelected ?? false)
+                {
+                    if (!(groupResource.ColorDiff?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorDiff?.FilePath ?? "ColorDiff文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.Luminance?.IsSelected ?? false)
+                {
+                    if (!(groupResource.Luminance?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Luminance?.FilePath ?? "Luminance文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.LumOneColor?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LumOneColor?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumOneColor?.FilePath ?? "LumOneColor文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.LumFourColor?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LumFourColor?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumFourColor?.FilePath ?? "LumFourColor文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
+                if (param.Color?.LumMultiColor?.IsSelected ?? false)
+                {
+                    if (!(groupResource.LumMultiColor?.IsValid ?? false))
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumMultiColor?.FilePath ?? "LumMultiColor文件路径"} 不存在", "ColorVision");
+                        return;
+                    }
+                }
             }
 
             double[] expTime = null;
@@ -475,19 +454,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
-            TakePhotoButton.Visibility = Visibility.Hidden;
 
+            EnsureTimedButtonOperations();
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
-
-            ButtonProgressBarGetData.Start();
-            ButtonProgressBarGetData.TargetTime = Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
-            msgRecord.MsgRecordStateChanged += (s, e) =>
+
+            ServicesHelper.SendTimedCommand(this, TakePhotoButton, msgRecord, onTerminalStateChanged: (record, state) =>
             {
-                ButtonProgressBarGetData.Stop();
-                DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.DisplayConfig.ExpTime;
-                if (e == MsgRecordState.Timeout)
+                if (state == MsgRecordState.Timeout)
                 {
                     if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration == null)
                     {
@@ -498,21 +473,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         MessageBox1.Show("取图超时,请重设超时时间");
                     }
                 }
-                if (e == MsgRecordState.Fail)
+                if (state == MsgRecordState.Fail)
                 {
                     View.SearchAll();
-                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试", "ColorVisoin");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), record.MsgReturn.Message + Environment.NewLine + "重启服务试试", "ColorVisoin");
                 }
-            };
-            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
+            });
 
         }
 
         public MsgRecord? TakePhoto(double exp = 0)
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
-
-            TakePhotoButton.Visibility = Visibility.Hidden;
 
             if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
             {
@@ -604,18 +576,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (port > 0)
                     {
                         MsgRecord msgRecord = DService.OpenVideo(host, port);
-                        msgRecord.MsgRecordStateChanged += (s, e) =>
+                        EnsureTimedButtonOperations();
+                        ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                         {
-                            if (e == MsgRecordState.Fail)
+                            if (state == MsgRecordState.Success)
                             {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
-                                Device.CameraVideoControl.Close();
-                                DService.Close();
-                                DService.IsVideoOpen = false;
-                            }
-                            else
-                            {
-                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msgRecord.MsgReturn.Data));
+                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(record.MsgReturn.Data));
                                 string mapName = Device.Code;
                                 if (pm_live.IsLocal) mapName = pm_live.MapName;
                                 if (string.IsNullOrEmpty(mapName))
@@ -630,9 +596,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 ButtonOpen.Visibility = Visibility.Collapsed;
                                 ButtonClose.Visibility = Visibility.Visible;
                                 StackPanelOpen.Visibility = Visibility.Visible;
+                                return;
                             }
-                        };
-                        ServicesHelper.SendCommand(button, msgRecord);
+
+                            if (state == MsgRecordState.Fail)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
+                            }
+                            else if (state == MsgRecordState.Timeout)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "视频模式打开超时，请检查日志", "ColorVision");
+                            }
+
+                            Device.CameraVideoControl.Close();
+                            DService.Close();
+                            DService.IsVideoOpen = false;
+                        });
                     }
                     else
                     {
@@ -643,6 +622,28 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
+        private async Task<(bool isSuccess, string errorMessage)> CloseLocalVideoInternalAsync(VideoFrameProcessor? frameProcessor)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    if (m_hCamHandle != IntPtr.Zero)
+                    {
+                        cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
+                        cvCameraCSLib.CM_Close(m_hCamHandle);
+                    }
+
+                    frameProcessor?.Dispose();
+                    return (true, string.Empty);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex);
+                    return (false, ex.Message);
+                }
+            });
+        }
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
@@ -668,7 +669,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (Device.PhyCamera == null)
-            {
+                            {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
@@ -739,14 +740,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (DService.IsVideoOpen)
                 Device.CameraVideoControl.Close();
 
-            MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
-            ButtonProgressBarClose.Start();
-            ButtonProgressBarClose.TargetTime = DisplayCameraConfig.CloseTime;
-            if (msgRecord != null)
+            if (sender is Button button)
             {
-                msgRecord.MsgRecordStateChanged += (s, e) =>
+                EnsureTimedButtonOperations();
+                MsgRecord msgRecord = DService.Close();
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (_, state) =>
                 {
-                    if (e == MsgRecordState.Timeout)
+                    if (state == MsgRecordState.Timeout)
                     {
                         MessageBox.Show("关闭相机超时,请查看日志并排查问题");
                         return;
@@ -756,9 +756,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     ButtonOpen.Visibility = Visibility.Visible;
                     ButtonClose.Visibility = Visibility.Collapsed;
                     StackPanelOpen.Visibility = Visibility.Collapsed;
-                    ButtonProgressBarClose.Stop();
-                    DisplayCameraConfig.CloseTime = ButtonProgressBarClose.Elapsed;
-                };
+                });
             }
         }
 
@@ -838,10 +836,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             // Clean up video display resources
             Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
-            _videoCancellationTokenSource?.Cancel();
-            _videoCancellationTokenSource?.Dispose();
-            _calculationHImage?.Dispose();
-            _calculationHImage = null;
+            _localFrameProcessor?.Dispose();
+            _localFrameProcessor = null;
+            this.DisposeTimedButtonOperations();
+            GC.SuppressFinalize(this);
         }
 
         private void CBFilp1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -879,103 +877,128 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     : System.Windows.Media.PixelFormats.Gray8;
             }
         }
-        double articulation;
-        /// <summary>
-        /// Checks if HImage needs reallocation based on new image dimensions
-        /// </summary>
-        private bool NeedsHImageReallocation(int width, int height, int channels, int bpp)
+
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
-            return _calculationHImage == null
-                || _calculationHImage.Value.cols != width
-                || _calculationHImage.Value.rows != height
-                || _calculationHImage.Value.channels != channels
-                || _calculationHImage.Value.depth != bpp / 8;
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
+            operations.Register(
+                TakePhotoButton,
+                "take-photo",
+                Properties.Resources.Capture,
+                "取图",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay),
+                onSuccessfulCompletion: elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime),
+                persistStatsImmediately: false);
+
+            operations.Register(
+                OpenButton,
+                "open",
+                Properties.Resources.Open,
+                "打开相机",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.OpenTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.OpenTime = elapsed;
+                    SaveDisplayConfig();
+                });
+
+            operations.Register(
+                VideoButton,
+                "video-open",
+                Properties.Resources.Video,
+                "视频模式",
+                Brushes.Red);
+
+            operations.Register(
+                CloseButton,
+                "close",
+                Properties.Resources.Close,
+                "关闭相机",
+                Brushes.Green,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.CloseTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.CloseTime = elapsed;
+                    SaveDisplayConfig();
+                });
+
+            operations.Register(
+                LocalVideoButton,
+                "local-video-open",
+                "LocalVideo",
+                "本地视频",
+                Brushes.Red,
+                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime),
+                onSuccessfulCompletion: elapsed =>
+                {
+                    DisplayCameraConfig.LocalVideoOpenTime = elapsed;
+                    SaveDisplayConfig();
+                },
+                contentFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    ? "Close Video"
+                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats),
+                tooltipFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    ? "关闭本地视频"
+                    : TimedButtonOperationTextFormatter.BuildTooltip("本地视频", stats));
+
+            return operations;
         }
+
+        private string BuildButtonOperationKey(string actionKey)
+        {
+            return $"camera:{Device.Config.Code}:{actionKey}";
+        }
+
+        private void SaveDisplayConfig()
+        {
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+        }
+
+        double articulation;
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
             Application.Current?.Dispatcher.Invoke(new Action(() =>
             {
-                if (VideoConfig.IsUseCacheFile)
+                if (!Device.DisplayConfig.IsLocalVideoOpen)
                 {
-                    if (NeedsHImageReallocation(width, height, channels, bpp))
+                    return;
+                }
+
+                var pseudoColorService = Device.View.ImageView.PseudoColorService;
+                bool enablePseudo = pseudoColorService.IsEnabled;
+                bool enableArticulation = VideoConfig.IsCalArtculation;
+                bool shouldProcess = VideoConfig.IsUseCacheFile && (enablePseudo || enableArticulation);
+
+                if (shouldProcess)
+                {
+                    Rect rect = DVRectangleText.Rect;
+
+                    if (rect.Width <= 0 || rect.Height <= 0)
                     {
-                        _calculationHImage = new HImage
-                        {
-                            rows = height,
-                            cols = width,
-                            channels = channels,
-                            depth = bpp / 8,
-                            pData = pData
-                        };
-                        logger.Info($"Allocated new HImage for video callback: {width}x{height}, bpp={bpp}, channels={channels}");
-                        DVRectangleText.Rect = new Rect(0, 0, width, height);
+                        rect = new Rect(0, 0, width, height);
                     }
 
-                    if (_calculationHImage != null)
+                    int frameBytes = width * height * channels * Math.Max(1, bpp / 8);
+                    PseudoColorFrameRequest? pseudoColorRequest = null;
+                    if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
                     {
-                        HImage hImage = _calculationHImage.Value;
-                        hImage.pData = pData;
-                        Rect rect = DVRectangleText.Rect;
-
-                        // Calculate articulation (accuracy) if enabled - using Task for proper lifecycle management
-                        if (VideoConfig.IsCalArtculation && _videoCancellationTokenSource != null)
-                        {
-                            var token = _videoCancellationTokenSource.Token;
-                            Task.Run(() =>
-                            {
-                                if (token.IsCancellationRequested) return;
-                                articulation = OpenCVMediaHelper.M_CalArtculation(hImage, VideoConfig.EvaFunc, new RoiRect(rect));
-                                if (token.IsCancellationRequested) return;
-                                Application.Current?.Dispatcher.Invoke(() =>
-                                {
-                                    DVText.Attribute.Text = $"fps:{lastFps} Articulation: {articulation:F5}";
-                                });
-                                logger.Info($"Video Articulation: {articulation}");
-                            }, token);
-                        }
-
-                        // Handle pseudo-color display if enabled
-                        if (Device.View.ImageView.Config.IsPseudo && _videoCancellationTokenSource != null)
-                        {
-                            uint min = (uint)Device.View.ImageView.PseudoSlider.ValueStart;
-                            uint max = (uint)Device.View.ImageView.PseudoSlider.ValueEnd;
-
-                            logger.Info($"Video callback processing PseudoColor, min:{min}, max:{max}");
-
-                            var token = _videoCancellationTokenSource.Token;
-                            Task.Run(() =>
-                            {
-                                if (token.IsCancellationRequested) return;
-                                int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, min, max, Device.View.ImageView.Config.ColormapTypes, 0);
-                                if (token.IsCancellationRequested)
-                                {
-                                    hImageProcessed.Dispose();
-                                    return;
-                                }
-                                Application.Current?.Dispatcher.Invoke(() =>
-                                {
-                                    if (ret == 0)
-                                    {
-                                        if (!HImageExtension.UpdateWriteableBitmap(Device.View.ImageView.FunctionImage, hImageProcessed))
-                                        {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-                                            hImageProcessed.Dispose();
-                                            Device.View.ImageView.FunctionImage = image;
-                                        }
-                                        if (Device.View.ImageView.Config.IsPseudo)
-                                        {
-                                            Device.View.ImageView.ImageShow.Source = Device.View.ImageView.FunctionImage;
-                                        }
-                                    }
-                                });
-                            }, token);
-                            return; // Don't update the normal bitmap when in pseudo mode
-                        }
+                        pseudoColorRequest = capturedRequest;
                     }
+
+                    var request = new VideoFrameProcessingRequest
+                    {
+                        EnableArticulation = enableArticulation,
+                        FocusAlgorithm = VideoConfig.EvaFunc,
+                        Roi = new RoiRect(rect),
+                        PseudoColor = pseudoColorRequest
+                    };
+                    _localFrameProcessor?.SubmitFrame(pData, frameBytes, width, height, channels, bpp, width * channels * Math.Max(1, bpp / 8), request);
                 }
 
                 // Normal display (non-pseudo color)
-                if (!Device.View.ImageView.Config.IsPseudo)
+                if (!enablePseudo)
                 {
                     WriteableBitmap writeableBitmap = Device.View.ImageView.ImageShow.Source as WriteableBitmap;
                     bool needNewBitmap = writeableBitmap == null
@@ -1014,19 +1037,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
 
                     writeableBitmap.Unlock();
+                }
 
-                    Interlocked.Increment(ref frameCount);
-                    if (fpsTimer.ElapsedMilliseconds >= 1000)
-                    {
-                        lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
-                        logger.Info($"Current FPS: {lastFps:F2}");
-                        Interlocked.Exchange(ref frameCount, 0);
-                        fpsTimer.Restart();
-                    }
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        DVText.Attribute.Text = $"fps:{lastFps} Articulation: {articulation:F5}";
-                    });
+                Interlocked.Increment(ref frameCount);
+                if (fpsTimer.ElapsedMilliseconds >= 1000)
+                {
+                    lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
+                    logger.Info($"Current FPS: {lastFps:F2}");
+                    Interlocked.Exchange(ref frameCount, 0);
+                    fpsTimer.Restart();
+                }
+
+                if (!enablePseudo)
+                {
+                    DVText.Attribute.Text = $"fps:{lastFps:F1} Articulation: {articulation:F5}";
                     if (first)
                     {
                         first = false;
@@ -1044,123 +1068,235 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private double lastFps;
         bool first = true;
 
-        private void Video1_Click(object sender, RoutedEventArgs e)
+        private async void Video1_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button) return;
+            TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             if (Device.DisplayConfig.IsLocalVideoOpen)
             {
-                // Cancel any running background tasks
-                _videoCancellationTokenSource?.Cancel();
-                _videoCancellationTokenSource?.Dispose();
-                _videoCancellationTokenSource = null;
+                TimedButtonOperationScope? localVideoCloseScope = operations.Begin(LocalVideoButton, runningText: "Close Video");
+                bool closeSucceeded = false;
+                string closeError = string.Empty;
+                VideoFrameProcessor? frameProcessor = _localFrameProcessor;
+                _localFrameProcessor = null;
 
-                cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
-                cvCameraCSLib.CM_Close(m_hCamHandle);
-                button.Content = "LocalVideo";
-                Device.DisplayConfig.IsLocalVideoOpen = false;
-                fpsTimer.Stop();
-                // Unsubscribe from pseudo-color changes
-                Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
-
-                // Cleanup visuals
-                if (_visualsAdded)
+                try
                 {
-                    Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
-                    Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
-                    _visualsAdded = false;
+                    Device.DisplayConfig.IsLocalVideoOpen = false;
+                    fpsTimer.Stop();
+                    Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
+
+                    if (_visualsAdded)
+                    {
+                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
+                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
+                        _visualsAdded = false;
+                    }
+
+                    (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync(frameProcessor);
                 }
-                _calculationHImage = null;
+                finally
+                {
+                    localVideoCloseScope?.Complete(false);
+                    operations.RefreshIdleState(LocalVideoButton);
+                }
+
+                if (!closeSucceeded && !string.IsNullOrWhiteSpace(closeError))
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), closeError, "ColorVision");
+                }
 
                 return;
             }
-            logger.Info("初始化视频模式");
 
-            if (m_hCamHandle == IntPtr.Zero)
+            if (_isOpeningLocalVideo)
             {
-                cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-                m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, strPathSysCfg);
-                cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
-                cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
+                return;
+            }
 
-                string szText = "";
-                if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+            _isOpeningLocalVideo = true;
+            TimedButtonOperationScope? localVideoScope = operations.Begin(LocalVideoButton);
+            logger.Info("初始化视频模式");
+            bool localVideoOpened = false;
+
+            try
+            {
+                _localFrameProcessor ??= new VideoFrameProcessor(HandleLocalFrameProcessed);
+
+                (bool isSuccess, string errorMessage) = await Task.Run(OpenLocalVideoInternal);
+                if (!isSuccess)
                 {
-                    JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
-
-                    if (jObject["ID"] != null)
+                    _localFrameProcessor?.Dispose();
+                    _localFrameProcessor = null;
+                    if (!string.IsNullOrWhiteSpace(errorMessage))
                     {
-                        JToken[] data = jObject["ID"].ToArray();
-
-                        for (int i = 0; i < data.Length; i++)
-                        {
-                            string camerid = data[i].ToString();
-
-                            string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
-
-                            if (MD5.ToUpper().Contains(Device.Config.CameraCode))
-                            {
-                                Device.Config.CameraID = camerid;
-                            }
-                        }
+                        MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
                     }
-                }
-                if (string.IsNullOrEmpty(Device.Config.CameraID))
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "CameraID is empty, please check CameraCode configuration", "ColorVision");
                     return;
                 }
-                cvCameraCSLib.CM_SetCameraID(m_hCamHandle, Device.Config.CameraID);
-                cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
-                cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
-            }
 
-            int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
-            logger.Info("CM_Open");
-            if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+                if (!_visualsAdded)
+                {
+                    Device.View.ImageView.ImageShow.AddVisualCommand(DVRectangleText);
+                    Device.View.ImageView.ImageShow.AddVisualCommand(DVText);
+                    _visualsAdded = true;
+                }
+
+                if (Device.View.ImageView.Config.IsPseudo)
+                {
+                    VideoConfig.IsUseCacheFile = true;
+                    VideoConfig.IsCalArtculation = true;
+                }
+
+                Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
+                Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
+
+                button.Content = "Close Video";
+                first = true;
+                articulation = 0;
+                Interlocked.Exchange(ref frameCount, 0);
+                lastFps = 0;
+                fpsTimer.Restart();
+                Device.DisplayConfig.IsLocalVideoOpen = true;
+                localVideoOpened = true;
+                logger.Info("视频模式初始化结束");
+            }
+            finally
             {
-                string szMsg = "";
-
-                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-
-                MessageBox.Show(szMsg);
-                return;
+                localVideoScope?.Complete(localVideoOpened);
+                operations.RefreshIdleState(LocalVideoButton);
+                _isOpeningLocalVideo = false;
             }
-
-            cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
-            cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
-            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
-
-            GCHandle hander = GCHandle.Alloc(this);
-            IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
-            callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
-            cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
-
-            // Initialize cancellation token for background tasks
-            _videoCancellationTokenSource = new CancellationTokenSource();
-
-            // Add visual elements for displaying articulation and ROI
-
-            Device.View.ImageView.ImageShow.AddVisualCommand(DVRectangleText);
-            Device.View.ImageView.ImageShow.AddVisualCommand(DVText);
-
-            if (Device.View.ImageView.Config.IsPseudo)
-            {
-                VideoConfig.IsUseCacheFile = true;
-                VideoConfig.IsCalArtculation = true;
-            }
-
-            Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
-
-            button.Content = "Close Video";
-            fpsTimer.Start();
-            logger.Info("视频模式初始化结束");
-            Device.DisplayConfig.IsLocalVideoOpen = true;
         }
 
         private void VideoConfig_PseudoChanged(object? sender, EventArgs e)
         {
             if (Device.View.ImageView.Config.IsPseudo)
                 VideoConfig.IsUseCacheFile = true;
+        }
+
+        private (bool isSuccess, string errorMessage) OpenLocalVideoInternal()
+        {
+            if (m_hCamHandle == IntPtr.Zero)
+            {
+                cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+                m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, strPathSysCfg);
+                int initResult = cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
+                if (initResult != cvErrorDefine.CV_ERR_SUCCESS)
+                {
+                    string initMessage = string.Empty;
+                    cvCameraCSLib.CM_GetErrorMessage(initResult, ref initMessage);
+                    return (false, string.IsNullOrWhiteSpace(initMessage) ? "CM_InitXYZ failed" : initMessage);
+                }
+                cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
+            }
+
+            string cameraId = ResolveLocalCameraId();
+            if (string.IsNullOrWhiteSpace(cameraId))
+            {
+                return (false, "CameraID is empty, please check CameraCode configuration");
+            }
+
+            Device.Config.CameraID = cameraId;
+            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
+            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
+            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
+
+            int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
+            logger.Info("CM_Open");
+            if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                string szMsg = string.Empty;
+                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
+                return (false, szMsg);
+            }
+
+            cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
+            cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
+            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
+            callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
+            cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
+
+            return (true, string.Empty);
+        }
+
+        private string ResolveLocalCameraId()
+        {
+            if (!string.IsNullOrWhiteSpace(Device.Config.CameraID))
+            {
+                return Device.Config.CameraID;
+            }
+
+            string szText = string.Empty;
+            if (!cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+            {
+                return string.Empty;
+            }
+
+            JObject jObject = JsonConvert.DeserializeObject<JObject>(szText);
+            JToken[] data = jObject?["ID"]?.ToArray();
+            if (data == null)
+            {
+                return string.Empty;
+            }
+
+            string cameraCode = Device.Config.CameraCode ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(cameraCode))
+            {
+                return string.Empty;
+            }
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                string cameraId = data[i].ToString();
+                string md5 = ColorVision.Common.Utilities.Tool.GetMD5(cameraId);
+                if (md5.Contains(cameraCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    return cameraId;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private void HandleLocalFrameProcessed(VideoFrameProcessingResult result)
+        {
+            Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!Device.DisplayConfig.IsLocalVideoOpen)
+                {
+                    if (result.PseudoImage is HImage staleImage)
+                    {
+                        staleImage.Dispose();
+                    }
+                    return;
+                }
+
+                if (result.Articulation is double value)
+                {
+                    articulation = value;
+                    logger.Info($"Video Articulation: {articulation}");
+                }
+
+                if (result.PseudoImage is HImage pseudoImage)
+                {
+                    if (Device.View.ImageView.PseudoColorService.IsEnabled)
+                    {
+                        VideoFrameUiHelper.ApplyPseudoImage(Device.View.ImageView.PseudoColorService, pseudoImage);
+                        if (first)
+                        {
+                            first = false;
+                            Device.View.ImageView.Zoombox1.ZoomUniform();
+                        }
+                    }
+                    else
+                    {
+                        pseudoImage.Dispose();
+                    }
+                }
+
+                DVText.Attribute.Text = $"fps:{lastFps:F1} Articulation: {articulation:F5}";
+            }));
         }
 
         private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
