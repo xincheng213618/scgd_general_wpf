@@ -3,15 +3,26 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
-
+    public enum SMUType
+    {
+        Keithley_2400,
+        Keithley_2600,
+        Precise_S100,
+        Vxi11Protocol,
+        VictualPss
+    }
 
     public class ConfigSMU : DeviceServiceConfig
     {
         public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; OnPropertyChanged(); } }
         private bool _IsAutoStart;
 
-        public string DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
-        private string _DevType;
+
+        public string DevType { get => _SMUType.ToString();  }
+
+        public SMUType SMUType { get => _SMUType; set { _SMUType = value; OnPropertyChanged(); OnPropertyChanged(nameof(DevType)); } }
+        private SMUType _SMUType;
+
         public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
         private bool _IsNet;
         public string DevName { get => Id; set { Id = value; OnPropertyChanged(); } }

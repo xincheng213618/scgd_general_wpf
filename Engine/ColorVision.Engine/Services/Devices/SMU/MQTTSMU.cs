@@ -241,7 +241,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             V = Math.Abs(V);
             I = Math.Abs(I);
 
-            if (Device.Config.DevType == "Keithley_2400")
+            if (Device.Config.SMUType == SMUType.Keithley_2400)
             {
                 if (V > 200)
                 {
@@ -259,7 +259,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     return false;
                 }
             }
-            else if (Device.Config.DevType == "Keithley_2600")
+            else if (Device.Config.SMUType == SMUType.Keithley_2600)
             {
                 if (V > 40)
                 {
@@ -277,7 +277,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     return false;
                 }
             }
-            else if (Device.Config.DevType == "Precise_S100")
+            else if (Device.Config.SMUType == SMUType.Precise_S100)
             {
                 if (V > 30)
                 {
