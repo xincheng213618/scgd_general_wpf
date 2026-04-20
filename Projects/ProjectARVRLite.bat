@@ -1,2 +1,3 @@
-"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe"  ..\scgd_general_wpf.sln /t:Projects\ProjectARVRLite /p:Configuration=Release /p:Platform=x64 /p:BuildProjectReferences=false
-python ..\Scripts\build_plugin.py -t Projects -p  ProjectARVRLite
+@echo off
+call "%~dp0..\Scripts\package_project.bat" ProjectARVRLite %*
+exit /b %errorlevel%

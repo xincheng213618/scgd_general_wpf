@@ -139,7 +139,7 @@ def zip_folder(folder_path: str, zip_path: str) -> None:
     print(f"成功打包: {zip_path}")
 
 
-# ── cvxp 插件包（与 build_plugin.py 逻辑一致） ───────────────────
+# ── cvxp 插件包（与通用 package_cvxp 剥离逻辑保持一致） ─────────────
 def _find_extra_files() -> list[str]:
     """在 Plugins/ 和 Plugins/Spectrum/ 目录下查找额外文件。"""
     result = []
@@ -158,7 +158,7 @@ def _find_extra_files() -> list[str]:
 def build_cvxp(src_dir: str, ref_dir: str, cvxp_path: str) -> bool:
     """
     对比 src_dir 与 ref_dir，将差异文件打包为 .cvxp 插件包。
-    逻辑与 build_plugin.py 的 compare_and_zip 一致。
+    逻辑与通用 cvxp 剥离打包流程一致。
     """
     if not os.path.isdir(ref_dir):
         print(f"ColorVision 参考目录不存在，跳过 cvxp 打包: {ref_dir}")

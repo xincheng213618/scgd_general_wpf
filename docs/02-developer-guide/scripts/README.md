@@ -8,10 +8,12 @@ ColorVision 项目包含一组 Python 脚本，用于构建应用程序、打包
 |------|------|
 | `build.py` | 构建主程序安装包并发布 |
 | `build_update.py` | 构建增量更新包 |
-| `build_plugin.py` | 构建通用插件包 (.cvxp) |
+| `build_plugin.py` | 兼容入口，内部转发到 `package_cvxp.py` |
 | `generate_shared_files.py` | 扫描宿主输出目录生成 `shared_files.json` |
 | `package_cvxp.py` | 基于 `shared_files.json` 剥离并打包/上传插件 |
 | `package_plugin.bat` | 仓库内插件一键构建并调用 `package_cvxp.py` |
+| `package_project.bat` | 仓库内项目一键构建并调用 `package_cvxp.py` |
+| `package_cvxp_demo.bat` | 给外部插件作者的最小打包示例 |
 | `build_spectrum.py` | 构建 Spectrum 插件 |
 | `publish_plugin.py` | 发布插件到市场后端 |
 | `backend_client.py` | 后端上传共享模块 |
@@ -103,72 +105,23 @@ py Scripts\build_update.py
 - `{History}/ColorVision-[{version}].zip` - 完整包
 - `{History}/update/ColorVision-Update-[{version}].cvx` - 增量包
 
-## build_plugin.py - 插件构建
+## build_plugin.py - 兼容入口
 
-通用插件打包工具。
+旧的打包实现已经移除。
+
+当前 `build_plugin.py` 只保留为兼容入口，会将常见仓库内调用转发到 `package_cvxp.py`，并输出迁移提示。新脚本不要再以它作为主入口。
 
 ### 用法
 
 ```powershell
-# 第一次双击/空参数运行：生成配置文件和共享文件表模板
-py Scripts\build_plugin.py
-
-# 使用配置文件打包
-py Scripts\build_plugin.py
-
-# 外部插件作者：命令行直接传参，生成 cvxp 但不上传
-py Scripts\build_plugin.py `
-    --project-file C:\src\MyPlugin\MyPlugin.csproj `
-    --configuration Release `
-    --framework net8.0-windows `
-    --no-upload
+py Scripts\build_plugin.py -t Projects -p ProjectARVR --no-upload
 ```
 
-### 参数
+### 推荐替代
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `-p, --project_name` | 仓库内项目名称 | 自动推断 / `ProjectBase` |
-| `-t, --type` | 仓库内项目类型目录 | `Plugins` |
-| `--project-file` | 外部插件项目的 `.csproj` 路径 | 空 |
-| `--src-dir` | 已编译输出目录 | 自动推断 |
-| `--assets-file` | `obj/project.assets.json` 路径 | 自动推断 |
-| `--shared-files-manifest` | 宿主共享文件表路径 | `build_plugin.shared_files.json` |
-| `-c, --configuration` | 构建配置 | `Release` |
-| `-f, --framework` | 目标框架 | `net10.0-windows` |
-| `--output-dir` | `.cvxp` 输出目录 | 当前目录 |
-| `--config` | 打包配置文件路径 | `Scripts/build_plugin.config.json` |
-| `--strip-mode` | 剥离模式：`auto` / `manifest` / `assets` / `none` | `auto` |
-| `--shared-prefix` | 追加共享依赖前缀 | 空 |
-| `--shared-package` | 追加共享依赖精确包名 | 空 |
-| `--no-upload` | 只打包，不走上传 | 关闭 |
-| `--upload` | 强制上传，即使配置文件里关闭上传 | 关闭 |
-| `--keep-package` | 上传后保留本地 `.cvxp` | 关闭 |
-
-### 打包逻辑
-
-1. 无参数首次运行时，生成 `build_plugin.config.json` 和 `build_plugin.shared_files.json`
-2. 后续优先读取 `build_plugin.shared_files.json` 作为共享文件表
-3. 如果共享文件表不存在，再从 `obj/project.assets.json` 生成共享文件表
-4. 从 `projectFileDependencyGroups` 中找出共享根依赖，默认识别 `ColorVision.*`、`cvColorVision`、`FlowEngineLib`、`ST.Library.UI`
-5. 递归收集这些共享依赖的传递依赖，并写入共享文件表
-6. 打包时根据共享文件表生成 `stripped_files.json`
-7. 排除 `.pdb` 文件，保留插件自身文件和额外元数据文件
-8. 生成 `{PluginName}-{version}.cvxp` 包
-9. 未指定 `--no-upload` 时，继续走上传流程
-
-### 模式说明
-
-- `auto`: 优先使用共享文件表；若不存在则从 `project.assets.json` 生成；两者都没有时不剥离共享依赖
-- `manifest`: 直接按共享文件表剥离共享依赖
-- `assets`: 从 `project.assets.json` 重新生成共享文件表并立即打包
-- `none`: 不剥离共享依赖，完整打包输出目录
-
-### 推荐流程
-
-- 双击脚本：先生成配置文件模板，填好 `project_file` 或 `src_dir` 后再次运行即可
-- 外部插件作者：建议保留 `upload: false`，先生成 `.cvxp`，再调用 `publish_plugin.py` 走插件市场 API
-- 如果插件显式依赖了额外宿主共享包，可以通过配置文件或 `--shared-prefix`、`--shared-package` 扩展识别规则
+- 仓库内插件：`Scripts\package_plugin.bat Pattern --no-upload`
+- 仓库内项目：`Scripts\package_project.bat ProjectARVR --no-upload`
+- 仓库外部：`py Scripts\package_cvxp.py --src-dir C:\src\MyPlugin\bin\x64\Release\net10.0-windows --no-upload`
 
 ## generate_shared_files.py - 共享文件表生成
 
@@ -209,6 +162,11 @@ py Scripts\package_cvxp.py --project-file Plugins\Pattern\Pattern.csproj --build
 py Scripts\package_cvxp.py `
     --src-dir Plugins\Pattern\bin\x64\Release\net10.0-windows `
     --plugin-root Plugins\Pattern
+
+# 仅传编译输出目录，自动推断插件根目录
+py Scripts\package_cvxp.py `
+    --src-dir C:\src\MyPlugin\bin\x64\Release\net10.0-windows `
+    --no-upload
 ```
 
 ### 参数
@@ -236,6 +194,10 @@ py Scripts\package_cvxp.py `
 6. 打包为 `.cvxp`
 7. 未指定 `--no-upload` 时上传包和 `LATEST_RELEASE`
 
+### 直接传输出目录
+
+当 `--src-dir` 指向类似 `PluginName/bin/x64/Release/net10.0-windows` 或 `PluginName/bin/Release/net10.0-windows` 的目录时，脚本会自动把 `PluginName` 目录识别为 `plugin_root`，这样即使不传 `--plugin-root`，也仍然可以带上项目根目录里的 `README.md`、`CHANGELOG.md`、`manifest.json`、`PackageIcon.png`。
+
 ## package_plugin.bat - 仓库内插件快捷入口
 
 这个批处理只给仓库内插件项目使用。它会自动定位 `.venv`、自动调用 `package_cvxp.py --build`，因此各插件目录下的 `.bat` 文件可以只保留一行转发。
@@ -244,6 +206,26 @@ py Scripts\package_cvxp.py `
 
 ```powershell
 Scripts\package_plugin.bat Pattern --no-upload
+```
+
+## package_project.bat - 仓库内项目快捷入口
+
+这个批处理与 `package_plugin.bat` 类似，但目标目录改为 `Projects/*/*.csproj`。适用于客户项目或项目化插件。
+
+### 用法
+
+```powershell
+Scripts\package_project.bat ProjectARVR --no-upload
+```
+
+## package_cvxp_demo.bat - 外部交付示例
+
+这个批处理面向仓库外部使用场景。把 `package_cvxp.py`、`shared_files.json` 和这个 demo 放在同一个目录，修改里面的 `SRC_DIR` 后就可以直接打包。
+
+### 用法
+
+```powershell
+Scripts\package_cvxp_demo.bat
 ```
 
 ## build_spectrum.py - Spectrum 插件构建

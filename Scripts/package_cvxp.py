@@ -193,12 +193,19 @@ def infer_project_name(src_dir: Path, project_file: Path | None, plugin_name: st
     return src_dir.name
 
 
+def infer_plugin_root_from_src_dir(src_dir: Path) -> Path:
+    for candidate in (src_dir, *src_dir.parents):
+        if candidate.name.lower() == "bin" and candidate.parent != candidate:
+            return candidate.parent.resolve()
+    return src_dir
+
+
 def resolve_plugin_root(src_dir: Path, project_file: Path | None, plugin_root: Path | None) -> Path:
     if plugin_root:
         return plugin_root
     if project_file:
         return project_file.parent
-    return src_dir
+    return infer_plugin_root_from_src_dir(src_dir)
 
 
 def resolve_src_dir(src_dir: Path | None, project_file: Path | None, configuration: str, framework: str) -> Path:

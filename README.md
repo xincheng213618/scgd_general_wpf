@@ -129,8 +129,9 @@ py Scripts/build.py
 # 构建更新包
 py Scripts/build_update.py
 
-# 构建插件
-py Scripts/build_plugin.py -p PluginName
+# 构建插件/项目包
+Scripts/package_plugin.bat Pattern --no-upload
+Scripts/package_project.bat ProjectARVR --no-upload
 
 # 发布插件到市场
 py Scripts/publish_plugin.py -p PluginId -v 1.0.0.1

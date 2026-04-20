@@ -90,7 +90,10 @@ py Scripts\build.py --skip-remote-upload
 py Scripts\build_update.py
 
 # Build plugin package
-py Scripts\build_plugin.py -p PluginName
+Scripts\package_plugin.bat Pattern --no-upload
+
+# Build project package
+Scripts\package_project.bat ProjectARVR --no-upload
 
 # Publish plugin to marketplace
 py Scripts\publish_plugin.py -p PluginId -v 1.0.0.1 -f Package-1.0.0.1.cvxp
