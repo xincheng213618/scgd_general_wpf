@@ -50,6 +50,45 @@ Builds the Spectrum plugin zip/cvxp artifacts. When `--upload` is used, the zip 
 py Scripts\build_spectrum.py --upload
 ```
 
+### `build_plugin.py`
+
+Builds generic `.cvxp` plugin packages.
+It now uses a config file plus a persisted shared-files manifest.
+Running it without arguments creates `build_plugin.config.json` and `build_plugin.shared_files.json`, which makes double-click initialization practical for external plugin authors.
+
+```powershell
+py Scripts\build_plugin.py
+```
+
+After editing the generated config, run the script again to package using the saved shared-files manifest. If the manifest does not exist yet, the script will regenerate it from `obj/project.assets.json`.
+
+### `generate_shared_files.py`
+
+Scans a host ColorVision output directory and writes `shared_files.json`.
+The generated manifest only keeps `version`, `generated_at`, and `shared_files`, and it skips the `Plugins` and `Log` folders automatically.
+This is usually a one-time refresh step, not something you need to run before every plugin package.
+
+```powershell
+py Scripts\generate_shared_files.py
+```
+
+### `package_cvxp.py`
+
+Single-file packager that reads `shared_files.json`, strips matching files plus `.pdb`, creates the `.cvxp`, and can upload it through the legacy authenticated PUT endpoint.
+If `--shared-files` is omitted, it looks for `shared_files.json` next to `package_cvxp.py` first.
+
+```powershell
+py Scripts\package_cvxp.py --project-file Plugins\Pattern\Pattern.csproj --build --no-upload
+```
+
+### `package_plugin.bat`
+
+Repo-local helper batch file that calls `package_cvxp.py --build` for a plugin project, so per-plugin `.bat` files stay minimal.
+
+```powershell
+Scripts\package_plugin.bat Pattern --no-upload
+```
+
 ### `publish_plugin.py`
 
 Publishes a plugin package through `/api/packages/publish`, requires Basic Auth, and now also runs backend preflight before publishing.

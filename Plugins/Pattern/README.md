@@ -287,11 +287,13 @@ msbuild Pattern.csproj /p:Configuration=Release
 
 ```bash
 # 构建整个插件
-"C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\msbuild.exe" ^
-  ..\scgd_general_wpf.sln /t:Plugins\Pattern /p:Configuration=Release /p:Platform=x64
+dotnet build .\Pattern.csproj -c Release -f net10.0-windows -p:Platform=x64
 
-# 打包插件
-python ..\Scripts\build_plugin.py -t Plugins -p Pattern
+# 使用随包提供的 shared_files.json 直接打包上传
+python ..\..\Scripts\package_cvxp.py --project-file .\Pattern.csproj
+
+# 或者一步完成构建和打包
+python ..\..\Scripts\package_cvxp.py --project-file .\Pattern.csproj --build
 ```
 
 ## 📖 使用示例
