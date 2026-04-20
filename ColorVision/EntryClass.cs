@@ -38,7 +38,7 @@ namespace ColorVision
         {
             ProgramTimer.Start();
             ArgumentParser.GetInstance().CommandLineArgs = args;
-            log.Debug("args��" + string.Join(", ", args));
+            log.Debug("args" + string.Join(", ", args));
 
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -78,7 +78,6 @@ namespace ColorVision
                 }
             }, level: NativeLogLevel.Info, enableLogs: true, enableNativeSink: false);
 
-            //ɱ����ʬ����
             App app;
             app = new App();
             app.InitializeComponent();
@@ -87,36 +86,26 @@ namespace ColorVision
 
         private static void KillZombieProcesses()
         {
-            // ��ȡ��ǰ���̵����ƺ�ID
             Process currentProcess = Process.GetCurrentProcess();
             string processName = currentProcess.ProcessName;
             int currentProcessId = currentProcess.Id;
 
-            // ��ȡ����ͬ������
             Process[] processes = Process.GetProcessesByName(processName);
             foreach (Process process in processes)
             {
-                // ������ǰ����
                 if (process.Id == currentProcessId)
                     continue;
                 try
                 {
-                    // 2. �����жϣ����ý����Ƿ��������ھ��
-                    // ��� MainWindowHandle Ϊ IntPtr.Zero��˵���ý���û�������ڣ����ں�̨���У�
                     if (process.MainWindowHandle == IntPtr.Zero)
                     {
-                        log.Info(ColorVision.Properties.Resources.TerminateUnresponsiveProcess); // ����ʹ���Զ�����ʾ��"���ֺ�̨�������̣�������ֹ..."
-
-                        // ��ֹ��ʬ����
+                        log.Info(ColorVision.Properties.Resources.TerminateUnresponsiveProcess); 
                         process.Kill();
-                        process.WaitForExit(1000); // �ȴ����1��ȷ���˳�����������
-                        log.Info($"����ֹ��̨��ʬ���̣�PID {process.Id}");
+                        process.WaitForExit(1000); 
                     }
                 }
                 catch (Exception ex)
                 {
-                    // �������ܵ��쳣������Ȩ�޲��������ڼ��������������˳�
-                    log.Warn($"�޷���ֹ���̣�PID {process.Id}������{ex.Message}");
                 }
             }
         }
