@@ -78,7 +78,7 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent = 1);
 /// <param name="imgs"></param>
 /// <param name="STEP"></param>
 /// <returns></returns>
-cv::Mat fusion(std::vector<cv::Mat> imgs, int STEP);
+cv::Mat fusion(const std::vector<cv::Mat>& imgs, int STEP);
 
 int extractChannel(cv::Mat& input, cv::Mat& dst, int channel);
 
