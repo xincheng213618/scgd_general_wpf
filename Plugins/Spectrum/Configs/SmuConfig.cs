@@ -22,11 +22,8 @@ namespace Spectrum.Configs
         private bool _IsNet = true;
 
         [DisplayName("源表类型")]
-        public Pss_Type DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); OnPropertyChanged(nameof(PssType)); } }
+        public Pss_Type DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
         private Pss_Type _DevType = Pss_Type.Keithley_2400;
-
-        [Browsable(false)]
-        public Pss_Type PssType { get => DevType; set => DevType = value; }
 
         [DisplayName("延迟时间(ms)")]
         public double DelayTime { get => _DelayTime; set { _DelayTime = value; OnPropertyChanged(); } }
