@@ -1,5 +1,6 @@
 using Spectrum.Data;
 using Spectrum.Models;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace Spectrum
@@ -47,36 +48,37 @@ namespace Spectrum
             }
         }
 
-        private void SmuConnect_Click(object sender, RoutedEventArgs e)
+        private async void SmuConnect_Click(object sender, RoutedEventArgs e)
         {
+            if (Manager.SmuController.IsBusy) return;
+
             if (Manager.SmuController.IsOpen)
             {
-                Manager.SmuController.Close();
-                ButtonSmuConnect.Content = "连接源表";
-                ButtonSmuMeasure.IsEnabled = false;
+                await Manager.SmuController.CloseAsync();
                 log.Info("SMU 已断开");
             }
             else
             {
-                bool ok = Manager.SmuController.Open();
+                bool ok = await Manager.SmuController.OpenAsync();
                 if (ok)
                 {
-                    ButtonSmuConnect.Content = "断开源表";
-                    ButtonSmuMeasure.IsEnabled = true;
                     log.Info($"SMU 连接成功: {Manager.SmuController.Version}");
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "源表连接失败，请检查设备名称和连接方式", "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
+                        ? "源表连接失败，请检查设备名称和连接方式"
+                        : Manager.SmuController.LastErrorMessage;
+                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
         }
 
-        private void SmuMeasure_Click(object sender, RoutedEventArgs e)
+        private async void SmuMeasure_Click(object sender, RoutedEventArgs e)
         {
-            if (!Manager.SmuController.IsOpen) return;
-            Manager.SmuController.ApplySettings();
-            bool ok = Manager.SmuController.MeasureData();
+            if (!Manager.SmuController.IsOpen || Manager.SmuController.IsBusy) return;
+
+            bool ok = await Manager.SmuController.MeasureAndApplyAsync();
             if (ok)
             {
                 var (voltage, currentMA) = Manager.SmuController.GetVI();
@@ -86,8 +88,19 @@ namespace Spectrum
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "源表读取失败", "读取失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
+                    ? "源表读取失败"
+                    : Manager.SmuController.LastErrorMessage;
+                MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "读取失败", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+
+        private void SmuCloseOutput_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Manager.SmuController.CanCloseOutput) return;
+
+            Manager.SmuController.CloseOutput();
+            log.Info("SMU 输出已关闭");
         }
     }
 }

@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Ports;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms.VisualStyles;
@@ -93,6 +94,7 @@ namespace Spectrum
             };
             this.Closed += (s, e) =>
             {
+                Manager.SmuController.Close();
                 Manager.Disconnect();
                 Instance = null;
             };
@@ -240,6 +242,29 @@ namespace Spectrum
             });
 
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
+            _ = AutoConnectSmuIfNeededAsync();
+        }
+
+        private async Task AutoConnectSmuIfNeededAsync()
+        {
+            if (!Manager.SmuController.Config.IsAutoStart || Manager.SmuController.IsOpen || Manager.SmuController.IsBusy)
+            {
+                return;
+            }
+
+            await Task.Yield();
+
+            bool ok = await Manager.SmuController.OpenAsync();
+            if (ok)
+            {
+                log.Info($"SMU 自动连接成功: {Manager.SmuController.Version}");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage))
+            {
+                log.Warn($"SMU 自动连接失败: {Manager.SmuController.LastErrorMessage}");
+            }
         }
 
         /// <summary>

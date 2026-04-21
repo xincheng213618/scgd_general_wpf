@@ -284,26 +284,26 @@ namespace Spectrum
                 {
                     cOLOR_PARA.fPh = (float)Math.Round((float)cOLOR_PARA.fPh, 2);
                 }
+
+                var smuMeasurement = MainWindowConfig.Instance.EqeEnabled && Manager.SmuController.IsOpen && !Manager.SmuController.IsBusy
+                    ? Manager.SmuController.CaptureMeasurementSnapshot()
+                    : null;
+
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     SprectrumModel sprectrumModel = new SprectrumModel() { ColorParam = cOLOR_PARA };
                     ViewResultManager.Save(sprectrumModel);
                     if (MainWindowConfig.Instance.EqeEnabled && ViewResultSpectrums.Count > 0)
                     {
-                        // When SMU is connected, read V/I from it; otherwise use manual values
                         float voltage = MainWindowConfig.Instance.EqeVoltage;
                         float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
-                        if (Manager.SmuController.IsOpen)
+                        if (smuMeasurement.HasValue)
                         {
-                            Manager.SmuController.ApplySettings();
-                            if (Manager.SmuController.MeasureData())
-                            {
-                                var (smuV, smuI) = Manager.SmuController.GetVI();
-                                voltage = smuV;
-                                currentMA = smuI;
-                                MainWindowConfig.Instance.EqeVoltage = voltage;
-                                MainWindowConfig.Instance.EqeCurrentMA = currentMA;
-                            }
+                            Manager.SmuController.ApplyMeasurement(smuMeasurement.Value);
+                            voltage = smuMeasurement.Value.Voltage;
+                            currentMA = smuMeasurement.Value.CurrentMA;
+                            MainWindowConfig.Instance.EqeVoltage = voltage;
+                            MainWindowConfig.Instance.EqeCurrentMA = currentMA;
                         }
 
                         var latest = ViewResultManager.Config.OrderByType == SqlSugar.OrderByType.Desc

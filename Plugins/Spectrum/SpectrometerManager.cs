@@ -404,6 +404,9 @@ namespace Spectrum
         [JsonIgnore]
         public RelayCommand EditAutodarkParamCommand { get; set; }
 
+        [JsonIgnore]
+        public RelayCommand EditSmuConfigCommand { get; set; }
+
 
         public SpectrometerManager()
         {
@@ -426,6 +429,8 @@ namespace Spectrum
             EditIntTimeConfigCommand = new RelayCommand(a => EditMeasurementDataConfig());
 
             EditAutodarkParamCommand = new RelayCommand(a => EditAutodarkParam());
+
+            EditSmuConfigCommand = new RelayCommand(a => new PropertyEditorWindow(SmuController.Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
 
             GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
 

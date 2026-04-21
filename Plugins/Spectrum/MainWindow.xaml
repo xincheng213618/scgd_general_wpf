@@ -334,34 +334,56 @@
                                                     <!--  ═══ 源表(SMU)配置 ═══  -->
                                                     <Separator Margin="0,6,0,6" />
                                                     <TextBlock Margin="0,0,0,4" FontWeight="Bold" Text="源表(SMU)" />
+                                                    <Border Margin="0,0,0,6" Padding="8" Background="#12007ACC" CornerRadius="4">
+                                                        <TextBlock Foreground="DodgerBlue" Text="{Binding SmuController.StatusSummary}" TextWrapping="Wrap" />
+                                                    </Border>
+                                                    <StackPanel Margin="0,0,0,4" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter1}}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Button Padding="10,4" Background="#2196F3" Click="SmuConnect_Click" Content="连接" Foreground="White" IsEnabled="{Binding SmuController.CanToggleConnection}" />
+                                                            <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditSmuConfigCommand}" IsEnabled="{Binding SmuController.CanEditConnectionSettings}">
+                                                                <Button.Triggers>
+                                                                    <EventTrigger RoutedEvent="Button.Click">
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransformSmuConfig" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </EventTrigger>
+                                                                </Button.Triggers>
+                                                                <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}" RenderTransformOrigin="0.5,0.5" Text="&#xE713;">
+                                                                    <TextBlock.RenderTransform>
+                                                                        <RotateTransform x:Name="rotateTransformSmuConfig" />
+                                                                    </TextBlock.RenderTransform>
+                                                                </TextBlock>
+                                                            </Button>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <StackPanel Margin="0,0,0,4" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter}}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Button Padding="10,4" Background="#E53935" Click="SmuConnect_Click" Content="断开" Foreground="White" IsEnabled="{Binding SmuController.CanToggleConnection}" />
+                                                            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray" Text="连接参数需先断开后再修改" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <TextBlock Margin="0,0,0,4" Foreground="Gray" Text="{Binding SmuController.ParameterHint}" TextWrapping="Wrap" />
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <TextBlock Width="80" Text="设备名称" />
-                                                        <TextBox Width="140" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.Config.DevName, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <CheckBox Margin="0,0,8,0" Content="电压源" IsChecked="{Binding SmuController.DisplayConfig.IsSourceV}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
+                                                        <CheckBox Margin="0,0,8,0" Content="通道A" IsChecked="{Binding SmuController.DisplayConfig.IsChannelA}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <CheckBox Margin="0,0,8,0" Content="网络连接" IsChecked="{Binding SmuController.Config.IsNet}" />
-                                                        <CheckBox Margin="0,0,8,0" Content="电压源" IsChecked="{Binding SmuController.Config.IsSourceV}" />
-                                                    </StackPanel>
-                                                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <CheckBox Margin="0,0,8,0" Content="通道A" IsChecked="{Binding SmuController.Config.IsChannelA}" />
-                                                        <CheckBox Margin="0,0,8,0" Content="四线制" IsChecked="{Binding SmuController.Config.Is4Wire}" />
-                                                        <CheckBox Margin="0,0,8,0" Content="前接口" IsChecked="{Binding SmuController.Config.IsFront}" />
-                                                    </StackPanel>
-                                                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <TextBlock Width="50" Text="测量值" />
-                                                        <TextBox Width="60" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.Config.MeasureVal, UpdateSourceTrigger=PropertyChanged}" />
-                                                        <TextBlock Width="50" Margin="8,0,0,0" Text="限制值" />
-                                                        <TextBox Width="60" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.Config.LimitVal, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBlock Width="68" Text="{Binding SmuController.MeasureValueLabel}" />
+                                                        <TextBox Width="70" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.DisplayConfig.MeasureVal, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
+                                                        <TextBlock Width="72" Margin="8,0,0,0" Text="{Binding SmuController.LimitValueLabel}" />
+                                                        <TextBox Width="70" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.DisplayConfig.LimitVal, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,4,0,4" Orientation="Horizontal">
-                                                        <Button x:Name="ButtonSmuConnect" Width="80" Margin="0,0,4,0" Click="SmuConnect_Click" Content="连接源表" />
-                                                        <Button x:Name="ButtonSmuMeasure" Width="80" Click="SmuMeasure_Click" Content="读取V/I" IsEnabled="False" />
+                                                        <Button Width="84" Margin="0,0,4,0" Click="SmuMeasure_Click" Content="点亮/设置" IsEnabled="{Binding SmuController.CanMeasure}" />
+                                                        <Button Width="80" Click="SmuCloseOutput_Click" Content="关闭输出" IsEnabled="{Binding SmuController.CanCloseOutput}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <TextBlock Width="20" Text="V:" />
-                                                        <TextBlock x:Name="SmuVDisplay" Width="80" Foreground="DodgerBlue" Text="{Binding SmuController.V, StringFormat='{}{0:F4}'}" />
+                                                        <TextBlock x:Name="SmuVDisplay" Width="80" Foreground="DodgerBlue" Text="{Binding SmuController.DisplayConfig.V, StringFormat='{}{0:F4}'}" />
                                                         <TextBlock Width="45" Margin="8,0,0,0" Text="I(mA):" />
-                                                        <TextBlock x:Name="SmuIDisplay" Width="80" Foreground="DodgerBlue" Text="{Binding SmuController.I, StringFormat='{}{0:F4}'}" />
+                                                        <TextBlock x:Name="SmuIDisplay" Width="80" Foreground="DodgerBlue" Text="{Binding SmuController.DisplayConfig.I, StringFormat='{}{0:F4}'}" />
                                                     </StackPanel>
                                                 </StackPanel>
                                             </StackPanel>
