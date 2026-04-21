@@ -530,7 +530,7 @@ namespace ProjectLUX.Process.MTFHVAR
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"MTFHV 画面结果" + Environment.NewLine;
+            outtext += $"MTFHVAR 画面结果" + Environment.NewLine;
 
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
@@ -554,7 +554,7 @@ namespace ProjectLUX.Process.MTFHVAR
 
         public override IRecipeConfig GetRecipeConfig()
         {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHVRecipeConfig>();
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHVARRecipeConfig>();
         }
 
         public override IFixConfig GetFixConfig()
