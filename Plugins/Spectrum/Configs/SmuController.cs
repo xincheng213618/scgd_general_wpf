@@ -36,7 +36,8 @@ namespace Spectrum.Configs
         };
 
         private readonly object _deviceLock = new();
-        private (double DelayTime, bool Is4Wire, bool IsFront, bool IsSourceV, bool IsChannelA)? _appliedSettings;
+        private (double DelayTime, bool Is4Wire, bool IsFront)? _appliedConnectionSettings;
+        private (bool IsSourceV, bool IsChannelA)? _appliedDisplaySettings;
         private bool _isBusy;
         private int _deviceId = -1;
 
@@ -144,7 +145,7 @@ namespace Spectrum.Configs
                 case nameof(SmuConfig.DelayTime):
                 case nameof(SmuConfig.Is4Wire):
                 case nameof(SmuConfig.IsFront):
-                    _appliedSettings = null;
+                    _appliedConnectionSettings = null;
                     break;
             }
         }
@@ -154,13 +155,13 @@ namespace Spectrum.Configs
             switch (e.PropertyName)
             {
                 case nameof(SmuDisplayConfig.IsSourceV):
-                    _appliedSettings = null;
+                    _appliedDisplaySettings = null;
                     OnPropertyChanged(nameof(MeasureValueLabel));
                     OnPropertyChanged(nameof(LimitValueLabel));
                     OnPropertyChanged(nameof(ParameterHint));
                     break;
                 case nameof(SmuDisplayConfig.IsChannelA):
-                    _appliedSettings = null;
+                    _appliedDisplaySettings = null;
                     break;
                 case nameof(SmuDisplayConfig.V):
                     OnPropertyChanged(nameof(V));
@@ -182,20 +183,32 @@ namespace Spectrum.Configs
             OnPropertyChanged(nameof(ConnectButtonText));
         }
 
-        private (double DelayTime, bool Is4Wire, bool IsFront, bool IsSourceV, bool IsChannelA) GetCurrentSettings()
+        private (double DelayTime, bool Is4Wire, bool IsFront) GetCurrentConnectionSettings()
         {
-            return (Config.DelayTime, Config.Is4Wire, Config.IsFront, DisplayConfig.IsSourceV, DisplayConfig.IsChannelA);
+            return (Config.DelayTime, Config.Is4Wire, Config.IsFront);
         }
 
-        private bool ApplySettingsCore(bool force = false)
+        private (bool IsSourceV, bool IsChannelA) GetCurrentDisplaySettings()
+        {
+            return (DisplayConfig.IsSourceV, DisplayConfig.IsChannelA);
+        }
+
+        private (double MeasureValue, double LimitValue) GetConvertedMeasureArguments()
+        {
+            return DisplayConfig.IsSourceV
+                ? (DisplayConfig.MeasureVal, DisplayConfig.LimitVal / 1000.0)
+                : (DisplayConfig.MeasureVal / 1000.0, DisplayConfig.LimitVal);
+        }
+
+        private bool ApplyConnectionSettingsCore(bool force = false)
         {
             if (!IsOpen)
             {
                 return false;
             }
 
-            var settings = GetCurrentSettings();
-            if (!force && _appliedSettings.HasValue && _appliedSettings.Value.Equals(settings))
+            var settings = GetCurrentConnectionSettings();
+            if (!force && _appliedConnectionSettings.HasValue && _appliedConnectionSettings.Value.Equals(settings))
             {
                 return true;
             }
@@ -213,6 +226,29 @@ namespace Spectrum.Configs
                 success = false;
             }
 
+            if (success)
+            {
+                _appliedConnectionSettings = settings;
+            }
+
+            return success;
+        }
+
+        private bool ApplyDisplaySettingsCore(bool force = false)
+        {
+            if (!IsOpen)
+            {
+                return false;
+            }
+
+            var settings = GetCurrentDisplaySettings();
+            if (!force && _appliedDisplaySettings.HasValue && _appliedDisplaySettings.Value.Equals(settings))
+            {
+                return true;
+            }
+
+            bool success = true;
+
             if (!PassSx.cvPssSxSetSourceV(_deviceId, settings.IsSourceV))
             {
                 log.Warn($"SMU SetSourceV failed: IsSourceV={settings.IsSourceV}");
@@ -227,7 +263,7 @@ namespace Spectrum.Configs
 
             if (success)
             {
-                _appliedSettings = settings;
+                _appliedDisplaySettings = settings;
             }
 
             return success;
@@ -263,10 +299,17 @@ namespace Spectrum.Configs
                 }
 
                 _deviceId = devId;
-                _appliedSettings = null;
-                if (!ApplySettingsCore(force: true))
+                _appliedConnectionSettings = null;
+                _appliedDisplaySettings = null;
+
+                if (!ApplyConnectionSettingsCore(force: true))
                 {
-                    log.Warn($"SMU apply settings after open returned false: DevID={devId}");
+                    log.Warn($"SMU apply connection settings after open returned false: DevID={devId}");
+                }
+
+                if (!ApplyDisplaySettingsCore(force: true))
+                {
+                    log.Warn($"SMU apply display settings after open returned false: DevID={devId}");
                 }
 
                 return (true, ReadIdnCore(devId), string.Empty);
@@ -302,7 +345,8 @@ namespace Spectrum.Configs
                 }
 
                 _deviceId = -1;
-                _appliedSettings = null;
+                _appliedConnectionSettings = null;
+                _appliedDisplaySettings = null;
             }
         }
 
@@ -315,9 +359,15 @@ namespace Spectrum.Configs
                     return (false, default, "源表未连接");
                 }
 
-                if (!ApplySettingsCore())
+                if (!ApplyDisplaySettingsCore())
                 {
-                    return (false, default, "源表参数应用失败");
+                    return (false, default, $"源表模式应用失败: IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}");
+                }
+
+                var convertedArgs = GetConvertedMeasureArguments();
+                if (log.IsDebugEnabled)
+                {
+                    log.Debug($"SMU MeasureData request: DevID={_deviceId}, IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}, Measure={DisplayConfig.MeasureVal}, Limit={DisplayConfig.LimitVal}, ConvertedMeasure={convertedArgs.MeasureValue}, ConvertedLimit={convertedArgs.LimitValue}");
                 }
 
                 double rstV = 0;
@@ -325,7 +375,7 @@ namespace Spectrum.Configs
                 bool ok = PassSx.cvMeasureData(_deviceId, DisplayConfig.MeasureVal, DisplayConfig.LimitVal, ref rstV, ref rstI);
                 if (!ok)
                 {
-                    return (false, default, $"源表读取失败: Measure={DisplayConfig.MeasureVal}, Limit={DisplayConfig.LimitVal}");
+                    return (false, default, $"源表读取失败: IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}, Measure={DisplayConfig.MeasureVal}, Limit={DisplayConfig.LimitVal}");
                 }
 
                 return (true, new SmuMeasurementSnapshot((float)rstV, (float)(rstI * 1000.0)), string.Empty);
@@ -436,9 +486,14 @@ namespace Spectrum.Configs
 
             lock (_deviceLock)
             {
-                if (!ApplySettingsCore())
+                if (!ApplyConnectionSettingsCore())
                 {
-                    log.Warn("SMU ApplySettings returned false");
+                    log.Warn("SMU ApplyConnectionSettings returned false");
+                }
+
+                if (!ApplyDisplaySettingsCore())
+                {
+                    log.Warn("SMU ApplyDisplaySettings returned false");
                 }
             }
         }
@@ -513,9 +568,9 @@ namespace Spectrum.Configs
             return ((float)(DisplayConfig.V ?? 0), (float)(DisplayConfig.I ?? 0));
         }
 
-        public void CloseOutput()
+        public bool CloseOutput()
         {
-            if (!IsOpen || IsBusy) return;
+            if (!IsOpen || IsBusy) return false;
 
             try
             {
@@ -525,15 +580,18 @@ namespace Spectrum.Configs
                 }
 
                 DisplayConfig.ClearOutput();
+                _appliedDisplaySettings = null;
                 LastErrorMessage = string.Empty;
                 StatusText = "输出已关闭";
                 log.Info("SMU output closed");
+                return true;
             }
             catch (Exception ex)
             {
                 LastErrorMessage = $"关闭源表输出失败: {ex.Message}";
                 StatusText = "关闭输出失败";
                 log.Warn("SMU close output failed", ex);
+                return false;
             }
         }
     }

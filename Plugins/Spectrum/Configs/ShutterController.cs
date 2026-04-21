@@ -1,10 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
 using Microsoft.VisualBasic.Logging;
+using Spectrum.TimedButtons;
 using System.IO.Ports;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Spectrum.Configs
 {
@@ -35,13 +37,48 @@ namespace Spectrum.Configs
 
         public ShutterController()
         {
-            ConnectCommand = new RelayCommand(_ => Connect(), _ => !IsConnected);
-            DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
-            OpenShutterCommand = new RelayCommand(_ => SendCommand(Config.OpenCmd), _ => IsConnected);
-            CloseShutterCommand = new RelayCommand(_ => SendCommand(Config.CloseCmd), _ => IsConnected);
+            ConnectCommand = new TimedButtonCommand(
+                async _ => await Task.FromResult(Connect()),
+                _ => !IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "shutter-connect",
+                "连接",
+                "连接快门",
+                Brushes.Red);
+
+            DisconnectCommand = new TimedButtonCommand(
+                async _ => await Task.FromResult(Disconnect()),
+                _ => IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "shutter-disconnect",
+                "断开",
+                "断开快门",
+                Brushes.Red);
+
+            OpenShutterCommand = new TimedButtonCommand(
+                _ => SendCommand(Config.OpenCmd),
+                _ => IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "shutter-open",
+                "Open Shutter",
+                "打开快门",
+                Brushes.Red);
+
+            CloseShutterCommand = new TimedButtonCommand(
+                _ => SendCommand(Config.CloseCmd),
+                _ => IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "shutter-close",
+                "Close Shutter",
+                "关闭快门",
+                Brushes.Red);
         }
 
-        private void Connect()
+        private bool Connect()
         {
             try
             {
@@ -57,6 +94,7 @@ namespace Spectrum.Configs
                 _serialPort.Open();
                 IsConnected = true;
                 log.Info($"连接成功");
+                return true;
 
             }
             catch (Exception ex)
@@ -64,11 +102,13 @@ namespace Spectrum.Configs
                 log.Info($"打开串口失败: {ex.Message}");
                 MessageBox.Show($"打开串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 IsConnected = false;
+                return false;
             }
         }
 
-        private void Disconnect()
+        private bool Disconnect()
         {
+            bool success = true;
             try
             {
                 if (_serialPort != null && _serialPort.IsOpen)
@@ -81,6 +121,7 @@ namespace Spectrum.Configs
                 log.Info($"关闭串口失败: {{ex.Message}}");
 
                 MessageBox.Show($"关闭串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                success = false;
             }
             finally
             {
@@ -88,6 +129,8 @@ namespace Spectrum.Configs
                 _serialPort?.Dispose();
                 _serialPort = null;
             }
+
+            return success;
         }
 
         public async Task<bool> OpenShutter()
@@ -164,6 +207,7 @@ namespace Spectrum.Configs
             _serialPort?.Close();
             _serialPort?.Dispose();
             _serialPort = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

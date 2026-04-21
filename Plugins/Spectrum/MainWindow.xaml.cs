@@ -94,6 +94,7 @@ namespace Spectrum
             };
             this.Closed += (s, e) =>
             {
+                CleanupSmuTimedButtons();
                 Manager.SmuController.Close();
                 Manager.Disconnect();
                 Instance = null;
@@ -242,6 +243,7 @@ namespace Spectrum
             });
 
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
+            InitializeSmuTimedButtons();
             _ = AutoConnectSmuIfNeededAsync();
         }
 
