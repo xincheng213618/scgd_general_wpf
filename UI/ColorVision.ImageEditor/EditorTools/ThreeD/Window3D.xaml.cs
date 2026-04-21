@@ -12,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
+using System.Windows.Input;
 
 namespace ColorVision.ImageEditor
 {
@@ -48,6 +49,13 @@ namespace ColorVision.ImageEditor
         private Point3D initialCameraPosition;
         private Vector3D initialLookDirection;
         private Vector3D initialUpDirection;
+
+        // Mouse move throttling
+        private DateTime lastMouseMoveTime = DateTime.MinValue;
+        private readonly TimeSpan mouseMoveThrottle = TimeSpan.FromMilliseconds(16);
+
+        // Reusable position collection to avoid GC pressure
+        private Point3DCollection? cachedPositions;
 
         private static readonly string[] ColormapNames =
         {
@@ -139,26 +147,20 @@ namespace ColorVision.ImageEditor
                     UpDirection = initialUpDirection,
                     FieldOfView = 60,
                 },
-                ShowFrameRate = true,
+                ShowFrameRate = false,
                 ZoomExtentsWhenLoaded = true,
+                IsRotationEnabled = true,
+                IsMoveEnabled = true,
+                IsPanEnabled = true,
+                RotateGesture = new MouseGesture(MouseAction.LeftClick),
+                PanGesture = new MouseGesture(MouseAction.RightClick),
             };
 
             viewport.Children.Add(new DefaultLights());
-            viewport.Children.Add(new GridLinesVisual3D
-            {
-                Length = newWidth,
-                Width = newHeight,
-                Center = new Point3D(newWidth / 2, newHeight / 2, 0)
-            });
-            viewport.Children.Add(new CoordinateSystemVisual3D
-            {
-                ArrowLengths = newWidth / 10
-            });
             ContentGrid.Children.Add(viewport);
 
             // Build mesh once with current height scale
             await BuildMeshAsync();
-            viewport.CameraController.AddRotateForce(0, 4.5);
 
             // Setup input handling
             PreviewKeyDown += Window3D_PreviewKeyDown;
@@ -186,6 +188,7 @@ namespace ColorVision.ImageEditor
             }
 
             currentMesh = null;
+            cachedPositions = null;
             colormapMaterial = null;
             grayPixels = null;
             currentColormap = null;
@@ -286,7 +289,11 @@ namespace ColorVision.ImageEditor
         {
             if (viewport == null || grayPixels == null) return;
 
-            // Show coordinate in status/tooltip
+            // Throttle mouse move updates to ~60fps max to reduce unnecessary UI updates
+            var now = DateTime.Now;
+            if (now - lastMouseMoveTime < mouseMoveThrottle) return;
+            lastMouseMoveTime = now;
+
             UpdateHoverTooltip(e);
         }
 
@@ -445,13 +452,16 @@ namespace ColorVision.ImageEditor
 
         /// <summary>
         /// Update only vertex positions when height scale changes - much faster than rebuilding entire mesh.
+        /// Reuses the Point3DCollection to avoid GC pressure.
         /// </summary>
         private void UpdateMeshPositions()
         {
             if (currentMesh == null || grayPixels == null) return;
 
-            int vertexCount = newWidth * newHeight;
-            var newPositions = new Point3DCollection(vertexCount);
+            if (cachedPositions == null)
+                cachedPositions = new Point3DCollection(newWidth * newHeight);
+            else
+                cachedPositions.Clear();
 
             for (int y = 0; y < newHeight; y++)
             {
@@ -461,11 +471,11 @@ namespace ColorVision.ImageEditor
                 {
                     int idx = rowOffset + x;
                     double z = grayPixels[idx] / 255.0 * heightScale;
-                    newPositions.Add(new Point3D(x, flippedY, z));
+                    cachedPositions.Add(new Point3D(x, flippedY, z));
                 }
             }
 
-            currentMesh.Positions = newPositions;
+            currentMesh.Positions = cachedPositions;
         }
 
         private DiffuseMaterial CurrentMaterial =>

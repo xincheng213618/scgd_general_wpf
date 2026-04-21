@@ -36,12 +36,18 @@
     <ClInclude Include="..\..\include\custom_structs.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="native_log.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="native_log.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
