@@ -3,7 +3,6 @@ using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,9 +26,6 @@ namespace Spectrum.Configs
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SmuController));
 
-        private readonly object _deviceLock = new();
-        private (double DelayTime, bool Is4Wire, bool IsFront)? _appliedConnectionSettings;
-        private (bool IsSourceV, bool IsChannelA)? _appliedDisplaySettings;
         private bool _isBusy;
         private int _deviceId = -1;
 
@@ -112,9 +108,7 @@ namespace Spectrum.Configs
         public string LimitValueLabel => DisplayConfig.IsSourceV ? "限制 (mA)" : "限制 (V)";
 
         [JsonIgnore]
-        public string ParameterHint => DisplayConfig.IsSourceV
-            ? "电压源模式: 测量值单位为 V，限制值单位为 mA"
-            : "电流源模式: 测量值单位为 mA，限制值单位为 V";
+        public string ParameterHint => DisplayConfig.IsSourceV ? "电压源模式: 测量值单位为 V，限制值单位为 mA" : "电流源模式: 测量值单位为 mA，限制值单位为 V";
 
         [JsonIgnore]
         public double? V => DisplayConfig.V;
@@ -124,42 +118,26 @@ namespace Spectrum.Configs
 
         public SmuController()
         {
-            Config.PropertyChanged += Config_PropertyChanged;
             DisplayConfig.PropertyChanged += DisplayConfig_PropertyChanged;
-        }
-
-        private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
-            {
-                case nameof(SmuConfig.DelayTime):
-                case nameof(SmuConfig.Is4Wire):
-                case nameof(SmuConfig.IsFront):
-                    _appliedConnectionSettings = null;
-                    break;
-            }
         }
 
         private void DisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            switch (e.PropertyName)
+            if (e.PropertyName == nameof(SmuDisplayConfig.IsSourceV))
             {
-                case nameof(SmuDisplayConfig.IsSourceV):
-                    _appliedDisplaySettings = null;
-                    OnPropertyChanged(nameof(MeasureValueLabel));
-                    OnPropertyChanged(nameof(LimitValueLabel));
-                    OnPropertyChanged(nameof(ParameterHint));
-                    break;
-                case nameof(SmuDisplayConfig.IsChannelA):
-                    _appliedDisplaySettings = null;
-                    break;
-                case nameof(SmuDisplayConfig.V):
-                    OnPropertyChanged(nameof(V));
-                    break;
-                case nameof(SmuDisplayConfig.I):
-                    OnPropertyChanged(nameof(I));
-                    break;
+                OnPropertyChanged(nameof(MeasureValueLabel));
+                OnPropertyChanged(nameof(LimitValueLabel));
+                OnPropertyChanged(nameof(ParameterHint));
+                return;
             }
+
+            if (e.PropertyName == nameof(SmuDisplayConfig.V))
+            {
+                OnPropertyChanged(nameof(V));
+                return;
+            }
+
+            if (e.PropertyName == nameof(SmuDisplayConfig.I)) OnPropertyChanged(nameof(I));
         }
 
         private void RefreshStateProperties()
@@ -173,37 +151,18 @@ namespace Spectrum.Configs
             OnPropertyChanged(nameof(ConnectButtonText));
         }
 
-        private (double DelayTime, bool Is4Wire, bool IsFront) GetCurrentConnectionSettings()
-        {
-            return (Config.DelayTime, Config.Is4Wire, Config.IsFront);
-        }
-
-        private (bool IsSourceV, bool IsChannelA) GetCurrentDisplaySettings()
-        {
-            return (DisplayConfig.IsSourceV, DisplayConfig.IsChannelA);
-        }
-
-        private (double MeasureValue, double LimitValue) GetConvertedMeasureArguments()
-        {
-            return DisplayConfig.IsSourceV
-                ? (DisplayConfig.MeasureVal, DisplayConfig.LimitVal / 1000.0)
-                : (DisplayConfig.MeasureVal / 1000.0, DisplayConfig.LimitVal);
-        }
-
         private static string BuildPassSxError(string operation, int resultCode, string? details = null)
         {
-            string errorMessage = PassSx.FormatErrorMessage(operation, resultCode);
+            string errorMessage = Spectrometer.GetErrorMessage(resultCode);
+            string message = string.IsNullOrWhiteSpace(errorMessage)
+                ? $"{operation} 失败，错误码: {resultCode}"
+                : $"{operation} 失败: {errorMessage}";
             return string.IsNullOrWhiteSpace(details)
-                ? errorMessage
-                : $"{errorMessage} | {details}";
+                ? message
+                : $"{message} | {details}";
         }
 
-        private static string NormalizeIdn(string? rawIdn)
-        {
-            return string.IsNullOrWhiteSpace(rawIdn)
-                ? string.Empty
-                : rawIdn.TrimEnd('\0', '\r', '\n', ' ');
-        }
+        private static string NormalizeIdn(string? rawIdn) => string.IsNullOrWhiteSpace(rawIdn) ? string.Empty : rawIdn.TrimEnd('\0', '\r', '\n', ' ');
 
         private static string DecodeIdnBuffer(byte[] idBuffer, int strLen)
         {
@@ -220,109 +179,65 @@ namespace Spectrum.Configs
             return NormalizeIdn(Encoding.Default.GetString(idBuffer, 0, actualLength));
         }
 
-        private (bool Success, string ErrorMessage) ApplyConnectionSettingsCore(bool force = false)
+        private bool ApplyConnectionSettingsCore()
         {
-            if (!IsOpen)
-            {
-                return (false, "源表未连接");
-            }
+            if (!IsOpen) return false;
 
-            var settings = GetCurrentConnectionSettings();
-            if (!force && _appliedConnectionSettings.HasValue && _appliedConnectionSettings.Value.Equals(settings))
+            if (Config.DelayTime > 0)
             {
-                if (log.IsDebugEnabled)
+                int delayTimeCode = PassSx.SetDelayTime(_deviceId, Config.DelayTime);
+                if (delayTimeCode != 1)
                 {
-                    log.Debug($"SMU ApplyConnectionSettings skipped (cached): DevID={_deviceId}, Delay={settings.DelayTime}, Is4Wire={settings.Is4Wire}, IsFront={settings.IsFront}");
-                }
-                return (true, string.Empty);
-            }
-
-            List<string> errors = new();
-
-            if (settings.DelayTime > 0)
-            {
-                int delayTimeCode = PassSx.SetDelayTimeCode(_deviceId, settings.DelayTime);
-                if (!PassSx.IsSuccess(delayTimeCode))
-                {
-                    string errorMessage = BuildPassSxError("SMU SetDelayTime", delayTimeCode, $"Delay={settings.DelayTime}");
-                    log.Warn(errorMessage);
-                    errors.Add(errorMessage);
+                    log.Warn(BuildPassSxError("SMU SetDelayTime", delayTimeCode, $"Delay={Config.DelayTime}"));
+                    return false;
                 }
                 else if (log.IsDebugEnabled)
                 {
-                    log.Debug($"SMU SetDelayTime ok: DevID={_deviceId}, Ret={delayTimeCode}, Delay={settings.DelayTime}");
+                    log.Debug($"SMU SetDelayTime ok: DevID={_deviceId}, Ret={delayTimeCode}, Delay={Config.DelayTime}");
                 }
             }
 
-            int set4WireFrontCode = PassSx.Set4WireFrontCode(_deviceId, settings.Is4Wire, settings.IsFront);
-            if (!PassSx.IsSuccess(set4WireFrontCode))
+            int set4WireFrontCode = PassSx.Set4WireFront(_deviceId, Config.Is4Wire, Config.IsFront);
+            if (set4WireFrontCode != 1)
             {
-                string errorMessage = BuildPassSxError("SMU Set4WireFront", set4WireFrontCode, $"Is4Wire={settings.Is4Wire}, IsFront={settings.IsFront}");
-                log.Warn(errorMessage);
-                errors.Add(errorMessage);
+                log.Warn(BuildPassSxError("SMU Set4WireFront", set4WireFrontCode, $"Is4Wire={Config.Is4Wire}, IsFront={Config.IsFront}"));
+                return false;
             }
             else if (log.IsDebugEnabled)
             {
-                log.Debug($"SMU Set4WireFront ok: DevID={_deviceId}, Ret={set4WireFrontCode}, Is4Wire={settings.Is4Wire}, IsFront={settings.IsFront}");
+                log.Debug($"SMU Set4WireFront ok: DevID={_deviceId}, Ret={set4WireFrontCode}, Is4Wire={Config.Is4Wire}, IsFront={Config.IsFront}");
             }
 
-            if (errors.Count == 0)
-            {
-                _appliedConnectionSettings = settings;
-            }
-
-            return (errors.Count == 0, string.Join("; ", errors));
+            return true;
         }
 
-        private (bool Success, string ErrorMessage) ApplyDisplaySettingsCore(bool force = false)
+        private bool ApplyDisplaySettingsCore()
         {
-            if (!IsOpen)
-            {
-                return (false, "源表未连接");
-            }
+            if (!IsOpen) return false;
 
-            var settings = GetCurrentDisplaySettings();
-            if (!force && _appliedDisplaySettings.HasValue && _appliedDisplaySettings.Value.Equals(settings))
+            int setSourceVCode = PassSx.SetSourceV(_deviceId, DisplayConfig.IsSourceV);
+            if (setSourceVCode != 1)
             {
-                if (log.IsDebugEnabled)
-                {
-                    log.Debug($"SMU ApplyDisplaySettings skipped (cached): DevID={_deviceId}, IsSourceV={settings.IsSourceV}, IsChannelA={settings.IsChannelA}");
-                }
-                return (true, string.Empty);
-            }
-
-            List<string> errors = new();
-
-            int setSourceVCode = PassSx.cvPssSxSetSourceVCode(_deviceId, settings.IsSourceV);
-            if (!PassSx.IsSuccess(setSourceVCode))
-            {
-                string errorMessage = BuildPassSxError("SMU SetSourceV", setSourceVCode, $"IsSourceV={settings.IsSourceV}");
-                log.Warn(errorMessage);
-                errors.Add(errorMessage);
+                log.Warn(BuildPassSxError("SMU SetSourceV", setSourceVCode, $"IsSourceV={DisplayConfig.IsSourceV}"));
+                return false;
             }
             else if (log.IsDebugEnabled)
             {
-                log.Debug($"SMU SetSourceV ok: DevID={_deviceId}, Ret={setSourceVCode}, IsSourceV={settings.IsSourceV}");
+                log.Debug($"SMU SetSourceV ok: DevID={_deviceId}, Ret={setSourceVCode}, IsSourceV={DisplayConfig.IsSourceV}");
             }
 
-            int setSrcAorBCode = PassSx.SetSrcAorBCode(_deviceId, settings.IsChannelA);
-            if (!PassSx.IsSuccess(setSrcAorBCode))
+            int setSrcAorBCode = PassSx.SetSrcAorB(_deviceId, DisplayConfig.IsChannelA);
+            if (setSrcAorBCode != 1)
             {
-                string errorMessage = BuildPassSxError("SMU SetSrcAorB", setSrcAorBCode, $"IsChannelA={settings.IsChannelA}");
-                log.Warn(errorMessage);
-                errors.Add(errorMessage);
+                log.Warn(BuildPassSxError("SMU SetSrcAorB", setSrcAorBCode, $"IsChannelA={DisplayConfig.IsChannelA}"));
+                return false;
             }
             else if (log.IsDebugEnabled)
             {
-                log.Debug($"SMU SetSrcAorB ok: DevID={_deviceId}, Ret={setSrcAorBCode}, IsChannelA={settings.IsChannelA}");
+                log.Debug($"SMU SetSrcAorB ok: DevID={_deviceId}, Ret={setSrcAorBCode}, IsChannelA={DisplayConfig.IsChannelA}");
             }
 
-            if (errors.Count == 0)
-            {
-                _appliedDisplaySettings = settings;
-            }
-
-            return (errors.Count == 0, string.Join("; ", errors));
+            return true;
         }
 
         private static string ReadIdnCore(int deviceId)
@@ -331,11 +246,11 @@ namespace Spectrum.Configs
 
             int strLen = bufferSize;
             StringBuilder idBuilder = new(bufferSize);
-            int stringBuilderResult = PassSx.cvPssSxGetIDNCode(deviceId, idBuilder, ref strLen);
+            int stringBuilderResult = PassSx.GetIDN(deviceId, idBuilder, ref strLen);
             string builderIdn = NormalizeIdn(idBuilder.ToString());
             if (!string.IsNullOrWhiteSpace(builderIdn))
             {
-                if (!PassSx.IsSuccess(stringBuilderResult) && log.IsDebugEnabled)
+                if (stringBuilderResult != 1 && log.IsDebugEnabled)
                 {
                     log.Debug($"SMU GetIDN returned non-success code but produced content: DevID={deviceId}, Ret={stringBuilderResult}, StrLen={strLen}, IDN={builderIdn}");
                 }
@@ -345,11 +260,11 @@ namespace Spectrum.Configs
 
             strLen = bufferSize;
             byte[] idBuffer = new byte[strLen];
-            int byteArrayResult = PassSx.cvPssSxGetIDNCode(deviceId, idBuffer, ref strLen);
+            int byteArrayResult = PassSx.GetIDN(deviceId, idBuffer, ref strLen);
             string bufferIdn = DecodeIdnBuffer(idBuffer, strLen);
             if (!string.IsNullOrWhiteSpace(bufferIdn))
             {
-                if (!PassSx.IsSuccess(byteArrayResult) && log.IsDebugEnabled)
+                if (byteArrayResult != 1 && log.IsDebugEnabled)
                 {
                     log.Debug($"SMU GetIDN byte buffer produced content with non-success code: DevID={deviceId}, Ret={byteArrayResult}, StrLen={strLen}, IDN={bufferIdn}");
                 }
@@ -361,100 +276,75 @@ namespace Spectrum.Configs
             return string.Empty;
         }
 
-        private (bool Success, string Version, string ErrorMessage) OpenCore()
+        private string? OpenCore()
         {
-            lock (_deviceLock)
+            if (IsOpen)
             {
-                if (IsOpen)
-                {
-                    return (true, Version, string.Empty);
-                }
-
-                int devId = PassSx.OpenNetDevice(Config.IsNet, Config.DevName, Config.DevType);
-                if (devId < 0)
-                {
-                    return (false, string.Empty, BuildPassSxError("源表连接失败", devId, $"DevName={Config.DevName}, IsNet={Config.IsNet}, DevType={Config.DevType}"));
-                }
-
-                _deviceId = devId;
-                _appliedConnectionSettings = null;
-                _appliedDisplaySettings = null;
-
-                var connectionResult = ApplyConnectionSettingsCore(force: true);
-                if (!connectionResult.Success)
-                {
-                    log.Warn($"SMU apply connection settings after open returned false: DevID={devId}, {connectionResult.ErrorMessage}");
-                }
-
-                var displayResult = ApplyDisplaySettingsCore(force: true);
-                if (!displayResult.Success)
-                {
-                    log.Warn($"SMU apply display settings after open returned false: DevID={devId}, {displayResult.ErrorMessage}");
-                }
-
-                return (true, ReadIdnCore(devId), string.Empty);
+                return Version;
             }
+
+            int devId = PassSx.OpenNetDevice(Config.IsNet, Config.DevName, Config.DevType);
+            if (devId < 0)
+            {
+                log.Warn(BuildPassSxError("源表连接失败", devId, $"DevName={Config.DevName}, IsNet={Config.IsNet}, DevType={Config.DevType}"));
+                return null;
+            }
+
+            _deviceId = devId;
+
+            if (!ApplyConnectionSettingsCore()) log.Warn($"SMU apply connection settings after open failed: DevID={devId}");
+            if (!ApplyDisplaySettingsCore()) log.Warn($"SMU apply display settings after open failed: DevID={devId}");
+
+            return ReadIdnCore(devId);
         }
 
         private void CloseCore()
         {
-            lock (_deviceLock)
+            if (_deviceId < 0)
             {
-                if (_deviceId < 0)
-                {
-                    return;
-                }
-
-                int devId = _deviceId;
-                int closeOutputCode = PassSx.CvPssSxCloseOutputCode(devId);
-                if (!PassSx.IsSuccess(closeOutputCode))
-                {
-                    log.Warn(BuildPassSxError("SMU close output before close", closeOutputCode, $"DevID={devId}"));
-                }
-
-                int closeDeviceCode = PassSx.CloseDeviceCode(devId);
-                if (!PassSx.IsSuccess(closeDeviceCode))
-                {
-                    log.Warn(BuildPassSxError("SMU close device", closeDeviceCode, $"DevID={devId}"));
-                }
-
-                _deviceId = -1;
-                _appliedConnectionSettings = null;
-                _appliedDisplaySettings = null;
+                return;
             }
+
+            int devId = _deviceId;
+            int closeOutputCode = PassSx.CloseOutput(devId);
+            if (closeOutputCode != 1) log.Warn(BuildPassSxError("SMU close output before close", closeOutputCode, $"DevID={devId}"));
+
+            int closeDeviceCode = PassSx.CloseDevice(devId);
+            if (closeDeviceCode != 1) log.Warn(BuildPassSxError("SMU close device", closeDeviceCode, $"DevID={devId}"));
+
+            _deviceId = -1;
         }
 
-        private (bool Success, SmuMeasurementSnapshot Snapshot, string ErrorMessage) CaptureMeasurementCore()
+        private SmuMeasurementSnapshot? CaptureMeasurementCore()
         {
-            lock (_deviceLock)
+            if (_deviceId < 0)
             {
-                if (_deviceId < 0)
-                {
-                    return (false, default, "源表未连接");
-                }
-
-                var displaySettingsResult = ApplyDisplaySettingsCore(force: true);
-                if (!displaySettingsResult.Success)
-                {
-                    return (false, default, $"{displaySettingsResult.ErrorMessage} | IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}");
-                }
-
-                var convertedArgs = GetConvertedMeasureArguments();
-                if (log.IsDebugEnabled)
-                {
-                    log.Debug($"SMU StepMeasureData request: DevID={_deviceId}, IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}, Measure={DisplayConfig.MeasureVal}, Limit={DisplayConfig.LimitVal}, ConvertedMeasure={convertedArgs.MeasureValue}, ConvertedLimit={convertedArgs.LimitValue}");
-                }
-
-                double rstV = 0;
-                double rstI = 0;
-                int measureDataCode = PassSx.cvStepMeasureDataCode(_deviceId, DisplayConfig.MeasureVal, DisplayConfig.LimitVal, ref rstV, ref rstI);
-                if (!PassSx.IsSuccess(measureDataCode))
-                {
-                    return (false, default, BuildPassSxError("源表 StepMeasureData 失败", measureDataCode, $"IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}, Measure={DisplayConfig.MeasureVal}, Limit={DisplayConfig.LimitVal}, ConvertedMeasure={convertedArgs.MeasureValue}, ConvertedLimit={convertedArgs.LimitValue}"));
-                }
-
-                return (true, new SmuMeasurementSnapshot((float)rstV, (float)(rstI * 1000.0)), string.Empty);
+                return null;
             }
+
+            if (!ApplyDisplaySettingsCore())
+            {
+                log.Warn($"SMU apply display settings before measure failed: DevID={_deviceId}, IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}");
+                return null;
+            }
+
+            double convertedMeasure = DisplayConfig.IsSourceV ? DisplayConfig.MeasureVal : DisplayConfig.MeasureVal / 1000.0;
+            double convertedLimit = DisplayConfig.IsSourceV ? DisplayConfig.LimitVal / 1000.0 : DisplayConfig.LimitVal;
+            if (log.IsDebugEnabled)
+            {
+                log.Debug($"SMU StepMeasureData request: DevID={_deviceId}, IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}, Measure={DisplayConfig.MeasureVal}, Limit={DisplayConfig.LimitVal}, ConvertedMeasure={convertedMeasure}, ConvertedLimit={convertedLimit}");
+            }
+
+            double rstV = 0;
+            double rstI = 0;
+            int measureDataCode = PassSx.StepMeasureData(_deviceId, convertedMeasure, convertedLimit, ref rstV, ref rstI);
+            if (measureDataCode != 1)
+            {
+                log.Warn(BuildPassSxError("源表 StepMeasureData 失败", measureDataCode, $"IsSourceV={DisplayConfig.IsSourceV}, IsChannelA={DisplayConfig.IsChannelA}, Measure={DisplayConfig.MeasureVal}, Limit={DisplayConfig.LimitVal}, ConvertedMeasure={convertedMeasure}, ConvertedLimit={convertedLimit}"));
+                return null;
+            }
+
+            return new SmuMeasurementSnapshot((float)rstV, (float)(rstI * 1000.0));
         }
 
         public async Task<bool> OpenAsync()
@@ -471,30 +361,23 @@ namespace Spectrum.Configs
             IsBusy = true;
             StatusText = "正在连接源表...";
             LastErrorMessage = string.Empty;
-            try
+            string? version = await Task.Run(OpenCore);
+            IsBusy = false;
+            if (version is null)
             {
-                var result = await Task.Run(OpenCore);
-                if (!result.Success)
-                {
-                    Version = string.Empty;
-                    LastErrorMessage = result.ErrorMessage;
-                    StatusText = "连接失败";
-                    log.Warn(result.ErrorMessage);
-                    RefreshStateProperties();
-                    return false;
-                }
-
-                Version = result.Version;
-                LastErrorMessage = string.Empty;
-                StatusText = "已连接";
+                Version = string.Empty;
+                LastErrorMessage = "源表连接失败，请检查设备名称和连接方式";
+                StatusText = "连接失败";
                 RefreshStateProperties();
-                log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
-                return true;
+                return false;
             }
-            finally
-            {
-                IsBusy = false;
-            }
+
+            Version = version;
+            LastErrorMessage = string.Empty;
+            StatusText = "已连接";
+            RefreshStateProperties();
+            log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
+            return true;
         }
 
         public bool Open()
@@ -502,17 +385,16 @@ namespace Spectrum.Configs
             if (IsOpen) return true;
             if (string.IsNullOrWhiteSpace(Config.DevName)) return false;
 
-            var result = OpenCore();
-            if (!result.Success)
+            string? version = OpenCore();
+            if (version is null)
             {
-                LastErrorMessage = result.ErrorMessage;
+                LastErrorMessage = "源表连接失败，请检查设备名称和连接方式";
                 StatusText = "连接失败";
-                log.Warn(result.ErrorMessage);
                 RefreshStateProperties();
                 return false;
             }
 
-            Version = result.Version;
+            Version = version;
             LastErrorMessage = string.Empty;
             StatusText = "已连接";
             RefreshStateProperties();
@@ -526,20 +408,14 @@ namespace Spectrum.Configs
 
             IsBusy = true;
             StatusText = "正在断开源表...";
-            try
-            {
-                await Task.Run(CloseCore);
-                DisplayConfig.ClearOutput();
-                Version = string.Empty;
-                LastErrorMessage = string.Empty;
-                StatusText = "未连接";
-                RefreshStateProperties();
-                log.Info("SMU closed");
-            }
-            finally
-            {
-                IsBusy = false;
-            }
+            await Task.Run(CloseCore);
+            IsBusy = false;
+            DisplayConfig.ClearOutput();
+            Version = string.Empty;
+            LastErrorMessage = string.Empty;
+            StatusText = "未连接";
+            RefreshStateProperties();
+            log.Info("SMU closed");
         }
 
         public void Close()
@@ -555,35 +431,7 @@ namespace Spectrum.Configs
             log.Info("SMU closed");
         }
 
-        public void ApplySettings()
-        {
-            if (!IsOpen) return;
-
-            lock (_deviceLock)
-            {
-                var connectionResult = ApplyConnectionSettingsCore();
-                if (!connectionResult.Success)
-                {
-                    log.Warn(connectionResult.ErrorMessage);
-                }
-
-                var displayResult = ApplyDisplaySettingsCore();
-                if (!displayResult.Success)
-                {
-                    log.Warn(displayResult.ErrorMessage);
-                }
-            }
-        }
-
-        public SmuMeasurementSnapshot? CaptureMeasurementSnapshot()
-        {
-            var result = CaptureMeasurementCore();
-            if (!result.Success)
-            {
-                log.Warn(result.ErrorMessage);
-            }
-            return result.Success ? result.Snapshot : null;
-        }
+        public SmuMeasurementSnapshot? CaptureMeasurementSnapshot() => CaptureMeasurementCore();
 
         public void ApplyMeasurement(SmuMeasurementSnapshot snapshot)
         {
@@ -597,86 +445,61 @@ namespace Spectrum.Configs
 
             IsBusy = true;
             StatusText = "正在点亮并读取...";
-            try
+            SmuMeasurementSnapshot? snapshot = await Task.Run(CaptureMeasurementCore);
+            IsBusy = false;
+            if (snapshot is null)
             {
-                var result = await Task.Run(CaptureMeasurementCore);
-                if (!result.Success)
-                {
-                    LastErrorMessage = result.ErrorMessage;
-                    StatusText = "读取失败";
-                    log.Warn(result.ErrorMessage);
-                    return false;
-                }
-
-                ApplyMeasurement(result.Snapshot);
-                LastErrorMessage = string.Empty;
-                StatusText = $"已读取 {DateTime.Now:HH:mm:ss}";
-                log.Info($"SMU MeasureData: V={V}, I={I} mA");
-                return true;
-            }
-            finally
-            {
-                IsBusy = false;
-            }
-        }
-
-        public bool MeasureData()
-        {
-            if (!IsOpen) return false;
-
-            var result = CaptureMeasurementCore();
-            if (!result.Success)
-            {
-                LastErrorMessage = result.ErrorMessage;
+                LastErrorMessage = "源表读取失败";
                 StatusText = "读取失败";
-                log.Warn(result.ErrorMessage);
                 return false;
             }
 
-            ApplyMeasurement(result.Snapshot);
+            ApplyMeasurement(snapshot.Value);
             LastErrorMessage = string.Empty;
             StatusText = $"已读取 {DateTime.Now:HH:mm:ss}";
             log.Info($"SMU MeasureData: V={V}, I={I} mA");
             return true;
         }
 
-        public (float voltage, float currentMA) GetVI()
+        public bool MeasureData()
         {
-            return ((float)(DisplayConfig.V ?? 0), (float)(DisplayConfig.I ?? 0));
+            if (!IsOpen) return false;
+
+            SmuMeasurementSnapshot? snapshot = CaptureMeasurementCore();
+            if (snapshot is null)
+            {
+                LastErrorMessage = "源表读取失败";
+                StatusText = "读取失败";
+                return false;
+            }
+
+            ApplyMeasurement(snapshot.Value);
+            LastErrorMessage = string.Empty;
+            StatusText = $"已读取 {DateTime.Now:HH:mm:ss}";
+            log.Info($"SMU MeasureData: V={V}, I={I} mA");
+            return true;
         }
+
+        public (float voltage, float currentMA) GetVI() => ((float)(DisplayConfig.V ?? 0), (float)(DisplayConfig.I ?? 0));
 
         public bool CloseOutput()
         {
             if (!IsOpen || IsBusy) return false;
 
-            try
+            int closeOutputCode = PassSx.CloseOutput(_deviceId);
+            if (closeOutputCode != 1)
             {
-                lock (_deviceLock)
-                {
-                    int closeOutputCode = PassSx.CvPssSxCloseOutputCode(_deviceId);
-                    if (!PassSx.IsSuccess(closeOutputCode))
-                    {
-                        LastErrorMessage = BuildPassSxError("关闭源表输出失败", closeOutputCode, $"DevID={_deviceId}");
-                        StatusText = "关闭输出失败";
-                        log.Warn(LastErrorMessage);
-                        return false;
-                    }
-                }
-
-                DisplayConfig.ClearOutput();
-                _appliedDisplaySettings = null;
-                LastErrorMessage = string.Empty;
-                StatusText = "输出已关闭";
-                log.Info("SMU output closed");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LastErrorMessage = $"关闭源表输出失败: {ex.Message}";
+                log.Warn(BuildPassSxError("关闭源表输出失败", closeOutputCode, $"DevID={_deviceId}"));
+                LastErrorMessage = "关闭源表输出失败";
                 StatusText = "关闭输出失败";
-                log.Warn("SMU close output failed", ex);
                 return false;
             }
+
+            DisplayConfig.ClearOutput();
+            LastErrorMessage = string.Empty;
+            StatusText = "输出已关闭";
+            log.Info("SMU output closed");
+            return true;
         }
     }
 }
