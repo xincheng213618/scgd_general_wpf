@@ -132,6 +132,7 @@
                     <!-- Action Buttons -->
                     <Button Style="{StaticResource ActionBtn}" Content="&#x21BB; 重置视角" ToolTip="重置相机视角 (Home)" Click="ResetViewButton_Click"/>
                     <Button Style="{StaticResource ActionBtn}" Content="&#x1F4F7; 截图" ToolTip="保存当前3D视图为图片" Click="ScreenshotButton_Click"/>
+                    <Button Style="{StaticResource ActionBtn}" Content="导出模型" ToolTip="导出当前3D网格为 OBJ 或 STL" Click="ExportModelButton_Click"/>
                     <Button Style="{StaticResource ActionBtn}" Content="&#x2699; 设置" ToolTip="渲染分辨率设置" Click="SettingsButton_Click"/>
                 </StackPanel>
             </Border>

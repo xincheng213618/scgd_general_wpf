@@ -1,10 +1,9 @@
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.EditorTools.ThreeD;
 using ColorVision.UI;
 using HelixToolkit.Wpf;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
-using System.Windows.Input;
+using Viewport3DHelper = ColorVision.ImageEditor.EditorTools.ThreeD.Viewport3DHelper;
 
 namespace ColorVision.ImageEditor
 {
@@ -44,6 +43,7 @@ namespace ColorVision.ImageEditor
         private double heightScale = 100.0;
         private DiffuseMaterial? colormapMaterial;
         private ColormapInfo? currentColormap;
+        private List<Visual3D>? axesVisuals;
 
         // Cached initial camera state for reset
         private Point3D initialCameraPosition;
@@ -134,30 +134,24 @@ namespace ColorVision.ImageEditor
             TxtTargetY.Text = Config.TargetPixelsY.ToString();
 
             // Calculate initial camera position
-            initialCameraPosition = new Point3D(newWidth / 2.0, -newHeight * 0.8, newHeight * 0.6);
-            initialLookDirection = new Vector3D(0, newHeight * 0.8, -newHeight * 0.6);
+            initialCameraPosition = new Point3D(newWidth * 0.92, -newHeight * 1.35, newHeight * 1.15);
+            initialLookDirection = new Vector3D(-newWidth * 0.42, newHeight * 1.35, -newHeight * 0.95);
             initialUpDirection = new Vector3D(0, 0, 1);
 
-            viewport = new HelixViewport3D
-            {
-                Camera = new PerspectiveCamera
-                {
-                    Position = initialCameraPosition,
-                    LookDirection = initialLookDirection,
-                    UpDirection = initialUpDirection,
-                    FieldOfView = 60,
-                },
-                ShowFrameRate = false,
-                ZoomExtentsWhenLoaded = true,
-                IsRotationEnabled = true,
-                IsMoveEnabled = true,
-                IsPanEnabled = true,
-                RotateGesture = new MouseGesture(MouseAction.LeftClick),
-                PanGesture = new MouseGesture(MouseAction.RightClick),
-            };
+            viewport = Viewport3DHelper.CreateDefaultViewport(
+                initialCameraPosition,
+                initialLookDirection,
+                initialUpDirection,
+                60);
 
-            viewport.Children.Add(new DefaultLights());
+            Viewport3DHelper.AddCameraAlignedLights(viewport, Rect3D.Empty);
             ContentGrid.Children.Add(viewport);
+
+            axesVisuals = Viewport3DHelper.CreateFixedCornerAxes(20);
+            foreach (var axis in axesVisuals)
+                viewport.Children.Add(axis);
+
+            CompositionTarget.Rendering += CompositionTarget_Rendering;
 
             // Build mesh once with current height scale
             await BuildMeshAsync();
@@ -171,6 +165,7 @@ namespace ColorVision.ImageEditor
         private void Window_Closed(object sender, EventArgs e)
         {
             PreviewKeyDown -= Window3D_PreviewKeyDown;
+            CompositionTarget.Rendering -= CompositionTarget_Rendering;
 
             if (viewport != null)
             {
@@ -192,6 +187,7 @@ namespace ColorVision.ImageEditor
             colormapMaterial = null;
             grayPixels = null;
             currentColormap = null;
+            axesVisuals = null;
         }
 
         private void Window3D_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -285,6 +281,12 @@ namespace ColorVision.ImageEditor
             }
         }
 
+        private void CompositionTarget_Rendering(object? sender, EventArgs e)
+        {
+            if (viewport?.Camera is PerspectiveCamera camera && axesVisuals != null)
+                Viewport3DHelper.UpdateFixedCornerAxes(axesVisuals, camera);
+        }
+
         private void Viewport_MouseMove(object sender, MouseEventArgs e)
         {
             if (viewport == null || grayPixels == null) return;
@@ -319,11 +321,8 @@ namespace ColorVision.ImageEditor
 
         private void ResetCameraView()
         {
-            if (viewport?.Camera == null) return;
-
-            viewport.Camera.Position = initialCameraPosition;
-            viewport.Camera.LookDirection = initialLookDirection;
-            viewport.Camera.UpDirection = initialUpDirection;
+            if (viewport?.Camera is not PerspectiveCamera camera) return;
+            Viewport3DHelper.ResetCameraView(camera, initialCameraPosition, initialLookDirection, initialUpDirection);
         }
 
         private static int FindClosestFactor(int value, int[] factors)
@@ -578,60 +577,19 @@ namespace ColorVision.ImageEditor
 
         private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveScreenshot();
+            if (viewport != null)
+                Viewport3DHelper.SaveScreenshot(viewport, $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+        }
+
+        private void ExportModelButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentMesh == null) return;
+            Viewport3DHelper.ExportMesh(currentMesh, $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.obj");
         }
 
         private void ResetViewButton_Click(object sender, RoutedEventArgs e)
         {
             ResetCameraView();
-        }
-
-        /// <summary>
-        /// Save a screenshot of the current 3D viewport.
-        /// </summary>
-        private void SaveScreenshot()
-        {
-            if (viewport == null) return;
-
-            var dialog = new SaveFileDialog
-            {
-                Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp",
-                DefaultExt = "png",
-                FileName = $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.png"
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                try
-                {
-                    // Render the viewport to a bitmap
-                    var renderBitmap = new RenderTargetBitmap(
-                        (int)viewport.ActualWidth,
-                        (int)viewport.ActualHeight,
-                        96, 96,
-                        PixelFormats.Pbgra32);
-
-                    renderBitmap.Render(viewport);
-
-                    // Encode and save
-                    BitmapEncoder encoder = dialog.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-                        ? new JpegBitmapEncoder()
-                        : dialog.FileName.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase)
-                            ? new BmpBitmapEncoder()
-                            : new PngBitmapEncoder();
-
-                    encoder.Frames.Add(BitmapFrame.Create(renderBitmap));
-
-                    using var stream = File.Create(dialog.FileName);
-                    encoder.Save(stream);
-
-                    MessageBox.Show($"Screenshot saved:\n{dialog.FileName}", "Screenshot Saved", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to save screenshot:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
         }
 
         // Height scale adjustment buttons
