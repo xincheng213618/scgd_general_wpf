@@ -1,19 +1,21 @@
 ﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
+using cvColorVision;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
-
 
     public class ConfigSMU : DeviceServiceConfig
     {
         public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; OnPropertyChanged(); } }
         private bool _IsAutoStart;
 
-        public string DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
-        private string _DevType;
+        public Pss_Type DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); OnPropertyChanged(nameof(DevType)); } }
+        private Pss_Type _DevType;
+
         public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
         private bool _IsNet;
+
         public string DevName { get => Id; set { Id = value; OnPropertyChanged(); } }
 
         [DisplayName("Is4Wire")]

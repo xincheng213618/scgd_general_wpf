@@ -140,11 +140,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
             EditCommand = new RelayCommand(a =>
             {
-                EditSMU window = new(this);
-                window.Icon = Icon;
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) => Save();
+                propertyEditorWindow.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             EditSMUTemplateCommand = new RelayCommand(a => EditSMUTemplate());
