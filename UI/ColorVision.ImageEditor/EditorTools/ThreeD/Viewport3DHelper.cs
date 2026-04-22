@@ -39,10 +39,10 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 },
                 ShowFrameRate = false,
                 ZoomExtentsWhenLoaded = true,
-                IsRotationEnabled = true,
+                IsRotationEnabled = false,
                 IsMoveEnabled = true,
                 IsPanEnabled = true,
-                RotateGesture = new MouseGesture(MouseAction.LeftClick),
+                RotateGesture = null,
                 PanGesture = new MouseGesture(MouseAction.RightClick),
             };
         }
