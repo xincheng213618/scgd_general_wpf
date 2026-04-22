@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +25,19 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             public required Material Material { get; init; }
             public required Material BackMaterial { get; init; }
         }
+
+        private sealed class ModelNode
+        {
+            public required string Name { get; init; }
+            public Model3D? Model { get; init; }
+            public List<ModelNode> Children { get; } = new();
+            public bool IsLeaf => Model is GeometryModel3D;
+            public override string ToString() => Name;
+        }
+
+        private readonly Dictionary<Model3D, bool> modelVisibility = new();
+        private readonly Dictionary<Model3D, ModelNode> nodeByModel = new();
+        private ModelNode? selectedNode;
 
         private HelixViewport3D? viewport;
         private ModelVisual3D? currentModelVisual;
@@ -47,6 +61,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private Point3D initialCameraPosition;
         private Vector3D initialLookDirection;
         private Vector3D initialUpDirection;
+        private string currentViewName = "ISO";
+        private bool isOrthographic;
 
         public static ModelViewer3DConfig Config => ModelViewer3DConfig.Instance;
 
@@ -94,7 +110,10 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             WireframeToggle.IsChecked = Config.DefaultWireframe;
             TextureToggle.IsChecked = Config.IsTextureVisible;
             MaterialToggle.IsChecked = Config.IsMaterialVisible;
+            ProjectionToggle.IsChecked = false;
             isWireframe = Config.DefaultWireframe;
+            UpdateStatusBar();
+            currentViewName = "ISO";
 
             if (!hasLoadedModel && !string.IsNullOrWhiteSpace(currentFilePath) && File.Exists(currentFilePath))
                 LoadModelWithErrorHandling(currentFilePath);
@@ -121,6 +140,10 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             currentModelGroup = null;
             originalMaterialStates = null;
             axesVisuals = null;
+            modelVisibility.Clear();
+            nodeByModel.Clear();
+            selectedNode = null;
+            ModelTreeView.ItemsSource = null;
             isInitialized = false;
             hasLoadedModel = false;
         }
@@ -287,6 +310,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     }
                 }, DispatcherPriority.Loaded);
 
+                BuildModelTree();
                 ApplyVisibilityState();
                 hasLoadedModel = true;
 
@@ -626,54 +650,124 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             {
                 Viewport3DHelper.ResetCameraView(fallbackCamera, initialCameraPosition, initialLookDirection, initialUpDirection);
             }
+
+            currentViewName = "ISO";
+            UpdateStatusBar();
         }
 
         private void CameraMoveLeft_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.Position = new Point3D(camera.Position.X - 20, camera.Position.Y, camera.Position.Z);
+            UpdateStatusBar();
         }
 
         private void CameraMoveForward_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.Position = new Point3D(camera.Position.X, camera.Position.Y + 20, camera.Position.Z);
+            UpdateStatusBar();
         }
 
         private void CameraMoveRight_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.Position = new Point3D(camera.Position.X + 20, camera.Position.Y, camera.Position.Z);
+            UpdateStatusBar();
         }
 
         private void CameraMoveBack_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.Position = new Point3D(camera.Position.X, camera.Position.Y - 20, camera.Position.Z);
+            UpdateStatusBar();
         }
 
         private void LookLeft_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.LookDirection = new Vector3D(camera.LookDirection.X - 10, camera.LookDirection.Y, camera.LookDirection.Z);
+            UpdateStatusBar();
         }
 
         private void LookUp_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z + 10);
+            UpdateStatusBar();
         }
 
         private void LookRight_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.LookDirection = new Vector3D(camera.LookDirection.X + 10, camera.LookDirection.Y, camera.LookDirection.Z);
+            UpdateStatusBar();
         }
 
         private void LookDown_Click(object sender, RoutedEventArgs e)
         {
             if (viewport?.Camera is not ProjectionCamera camera) return;
             camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z - 10);
+            UpdateStatusBar();
+        }
+
+        private void FrontView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("前", new Vector3D(0, -1, 0), new Vector3D(0, 0, 1));
+        private void BackView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("后", new Vector3D(0, 1, 0), new Vector3D(0, 0, 1));
+        private void LeftView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("左", new Vector3D(1, 0, 0), new Vector3D(0, 0, 1));
+        private void RightView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("右", new Vector3D(-1, 0, 0), new Vector3D(0, 0, 1));
+        private void TopView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("上", new Vector3D(0, 0, -1), new Vector3D(0, 1, 0));
+        private void BottomView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("下", new Vector3D(0, 0, 1), new Vector3D(0, -1, 0));
+        private void IsoView_Click(object sender, RoutedEventArgs e) => ResetView_Click(sender, e);
+
+        private void ProjectionToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            isOrthographic = true;
+            StatusProjectionText.Text = "投影: 正交";
+            UpdateStatusBar();
+        }
+
+        private void ProjectionToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            isOrthographic = false;
+            StatusProjectionText.Text = "投影: 透视";
+            UpdateStatusBar();
+        }
+
+        private void ApplyPresetView(string viewName, Vector3D direction, Vector3D upDirection)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera || currentModelGroup == null)
+                return;
+
+            Rect3D bounds = Viewport3DHelper.GetBounds(currentModelGroup);
+            if (bounds.IsEmpty)
+                return;
+
+            Point3D center = new Point3D(bounds.X + bounds.SizeX / 2, bounds.Y + bounds.SizeY / 2, bounds.Z + bounds.SizeZ / 2);
+            double radius = Math.Max(bounds.SizeX, Math.Max(bounds.SizeY, bounds.SizeZ));
+            if (radius <= 0)
+                radius = 1;
+
+            direction.Normalize();
+            camera.Position = center - direction * (radius * 2.6);
+            camera.LookDirection = center - camera.Position;
+            camera.UpDirection = upDirection;
+            currentViewName = viewName;
+            UpdateStatusBar();
+        }
+
+        private void UpdateStatusBar()
+        {
+            StatusProjectionText.Text = $"投影: {(isOrthographic ? "正交" : "透视")}";
+            StatusViewText.Text = $"视图: {currentViewName}";
+
+            if (viewport?.Camera is ProjectionCamera camera)
+            {
+                StatusCameraText.Text = $"相机: X {camera.Position.X:F0}  Y {camera.Position.Y:F0}  Z {camera.Position.Z:F0}";
+            }
+            else
+            {
+                StatusCameraText.Text = "相机: -";
+            }
         }
 
         private void ShowLoading(bool show, string? message = null)
@@ -783,6 +877,107 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     e.Handled = true;
                     break;
             }
+
+            UpdateStatusBar();
+        }
+
+
+        private void BuildModelTree()
+        {
+            nodeByModel.Clear();
+            modelVisibility.Clear();
+
+            if (currentModelGroup == null)
+            {
+                ModelTreeView.ItemsSource = null;
+                return;
+            }
+
+            var root = CreateModelNode(currentModelGroup, "Root");
+            ModelTreeView.ItemsSource = new[] { root };
+        }
+
+        private ModelNode CreateModelNode(Model3D model, string fallbackName)
+        {
+            string name = fallbackName;
+            if (model is GeometryModel3D geometry)
+                name = geometry.GetHashCode().ToString("X");
+
+            var node = new ModelNode { Name = name, Model = model };
+            nodeByModel[model] = node;
+            modelVisibility[model] = true;
+
+            if (model is Model3DGroup group)
+            {
+                for (int i = 0; i < group.Children.Count; i++)
+                    node.Children.Add(CreateModelNode(group.Children[i], $"Node_{i + 1}"));
+            }
+
+            return node;
+        }
+
+        private void ModelTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            selectedNode = e.NewValue as ModelNode;
+        }
+
+        private void IsolateSelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentModelGroup == null || selectedNode?.Model == null)
+                return;
+
+            foreach (var key in nodeByModel.Keys.ToList())
+                modelVisibility[key] = false;
+
+            SetVisibilityRecursive(selectedNode.Model, true);
+            ApplyModelVisibility();
+        }
+
+        private void ShowAllNodes_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var key in nodeByModel.Keys.ToList())
+                modelVisibility[key] = true;
+
+            ApplyModelVisibility();
+        }
+
+        private void SetVisibilityRecursive(Model3D model, bool visible)
+        {
+            modelVisibility[model] = visible;
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                    SetVisibilityRecursive(child, visible);
+            }
+        }
+
+        private void ApplyModelVisibility()
+        {
+            if (currentModelGroup == null)
+                return;
+
+            ApplyModelVisibilityRecursive(currentModelGroup);
+            ApplyVisibilityState();
+        }
+
+        private void ApplyModelVisibilityRecursive(Model3D model)
+        {
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                    ApplyModelVisibilityRecursive(child);
+                return;
+            }
+
+            if (model is GeometryModel3D geometry)
+            {
+                bool visible = modelVisibility.TryGetValue(model, out bool isVisible) ? isVisible : true;
+                if (!visible)
+                {
+                    geometry.Material = new DiffuseMaterial(new SolidColorBrush(Color.FromArgb(0, 0, 0, 0)));
+                    geometry.BackMaterial = geometry.Material;
+                }
+            }
         }
 
         private static bool IsDescendantOf(DependencyObject child, DependencyObject parent)
@@ -865,6 +1060,11 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private void TextureToggle_Checked(object sender, RoutedEventArgs e)
         {
             Config.IsTextureVisible = true;
+            if (!Config.IsMaterialVisible)
+            {
+                Config.IsMaterialVisible = true;
+                MaterialToggle.IsChecked = true;
+            }
             ApplyVisibilityState();
         }
 
@@ -883,6 +1083,11 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private void MaterialToggle_Unchecked(object sender, RoutedEventArgs e)
         {
             Config.IsMaterialVisible = false;
+            if (Config.IsTextureVisible)
+            {
+                Config.IsTextureVisible = false;
+                TextureToggle.IsChecked = false;
+            }
             ApplyVisibilityState();
         }
 

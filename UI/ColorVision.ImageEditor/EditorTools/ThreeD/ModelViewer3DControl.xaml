@@ -80,10 +80,32 @@
     </UserControl.Resources>
 
     <Grid Background="#1a1a1a">
-        <Grid x:Name="ContentGrid"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Margin="8,8,0,8" Background="#C8181818" CornerRadius="6"
+                BorderBrush="#30FFFFFF" BorderThickness="1" Panel.ZIndex="90">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
+                    <TextBlock Text="模型结构" Foreground="#DDFFFFFF" FontSize="12" VerticalAlignment="Center"/>
+                    <Button Margin="8,0,0,0" Padding="6,2" Content="隔离选中" Click="IsolateSelected_Click"/>
+                    <Button Margin="4,0,0,0" Padding="6,2" Content="恢复全部" Click="ShowAllNodes_Click"/>
+                </StackPanel>
+                <TreeView x:Name="ModelTreeView" Margin="8,0,8,8" SelectedItemChanged="ModelTreeView_SelectedItemChanged">
+                    <TreeView.Resources>
+                        <HierarchicalDataTemplate DataType="{x:Type TreeViewItem}" ItemsSource="{Binding Children}"/>
+                    </TreeView.Resources>
+                </TreeView>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1" x:Name="ContentGrid"/>
+        <Grid Grid.ColumnSpan="2" x:Name="OverlayRoot"/>
 
         <!-- Toolbar overlay panel -->
-        <Border x:Name="ToolbarPanel" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Panel.ZIndex="99"
+        <Border x:Name="ToolbarPanel" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Panel.ZIndex="99"
                 Background="#C8181818" CornerRadius="6" Padding="8"
                 BorderBrush="#30FFFFFF" BorderThickness="1">
             <StackPanel Width="122">
@@ -124,6 +146,32 @@
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
+                <TextBlock Text="预设视角" Style="{StaticResource SectionLabel}"/>
+                <Grid HorizontalAlignment="Center" Width="120">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/><RowDefinition/><RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="前" ToolTip="前视图" Click="FrontView_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="上" ToolTip="上视图" Click="TopView_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="右" ToolTip="右视图" Click="RightView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="左" ToolTip="左视图" Click="LeftView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="ISO" ToolTip="等轴视图" Click="IsoView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="后" ToolTip="后视图" Click="BackView_Click"/>
+                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="下" ToolTip="下视图" Click="BottomView_Click"/>
+                </Grid>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <TextBlock Text="投影" Style="{StaticResource SectionLabel}"/>
+                <ToggleButton x:Name="ProjectionToggle" Style="{StaticResource ToggleActionBtn}"
+                              Content="正交投影" Checked="ProjectionToggle_Checked"
+                              Unchecked="ProjectionToggle_Unchecked"/>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
                 <TextBlock Text="渲染" Style="{StaticResource SectionLabel}"/>
                 <ToggleButton x:Name="WireframeToggle" Style="{StaticResource ToggleActionBtn}"
                               Content="线框模式" Checked="WireframeToggle_Checked"
@@ -144,11 +192,21 @@
         </Border>
 
         <!-- Model info panel -->
-        <Border VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="8" Panel.ZIndex="99"
+        <Border Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="8,8,8,36" Panel.ZIndex="99"
                 Background="#C8181818" CornerRadius="4" Padding="8,4"
                 BorderBrush="#30FFFFFF" BorderThickness="1">
             <TextBlock x:Name="ModelInfoText" Foreground="#99FFFFFF" FontSize="11"
                        LineHeight="16" LineStackingStrategy="BlockLineHeight"/>
+        </Border>
+
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="8" Panel.ZIndex="99"
+                Background="#C8181818" CornerRadius="4" Padding="8,4"
+                BorderBrush="#30FFFFFF" BorderThickness="1">
+            <DockPanel>
+                <TextBlock x:Name="StatusProjectionText" Foreground="#99FFFFFF" FontSize="11" Margin="0,0,12,0"/>
+                <TextBlock x:Name="StatusViewText" Foreground="#99FFFFFF" FontSize="11" Margin="0,0,12,0"/>
+                <TextBlock x:Name="StatusCameraText" Foreground="#99FFFFFF" FontSize="11"/>
+            </DockPanel>
         </Border>
 
         <!-- Loading progress overlay -->
