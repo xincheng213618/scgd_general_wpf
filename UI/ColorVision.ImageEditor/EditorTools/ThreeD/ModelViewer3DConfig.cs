@@ -27,5 +27,33 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             set { _FieldOfView = value; OnPropertyChanged(); }
         }
         private double _FieldOfView = 60;
+
+        public bool IsToolbarVisible
+        {
+            get => _IsToolbarVisible;
+            set { _IsToolbarVisible = value; OnPropertyChanged(); }
+        }
+        private bool _IsToolbarVisible = true;
+
+        public bool IsTextureVisible
+        {
+            get => _IsTextureVisible;
+            set { _IsTextureVisible = value; OnPropertyChanged(); }
+        }
+        private bool _IsTextureVisible = true;
+
+        public bool IsMaterialVisible
+        {
+            get => _IsMaterialVisible;
+            set { _IsMaterialVisible = value; OnPropertyChanged(); }
+        }
+        private bool _IsMaterialVisible = true;
+
+        public bool HideExportedTextureFiles
+        {
+            get => _HideExportedTextureFiles;
+            set { _HideExportedTextureFiles = value; OnPropertyChanged(); }
+        }
+        private bool _HideExportedTextureFiles = true;
     }
 }

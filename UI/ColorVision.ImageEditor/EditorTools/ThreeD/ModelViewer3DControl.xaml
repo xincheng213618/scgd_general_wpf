@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
+             Focusable="True"
              d:DesignHeight="700" d:DesignWidth="1100">
     <UserControl.Resources>
         <Style x:Key="ToolBtn" TargetType="Button">
@@ -82,19 +83,44 @@
         <Grid x:Name="ContentGrid"/>
 
         <!-- Toolbar overlay panel -->
-        <Border VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Panel.ZIndex="99"
+        <Border x:Name="ToolbarPanel" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Panel.ZIndex="99"
                 Background="#C8181818" CornerRadius="6" Padding="8"
                 BorderBrush="#30FFFFFF" BorderThickness="1">
-            <StackPanel Width="130">
+            <StackPanel Width="122">
                 <TextBlock Text="文件" Style="{StaticResource SectionLabel}"/>
-                <Button Style="{StaticResource ActionBtn}" Content="打开模型" Click="OpenModel_Click"/>
+                <Button Style="{StaticResource ActionBtn}" Content="打开模型" Click="OpenModel_Click" ToolTip="打开模型文件"/>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                <TextBlock Text="视角" Style="{StaticResource SectionLabel}"/>
-                <Button Style="{StaticResource ActionBtn}" Content="重置视角" Click="ResetView_Click"/>
-                <Button Style="{StaticResource ActionBtn}" Content="截图" Click="Screenshot_Click"/>
-                <Button Style="{StaticResource ActionBtn}" Content="导出模型" Click="ExportModel_Click"/>
+                <TextBlock Text="相机位置" Style="{StaticResource SectionLabel}"/>
+                <Grid HorizontalAlignment="Center" Width="96">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/><RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左移 (L)" Click="CameraMoveLeft_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="前进 (T)" Click="CameraMoveForward_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右移 (R)" Click="CameraMoveRight_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="后退 (B)" Click="CameraMoveBack_Click"/>
+                </Grid>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <TextBlock Text="视角方向" Style="{StaticResource SectionLabel}"/>
+                <Grid HorizontalAlignment="Center" Width="96">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/><RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左看 (D)" Click="LookLeft_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="上看 (A)" Click="LookUp_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右看 (F)" Click="LookRight_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="下看 (C)" Click="LookDown_Click"/>
+                </Grid>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
@@ -102,6 +128,18 @@
                 <ToggleButton x:Name="WireframeToggle" Style="{StaticResource ToggleActionBtn}"
                               Content="线框模式" Checked="WireframeToggle_Checked"
                               Unchecked="WireframeToggle_Unchecked"/>
+                <ToggleButton x:Name="TextureToggle" Style="{StaticResource ToggleActionBtn}"
+                              Content="显示贴图" Checked="TextureToggle_Checked"
+                              Unchecked="TextureToggle_Unchecked"/>
+                <ToggleButton x:Name="MaterialToggle" Style="{StaticResource ToggleActionBtn}"
+                              Content="显示材质" Checked="MaterialToggle_Checked"
+                              Unchecked="MaterialToggle_Unchecked"/>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <Button Style="{StaticResource ActionBtn}" Content="重置视角" Click="ResetView_Click" ToolTip="重置视角 (Home)"/>
+                <Button Style="{StaticResource ActionBtn}" Content="截图" Click="Screenshot_Click"/>
+                <Button Style="{StaticResource ActionBtn}" Content="导出模型" Click="ExportModel_Click"/>
             </StackPanel>
         </Border>
 

@@ -10,6 +10,9 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Windows.Input;
 using System.Windows.Threading;
+using System.Windows.Data;
+using System.Windows.Media.Animation;
+using System.Globalization;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
 {
@@ -31,6 +34,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private bool isInitialized;
         private bool hasLoadedModel;
         private string? currentFilePath;
+        private bool keyboardHooked;
 
         // Object rotation tracking
         private Point lastMousePosition;
@@ -74,6 +78,12 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             viewport.MouseDown += Viewport_MouseDown;
             viewport.MouseMove += Viewport_MouseMove;
             viewport.MouseUp += Viewport_MouseUp;
+            viewport.GotKeyboardFocus += Viewport_GotKeyboardFocus;
+            viewport.MouseEnter += Viewport_MouseEnter;
+            HookKeyboard();
+            BindToolbarVisibility();
+            Focus();
+            Keyboard.Focus(this);
 
             axesVisuals = Viewport3DHelper.CreateFixedCornerAxes(20);
             foreach (var axis in axesVisuals)
@@ -81,11 +91,10 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
             CompositionTarget.Rendering += CompositionTarget_Rendering;
 
-            if (Config.DefaultWireframe)
-            {
-                WireframeToggle.IsChecked = true;
-                isWireframe = true;
-            }
+            WireframeToggle.IsChecked = Config.DefaultWireframe;
+            TextureToggle.IsChecked = Config.IsTextureVisible;
+            MaterialToggle.IsChecked = Config.IsMaterialVisible;
+            isWireframe = Config.DefaultWireframe;
 
             if (!hasLoadedModel && !string.IsNullOrWhiteSpace(currentFilePath) && File.Exists(currentFilePath))
                 LoadModelWithErrorHandling(currentFilePath);
@@ -100,11 +109,14 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 viewport.MouseDown -= Viewport_MouseDown;
                 viewport.MouseMove -= Viewport_MouseMove;
                 viewport.MouseUp -= Viewport_MouseUp;
+                viewport.GotKeyboardFocus -= Viewport_GotKeyboardFocus;
+                viewport.MouseEnter -= Viewport_MouseEnter;
                 viewport.Children.Clear();
                 ContentGrid.Children.Remove(viewport);
                 viewport = null;
             }
 
+            UnhookKeyboard();
             currentModelVisual = null;
             currentModelGroup = null;
             originalMaterialStates = null;
@@ -121,6 +133,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
         private void Viewport_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            Focus();
+            Keyboard.Focus(this);
             if (e.ChangedButton != MouseButton.Left || currentModelVisual == null) return;
             isLeftButtonDown = true;
             lastMousePosition = e.GetPosition(viewport);
@@ -273,6 +287,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     }
                 }, DispatcherPriority.Loaded);
 
+                ApplyVisibilityState();
                 hasLoadedModel = true;
 
                 string fileName = Path.GetFileName(filePath);
@@ -613,11 +628,173 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             }
         }
 
+        private void CameraMoveLeft_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.Position = new Point3D(camera.Position.X - 20, camera.Position.Y, camera.Position.Z);
+        }
+
+        private void CameraMoveForward_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.Position = new Point3D(camera.Position.X, camera.Position.Y + 20, camera.Position.Z);
+        }
+
+        private void CameraMoveRight_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.Position = new Point3D(camera.Position.X + 20, camera.Position.Y, camera.Position.Z);
+        }
+
+        private void CameraMoveBack_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.Position = new Point3D(camera.Position.X, camera.Position.Y - 20, camera.Position.Z);
+        }
+
+        private void LookLeft_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.LookDirection = new Vector3D(camera.LookDirection.X - 10, camera.LookDirection.Y, camera.LookDirection.Z);
+        }
+
+        private void LookUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z + 10);
+        }
+
+        private void LookRight_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.LookDirection = new Vector3D(camera.LookDirection.X + 10, camera.LookDirection.Y, camera.LookDirection.Z);
+        }
+
+        private void LookDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewport?.Camera is not ProjectionCamera camera) return;
+            camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z - 10);
+        }
+
         private void ShowLoading(bool show, string? message = null)
         {
             LoadingOverlay.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
             if (message != null)
                 LoadingText.Text = message;
+        }
+
+        private void Viewport_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            Keyboard.Focus(this);
+        }
+
+        private void Viewport_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (!IsKeyboardFocusWithin)
+                Keyboard.Focus(this);
+        }
+
+        private void HookKeyboard()
+        {
+            if (keyboardHooked)
+                return;
+
+            PreviewKeyDown += ModelViewer3DControl_PreviewKeyDown;
+            keyboardHooked = true;
+        }
+
+        private void UnhookKeyboard()
+        {
+            if (!keyboardHooked)
+                return;
+
+            PreviewKeyDown -= ModelViewer3DControl_PreviewKeyDown;
+            keyboardHooked = false;
+        }
+
+        private void BindToolbarVisibility()
+        {
+            var converter = Application.Current.TryFindResource("bool2VisibilityConverter") as IValueConverter;
+            ToolbarPanel.SetBinding(VisibilityProperty, new Binding(nameof(ModelViewer3DConfig.IsToolbarVisible))
+            {
+                Source = Config,
+                Converter = converter
+            });
+        }
+
+        private void ModelViewer3DControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!IsKeyboardFocusWithin)
+                return;
+
+            if (e.OriginalSource is DependencyObject source)
+            {
+                var focusedElement = Keyboard.FocusedElement as DependencyObject;
+                if (focusedElement != null && focusedElement != this && !IsDescendantOf(focusedElement, this))
+                    return;
+            }
+
+            if (viewport?.Camera is not ProjectionCamera camera)
+                return;
+
+            const double moveSpeed = 20.0;
+            const double lookSpeed = 10.0;
+
+            switch (e.Key)
+            {
+                case Key.L:
+                    camera.Position = new Point3D(camera.Position.X - moveSpeed, camera.Position.Y, camera.Position.Z);
+                    e.Handled = true;
+                    break;
+                case Key.T:
+                    camera.Position = new Point3D(camera.Position.X, camera.Position.Y + moveSpeed, camera.Position.Z);
+                    e.Handled = true;
+                    break;
+                case Key.R:
+                    camera.Position = new Point3D(camera.Position.X + moveSpeed, camera.Position.Y, camera.Position.Z);
+                    e.Handled = true;
+                    break;
+                case Key.B:
+                    camera.Position = new Point3D(camera.Position.X, camera.Position.Y - moveSpeed, camera.Position.Z);
+                    e.Handled = true;
+                    break;
+                case Key.A:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z + lookSpeed);
+                    e.Handled = true;
+                    break;
+                case Key.C:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z - lookSpeed);
+                    e.Handled = true;
+                    break;
+                case Key.D:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X - lookSpeed, camera.LookDirection.Y, camera.LookDirection.Z);
+                    e.Handled = true;
+                    break;
+                case Key.F:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X + lookSpeed, camera.LookDirection.Y, camera.LookDirection.Z);
+                    e.Handled = true;
+                    break;
+                case Key.Home:
+                    ResetView_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    break;
+                case Key.H:
+                    Config.IsToolbarVisible = !Config.IsToolbarVisible;
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        private static bool IsDescendantOf(DependencyObject child, DependencyObject parent)
+        {
+            DependencyObject? current = child;
+            while (current != null)
+            {
+                if (current == parent)
+                    return true;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return false;
         }
 
         private void ResetModelRotation()
@@ -638,6 +815,77 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 currentModelVisual.Transform = currentTransform;
         }
 
+        private void ApplyVisibilityState()
+        {
+            if (currentModelGroup == null || originalMaterialStates == null)
+                return;
+
+            if (isWireframe)
+            {
+                SetMaterialRecursive(currentModelGroup, MaterialHelper.CreateMaterial(Brushes.LimeGreen));
+                return;
+            }
+
+            if (!Config.IsMaterialVisible)
+            {
+                var hiddenMaterial = new DiffuseMaterial(new SolidColorBrush(Color.FromArgb(8, 180, 180, 180)));
+                SetMaterialRecursive(currentModelGroup, hiddenMaterial);
+                return;
+            }
+
+            foreach (var state in originalMaterialStates)
+            {
+                state.Geometry.Material = Config.IsTextureVisible ? state.Material : RemoveTextureFromMaterial(state.Material);
+                state.Geometry.BackMaterial = Config.IsTextureVisible ? state.BackMaterial : RemoveTextureFromMaterial(state.BackMaterial);
+            }
+        }
+
+        private static Material RemoveTextureFromMaterial(Material material)
+        {
+            if (material is MaterialGroup group)
+            {
+                var newGroup = new MaterialGroup();
+                foreach (var child in group.Children)
+                    newGroup.Children.Add(RemoveTextureFromMaterial(child));
+                return newGroup;
+            }
+
+            if (material is DiffuseMaterial diffuse)
+                return diffuse.Brush is ImageBrush ? new DiffuseMaterial(Brushes.White) : diffuse.Clone();
+
+            if (material is EmissiveMaterial emissive)
+                return emissive.Brush is ImageBrush ? new EmissiveMaterial(Brushes.White) : emissive.Clone();
+
+            if (material is SpecularMaterial specular)
+                return specular.Brush is ImageBrush ? new SpecularMaterial(Brushes.White, specular.SpecularPower) : specular.Clone();
+
+            return material.Clone();
+        }
+
+        private void TextureToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            Config.IsTextureVisible = true;
+            ApplyVisibilityState();
+        }
+
+        private void TextureToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            Config.IsTextureVisible = false;
+            ApplyVisibilityState();
+        }
+
+        private void MaterialToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            Config.IsMaterialVisible = true;
+            ApplyVisibilityState();
+        }
+
+        private void MaterialToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            Config.IsMaterialVisible = false;
+            ApplyVisibilityState();
+        }
+
         private void Screenshot_Click(object sender, RoutedEventArgs e)
         {
             if (viewport != null)
@@ -656,30 +904,25 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private void WireframeToggle_Checked(object sender, RoutedEventArgs e)
         {
             isWireframe = true;
+            Config.DefaultWireframe = true;
             ApplyWireframe();
         }
 
         private void WireframeToggle_Unchecked(object sender, RoutedEventArgs e)
         {
             isWireframe = false;
+            Config.DefaultWireframe = false;
             RestoreSolid();
         }
 
         private void ApplyWireframe()
         {
-            if (currentModelGroup == null) return;
-            SetMaterialRecursive(currentModelGroup, MaterialHelper.CreateMaterial(Brushes.LimeGreen));
+            ApplyVisibilityState();
         }
 
         private void RestoreSolid()
         {
-            if (originalMaterialStates == null) return;
-
-            foreach (var state in originalMaterialStates)
-            {
-                state.Geometry.Material = state.Material;
-                state.Geometry.BackMaterial = state.BackMaterial;
-            }
+            ApplyVisibilityState();
         }
 
         private static void SetMaterialRecursive(Model3DGroup group, Material material)

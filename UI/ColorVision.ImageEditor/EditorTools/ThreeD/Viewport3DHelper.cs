@@ -602,6 +602,18 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(sourceToSave));
             encoder.Save(stream);
+
+            if (ModelViewer3DConfig.Instance.HideExportedTextureFiles)
+            {
+                try
+                {
+                    File.SetAttributes(texturePath, File.GetAttributes(texturePath) | FileAttributes.Hidden);
+                }
+                catch
+                {
+                }
+            }
+
             return textureFileName;
         }
 

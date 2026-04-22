@@ -33,8 +33,8 @@ namespace ColorVision.ImageEditor
         }
 
         private void InvalidatePseudoColorRender()
-        {
-            PseudoColorService.Invalidate();
+        { 
+            PseudoColorService?.Invalidate();
         }
 
         private void Config_ColormapTypesChanged(object? sender, EventArgs e)
