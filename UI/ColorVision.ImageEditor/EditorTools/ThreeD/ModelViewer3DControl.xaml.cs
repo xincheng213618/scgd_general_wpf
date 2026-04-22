@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
@@ -28,7 +29,16 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private List<GeometryMaterialState>? originalMaterialStates;
         private bool isWireframe;
         private bool isInitialized;
+        private bool hasLoadedModel;
         private string? currentFilePath;
+
+        // Object rotation tracking
+        private Point lastMousePosition;
+        private bool isLeftButtonDown;
+        private Transform3DGroup currentTransform = new Transform3DGroup();
+        private QuaternionRotation3D currentRotation = new QuaternionRotation3D();
+        private Point3D rotationCenter;
+        private bool hasRotationCenter;
 
         private Point3D initialCameraPosition;
         private Vector3D initialLookDirection;
@@ -40,12 +50,13 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         {
             InitializeComponent();
             Loaded += ModelViewer3DControl_Loaded;
-            Unloaded += ModelViewer3DControl_Unloaded;
         }
 
         private void ModelViewer3DControl_Loaded(object sender, RoutedEventArgs e)
         {
-            if (isInitialized) return;
+            if (isInitialized)
+                return;
+
             isInitialized = true;
 
             initialCameraPosition = new Point3D(180, -260, 180);
@@ -60,6 +71,10 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
             ContentGrid.Children.Add(viewport);
 
+            viewport.MouseDown += Viewport_MouseDown;
+            viewport.MouseMove += Viewport_MouseMove;
+            viewport.MouseUp += Viewport_MouseUp;
+
             axesVisuals = Viewport3DHelper.CreateFixedCornerAxes(20);
             foreach (var axis in axesVisuals)
                 viewport.Children.Add(axis);
@@ -72,16 +87,19 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 isWireframe = true;
             }
 
-            if (!string.IsNullOrWhiteSpace(currentFilePath) && File.Exists(currentFilePath))
-                _ = LoadModelAsync(currentFilePath);
+            if (!hasLoadedModel && !string.IsNullOrWhiteSpace(currentFilePath) && File.Exists(currentFilePath))
+                LoadModelWithErrorHandling(currentFilePath);
         }
 
-        private void ModelViewer3DControl_Unloaded(object sender, RoutedEventArgs e)
+        public void DisposeViewer()
         {
             CompositionTarget.Rendering -= CompositionTarget_Rendering;
 
             if (viewport != null)
             {
+                viewport.MouseDown -= Viewport_MouseDown;
+                viewport.MouseMove -= Viewport_MouseMove;
+                viewport.MouseUp -= Viewport_MouseUp;
                 viewport.Children.Clear();
                 ContentGrid.Children.Remove(viewport);
                 viewport = null;
@@ -92,12 +110,45 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             originalMaterialStates = null;
             axesVisuals = null;
             isInitialized = false;
+            hasLoadedModel = false;
         }
 
         private void CompositionTarget_Rendering(object? sender, EventArgs e)
         {
             if (viewport?.Camera is PerspectiveCamera camera && axesVisuals != null)
                 Viewport3DHelper.UpdateFixedCornerAxes(axesVisuals, camera);
+        }
+
+        private void Viewport_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left || currentModelVisual == null) return;
+            isLeftButtonDown = true;
+            lastMousePosition = e.GetPosition(viewport);
+            viewport?.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void Viewport_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!isLeftButtonDown || currentModelVisual == null || viewport == null) return;
+
+            Point currentPosition = e.GetPosition(viewport);
+            Vector delta = currentPosition - lastMousePosition;
+            lastMousePosition = currentPosition;
+
+            const double rotationSpeed = 0.45;
+            Quaternion yaw = new Quaternion(new Vector3D(0, 0, 1), delta.X * rotationSpeed);
+            Quaternion pitch = new Quaternion(new Vector3D(1, 0, 0), delta.Y * rotationSpeed);
+            currentRotation.Quaternion = yaw * pitch * currentRotation.Quaternion;
+            currentModelVisual.Transform = currentTransform;
+        }
+
+        private void Viewport_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left) return;
+            isLeftButtonDown = false;
+            viewport?.ReleaseMouseCapture();
+            e.Handled = true;
         }
 
         public void SetInitialFile(string? filePath)
@@ -126,78 +177,125 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (viewport == null) return;
 
             currentFilePath = filePath;
+            hasLoadedModel = false;
+            ShowLoading(true, $"Loading {Path.GetFileName(filePath)}...");
+
             Model3DGroup? modelGroup = null;
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
             int vertexCount = 0;
             int triangleCount = 0;
             Rect3D bounds = Rect3D.Empty;
 
-            await Task.Run(() =>
+            try
             {
-                if (ext == ".obj")
+                await Task.Run(() =>
                 {
-                    bool deleteAfterLoad;
-                    string objPath = PreprocessObjFileIfNeeded(filePath, out deleteAfterLoad);
-                    try
+                    if (ext == ".obj")
                     {
-                        var reader = new ObjReader();
-                        modelGroup = reader.Read(objPath);
-                    }
-                    finally
-                    {
-                        if (deleteAfterLoad)
+                        bool deleteAfterLoad;
+                        string objPath = PreprocessObjFileIfNeeded(filePath, out deleteAfterLoad);
+                        try
                         {
-                            try { File.Delete(objPath); } catch { }
+                            var reader = new ObjReader();
+                            modelGroup = reader.Read(objPath);
+                        }
+                        finally
+                        {
+                            if (deleteAfterLoad)
+                            {
+                                try { File.Delete(objPath); } catch { }
+                            }
                         }
                     }
-                }
-                else if (ext == ".stl")
+                    else if (ext == ".stl")
+                    {
+                        var reader = new StLReader();
+                        modelGroup = reader.Read(filePath);
+                    }
+
+                    if (modelGroup != null)
+                    {
+                        PrepareModelForDisplay(modelGroup, ext == ".obj");
+                        CountGeometry(modelGroup, ref vertexCount, ref triangleCount);
+                        bounds = Viewport3DHelper.GetBounds(modelGroup);
+                        Viewport3DHelper.ApplyDefaultMaterial(modelGroup);
+                        FreezeModelForTransfer(modelGroup);
+                    }
+                });
+
+                if (modelGroup == null || !Viewport3DHelper.HasGeometry(modelGroup))
                 {
-                    var reader = new StLReader();
-                    modelGroup = reader.Read(filePath);
+                    MessageBox.Show($"Failed to load model:\n{filePath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
 
-                if (modelGroup != null)
-                {
-                    CountGeometry(modelGroup, ref vertexCount, ref triangleCount);
-                    bounds = Viewport3DHelper.GetBounds(modelGroup);
-                    Viewport3DHelper.ApplyDefaultMaterial(modelGroup);
-                }
-            });
+                if (!modelGroup.IsFrozen)
+                    throw new InvalidOperationException("The loaded model could not be transferred to the UI thread.");
 
-            if (modelGroup == null || !Viewport3DHelper.HasGeometry(modelGroup))
-            {
-                MessageBox.Show($"Failed to load model:\n{filePath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                modelGroup = modelGroup.Clone();
+
+                if (currentModelVisual != null)
+                    viewport.Children.Remove(currentModelVisual);
+
+                currentModelGroup = modelGroup;
+                originalMaterialStates = CaptureMaterialStates(modelGroup);
+                ResetModelRotation();
+
+                currentModelVisual = new ModelVisual3D { Content = modelGroup, Transform = currentTransform };
+                viewport.Children.Insert(0, currentModelVisual);
+
+                if (viewport.Camera is PerspectiveCamera camera)
+                {
+                    Viewport3DHelper.FrameModel(camera, bounds);
+                    Viewport3DHelper.ClearLights(viewport);
+                    Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
+                }
+                else
+                {
+                    Viewport3DHelper.ClearLights(viewport);
+                    Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
+                }
+
+                if (isWireframe)
+                    ApplyWireframe();
+
+                Viewport3DHelper.TryZoomExtents(viewport);
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (viewport?.Camera is PerspectiveCamera delayedCamera)
+                    {
+                        Viewport3DHelper.FrameModel(delayedCamera, bounds);
+                        if (viewport != null)
+                        {
+                            Viewport3DHelper.ClearLights(viewport);
+                            Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
+                        }
+                    }
+                }, DispatcherPriority.Loaded);
+
+                hasLoadedModel = true;
+
+                string fileName = Path.GetFileName(filePath);
+                ModelInfoText.Text = $"{fileName}\nVertices: {vertexCount:N0}\nTriangles: {triangleCount:N0}";
             }
-
-            Viewport3DHelper.ClearLights(viewport);
-            Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
-
-            if (currentModelVisual != null)
-                viewport.Children.Remove(currentModelVisual);
-
-            currentModelGroup = modelGroup;
-            originalMaterialStates = CaptureMaterialStates(modelGroup);
-
-            currentModelVisual = new ModelVisual3D { Content = modelGroup };
-            viewport.Children.Insert(0, currentModelVisual);
-
-            if (viewport.Camera is PerspectiveCamera camera)
-                Viewport3DHelper.FrameModel(camera, bounds);
-
-            if (isWireframe)
-                ApplyWireframe();
-
-            Viewport3DHelper.TryZoomExtents(viewport);
-            Dispatcher.BeginInvoke(() =>
+            finally
             {
-                if (viewport?.Camera is PerspectiveCamera delayedCamera)
-                    Viewport3DHelper.FrameModel(delayedCamera, bounds);
-            }, DispatcherPriority.Loaded);
+                ShowLoading(false);
+            }
+        }
 
-            string fileName = Path.GetFileName(filePath);
-            ModelInfoText.Text = $"{fileName}\nVertices: {vertexCount:N0}\nTriangles: {triangleCount:N0}";
+        private async void LoadModelWithErrorHandling(string filePath)
+        {
+            try
+            {
+                await LoadModelAsync(filePath);
+            }
+            catch (Exception ex)
+            {
+                string fileName = Path.GetFileName(filePath);
+                ModelInfoText.Text = $"{fileName}\nLoad failed";
+                MessageBox.Show($"Failed to load model:\n{filePath}\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private static void CountGeometry(Model3DGroup group, ref int vertexCount, ref int triangleCount)
@@ -214,6 +312,208 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     CountGeometry(childGroup, ref vertexCount, ref triangleCount);
                 }
             }
+        }
+
+        private static void PrepareModelForDisplay(Model3DGroup group, bool preferVisibleFallback)
+        {
+            bool forceVisibleMaterial = preferVisibleFallback && !HasVisibleMaterial(group);
+            PrepareModelForDisplayRecursive(group, forceVisibleMaterial);
+        }
+
+        private static void PrepareModelForDisplayRecursive(Model3D model, bool forceVisibleMaterial)
+        {
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                    PrepareModelForDisplayRecursive(child, forceVisibleMaterial);
+                return;
+            }
+
+            if (model is not GeometryModel3D geometry)
+                return;
+
+            if (geometry.Geometry is MeshGeometry3D mesh)
+                EnsureMeshNormals(mesh);
+
+            Material fallbackMaterial = MaterialHelper.CreateMaterial(Brushes.White);
+            if (geometry.Material == null || forceVisibleMaterial && MaterialLikelyInvisible(geometry.Material))
+                geometry.Material = fallbackMaterial;
+
+            if (geometry.BackMaterial == null || forceVisibleMaterial && MaterialLikelyInvisible(geometry.BackMaterial))
+                geometry.BackMaterial = geometry.Material;
+        }
+
+        private static bool HasVisibleMaterial(Model3D model)
+        {
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                {
+                    if (HasVisibleMaterial(child))
+                        return true;
+                }
+                return false;
+            }
+
+            if (model is not GeometryModel3D geometry)
+                return false;
+
+            return !MaterialLikelyInvisible(geometry.Material) || !MaterialLikelyInvisible(geometry.BackMaterial);
+        }
+
+        private static bool MaterialLikelyInvisible(Material? material)
+        {
+            if (material == null)
+                return true;
+
+            if (material is MaterialGroup group)
+            {
+                foreach (var child in group.Children)
+                {
+                    if (!MaterialLikelyInvisible(child))
+                        return false;
+                }
+                return true;
+            }
+
+            if (material is DiffuseMaterial diffuse)
+                return BrushLikelyInvisible(diffuse.Brush);
+
+            if (material is EmissiveMaterial emissive)
+                return BrushLikelyInvisible(emissive.Brush);
+
+            return true;
+        }
+
+        private static bool BrushLikelyInvisible(Brush? brush)
+        {
+            if (brush == null || brush.Opacity <= 0.01)
+                return true;
+
+            if (brush is ImageBrush imageBrush)
+                return imageBrush.ImageSource == null;
+
+            if (brush is SolidColorBrush solidColorBrush)
+            {
+                var color = solidColorBrush.Color;
+                int maxChannel = Math.Max(color.R, Math.Max(color.G, color.B));
+                return color.A <= 8 || maxChannel <= 12;
+            }
+
+            return false;
+        }
+
+        private static void EnsureMeshNormals(MeshGeometry3D mesh)
+        {
+            if (mesh.Positions.Count == 0)
+                return;
+
+            if (mesh.Normals != null && mesh.Normals.Count == mesh.Positions.Count && HasUsableNormals(mesh.Normals))
+                return;
+
+            var normals = new Vector3D[mesh.Positions.Count];
+            for (int i = 0; i + 2 < mesh.TriangleIndices.Count; i += 3)
+            {
+                int index0 = mesh.TriangleIndices[i];
+                int index1 = mesh.TriangleIndices[i + 1];
+                int index2 = mesh.TriangleIndices[i + 2];
+
+                if (index0 < 0 || index1 < 0 || index2 < 0 ||
+                    index0 >= mesh.Positions.Count || index1 >= mesh.Positions.Count || index2 >= mesh.Positions.Count)
+                {
+                    continue;
+                }
+
+                Vector3D edge1 = mesh.Positions[index1] - mesh.Positions[index0];
+                Vector3D edge2 = mesh.Positions[index2] - mesh.Positions[index0];
+                Vector3D faceNormal = Vector3D.CrossProduct(edge1, edge2);
+                if (faceNormal.LengthSquared <= 1e-12)
+                    continue;
+
+                faceNormal.Normalize();
+                normals[index0] += faceNormal;
+                normals[index1] += faceNormal;
+                normals[index2] += faceNormal;
+            }
+
+            var normalCollection = new Vector3DCollection(mesh.Positions.Count);
+            for (int i = 0; i < normals.Length; i++)
+            {
+                Vector3D normal = normals[i];
+                if (normal.LengthSquared <= 1e-12)
+                    normal = new Vector3D(0, 0, 1);
+                else
+                    normal.Normalize();
+
+                normalCollection.Add(normal);
+            }
+
+            mesh.Normals = normalCollection;
+        }
+
+        private static bool HasUsableNormals(Vector3DCollection normals)
+        {
+            foreach (var normal in normals)
+            {
+                if (normal.LengthSquared > 1e-12)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static void FreezeModelForTransfer(Model3D model)
+        {
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                    FreezeModelForTransfer(child);
+            }
+            else if (model is GeometryModel3D geometry)
+            {
+                FreezeFreezable(geometry.Geometry);
+                FreezeMaterialForTransfer(geometry.Material);
+                FreezeMaterialForTransfer(geometry.BackMaterial);
+            }
+
+            FreezeFreezable(model);
+        }
+
+        private static void FreezeMaterialForTransfer(Material? material)
+        {
+            if (material is MaterialGroup group)
+            {
+                foreach (var child in group.Children)
+                    FreezeMaterialForTransfer(child);
+            }
+            else if (material is DiffuseMaterial diffuse)
+            {
+                FreezeBrushForTransfer(diffuse.Brush);
+            }
+            else if (material is EmissiveMaterial emissive)
+            {
+                FreezeBrushForTransfer(emissive.Brush);
+            }
+            else if (material is SpecularMaterial specular)
+            {
+                FreezeBrushForTransfer(specular.Brush);
+            }
+
+            FreezeFreezable(material);
+        }
+
+        private static void FreezeBrushForTransfer(Brush? brush)
+        {
+            if (brush is ImageBrush imageBrush)
+                FreezeFreezable(imageBrush.ImageSource as Freezable);
+
+            FreezeFreezable(brush);
+        }
+
+        private static void FreezeFreezable(Freezable? freezable)
+        {
+            if (freezable?.CanFreeze == true && !freezable.IsFrozen)
+                freezable.Freeze();
         }
 
         private static List<GeometryMaterialState> CaptureMaterialStates(Model3DGroup group)
@@ -234,7 +534,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
             if (model is GeometryModel3D geometry)
             {
-                var material = geometry.Material ?? MaterialHelper.CreateMaterial(Brushes.LightGray);
+                var material = geometry.Material ?? MaterialHelper.CreateMaterial(Brushes.White);
                 var backMaterial = geometry.BackMaterial ?? material;
                 geometry.Material = material;
                 geometry.BackMaterial = backMaterial;
@@ -294,12 +594,14 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (dialog.ShowDialog() == true)
             {
                 Config.LastOpenDirectory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
-                _ = LoadModelAsync(dialog.FileName);
+                LoadModelWithErrorHandling(dialog.FileName);
             }
         }
 
         private void ResetView_Click(object sender, RoutedEventArgs e)
         {
+            ResetModelRotation();
+
             if (viewport?.Camera is PerspectiveCamera camera && currentModelGroup != null)
             {
                 var bounds = Viewport3DHelper.GetBounds(currentModelGroup);
@@ -309,6 +611,31 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             {
                 Viewport3DHelper.ResetCameraView(fallbackCamera, initialCameraPosition, initialLookDirection, initialUpDirection);
             }
+        }
+
+        private void ShowLoading(bool show, string? message = null)
+        {
+            LoadingOverlay.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            if (message != null)
+                LoadingText.Text = message;
+        }
+
+        private void ResetModelRotation()
+        {
+            currentRotation = new QuaternionRotation3D(Quaternion.Identity);
+            currentTransform = new Transform3DGroup();
+            if (hasRotationCenter)
+            {
+                currentTransform.Children.Add(new TranslateTransform3D(-rotationCenter.X, -rotationCenter.Y, -rotationCenter.Z));
+                currentTransform.Children.Add(new RotateTransform3D(currentRotation));
+                currentTransform.Children.Add(new TranslateTransform3D(rotationCenter.X, rotationCenter.Y, rotationCenter.Z));
+            }
+            else
+            {
+                currentTransform.Children.Add(new RotateTransform3D(currentRotation));
+            }
+            if (currentModelVisual != null)
+                currentModelVisual.Transform = currentTransform;
         }
 
         private void Screenshot_Click(object sender, RoutedEventArgs e)

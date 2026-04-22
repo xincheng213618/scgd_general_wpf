@@ -112,5 +112,14 @@
             <TextBlock x:Name="ModelInfoText" Foreground="#99FFFFFF" FontSize="11"
                        LineHeight="16" LineStackingStrategy="BlockLineHeight"/>
         </Border>
+
+        <!-- Loading progress overlay -->
+        <Grid x:Name="LoadingOverlay" Panel.ZIndex="100" Background="#E0000000" Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock x:Name="LoadingText" Text="Loading model..." Foreground="#FFFFFF" FontSize="14" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+                <ProgressBar x:Name="LoadingProgressBar" Width="280" Height="6" IsIndeterminate="True"
+                             Background="#333333" BorderThickness="0" Foreground="#4CAF50"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

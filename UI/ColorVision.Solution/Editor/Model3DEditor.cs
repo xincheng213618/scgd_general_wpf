@@ -53,7 +53,7 @@ namespace ColorVision.Solution.Editor
 
                 layoutDocument.Closing += (s, e) =>
                 {
-                    // Cleanup is handled by ModelViewer3DControl.Unloaded
+                    control.DisposeViewer();
                 };
             }
         }

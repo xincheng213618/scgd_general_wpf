@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -237,7 +238,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
         public static void ApplyDefaultMaterial(Model3D model)
         {
-            var material = MaterialHelper.CreateMaterial(Brushes.LightGray);
+            var material = MaterialHelper.CreateMaterial(Brushes.White);
             ApplyMaterialRecursive(model, material);
         }
 
@@ -262,11 +263,47 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         public static void AddCameraAlignedLights(HelixViewport3D viewport, Rect3D bounds)
         {
             if (viewport == null) return;
-            double size = Math.Max(bounds.SizeX, Math.Max(bounds.SizeY, bounds.SizeZ));
-            if (size <= 0) size = 1000;
 
-            viewport.Children.Add(new SunLight());
-            viewport.Children.Add(new DefaultLights());
+            Vector3D forward = new Vector3D(0.3, -1, -0.5);
+            Vector3D up = new Vector3D(0, 0, 1);
+
+            if (viewport.Camera is ProjectionCamera camera && camera.LookDirection.LengthSquared > 1e-12)
+            {
+                forward = camera.LookDirection;
+                forward.Normalize();
+
+                if (camera.UpDirection.LengthSquared > 1e-12)
+                {
+                    up = camera.UpDirection;
+                    up.Normalize();
+                }
+            }
+
+            Vector3D right = Vector3D.CrossProduct(forward, up);
+            if (right.LengthSquared <= 1e-12)
+                right = new Vector3D(1, 0, 0);
+            else
+                right.Normalize();
+
+            up = Vector3D.CrossProduct(right, forward);
+            if (up.LengthSquared <= 1e-12)
+                up = new Vector3D(0, 0, 1);
+            else
+                up.Normalize();
+
+            viewport.Children.Add(new ModelVisual3D { Content = new AmbientLight(Color.FromRgb(128, 128, 128)) });
+            viewport.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Colors.White, -forward) });
+            viewport.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Color.FromRgb(190, 190, 190), NormalizeLightDirection(-forward - right * 0.65 + up * 0.35)) });
+            viewport.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Color.FromRgb(120, 120, 120), NormalizeLightDirection(-forward + right * 0.45 - up * 0.2)) });
+        }
+
+        private static Vector3D NormalizeLightDirection(Vector3D direction)
+        {
+            if (direction.LengthSquared <= 1e-12)
+                return new Vector3D(0, -1, -0.4);
+
+            direction.Normalize();
+            return direction;
         }
 
         public static void ClearLights(HelixViewport3D viewport)
@@ -274,7 +311,10 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (viewport == null) return;
             for (int i = viewport.Children.Count - 1; i >= 0; i--)
             {
-                if (viewport.Children[i] is LightVisual3D || viewport.Children[i] is DefaultLights || viewport.Children[i] is SunLight)
+                if (viewport.Children[i] is LightVisual3D ||
+                    viewport.Children[i] is DefaultLights ||
+                    viewport.Children[i] is SunLight ||
+                    viewport.Children[i] is ModelVisual3D modelVisual && modelVisual.Content is Light)
                     viewport.Children.RemoveAt(i);
             }
         }
@@ -398,20 +438,35 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             ExportModel(model, defaultFileName);
         }
 
+        private sealed class ObjMaterialExportState
+        {
+            public required string MaterialName { get; init; }
+            public string? TextureFileName { get; init; }
+        }
+
         private static void WriteObj(Model3D model, string filePath)
         {
-            var builder = new StringBuilder();
-            builder.AppendLine("# Exported by ColorVision");
+            var objBuilder = new StringBuilder();
+            var mtlBuilder = new StringBuilder();
+            objBuilder.AppendLine("# Exported by ColorVision");
+
+            string materialFileName = Path.GetFileNameWithoutExtension(filePath) + ".mtl";
+            objBuilder.AppendLine($"mtllib {materialFileName}");
+            objBuilder.AppendLine();
 
             int vertexOffset = 1;
             int texcoordOffset = 1;
             int meshIndex = 0;
-            WriteObjRecursive(model, Transform3D.Identity.Value, builder, ref vertexOffset, ref texcoordOffset, ref meshIndex);
+            int materialIndex = 0;
+            bool hasMaterials = false;
+            WriteObjRecursive(model, Transform3D.Identity.Value, filePath, objBuilder, mtlBuilder, ref vertexOffset, ref texcoordOffset, ref meshIndex, ref materialIndex, ref hasMaterials);
 
-            File.WriteAllText(filePath, builder.ToString(), Encoding.UTF8);
+            File.WriteAllText(filePath, objBuilder.ToString(), Encoding.UTF8);
+            if (hasMaterials)
+                File.WriteAllText(Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, materialFileName), mtlBuilder.ToString(), Encoding.UTF8);
         }
 
-        private static void WriteObjRecursive(Model3D model, Matrix3D parentTransform, StringBuilder builder, ref int vertexOffset, ref int texcoordOffset, ref int meshIndex)
+        private static void WriteObjRecursive(Model3D model, Matrix3D parentTransform, string objFilePath, StringBuilder objBuilder, StringBuilder mtlBuilder, ref int vertexOffset, ref int texcoordOffset, ref int meshIndex, ref int materialIndex, ref bool hasMaterials)
         {
             if (model == null) return;
 
@@ -422,7 +477,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (model is Model3DGroup group)
             {
                 foreach (var child in group.Children)
-                    WriteObjRecursive(child, transform, builder, ref vertexOffset, ref texcoordOffset, ref meshIndex);
+                    WriteObjRecursive(child, transform, objFilePath, objBuilder, mtlBuilder, ref vertexOffset, ref texcoordOffset, ref meshIndex, ref materialIndex, ref hasMaterials);
                 return;
             }
 
@@ -432,19 +487,26 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 return;
 
             meshIndex++;
-            builder.AppendLine($"o mesh_{meshIndex}");
+            objBuilder.AppendLine($"o mesh_{meshIndex}");
+
+            ObjMaterialExportState? materialState = CreateObjMaterial(geometry.Material, objFilePath, mtlBuilder, ref materialIndex);
+            if (materialState != null)
+            {
+                hasMaterials = true;
+                objBuilder.AppendLine($"usemtl {materialState.MaterialName}");
+            }
 
             foreach (var position in mesh.Positions)
             {
                 Point3D p = transform.Transform(position);
-                builder.AppendLine(FormattableString.Invariant($"v {p.X} {p.Y} {p.Z}"));
+                objBuilder.AppendLine(FormattableString.Invariant($"v {p.X} {p.Y} {p.Z}"));
             }
 
             bool hasTexcoords = mesh.TextureCoordinates != null && mesh.TextureCoordinates.Count == mesh.Positions.Count;
             if (hasTexcoords)
             {
                 foreach (var uv in mesh.TextureCoordinates)
-                    builder.AppendLine(FormattableString.Invariant($"vt {uv.X} {1 - uv.Y}"));
+                    objBuilder.AppendLine(FormattableString.Invariant($"vt {uv.X} {1 - uv.Y}"));
             }
 
             for (int i = 0; i + 2 < mesh.TriangleIndices.Count; i += 3)
@@ -458,17 +520,113 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     int ta = mesh.TriangleIndices[i] + texcoordOffset;
                     int tb = mesh.TriangleIndices[i + 1] + texcoordOffset;
                     int tc = mesh.TriangleIndices[i + 2] + texcoordOffset;
-                    builder.AppendLine($"f {a}/{ta} {b}/{tb} {c}/{tc}");
+                    objBuilder.AppendLine($"f {a}/{ta} {b}/{tb} {c}/{tc}");
                 }
                 else
                 {
-                    builder.AppendLine($"f {a} {b} {c}");
+                    objBuilder.AppendLine($"f {a} {b} {c}");
                 }
             }
 
+            objBuilder.AppendLine();
             vertexOffset += mesh.Positions.Count;
             if (hasTexcoords)
                 texcoordOffset += mesh.TextureCoordinates.Count;
+        }
+
+        private static ObjMaterialExportState? CreateObjMaterial(Material? material, string objFilePath, StringBuilder mtlBuilder, ref int materialIndex)
+        {
+            if (material == null)
+                return null;
+
+            if (material is MaterialGroup group)
+            {
+                foreach (var child in group.Children)
+                {
+                    var childState = CreateObjMaterial(child, objFilePath, mtlBuilder, ref materialIndex);
+                    if (childState != null)
+                        return childState;
+                }
+                return null;
+            }
+
+            if (material is not DiffuseMaterial diffuse)
+                return null;
+
+            materialIndex++;
+            string materialName = $"mat_{materialIndex}";
+            string? textureFileName = null;
+            Color kd = Colors.White;
+
+            if (diffuse.Brush is SolidColorBrush solidColorBrush)
+            {
+                kd = solidColorBrush.Color;
+            }
+            else if (diffuse.Brush is ImageBrush imageBrush)
+            {
+                textureFileName = ExportObjTexture(imageBrush, objFilePath, materialName);
+            }
+
+            mtlBuilder.AppendLine($"newmtl {materialName}");
+            mtlBuilder.AppendLine(FormattableString.Invariant($"Kd {kd.R / 255.0:F6} {kd.G / 255.0:F6} {kd.B / 255.0:F6}"));
+            mtlBuilder.AppendLine("Ka 0.000000 0.000000 0.000000");
+            mtlBuilder.AppendLine("Ks 0.000000 0.000000 0.000000");
+            mtlBuilder.AppendLine("d 1.000000");
+            mtlBuilder.AppendLine("illum 1");
+            if (!string.IsNullOrWhiteSpace(textureFileName))
+                mtlBuilder.AppendLine($"map_Kd {textureFileName}");
+            mtlBuilder.AppendLine();
+
+            return new ObjMaterialExportState
+            {
+                MaterialName = materialName,
+                TextureFileName = textureFileName
+            };
+        }
+
+        private static string? ExportObjTexture(ImageBrush imageBrush, string objFilePath, string materialName)
+        {
+            BitmapSource? bitmapSource = ExtractBitmapSource(imageBrush);
+            if (bitmapSource == null)
+                return null;
+
+            string directory = Path.GetDirectoryName(objFilePath) ?? string.Empty;
+            string textureFileName = Path.GetFileNameWithoutExtension(objFilePath) + $"_{materialName}.png";
+            string texturePath = Path.Combine(directory, textureFileName);
+
+            BitmapSource sourceToSave = bitmapSource.Format == PixelFormats.Bgra32 || bitmapSource.Format == PixelFormats.Pbgra32
+                ? bitmapSource
+                : new FormatConvertedBitmap(bitmapSource, PixelFormats.Bgra32, null, 0);
+
+            using var stream = File.Create(texturePath);
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(sourceToSave));
+            encoder.Save(stream);
+            return textureFileName;
+        }
+
+        private static BitmapSource? ExtractBitmapSource(ImageBrush imageBrush)
+        {
+            if (imageBrush.ImageSource is BitmapSource bitmapSource)
+                return bitmapSource;
+
+            if (imageBrush.ViewboxUnits == BrushMappingMode.Absolute && imageBrush.ImageSource != null)
+            {
+                var image = new Image { Source = imageBrush.ImageSource, Stretch = Stretch.Fill };
+                image.Measure(new Size(imageBrush.Viewbox.Width, imageBrush.Viewbox.Height));
+                image.Arrange(new Rect(0, 0, imageBrush.Viewbox.Width, imageBrush.Viewbox.Height));
+                var renderBitmap = new RenderTargetBitmap(
+                    Math.Max((int)Math.Ceiling(imageBrush.Viewbox.Width), 1),
+                    Math.Max((int)Math.Ceiling(imageBrush.Viewbox.Height), 1),
+                    96,
+                    96,
+                    PixelFormats.Pbgra32);
+                renderBitmap.Render(image);
+                renderBitmap.Freeze();
+                return renderBitmap;
+            }
+
+            return null;
         }
 
         private static void WriteStl(Model3D model, string filePath)
