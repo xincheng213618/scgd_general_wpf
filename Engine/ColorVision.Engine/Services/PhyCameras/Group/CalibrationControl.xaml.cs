@@ -11,23 +11,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     sealed class TempCache
     {
         public string Cache { get; set; }
-
-        // 基础校正项选中状态
-        public bool DarkNoiseIsSelected { get; set; }
-        public bool DefectPointIsSelected { get; set; }
-        public bool DSNUIsSelected { get; set; }
-        public bool DistortionIsSelected { get; set; }
-        public bool ColorShiftIsSelected { get; set; }
-        public bool ColorDiffIsSelected { get; set; }
-        public bool AngleShiftIsSelected { get; set; }
-        public bool LineArityIsSelected { get; set; }
-        public bool UniformityIsSelected { get; set; }
-
-        // 色彩校正项选中状态（互斥）
-        public bool LumFourColorIsSelected { get; set; }
-        public bool LumOneColorIsSelected { get; set; }
-        public bool LumMultiColorIsSelected { get; set; }
-        public bool LuminanceIsSelected { get; set; }
+        private readonly Dictionary<string, bool> selectionStates = new();
 
         /// <summary>
         /// 从 CalibrationParam 中快照当前选中状态
@@ -35,20 +19,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public void SaveFrom(CalibrationParam param)
         {
             Cache = param.CalibrationMode;
-            DarkNoiseIsSelected = param.Normal.DarkNoise.IsSelected;
-            DefectPointIsSelected = param.Normal.DefectPoint.IsSelected;
-            DSNUIsSelected = param.Normal.DSNU.IsSelected;
-            DistortionIsSelected = param.Normal.Distortion.IsSelected;
-            ColorShiftIsSelected = param.Normal.ColorShift.IsSelected;
-            UniformityIsSelected = param.Normal.Uniformity.IsSelected;
-            ColorDiffIsSelected = param.Normal.ColorDiff.IsSelected;
-            LineArityIsSelected = param.Normal.LineArity.IsSelected;
-            AngleShiftIsSelected = param.Normal.AngleShift.IsSelected;
-
-            LuminanceIsSelected = param.Color.Luminance.IsSelected;
-            LumFourColorIsSelected = param.Color.LumFourColor.IsSelected;
-            LumMultiColorIsSelected = param.Color.LumMultiColor.IsSelected;
-            LumOneColorIsSelected = param.Color.LumOneColor.IsSelected;
+            selectionStates.Clear();
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                selectionStates[slot.Key] = slot.ParamGetter(param).IsSelected;
+            }
         }
 
         /// <summary>
@@ -56,20 +31,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// </summary>
         public void RestoreTo(CalibrationParam param)
         {
-            param.Normal.DarkNoise.IsSelected = DarkNoiseIsSelected;
-            param.Normal.DefectPoint.IsSelected = DefectPointIsSelected;
-            param.Normal.DSNU.IsSelected = DSNUIsSelected;
-            param.Normal.Distortion.IsSelected = DistortionIsSelected;
-            param.Normal.ColorShift.IsSelected = ColorShiftIsSelected;
-            param.Normal.Uniformity.IsSelected = UniformityIsSelected;
-            param.Normal.ColorDiff.IsSelected = ColorDiffIsSelected;
-            param.Normal.LineArity.IsSelected = LineArityIsSelected;
-            param.Normal.AngleShift.IsSelected = AngleShiftIsSelected;
-
-            param.Color.Luminance.IsSelected = LuminanceIsSelected;
-            param.Color.LumFourColor.IsSelected = LumFourColorIsSelected;
-            param.Color.LumMultiColor.IsSelected = LumMultiColorIsSelected;
-            param.Color.LumOneColor.IsSelected = LumOneColorIsSelected;
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                if (selectionStates.TryGetValue(slot.Key, out var isSelected))
+                {
+                    slot.ParamGetter(param).IsSelected = isSelected;
+                }
+            }
         }
 
         /// <summary>
@@ -77,20 +45,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// </summary>
         public static void ClearSelection(CalibrationParam param)
         {
-            param.Normal.DarkNoise.IsSelected = false;
-            param.Normal.DefectPoint.IsSelected = false;
-            param.Normal.DSNU.IsSelected = false;
-            param.Normal.Distortion.IsSelected = false;
-            param.Normal.ColorShift.IsSelected = false;
-            param.Normal.Uniformity.IsSelected = false;
-            param.Normal.ColorDiff.IsSelected = false;
-            param.Normal.LineArity.IsSelected = false;
-            param.Normal.AngleShift.IsSelected = false;
-
-            param.Color.Luminance.IsSelected = false;
-            param.Color.LumFourColor.IsSelected = false;
-            param.Color.LumMultiColor.IsSelected = false;
-            param.Color.LumOneColor.IsSelected = false;
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                slot.ParamGetter(param).IsSelected = false;
+            }
         }
     }
 
@@ -133,20 +91,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// </summary>
         private static void SyncFileExistence(CalibrationParam param, GroupResource groupResource)
         {
-            param.Normal.DarkNoise.IsExitFile = groupResource.DarkNoise?.IsValid ?? false;
-            param.Normal.DefectPoint.IsExitFile = groupResource.DefectPoint?.IsValid ?? false;
-            param.Normal.DSNU.IsExitFile = groupResource.DSNU?.IsValid ?? false;
-            param.Normal.Distortion.IsExitFile = groupResource.Distortion?.IsValid ?? false;
-            param.Normal.ColorShift.IsExitFile = groupResource.ColorShift?.IsValid ?? false;
-            param.Normal.Uniformity.IsExitFile = groupResource.Uniformity?.IsValid ?? false;
-            param.Normal.LineArity.IsExitFile = groupResource.LineArity?.IsValid ?? false;
-            param.Normal.ColorDiff.IsExitFile = groupResource.ColorDiff?.IsValid ?? false;
-            param.Normal.AngleShift.IsExitFile = groupResource.AngleShift?.IsValid ?? false;
-
-            param.Color.Luminance.IsExitFile = groupResource.Luminance?.IsValid ?? false;
-            param.Color.LumFourColor.IsExitFile = groupResource.LumFourColor?.IsValid ?? false;
-            param.Color.LumMultiColor.IsExitFile = groupResource.LumMultiColor?.IsValid ?? false;
-            param.Color.LumOneColor.IsExitFile = groupResource.LumOneColor?.IsValid ?? false;
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                slot.ParamGetter(param).IsExitFile = slot.GroupGetter(groupResource)?.IsValid ?? false;
+            }
         }
 
         /// <summary>
@@ -154,20 +102,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// </summary>
         private static void ClearAllFilePaths(CalibrationParam param)
         {
-            param.Normal.DarkNoise.FilePath = string.Empty;
-            param.Normal.DefectPoint.FilePath = string.Empty;
-            param.Normal.DSNU.FilePath = string.Empty;
-            param.Normal.Distortion.FilePath = string.Empty;
-            param.Normal.ColorShift.FilePath = string.Empty;
-            param.Normal.Uniformity.FilePath = string.Empty;
-            param.Normal.ColorDiff.FilePath = string.Empty;
-            param.Normal.LineArity.FilePath = string.Empty;
-            param.Normal.AngleShift.FilePath = string.Empty;
-
-            param.Color.Luminance.FilePath = string.Empty;
-            param.Color.LumFourColor.FilePath = string.Empty;
-            param.Color.LumMultiColor.FilePath = string.Empty;
-            param.Color.LumOneColor.FilePath = string.Empty;
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                slot.ParamGetter(param).FilePath = string.Empty;
+            }
         }
 
         /// <summary>
@@ -175,20 +113,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// </summary>
         private static void SyncFilePathsAndIds(CalibrationParam param, GroupResource groupResource)
         {
-            SetCalibrationFile(param.Normal.DarkNoise, groupResource.DarkNoise);
-            SetCalibrationFile(param.Normal.DefectPoint, groupResource.DefectPoint);
-            SetCalibrationFile(param.Normal.DSNU, groupResource.DSNU);
-            SetCalibrationFile(param.Normal.Distortion, groupResource.Distortion);
-            SetCalibrationFile(param.Normal.ColorShift, groupResource.ColorShift);
-            SetCalibrationFile(param.Normal.Uniformity, groupResource.Uniformity);
-            SetCalibrationFile(param.Normal.LineArity, groupResource.LineArity);
-            SetCalibrationFile(param.Normal.ColorDiff, groupResource.ColorDiff);
-            SetCalibrationFile(param.Normal.AngleShift, groupResource.AngleShift);
-
-            SetCalibrationFile(param.Color.Luminance, groupResource.Luminance);
-            SetCalibrationFile(param.Color.LumOneColor, groupResource.LumOneColor);
-            SetCalibrationFile(param.Color.LumFourColor, groupResource.LumFourColor);
-            SetCalibrationFile(param.Color.LumMultiColor, groupResource.LumMultiColor);
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                SetCalibrationFile(slot.ParamGetter(param), slot.GroupGetter(groupResource));
+            }
         }
 
         /// <summary>

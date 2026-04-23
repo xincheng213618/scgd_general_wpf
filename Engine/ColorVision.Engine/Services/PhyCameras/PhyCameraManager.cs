@@ -398,7 +398,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         phyCamera.AddChild(groupResource);
                         LoadGroupResource(groupResource);
                         break;
-                    case >= 30 and <= 50:
+                    case int resourceType when CalibrationSlotDefinitions.IsCalibrationType(resourceType):
                         var calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                         phyCamera.AddChild(calibrationResource);
                         break;
@@ -422,7 +422,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         LoadGroupResource(nestedGroupResource);
                         groupResource.AddChild(nestedGroupResource);
                         break;
-                    case >= 30 and <= 50:
+                    case int resourceType when CalibrationSlotDefinitions.IsCalibrationType(resourceType):
                         var calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                         groupResource.AddChild(calibrationResource);
                         break;

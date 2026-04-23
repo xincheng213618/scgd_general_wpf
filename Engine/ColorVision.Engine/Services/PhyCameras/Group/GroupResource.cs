@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -87,7 +86,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     LoadgroupResource(groupResource1);
                     groupResource.AddChild(groupResource);
                 }
-                else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 50)
+                else if (CalibrationSlotDefinitions.IsCalibrationType(sysResourceModel.Type))
                 {
                     CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
@@ -148,9 +147,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// 选择本地文件 → 拷贝到 PhyCamera 的 cfg 目录 → 在数据库中注册 SysResourceModel
         /// → 添加到 PhyCamera.VisualChildren（触发 CalibrationEdit 刷新 ComboBox）
         /// → 赋值到当前 GroupResource 的对应属性并保存。
-        /// CommandParameter 需传入属性名（同时也是 ServiceTypes 枚举名）：
-        /// DarkNoise / DefectPoint / DSNU / Uniformity / Distortion / ColorShift /
-        /// LineArity / ColorDiff / Luminance / LumOneColor / LumFourColor / LumMultiColor
+        /// CommandParameter 需传入 CalibrationSlotDefinitions 中定义的槽位 Key。
         /// </summary>
         private void UploadCalibrationItem(object parameter)
         {
@@ -160,18 +157,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 return;
             }
 
-            if (!Enum.TryParse<ServiceTypes>(typeName, out var serviceType))
+            if (!CalibrationSlotDefinitions.TryGet(typeName, out var slot))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"未知的校正类型：{typeName}", "ColorVision");
                 return;
             }
 
-            PropertyInfo prop = typeof(GroupResource).GetProperty(typeName, BindingFlags.Public | BindingFlags.Instance);
-            if (prop == null || prop.PropertyType != typeof(CalibrationResource))
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到校正槽：{typeName}", "ColorVision");
-                return;
-            }
+            var serviceType = slot.ServiceType;
 
             if (this.GetAncestor<PhyCamera>() is not PhyCamera phyCamera)
             {
@@ -272,7 +264,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             }
 
             // 赋值到当前组的对应槽位
-            prop.SetValue(this, calibrationResource);
+            slot.GroupSetter(this, calibrationResource);
             Save();
         }
 
@@ -293,20 +285,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             Db.Deleteable<SysResourceGoupModel>().Where(x => x.GroupId == SysResourceModel.Id).ExecuteCommand();
 
             VisualChildren.Clear();
-            VisualChildren.Add(DarkNoise);
-            VisualChildren.Add(DSNU);
-            VisualChildren.Add(DefectPoint);
-            VisualChildren.Add(Uniformity);
-            VisualChildren.Add(Distortion);
-            VisualChildren.Add(ColorShift); 
-            VisualChildren.Add(LineArity);
-            VisualChildren.Add(ColorDiff);
-            VisualChildren.Add(AngleShift);
-            VisualChildren.Add(Luminance);
-            VisualChildren.Add(LumOneColor);
-            VisualChildren.Add(LumFourColor);
-            VisualChildren.Add(LumMultiColor);
-
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                var calibrationResource = slot.GroupGetter(this);
+                if (calibrationResource != null)
+                {
+                    VisualChildren.Add(calibrationResource);
+                }
+            }
 
             foreach (var item in VisualChildren.OfType<CalibrationResource>())
             {
@@ -316,53 +302,17 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         }
         public void SetCalibrationResource()
         {
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                slot.GroupSetter(this, null);
+            }
+
             foreach (var item in VisualChildren.OfType<CalibrationResource>())
             {
-                switch ((ServiceTypes)item.SysResourceModel.Type)
+                if (CalibrationSlotDefinitions.TryGet((ServiceTypes)item.SysResourceModel.Type, out var slot))
                 {
-                    case ServiceTypes.DarkNoise:
-                        DarkNoise = item;
-                        break;
-                    case ServiceTypes.DefectPoint:
-                        DefectPoint = item;
-                        break;
-                    case ServiceTypes.DSNU:
-                        DSNU = item;
-                        break;
-                    case ServiceTypes.Uniformity:
-                        Uniformity = item;
-                        break;
-                    case ServiceTypes.Distortion:
-                        Distortion = item;
-                        break;
-                    case ServiceTypes.ColorShift:
-                        ColorShift = item;
-                        break;
-                    case ServiceTypes.Luminance:
-                        Luminance = item;
-                        break;
-                    case ServiceTypes.LumOneColor:
-                        LumOneColor = item;
-                        break;
-                    case ServiceTypes.LumFourColor:
-                        LumFourColor = item;
-                        break;
-                    case ServiceTypes.LumMultiColor:
-                        LumMultiColor = item;
-                        break;
-                    case ServiceTypes.ColorDiff:
-                        ColorDiff = item;
-                        break;
-                    case ServiceTypes.LineArity:
-                        LineArity = item;
-                        break;
-                    case ServiceTypes.AngleShift:
-                        AngleShift = item;
-                        break;
-                    default:
-                        break;
+                    slot.GroupSetter(this, item);
                 }
-
             }
 
             if (!Config.IsInit)

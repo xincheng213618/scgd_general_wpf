@@ -48,10 +48,33 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public ObservableCollection<CalibrationResource> AngleShiftList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> LineArityList { get; set; } = new ObservableCollection<CalibrationResource>();
 
+        private IReadOnlyDictionary<ServiceTypes, ObservableCollection<CalibrationResource>> CalibrationListsByServiceType => _CalibrationListsByServiceType ??= new Dictionary<ServiceTypes, ObservableCollection<CalibrationResource>>
+        {
+            [ServiceTypes.DarkNoise] = DarkNoiseList,
+            [ServiceTypes.DefectPoint] = DefectPointList,
+            [ServiceTypes.DSNU] = DSNUList,
+            [ServiceTypes.Uniformity] = UniformityList,
+            [ServiceTypes.Distortion] = DistortionList,
+            [ServiceTypes.ColorShift] = ColorShiftList,
+            [ServiceTypes.Luminance] = LuminanceList,
+            [ServiceTypes.LumOneColor] = LumOneColorList,
+            [ServiceTypes.LumFourColor] = LumFourColorList,
+            [ServiceTypes.LumMultiColor] = LumMultiColorList,
+            [ServiceTypes.ColorDiff] = ColorDiffList,
+            [ServiceTypes.AngleShift] = AngleShiftList,
+            [ServiceTypes.LineArity] = LineArityList,
+        };
+        private IReadOnlyDictionary<ServiceTypes, ObservableCollection<CalibrationResource>> _CalibrationListsByServiceType;
+
 
         public void Init()
         {
             groupResources.Clear();
+            foreach (var calibrationList in CalibrationListsByServiceType.Values)
+            {
+                calibrationList.Clear();
+            }
+
             foreach (var item in PhyCamera.VisualChildren)
             {
                 if (item is GroupResource groupResource)
@@ -59,52 +82,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     groupResource.SetCalibrationResource();
                     groupResources.Add(groupResource);
                 }
-                if (item is CalibrationResource calibrationResource)
+                if (item is CalibrationResource calibrationResource
+                    && CalibrationListsByServiceType.TryGetValue((ServiceTypes)calibrationResource.SysResourceModel.Type, out var calibrationList))
                 {
-                    switch ((ServiceTypes)calibrationResource.SysResourceModel.Type)
-                    {
-                        case ServiceTypes.DarkNoise:
-                            DarkNoiseList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.DefectPoint:
-                            DefectPointList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.DSNU:
-                            DSNUList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.Uniformity:
-                            UniformityList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.Distortion:
-                            DistortionList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.ColorShift:
-                            ColorShiftList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.Luminance:
-                            LuminanceList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.LumOneColor:
-                            LumOneColorList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.LumFourColor:
-                            LumFourColorList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.LumMultiColor:
-                            LumMultiColorList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.ColorDiff:
-                            ColorDiffList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.AngleShift:
-                            AngleShiftList.Add(calibrationResource);
-                            break;
-                        case ServiceTypes.LineArity:
-                            LineArityList.Add(calibrationResource);
-                            break;
-                        default:
-                            break;
-                    }
+                    calibrationList.Add(calibrationResource);
                 }
             }
 
@@ -115,19 +96,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 StackPanelCab.DataContext = groupResources[0];
             }
 
-            ComboBoxDarkNoise.ItemsSource = DarkNoiseList;
-            ComboBoxDefectPoint.ItemsSource = DefectPointList;
-            ComboBoxDSNU.ItemsSource = DSNUList;
-            ComboBoxUniformity.ItemsSource = UniformityList;
-            ComboBoxDistortion.ItemsSource = DistortionList;
-            ComboBoxColorShift.ItemsSource = ColorShiftList;
-            ComboBoxLuminance.ItemsSource = LuminanceList;
-            ComboBoxLumOneColor.ItemsSource = LumOneColorList;
-            ComboBoxLumFourColor.ItemsSource = LumFourColorList;
-            ComboBoxLumMultiColor.ItemsSource = LumMultiColorList;
-            ComboBoxColorDiff.ItemsSource = ColorDiffList;
-            ComboBoxAngleShift.ItemsSource = AngleShiftList;
-            ComboBoxLineArity.ItemsSource = LineArityList;
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                if (FindName($"ComboBox{slot.Key}") is ComboBox comboBox
+                    && CalibrationListsByServiceType.TryGetValue(slot.ServiceType, out var calibrationList))
+                {
+                    comboBox.ItemsSource = calibrationList;
+                }
+            }
 
             ListView1.SelectedIndex = Index;
         }
