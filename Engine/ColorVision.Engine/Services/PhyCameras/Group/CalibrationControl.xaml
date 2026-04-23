@@ -92,11 +92,18 @@
                             <TextBox IsEnabled="False" Text="{Binding Normal.LineArity.FilePath}" />
                         </DockPanel>
                         <!-- 色差校正：校正不同色彩通道间的色差偏移 -->
-                        <DockPanel ToolTip="色差校正（ColorDiff）：校正不同色彩通道间的色差">
+                        <DockPanel Margin="0,0,0,5" ToolTip="色差校正（ColorDiff）：校正不同色彩通道间的色差">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Normal.ColorDiff.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
                             <TextBlock DockPanel.Dock="Left" Text="ColorDiff" Width="80" ToolTip="色差校正：消除不同色彩通道间的色差偏移" />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.ColorDiff.IsSelected}"   Margin="5,0,0,0"  Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.ColorDiff.FilePath}" />
+                        </DockPanel>
+                        <!-- AngleShift：ColorDiff 变种（ServiceTypes=43），色差校正 -->
+                        <DockPanel ToolTip="色差校正（AngleShift）：ColorDiff 的变种，角度相关色差校正">
+                            <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Normal.AngleShift.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
+                            <TextBlock DockPanel.Dock="Left" Text="AngleShift" Width="80" ToolTip="色差校正（AngleShift）：ColorDiff 变种，用于角度相关的色差校正" />
+                            <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.AngleShift.IsSelected}"   Margin="5,0,0,0"  Width="20"/>
+                            <TextBox IsEnabled="False" Text="{Binding Normal.AngleShift.FilePath}" />
                         </DockPanel>
                     </StackPanel>
                 </Border>

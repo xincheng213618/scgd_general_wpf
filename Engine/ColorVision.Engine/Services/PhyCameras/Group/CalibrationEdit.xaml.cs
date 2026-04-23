@@ -45,6 +45,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public ObservableCollection<CalibrationResource> LumFourColorList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> LumMultiColorList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> ColorDiffList { get; set; } = new ObservableCollection<CalibrationResource>();
+        public ObservableCollection<CalibrationResource> AngleShiftList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> LineArityList { get; set; } = new ObservableCollection<CalibrationResource>();
 
 
@@ -95,6 +96,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                         case ServiceTypes.ColorDiff:
                             ColorDiffList.Add(calibrationResource);
                             break;
+                        case ServiceTypes.AngleShift:
+                            AngleShiftList.Add(calibrationResource);
+                            break;
                         case ServiceTypes.LineArity:
                             LineArityList.Add(calibrationResource);
                             break;
@@ -122,6 +126,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             ComboBoxLumFourColor.ItemsSource = LumFourColorList;
             ComboBoxLumMultiColor.ItemsSource = LumMultiColorList;
             ComboBoxColorDiff.ItemsSource = ColorDiffList;
+            ComboBoxAngleShift.ItemsSource = AngleShiftList;
             ComboBoxLineArity.ItemsSource = LineArityList;
 
             ListView1.SelectedIndex = Index;

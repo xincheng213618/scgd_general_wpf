@@ -32,7 +32,7 @@ namespace Pattern
 
         [DisplayName("保存格式")]
         public PatternFormat PatternFormat { get => _PatternFormat; set { _PatternFormat = value; OnPropertyChanged(); } }
-        private PatternFormat _PatternFormat = PatternFormat.bmp;
+        private PatternFormat _PatternFormat = PatternFormat.bmp24;
     }
 
 

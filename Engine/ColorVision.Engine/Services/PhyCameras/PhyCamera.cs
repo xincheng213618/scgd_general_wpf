@@ -901,6 +901,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                             case CalibrationType.LineArity:
                                 FilePath = path + "\\Calibration\\" + "LineArity\\" + item.FileName;
                                 break;
+                            case CalibrationType.AngleShift:
+                                FilePath = path + "\\Calibration\\" + "AngleShift\\" + item.FileName;
+                                break;
                             case CalibrationType.Empty_Num:
                                 break;
                             default:

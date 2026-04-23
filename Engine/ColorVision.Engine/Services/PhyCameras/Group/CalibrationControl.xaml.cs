@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public bool DistortionIsSelected { get; set; }
         public bool ColorShiftIsSelected { get; set; }
         public bool ColorDiffIsSelected { get; set; }
+        public bool AngleShiftIsSelected { get; set; }
         public bool LineArityIsSelected { get; set; }
         public bool UniformityIsSelected { get; set; }
 
@@ -42,6 +43,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             UniformityIsSelected = param.Normal.Uniformity.IsSelected;
             ColorDiffIsSelected = param.Normal.ColorDiff.IsSelected;
             LineArityIsSelected = param.Normal.LineArity.IsSelected;
+            AngleShiftIsSelected = param.Normal.AngleShift.IsSelected;
 
             LuminanceIsSelected = param.Color.Luminance.IsSelected;
             LumFourColorIsSelected = param.Color.LumFourColor.IsSelected;
@@ -62,6 +64,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             param.Normal.Uniformity.IsSelected = UniformityIsSelected;
             param.Normal.ColorDiff.IsSelected = ColorDiffIsSelected;
             param.Normal.LineArity.IsSelected = LineArityIsSelected;
+            param.Normal.AngleShift.IsSelected = AngleShiftIsSelected;
 
             param.Color.Luminance.IsSelected = LuminanceIsSelected;
             param.Color.LumFourColor.IsSelected = LumFourColorIsSelected;
@@ -82,6 +85,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             param.Normal.Uniformity.IsSelected = false;
             param.Normal.ColorDiff.IsSelected = false;
             param.Normal.LineArity.IsSelected = false;
+            param.Normal.AngleShift.IsSelected = false;
 
             param.Color.Luminance.IsSelected = false;
             param.Color.LumFourColor.IsSelected = false;
@@ -137,6 +141,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             param.Normal.Uniformity.IsExitFile = groupResource.Uniformity?.IsValid ?? false;
             param.Normal.LineArity.IsExitFile = groupResource.LineArity?.IsValid ?? false;
             param.Normal.ColorDiff.IsExitFile = groupResource.ColorDiff?.IsValid ?? false;
+            param.Normal.AngleShift.IsExitFile = groupResource.AngleShift?.IsValid ?? false;
 
             param.Color.Luminance.IsExitFile = groupResource.Luminance?.IsValid ?? false;
             param.Color.LumFourColor.IsExitFile = groupResource.LumFourColor?.IsValid ?? false;
@@ -157,6 +162,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             param.Normal.Uniformity.FilePath = string.Empty;
             param.Normal.ColorDiff.FilePath = string.Empty;
             param.Normal.LineArity.FilePath = string.Empty;
+            param.Normal.AngleShift.FilePath = string.Empty;
 
             param.Color.Luminance.FilePath = string.Empty;
             param.Color.LumFourColor.FilePath = string.Empty;
@@ -177,6 +183,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SetCalibrationFile(param.Normal.Uniformity, groupResource.Uniformity);
             SetCalibrationFile(param.Normal.LineArity, groupResource.LineArity);
             SetCalibrationFile(param.Normal.ColorDiff, groupResource.ColorDiff);
+            SetCalibrationFile(param.Normal.AngleShift, groupResource.AngleShift);
 
             SetCalibrationFile(param.Color.Luminance, groupResource.Luminance);
             SetCalibrationFile(param.Color.LumOneColor, groupResource.LumOneColor);

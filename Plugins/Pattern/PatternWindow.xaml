@@ -178,7 +178,7 @@
                     </UniformGrid>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Content="另存为" Click="BtnSave_Click" ToolTip="另存为图片文件" Margin="5,0,0,0"/>
-                        <ComboBox x:Name="cmbFormat" SelectedValue="{Binding Config.PatternFormat}" Height="28"/>
+                        <ComboBox x:Name="cmbFormat" SelectedValue="{Binding Config.PatternFormat}" DisplayMemberPath="Key" SelectedValuePath="Value" Height="28"/>
                     </DockPanel>
                 </StackPanel>
             </Grid>

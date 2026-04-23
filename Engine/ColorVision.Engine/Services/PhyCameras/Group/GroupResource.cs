@@ -1,11 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using SqlSugar;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -83,7 +87,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     LoadgroupResource(groupResource1);
                     groupResource.AddChild(groupResource);
                 }
-                else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+                else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 50)
                 {
                     CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
@@ -124,17 +128,152 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private bool _IsEditMode;
 
         public RelayCommand ReNameCommand { get; set; }
+        public RelayCommand UploadCalibrationItemCommand { get; set; }
         public ContextMenu ContextMenu { get; set; }
         public GroupResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
+            UploadCalibrationItemCommand = new RelayCommand(a => UploadCalibrationItem(a));
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
             ContextMenu.Items.Add( new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = true));
+        }
+
+        /// <summary>
+        /// 针对单个校正项（如 DarkNoise / DSNU ...）的上传：
+        /// 选择本地文件 → 拷贝到 PhyCamera 的 cfg 目录 → 在数据库中注册 SysResourceModel
+        /// → 添加到 PhyCamera.VisualChildren（触发 CalibrationEdit 刷新 ComboBox）
+        /// → 赋值到当前 GroupResource 的对应属性并保存。
+        /// CommandParameter 需传入属性名（同时也是 ServiceTypes 枚举名）：
+        /// DarkNoise / DefectPoint / DSNU / Uniformity / Distortion / ColorShift /
+        /// LineArity / ColorDiff / Luminance / LumOneColor / LumFourColor / LumMultiColor
+        /// </summary>
+        private void UploadCalibrationItem(object parameter)
+        {
+            if (parameter is not string typeName || string.IsNullOrWhiteSpace(typeName))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "未指定上传的校正类型", "ColorVision");
+                return;
+            }
+
+            if (!Enum.TryParse<ServiceTypes>(typeName, out var serviceType))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"未知的校正类型：{typeName}", "ColorVision");
+                return;
+            }
+
+            PropertyInfo prop = typeof(GroupResource).GetProperty(typeName, BindingFlags.Public | BindingFlags.Instance);
+            if (prop == null || prop.PropertyType != typeof(CalibrationResource))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到校正槽：{typeName}", "ColorVision");
+                return;
+            }
+
+            if (this.GetAncestor<PhyCamera>() is not PhyCamera phyCamera)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对应的物理相机", "ColorVision");
+                return;
+            }
+
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog
+            {
+                Title = $"选择 {typeName} 校正文件",
+                RestoreDirectory = true,
+                Multiselect = false,
+                Filter = "校正文件 (*.cvcal;*.bin;*.json;*.txt;*.dat)|*.cvcal;*.bin;*.json;*.txt;*.dat|所有文件 (*.*)|*.*",
+            };
+            if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                return;
+
+            string srcFile = openFileDialog.FileName;
+            if (!File.Exists(srcFile))
+                return;
+
+            string desDir = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg");
+            try
+            {
+                if (!Directory.Exists(desDir))
+                    Directory.CreateDirectory(desDir);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "创建目录失败：" + ex.Message, "ColorVision");
+                return;
+            }
+
+            string fileName = Path.GetFileName(srcFile);
+            string desFile = Path.Combine(desDir, fileName);
+            try
+            {
+                File.Copy(srcFile, desFile, true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "复制文件失败：" + ex.Message, "ColorVision");
+                return;
+            }
+
+            string title = Path.GetFileNameWithoutExtension(fileName);
+            string md5 = Tool.CalculateMD5(desFile);
+
+            // 同名 + 同 MD5 的资源已存在则复用
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            SysResourceModel existing = db.Queryable<SysResourceModel>()
+                .Where(a => a.Pid == phyCamera.SysResourceModel.Id
+                            && a.Type == (int)serviceType
+                            && a.Name == title
+                            && a.Code != null
+                            && a.Code.Contains(md5))
+                .First();
+
+            CalibrationResource calibrationResource;
+            if (existing != null)
+            {
+                calibrationResource = CalibrationResource.EnsureInstance(existing);
+            }
+            else
+            {
+                var sysResourceModel = new SysResourceModel
+                {
+                    Name = title,
+                    Code = phyCamera.Id + md5 + title,
+                    Type = (int)serviceType,
+                    Pid = phyCamera.SysResourceModel.Id,
+                    TenantId = phyCamera.SysResourceModel.TenantId,
+                    Value = fileName,
+                    CreateDate = DateTime.Now,
+                    Remark = JsonConvert.SerializeObject(new CalibrationFileConfig
+                    {
+                        CalibrationType = serviceType.ToCalibrationType(),
+                        FileName = fileName,
+                        Title = title,
+                    }),
+                };
+
+                int ret = SysResourceDao.Instance.Save(sysResourceModel);
+                if (ret < 0 || sysResourceModel.Id <= 0)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "保存资源记录失败", "ColorVision");
+                    return;
+                }
+
+                var saved = SysResourceDao.Instance.GetById(sysResourceModel.Id) ?? sysResourceModel;
+                calibrationResource = CalibrationResource.EnsureInstance(saved);
+            }
+
+            // 添加到 PhyCamera 顶层（若尚未添加），CalibrationEdit 会通过 CollectionChanged 刷新 ComboBox
+            if (calibrationResource.Parent != phyCamera)
+            {
+                Application.Current.Dispatcher.Invoke(() => phyCamera.AddChild(calibrationResource));
+            }
+
+            // 赋值到当前组的对应槽位
+            prop.SetValue(this, calibrationResource);
+            Save();
         }
 
         public override void Delete()
@@ -162,6 +301,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             VisualChildren.Add(ColorShift); 
             VisualChildren.Add(LineArity);
             VisualChildren.Add(ColorDiff);
+            VisualChildren.Add(AngleShift);
             VisualChildren.Add(Luminance);
             VisualChildren.Add(LumOneColor);
             VisualChildren.Add(LumFourColor);
@@ -216,6 +356,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     case ServiceTypes.LineArity:
                         LineArity = item;
                         break;
+                    case ServiceTypes.AngleShift:
+                        AngleShift = item;
+                        break;
                     default:
                         break;
                 }
@@ -249,7 +392,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private CalibrationResource _LineArity;
         public CalibrationResource ColorDiff { get => _ColorDiff; set { _ColorDiff = value; OnPropertyChanged(); } }
         private CalibrationResource _ColorDiff;
-        
+        /// <summary>
+        /// 色差校正（AngleShift）：ColorDiff 的变种，使用 ServiceTypes.AngleShift = 43。
+        /// </summary>
+        public CalibrationResource AngleShift { get => _AngleShift; set { _AngleShift = value; OnPropertyChanged(); } }
+        private CalibrationResource _AngleShift;
+
         public CalibrationResource Luminance { get => _Luminance; set { _Luminance = value; OnPropertyChanged(); } }
         private CalibrationResource _Luminance;
         public CalibrationResource LumOneColor { get => _LumOneColor; set { _LumOneColor = value; OnPropertyChanged(); } }

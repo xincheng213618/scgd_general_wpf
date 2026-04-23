@@ -8,6 +8,11 @@ using ColorVision.UI.Menus;
 using log4net;
 using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
+using Cv2 = OpenCvSharp.Cv2;
+using MatType = OpenCvSharp.MatType;
+using ImageEncodingParam = OpenCvSharp.ImageEncodingParam;
+using ImwriteFlags = OpenCvSharp.ImwriteFlags;
+using ColorConversionCodes = OpenCvSharp.ColorConversionCodes;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
@@ -17,6 +22,9 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using PixelFormat = System.Windows.Media.PixelFormat;
+using CvMat = OpenCvSharp.Mat;
 
 namespace Pattern
 {
@@ -55,7 +63,14 @@ namespace Pattern
 
     public enum PatternFormat
     {
-        bmp,
+        [System.ComponentModel.Description("单色位图 (*.bmp;*.dib)")]
+        bmp1,
+        [System.ComponentModel.Description("16色位图 (*.bmp;*.dib)")]
+        bmp4,
+        [System.ComponentModel.Description("256色位图 (*.bmp;*.dib)")]
+        bmp8,
+        [System.ComponentModel.Description("24位位图 (*.bmp;*.dib)")]
+        bmp24,
         tif,
         png,
         jpg
@@ -157,8 +172,10 @@ namespace Pattern
             //DisplayGrid.Children.Add(imgDisplay);
             DisplayGrid.Child = imgDisplay;
             this.Closed += (s, e) => Dispose();
-            cmbFormat.ItemsSource = Enum.GetValues(typeof(PatternFormat));
-            cmbFormat.SelectedIndex = 0;
+            cmbFormat.ItemsSource = Enum.GetValues(typeof(PatternFormat))
+                .Cast<PatternFormat>()
+                .Select(f => new KeyValuePair<string, PatternFormat>(GetPatternFormatDescription(f), f));
+            cmbFormat.SelectedValue = PatternManager.Config.PatternFormat;
             cmbResolution.ItemsSource = Array.ConvertAll(commonResolutions, t => t.Item1);
             cmbResolution.SelectedIndex = 4; // 默认640x480
 
@@ -228,18 +245,184 @@ namespace Pattern
                 System.Windows.MessageBox.Show("请先生成图案");
                 return;
             }
-            string ext = PatternManager.Config.PatternFormat.ToString();
-            string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + $".{PatternManager.Config.PatternFormat}");
+
+            if (PatternMeta == null)
+            {
+                System.Windows.MessageBox.Show("请先选择图案");
+                return;
+            }
+
+            string extension = GetFileExtension(PatternManager.Config.PatternFormat);
+            string fileName = Path.Combine(
+                PatternManager.GetInstance().PatternPath,
+                Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + extension);
+
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
-                Filter = "PNG|*.png|JPEG|*.jpg|BMP|*.bmp",
-                DefaultExt = ext,
-                FileName = json
+                Filter = GetSaveFileDialogFilter(),
+                DefaultExt = extension,
+                FileName = fileName,
+                AddExtension = true
             };
             if (dlg.ShowDialog() == true)
             {
-                currentMat.SaveImage(dlg.FileName);
+                SavePatternImage(currentMat, dlg.FileName, PatternManager.Config.PatternFormat);
                 System.Windows.MessageBox.Show("保存成功: " + dlg.FileName);
+            }
+        }
+
+        private static string GetPatternFormatDescription(PatternFormat format)
+        {
+            var field = typeof(PatternFormat).GetField(format.ToString());
+            var attr = field?.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>();
+            return attr?.Description ?? format.ToString();
+        }
+
+        private static string GetFileExtension(PatternFormat format)
+        {
+            return format switch
+            {
+                PatternFormat.bmp1 or PatternFormat.bmp4 or PatternFormat.bmp8 or PatternFormat.bmp24 => ".bmp",
+                PatternFormat.tif => ".tif",
+                PatternFormat.png => ".png",
+                PatternFormat.jpg => ".jpg",
+                _ => ".bmp"
+            };
+        }
+
+        private static string GetSaveFileDialogFilter()
+        {
+            return string.Join("|", new[]
+            {
+                "单色位图 (*.bmp;*.dib)|*.bmp;*.dib",
+                "16色位图 (*.bmp;*.dib)|*.bmp;*.dib",
+                "256色位图 (*.bmp;*.dib)|*.bmp;*.dib",
+                "24位位图 (*.bmp;*.dib)|*.bmp;*.dib",
+                "PNG (*.png)|*.png",
+                "JPEG (*.jpg)|*.jpg",
+                "TIFF (*.tif)|*.tif"
+            });
+        }
+
+        private static BitmapPalette CreatePalette(int colorCount)
+        {
+            if (colorCount <= 2)
+                return BitmapPalettes.BlackAndWhite;
+
+            var colors = new List<System.Windows.Media.Color>(colorCount);
+            for (int i = 0; i < colorCount; i++)
+            {
+                byte gray = (byte)Math.Round(i * 255.0 / (colorCount - 1));
+                colors.Add(System.Windows.Media.Color.FromRgb(gray, gray, gray));
+            }
+            return new BitmapPalette(colors);
+        }
+
+        private static BitmapSource CreateBmpBitmapSource(CvMat source, PatternFormat format)
+        {
+            using var normalized = EnsureGray8(source);
+            PixelFormat pixelFormat;
+            BitmapPalette? palette;
+
+            switch (format)
+            {
+                case PatternFormat.bmp1:
+                    pixelFormat = PixelFormats.Indexed1;
+                    palette = BitmapPalettes.BlackAndWhite;
+                    break;
+                case PatternFormat.bmp4:
+                    pixelFormat = PixelFormats.Indexed4;
+                    palette = CreatePalette(16);
+                    break;
+                case PatternFormat.bmp8:
+                    pixelFormat = PixelFormats.Indexed8;
+                    palette = BitmapPalettes.Gray256;
+                    break;
+                default:
+                    return normalized.ToWriteableBitmap();
+            }
+
+            int width = normalized.Width;
+            int height = normalized.Height;
+            int stride = (width * pixelFormat.BitsPerPixel + 7) / 8;
+            byte[] pixels = new byte[stride * height];
+            var indexer = normalized.GetGenericIndexer<byte>();
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    byte value = indexer[y, x];
+                    int rowOffset = y * stride;
+                    switch (format)
+                    {
+                        case PatternFormat.bmp1:
+                            if (value >= 128)
+                                pixels[rowOffset + x / 8] |= (byte)(0x80 >> (x % 8));
+                            break;
+                        case PatternFormat.bmp4:
+                            byte nibble = (byte)(value >> 4);
+                            int byteIndex = rowOffset + x / 2;
+                            if ((x & 1) == 0)
+                                pixels[byteIndex] |= (byte)(nibble << 4);
+                            else
+                                pixels[byteIndex] |= nibble;
+                            break;
+                        case PatternFormat.bmp8:
+                            pixels[rowOffset + x] = value;
+                            break;
+                    }
+                }
+            }
+
+            return BitmapSource.Create(width, height, 96, 96, pixelFormat, palette, pixels, stride);
+        }
+
+        private static CvMat EnsureGray8(CvMat source)
+        {
+            if (source.Type().Channels == 1 && source.Depth() == 0)
+                return source.Clone();
+
+            var gray = new CvMat();
+            if (source.Type().Channels == 1)
+            {
+                source.ConvertTo(gray, MatType.CV_8UC1);
+                return gray;
+            }
+
+            Cv2.CvtColor(source, gray, ColorConversionCodes.BGR2GRAY);
+            return gray;
+        }
+
+        private static void SaveBitmapUsingEncoder(BitmapSource bitmapSource, string fileName, BitmapEncoder encoder)
+        {
+            encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+            using var stream = File.Create(fileName);
+            encoder.Save(stream);
+        }
+
+        private static void SavePatternImage(CvMat source, string fileName, PatternFormat format)
+        {
+            switch (format)
+            {
+                case PatternFormat.bmp1:
+                case PatternFormat.bmp4:
+                case PatternFormat.bmp8:
+                case PatternFormat.bmp24:
+                    SaveBitmapUsingEncoder(CreateBmpBitmapSource(source, format), fileName, new BmpBitmapEncoder());
+                    break;
+                case PatternFormat.png:
+                    source.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, 3));
+                    break;
+                case PatternFormat.jpg:
+                    source.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, 95));
+                    break;
+                case PatternFormat.tif:
+                    source.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+                    break;
+                default:
+                    source.SaveImage(fileName);
+                    break;
             }
         }
 
@@ -403,7 +586,7 @@ namespace Pattern
                     currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
                     string name = Path.GetFileNameWithoutExtension(item.FilePath);
 
-                    currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath, name + $".{PatternManager.Config.PatternFormat}"));
+                    SavePatternImage(currentMat, Path.Combine(PatternManager.Config.SaveFilePath, name + GetFileExtension(PatternManager.Config.PatternFormat)), PatternManager.Config.PatternFormat);
                 }
                 catch(Exception ex)
                 {
