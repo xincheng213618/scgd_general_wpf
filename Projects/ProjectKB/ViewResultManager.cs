@@ -40,6 +40,10 @@ namespace ProjectKB
         [DisplayName("Text保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
         public string TextSavePath { get => _TextSavePath; set { _TextSavePath = value; OnPropertyChanged(); } }
         private string _TextSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB");
+
+        [DisplayName("保存Text"), Category("KB")]
+        public bool SaveText { get => _SaveText; set { _SaveText = value; OnPropertyChanged(); } }
+        private bool _SaveText = true;
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable
