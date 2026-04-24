@@ -66,7 +66,8 @@ export default withMermaid(
               items: [
                 { text: '主窗口导览', link: '/01-user-guide/interface/main-window' },
                 { text: '属性编辑器', link: '/01-user-guide/interface/property-editor' },
-                { text: '日志查看器', link: '/01-user-guide/interface/log-viewer' }
+                { text: '日志查看器', link: '/01-user-guide/interface/log-viewer' },
+                { text: '终端', link: '/01-user-guide/interface/terminal' }
               ]
             },
             {
@@ -140,6 +141,19 @@ export default withMermaid(
                 { text: '自定义控件', link: '/02-developer-guide/ui-development/custom-controls' },
                 { text: 'ImageEditor 集成', link: '/02-developer-guide/ui-development/image-editor-integration' },
                 { text: '主题与样式', link: '/02-developer-guide/ui-development/themes' }
+              ]
+            },
+            {
+              text: 'Core 性能优化',
+              collapsed: true,
+              items: [
+                { text: '优化总览', link: '/02-developer-guide/core-optimization/README' },
+                { text: '内存管理', link: '/02-developer-guide/core-optimization/memory-management' },
+                { text: '异步流水线', link: '/02-developer-guide/core-optimization/async-pipeline' },
+                { text: 'CPU 并行化', link: '/02-developer-guide/core-optimization/cpu-parallelization' },
+                { text: 'CUDA 优化', link: '/02-developer-guide/core-optimization/cuda-optimization' },
+                { text: 'SFR 重构', link: '/02-developer-guide/core-optimization/sfr-refactor' },
+                { text: 'API 设计', link: '/02-developer-guide/core-optimization/api-design' }
               ]
             },
             {
@@ -301,7 +315,11 @@ export default withMermaid(
               items: [
                 { text: 'Pattern 插件', link: '/04-api-reference/plugins/standard-plugins/pattern' },
                 { text: 'Spectrum 插件', link: '/04-api-reference/plugins/standard-plugins/spectrum' },
-                { text: 'SystemMonitor 插件', link: '/04-api-reference/plugins/standard-plugins/system-monitor' }
+                { text: 'SystemMonitor 插件', link: '/04-api-reference/plugins/standard-plugins/system-monitor' },
+                { text: 'EventVwr 插件', link: '/04-api-reference/plugins/standard-plugins/eventvwr' },
+                { text: '图像投影插件', link: '/04-api-reference/plugins/standard-plugins/image-projector' },
+                { text: '录屏插件', link: '/04-api-reference/plugins/standard-plugins/screen-recorder' },
+                { text: 'Windows 服务插件', link: '/04-api-reference/plugins/standard-plugins/windows-service' }
               ]
             },
             {
@@ -322,7 +340,8 @@ export default withMermaid(
               collapsed: true,
               items: [
                 { text: '项目结构总览', link: '/05-resources/project-structure/README' },
-                { text: '模块与文档对照', link: '/05-resources/project-structure/module-documentation-map' }
+                { text: '模块与文档对照', link: '/05-resources/project-structure/module-documentation-map' },
+                { text: 'ProjectARVRPro 结构', link: '/05-resources/project-structure/project-arvrpro' }
               ]
             },
             {
