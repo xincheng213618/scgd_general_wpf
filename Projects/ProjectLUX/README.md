@@ -108,7 +108,7 @@ ProjectLUX
 
 ## Socket 协议
 
-外部系统通过 TCP Socket 发送命令，格式：`T00XX,SN;`
+外部系统通过 TCP Socket 发送命令，格式：`T00XX,SN;`。
 
 | 命令码 | 功能 | 说明 |
 |--------|------|------|
@@ -116,7 +116,7 @@ ProjectLUX
 | `T0001` | VID 虚像距 | 自动对焦测量，返回 VID 位置值 |
 | `T0002` | 光学中心 | OC 测试（仅 AR 模式） |
 | `T0031` | 光通量 | 光谱仪测量，返回光通量值 |
-| `T00XX` | 流程执行 | 按 SocketCode 匹配 ProcessMeta 执行对应测试 |
+| `T00XX` | 流程执行 | 在当前活动组内按 SocketCode 匹配 ProcessMeta 执行对应测试 |
 
 响应格式：`H03XX,SN,状态;[数据]`
 

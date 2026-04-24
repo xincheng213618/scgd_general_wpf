@@ -97,60 +97,32 @@ namespace ProjectLUX
             }
         }
 
-        public void RunTemplate(int index,string templatename)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ProjectLUXConfig.Instance.StepIndex = index;
-                var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(templatename));     
-                if (ProjectLUXConfig.Instance.LUXTestOpen && temp !=null)
-                {
-                    FlowTemplate.SelectedValue = temp.Value;
-                    RunTemplate();
-                }
-                else
-                {
-                    log.Error($"cant find {templatename} error");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
-                }
-            });
-        }
-
-        public void RunTemplate(int index)
-        {
-            if (index >= 0 && index < Process.ProcessManager.GetInstance().ProcessMetas.Count)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProcessMeta processMeta = ProcessMetas[index];
-                    ProjectConfig.StepIndex = index;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
-                    RunTemplate();
-                });
-            }
-            else
-            {
-                log.Info("超出范围");
-            }
-        }
-
         /// <summary>
-        /// 根据 SocketCode 查找对应的 ProcessMeta 并执行流程。
+        /// 在当前活动组内根据 SocketCode 查找对应的 ProcessMeta 并执行流程。
         /// </summary>
         public void RunTemplateBySocketCode(string socketCode)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var processMeta = ProcessMetas.FirstOrDefault(m => m.SocketCode == socketCode);
-                if (processMeta == null)
+                var activeGroup = ProcessManager.ActiveGroup;
+                if (activeGroup == null)
                 {
-                    log.Error($"未找到 SocketCode={socketCode} 对应的流程");
+                    log.Error($"未设置活动流程组，无法执行 SocketCode={socketCode}");
                     if (SocketControl.Current.Stream != null)
                         SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     return;
                 }
-                int index = ProcessMetas.IndexOf(processMeta);
+
+                var processMeta = ProcessManager.FindProcessMetaBySocketCode(socketCode);
+                if (processMeta == null)
+                {
+                    log.Error($"未在组 {activeGroup.Name} 中找到 SocketCode={socketCode} 对应的流程");
+                    if (SocketControl.Current.Stream != null)
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    return;
+                }
+
+                int index = activeGroup.ProcessMetas.IndexOf(processMeta);
                 ProjectConfig.StepIndex = index;
                 var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(processMeta.FlowTemplate));
                 if (temp != null)
@@ -179,6 +151,8 @@ namespace ProjectLUX
         private void Window_Initialized(object sender, EventArgs e)
         {
             ProcessManager.GenStepBar(stepBar);
+            ProcessManager.ActiveGroupChanged += ProcessManager_ActiveGroupChanged;
+            UpdateActiveGroupDisplay();
 
             this.DataContext = ProjectLUXConfig.Instance;
 
@@ -206,6 +180,7 @@ namespace ProjectLUX
 
             this.Closed += (s, e) =>
             {
+                ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
 
@@ -218,6 +193,25 @@ namespace ProjectLUX
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
 
+        }
+
+        private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                ProcessManager.GenStepBar(stepBar);
+                ProjectLUXConfig.Instance.StepIndex = 0;
+                UpdateActiveGroupDisplay();
+                log.Info($"切换流程组: {ProcessManager.ActiveGroup?.Name}");
+            });
+        }
+
+        private void UpdateActiveGroupDisplay()
+        {
+            string groupName = ProcessManager.ActiveGroup?.Name;
+            ActiveGroupTextBlock.Text = string.IsNullOrWhiteSpace(groupName)
+                ? "当前组: 未设置"
+                : $"当前组: {groupName}";
         }
 
         public void Delete()
