@@ -22,7 +22,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -43,10 +42,10 @@ namespace ProjectKB
         public static ProjectKBWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBWindowConfig>();
     }
 
-        /// <summary>
-        /// Interaction logic for _windowInstance.xaml
-        /// </summary>
-    public partial class ProjectKBWindow : Window,IDisposable
+    /// <summary>
+    /// Interaction logic for _windowInstance.xaml
+    /// </summary>
+    public partial class ProjectKBWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
@@ -72,7 +71,7 @@ namespace ProjectKB
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => ViewResultManager.Delete(listView1.SelectedIndex), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.ItemsSource = ViewResluts;
             InitFlow();
-            Task.Run(async() =>
+            Task.Run(async () =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)
                 {
@@ -254,7 +253,7 @@ namespace ProjectKB
         int TryCount;
         public async Task RunTemplate()
         {
-            if (flowControl!=null && flowControl.IsFlowRun) return;
+            if (flowControl != null && flowControl.IsFlowRun) return;
 
             TryCount++;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
@@ -433,7 +432,7 @@ namespace ProjectKB
                             if (key != null)
                             {
                                 key.Lv = list.Y;
-                                key.Lv = list.Y*list.PixNumber;
+                                key.Lv = list.Y * list.PixNumber;
                                 if (key.KBKeyRect.KBKey.Area != 0)
                                 {
                                     key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
@@ -534,7 +533,7 @@ namespace ProjectKB
             KBItemMaster.DrakestKey = minLKey.Name;
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
 
-            KBItemMaster.LvUniformity = KBItemMaster.MaxLv ==0 ? 0: KBItemMaster.MinLv / KBItemMaster.MaxLv;
+            KBItemMaster.LvUniformity = KBItemMaster.MaxLv == 0 ? 0 : KBItemMaster.MinLv / KBItemMaster.MaxLv;
             KBItemMaster.SN = SNtextBox.Text;
             KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
 
@@ -616,7 +615,12 @@ namespace ProjectKB
                 Summary.DefectiveProductCount += 1;
             }
             ViewResultManager.Save(KBItemMaster);
-            SaveOutputText(KBItemMaster);
+
+            string resultPath = ViewResultManager.Config.TextSavePath + $"\\{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt";
+            string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
+
+            log.Debug($"结果正在写入{resultPath},result:{result}");
+            File.WriteAllText(resultPath, result);
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -691,7 +695,7 @@ namespace ProjectKB
                 double centey = item.KBKeyRect.Y + item.KBKeyRect.Height / 2;
 
                 List<KBItem> round = new List<KBItem>();
-                foreach (var keys in kBItems.Where(a=>a != item))
+                foreach (var keys in kBItems.Where(a => a != item))
                 {
                     if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 300))
                         round.Add(keys);
@@ -699,7 +703,7 @@ namespace ProjectKB
                 List<string> strings = round.Select(keys => keys.Name).ToList();
                 log.Debug($"Round Key {item.Name}: {string.Join(",", strings)}");
 
-                double averagelv = round.Count>0 ? round.Average(item => item.Lv) : 0;
+                double averagelv = round.Count > 0 ? round.Average(item => item.Lv) : 0;
                 log.Debug($"Round Key {item.Name}: averagelv{averagelv}");
                 if (averagelv == 0)
                 {
@@ -712,68 +716,6 @@ namespace ProjectKB
             }
         }
 
-        private static string SanitizePathPart(string value, string fallback)
-        {
-            string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-            string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-            string sanitized = Regex.Replace(value ?? string.Empty, regexPattern, string.Empty).Trim();
-            return string.IsNullOrWhiteSpace(sanitized) ? fallback : sanitized;
-        }
-
-        private static string BuildOutputText(KBItemMaster kmitemmaster)
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine($"Model:{kmitemmaster.Model}");
-            builder.AppendLine($"SN:{kmitemmaster.SN}");
-            builder.AppendLine("Poiints of Interest: ");
-            builder.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM//dd HH:mm:ss}");
-            builder.AppendLine($"{"PT",-20}   {"Lv",-10} {"Lc",10}");
-
-            foreach (var item in kmitemmaster.Items)
-            {
-                string formattedString = $"[{item.Name}]";
-                builder.AppendLine($"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc * 100,10:F2}%  {(item.Result ? string.Empty : "Fail")}");
-            }
-
-            builder.AppendLine($"Min Lv= {kmitemmaster.MinLv:F2} cd/m2");
-            builder.AppendLine($"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2");
-            builder.AppendLine($"Darkest Key= {kmitemmaster.DrakestKey}");
-            builder.AppendLine($"Brightest Key= {kmitemmaster.BrightestKey}");
-            builder.AppendLine();
-            builder.AppendLine("Pass/Fail Criteria:");
-            builder.AppendLine($"NbrFail Points={kmitemmaster.NbrFailPoints}");
-            builder.AppendLine($"Avg Lv={kmitemmaster.AvgLv:F2}");
-            builder.AppendLine($"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%");
-            builder.AppendLine(kmitemmaster.Result ? "Pass" : "Fail");
-
-            return builder.ToString();
-        }
-
-        private static void SaveOutputText(KBItemMaster kmitemmaster)
-        {
-            if (!ViewResultManager.Config.SaveText)
-            {
-                return;
-            }
-
-            string textRootPath = string.IsNullOrWhiteSpace(ViewResultManager.Config.TextSavePath)
-                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB")
-                : ViewResultManager.Config.TextSavePath;
-            string modelDirectoryPath = Path.Combine(textRootPath, SanitizePathPart(kmitemmaster.Model, "UnknownModel"));
-            string fallbackFileName = kmitemmaster.CreateTime.ToString("yyyyMMddHHmmssffff");
-            string fileName = string.IsNullOrWhiteSpace(kmitemmaster.SN)
-                ? fallbackFileName
-                : SanitizePathPart(kmitemmaster.SN, fallbackFileName);
-
-            Directory.CreateDirectory(modelDirectoryPath);
-
-            string resultPath = Path.Combine(modelDirectoryPath, $"{fileName}.txt");
-            string result = BuildOutputText(kmitemmaster);
-
-            log.Debug($"结果正在写入{resultPath}");
-            File.WriteAllText(resultPath, result);
-        }
-
         public void GenoutputText(KBItemMaster kmitemmaster)
         {
             NGResult.Text = kmitemmaster.Result ? "OK" : "NG";
@@ -782,11 +724,68 @@ namespace ProjectKB
             outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
-            Run run = new Run(BuildOutputText(kmitemmaster));
+            string outtext = string.Empty;
+            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
+            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
+            outtext += $"Poiints of Interest: " + Environment.NewLine;
+            outtext += $"{kmitemmaster.CreateTime:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+
+            Run run = new Run(outtext);
             run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
-            outputText.Document.Blocks.Add(new Paragraph(run));
+            var paragraph = new Paragraph();
+            paragraph.Inlines.Add(run);
+
+            outputText.Document.Blocks.Add(paragraph);
+            outtext = string.Empty;
+
+            paragraph = new Paragraph();
+
+            string title1 = "PT";
+            string title2 = "Lv";
+
+            string title5 = "Lc";
+            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            paragraph.Inlines.Add(run);
+            outtext = string.Empty;
+
+            foreach (var item in kmitemmaster.Items)
+            {
+                string formattedString = $"[{item.Name}]";
+
+                outtext += $"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc * 100,10:F2}%  {(item.Result ? "" : "Fail")}" + Environment.NewLine;
+                run = new Run(outtext);
+                run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+                run.FontSize += 1;
+                paragraph.Inlines.Add(run);
+                outtext = string.Empty;
+            }
+            outputText.Document.Blocks.Add(paragraph);
+
+            outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
+            outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
+            outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
+            outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
+
+            outtext += Environment.NewLine;
+            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
+            outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
+            outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
+            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
+
+            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
+
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+            paragraph = new Paragraph(run);
+            outtext = string.Empty;
+            outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
         }
 
@@ -808,12 +807,12 @@ namespace ProjectKB
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex >-1)
+            if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var kBItem = ViewResluts[listView.SelectedIndex];
                 GenoutputText(kBItem);
 
-                var maxKeyItem = kBItem.Items.Where(a=>a.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
+                var maxKeyItem = kBItem.Items.Where(a => a.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
                 var minLKey = kBItem.Items.Where(a => a.Result).OrderBy(item => item.Lv).FirstOrDefault();
 
 
@@ -833,7 +832,7 @@ namespace ProjectKB
                             }
                             if (fileInfo.Length > 0)
                             {
-                                _=Application.Current.Dispatcher.BeginInvoke(() =>
+                                _ = Application.Current.Dispatcher.BeginInvoke(() =>
                                 {
                                     ImageView.OpenImage(kBItem.ResultImagFile);
                                     ImageView.ImageShow.Clear();
@@ -844,13 +843,13 @@ namespace ProjectKB
                         {
                             log.Warn("文件还在写入");
                             await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
-                            _=Application.Current.Dispatcher.BeginInvoke(() =>
+                            _ = Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 ImageView.OpenImage(kBItem.ResultImagFile);
                                 ImageView.ImageShow.Clear();
                             });
                         }
-                        _=Application.Current.Dispatcher.BeginInvoke(() =>
+                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             foreach (var item in kBItem.Items)
                             {
@@ -965,10 +964,10 @@ namespace ProjectKB
                 log.Info("CheckWIP Stage result" + result);
                 if (result != "N")
                 {
-                    IsUploadSNing =false;
+                    IsUploadSNing = false;
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), result,"CheckWIP Stage Fail");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), result, "CheckWIP Stage Fail");
                         SNtextBox.Focus();
                         SNtextBox.SelectAll();
                     });
