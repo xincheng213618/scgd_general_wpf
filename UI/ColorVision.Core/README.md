@@ -1,32 +1,51 @@
 # ColorVision.Core
 
-## 🎯 功能定位
+> 版本: 1.5.5.1 | 目标框架: .NET 10.0 Windows (仅 x64)
 
-OpencCV413 以及其他相关算法的 .NET 互操作层，提供高性能的算法调用接口，支持跨语言数据传递和内存管理。
+## 功能定位
 
-## 作用范围
+OpenCV 4.13 的 .NET 互操作层，提供高性能图像处理算法调用接口。通过 P/Invoke 调用原生 C++ DLL，封装为易用的 C# API。
 
-底层接口层，为上层应用提供高性能算法调用接口。
+## 主要功能
 
-## 主要功能点
+### 图像处理核心
+- **HImage** — 基于 OpenCV Mat 的图像封装类，支持高位深（RGB48）图像
+- **HImageExtension** — HImage 扩展方法（格式转换、缩放、裁剪等）
+- **ImageCompute** — 图像计算（直方图、统计、滤波等）
 
-- **C++互操作** - .NET与C++算法库的接口封装
-- **内存管理** - 跨语言内存安全管理
-- **类型转换** - .NET和C++数据类型的转换
-- **异常处理** - 统一的异常处理和错误传递
-- **性能优化** - 高效的数据传递和调用机制
+### 视频媒体
+- **OpenCVMediaHelper** — C++/C# 视频解码桥接（FFmpeg + OpenCV）
+- **NativeLogBridge** — C++ 原生日志桥接到 .NET log4net
 
-## 与主程序的依赖关系
+### CUDA 加速
+- **OpenCVCuda** — CUDA 设备检测和 GPU 加速接口
+- **nvcuda** — NVIDIA CUDA P/Invoke 定义
 
-**被引用方式**:
-- cvColorVision 引用用于算法实现
-- ColorVision.Engine 间接引用
+### 色彩映射
+- **ColormapTypes** — OpenCV 伪彩色映射类型定义
 
-**引用的外部依赖**:
-- C++ 算法动态链接库
-- P/Invoke 接口定义
-- 
+## 文件清单
 
-## 维护者
+| 文件 | 说明 |
+|------|------|
+| `HImage.cs` | 图像封装类 |
+| `HImageExtension.cs` | 图像扩展方法 |
+| `ImageCompute.cs` | 图像计算 |
+| `OpenCVMediaHelper.cs` | 视频解码桥接 |
+| `OpenCVCuda.cs` | CUDA 接口 |
+| `nvcuda.cs` | CUDA P/Invoke |
+| `ColormapTypes.cs` | 色彩映射类型 |
+| `NativeLogBridge.cs` | 原生日志桥接 |
 
-ColorVision 核心团队
+## 依赖关系
+
+- **无项目依赖**，直接引用原生 OpenCV DLL
+- **被引用**: ColorVision.ImageEditor
+
+## 构建
+
+```bash
+dotnet build UI/ColorVision.Core/ColorVision.Core.csproj
+```
+
+> 注意: 仅支持 x64 平台，需要 OpenCV 4.13 原生 DLL

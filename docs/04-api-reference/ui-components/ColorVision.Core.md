@@ -3,366 +3,266 @@
 ## 目录
 1. [概述](#概述)
 2. [核心功能](#核心功能)
-3. [架构设计](#架构设计)
-4. [接口封装](#接口封装)
-5. [使用示例](#使用示例)
-6. [性能考虑](#性能考虑)
+3. [主要组件](#主要组件)
+4. [使用示例](#使用示例)
+5. [性能考虑](#性能考虑)
 
 ## 概述
 
-**ColorVision.Core** 是 ColorVision 系统的核心组件库，提供一些C++接口的封装和核心功能的实现。它作为底层技术栈的桥接层，为上层应用提供高性能的算法接口和系统级功能。
+**ColorVision.Core** 是 OpenCV 4.13 的 .NET 互操作层，提供高性能图像处理算法调用接口。通过 P/Invoke 调用原生 C++ DLL，封装为易用的 C# API。
 
 ### 基本信息
 
-- **版本**: 1.5.2.1
-- **目标框架**: .NET 8.0 / .NET 10.0 Windows
-- **主要功能**: C++ 接口封装、核心算法实现
-- **技术栈**: C++/CLI, .NET Interop, OpenCV
-- **特色功能**: 高性能计算、系统级操作、OpenCV 原生集成
-- **应用场景**: 图像处理、数值计算、硬件接口、视频解码
+- **版本**: 1.5.5.1
+- **目标框架**: .NET 10.0 Windows（仅 x64）
+- **主要功能**: OpenCV 封装、图像处理、视频解码、CUDA 加速
+- **技术栈**: P/Invoke, OpenCV 4.13, CUDA
 - **允许不安全代码**: 是（AllowUnsafeBlocks）
 
 ### 原生依赖
 
 ColorVision.Core 集成了以下 OpenCV 原生库（win-x64）：
-- `opencv_core` - 核心功能
-- `opencv_imgproc` - 图像处理
-- `opencv_videoio` - 视频输入输出
-- `opencv_imgcodecs` - 图像编解码
-- 其他 OpenCV 模块
+- `opencv_core` — 核心功能
+- `opencv_imgproc` — 图像处理
+- `opencv_videoio` — 视频输入输出
+- `opencv_imgcodecs` — 图像编解码
 
 ## 核心功能
 
-### 1. C++ 接口封装
-- **互操作性**: .NET 与 C++ 代码的互操作
-- **性能优化**: 关键算法的原生实现
-- **内存管理**: 托管和非托管内存的协调
-- **异常处理**: 跨语言异常处理机制
+### 图像处理核心
+- **HImage** — 基于 OpenCV Mat 的图像封装类，支持高位深（RGB48）图像
+- **HImageExtension** — HImage 扩展方法（格式转换、缩放、裁剪等）
+- **ImageCompute** — 图像计算（直方图、统计、滤波等）
 
-### 2. 算法接口
-- **图像处理**: 高性能图像算法
-- **数值计算**: 数学运算和统计分析
-- **信号处理**: 数字信号处理算法
-- **优化算法**: 搜索和优化算法
+### 视频媒体
+- **OpenCVMediaHelper** — C++/C# 视频解码桥接（FFmpeg + OpenCV）
+- **NativeLogBridge** — C++ 原生日志桥接到 .NET log4net
 
-### 3. 系统接口
-- **硬件访问**: 硬件设备的底层访问
-- **系统调用**: Windows API 的封装
-- **文件操作**: 高效的文件 I/O 操作
-- **网络通信**: 底层网络协议实现
+### CUDA 加速
+- **OpenCVCuda** — CUDA 设备检测和 GPU 加速接口
+- **nvcuda** — NVIDIA CUDA P/Invoke 定义
 
-## 架构设计
+### 色彩映射
+- **ColormapTypes** — OpenCV 伪彩色映射类型定义
 
-```mermaid
-graph TD
-    A[ColorVision.Core] --> B[C++ 接口层]
-    A --> C[.NET 封装层]
-    A --> D[性能优化层]
-    
-    B --> B1[原生算法]
-    B --> B2[硬件接口]
-    B --> B3[系统API]
-    
-    C --> C1[托管包装]
-    C --> C2[异常处理]
-    C --> C3[类型转换]
-    
-    D --> D1[内存池]
-    D --> D2[并行处理]
-    D --> D3[缓存优化]
-```
+## 主要组件
 
-## 接口封装
+### HImage
 
-### 1. 图像处理接口
+基于 OpenCV Mat 的图像封装类，支持高位深图像。
 
 ```csharp
-public static class ImageProcessor
+public class HImage : IDisposable
 {
-    [DllImport("ColorVisionCore.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr ProcessImage(IntPtr imageData, int width, int height, int channels);
-    
-    public static unsafe byte[] ProcessImage(byte[] imageData, int width, int height, int channels = 3)
-    {
-        fixed (byte* ptr = imageData)
-        {
-            IntPtr result = ProcessImage(new IntPtr(ptr), width, height, channels);
-            // 处理返回的结果
-            return ConvertToManagedArray(result, width * height * channels);
-        }
-    }
+    public int Width { get; }
+    public int Height { get; }
+    public int Channels { get; }
+    public IntPtr Data { get; }
+
+    // 从文件加载
+    public static HImage Load(string path);
+
+    // 从 byte[] 创建
+    public static HImage FromBytes(byte[] data, int width, int height, int channels);
+
+    // 转换为 BitmapSource
+    public BitmapSource ToBitmapSource();
+
+    public void Dispose();
 }
 ```
 
-### 2. 数学运算接口
+### HImageExtension
+
+HImage 的扩展方法集。
 
 ```csharp
-public static class MathUtils
+public static class HImageExtension
 {
-    [DllImport("ColorVisionCore.dll")]
-    private static extern double FastSin(double x);
-    
-    [DllImport("ColorVisionCore.dll")]
-    private static extern double FastCos(double x);
-    
-    public static double Sin(double x) => FastSin(x);
-    public static double Cos(double x) => FastCos(x);
+    // 格式转换
+    public static HImage ConvertTo(this HImage src, PixelFormat format);
+
+    // 缩放
+    public static HImage Resize(this HImage src, int width, int height);
+
+    // 裁剪
+    public static HImage Crop(this HImage src, Rect roi);
+
+    // 保存
+    public static bool Save(this HImage src, string path);
 }
 ```
 
-### 3. 硬件接口封装
+### ImageCompute
+
+图像计算功能。
 
 ```csharp
-public class HardwareInterface : IDisposable
+public static class ImageCompute
 {
-    private IntPtr _handle;
-    
-    [DllImport("ColorVisionCore.dll")]
-    private static extern IntPtr InitializeHardware();
-    
-    [DllImport("ColorVisionCore.dll")]
-    private static extern bool WriteToHardware(IntPtr handle, byte[] data, int length);
-    
-    [DllImport("ColorVisionCore.dll")]
-    private static extern int ReadFromHardware(IntPtr handle, byte[] buffer, int bufferSize);
-    
-    public HardwareInterface()
-    {
-        _handle = InitializeHardware();
-        if (_handle == IntPtr.Zero)
-            throw new InvalidOperationException("无法初始化硬件");
-    }
-    
-    public bool Write(byte[] data)
-    {
-        return WriteToHardware(_handle, data, data.Length);
-    }
-    
-    public byte[] Read(int bufferSize)
-    {
-        byte[] buffer = new byte[bufferSize];
-        int bytesRead = ReadFromHardware(_handle, buffer, bufferSize);
-        
-        if (bytesRead <= 0) return new byte[0];
-        
-        Array.Resize(ref buffer, bytesRead);
-        return buffer;
-    }
-    
-    public void Dispose()
-    {
-        if (_handle != IntPtr.Zero)
-        {
-            CloseHardware(_handle);
-            _handle = IntPtr.Zero;
-        }
-    }
-    
-    [DllImport("ColorVisionCore.dll")]
-    private static extern void CloseHardware(IntPtr handle);
+    // 直方图计算
+    public static int[] CalcHistogram(HImage image, int channel = 0);
+
+    // 统计信息
+    public static ImageStats GetStats(HImage image);
+
+    // 滤波
+    public static HImage GaussianBlur(HImage image, int kernelSize);
 }
 ```
+
+### OpenCVMediaHelper
+
+视频解码桥接，通过 P/Invoke 调用 C++ FFmpeg/OpenCV 解码器。
+
+```csharp
+public static class OpenCVMediaHelper
+{
+    // 打开视频
+    public static int OpenVideo(string path);
+
+    // 读取帧
+    public static bool ReadFrame(int handle, ref HImage frame);
+
+    // 获取视频信息
+    public static VideoInfo GetVideoInfo(int handle);
+
+    // 释放
+    public static void Release(int handle);
+}
+```
+
+### OpenCVCuda
+
+CUDA 设备检测和 GPU 加速接口。
+
+```csharp
+public static class OpenCVCuda
+{
+    // 检测 CUDA 设备
+    public static int GetCudaDeviceCount();
+
+    // 检查是否支持 CUDA
+    public static bool IsCudaAvailable();
+
+    // GPU 加速图像处理
+    public static HImage GpuProcess(HImage image);
+}
+```
+
+## 文件清单
+
+| 文件 | 说明 |
+|------|------|
+| `HImage.cs` | 图像封装类 |
+| `HImageExtension.cs` | 图像扩展方法 |
+| `ImageCompute.cs` | 图像计算 |
+| `OpenCVMediaHelper.cs` | 视频解码桥接 |
+| `OpenCVCuda.cs` | CUDA 接口 |
+| `nvcuda.cs` | CUDA P/Invoke |
+| `ColormapTypes.cs` | 色彩映射类型 |
+| `NativeLogBridge.cs` | 原生日志桥接 |
 
 ## 使用示例
 
-### 1. 图像处理应用
+### 1. 加载和显示图像
 
 ```csharp
-public class ImageProcessingService
-{
-    public byte[] EnhanceImage(byte[] originalImage, int width, int height)
-    {
-        try
-        {
-            // 使用 ColorVision.Core 的高性能图像处理
-            return ImageProcessor.ProcessImage(originalImage, width, height);
-        }
-        catch (Exception ex)
-        {
-            // 异常处理
-            throw new ImageProcessingException("图像处理失败", ex);
-        }
-    }
-    
-    public async Task<byte[]> EnhanceImageAsync(byte[] originalImage, int width, int height)
-    {
-        return await Task.Run(() => EnhanceImage(originalImage, width, height));
-    }
-}
+// 加载图像
+using var image = HImage.Load("test.png");
+
+// 转换为 WPF BitmapSource
+var bitmap = image.ToBitmapSource();
+imageView.Source = bitmap;
 ```
 
-### 2. 数值计算应用
+### 2. 图像处理
 
 ```csharp
-public class CalculationService
-{
-    public double[] CalculateFrequencySpectrum(double[] signal)
-    {
-        // 使用优化的 FFT 算法
-        return CoreMath.FFT(signal);
-    }
-    
-    public Matrix MultiplyMatrices(Matrix a, Matrix b)
-    {
-        // 使用优化的矩阵运算
-        return CoreMath.MatrixMultiply(a, b);
-    }
-}
+using var image = HImage.Load("input.png");
+
+// 缩放
+using var resized = image.Resize(800, 600);
+
+// 高斯模糊
+using var blurred = ImageCompute.GaussianBlur(resized, 5);
+
+// 保存
+blurred.Save("output.png");
 ```
 
-### 3. 硬件控制应用
+### 3. 视频解码
 
 ```csharp
-public class DeviceController : IDisposable
+int handle = OpenCVMediaHelper.OpenVideo("video.mp4");
+var info = OpenCVMediaHelper.GetVideoInfo(handle);
+Console.WriteLine($"分辨率: {info.Width}x{info.Height}, 帧率: {info.Fps}");
+
+HImage frame = null;
+while (OpenCVMediaHelper.ReadFrame(handle, ref frame))
 {
-    private HardwareInterface _hardware;
-    
-    public DeviceController()
-    {
-        _hardware = new HardwareInterface();
-    }
-    
-    public async Task\<bool\> SendCommandAsync(byte[] command)
-    {
-        return await Task.Run(() => _hardware.Write(command));
-    }
-    
-    public async Task<byte[]> ReadDataAsync(int size)
-    {
-        return await Task.Run(() => _hardware.Read(size));
-    }
-    
-    public void Dispose()
-    {
-        _hardware?.Dispose();
-    }
+    // 处理帧
+    var bitmap = frame.ToBitmapSource();
+}
+
+OpenCVMediaHelper.Release(handle);
+```
+
+### 4. CUDA 加速
+
+```csharp
+if (OpenCVCuda.IsCudaAvailable())
+{
+    Console.WriteLine($"CUDA 设备数: {OpenCVCuda.GetCudaDeviceCount()}");
+
+    using var image = HImage.Load("large_image.png");
+    using var result = OpenCVCuda.GpuProcess(image);
+    result.Save("processed.png");
 }
 ```
 
 ## 性能考虑
 
 ### 1. 内存管理
+- HImage 实现 IDisposable，使用后及时释放
+- 大图像使用 `using` 语句确保释放
+- 避免频繁的 HImage ↔ BitmapSource 转换
 
-```csharp
-public class ManagedBuffer : IDisposable
-{
-    private IntPtr _nativeBuffer;
-    private int _size;
-    
-    public ManagedBuffer(int size)
-    {
-        _size = size;
-        _nativeBuffer = Marshal.AllocHGlobal(size);
-    }
-    
-    public IntPtr Buffer => _nativeBuffer;
-    public int Size => _size;
-    
-    public void Dispose()
-    {
-        if (_nativeBuffer != IntPtr.Zero)
-        {
-            Marshal.FreeHGlobal(_nativeBuffer);
-            _nativeBuffer = IntPtr.Zero;
-        }
-    }
-}
-```
+### 2. CUDA 加速
+- 检测 CUDA 可用性后再使用
+- 大图像（>4K）适合 GPU 加速
+- 小图像 CPU 处理可能更快（避免数据传输开销）
 
-### 2. 并行处理
+### 3. 视频解码
+- 使用完成后及时调用 `Release` 释放资源
+- 高分辨率视频考虑降采样预览
 
-```csharp
-public static class ParallelProcessor
-{
-    public static void ProcessInParallel\<T\>(T[] data, Action\<T\> processor)
-    {
-        Parallel.ForEach(data, new ParallelOptions
-        {
-            MaxDegreeOfParallelism = Environment.ProcessorCount
-        }, processor);
-    }
-    
-    public static TResult[] ProcessInParallel\<T, TResult\>(T[] data, Func\<T, TResult\> processor)
-    {
-        var results = new TResult[data.Length];
-        
-        Parallel.For(0, data.Length, i =>
-        {
-            results[i] = processor(data[i]);
-        });
-        
-        return results;
-    }
-}
-```
+## 依赖关系
 
-### 3. 缓存优化
-
-```csharp
-public class ResultCache\<TKey, TValue\>
-{
-    private readonly ConcurrentDictionary\\<TKey, TValue\> _cache = new();
-    private readonly int _maxSize;
-    
-    public ResultCache(int maxSize = 1000)
-    {
-        _maxSize = maxSize;
-    }
-    
-    public TValue GetOrCompute(TKey key, Func\<TKey, TValue\> factory)
-    {
-        return _cache.GetOrAdd(key, factory);
-    }
-    
-    public void Clear()
-    {
-        if (_cache.Count > _maxSize)
-        {
-            _cache.Clear();
-        }
-    }
-}
-```
-
-## 最佳实践
-
-### 1. 异常处理
-- 正确处理跨语言异常
-- 实现适当的异常转换
-- 提供有意义的错误信息
-
-### 2. 资源管理
-- 及时释放非托管资源
-- 使用 IDisposable 模式
-- 避免内存泄漏
-
-### 3. 性能优化
-- 最小化托管/非托管转换
-- 使用内存池减少分配
-- 合理使用并行处理
-
-### 4. 类型安全
-- 验证输入参数
-- 正确处理指针操作
-- 实现类型安全的包装
+- **无项目依赖**，直接引用原生 OpenCV DLL
+- **被引用**: ColorVision.ImageEditor
 
 ## 更新日志
 
-### v1.5.2.1（2026-02）
-- ✅ 升级目标框架至 .NET 8.0 / .NET 10.0
+### v1.5.5.1 (2026-04)
+- ✅ 版本号统一升级
+
+### v1.5.2.1 (2026-02)
+- ✅ 升级目标框架至 .NET 10.0
 - ✅ 更新 OpenCV 原生库至 4.13
-- ✅ 新增视频解码支持（VideoCapture）
+- ✅ 新增视频解码支持（OpenCVMediaHelper）
 - ✅ 新增 HImage 内存共享机制
 - ✅ 优化 C++/C# 跨语言数据传输
 
-### v1.4.x 及更早
-- 基础 C++ 接口封装
-- 图像处理算法
-- 硬件接口抽象
+## 构建
+
+```bash
+dotnet build UI/ColorVision.Core/ColorVision.Core.csproj
+```
+
+> 注意: 仅支持 x64 平台，需要 OpenCV 4.13 原生 DLL
 
 ## 相关资源
 
-- [性能优化指南](../developer-guide/performance-optimization/)
-- [互操作性最佳实践](../developer-guide/interop-best-practices/)
-- [内存管理指南](../developer-guide/memory-management/)
-- [硬件接口开发](../developer-guide/hardware-interfaces/)
+- [ColorVision.ImageEditor](ColorVision.ImageEditor.md) - 图像编辑器
+- [性能优化指南](../../02-developer-guide/core-optimization/overview.md)

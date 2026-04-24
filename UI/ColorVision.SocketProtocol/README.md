@@ -1,93 +1,43 @@
 # ColorVision.SocketProtocol
 
-## 🎯 功能定位
+> 版本: 1.5.5.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows
 
-网络通信协议模块，提供Socket和串口通信功能。
+## 功能定位
 
-## 作用范围
+JSON 消息协议层，基于 Socket 的设备通信模块。定义了统一的消息格式和处理器接口，用于与外部设备（如光源控制器、相机等）通信。
 
-通信协议层，为设备通信提供统一的网络接口。
+## 主要功能
 
-## 主要功能点
+### 消息系统
+- **SocketMessage** — JSON 消息实体（IEntity），存储在数据库中
+- **SocketMessageManager** — 消息管理器（SQLite 存储），提供消息的收发和持久化
+- **ISocketJsonHandler** — 消息处理器接口，支持插件化扩展
 
-- **Socket通信** - TCP/UDP网络通信协议
-- **串口通信** - RS232/RS485串口设备通信
-- **协议封装** - 统一的通信协议接口
-- **连接管理** - 自动重连和连接状态监控
-- **数据缓冲** - 高效的数据收发缓冲机制
-- **异步通信** - 支持异步通信避免界面阻塞
+### 配置管理
+- **SocketConfig** — Socket 通信配置（IP、端口、超时等）
+- **SocketConfigProvider** — 配置提供者，集成到设置系统
 
-## 与主程序的依赖关系
+### 初始化
+- **SocketInitializer** — 通信模块初始化器
 
-**被引用方式**:
-- ColorVision.Engine 引用用于设备通信
-- 各插件和项目引用用于外部通信
+## 文件清单
 
-**引用的程序集**:
-- System.IO.Ports - 串口通信
-- System.Net.Sockets - Socket通信
+| 文件 | 说明 |
+|------|------|
+| `SocketMessage.cs` | 消息实体（ViewEntity） |
+| `SocketMessageManager.cs` | 消息管理器（SQLite 存储） |
+| `ISocketJsonHandler.cs` | 消息处理器接口 |
+| `SocketConfig.cs` | 通信配置 |
+| `SocketConfigProvider.cs` | 配置提供者 |
+| `SocketInitializer.cs` | 初始化器 |
 
-## 使用方式
+## 依赖关系
 
-### 引用方式
-```xml
-<ProjectReference Include="..\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
-```
+- **引用**: ColorVision.UI, ColorVision.Database, log4net, Newtonsoft.Json
+- **被引用**: ColorVision.Engine（设备通信）
 
-### 在主程序中的启用
-- 通过设备配置自动启用对应通信方式
-- 支持插件化通信协议扩展
-
-## 开发调试
+## 构建
 
 ```bash
 dotnet build UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj
 ```
-
-## 通信示例
-
-### Socket通信示例
-```csharp
-// 创建TCP客户端
-var client = new SocketClient("192.168.1.100", 8080);
-
-// 连接服务器
-await client.ConnectAsync();
-
-// 发送数据
-await client.SendAsync(data);
-
-// 接收数据
-var response = await client.ReceiveAsync();
-```
-
-### 串口通信示例
-```csharp
-// 配置串口
-var serialPort = new SerialPortClient
-{
-    PortName = "COM3",
-    BaudRate = 9600,
-    DataBits = 8,
-    Parity = Parity.None,
-    StopBits = StopBits.One
-};
-
-// 打开串口
-serialPort.Open();
-
-// 发送数据
-serialPort.Write(data);
-
-// 接收数据
-var response = serialPort.Read();
-```
-
-## 相关文档链接
-
-- [设备通信文档](../../docs/04-api-reference/engine-components/README.md)
-- [网络通信指南](../../docs/00-getting-started/README.md)
-
-## 维护者
-
-ColorVision 通信团队
