@@ -44,6 +44,14 @@ namespace ProjectKB
         [DisplayName("保存Text"), Category("KB")]
         public bool SaveText { get => _SaveText; set { _SaveText = value; OnPropertyChanged(); } }
         private bool _SaveText = true;
+
+        [DisplayName("Summary保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
+        public string SummarySavePath { get => _SummarySavePath; set { _SummarySavePath = value; OnPropertyChanged(); } }
+        private string _SummarySavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB", "Summary");
+
+        [DisplayName("保存Summary"), Category("KB")]
+        public bool SaveSummary { get => _SaveSummary; set { _SaveSummary = value; OnPropertyChanged(); } }
+        private bool _SaveSummary = true;
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable

@@ -622,6 +622,26 @@ namespace ProjectKB
             log.Debug($"结果正在写入{resultPath},result:{result}");
             File.WriteAllText(resultPath, result);
 
+            if (ViewResultManager.Config.SaveSummary)
+            {
+                try
+                {
+                    string invalidChars2 = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                    string regexPattern2 = $"[{Regex.Escape(invalidChars2)}]";
+                    string safeModel = Regex.Replace(KBItemMaster.Model ?? string.Empty, regexPattern2, "");
+                    string summaryDir = Path.Combine(ViewResultManager.Config.SummarySavePath, safeModel);
+                    Directory.CreateDirectory(summaryDir);
+                    string summaryPath = Path.Combine(summaryDir, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
+                    string summaryText = BuildSummaryText(KBItemMaster);
+                    log.Debug($"Summary 正在写入 {summaryPath}");
+                    File.WriteAllText(summaryPath, summaryText);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("写入 Summary 失败", ex);
+                }
+            }
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
@@ -714,6 +734,38 @@ namespace ProjectKB
                     item.Lc = (item.Lv - averagelv) / averagelv;
                 }
             }
+        }
+
+        public static string BuildSummaryText(KBItemMaster kmitemmaster)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Model:{kmitemmaster.Model}");
+            sb.AppendLine($"SN:{kmitemmaster.SN}");
+            sb.AppendLine("Poiints of Interest: ");
+            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM//dd HH:mm:ss}");
+
+            string title1 = "PT";
+            string title2 = "Lv";
+            string title5 = "Lc";
+            sb.AppendLine($"{title1,-20}   {title2,-10} {title5,10}");
+
+            foreach (var item in kmitemmaster.Items)
+            {
+                string formattedString = $"[{item.Name}]";
+                sb.AppendLine($"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc * 100,10:F2}%  {(item.Result ? "" : "Fail")}");
+            }
+
+            sb.AppendLine($"Min Lv= {kmitemmaster.MinLv:F2} cd/m2");
+            sb.AppendLine($"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2");
+            sb.AppendLine($"Darkest Key= {kmitemmaster.DrakestKey}");
+            sb.AppendLine($"Brightest Key= {kmitemmaster.BrightestKey}");
+            sb.AppendLine();
+            sb.AppendLine("Pass/Fail Criteria:");
+            sb.AppendLine($"NbrFail Points={kmitemmaster.NbrFailPoints}");
+            sb.AppendLine($"Avg Lv={kmitemmaster.AvgLv:F2}");
+            sb.AppendLine($"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%");
+            sb.AppendLine(kmitemmaster.Result ? "Pass" : "Fail");
+            return sb.ToString();
         }
 
         public void GenoutputText(KBItemMaster kmitemmaster)
