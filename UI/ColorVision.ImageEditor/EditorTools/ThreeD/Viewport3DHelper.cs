@@ -167,7 +167,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             ];
         }
 
-        public static void UpdateFixedCornerAxes(IReadOnlyList<Visual3D> axes, PerspectiveCamera camera)
+        public static void UpdateFixedCornerAxes(IReadOnlyList<Visual3D> axes, ProjectionCamera camera)
         {
             if (camera == null || axes.Count < 9) return;
 
@@ -324,9 +324,56 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (viewport == null) return;
             for (int i = viewport.Children.Count - 1; i >= 0; i--)
             {
-                if (viewport.Children[i] is ArrowVisual3D)
+                var child = viewport.Children[i];
+                if (child is PipeVisual3D || child is SphereVisual3D || child is BillboardTextVisual3D)
                     viewport.Children.RemoveAt(i);
             }
+        }
+
+        /// <summary>
+        /// 创建线框几何体 — 将网格的边渲染为细圆柱体
+        /// </summary>
+        public static Model3DGroup? CreateWireframeGeometry(Model3DGroup modelGroup, double diameter = 0.5, int thetaDiv = 4)
+        {
+            var wireframeGroup = new Model3DGroup();
+            CreateWireframeRecursive(modelGroup, Transform3D.Identity, wireframeGroup, diameter, thetaDiv);
+            return wireframeGroup.Children.Count > 0 ? wireframeGroup : null;
+        }
+
+        private static void CreateWireframeRecursive(Model3D model, Transform3D parentTransform, Model3DGroup wireframeGroup, double diameter, int thetaDiv)
+        {
+            var transform = parentTransform;
+            if (model.Transform != null && !model.Transform.Value.IsIdentity)
+                transform = new MatrixTransform3D(parentTransform.Value * model.Transform.Value);
+
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                    CreateWireframeRecursive(child, transform, wireframeGroup, diameter, thetaDiv);
+                return;
+            }
+
+            if (model is not GeometryModel3D geometry || geometry.Geometry is not MeshGeometry3D mesh)
+                return;
+            if (mesh.Positions.Count == 0 || mesh.TriangleIndices.Count < 3)
+                return;
+
+            var edgeIndices = MeshGeometryHelper.FindEdges(mesh);
+            if (edgeIndices.Count < 2)
+                return;
+
+            var transformedPositions = new List<Point3D>(mesh.Positions.Count);
+            foreach (var p in mesh.Positions)
+                transformedPositions.Add(transform.Transform(p));
+
+            var builder = new MeshBuilder(false, false);
+            builder.AddEdges(transformedPositions, edgeIndices, diameter, thetaDiv);
+            var edgeMesh = builder.ToMesh();
+            edgeMesh.Freeze();
+
+            var edgeMaterial = MaterialHelper.CreateMaterial(Brushes.LimeGreen);
+            var edgeModel = new GeometryModel3D(edgeMesh, edgeMaterial) { BackMaterial = edgeMaterial };
+            wireframeGroup.Children.Add(edgeModel);
         }
 
         public static bool HasGeometry(Model3D model)
@@ -427,6 +474,44 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to export model:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 处理相机键盘移动和视角方向按键，返回是否已处理
+        /// </summary>
+        public static bool HandleCameraKey(ProjectionCamera camera, Key key, double moveSpeed = 20.0, double lookSpeed = 10.0)
+        {
+            if (camera == null) return false;
+
+            switch (key)
+            {
+                case Key.L:
+                    camera.Position = new Point3D(camera.Position.X - moveSpeed, camera.Position.Y, camera.Position.Z);
+                    return true;
+                case Key.T:
+                    camera.Position = new Point3D(camera.Position.X, camera.Position.Y + moveSpeed, camera.Position.Z);
+                    return true;
+                case Key.R:
+                    camera.Position = new Point3D(camera.Position.X + moveSpeed, camera.Position.Y, camera.Position.Z);
+                    return true;
+                case Key.B:
+                    camera.Position = new Point3D(camera.Position.X, camera.Position.Y - moveSpeed, camera.Position.Z);
+                    return true;
+                case Key.A:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z + lookSpeed);
+                    return true;
+                case Key.C:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z - lookSpeed);
+                    return true;
+                case Key.D:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X - lookSpeed, camera.LookDirection.Y, camera.LookDirection.Z);
+                    return true;
+                case Key.F:
+                    camera.LookDirection = new Vector3D(camera.LookDirection.X + lookSpeed, camera.LookDirection.Y, camera.LookDirection.Z);
+                    return true;
+                default:
+                    return false;
             }
         }
 

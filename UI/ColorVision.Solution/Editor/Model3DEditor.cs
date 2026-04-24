@@ -2,6 +2,8 @@ using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.EditorTools.ThreeD;
 using ColorVision.Solution.Workspace;
+using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 
@@ -34,7 +36,7 @@ namespace ColorVision.Solution.Editor
                 var control = new ModelViewer3DControl();
                 control.SetInitialFile(filePath);
 
-                LayoutDocument layoutDocument = new LayoutDocument()
+                var layoutDocument = new LayoutDocument()
                 {
                     ContentId = guidId,
                     Title = Path.GetFileName(filePath)
@@ -43,18 +45,27 @@ namespace ColorVision.Solution.Editor
                 WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
                 WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
 
-                layoutDocument.IsActiveChanged += (s, e) =>
+                // Use named handlers so we can unsubscribe in Closing
+                EventHandler isActiveChangedHandler = (s, e) =>
                 {
                     if (layoutDocument.IsActive)
-                    {
                         WorkspaceManager.OnContentIdSelected(filePath);
-                    }
                 };
 
-                layoutDocument.Closing += (s, e) =>
+                EventHandler<CancelEventArgs> closingHandler = null!;
+                closingHandler = (s, e) =>
                 {
+                    // Unsubscribe both handlers to break closure references
+                    layoutDocument.IsActiveChanged -= isActiveChangedHandler;
+                    layoutDocument.Closing -= closingHandler;
+
                     control.DisposeViewer();
+
+                    layoutDocument.Content = null;
                 };
+
+                layoutDocument.IsActiveChanged += isActiveChangedHandler;
+                layoutDocument.Closing += closingHandler;
             }
         }
     }

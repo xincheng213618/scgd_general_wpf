@@ -20,7 +20,13 @@
 | ImageEditor | .png, .jpg, .bmp, ... | 图像查看/编辑 |
 | HexEditor | .bin, .dat, ... | 十六进制编辑 |
 | WebEditor | .html, .url, ... | WebView2 预览 |
+| Model3DEditor | .obj, .stl | 3D 模型查看（嵌入 ModelViewer3DControl） |
 | ProjectEditor | .cvsln, .json | 项目配置编辑 |
+
+**Model3DEditor 内存管理**
+- 使用命名委托 + `Closing` 事件中主动取消订阅，打破 lambda 闭包引用链
+- 关闭时调用 `DisposeViewer()` 释放 3D 资源（网格缓冲区、材质纹理）
+- 置空 `LayoutDocument.Content` 断开内容引用，确保 GC 可回收
 
 ### RBAC 权限系统 (Rbac/)
 - **用户/角色/权限** — 完整的 RBAC 模型

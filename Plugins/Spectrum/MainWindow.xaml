@@ -555,6 +555,13 @@
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
+                                                        <GridViewColumn Header="总耗时(ms)">
+                                                            <GridViewColumn.CellTemplate>
+                                                                <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
+                                                                    <TextBlock Text="{Binding TotalDurationMs}" />
+                                                                </DataTemplate>
+                                                            </GridViewColumn.CellTemplate>
+                                                        </GridViewColumn>
                                                         <GridViewColumn Header="IP">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">

@@ -121,6 +121,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
         public void DisposeViewer()
         {
+            Loaded -= ModelViewer3DControl_Loaded;
             CompositionTarget.Rendering -= CompositionTarget_Rendering;
 
             if (viewport != null)
@@ -135,9 +136,15 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 viewport = null;
             }
 
+            // Release 3D model geometry and material resources
+            if (currentModelGroup != null)
+            {
+                ReleaseModelResources(currentModelGroup);
+                currentModelGroup = null;
+            }
+
             UnhookKeyboard();
             currentModelVisual = null;
-            currentModelGroup = null;
             originalMaterialStates = null;
             axesVisuals = null;
             modelVisibility.Clear();
@@ -146,11 +153,61 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             ModelTreeView.ItemsSource = null;
             isInitialized = false;
             hasLoadedModel = false;
+
+            // Force GC to release WPF 3D unmanaged rendering resources
+            GC.Collect(2, GCCollectionMode.Forced, true);
+            GC.WaitForPendingFinalizers();
+        }
+
+        private static void ReleaseModelResources(Model3D model)
+        {
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                    ReleaseModelResources(child);
+                group.Children.Clear();
+                return;
+            }
+
+            if (model is GeometryModel3D geometry)
+            {
+                // Clear mesh data to free vertex/index buffers
+                if (geometry.Geometry is MeshGeometry3D mesh)
+                {
+                    mesh.Positions = null;
+                    mesh.TriangleIndices = null;
+                    mesh.TextureCoordinates = null;
+                    mesh.Normals = null;
+                }
+                geometry.Geometry = null;
+
+                // Release material textures
+                ReleaseMaterial(geometry.Material);
+                ReleaseMaterial(geometry.BackMaterial);
+                geometry.Material = null;
+                geometry.BackMaterial = null;
+            }
+        }
+
+        private static void ReleaseMaterial(Material? material)
+        {
+            if (material is MaterialGroup group)
+            {
+                foreach (var child in group.Children)
+                    ReleaseMaterial(child);
+                group.Children.Clear();
+                return;
+            }
+
+            if (material is DiffuseMaterial diffuse && diffuse.Brush is ImageBrush imageBrush)
+                imageBrush.ImageSource = null;
+            else if (material is EmissiveMaterial emissive && emissive.Brush is ImageBrush emissiveBrush)
+                emissiveBrush.ImageSource = null;
         }
 
         private void CompositionTarget_Rendering(object? sender, EventArgs e)
         {
-            if (viewport?.Camera is PerspectiveCamera camera && axesVisuals != null)
+            if (viewport?.Camera is ProjectionCamera camera && axesVisuals != null)
                 Viewport3DHelper.UpdateFixedCornerAxes(axesVisuals, camera);
         }
 
@@ -276,22 +333,23 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
                 currentModelGroup = modelGroup;
                 originalMaterialStates = CaptureMaterialStates(modelGroup);
+                UpdateRotationCenterFromBounds(bounds);
                 ResetModelRotation();
 
                 currentModelVisual = new ModelVisual3D { Content = modelGroup, Transform = currentTransform };
                 viewport.Children.Insert(0, currentModelVisual);
 
-                if (viewport.Camera is PerspectiveCamera camera)
+                if (viewport.Camera is PerspectiveCamera perspCamera)
                 {
-                    Viewport3DHelper.FrameModel(camera, bounds);
-                    Viewport3DHelper.ClearLights(viewport);
-                    Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
+                    Viewport3DHelper.FrameModel(perspCamera, bounds);
                 }
-                else
+                else if (viewport.Camera is OrthographicCamera orthoCamera)
                 {
-                    Viewport3DHelper.ClearLights(viewport);
-                    Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
+                    FrameCameraToModel(orthoCamera, bounds);
                 }
+
+                Viewport3DHelper.ClearLights(viewport);
+                Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
 
                 if (isWireframe)
                     ApplyWireframe();
@@ -299,14 +357,19 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 Viewport3DHelper.TryZoomExtents(viewport);
                 Dispatcher.BeginInvoke(() =>
                 {
-                    if (viewport?.Camera is PerspectiveCamera delayedCamera)
+                    if (viewport?.Camera is PerspectiveCamera delayedPersp)
                     {
-                        Viewport3DHelper.FrameModel(delayedCamera, bounds);
-                        if (viewport != null)
-                        {
-                            Viewport3DHelper.ClearLights(viewport);
-                            Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
-                        }
+                        Viewport3DHelper.FrameModel(delayedPersp, bounds);
+                    }
+                    else if (viewport?.Camera is OrthographicCamera delayedOrtho)
+                    {
+                        FrameCameraToModel(delayedOrtho, bounds);
+                    }
+
+                    if (viewport != null)
+                    {
+                        Viewport3DHelper.ClearLights(viewport);
+                        Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
                     }
                 }, DispatcherPriority.Loaded);
 
@@ -639,20 +702,55 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
         private void ResetView_Click(object sender, RoutedEventArgs e)
         {
-            ResetModelRotation();
-
-            if (viewport?.Camera is PerspectiveCamera camera && currentModelGroup != null)
+            if (currentModelGroup != null)
             {
                 var bounds = Viewport3DHelper.GetBounds(currentModelGroup);
-                Viewport3DHelper.FrameModel(camera, bounds);
+                UpdateRotationCenterFromBounds(bounds);
             }
-            else if (viewport?.Camera is PerspectiveCamera fallbackCamera)
+            ResetModelRotation();
+
+            if (viewport?.Camera is ProjectionCamera camera)
             {
-                Viewport3DHelper.ResetCameraView(fallbackCamera, initialCameraPosition, initialLookDirection, initialUpDirection);
+                if (currentModelGroup != null)
+                {
+                    var bounds = Viewport3DHelper.GetBounds(currentModelGroup);
+                    if (!bounds.IsEmpty)
+                        FrameCameraToModel(camera, bounds);
+                }
+                else
+                {
+                    camera.Position = initialCameraPosition;
+                    camera.LookDirection = initialLookDirection;
+                    camera.UpDirection = initialUpDirection;
+                }
             }
 
             currentViewName = "ISO";
             UpdateStatusBar();
+        }
+
+        private static void FrameCameraToModel(ProjectionCamera camera, Rect3D bounds)
+        {
+            var center = new Point3D(
+                bounds.X + bounds.SizeX / 2,
+                bounds.Y + bounds.SizeY / 2,
+                bounds.Z + bounds.SizeZ / 2);
+
+            double radius = Math.Max(bounds.SizeX, Math.Max(bounds.SizeY, bounds.SizeZ));
+            if (radius <= 0) radius = 1;
+
+            double distance = radius * 3.2;
+            camera.Position = new Point3D(
+                center.X + distance * 0.42,
+                center.Y - distance,
+                center.Z + distance * 0.78);
+            camera.LookDirection = center - camera.Position;
+            camera.UpDirection = new Vector3D(0, 0, 1);
+            camera.NearPlaneDistance = Math.Max(distance / 500, 0.1);
+            camera.FarPlaneDistance = Math.Max(distance * 120, 10000);
+
+            if (camera is OrthographicCamera ortho)
+                ortho.Width = radius * 2.5;
         }
 
         private void CameraMoveLeft_Click(object sender, RoutedEventArgs e)
@@ -722,15 +820,75 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private void ProjectionToggle_Checked(object sender, RoutedEventArgs e)
         {
             isOrthographic = true;
-            StatusProjectionText.Text = "投影: 正交";
+            SwitchCamera(isOrthographic: true);
             UpdateStatusBar();
         }
 
         private void ProjectionToggle_Unchecked(object sender, RoutedEventArgs e)
         {
             isOrthographic = false;
-            StatusProjectionText.Text = "投影: 透视";
+            SwitchCamera(isOrthographic: false);
             UpdateStatusBar();
+        }
+
+        private void SwitchCamera(bool isOrthographic)
+        {
+            if (viewport == null) return;
+
+            var oldCamera = viewport.Camera as ProjectionCamera;
+            if (oldCamera == null) return;
+
+            double width = 100;
+            if (oldCamera is PerspectiveCamera persp)
+                width = persp.FieldOfView;
+            else if (oldCamera is OrthographicCamera ortho)
+                width = ortho.Width;
+
+            ProjectionCamera newCamera;
+            if (isOrthographic)
+            {
+                var perspOld = oldCamera as PerspectiveCamera;
+                double dist = perspOld?.LookDirection.Length ?? 500;
+                double orthoWidth = dist * 2 * Math.Tan((perspOld?.FieldOfView ?? 60) * Math.PI / 360.0);
+                newCamera = new OrthographicCamera
+                {
+                    Position = oldCamera.Position,
+                    LookDirection = oldCamera.LookDirection,
+                    UpDirection = oldCamera.UpDirection,
+                    Width = orthoWidth,
+                    NearPlaneDistance = oldCamera.NearPlaneDistance,
+                    FarPlaneDistance = oldCamera.FarPlaneDistance,
+                };
+            }
+            else
+            {
+                var orthoOld = oldCamera as OrthographicCamera;
+                double dist = oldCamera.LookDirection.Length;
+                if (dist < 1) dist = 500;
+                double fov = 2 * Math.Atan2(orthoOld?.Width ?? 100, 2 * dist) * 180.0 / Math.PI;
+                newCamera = new PerspectiveCamera
+                {
+                    Position = oldCamera.Position,
+                    LookDirection = oldCamera.LookDirection,
+                    UpDirection = oldCamera.UpDirection,
+                    FieldOfView = fov,
+                    NearPlaneDistance = oldCamera.NearPlaneDistance,
+                    FarPlaneDistance = oldCamera.FarPlaneDistance,
+                };
+            }
+
+            viewport.Camera = newCamera;
+
+            Viewport3DHelper.ClearLights(viewport);
+            if (currentModelGroup != null)
+            {
+                var bounds = Viewport3DHelper.GetBounds(currentModelGroup);
+                Viewport3DHelper.AddCameraAlignedLights(viewport, bounds);
+            }
+            else
+            {
+                Viewport3DHelper.AddCameraAlignedLights(viewport, Rect3D.Empty);
+            }
         }
 
         private void ApplyPresetView(string viewName, Vector3D direction, Vector3D upDirection)
@@ -751,6 +909,10 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             camera.Position = center - direction * (radius * 2.6);
             camera.LookDirection = center - camera.Position;
             camera.UpDirection = upDirection;
+
+            if (camera is OrthographicCamera ortho)
+                ortho.Width = radius * 2.5;
+
             currentViewName = viewName;
             UpdateStatusBar();
         }
@@ -831,43 +993,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (viewport?.Camera is not ProjectionCamera camera)
                 return;
 
-            const double moveSpeed = 20.0;
-            const double lookSpeed = 10.0;
-
             switch (e.Key)
             {
-                case Key.L:
-                    camera.Position = new Point3D(camera.Position.X - moveSpeed, camera.Position.Y, camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.T:
-                    camera.Position = new Point3D(camera.Position.X, camera.Position.Y + moveSpeed, camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.R:
-                    camera.Position = new Point3D(camera.Position.X + moveSpeed, camera.Position.Y, camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.B:
-                    camera.Position = new Point3D(camera.Position.X, camera.Position.Y - moveSpeed, camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.A:
-                    camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z + lookSpeed);
-                    e.Handled = true;
-                    break;
-                case Key.C:
-                    camera.LookDirection = new Vector3D(camera.LookDirection.X, camera.LookDirection.Y, camera.LookDirection.Z - lookSpeed);
-                    e.Handled = true;
-                    break;
-                case Key.D:
-                    camera.LookDirection = new Vector3D(camera.LookDirection.X - lookSpeed, camera.LookDirection.Y, camera.LookDirection.Z);
-                    e.Handled = true;
-                    break;
-                case Key.F:
-                    camera.LookDirection = new Vector3D(camera.LookDirection.X + lookSpeed, camera.LookDirection.Y, camera.LookDirection.Z);
-                    e.Handled = true;
-                    break;
                 case Key.Home:
                     ResetView_Click(this, new RoutedEventArgs());
                     e.Handled = true;
@@ -876,9 +1003,13 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     Config.IsToolbarVisible = !Config.IsToolbarVisible;
                     e.Handled = true;
                     break;
+                default:
+                    e.Handled = Viewport3DHelper.HandleCameraKey(camera, e.Key);
+                    break;
             }
 
-            UpdateStatusBar();
+            if (e.Handled)
+                UpdateStatusBar();
         }
 
 
@@ -992,6 +1123,21 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             return false;
         }
 
+        private void UpdateRotationCenterFromBounds(Rect3D bounds)
+        {
+            if (bounds.IsEmpty)
+            {
+                hasRotationCenter = false;
+                return;
+            }
+
+            rotationCenter = new Point3D(
+                bounds.X + bounds.SizeX / 2,
+                bounds.Y + bounds.SizeY / 2,
+                bounds.Z + bounds.SizeZ / 2);
+            hasRotationCenter = true;
+        }
+
         private void ResetModelRotation()
         {
             currentRotation = new QuaternionRotation3D(Quaternion.Identity);
@@ -1017,7 +1163,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
             if (isWireframe)
             {
-                SetMaterialRecursive(currentModelGroup, MaterialHelper.CreateMaterial(Brushes.LimeGreen));
+                // Wireframe overlay handles rendering — make original model nearly invisible
+                SetMaterialRecursive(currentModelGroup, new DiffuseMaterial(new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))));
                 return;
             }
 
@@ -1122,13 +1269,38 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
         private void ApplyWireframe()
         {
-            ApplyVisibilityState();
+            if (currentModelGroup == null || viewport == null) return;
+
+            // Hide original model by making it transparent
+            SetMaterialRecursive(currentModelGroup, new DiffuseMaterial(new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))));
+
+            // Create real wireframe geometry
+            var wireframe = Viewport3DHelper.CreateWireframeGeometry(currentModelGroup);
+            if (wireframe != null)
+            {
+                var wireframeVisual = new ModelVisual3D { Content = wireframe };
+                wireframeVisual.SetValue(WireframeVisualTagProperty, true);
+                viewport.Children.Add(wireframeVisual);
+            }
         }
 
         private void RestoreSolid()
         {
+            if (viewport == null) return;
+
+            // Remove wireframe visuals
+            for (int i = viewport.Children.Count - 1; i >= 0; i--)
+            {
+                if (viewport.Children[i] is ModelVisual3D mv && mv.GetValue(WireframeVisualTagProperty) is true)
+                    viewport.Children.RemoveAt(i);
+            }
+
+            // Restore original materials
             ApplyVisibilityState();
         }
+
+        private static readonly DependencyProperty WireframeVisualTagProperty =
+            DependencyProperty.RegisterAttached("WireframeVisualTag", typeof(bool), typeof(ModelViewer3DControl), new PropertyMetadata(false));
 
         private static void SetMaterialRecursive(Model3DGroup group, Material material)
         {

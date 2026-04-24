@@ -1,6 +1,4 @@
-using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.EditorTools.ThreeD;
-using ColorVision.UI;
 using HelixToolkit.Wpf;
 using System;
 using System.Collections.Generic;
@@ -15,22 +13,6 @@ using Viewport3DHelper = ColorVision.ImageEditor.EditorTools.ThreeD.Viewport3DHe
 
 namespace ColorVision.ImageEditor
 {
-    public class Window3DConfig : ViewModelBase, IConfig
-    {
-        public static Window3DConfig Instance => ConfigService.Instance.GetRequiredService<Window3DConfig>();
-
-        public int TargetPixelsX { get => _TargetPixelsX; set { _TargetPixelsX = value; OnPropertyChanged(); } }
-        private int _TargetPixelsX = 512;
-
-        public int TargetPixelsY { get => _TargetPixelsY; set { _TargetPixelsY = value; OnPropertyChanged(); } }
-        private int _TargetPixelsY = 512;
-
-        public string SelectedColormap { get => _SelectedColormap; set { _SelectedColormap = value; OnPropertyChanged(); } }
-        private string _SelectedColormap = "jet";
-    }
-
-    public record ColormapInfo(string Name, BitmapImage? ImageSource, byte[]? Lut);
-
     public partial class Window3D : Window
     {
         private readonly WriteableBitmap colorBitmap;
@@ -191,6 +173,19 @@ namespace ColorVision.ImageEditor
 
             if (modelVisual != null)
             {
+                if (modelVisual.Content is GeometryModel3D geometry)
+                {
+                    if (geometry.Geometry is MeshGeometry3D mesh)
+                    {
+                        mesh.Positions = null;
+                        mesh.TriangleIndices = null;
+                        mesh.TextureCoordinates = null;
+                        mesh.Normals = null;
+                    }
+                    geometry.Geometry = null;
+                    geometry.Material = null;
+                    geometry.BackMaterial = null;
+                }
                 modelVisual.Content = null;
                 modelVisual = null;
             }
@@ -201,14 +196,14 @@ namespace ColorVision.ImageEditor
             grayPixels = null;
             currentColormap = null;
             axesVisuals = null;
+
+            GC.Collect(2, GCCollectionMode.Forced, true);
+            GC.WaitForPendingFinalizers();
         }
 
         private void Window3D_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (viewport == null) return;
-
-            const double moveSpeed = 20.0;
-            const double lookSpeed = 10.0;
+            if (viewport?.Camera is not ProjectionCamera camera) return;
 
             switch (e.Key)
             {
@@ -226,77 +221,21 @@ namespace ColorVision.ImageEditor
                     e.Handled = true;
                     break;
 
-                // Camera position (WASD-like with T/B)
-                case Key.L: // Left
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X - moveSpeed,
-                        viewport.Camera.Position.Y,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.T: // Forward (Top view direction in default orientation)
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X,
-                        viewport.Camera.Position.Y + moveSpeed,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.R: // Right
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X + moveSpeed,
-                        viewport.Camera.Position.Y,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.B: // Backward
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X,
-                        viewport.Camera.Position.Y - moveSpeed,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-
-                // Look direction (arrow-like with A/C)
-                case Key.A: // Look Up (increase Z component of look direction)
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z + lookSpeed);
-                    e.Handled = true;
-                    break;
-                case Key.C: // Look Down
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z - lookSpeed);
-                    e.Handled = true;
-                    break;
-                case Key.D: // Look Left (decrease X)
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X - lookSpeed,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z);
-                    e.Handled = true;
-                    break;
-                case Key.F: // Look Right (increase X)
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X + lookSpeed,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z);
-                    e.Handled = true;
-                    break;
-
                 // Reset view
                 case Key.Home:
                     ResetCameraView();
                     e.Handled = true;
+                    break;
+
+                default:
+                    e.Handled = Viewport3DHelper.HandleCameraKey(camera, e.Key);
                     break;
             }
         }
 
         private void CompositionTarget_Rendering(object? sender, EventArgs e)
         {
-            if (viewport?.Camera is PerspectiveCamera camera && axesVisuals != null)
+            if (viewport?.Camera is ProjectionCamera camera && axesVisuals != null)
                 Viewport3DHelper.UpdateFixedCornerAxes(axesVisuals, camera);
         }
 
@@ -321,12 +260,37 @@ namespace ColorVision.ImageEditor
         {
             if (viewport?.Camera == null || grayPixels == null) return;
 
-            // Project mouse position to approximate 3D coordinates
-            // This is a simplified approximation
             var pos = e.GetPosition(viewport);
-            var tooltipText = $"Mouse: ({pos.X:F0}, {pos.Y:F0})\n";
-            tooltipText += $"Scale: {heightScale:F1}x\n";
-            tooltipText += $"Res: {newWidth}x{newHeight}";
+            Point3D? hitPoint = null;
+            byte hitValue = 0;
+
+            // Perform 3D hit test to find the point under the mouse
+            HitTestResult result = VisualTreeHelper.HitTest(viewport, pos);
+            if (result is RayMeshGeometry3DHitTestResult meshHit)
+            {
+                hitPoint = meshHit.PointHit;
+
+                // Map 3D point back to grid coordinates
+                int gridX = (int)Math.Clamp(Math.Round(hitPoint.Value.X), 0, newWidth - 1);
+                int gridY = newHeight - 1 - (int)Math.Clamp(Math.Round(hitPoint.Value.Y), 0, newHeight - 1);
+                int idx = gridY * newWidth + gridX;
+                if (idx >= 0 && idx < grayPixels.Length)
+                    hitValue = grayPixels[idx];
+            }
+
+            string tooltipText;
+            if (hitPoint.HasValue)
+            {
+                var p = hitPoint.Value;
+                tooltipText = $"X: {p.X:F1}  Y: {newHeight - 1 - p.Y:F1}\n";
+                tooltipText += $"Z: {p.Z:F2}  值: {hitValue}\n";
+                tooltipText += $"高度: {heightScale:F1}x  分辨率: {newWidth}x{newHeight}";
+            }
+            else
+            {
+                tooltipText = $"鼠标: ({pos.X:F0}, {pos.Y:F0})\n";
+                tooltipText += $"高度: {heightScale:F1}x  分辨率: {newWidth}x{newHeight}";
+            }
 
             HoverInfoText.Text = tooltipText;
             HoverInfoPopup.IsOpen = true;
@@ -440,13 +404,13 @@ namespace ColorVision.ImageEditor
         }
 
         // Height scale adjustment buttons
-        private async void HeightScaleIncrease_Click(object sender, RoutedEventArgs e)
+        private void HeightScaleIncrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 1.1;
             UpdateMeshPositions();
         }
 
-        private async void HeightScaleDecrease_Click(object sender, RoutedEventArgs e)
+        private void HeightScaleDecrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 0.9;
             UpdateMeshPositions();
@@ -560,13 +524,37 @@ namespace ColorVision.ImageEditor
             byte[] fullGray = new byte[origH * grayStride];
             graySource.CopyPixels(fullGray, grayStride, 0);
 
-            // Nearest-neighbor downsample
+            // Bilinear interpolation downsample
             byte[] gray = new byte[newW * newH];
+            double scaleX = (double)(origW - 1) / Math.Max(newW - 1, 1);
+            double scaleY = (double)(origH - 1) / Math.Max(newH - 1, 1);
+
             for (int y = 0; y < newH; y++)
             {
-                int srcY = y * scaleFactor;
+                double srcY = y * scaleY;
+                int y0 = (int)srcY;
+                int y1 = Math.Min(y0 + 1, origH - 1);
+                double fy = srcY - y0;
+
                 for (int x = 0; x < newW; x++)
-                    gray[y * newW + x] = fullGray[srcY * grayStride + x * scaleFactor];
+                {
+                    double srcX = x * scaleX;
+                    int x0 = (int)srcX;
+                    int x1 = Math.Min(x0 + 1, origW - 1);
+                    double fx = srcX - x0;
+
+                    double v00 = fullGray[y0 * grayStride + x0];
+                    double v10 = fullGray[y0 * grayStride + x1];
+                    double v01 = fullGray[y1 * grayStride + x0];
+                    double v11 = fullGray[y1 * grayStride + x1];
+
+                    double value = v00 * (1 - fx) * (1 - fy)
+                                 + v10 * fx * (1 - fy)
+                                 + v01 * (1 - fx) * fy
+                                 + v11 * fx * fy;
+
+                    gray[y * newW + x] = (byte)Math.Clamp(Math.Round(value), 0, 255);
+                }
             }
 
             return (gray, newW, newH);
@@ -595,10 +583,10 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>
-        /// Build mesh arrays - positions, indices, and texture coordinates.
+        /// Build mesh arrays - positions, indices, texture coordinates, and normals.
         /// Separated from mesh creation to allow position-only updates.
         /// </summary>
-        private static (Point3D[] Positions, int[] Indices, Point[] TexCoords) BuildMeshArrays(
+        private static (Point3D[] Positions, int[] Indices, Point[] TexCoords, Vector3D[] Normals) BuildMeshArrays(
             byte[] pixels, int width, int height, double heightScale)
         {
             int vertexCount = width * height;
@@ -606,6 +594,7 @@ namespace ColorVision.ImageEditor
 
             var positions = new Point3D[vertexCount];
             var texCoords = new Point[vertexCount];
+            var normals = new Vector3D[vertexCount];
             var indices = new int[indexCount];
 
             double wm1 = Math.Max(width - 1, 1);
@@ -622,6 +611,27 @@ namespace ColorVision.ImageEditor
                     double z = pixels[idx] / 255.0 * heightScale;
                     positions[idx] = new Point3D(x, flippedY, z);
                     texCoords[idx] = new Point(x / wm1, y / hm1);
+                }
+            }
+
+            // Compute per-vertex normals from height gradients
+            for (int y = 0; y < height; y++)
+            {
+                int rowOffset = y * width;
+                for (int x = 0; x < width; x++)
+                {
+                    int idx = rowOffset + x;
+                    double zL = x > 0 ? pixels[idx - 1] / 255.0 * heightScale : positions[idx].Z;
+                    double zR = x < width - 1 ? pixels[idx + 1] / 255.0 * heightScale : positions[idx].Z;
+                    double zU = y > 0 ? pixels[idx - width] / 255.0 * heightScale : positions[idx].Z;
+                    double zD = y < height - 1 ? pixels[idx + width] / 255.0 * heightScale : positions[idx].Z;
+
+                    // Gradient in X, gradient in Y (flipped), cross product gives normal
+                    double dzdx = (zR - zL) * 0.5;
+                    double dzdy = (zD - zU) * 0.5;
+                    var normal = new Vector3D(-dzdx, dzdy, 1.0);
+                    normal.Normalize();
+                    normals[idx] = normal;
                 }
             }
 
@@ -647,7 +657,7 @@ namespace ColorVision.ImageEditor
                 }
             }
 
-            return (positions, indices, texCoords);
+            return (positions, indices, texCoords, normals);
         }
 
         /// <summary>
@@ -663,6 +673,8 @@ namespace ColorVision.ImageEditor
             else
                 cachedPositions.Clear();
 
+            var normals = new Vector3DCollection(newWidth * newHeight);
+
             for (int y = 0; y < newHeight; y++)
             {
                 int flippedY = newHeight - 1 - y;
@@ -672,10 +684,23 @@ namespace ColorVision.ImageEditor
                     int idx = rowOffset + x;
                     double z = grayPixels[idx] / 255.0 * heightScale;
                     cachedPositions.Add(new Point3D(x, flippedY, z));
+
+                    // Recompute normal from height gradients
+                    double zL = x > 0 ? grayPixels[idx - 1] / 255.0 * heightScale : z;
+                    double zR = x < newWidth - 1 ? grayPixels[idx + 1] / 255.0 * heightScale : z;
+                    double zU = y > 0 ? grayPixels[idx - newWidth] / 255.0 * heightScale : z;
+                    double zD = y < newHeight - 1 ? grayPixels[idx + newWidth] / 255.0 * heightScale : z;
+
+                    double dzdx = (zR - zL) * 0.5;
+                    double dzdy = (zD - zU) * 0.5;
+                    var normal = new Vector3D(-dzdx, dzdy, 1.0);
+                    normal.Normalize();
+                    normals.Add(normal);
                 }
             }
 
             currentMesh.Positions = cachedPositions;
+            currentMesh.Normals = normals;
             UpdateRotationCenterFromMesh(currentMesh);
             ResetModelRotation();
         }
@@ -716,13 +741,14 @@ namespace ColorVision.ImageEditor
             int w = newWidth, h = newHeight;
             double hs = heightScale;
 
-            var (positions, indices, texCoords) = await Task.Run(() => BuildMeshArrays(pixels, w, h, hs));
+            var (positions, indices, texCoords, normals) = await Task.Run(() => BuildMeshArrays(pixels, w, h, hs));
 
             currentMesh = new MeshGeometry3D
             {
                 Positions = new Point3DCollection(positions),
                 TriangleIndices = new Int32Collection(indices),
-                TextureCoordinates = new PointCollection(texCoords)
+                TextureCoordinates = new PointCollection(texCoords),
+                Normals = new Vector3DCollection(normals)
             };
 
             UpdateRotationCenterFromMesh(currentMesh);

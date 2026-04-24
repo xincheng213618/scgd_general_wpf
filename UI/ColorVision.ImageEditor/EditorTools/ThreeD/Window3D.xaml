@@ -7,47 +7,11 @@
         Title="3D视图" Height="600" Width="1000"
         Initialized="Window_Initialized" Closed="Window_Closed">
     <Window.Resources>
-        <Style x:Key="ToolBtn" TargetType="Button">
-            <Setter Property="Width" Value="28"/>
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="Margin" Value="1"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#DDFFFFFF"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="#50505050" BorderBrush="#40707070"
-                                BorderThickness="1" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#80707070"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#80AAAAAA"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#A0909090"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ActionBtn" TargetType="Button" BasedOn="{StaticResource ToolBtn}">
-            <Setter Property="Width" Value="Auto"/>
-            <Setter Property="Height" Value="26"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="2"/>
-        </Style>
-        <Style x:Key="SectionLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#99FFFFFF"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Margin" Value="2,0,0,3"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ThreeDStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Grid Background="Black">

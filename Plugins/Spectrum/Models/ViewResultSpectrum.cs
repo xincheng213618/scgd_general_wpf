@@ -22,6 +22,9 @@ namespace Spectrum.Models
         public int Id { get; set; }
         [DisplayName("测量时间")]
         public DateTime? CreateTime { get; set; }
+        [DisplayName("总耗时(ms)")]
+        public long? TotalDurationMs { get => _TotalDurationMs; set { _TotalDurationMs = value; OnPropertyChanged(); } }
+        private long? _TotalDurationMs;
         public string Batch { get; set; }
         public int? BatchID { get; set; }
         [JsonIgnore]
@@ -162,6 +165,7 @@ namespace Spectrum.Models
         {
             Id = sprectrumModel.Id;
             CreateTime = sprectrumModel.CreateTime;
+            TotalDurationMs = sprectrumModel.TotalDurationMs;
 
             var colorParam = sprectrumModel.ColorParam;
 

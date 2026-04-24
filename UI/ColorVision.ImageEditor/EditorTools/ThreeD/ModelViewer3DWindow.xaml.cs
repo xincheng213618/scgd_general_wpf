@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
@@ -7,6 +8,11 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         public ModelViewer3DWindow()
         {
             InitializeComponent();
+        }
+
+        private void Window_Closed(object? sender, EventArgs e)
+        {
+            ViewerControl.DisposeViewer();
         }
     }
 }

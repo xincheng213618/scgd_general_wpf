@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.ThreeD"
         mc:Ignorable="d"
-        Title="3D模型查看器" Height="700" Width="1100">
+        Title="3D模型查看器" Height="700" Width="1100"
+        Closed="Window_Closed">
     <local:ModelViewer3DControl x:Name="ViewerControl"/>
 </Window>

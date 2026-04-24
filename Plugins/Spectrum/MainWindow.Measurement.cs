@@ -1,8 +1,10 @@
 using ColorVision.Themes.Controls;
 using cvColorVision;
+using Newtonsoft.Json;
 using Spectrum.Configs;
 using Spectrum.Data;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 
 namespace Spectrum
@@ -158,171 +160,348 @@ namespace Spectrum
             }
             IsRun = true;
 
-            if (Manager.EnableAutodark)
+            var totalStopwatch = Stopwatch.StartNew();
+            var stepDetails = new List<MeasurementStepDetail>();
+            var profile = new SpectrumMeasurementProfile
             {
-                if (!Manager.ShutterController.IsConnected)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "未配备shutter，无法自动校零", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    });
-                    IsRun = false;
-                    return;
-                }
-                log.Debug("开启快门");
-                await Manager.ShutterController.OpenShutter();
-                int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
-                log.Debug("关闭快门");
-                await Manager.ShutterController.CloseShutter();
-                if (ret == 1)
-                    log.Debug("测量前自动校零成功");
-                else
-                    log.Warn($"测量前自动校零失败: {Spectrometer.GetErrorMessage(ret)}");
-            }
+                CreateTime = DateTime.Now,
+                MeasurementMode = Manager.GetDataConfig.IsSyncFrequencyEnabled ? "sync-frequency" : "standard",
+                InputParametersJson = CreateMeasurementInputSnapshotJson()
+            };
+            long? committedTotalDurationMs = null;
 
-            if (Manager.EnableAutoIntegration)
+            try
             {
-
-                if (Manager.IntTimeConfig.IsOldVersion)
+                if (Manager.EnableAutodark)
                 {
-                    ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.IntTimeConfig.MaxPercent);
-                    if (ret == 1)
+                    if (!Manager.ShutterController.IsConnected)
                     {
-                        log.Debug($"自动积分时间: {fIntTime}ms");
-                        // When sync frequency is enabled, defer updating Manager.IntTime
-                        // to avoid showing intermediate value before sync adjustment
-                        if (!Manager.GetDataConfig.IsSyncFrequencyEnabled)
-                            Manager.IntTime = fIntTime;
-                    }
-                    else
-                    {
-                        log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
-                        IsRun = false;
+                        const string message = "未配备shutter，无法自动校零";
+                        AddMeasurementStep(stepDetails, "AutoDarkPrerequisite", 0, false, null, new
+                        {
+                            Manager.EnableAutodark,
+                            ShutterConnected = false
+                        }, message);
+                        profile.ErrorMessage = message;
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), message, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        });
                         return;
                     }
-                }
-                else
-                {
-                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.IntTimeConfig.Max, MyAutoTimeCallback);
-                    if (ret == 1)
+
+                    var autoDarkStopwatch = Stopwatch.StartNew();
+                    log.Debug("开启快门");
+                    await Manager.ShutterController.OpenShutter();
+                    int autoDarkRet = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
+                    log.Debug("关闭快门");
+                    await Manager.ShutterController.CloseShutter();
+                    autoDarkStopwatch.Stop();
+
+                    profile.AutoDarkDurationMs = autoDarkStopwatch.ElapsedMilliseconds;
+                    string autoDarkMessage = autoDarkRet == 1 ? "测量前自动校零成功" : Spectrometer.GetErrorMessage(autoDarkRet);
+                    AddMeasurementStep(stepDetails, "AutoDark", profile.AutoDarkDurationMs.Value, autoDarkRet == 1, autoDarkRet, new
                     {
-                        log.Debug($"自动积分时间: {fIntTime}ms");
-                        if (!Manager.GetDataConfig.IsSyncFrequencyEnabled)
-                            Manager.IntTime = fIntTime;
-                    }
+                        IntTime = Manager.IntTime,
+                        Manager.Average,
+                        DarkChannel = 0,
+                        ShutterConnected = true
+                    }, autoDarkMessage);
+
+                    if (autoDarkRet == 1)
+                        log.Debug("测量前自动校零成功");
                     else
-                    {
-                        log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
-                        IsRun = false;
-                        return;
-                    }
+                        log.Warn($"测量前自动校零失败: {autoDarkMessage}");
                 }
-            }
-
-
-            if (Manager.EnableAdaptiveAutoDark)
-            {
-                // When auto-integration deferred Manager.IntTime update (sync frequency enabled),
-                // use the field-level fIntTime which has the fresh auto-integration result
-                float darkIntTime = (Manager.EnableAutoIntegration && Manager.GetDataConfig.IsSyncFrequencyEnabled) ? fIntTime : Manager.IntTime;
-                ret = Spectrometer.CM_Emission_AutoDarkStorage(SpectrometerHandle, darkIntTime, Manager.Average, 0, Manager.fDarkData);
-                if (ret == 1)
-                {
-                    log.Debug("自适应校零数据获取成功");
-                }
-                else if (ret == 0)
-                {
-                    log.Warn("自适应校零未初始化，请先执行一次自适应校零");
-                    isstartAuto = false;
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MessageBox.Show("请先做一次自适应校零");
-                    });
-                    IsRun = false;
-                    return;
-                }
-                else
-                {
-                    log.Warn($"自适应校零数据获取失败: {Spectrometer.GetErrorMessage(ret)}");
-                }
-            }
-
-            float fDx = 0;
-            float fDy = 0;
-            COLOR_PARA cOLOR_PARA = new COLOR_PARA();
-
-            if (Manager.GetDataConfig.IsSyncFrequencyEnabled)
-            {
-                // Use field-level fIntTime (auto-integration result) when auto-integration ran,
-                // otherwise use Manager.IntTime (user-set value)
-                float syncIntTime = Manager.EnableAutoIntegration ? fIntTime : Manager.IntTime;
-                ret = Spectrometer.CM_Emission_GetDataSyncfreq(SpectrometerHandle, 0, Manager.GetDataConfig.Syncfreq, Manager.GetDataConfig.SyncfreqFactor, ref syncIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
-                if (ret != 1)
-                    log.Warn($"同步频率采集数据失败: {Spectrometer.GetErrorMessage(ret)}");
 
                 if (Manager.EnableAutoIntegration)
-                    Manager.IntTime = syncIntTime;
-            }
-            else
-            {
-                ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
-                if (ret == -13007)
                 {
-                    log.Warn($"采集数据超时，正在重试: {Spectrometer.GetErrorMessage(ret)}");
-                    ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
+                    var autoIntegrationStopwatch = Stopwatch.StartNew();
+                    if (Manager.IntTimeConfig.IsOldVersion)
+                    {
+                        ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.IntTimeConfig.MaxPercent);
+                    }
+                    else
+                    {
+                        ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.IntTimeConfig.Max, MyAutoTimeCallback);
+                    }
+                    autoIntegrationStopwatch.Stop();
+
+                    profile.AutoIntegrationDurationMs = autoIntegrationStopwatch.ElapsedMilliseconds;
+                    string? autoIntegrationError = ret == 1 ? null : Spectrometer.GetErrorMessage(ret);
+                    AddMeasurementStep(stepDetails, "AutoIntegration", profile.AutoIntegrationDurationMs.Value, ret == 1, ret, new
+                    {
+                        Manager.IntTimeConfig.IsOldVersion,
+                        Manager.IntTimeConfig.IntLimitTime,
+                        Manager.IntTimeConfig.AutoIntTimeB,
+                        AutoIntegrationMax = Manager.IntTimeConfig.IsOldVersion ? (object)Manager.IntTimeConfig.MaxPercent : Manager.IntTimeConfig.Max
+                    }, ret == 1 ? $"自动积分时间={fIntTime}ms" : autoIntegrationError);
+
+                    if (ret == 1)
+                    {
+                        log.Debug($"自动积分时间: {fIntTime}ms");
+                        if (!Manager.GetDataConfig.IsSyncFrequencyEnabled)
+                            Manager.IntTime = fIntTime;
+                    }
+                    else
+                    {
+                        profile.ErrorCode = ret;
+                        profile.ErrorMessage = $"自动积分时间获取失败: {autoIntegrationError}";
+                        log.Warn(profile.ErrorMessage);
+                        return;
+                    }
                 }
-                if (ret != 1)
-                    log.Warn($"采集光谱数据失败: {Spectrometer.GetErrorMessage(ret)}");
-            }
-            if (ret == 1)
-            {
-                if (cOLOR_PARA.fPh < 1)
+
+                if (Manager.EnableAdaptiveAutoDark)
                 {
-                    cOLOR_PARA.fPh = (float)Math.Round((float)cOLOR_PARA.fPh, 4);
+                    float darkIntTime = (Manager.EnableAutoIntegration && Manager.GetDataConfig.IsSyncFrequencyEnabled) ? fIntTime : Manager.IntTime;
+                    var adaptiveAutoDarkStopwatch = Stopwatch.StartNew();
+                    ret = Spectrometer.CM_Emission_AutoDarkStorage(SpectrometerHandle, darkIntTime, Manager.Average, 0, Manager.fDarkData);
+                    adaptiveAutoDarkStopwatch.Stop();
+
+                    profile.AdaptiveAutoDarkDurationMs = adaptiveAutoDarkStopwatch.ElapsedMilliseconds;
+                    string adaptiveAutoDarkMessage = ret == 1
+                        ? "自适应校零数据获取成功"
+                        : ret == 0
+                            ? "自适应校零未初始化，请先执行一次自适应校零"
+                            : Spectrometer.GetErrorMessage(ret);
+
+                    AddMeasurementStep(stepDetails, "AdaptiveAutoDark", profile.AdaptiveAutoDarkDurationMs.Value, ret == 1, ret, new
+                    {
+                        IntTime = darkIntTime,
+                        Manager.Average,
+                        DarkChannel = 0
+                    }, adaptiveAutoDarkMessage);
+
+                    if (ret == 1)
+                    {
+                        log.Debug("自适应校零数据获取成功");
+                    }
+                    else if (ret == 0)
+                    {
+                        profile.ErrorCode = ret;
+                        profile.ErrorMessage = adaptiveAutoDarkMessage;
+                        log.Warn(adaptiveAutoDarkMessage);
+                        isstartAuto = false;
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show("请先做一次自适应校零");
+                        });
+                        return;
+                    }
+                    else
+                    {
+                        log.Warn($"自适应校零数据获取失败: {adaptiveAutoDarkMessage}");
+                    }
+                }
+
+                float fDx = 0;
+                float fDy = 0;
+                COLOR_PARA cOLOR_PARA = new COLOR_PARA();
+
+                int acquireAttempts = 1;
+                var acquireStopwatch = Stopwatch.StartNew();
+                if (Manager.GetDataConfig.IsSyncFrequencyEnabled)
+                {
+                    float requestedIntTime = Manager.EnableAutoIntegration ? fIntTime : Manager.IntTime;
+                    float syncIntTime = requestedIntTime;
+                    ret = Spectrometer.CM_Emission_GetDataSyncfreq(SpectrometerHandle, 0, Manager.GetDataConfig.Syncfreq, Manager.GetDataConfig.SyncfreqFactor, ref syncIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
+                    acquireStopwatch.Stop();
+
+                    profile.AcquireDurationMs = acquireStopwatch.ElapsedMilliseconds;
+                    string acquireMessage = ret == 1 ? $"同步频率采集成功，积分时间={syncIntTime}ms" : Spectrometer.GetErrorMessage(ret);
+                    AddMeasurementStep(stepDetails, "AcquireDataSyncFrequency", profile.AcquireDurationMs.Value, ret == 1, ret, new
+                    {
+                        RequestedIntTime = requestedIntTime,
+                        FinalIntTime = syncIntTime,
+                        Manager.GetDataConfig.Syncfreq,
+                        Manager.GetDataConfig.SyncfreqFactor,
+                        Manager.Average,
+                        Manager.GetDataConfig.FilterBW,
+                        Manager.GetDataConfig.SetWL1,
+                        Manager.GetDataConfig.SetWL2
+                    }, acquireMessage);
+
+                    if (ret != 1)
+                        log.Warn($"同步频率采集数据失败: {acquireMessage}");
+
+                    if (Manager.EnableAutoIntegration)
+                        Manager.IntTime = syncIntTime;
                 }
                 else
                 {
-                    cOLOR_PARA.fPh = (float)Math.Round((float)cOLOR_PARA.fPh, 2);
+                    float requestedIntTime = Manager.IntTime;
+                    ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
+                    if (ret == -13007)
+                    {
+                        acquireAttempts = 2;
+                        log.Warn($"采集数据超时，正在重试: {Spectrometer.GetErrorMessage(ret)}");
+                        ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
+                    }
+                    acquireStopwatch.Stop();
+
+                    profile.AcquireDurationMs = acquireStopwatch.ElapsedMilliseconds;
+                    string acquireMessage = ret == 1 ? "采集光谱数据成功" : Spectrometer.GetErrorMessage(ret);
+                    AddMeasurementStep(stepDetails, "AcquireData", profile.AcquireDurationMs.Value, ret == 1, ret, new
+                    {
+                        RequestedIntTime = requestedIntTime,
+                        Manager.Average,
+                        Manager.GetDataConfig.FilterBW,
+                        Manager.GetDataConfig.SetWL1,
+                        Manager.GetDataConfig.SetWL2,
+                        Attempts = acquireAttempts
+                    }, acquireMessage);
+
+                    if (ret != 1)
+                        log.Warn($"采集光谱数据失败: {acquireMessage}");
                 }
 
-                var smuMeasurement = MainWindowConfig.Instance.EqeEnabled && Manager.SmuController.IsOpen && !Manager.SmuController.IsBusy
-                    ? Manager.SmuController.CaptureMeasurementSnapshot()
-                    : null;
-
-                Application.Current.Dispatcher.Invoke(() =>
+                if (ret == 1)
                 {
-                    SprectrumModel sprectrumModel = new SprectrumModel() { ColorParam = cOLOR_PARA };
-                    ViewResultManager.Save(sprectrumModel);
-                    if (MainWindowConfig.Instance.EqeEnabled && ViewResultSpectrums.Count > 0)
+                    if (cOLOR_PARA.fPh < 1)
                     {
-                        float voltage = MainWindowConfig.Instance.EqeVoltage;
-                        float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
-                        if (smuMeasurement.HasValue)
+                        cOLOR_PARA.fPh = (float)Math.Round((float)cOLOR_PARA.fPh, 4);
+                    }
+                    else
+                    {
+                        cOLOR_PARA.fPh = (float)Math.Round((float)cOLOR_PARA.fPh, 2);
+                    }
+
+                    var smuMeasurement = MainWindowConfig.Instance.EqeEnabled && Manager.SmuController.IsOpen && !Manager.SmuController.IsBusy
+                        ? Manager.SmuController.CaptureMeasurementSnapshot()
+                        : null;
+
+                    long renderDurationMs = 0;
+                    long persistDurationMs = 0;
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        var renderStopwatch = Stopwatch.StartNew();
+                        SprectrumModel sprectrumModel = new SprectrumModel()
                         {
-                            Manager.SmuController.ApplyMeasurement(smuMeasurement.Value);
-                            voltage = smuMeasurement.Value.Voltage;
-                            currentMA = smuMeasurement.Value.CurrentMA;
-                            MainWindowConfig.Instance.EqeVoltage = voltage;
-                            MainWindowConfig.Instance.EqeCurrentMA = currentMA;
-                        }
+                            ColorParam = cOLOR_PARA,
+                            TotalDurationMs = totalStopwatch.ElapsedMilliseconds
+                        };
+                        renderStopwatch.Stop();
+                        renderDurationMs = renderStopwatch.ElapsedMilliseconds;
+
+                        var persistStopwatch = Stopwatch.StartNew();
+                        ViewResultManager.Save(sprectrumModel);
 
                         var latest = ViewResultManager.Config.OrderByType == SqlSugar.OrderByType.Desc
                             ? ViewResultSpectrums.FirstOrDefault()
                             : ViewResultSpectrums.LastOrDefault();
-                        if (latest != null)
+
+                        if (MainWindowConfig.Instance.EqeEnabled && latest != null)
                         {
+                            float voltage = MainWindowConfig.Instance.EqeVoltage;
+                            float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
+                            if (smuMeasurement.HasValue)
+                            {
+                                Manager.SmuController.ApplyMeasurement(smuMeasurement.Value);
+                                voltage = smuMeasurement.Value.Voltage;
+                                currentMA = smuMeasurement.Value.CurrentMA;
+                                MainWindowConfig.Instance.EqeVoltage = voltage;
+                                MainWindowConfig.Instance.EqeCurrentMA = currentMA;
+                            }
+
                             latest.CalculateEqeParams(voltage, currentMA);
                             ViewResultManager.UpdateEqeFields(latest, isRecalculated: false);
                         }
-                    }
-                });
+
+                        persistStopwatch.Stop();
+                        persistDurationMs = persistStopwatch.ElapsedMilliseconds;
+
+                        long currentTotalDurationMs = totalStopwatch.ElapsedMilliseconds;
+                        ViewResultManager.UpdateMeasurementDuration(sprectrumModel.Id, currentTotalDurationMs);
+                        if (latest != null)
+                            latest.TotalDurationMs = currentTotalDurationMs;
+
+                        profile.SpectrumId = sprectrumModel.Id;
+                        committedTotalDurationMs = currentTotalDurationMs;
+                    });
+
+                    profile.RenderDurationMs = renderDurationMs;
+                    profile.PersistDurationMs = persistDurationMs;
+                    AddMeasurementStep(stepDetails, "RenderResult", renderDurationMs, true, null, new
+                    {
+                        HasEqeMeasurement = smuMeasurement.HasValue,
+                        MainWindowConfig.Instance.EqeEnabled
+                    }, "生成视图结果");
+                    AddMeasurementStep(stepDetails, "PersistResult", persistDurationMs, true, 1, new
+                    {
+                        profile.SpectrumId,
+                        MainWindowConfig.Instance.EqeEnabled
+                    }, "保存测量结果");
+                    profile.IsSuccess = true;
+                }
+                else
+                {
+                    errornum++;
+                    string errorMessage = Spectrometer.GetErrorMessage(ret);
+                    profile.ErrorCode = ret;
+                    profile.ErrorMessage = errorMessage;
+                    log.Error($"光谱数据采集失败: {errorMessage}");
+                }
             }
-            else
+            finally
             {
-                errornum++;
-                log.Error($"光谱数据采集失败: {Spectrometer.GetErrorMessage(ret)}");
+                totalStopwatch.Stop();
+                profile.TotalDurationMs = committedTotalDurationMs ?? totalStopwatch.ElapsedMilliseconds;
+                SaveMeasurementProfile(profile, stepDetails);
+                IsRun = false;
             }
-            IsRun = false;
+        }
+
+        private string CreateMeasurementInputSnapshotJson()
+        {
+            return JsonConvert.SerializeObject(new
+            {
+                RequestedIntTime = Manager.IntTime,
+                Manager.Average,
+                Manager.GetDataConfig.FilterBW,
+                Manager.EnableAutodark,
+                Manager.EnableAdaptiveAutoDark,
+                Manager.EnableAutoIntegration,
+                Manager.GetDataConfig.IsSyncFrequencyEnabled,
+                Manager.GetDataConfig.Syncfreq,
+                Manager.GetDataConfig.SyncfreqFactor,
+                Manager.GetDataConfig.SetWL1,
+                Manager.GetDataConfig.SetWL2,
+                Manager.IntTimeConfig.IsOldVersion,
+                Manager.IntTimeConfig.IntLimitTime,
+                Manager.IntTimeConfig.AutoIntTimeB,
+                AutoIntegrationMax = Manager.IntTimeConfig.IsOldVersion ? (object)Manager.IntTimeConfig.MaxPercent : Manager.IntTimeConfig.Max,
+                ShutterConnected = Manager.ShutterController.IsConnected
+            });
+        }
+
+        private static void AddMeasurementStep(ICollection<MeasurementStepDetail> stepDetails, string stepName, long durationMs, bool isSuccess, int? returnCode = null, object? input = null, string? message = null)
+        {
+            stepDetails.Add(new MeasurementStepDetail
+            {
+                StepName = stepName,
+                DurationMs = durationMs,
+                IsSuccess = isSuccess,
+                ReturnCode = returnCode,
+                InputJson = input == null ? null : JsonConvert.SerializeObject(input),
+                Message = message
+            });
+        }
+
+        private void SaveMeasurementProfile(SpectrumMeasurementProfile profile, IList<MeasurementStepDetail> stepDetails)
+        {
+            try
+            {
+                profile.StepDetailsJson = JsonConvert.SerializeObject(stepDetails);
+                ViewResultManager.SaveMeasurementProfile(profile);
+                log.Info($"测量耗时统计: total={profile.TotalDurationMs}ms, autoDark={profile.AutoDarkDurationMs ?? 0}ms, autoIntegration={profile.AutoIntegrationDurationMs ?? 0}ms, adaptiveDark={profile.AdaptiveAutoDarkDurationMs ?? 0}ms, acquire={profile.AcquireDurationMs ?? 0}ms, render={profile.RenderDurationMs ?? 0}ms, persist={profile.PersistDurationMs ?? 0}ms, success={profile.IsSuccess}, spectrumId={profile.SpectrumId?.ToString() ?? "-"}");
+                log.Debug($"测量耗时明细: {profile.StepDetailsJson}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("保存测量耗时记录失败", ex);
+            }
         }
 
         //单次测量

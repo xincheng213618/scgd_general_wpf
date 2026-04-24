@@ -63,15 +63,39 @@
 - **测量工具**: 距离和角度测量
 
 ### 5. 3D 可视化 (v2.0+ 优化)
-- **3D 图像视图**: 将图像作为高度图进行三维可视化
-- **智能网格缓存**: 三角索引和纹理坐标只构建一次，高度缩放时仅更新顶点位置（大幅提升性能）
-- **伪彩色映射**: 支持 24 种颜色映射（jet、viridis、plasma、inferno、magma、cividis 等）
-- **实时高度缩放**: 通过 +/- 按钮或键盘快捷键实时调整高度比例
-- **相机控制**: 支持位置移动（L/T/R/B）和视角方向调整（A/C/D/F）
-- **重置视角**: 一键恢复初始相机位置和方向（Home 键）
-- **截图导出**: 将当前3D视口保存为 PNG/JPG/BMP
-- **CIE 色彩空间**: 色彩科学分析工具
-- **深度数据处理**: 点云和深度图支持
+基于 HelixToolkit.Wpf 的 3D 渲染模块，包含两个独立查看器：
+
+**Window3D — 图像转 3D 表面**
+- 2D 图像 → 高度图 3D 曲面（支持 RGB48/Gray8 等多格式自动转换）
+- 双线性插值降采样（替代最近邻，消除锯齿）
+- 逐顶点法线计算（从高度梯度推导，提升光照效果）
+- 24 种伪彩色映射（jet/viridis/plasma 等）+ 色条图例
+- 实时高度缩放（键盘 +/- 或按钮）
+- 3D 拾取悬停提示（`VisualTreeHelper.HitTest` raycast，显示 3D 坐标和像素值）
+- 截图导出（PNG/JPEG/BMP）、模型导出（OBJ/STL）
+- 智能网格缓存：三角索引和纹理坐标只构建一次，高度缩放时仅更新顶点位置和法线
+
+**ModelViewer3DControl — OBJ/STL 模型查看器**
+- 异步后台加载 OBJ/STL 文件，自动预处理无效 mtllib 行
+- 自动法线生成、材质可见性检测与回退
+- 真实线框模式（`MeshGeometryHelper.FindEdges` + 边圆柱体渲染）
+- 正交/透视投影实时切换（`OrthographicCamera` ↔ `PerspectiveCamera`）
+- 模型树视图（隔离/显示全部），暗色主题样式
+- 预设视角（前/后/左/右/上/下/ISO）
+- 基于模型包围盒中心的对象旋转（非世界原点）
+- 截图/模型导出（OBJ/STL 含材质和纹理）
+
+**Viewport3DHelper — 共享工具类**
+- 相机初始化、重置、帧适配（支持 PerspectiveCamera 和 OrthographicCamera）
+- 固定角坐标轴指示器（PipeVisual3D + SphereVisual3D + BillboardTextVisual3D）
+- 统一键盘移动处理（L/T/R/B/A/C/D/F）— `HandleCameraKey()` 方法
+- 共享 UI 样式（`ThreeDStyles.xaml` 资源字典：ToolBtn/ActionBtn/ToggleActionBtn/DarkTreeView）
+- 线框几何体生成、截图/导出
+
+**内存管理**
+- `ModelViewer3DControl.DisposeViewer()` 递归释放网格缓冲区（Positions/Indices/Normals）、材质纹理（ImageBrush.ImageSource）
+- `Model3DEditor`（AvalonDock 标签页）使用命名委托 + Closing 事件中主动取消订阅，打破 lambda 闭包引用链
+- 关闭时强制 GC（`GC.Collect(2, Forced)` + `WaitForPendingFinalizers()`）释放 WPF 3D 非托管渲染资源
 
 ## 视频播放功能
 
@@ -290,13 +314,30 @@ histogramView.DataSource = histogram;
 var window3D = new Window3D(writeableBitmap);
 window3D.Show();
 
-// 3D视图内部特性：
-// - 自动下采样到目标分辨率（默认 512x512）
-// - 支持 24 种伪彩色映射
+// Window3D 特性：
+// - 双线性插值降采样到目标分辨率（默认 512x512）
+// - 24 种伪彩色映射 + 色条图例
+// - 逐顶点法线计算（高度梯度推导）
+// - 3D 拾取悬停提示（raycast 显示坐标和像素值）
 // - 实时高度缩放（+/- 按钮或键盘）
-// - 相机位置/视角控制
+// - 相机位置/视角控制（L/T/R/B/A/C/D/F）
 // - Home 键重置视角
-// - 截图导出功能
+// - 截图/模型导出
+
+// OBJ/STL 模型查看器（通过菜单 Tools → 3D模型查看器）
+var window = new ModelViewer3DWindow();
+window.Show();
+
+// 或嵌入 AvalonDock 标签页（Model3DEditor 自动处理）
+// 打开 .obj/.stl 文件即可
+
+// ModelViewer3DControl 特性：
+// - 异步后台加载 + 加载遮罩
+// - 真实线框模式（边圆柱体渲染）
+// - 正交/透视投影切换
+// - 模型树视图（隔离/显示全部）
+// - 预设视角（前/后/左/右/上/下/ISO）
+// - 基于模型中心的对象旋转
 ```
 
 ## 视频播放使用指南
@@ -377,9 +418,11 @@ public class CustomImageProcessor : IImageProcessor
 
 ### 3D 视图
 1. **合理设置分辨率**: 默认 512x512 适合大多数场景，4K 图像可使用 256x256 提升流畅度
-2. **高度缩放缓存**: 网格顶点位置缓存，高度缩放时只更新 Z 坐标，避免重建整个 Mesh
+2. **高度缩放缓存**: 网格顶点位置和法线缓存，高度缩放时只更新 Z 坐标和法线，避免重建整个 Mesh
 3. **冻结资源**: 颜色映射纹理在加载时 Freeze，减少 UI 线程开销
-4. **及时释放**: 关闭窗口时正确清理 Viewport3D 和 Mesh 资源
+4. **及时释放**: `DisposeViewer()` 递归释放网格缓冲区和材质纹理，关闭时强制 GC 释放非托管渲染资源
+5. **线框模式性能**: 大模型（>50k 边）的线框渲染可能较慢，建议对大模型关闭线框
+6. **降采样质量**: 使用双线性插值替代最近邻，消除高度图锯齿，但不增加计算开销
 
 ## 最佳实践
 
@@ -446,6 +489,19 @@ public class CustomImageProcessor : IImageProcessor
 - ✅ 3D 视图新增重置视角按钮和 Home 快捷键
 - ✅ 补齐 3D 视图缺失的键盘快捷键（T/D/F/C）
 - ✅ 3D 视图事件处理器重命名，提升可维护性
+- ✅ 修复正交投影切换：真正替换 PerspectiveCamera ↔ OrthographicCamera
+- ✅ 修复线框模式：使用 MeshGeometryHelper.FindEdges + 边圆柱体渲染真实线框
+- ✅ 修复 ClearAxes 类型不匹配：检查 PipeVisual3D/SphereVisual3D/BillboardTextVisual3D
+- ✅ 移除无意义的 async void（HeightScaleIncrease/Decrease_Click）
+- ✅ 高度图添加逐顶点法线计算（从高度梯度推导，提升光照效果）
+- ✅ 降采样从最近邻改为双线性插值（消除锯齿）
+- ✅ 3D 拾取悬停提示（VisualTreeHelper.HitTest raycast，显示 3D 坐标和像素值）
+- ✅ ModelViewer3D 对象旋转修复为基于模型包围盒中心（非世界原点）
+- ✅ 提取共享 UI 样式到 ThreeDStyles.xaml 资源字典
+- ✅ 提取共享键盘逻辑到 Viewport3DHelper.HandleCameraKey()
+- ✅ Window3DConfig 独立成文件
+- ✅ ModelViewer3DControl.DisposeViewer() 递归释放网格缓冲区和材质纹理
+- ✅ Model3DEditor 内存泄漏修复：命名委托 + Closing 事件取消订阅打破闭包引用链
 
 ### v1.5.1.1 (2026-02)
 - ✅ 新增视频播放功能（MP4/AVI/MKV/MOV/WMV/FLV/WebM）

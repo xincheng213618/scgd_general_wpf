@@ -405,7 +405,28 @@ public class HexEditor : EditorBase
 | HexEditor | * (通用) | 二进制文件 |
 | AvalonEdit | .cs, .xaml, .cpp, .h, .py | 代码文件 |
 | WebEditor | .html, .htm | Web 文件 |
+| Model3DEditor | .obj, .stl | 3D 模型查看（嵌入 ModelViewer3DControl） |
 | MarkdownView | .md | Markdown 文件 (v1.5+) |
+
+### Model3DEditor 内存管理
+
+Model3DEditor 使用命名委托模式管理 AvalonDock 标签页生命周期：
+
+```csharp
+// 使用命名委托，Closing 时主动取消订阅打破闭包引用链
+EventHandler isActiveChangedHandler = (s, e) => { ... };
+EventHandler<CancelEventArgs> closingHandler = (s, e) =>
+{
+    layoutDocument.IsActiveChanged -= isActiveChangedHandler;
+    layoutDocument.Closing -= closingHandler;
+    control.DisposeViewer();
+    layoutDocument.Content = null;
+};
+```
+
+- `DisposeViewer()` 递归释放 3D 资源（网格缓冲区、材质纹理）
+- 事件取消订阅后闭包不再被 AvalonDock 引用，GC 可正常回收
+- 强制 GC 释放 WPF 3D 非托管渲染资源
 
 ## 权限控制
 
@@ -773,6 +794,11 @@ if (!RbacManager.Instance.HasPermission("FILE_DELETE"))
 ```
 
 ## 更新日志
+
+### v2.0.x (2026-04)
+- ✅ 新增 Model3DEditor 编辑器（.obj/.stl 文件，嵌入 ModelViewer3DControl）
+- ✅ 修复 Model3DEditor 内存泄漏：命名委托 + Closing 事件取消订阅打破 lambda 闭包引用链
+- ✅ Model3DEditor 关闭时递归释放 3D 资源（网格缓冲区、材质纹理、强制 GC）
 
 ### v1.5.1.1 (2026-02)
 - ✅ 新增多图像查看器 (`MultiImageViewer`)

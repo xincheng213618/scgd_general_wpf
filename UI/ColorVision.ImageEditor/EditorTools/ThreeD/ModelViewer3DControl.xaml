@@ -7,76 +7,11 @@
              Focusable="True"
              d:DesignHeight="700" d:DesignWidth="1100">
     <UserControl.Resources>
-        <Style x:Key="ToolBtn" TargetType="Button">
-            <Setter Property="Width" Value="28"/>
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="Margin" Value="1"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#DDFFFFFF"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="#50505050" BorderBrush="#40707070"
-                                BorderThickness="1" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#80707070"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#80AAAAAA"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#A0909090"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ActionBtn" TargetType="Button" BasedOn="{StaticResource ToolBtn}">
-            <Setter Property="Width" Value="Auto"/>
-            <Setter Property="Height" Value="26"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="2"/>
-        </Style>
-        <Style x:Key="ToggleActionBtn" TargetType="ToggleButton">
-            <Setter Property="Width" Value="Auto"/>
-            <Setter Property="Height" Value="26"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="Padding" Value="6,0"/>
-            <Setter Property="Foreground" Value="#DDFFFFFF"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Bd" Background="#50505050" BorderBrush="#40707070"
-                                BorderThickness="1" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#80707070"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#80AAAAAA"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#A0909090"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#80AAAAAA"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="SectionLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#99FFFFFF"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Margin" Value="2,0,0,3"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ThreeDStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Background="#1a1a1a">
@@ -90,10 +25,13 @@
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
                     <TextBlock Text="模型结构" Foreground="#DDFFFFFF" FontSize="12" VerticalAlignment="Center"/>
-                    <Button Margin="8,0,0,0" Padding="6,2" Content="隔离选中" Click="IsolateSelected_Click"/>
-                    <Button Margin="4,0,0,0" Padding="6,2" Content="恢复全部" Click="ShowAllNodes_Click"/>
+                    <Button Style="{StaticResource PanelActionBtn}" Content="隔离选中" Click="IsolateSelected_Click"/>
+                    <Button Style="{StaticResource PanelActionBtn}" Content="恢复全部" Click="ShowAllNodes_Click"/>
                 </StackPanel>
-                <TreeView x:Name="ModelTreeView" Margin="8,0,8,8" SelectedItemChanged="ModelTreeView_SelectedItemChanged">
+                <TreeView x:Name="ModelTreeView" Margin="8,0,8,8"
+                          Style="{StaticResource DarkTreeView}"
+                          ItemContainerStyle="{StaticResource DarkTreeViewItem}"
+                          SelectedItemChanged="ModelTreeView_SelectedItemChanged">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type TreeViewItem}" ItemsSource="{Binding Children}"/>
                     </TreeView.Resources>
