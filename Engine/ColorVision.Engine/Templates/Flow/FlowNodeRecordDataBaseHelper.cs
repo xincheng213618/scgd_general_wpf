@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using ColorVision.Database;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -51,6 +52,18 @@ namespace ColorVision.Engine.Templates.Flow
                     _writerThread.Start();
 
                     _initialized = true;
+
+                        DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
+                            "sqlite.flownoderecords",
+                            "流程节点记录",
+                            () => ConfigService.Instance.GetRequiredService<FlowNodeRecordConfig>().SqliteDbPath,
+                            dbPath => new SqlSugarClient(new ConnectionConfig
+                            {
+                                ConnectionString = $"Data Source={dbPath}",
+                                DbType = DbType.Sqlite,
+                                IsAutoCloseConnection = true,
+                                InitKeyType = InitKeyType.Attribute
+                            })));
                 }
                 catch (Exception ex)
                 {

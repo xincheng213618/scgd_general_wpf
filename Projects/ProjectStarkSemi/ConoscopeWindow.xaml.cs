@@ -15,10 +15,12 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using log4net;
 using Microsoft.Win32;
 using OpenCvSharp.WpfExtensions;
 using ProjectStarkSemi.Conoscope;
+using ProjectStarkSemi.Layout;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -46,6 +48,9 @@ namespace ProjectStarkSemi
     public partial class ConoscopeWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeWindow));
+
+        internal static ConoscopeWindow? Instance { get; private set; }
+        internal DockLayoutManager? LayoutManager { get; private set; }
 
         private MVSViewWindow? observationCameraWindow;
         private DeviceCamera? Device;
@@ -90,14 +95,39 @@ namespace ProjectStarkSemi
         public ConoscopeWindow()
         {
             InitializeComponent();
+            Instance = this;
             this.ApplyCaption();
             ConoscopeWindowConfig.Instance.SetWindow(this);
             this.Title += Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? "";
+            this.Closing += (s, e) => LayoutManager?.SaveLayout();
+            this.Closed += (s, e) => Instance = null;
         }
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            void ThemeChange(Theme theme)
+            {
+                DockingManager.Theme = theme == Theme.Dark
+                    ? new AvalonDock.Themes.Vs2013DarkTheme()
+                    : new AvalonDock.Themes.Vs2013LightTheme();
+            }
+            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
+            ThemeChange(ThemeManager.Current.CurrentUITheme);
+
+            LayoutManager = new DockLayoutManager(DockingManager);
+            LayoutManager.RegisterContent("ControlPanel", ControlPanelPane.Content);
+            LayoutManager.RegisterContent("ImageView", ImageView);
+            LayoutManager.RegisterContent("ChannelPanel", ChannelPanelPane.Content);
+            LayoutManager.RegisterContent("AzimuthPlot", AzimuthPlotPane.Content);
+            LayoutManager.RegisterContent("PolarPlot", PolarPlotPane.Content);
+            LayoutManager.RegisterContent("SettingPanel", SettingPanelPane.Content);
+            LayoutManager.LoadLayout();
+
+            MenuManager.GetInstance().LoadMenuForWindow("Conoscope", menu);
+
+            this.Closed += (s, e) => ThemeManager.Current.CurrentUIThemeChanged -= ThemeChange;
+
             foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
             {
                 StackPanelControl.Children.Add(item.GetDisplayCamera());
@@ -1955,6 +1985,7 @@ namespace ProjectStarkSemi
 
         private void Window_Closed(object sender, EventArgs e)
         {
+            LayoutManager?.SaveLayout();
             this.Dispose();
         }
 

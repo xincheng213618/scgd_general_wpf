@@ -113,6 +113,17 @@ namespace ProjectARVRPro
             // 确保表存在
             _db.CodeFirst.InitTables<ProjectARVRReuslt>();
             LoadAll(Config.Count);
+                DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
+                    "sqlite.projectarvr",
+                    "ARVR 结果",
+                    () => SqliteDbPath,
+                    dbPath => new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={dbPath}",
+                        DbType = DbType.Sqlite,
+                        IsAutoCloseConnection = true,
+                        InitKeyType = InitKeyType.Attribute
+                    })));
 
             if (!Directory.Exists(Config.TextSavePath))
                 Directory.CreateDirectory(Config.TextSavePath);

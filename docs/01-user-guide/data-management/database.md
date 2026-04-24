@@ -1,6 +1,6 @@
 # 数据库操作
 
-介绍 ColorVision 的数据库配置、实体浏览器和 CRUD 操作。
+介绍 ColorVision 的数据库配置、数据库浏览器和基础 CRUD 操作。
 
 ## 数据库配置
 
@@ -22,50 +22,46 @@
 2. 指定数据库文件路径
 3. 保存配置
 
-## 实体浏览器
+## 数据库浏览器
 
-> 菜单入口：**工具 → 实体浏览器**
+> 菜单入口：**工具 → 数据库浏览器**
 
-实体浏览器是 ColorVision 提供的通用数据库管理工具，类似 Navicat，可以浏览和管理所有数据库实体。
+数据库浏览器是 ColorVision 提供的通用数据库管理工具，类似 Navicat，可以先浏览数据源和库，再进入库中的表。它不依赖 C# 实体，适合同时查看 MySQL 和 SQLite 数据。
 
 ### 界面布局
 
-- **左侧**：实体列表 DataGrid
-  - **表名**：实体类对应的数据库表名
-  - **数据库**：MySQL 或 SQLite
-  - **记录数**：该表的记录总数
-- **右侧**：选中实体的 CRUD 界面（DataGrid）
+- **左侧**：数据源树
+   - **数据源**：MySQL、SQLite 日志或其他已注册 Provider
+   - **库**：MySQL schema 或 SQLite 文件 catalog
+   - **表**：数据库中的实际表
+- **右侧**：选中表的数据网格、分页和维护工具栏
 
 ### 使用方法
 
-1. 点击菜单 **工具 → 实体浏览器**
-2. 左侧面板显示所有已注册的实体类型
-3. 使用搜索框按表名过滤
-4. 点击某个实体，右侧显示该表的数据
-5. 支持以下操作：
+1. 点击菜单 **工具 → 数据库浏览器**
+2. 在左侧展开数据源、库和表
+3. 点击某个表，右侧显示该表的数据
+4. 支持以下操作：
    - **查看数据**：分页浏览表数据
-   - **编辑数据**：直接在 DataGrid 单元格内编辑，失焦自动保存
+   - **编辑数据**：直接在 DataGrid 单元格内编辑，然后点击保存
    - **新增记录**：点击工具栏"新增"按钮
    - **删除记录**：选中行后点击"删除"按钮
    - **搜索过滤**：输入关键字过滤数据
    - **分页导航**：上一页/下一页切换
 
-### 数据库来源标注
+### 数据源注册
 
-实体浏览器通过 `[DatabaseSource]` 属性判断实体属于哪个数据库：
+数据库浏览器通过 `IDatabaseBrowserProvider` 接入数据源。默认已注册 MySQL 和 SQLite 日志库，其他 SQLite 文件可以在代码中注册：
 
 ```csharp
-// MySQL 实体（默认，无需标注）
-[SugarTable("users")]
-public class UserEntity : EntityBase { ... }
-
-// SQLite 实体（需要标注）
-[DatabaseSource(DatabaseType.Sqlite)]
-[SugarTable("log_entries")]
-public class LogEntry : EntityBase { ... }
+DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
+    "sqlite.demo",
+    "SQLite Demo",
+    () => DemoDbManager.DbPath,
+    DemoDbManager.CreateDbClient));
 ```
 
-未标注的实体默认归类为 MySQL。
+修改和删除依赖表主键；无主键表建议只做查询或新增。
 
 ## 数据表结构
 
@@ -77,14 +73,14 @@ ColorVision 使用以下主要数据表：
 - `devices` - 设备配置
 - `log_entries` - 系统日志（SQLite）
 
-所有实现了 `IEntity` 接口的实体类会自动被实体浏览器发现。
+浏览器直接读取数据库表结构，不要求表存在对应的 `IEntity` 实体类。
 
 ## 数据查询
 
-### 使用实体浏览器
+### 使用数据库浏览器
 
-1. 打开"工具" → "实体浏览器"
-2. 在左侧选择实体类型
+1. 打开"工具" → "数据库浏览器"
+2. 在左侧选择数据库表
 3. 右侧 DataGrid 直接显示数据
 4. 使用搜索框过滤
 

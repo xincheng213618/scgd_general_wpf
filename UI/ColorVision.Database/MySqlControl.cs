@@ -115,9 +115,15 @@ namespace ColorVision.Database
             return new SqlSugarClient(new ConnectionConfig
             {
                 ConnectionString = GetConnectionString(),
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true
+                DbType = DbType.MySql,
+                IsAutoCloseConnection = true,
+                InitKeyType = InitKeyType.Attribute
             });
+        }
+
+        public static IDatabaseBrowserProvider CreateBrowserProvider()
+        {
+            return new MySqlDatabaseBrowserProvider(() => Config);
         }
 
 
@@ -125,7 +131,12 @@ namespace ColorVision.Database
 
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout = 1)
         {
-            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout};SSL Mode =None;Pooling=true;AllowLoadLocalInfile=True";
+            return GetConnectionString(MySqlConfig, timeout, MySqlConfig.Database);
+        }
+
+        public static string GetConnectionString(MySqlConfig MySqlConfig, int timeout, string? databaseName)
+        {
+            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={databaseName ?? string.Empty};charset=utf8;Connect Timeout={timeout};SSL Mode =None;Pooling=true;AllowLoadLocalInfile=True";
             return connStr;
         }
 

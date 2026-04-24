@@ -77,6 +77,17 @@ namespace ProjectLUX
             // 确保表存在
             _db.CodeFirst.InitTables<ProjectLUXReuslt>();
             LoadAll(Config.Count);
+                DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
+                    "sqlite.projectlux",
+                    "LUX 结果",
+                    () => SqliteDbPath,
+                    dbPath => new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={dbPath}",
+                        DbType = DbType.Sqlite,
+                        IsAutoCloseConnection = true,
+                        InitKeyType = InitKeyType.Attribute
+                    })));
 
             try
             {
