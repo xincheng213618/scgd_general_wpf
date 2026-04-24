@@ -54,6 +54,7 @@
   - HexEditor - 二进制文件编辑
   - WebEditor - Web内容查看
   - AvalonEdit - 代码编辑器（支持语法高亮）
+  - Model3DEditor - 3D 模型查看（.obj/.stl，嵌入 ModelViewer3DControl）
   - ProjectEditor - 项目文件编辑
   - SystemEditor - 系统编辑器
 - **编辑器注册**: 通过 `EditorForExtensionAttribute` 特性自动注册
@@ -215,6 +216,7 @@ graph TD
     D --> D2[TextEditor]
     D --> D3[ImageEditor]
     D --> D4[AvalonEdit]
+    D --> D5[Model3DEditor]
 
     E --> E1[RbacManager]
     E --> E2[AuthService]
