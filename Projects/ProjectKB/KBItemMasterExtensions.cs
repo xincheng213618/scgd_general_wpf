@@ -8,6 +8,16 @@ namespace ProjectKB
     {
         public static void SaveCsv(this KBItemMaster KBItems, string FileName)
         {
+            // LvFailures是 MaxKeyLv 和 MinKeyLv  失败的数量, 都失败算1个，不都统计
+            // LocalContrastFailures  MinKeyLc 和 MaxKeyLc 是失败的数量，都失败算1个，不都统计
+            // DarkKeyLocalContrast 是最暗Key的Lc
+            // BrightKeyLocalContrast 是最亮Key的Lc
+
+            //LocalDarkestKey  判定的是Lc 是最小Key
+            //LocalBrightestKey  判定的是Lc 是最大Key
+
+            //ColorDifference 是彩色才有，目前还是空
+
             var csvBuilder = new StringBuilder();
             List<string> properties = new()
     {
@@ -78,7 +88,7 @@ namespace ProjectKB
                     item.DrakestKey.ToString(CultureInfo.InvariantCulture),
                     item.BrightestKey.ToString(CultureInfo.InvariantCulture),
                     "",
-                    "",
+                    item.NbrFailPoints.ToString(CultureInfo.InvariantCulture),
                     "",
                     "",
                     "",
