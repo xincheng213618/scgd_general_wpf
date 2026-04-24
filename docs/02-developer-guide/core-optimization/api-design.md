@@ -66,7 +66,7 @@ public:
 } // namespace cvcore
 ```
 
-### 2. Result<T> 类型
+### 2. Result\<T\> 类型
 
 用于错误处理：
 
