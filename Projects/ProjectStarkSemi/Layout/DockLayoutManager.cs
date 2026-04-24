@@ -3,6 +3,8 @@ using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
 using ColorVision.UI;
 using log4net;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
