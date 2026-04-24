@@ -66,6 +66,10 @@ namespace ProjectKB
         public string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN = string.Empty;
 
+
+        public string KBTemplate { get => _KBTemplate; set { _KBTemplate = value; OnPropertyChanged(); } }
+        private string _KBTemplate = string.Empty;
+
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string _Code = string.Empty;
 

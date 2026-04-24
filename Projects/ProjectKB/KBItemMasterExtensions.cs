@@ -93,12 +93,16 @@ namespace ProjectKB
             {
                 item.SN = $"\"{item.SN.Replace("\"", "\"\"")}\"";
             }
+            if (item.KBTemplate.Contains(',') || item.KBTemplate.Contains('"'))
+            {
+                item.KBTemplate = $"\"{item.KBTemplate.Replace("\"", "\"\"")}\"";
+            }
             List<string> values = new()
                 {
                     item.Id.ToString(),
                     item.Model,
                     item.SN,
-                    "",
+                    item.KBTemplate,
                     item.AvgLv.ToString("F2",CultureInfo.InvariantCulture),
                     item.MinLv.ToString("F2",CultureInfo.InvariantCulture),
                     item.MaxLv.ToString("F2",CultureInfo.InvariantCulture),
