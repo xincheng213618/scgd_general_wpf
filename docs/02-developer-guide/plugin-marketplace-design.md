@@ -55,7 +55,7 @@ H:\ColorVision\
 
 ### 2.2 为什么选 Python Flask 而不是 C# ASP.NET Core
 
-1. **与构建脚本一致**: `build_plugin.py`、`build_spectrum.py`、`build_update.py` 都是 Python
+1. **与构建脚本一致**: `package_cvxp.py`、`build_spectrum.py`、`build_update.py` 都是 Python
 2. **直接使用现有文件结构**: 无需数据迁移、不引入 ORM/EF Core
 3. **Web UI 更简单**: Jinja2 模板 vs WPF 无法做 Web UI
 4. **依赖更少**: 只需 `pip install flask`（vs EF Core + Swagger + 多个 NuGet 包）
@@ -167,7 +167,7 @@ Backend/marketplace/
 
 Scripts/
 ├── publish_plugin.py   # 发布脚本（POST /api/packages/publish）
-├── build_plugin.py     # 通用插件打包
+├── package_cvxp.py     # 通用插件/项目打包
 ├── build_spectrum.py   # Spectrum 插件打包
 └── build_update.py     # 应用更新包
 ```

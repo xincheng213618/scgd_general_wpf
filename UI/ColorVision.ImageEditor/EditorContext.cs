@@ -56,8 +56,7 @@ namespace ColorVision.ImageEditor
             {
                 return service;
             }
-
-            throw new InvalidOperationException($"EditorContext service {typeof(TService).FullName} is not registered.");
+            return null;
         }
 
         public bool UnregisterService<TService>() where TService : class

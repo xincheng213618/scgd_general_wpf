@@ -612,7 +612,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
             {
-                item.MarkColor = System.Drawing.Color.Blue;
+                item.TitleColor = System.Drawing.Color.Blue;
             }
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;

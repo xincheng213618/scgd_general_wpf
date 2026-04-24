@@ -27,14 +27,7 @@ namespace ProjectARVRLite
         [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         [JsonIgnore]
-        public RelayCommand OpenLogCommand { get; set; }
-        [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenChangeLogCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenReadMeCommand { get; set; }
-
         [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
 
@@ -43,11 +36,8 @@ namespace ProjectARVRLite
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
-
-            OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
-            OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
-            OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
+
             InitTestCommand = new RelayCommand(a => InitTest());
 
         }
@@ -78,52 +68,7 @@ namespace ProjectARVRLite
             ConfigService.Instance.SaveConfigs();
         }
 
-        public static void OpenResourceName(string title, string resourceName)
-        {
-            // 获取当前执行的程序集
-            Assembly assembly = Assembly.GetExecutingAssembly();
 
-            // 资源文件的完整名称
-
-            // 确保资源名称正确
-            string[] resourceNames = assembly.GetManifestResourceNames();
-
-            // 读取资源文件内容
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                {
-                    Console.WriteLine("资源文件未找到。请检查资源名称。");
-                    return;
-                }
-
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    string content = reader.ReadToEnd();
-
-                    string html = Markdig.Markdown.ToHtml(content);
-                    new MarkdownViewWindow(html) { Title = title, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-                }
-            }
-        }
-
-        public static void OpenChangeLog()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectARVR.CHANGELOG.md";
-            OpenResourceName("CHANGELOG", resourceName);
-        }
-        public static void OpenReadMe()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectARVR.README.md";
-            OpenResourceName("README",resourceName);
-        }
-        public static void OpenLog()
-        {
-            WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
-            windowLog.Show();
-        }
 
         [JsonIgnore]
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
@@ -140,11 +85,6 @@ namespace ProjectARVRLite
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-
-        [DisplayName("测试结束类型")]
-        public ARVR1TestType TestTypeCompleted { get => _TestTypeCompleted; set { _TestTypeCompleted = value; OnPropertyChanged(); } }
-        private ARVR1TestType _TestTypeCompleted = ARVR1TestType.DotMatrix;
 
 
         public event EventHandler<string> SNChanged;

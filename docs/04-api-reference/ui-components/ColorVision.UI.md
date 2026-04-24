@@ -18,13 +18,15 @@
 - **主要功能**: 核心UI控件、插件系统、属性编辑器、快捷键管理、菜单系统
 - **UI 框架**: WPF
 - **特色功能**: 插件加载、属性编辑、全局快捷键、多语言、CUDA支持
-- **版本**: 1.5.1.1
+- **版本**: 1.5.5.1
 - **目标框架**: .NET 8.0 / .NET 10.0
 
 ## 核心功能
 
-### 1. 插件系统 (PluginLoader)
-- **动态加载** - 从 Plugins 目录自动扫描和加载插件
+### 1. 插件系统 (Plugins/)
+- **PluginLoader** - 从 Plugins 目录自动扫描和加载插件
+- **PluginExtractor** - 插件包解压（.cvxp 格式）
+- **PluginManifest** - 基于 manifest.json 的插件元数据
 - **Manifest 支持** - 基于 manifest.json 的插件元数据管理
 - **依赖检查** - 自动验证插件依赖的 ColorVision 组件版本
 - **版本控制** - 支持插件版本管理和更新

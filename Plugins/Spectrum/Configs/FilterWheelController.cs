@@ -1,9 +1,11 @@
 using ColorVision.Common.MVVM;
 using log4net;
+using Spectrum.TimedButtons;
 using System.IO.Ports;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Spectrum.Configs
 {
@@ -66,19 +68,61 @@ namespace Spectrum.Configs
 
         public FilterWheelController()
         {
-            ConnectCommand = new RelayCommand(_ => Connect(), _ => !IsConnected);
-            DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
-            QueryPositionCommand = new RelayCommand(_ => _ = QueryPositionAsync(), _ => IsConnected);
-            SetPositionCommand = new RelayCommand(p =>
-            {
-                if (p is int pos)
-                    _ = SetPositionAsync(pos);
-                else if (p is string s && int.TryParse(s, out int parsed))
-                    _ = SetPositionAsync(parsed);
-            }, _ => IsConnected);
+            ConnectCommand = new TimedButtonCommand(
+                async _ => await Task.FromResult(Connect()),
+                _ => !IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "filter-wheel-connect",
+                "连接",
+                "连接滤色轮",
+                Brushes.Red);
+
+            DisconnectCommand = new TimedButtonCommand(
+                async _ => await Task.FromResult(Disconnect()),
+                _ => IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "filter-wheel-disconnect",
+                "断开",
+                "断开滤色轮",
+                Brushes.Red);
+
+            QueryPositionCommand = new TimedButtonCommand(
+                async _ => await QueryPositionAsync() >= 0,
+                _ => IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "filter-wheel-query",
+                "查询",
+                "查询滤色轮位置",
+                Brushes.Red);
+
+            SetPositionCommand = new TimedButtonCommand(
+                async p =>
+                {
+                    if (p is int pos)
+                    {
+                        return await SetPositionAsync(pos);
+                    }
+
+                    if (p is string s && int.TryParse(s, out int parsed))
+                    {
+                        return await SetPositionAsync(parsed);
+                    }
+
+                    return false;
+                },
+                _ => IsConnected,
+                SpectrumTimedButtonHost.GetOwner,
+                SpectrumTimedButtonHost.BuildOperationKey,
+                "filter-wheel-set-position",
+                "切换位置",
+                "切换滤色轮位置",
+                Brushes.Red);
         }
 
-        public void Connect()
+        public bool Connect()
         {
             try
             {
@@ -96,17 +140,20 @@ namespace Spectrum.Configs
 
                 // Query current position after connect
                 _ = QueryPositionAsync();
+                return true;
             }
             catch (Exception ex)
             {
                 log.Error($"FilterWheel: 打开串口失败: {ex.Message}");
                 MessageBox.Show($"打开滤色轮串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 IsConnected = false;
+                return false;
             }
         }
 
-        public void Disconnect()
+        public bool Disconnect()
         {
+            bool success = true;
             try
             {
                 if (_serialPort != null && _serialPort.IsOpen)
@@ -118,6 +165,7 @@ namespace Spectrum.Configs
             {
                 log.Error($"FilterWheel: 关闭串口失败: {ex.Message}");
                 MessageBox.Show($"关闭滤色轮串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                success = false;
             }
             finally
             {
@@ -126,6 +174,8 @@ namespace Spectrum.Configs
                 _serialPort?.Dispose();
                 _serialPort = null;
             }
+
+            return success;
         }
 
         /// <summary>
@@ -224,6 +274,7 @@ namespace Spectrum.Configs
             _serialPort?.Close();
             _serialPort?.Dispose();
             _serialPort = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -193,7 +193,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 MsgRecord msgRecord = DeviceService.ExecCmd(cmd);
                 msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
-                    MessageBox.Show(s.ToString());
+                    MessageBox.Show(e.ToString());
                 };
             }
         }

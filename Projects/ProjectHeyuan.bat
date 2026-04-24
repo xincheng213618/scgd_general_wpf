@@ -1,2 +1,3 @@
-"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe"  ..\scgd_general_wpf.sln /t:Projects\ProjectHeyuan /p:Configuration=Release /p:Platform=x64 /p:BuildProjectReferences=false
-python ..\Scripts\build_plugin.py -t Projects -p ProjectHeyuan
+@echo off
+call "%~dp0..\Scripts\package_project.bat" ProjectHeyuan %*
+exit /b %errorlevel%

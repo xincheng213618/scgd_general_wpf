@@ -45,11 +45,20 @@ namespace ColorVision.Engine.Archive.Dao
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB.Queryable<T>();
-                foreach (var item in DB.Queryable<ArchivedMasterModel>().ToList())
+                try
                 {
-                    ViewResults.Add(item);
+                    var list = DB.Queryable<T>();
+                    foreach (var item in DB.Queryable<ArchivedMasterModel>().ToList())
+                    {
+                        ViewResults.Add(item);
+                    }
                 }
+                catch (Exception ex) 
+                {
+                }
+
+
+
             }
 
 

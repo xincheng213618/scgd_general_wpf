@@ -1,10 +1,7 @@
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
+using ColorVision.ImageEditor.EditorTools.ThreeD;
 using HelixToolkit.Wpf;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,25 +9,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
+using Viewport3DHelper = ColorVision.ImageEditor.EditorTools.ThreeD.Viewport3DHelper;
 
 namespace ColorVision.ImageEditor
 {
-    public class Window3DConfig : ViewModelBase, IConfig
-    {
-        public static Window3DConfig Instance => ConfigService.Instance.GetRequiredService<Window3DConfig>();
-
-        public int TargetPixelsX { get => _TargetPixelsX; set { _TargetPixelsX = value; OnPropertyChanged(); } }
-        private int _TargetPixelsX = 512;
-
-        public int TargetPixelsY { get => _TargetPixelsY; set { _TargetPixelsY = value; OnPropertyChanged(); } }
-        private int _TargetPixelsY = 512;
-
-        public string SelectedColormap { get => _SelectedColormap; set { _SelectedColormap = value; OnPropertyChanged(); } }
-        private string _SelectedColormap = "jet";
-    }
-
-    public record ColormapInfo(string Name, BitmapImage? ImageSource, byte[]? Lut);
-
     public partial class Window3D : Window
     {
         private readonly WriteableBitmap colorBitmap;
@@ -43,11 +25,25 @@ namespace ColorVision.ImageEditor
         private double heightScale = 100.0;
         private DiffuseMaterial? colormapMaterial;
         private ColormapInfo? currentColormap;
+        private List<Visual3D>? axesVisuals;
+        private Point lastMousePosition;
+        private bool isLeftButtonDown;
+        private Transform3DGroup currentTransform = new Transform3DGroup();
+        private QuaternionRotation3D currentRotation = new QuaternionRotation3D();
+        private Point3D rotationCenter;
+        private bool hasRotationCenter;
 
         // Cached initial camera state for reset
         private Point3D initialCameraPosition;
         private Vector3D initialLookDirection;
         private Vector3D initialUpDirection;
+
+        // Mouse move throttling
+        private DateTime lastMouseMoveTime = DateTime.MinValue;
+        private readonly TimeSpan mouseMoveThrottle = TimeSpan.FromMilliseconds(16);
+
+        // Reusable position collection to avoid GC pressure
+        private Point3DCollection? cachedPositions;
 
         private static readonly string[] ColormapNames =
         {
@@ -126,39 +122,31 @@ namespace ColorVision.ImageEditor
             TxtTargetY.Text = Config.TargetPixelsY.ToString();
 
             // Calculate initial camera position
-            initialCameraPosition = new Point3D(newWidth / 2.0, -newHeight * 0.8, newHeight * 0.6);
-            initialLookDirection = new Vector3D(0, newHeight * 0.8, -newHeight * 0.6);
+            initialCameraPosition = new Point3D(newWidth * 0.92, -newHeight * 1.35, newHeight * 1.15);
+            initialLookDirection = new Vector3D(-newWidth * 0.42, newHeight * 1.35, -newHeight * 0.95);
             initialUpDirection = new Vector3D(0, 0, 1);
 
-            viewport = new HelixViewport3D
-            {
-                Camera = new PerspectiveCamera
-                {
-                    Position = initialCameraPosition,
-                    LookDirection = initialLookDirection,
-                    UpDirection = initialUpDirection,
-                    FieldOfView = 60,
-                },
-                ShowFrameRate = true,
-                ZoomExtentsWhenLoaded = true,
-            };
+            viewport = Viewport3DHelper.CreateDefaultViewport(
+                initialCameraPosition,
+                initialLookDirection,
+                initialUpDirection,
+                60);
 
-            viewport.Children.Add(new DefaultLights());
-            viewport.Children.Add(new GridLinesVisual3D
-            {
-                Length = newWidth,
-                Width = newHeight,
-                Center = new Point3D(newWidth / 2, newHeight / 2, 0)
-            });
-            viewport.Children.Add(new CoordinateSystemVisual3D
-            {
-                ArrowLengths = newWidth / 10
-            });
+            Viewport3DHelper.AddCameraAlignedLights(viewport, Rect3D.Empty);
             ContentGrid.Children.Add(viewport);
+
+            viewport.MouseDown += Viewport_ObjectRotateMouseDown;
+            viewport.MouseMove += Viewport_ObjectRotateMouseMove;
+            viewport.MouseUp += Viewport_ObjectRotateMouseUp;
+
+            axesVisuals = Viewport3DHelper.CreateFixedCornerAxes(20);
+            foreach (var axis in axesVisuals)
+                viewport.Children.Add(axis);
+
+            CompositionTarget.Rendering += CompositionTarget_Rendering;
 
             // Build mesh once with current height scale
             await BuildMeshAsync();
-            viewport.CameraController.AddRotateForce(0, 4.5);
 
             // Setup input handling
             PreviewKeyDown += Window3D_PreviewKeyDown;
@@ -169,9 +157,13 @@ namespace ColorVision.ImageEditor
         private void Window_Closed(object sender, EventArgs e)
         {
             PreviewKeyDown -= Window3D_PreviewKeyDown;
+            CompositionTarget.Rendering -= CompositionTarget_Rendering;
 
             if (viewport != null)
             {
+                viewport.MouseDown -= Viewport_ObjectRotateMouseDown;
+                viewport.MouseMove -= Viewport_ObjectRotateMouseMove;
+                viewport.MouseUp -= Viewport_ObjectRotateMouseUp;
                 viewport.MouseMove -= Viewport_MouseMove;
                 viewport.MouseLeave -= Viewport_MouseLeave;
                 viewport.Children.Clear();
@@ -181,22 +173,37 @@ namespace ColorVision.ImageEditor
 
             if (modelVisual != null)
             {
+                if (modelVisual.Content is GeometryModel3D geometry)
+                {
+                    if (geometry.Geometry is MeshGeometry3D mesh)
+                    {
+                        mesh.Positions = null;
+                        mesh.TriangleIndices = null;
+                        mesh.TextureCoordinates = null;
+                        mesh.Normals = null;
+                    }
+                    geometry.Geometry = null;
+                    geometry.Material = null;
+                    geometry.BackMaterial = null;
+                }
                 modelVisual.Content = null;
                 modelVisual = null;
             }
 
             currentMesh = null;
+            cachedPositions = null;
             colormapMaterial = null;
             grayPixels = null;
             currentColormap = null;
+            axesVisuals = null;
+
+            GC.Collect(2, GCCollectionMode.Forced, true);
+            GC.WaitForPendingFinalizers();
         }
 
         private void Window3D_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (viewport == null) return;
-
-            const double moveSpeed = 20.0;
-            const double lookSpeed = 10.0;
+            if (viewport?.Camera is not ProjectionCamera camera) return;
 
             switch (e.Key)
             {
@@ -214,79 +221,33 @@ namespace ColorVision.ImageEditor
                     e.Handled = true;
                     break;
 
-                // Camera position (WASD-like with T/B)
-                case Key.L: // Left
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X - moveSpeed,
-                        viewport.Camera.Position.Y,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.T: // Forward (Top view direction in default orientation)
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X,
-                        viewport.Camera.Position.Y + moveSpeed,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.R: // Right
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X + moveSpeed,
-                        viewport.Camera.Position.Y,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-                case Key.B: // Backward
-                    viewport.Camera.Position = new Point3D(
-                        viewport.Camera.Position.X,
-                        viewport.Camera.Position.Y - moveSpeed,
-                        viewport.Camera.Position.Z);
-                    e.Handled = true;
-                    break;
-
-                // Look direction (arrow-like with A/C)
-                case Key.A: // Look Up (increase Z component of look direction)
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z + lookSpeed);
-                    e.Handled = true;
-                    break;
-                case Key.C: // Look Down
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z - lookSpeed);
-                    e.Handled = true;
-                    break;
-                case Key.D: // Look Left (decrease X)
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X - lookSpeed,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z);
-                    e.Handled = true;
-                    break;
-                case Key.F: // Look Right (increase X)
-                    viewport.Camera.LookDirection = new Vector3D(
-                        viewport.Camera.LookDirection.X + lookSpeed,
-                        viewport.Camera.LookDirection.Y,
-                        viewport.Camera.LookDirection.Z);
-                    e.Handled = true;
-                    break;
-
                 // Reset view
                 case Key.Home:
                     ResetCameraView();
                     e.Handled = true;
                     break;
+
+                default:
+                    e.Handled = Viewport3DHelper.HandleCameraKey(camera, e.Key);
+                    break;
             }
+        }
+
+        private void CompositionTarget_Rendering(object? sender, EventArgs e)
+        {
+            if (viewport?.Camera is ProjectionCamera camera && axesVisuals != null)
+                Viewport3DHelper.UpdateFixedCornerAxes(axesVisuals, camera);
         }
 
         private void Viewport_MouseMove(object sender, MouseEventArgs e)
         {
             if (viewport == null || grayPixels == null) return;
 
-            // Show coordinate in status/tooltip
+            // Throttle mouse move updates to ~60fps max to reduce unnecessary UI updates
+            var now = DateTime.Now;
+            if (now - lastMouseMoveTime < mouseMoveThrottle) return;
+            lastMouseMoveTime = now;
+
             UpdateHoverTooltip(e);
         }
 
@@ -299,244 +260,99 @@ namespace ColorVision.ImageEditor
         {
             if (viewport?.Camera == null || grayPixels == null) return;
 
-            // Project mouse position to approximate 3D coordinates
-            // This is a simplified approximation
             var pos = e.GetPosition(viewport);
-            var tooltipText = $"Mouse: ({pos.X:F0}, {pos.Y:F0})\n";
-            tooltipText += $"Scale: {heightScale:F1}x\n";
-            tooltipText += $"Res: {newWidth}x{newHeight}";
+            Point3D? hitPoint = null;
+            byte hitValue = 0;
+
+            // Perform 3D hit test to find the point under the mouse
+            HitTestResult result = VisualTreeHelper.HitTest(viewport, pos);
+            if (result is RayMeshGeometry3DHitTestResult meshHit)
+            {
+                hitPoint = meshHit.PointHit;
+
+                // Map 3D point back to grid coordinates
+                int gridX = (int)Math.Clamp(Math.Round(hitPoint.Value.X), 0, newWidth - 1);
+                int gridY = newHeight - 1 - (int)Math.Clamp(Math.Round(hitPoint.Value.Y), 0, newHeight - 1);
+                int idx = gridY * newWidth + gridX;
+                if (idx >= 0 && idx < grayPixels.Length)
+                    hitValue = grayPixels[idx];
+            }
+
+            string tooltipText;
+            if (hitPoint.HasValue)
+            {
+                var p = hitPoint.Value;
+                tooltipText = $"X: {p.X:F1}  Y: {newHeight - 1 - p.Y:F1}\n";
+                tooltipText += $"Z: {p.Z:F2}  值: {hitValue}\n";
+                tooltipText += $"高度: {heightScale:F1}x  分辨率: {newWidth}x{newHeight}";
+            }
+            else
+            {
+                tooltipText = $"鼠标: ({pos.X:F0}, {pos.Y:F0})\n";
+                tooltipText += $"高度: {heightScale:F1}x  分辨率: {newWidth}x{newHeight}";
+            }
 
             HoverInfoText.Text = tooltipText;
             HoverInfoPopup.IsOpen = true;
         }
 
+        private void Viewport_ObjectRotateMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left || modelVisual == null) return;
+            isLeftButtonDown = true;
+            lastMousePosition = e.GetPosition(viewport);
+            viewport?.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void Viewport_ObjectRotateMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!isLeftButtonDown || modelVisual == null || viewport == null) return;
+
+            Point currentPosition = e.GetPosition(viewport);
+            Vector delta = currentPosition - lastMousePosition;
+            lastMousePosition = currentPosition;
+
+            const double rotationSpeed = 0.45;
+            Quaternion yaw = new Quaternion(new Vector3D(0, 0, 1), delta.X * rotationSpeed);
+            Quaternion pitch = new Quaternion(new Vector3D(1, 0, 0), delta.Y * rotationSpeed);
+            currentRotation.Quaternion = yaw * pitch * currentRotation.Quaternion;
+            modelVisual.Transform = currentTransform;
+            e.Handled = true;
+        }
+
+        private void Viewport_ObjectRotateMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left) return;
+            isLeftButtonDown = false;
+            viewport?.ReleaseMouseCapture();
+            e.Handled = true;
+        }
+
         private void ResetCameraView()
         {
-            if (viewport?.Camera == null) return;
-
-            viewport.Camera.Position = initialCameraPosition;
-            viewport.Camera.LookDirection = initialLookDirection;
-            viewport.Camera.UpDirection = initialUpDirection;
+            if (viewport?.Camera is not PerspectiveCamera camera) return;
+            Viewport3DHelper.ResetCameraView(camera, initialCameraPosition, initialLookDirection, initialUpDirection);
         }
 
-        private static int FindClosestFactor(int value, int[] factors)
+        private void ResetModelRotation()
         {
-            int closest = factors[0];
-            foreach (int factor in factors)
+            currentRotation = new QuaternionRotation3D(Quaternion.Identity);
+            currentTransform = new Transform3DGroup();
+            if (hasRotationCenter)
             {
-                if (Math.Abs(value - factor) < Math.Abs(value - closest))
-                    closest = factor;
-            }
-            return closest;
-        }
-
-        /// <summary>
-        /// Convert WriteableBitmap to downsampled grayscale bytes (pure C#, handles all WPF pixel formats).
-        /// </summary>
-        private static (byte[] Gray, int Width, int Height) ConvertBitmapToGray(
-            WriteableBitmap bitmap, int targetX, int targetY)
-        {
-            int origW = bitmap.PixelWidth;
-            int origH = bitmap.PixelHeight;
-            int targetPixels = targetX * targetY;
-
-            double initScale = Math.Sqrt((double)origW * origH / targetPixels);
-            int[] factors = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
-            int scaleFactor = Math.Max(FindClosestFactor((int)Math.Round(initScale), factors), 1);
-
-            int newW = Math.Max(origW / scaleFactor, 2);
-            int newH = Math.Max(origH / scaleFactor, 2);
-
-            // WPF FormatConvertedBitmap handles all format conversions (16bit, float, BGR, etc.)
-            var graySource = new FormatConvertedBitmap(bitmap, PixelFormats.Gray8, null, 0);
-            int grayStride = origW; // Gray8 = 1 byte per pixel
-            byte[] fullGray = new byte[origH * grayStride];
-            graySource.CopyPixels(fullGray, grayStride, 0);
-
-            // Nearest-neighbor downsample
-            byte[] gray = new byte[newW * newH];
-            for (int y = 0; y < newH; y++)
-            {
-                int srcY = y * scaleFactor;
-                for (int x = 0; x < newW; x++)
-                    gray[y * newW + x] = fullGray[srcY * grayStride + x * scaleFactor];
-            }
-
-            return (gray, newW, newH);
-        }
-
-        private void CreateColormapMaterial(byte[] lut)
-        {
-            if (grayPixels == null) return;
-
-            byte[] texPixels = new byte[newWidth * newHeight * 3];
-            for (int i = 0; i < grayPixels.Length; i++)
-            {
-                int lutIdx = grayPixels[i] * 3;
-                texPixels[i * 3] = lut[lutIdx];
-                texPixels[i * 3 + 1] = lut[lutIdx + 1];
-                texPixels[i * 3 + 2] = lut[lutIdx + 2];
-            }
-
-            var bitmap = new WriteableBitmap(newWidth, newHeight, 96, 96, PixelFormats.Bgr24, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, newWidth, newHeight), texPixels, newWidth * 3, 0);
-            bitmap.Freeze();
-
-            var brush = new ImageBrush(bitmap);
-            brush.Freeze();
-            colormapMaterial = new DiffuseMaterial(brush);
-        }
-
-        /// <summary>
-        /// Build mesh arrays - positions, indices, and texture coordinates.
-        /// Separated from mesh creation to allow position-only updates.
-        /// </summary>
-        private static (Point3D[] Positions, int[] Indices, Point[] TexCoords) BuildMeshArrays(
-            byte[] pixels, int width, int height, double heightScale)
-        {
-            int vertexCount = width * height;
-            int indexCount = (width - 1) * (height - 1) * 6;
-
-            var positions = new Point3D[vertexCount];
-            var texCoords = new Point[vertexCount];
-            var indices = new int[indexCount];
-
-            double wm1 = Math.Max(width - 1, 1);
-            double hm1 = Math.Max(height - 1, 1);
-
-            // Shared vertex grid
-            for (int y = 0; y < height; y++)
-            {
-                int flippedY = height - 1 - y;
-                int rowOffset = y * width;
-                for (int x = 0; x < width; x++)
-                {
-                    int idx = rowOffset + x;
-                    double z = pixels[idx] / 255.0 * heightScale;
-                    positions[idx] = new Point3D(x, flippedY, z);
-                    texCoords[idx] = new Point(x / wm1, y / hm1);
-                }
-            }
-
-            // Index buffer - two triangles per grid cell
-            int ii = 0;
-            for (int y = 0; y < height - 1; y++)
-            {
-                int rowStart = y * width;
-                int nextRowStart = rowStart + width;
-                for (int x = 0; x < width - 1; x++)
-                {
-                    int tl = rowStart + x;
-                    int tr = tl + 1;
-                    int bl = nextRowStart + x;
-                    int br = bl + 1;
-
-                    indices[ii++] = tl;
-                    indices[ii++] = tr;
-                    indices[ii++] = bl;
-                    indices[ii++] = tr;
-                    indices[ii++] = br;
-                    indices[ii++] = bl;
-                }
-            }
-
-            return (positions, indices, texCoords);
-        }
-
-        /// <summary>
-        /// Update only vertex positions when height scale changes - much faster than rebuilding entire mesh.
-        /// </summary>
-        private void UpdateMeshPositions()
-        {
-            if (currentMesh == null || grayPixels == null) return;
-
-            int vertexCount = newWidth * newHeight;
-            var newPositions = new Point3DCollection(vertexCount);
-
-            for (int y = 0; y < newHeight; y++)
-            {
-                int flippedY = newHeight - 1 - y;
-                int rowOffset = y * newWidth;
-                for (int x = 0; x < newWidth; x++)
-                {
-                    int idx = rowOffset + x;
-                    double z = grayPixels[idx] / 255.0 * heightScale;
-                    newPositions.Add(new Point3D(x, flippedY, z));
-                }
-            }
-
-            currentMesh.Positions = newPositions;
-        }
-
-        private DiffuseMaterial CurrentMaterial =>
-            colormapMaterial ?? new DiffuseMaterial(Brushes.White);
-
-        /// <summary>
-        /// Build mesh initially - creates the mesh structure with positions, indices, and UVs.
-        /// </summary>
-        private async Task BuildMeshAsync()
-        {
-            if (grayPixels == null || viewport == null) return;
-
-            var pixels = grayPixels;
-            int w = newWidth, h = newHeight;
-            double hs = heightScale;
-
-            var (positions, indices, texCoords) = await Task.Run(() => BuildMeshArrays(pixels, w, h, hs));
-
-            currentMesh = new MeshGeometry3D
-            {
-                Positions = new Point3DCollection(positions),
-                TriangleIndices = new Int32Collection(indices),
-                TextureCoordinates = new PointCollection(texCoords)
-            };
-
-            var material = CurrentMaterial;
-            var model = new GeometryModel3D(currentMesh, material) { BackMaterial = material };
-
-            if (modelVisual == null)
-            {
-                modelVisual = new ModelVisual3D { Content = model };
-                viewport.Children.Add(modelVisual);
+                currentTransform.Children.Add(new TranslateTransform3D(-rotationCenter.X, -rotationCenter.Y, -rotationCenter.Z));
+                currentTransform.Children.Add(new RotateTransform3D(currentRotation));
+                currentTransform.Children.Add(new TranslateTransform3D(rotationCenter.X, rotationCenter.Y, rotationCenter.Z));
             }
             else
             {
-                modelVisual.Content = model;
+                currentTransform.Children.Add(new RotateTransform3D(currentRotation));
             }
+            if (modelVisual != null)
+                modelVisual.Transform = currentTransform;
         }
 
-        private void UpdateMaterial()
-        {
-            if (modelVisual?.Content is GeometryModel3D model)
-            {
-                var material = CurrentMaterial;
-                model.Material = material;
-                model.BackMaterial = material;
-            }
-        }
-
-        private void ComboBoxColormap_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ComboBoxColormap.SelectedItem is ColormapInfo info && grayPixels != null)
-            {
-                currentColormap = info;
-                Config.SelectedColormap = info.Name;
-
-                if (info.Lut != null)
-                {
-                    CreateColormapMaterial(info.Lut);
-                    ColorBarPanel.Visibility = Visibility.Visible;
-                    ColorBarImage.Source = info.ImageSource;
-                }
-                else
-                {
-                    colormapMaterial = null;
-                    ColorBarPanel.Visibility = Visibility.Collapsed;
-                }
-
-                UpdateMaterial();
-            }
-        }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
@@ -568,70 +384,33 @@ namespace ColorVision.ImageEditor
 
         private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveScreenshot();
+            if (viewport != null)
+                Viewport3DHelper.SaveScreenshot(viewport, $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+        }
+
+        private void ExportModelButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentMesh == null) return;
+
+            var material = CurrentMaterial;
+            var model = new GeometryModel3D(currentMesh, material) { BackMaterial = material };
+            Viewport3DHelper.ExportModel(model, $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.obj");
         }
 
         private void ResetViewButton_Click(object sender, RoutedEventArgs e)
         {
+            ResetModelRotation();
             ResetCameraView();
         }
 
-        /// <summary>
-        /// Save a screenshot of the current 3D viewport.
-        /// </summary>
-        private void SaveScreenshot()
-        {
-            if (viewport == null) return;
-
-            var dialog = new SaveFileDialog
-            {
-                Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp",
-                DefaultExt = "png",
-                FileName = $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.png"
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                try
-                {
-                    // Render the viewport to a bitmap
-                    var renderBitmap = new RenderTargetBitmap(
-                        (int)viewport.ActualWidth,
-                        (int)viewport.ActualHeight,
-                        96, 96,
-                        PixelFormats.Pbgra32);
-
-                    renderBitmap.Render(viewport);
-
-                    // Encode and save
-                    BitmapEncoder encoder = dialog.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-                        ? new JpegBitmapEncoder()
-                        : dialog.FileName.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase)
-                            ? new BmpBitmapEncoder()
-                            : new PngBitmapEncoder();
-
-                    encoder.Frames.Add(BitmapFrame.Create(renderBitmap));
-
-                    using var stream = File.Create(dialog.FileName);
-                    encoder.Save(stream);
-
-                    MessageBox.Show($"Screenshot saved:\n{dialog.FileName}", "Screenshot Saved", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to save screenshot:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
         // Height scale adjustment buttons
-        private async void HeightScaleIncrease_Click(object sender, RoutedEventArgs e)
+        private void HeightScaleIncrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 1.1;
             UpdateMeshPositions();
         }
 
-        private async void HeightScaleDecrease_Click(object sender, RoutedEventArgs e)
+        private void HeightScaleDecrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 0.9;
             UpdateMeshPositions();
@@ -710,5 +489,318 @@ namespace ColorVision.ImageEditor
                 viewport.Camera.LookDirection.Y,
                 viewport.Camera.LookDirection.Z - 10);
         }
+
+        private static int FindClosestFactor(int value, int[] factors)
+        {
+            int closest = factors[0];
+            foreach (int factor in factors)
+            {
+                if (Math.Abs(value - factor) < Math.Abs(value - closest))
+                    closest = factor;
+            }
+            return closest;
+        }
+
+        /// <summary>
+        /// Convert WriteableBitmap to downsampled grayscale bytes (pure C#, handles all WPF pixel formats).
+        /// </summary>
+        private static (byte[] Gray, int Width, int Height) ConvertBitmapToGray(
+            WriteableBitmap bitmap, int targetX, int targetY)
+        {
+            int origW = bitmap.PixelWidth;
+            int origH = bitmap.PixelHeight;
+            int targetPixels = targetX * targetY;
+
+            double initScale = Math.Sqrt((double)origW * origH / targetPixels);
+            int[] factors = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
+            int scaleFactor = Math.Max(FindClosestFactor((int)Math.Round(initScale), factors), 1);
+
+            int newW = Math.Max(origW / scaleFactor, 2);
+            int newH = Math.Max(origH / scaleFactor, 2);
+
+            // WPF FormatConvertedBitmap handles all format conversions (16bit, float, BGR, etc.)
+            var graySource = new FormatConvertedBitmap(bitmap, PixelFormats.Gray8, null, 0);
+            int grayStride = origW; // Gray8 = 1 byte per pixel
+            byte[] fullGray = new byte[origH * grayStride];
+            graySource.CopyPixels(fullGray, grayStride, 0);
+
+            // Bilinear interpolation downsample
+            byte[] gray = new byte[newW * newH];
+            double scaleX = (double)(origW - 1) / Math.Max(newW - 1, 1);
+            double scaleY = (double)(origH - 1) / Math.Max(newH - 1, 1);
+
+            for (int y = 0; y < newH; y++)
+            {
+                double srcY = y * scaleY;
+                int y0 = (int)srcY;
+                int y1 = Math.Min(y0 + 1, origH - 1);
+                double fy = srcY - y0;
+
+                for (int x = 0; x < newW; x++)
+                {
+                    double srcX = x * scaleX;
+                    int x0 = (int)srcX;
+                    int x1 = Math.Min(x0 + 1, origW - 1);
+                    double fx = srcX - x0;
+
+                    double v00 = fullGray[y0 * grayStride + x0];
+                    double v10 = fullGray[y0 * grayStride + x1];
+                    double v01 = fullGray[y1 * grayStride + x0];
+                    double v11 = fullGray[y1 * grayStride + x1];
+
+                    double value = v00 * (1 - fx) * (1 - fy)
+                                 + v10 * fx * (1 - fy)
+                                 + v01 * (1 - fx) * fy
+                                 + v11 * fx * fy;
+
+                    gray[y * newW + x] = (byte)Math.Clamp(Math.Round(value), 0, 255);
+                }
+            }
+
+            return (gray, newW, newH);
+        }
+
+        private void CreateColormapMaterial(byte[] lut)
+        {
+            if (grayPixels == null) return;
+
+            byte[] texPixels = new byte[newWidth * newHeight * 3];
+            for (int i = 0; i < grayPixels.Length; i++)
+            {
+                int lutIdx = grayPixels[i] * 3;
+                texPixels[i * 3] = lut[lutIdx];
+                texPixels[i * 3 + 1] = lut[lutIdx + 1];
+                texPixels[i * 3 + 2] = lut[lutIdx + 2];
+            }
+
+            var bitmap = new WriteableBitmap(newWidth, newHeight, 96, 96, PixelFormats.Bgr24, null);
+            bitmap.WritePixels(new Int32Rect(0, 0, newWidth, newHeight), texPixels, newWidth * 3, 0);
+            bitmap.Freeze();
+
+            var brush = new ImageBrush(bitmap);
+            brush.Freeze();
+            colormapMaterial = new DiffuseMaterial(brush);
+        }
+
+        /// <summary>
+        /// Build mesh arrays - positions, indices, texture coordinates, and normals.
+        /// Separated from mesh creation to allow position-only updates.
+        /// </summary>
+        private static (Point3D[] Positions, int[] Indices, Point[] TexCoords, Vector3D[] Normals) BuildMeshArrays(
+            byte[] pixels, int width, int height, double heightScale)
+        {
+            int vertexCount = width * height;
+            int indexCount = (width - 1) * (height - 1) * 6;
+
+            var positions = new Point3D[vertexCount];
+            var texCoords = new Point[vertexCount];
+            var normals = new Vector3D[vertexCount];
+            var indices = new int[indexCount];
+
+            double wm1 = Math.Max(width - 1, 1);
+            double hm1 = Math.Max(height - 1, 1);
+
+            // Shared vertex grid
+            for (int y = 0; y < height; y++)
+            {
+                int flippedY = height - 1 - y;
+                int rowOffset = y * width;
+                for (int x = 0; x < width; x++)
+                {
+                    int idx = rowOffset + x;
+                    double z = pixels[idx] / 255.0 * heightScale;
+                    positions[idx] = new Point3D(x, flippedY, z);
+                    texCoords[idx] = new Point(x / wm1, y / hm1);
+                }
+            }
+
+            // Compute per-vertex normals from height gradients
+            for (int y = 0; y < height; y++)
+            {
+                int rowOffset = y * width;
+                for (int x = 0; x < width; x++)
+                {
+                    int idx = rowOffset + x;
+                    double zL = x > 0 ? pixels[idx - 1] / 255.0 * heightScale : positions[idx].Z;
+                    double zR = x < width - 1 ? pixels[idx + 1] / 255.0 * heightScale : positions[idx].Z;
+                    double zU = y > 0 ? pixels[idx - width] / 255.0 * heightScale : positions[idx].Z;
+                    double zD = y < height - 1 ? pixels[idx + width] / 255.0 * heightScale : positions[idx].Z;
+
+                    // Gradient in X, gradient in Y (flipped), cross product gives normal
+                    double dzdx = (zR - zL) * 0.5;
+                    double dzdy = (zD - zU) * 0.5;
+                    var normal = new Vector3D(-dzdx, dzdy, 1.0);
+                    normal.Normalize();
+                    normals[idx] = normal;
+                }
+            }
+
+            // Index buffer - two triangles per grid cell
+            int ii = 0;
+            for (int y = 0; y < height - 1; y++)
+            {
+                int rowStart = y * width;
+                int nextRowStart = rowStart + width;
+                for (int x = 0; x < width - 1; x++)
+                {
+                    int tl = rowStart + x;
+                    int tr = tl + 1;
+                    int bl = nextRowStart + x;
+                    int br = bl + 1;
+
+                    indices[ii++] = tl;
+                    indices[ii++] = tr;
+                    indices[ii++] = bl;
+                    indices[ii++] = tr;
+                    indices[ii++] = br;
+                    indices[ii++] = bl;
+                }
+            }
+
+            return (positions, indices, texCoords, normals);
+        }
+
+        /// <summary>
+        /// Update only vertex positions when height scale changes - much faster than rebuilding entire mesh.
+        /// Reuses the Point3DCollection to avoid GC pressure.
+        /// </summary>
+        private void UpdateMeshPositions()
+        {
+            if (currentMesh == null || grayPixels == null) return;
+
+            if (cachedPositions == null)
+                cachedPositions = new Point3DCollection(newWidth * newHeight);
+            else
+                cachedPositions.Clear();
+
+            var normals = new Vector3DCollection(newWidth * newHeight);
+
+            for (int y = 0; y < newHeight; y++)
+            {
+                int flippedY = newHeight - 1 - y;
+                int rowOffset = y * newWidth;
+                for (int x = 0; x < newWidth; x++)
+                {
+                    int idx = rowOffset + x;
+                    double z = grayPixels[idx] / 255.0 * heightScale;
+                    cachedPositions.Add(new Point3D(x, flippedY, z));
+
+                    // Recompute normal from height gradients
+                    double zL = x > 0 ? grayPixels[idx - 1] / 255.0 * heightScale : z;
+                    double zR = x < newWidth - 1 ? grayPixels[idx + 1] / 255.0 * heightScale : z;
+                    double zU = y > 0 ? grayPixels[idx - newWidth] / 255.0 * heightScale : z;
+                    double zD = y < newHeight - 1 ? grayPixels[idx + newWidth] / 255.0 * heightScale : z;
+
+                    double dzdx = (zR - zL) * 0.5;
+                    double dzdy = (zD - zU) * 0.5;
+                    var normal = new Vector3D(-dzdx, dzdy, 1.0);
+                    normal.Normalize();
+                    normals.Add(normal);
+                }
+            }
+
+            currentMesh.Positions = cachedPositions;
+            currentMesh.Normals = normals;
+            UpdateRotationCenterFromMesh(currentMesh);
+            ResetModelRotation();
+        }
+
+        private void UpdateRotationCenterFromMesh(MeshGeometry3D mesh)
+        {
+            if (mesh.Positions.Count == 0)
+            {
+                hasRotationCenter = false;
+                return;
+            }
+
+            Rect3D bounds = mesh.Bounds;
+            if (bounds.IsEmpty)
+            {
+                hasRotationCenter = false;
+                return;
+            }
+
+            rotationCenter = new Point3D(
+                bounds.X + bounds.SizeX / 2,
+                bounds.Y + bounds.SizeY / 2,
+                bounds.Z + bounds.SizeZ / 2);
+            hasRotationCenter = true;
+        }
+
+        private DiffuseMaterial CurrentMaterial =>
+            colormapMaterial ?? new DiffuseMaterial(Brushes.White);
+
+        /// <summary>
+        /// Build mesh initially - creates the mesh structure with positions, indices, and UVs.
+        /// </summary>
+        private async Task BuildMeshAsync()
+        {
+            if (grayPixels == null || viewport == null) return;
+
+            var pixels = grayPixels;
+            int w = newWidth, h = newHeight;
+            double hs = heightScale;
+
+            var (positions, indices, texCoords, normals) = await Task.Run(() => BuildMeshArrays(pixels, w, h, hs));
+
+            currentMesh = new MeshGeometry3D
+            {
+                Positions = new Point3DCollection(positions),
+                TriangleIndices = new Int32Collection(indices),
+                TextureCoordinates = new PointCollection(texCoords),
+                Normals = new Vector3DCollection(normals)
+            };
+
+            UpdateRotationCenterFromMesh(currentMesh);
+            ResetModelRotation();
+
+            var material = CurrentMaterial;
+            var model = new GeometryModel3D(currentMesh, material) { BackMaterial = material };
+
+            if (modelVisual == null)
+            {
+                ResetModelRotation();
+                modelVisual = new ModelVisual3D { Content = model, Transform = currentTransform };
+                viewport.Children.Add(modelVisual);
+            }
+            else
+            {
+                modelVisual.Content = model;
+            }
+        }
+
+        private void UpdateMaterial()
+        {
+            if (modelVisual?.Content is GeometryModel3D model)
+            {
+                var material = CurrentMaterial;
+                model.Material = material;
+                model.BackMaterial = material;
+            }
+        }
+
+        private void ComboBoxColormap_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ComboBoxColormap.SelectedItem is ColormapInfo info && grayPixels != null)
+            {
+                currentColormap = info;
+                Config.SelectedColormap = info.Name;
+
+                if (info.Lut != null)
+                {
+                    CreateColormapMaterial(info.Lut);
+                    ColorBarPanel.Visibility = Visibility.Visible;
+                    ColorBarImage.Source = info.ImageSource;
+                }
+                else
+                {
+                    colormapMaterial = null;
+                    ColorBarPanel.Visibility = Visibility.Collapsed;
+                }
+
+                UpdateMaterial();
+            }
+        }
+
     }
 }

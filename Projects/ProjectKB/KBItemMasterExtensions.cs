@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace ProjectKB
 {
@@ -8,6 +9,16 @@ namespace ProjectKB
     {
         public static void SaveCsv(this KBItemMaster KBItems, string FileName)
         {
+            // LvFailures是 MaxKeyLv 和 MinKeyLv  失败的数量, 都失败算1个，不都统计
+            // LocalContrastFailures  MinKeyLc 和 MaxKeyLc 是失败的数量，都失败算1个，不都统计
+            // DarkKeyLocalContrast 是最暗Key的Lc
+            // BrightKeyLocalContrast 是最亮Key的Lc
+
+            //LocalDarkestKey  判定的是Lc 是最小Key
+            //LocalBrightestKey  判定的是Lc 是最大Key
+
+            //ColorDifference 是彩色才有，目前还是空
+
             var csvBuilder = new StringBuilder();
             List<string> properties = new()
     {
@@ -61,16 +72,37 @@ namespace ProjectKB
                 csvBuilder.AppendLine(newHeaders);
             }
             var item = KBItems;
+            var recipe = RecipeManager.GetInstance().RecipeConfig;
+            var darkestByLv = item.Items.OrderBy(x => x.Lv).FirstOrDefault();
+            var brightestByLv = item.Items.OrderByDescending(x => x.Lv).FirstOrDefault();
+            var darkestByLc = item.Items.OrderBy(x => x.Lc).FirstOrDefault();
+            var brightestByLc = item.Items.OrderByDescending(x => x.Lc).FirstOrDefault();
+
+            double minLc = item.Items.Count > 0 ? item.Items.Min(x => x.Lc) : 0;
+            double maxLc = item.Items.Count > 0 ? item.Items.Max(x => x.Lc) : 0;
+
+            bool minLvFailed = recipe.MinKeyLv != 0 && item.MinLv < recipe.MinKeyLv;
+            bool maxLvFailed = recipe.MaxKeyLv != 0 && item.MaxLv > recipe.MaxKeyLv;
+            int lvFailures = (minLvFailed || maxLvFailed) ? 1 : 0;
+
+            bool minLcFailed = recipe.MinKeyLc != 0 && minLc < recipe.MinKeyLc / 100;
+            bool maxLcFailed = recipe.MaxKeyLc != 0 && maxLc > recipe.MaxKeyLc / 100;
+            int localContrastFailures = (minLcFailed || maxLcFailed) ? 1 : 0;
+
             if (item.SN.Contains(',') || item.SN.Contains('"'))
             {
                 item.SN = $"\"{item.SN.Replace("\"", "\"\"")}\"";
+            }
+            if (item.KBTemplate.Contains(',') || item.KBTemplate.Contains('"'))
+            {
+                item.KBTemplate = $"\"{item.KBTemplate.Replace("\"", "\"\"")}\"";
             }
             List<string> values = new()
                 {
                     item.Id.ToString(),
                     item.Model,
                     item.SN,
-                    "",
+                    item.KBTemplate,
                     item.AvgLv.ToString("F2",CultureInfo.InvariantCulture),
                     item.MinLv.ToString("F2",CultureInfo.InvariantCulture),
                     item.MaxLv.ToString("F2",CultureInfo.InvariantCulture),
@@ -78,13 +110,13 @@ namespace ProjectKB
                     item.DrakestKey.ToString(CultureInfo.InvariantCulture),
                     item.BrightestKey.ToString(CultureInfo.InvariantCulture),
                     "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
+                    item.NbrFailPoints.ToString(CultureInfo.InvariantCulture),
+                    lvFailures.ToString(CultureInfo.InvariantCulture),
+                    localContrastFailures.ToString(CultureInfo.InvariantCulture),
+                    (darkestByLv?.Lc ?? 0).ToString("F2", CultureInfo.InvariantCulture),
+                    (brightestByLv?.Lc ?? 0).ToString("F2", CultureInfo.InvariantCulture),
+                    darkestByLc?.Name ?? string.Empty,
+                    brightestByLc?.Name ?? string.Empty,
                     "",
                     item.Result.ToString(),
                     item.CreateTime.ToString("yyyy-MM-dd HH:mm:ss"),

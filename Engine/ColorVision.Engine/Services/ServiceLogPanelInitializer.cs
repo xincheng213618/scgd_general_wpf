@@ -7,7 +7,6 @@ using log4net;
 using System;
 using System.IO;
 using System.Text;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services
 {
@@ -20,6 +19,7 @@ namespace ColorVision.Engine.Services
     public class ServiceLogPanelProvider : IDockPanelProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ServiceLogPanelProvider));
+        private static readonly Encoding ServiceLogEncoding = Encoding.GetEncoding("GB2312");
 
         public int Order => 100;
 
@@ -28,14 +28,27 @@ namespace ColorVision.Engine.Services
         /// When logFilePrefix is null, the main daily log is used.
         /// When logFilePrefix is specified, LogFileHelper.GetMostRecentLogFile is used.
         /// </summary>
-        private static readonly (string PanelId, string Title, string? LogFilePrefix)[] ServiceLogs = new[]
+        private static readonly (string PanelId, string Title, string? LogFilePrefix)[] X64ServiceLogs = new[]
         {
             ("ServiceLog_x64",          "x64服务日志",         (string?)null),
             ("ServiceLog_Camera",       "Camera服务日志",      "CVMainWindowsService_x64_camera"),
             ("ServiceLog_Algorithm",    "Algorithm服务日志",   "CVMainWindowsService_x64_Algorithm"),
             ("ServiceLog_CVOLED",       "CVOLED服务日志",      "CVMainWindowsService_x64_CVOLED"),
-            ("ServiceLog_Spectrum",     "Spectrum服务日志",     "CVMainWindowsService_x64_Spectrum_"),
+            ("ServiceLog_Spectrum",     "Spectrum服务日志",     "CVMainWindowsService_x64_Spectrum"),
         };
+
+        private static readonly (string PanelId, string Title, string? LogFilePrefix)[] DevServiceLogs = new[]
+        {
+            ("ServiceLog_dev",          "dev服务日志",         (string?)null),
+            ("ServiceLog_SMU",          "SMU服务日志",         "CVMainWindowsService_dev_SMU"),
+        };
+
+        private static readonly (string ServiceName, Func<string?> ConfiguredPathAccessor, (string PanelId, string Title, string? LogFilePrefix)[] Logs)[] ServiceGroups =
+        {
+            ("CVMainService_x64", () => ServiceConfig.Instance?.CVMainService_x64, X64ServiceLogs),
+            ("CVMainService_dev", () => ServiceConfig.Instance?.CVMainService_dev, DevServiceLogs),
+        };
+
 
         public void RegisterPanels()
         {
@@ -48,39 +61,11 @@ namespace ColorVision.Engine.Services
                     return;
                 }
 
-                // Try to get the service base directory from registry (fast, no async wait needed)
-                string? serviceBaseDir = GetServiceBaseDir();
-
-                if (string.IsNullOrEmpty(serviceBaseDir))
+                foreach (var (serviceName, configuredPathAccessor, logs) in ServiceGroups)
                 {
-                    log.Debug("CVMainService_x64 not installed or path unavailable, skipping service log panels");
-                    return;
+                    RegisterServicePanels(layoutManager, serviceName, configuredPathAccessor, logs);
                 }
 
-                string logDir = Path.Combine(serviceBaseDir, "log");
-
-                foreach (var (panelId, title, logFilePrefix) in ServiceLogs)
-                {
-                    try
-                    {
-                        string? logPath = GetLogFilePath(serviceBaseDir, logDir, logFilePrefix);
-
-                        if (string.IsNullOrEmpty(logPath))
-                        {
-                            log.Debug($"No log file found for {panelId}, skipping");
-                            continue;
-                        }
-
-                        var logOutput = new LogLocalOutput(logPath, Encoding.GetEncoding("GB2312"));
-
-                        layoutManager.RegisterPanel(panelId, logOutput, title, PanelPosition.Bottom);
-                        log.Info($"Registered service log panel: {title} -> {logPath}");
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"Failed to register service log panel {panelId}: {ex.Message}");
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -89,17 +74,57 @@ namespace ColorVision.Engine.Services
         }
 
         /// <summary>
-        /// Get the base directory of the x64 service from ServiceInfo or registry.
+        /// Register all configured log panels for a single Windows service.
         /// </summary>
-        private static string? GetServiceBaseDir()
+        private static void RegisterServicePanels(
+            DockLayoutManager layoutManager,
+            string serviceName,
+            Func<string?> configuredPathAccessor,
+            (string PanelId, string Title, string? LogFilePrefix)[] serviceLogs)
+        {
+            string? serviceBaseDir = GetServiceBaseDir(configuredPathAccessor, serviceName);
+            if (string.IsNullOrEmpty(serviceBaseDir))
+            {
+                log.Debug($"{serviceName} not installed or path unavailable, skipping service log panels");
+                return;
+            }
+
+            string logDir = Path.Combine(serviceBaseDir, "log");
+
+            foreach (var (panelId, title, logFilePrefix) in serviceLogs)
+            {
+                try
+                {
+                    string? logPath = GetLogFilePath(serviceBaseDir, logDir, logFilePrefix);
+                    if (string.IsNullOrEmpty(logPath))
+                    {
+                        log.Debug($"No log file found for {panelId} under {serviceName}, skipping");
+                        continue;
+                    }
+
+                    var logOutput = new LogLocalOutput(logPath, ServiceLogEncoding);
+                    layoutManager.RegisterPanel(panelId, logOutput, title, PanelPosition.Bottom);
+                    log.Info($"Registered service log panel: {title} -> {logPath}");
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Failed to register service log panel {panelId}: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the base directory of a service from persisted config or registry.
+        /// </summary>
+        private static string? GetServiceBaseDir(Func<string?> configuredPathAccessor, string serviceName)
         {
             // First try from the already-populated ServiceConfig (may be populated from persisted config)
             try
             {
-                string? x64Path = ServiceConfig.Instance?.CVMainService_x64;
-                if (!string.IsNullOrEmpty(x64Path) && File.Exists(x64Path))
+                string? configuredPath = configuredPathAccessor();
+                if (!string.IsNullOrEmpty(configuredPath) && File.Exists(configuredPath))
                 {
-                    return Directory.GetParent(x64Path)?.FullName;
+                    return Directory.GetParent(configuredPath)?.FullName;
                 }
             }
             catch
@@ -108,7 +133,7 @@ namespace ColorVision.Engine.Services
             }
 
             // Fallback: check the registry directly
-            string? exePath = ServiceManagerUitl.GetServiceExecutablePath("CVMainService_x64");
+            string? exePath = ServiceManagerUitl.GetServiceExecutablePath(serviceName);
             if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
             {
                 try
@@ -126,6 +151,8 @@ namespace ColorVision.Engine.Services
 
         /// <summary>
         /// Get the appropriate log file path for a service log.
+        /// Dynamic module logs include timestamp and pid segments, so they can only be resolved
+        /// from an existing file and should not fall back to a fabricated path.
         /// </summary>
         private static string? GetLogFilePath(string serviceBaseDir, string logDir, string? logFilePrefix)
         {
@@ -136,16 +163,10 @@ namespace ColorVision.Engine.Services
             }
             else
             {
-                // Device/module-specific log: most recent file matching prefix
-                if (Directory.Exists(logDir))
-                {
-                    string? logPath = LogFileHelper.GetMostRecentLogFile(logDir, logFilePrefix);
-                    if (!string.IsNullOrEmpty(logPath))
-                        return logPath;
-                }
+                if (!Directory.Exists(logDir))
+                    return null;
 
-                // Fallback: construct expected path (file may not exist yet, LogLocalOutput handles this)
-                return Path.Combine(logDir, $"{logFilePrefix}{DateTime.Now:yyyyMMdd}.log");
+                return LogFileHelper.GetMostRecentLogFile(logDir, logFilePrefix);
             }
         }
     }

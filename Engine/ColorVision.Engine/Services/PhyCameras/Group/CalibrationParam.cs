@@ -52,6 +52,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             ColorShift = new CalibrationBase(detail, nameof(ColorShift) + Type);
             ColorDiff = new CalibrationBase(detail, nameof(ColorDiff) + Type);
             LineArity = new CalibrationBase(detail, nameof(LineArity) + Type);
+            AngleShift = new CalibrationBase(detail, nameof(AngleShift) + Type);
         }
         public CalibrationBase DarkNoise { get; set; }
         public CalibrationBase DefectPoint { get; set; }
@@ -61,6 +62,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public CalibrationBase ColorShift { get; set; }
         public CalibrationBase ColorDiff { get; set; }
         public CalibrationBase LineArity { get; set; }
+        public CalibrationBase AngleShift { get; set; }
 
         public Dictionary<string, object> ToDictionary()
         {
@@ -81,6 +83,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 keyValuePairs.Add(nameof(ColorDiff), ColorDiff.FilePath);
             if (LineArity.IsSelected)
                 keyValuePairs.Add(nameof(LineArity), LineArity.FilePath);        
+            if (AngleShift.IsSelected)
+                keyValuePairs.Add(nameof(AngleShift), AngleShift.FilePath);
             return keyValuePairs;
         }
     }

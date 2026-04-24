@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Templates.Flow;
+using cvColorVision;
 using MQTTnet;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -241,7 +242,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             V = Math.Abs(V);
             I = Math.Abs(I);
 
-            if (Device.Config.DevType == "Keithley_2400")
+            if (Device.Config.DevType == Pss_Type.Keithley_2400)
             {
                 if (V > 200)
                 {
@@ -259,7 +260,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     return false;
                 }
             }
-            else if (Device.Config.DevType == "Keithley_2600")
+            else if (Device.Config.DevType == Pss_Type.Keithley_2600)
             {
                 if (V > 40)
                 {
@@ -277,7 +278,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     return false;
                 }
             }
-            else if (Device.Config.DevType == "Precise_S100")
+            else if (Device.Config.DevType == Pss_Type.Precise_S100)
             {
                 if (V > 30)
                 {

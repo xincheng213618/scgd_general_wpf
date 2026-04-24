@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 CalibrationType.LumMultiColor => ServiceTypes.LumMultiColor,
                 CalibrationType.ColorDiff => ServiceTypes.ColorDiff,
                 CalibrationType.LineArity => ServiceTypes.LineArity,
+                CalibrationType.AngleShift => ServiceTypes.AngleShift,
                 _ => ServiceTypes.DarkNoise,
             };
         }
@@ -43,6 +44,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 ServiceTypes.LumMultiColor => CalibrationType.LumMultiColor,
                 ServiceTypes.ColorDiff => CalibrationType.ColorDiff,
                 ServiceTypes.LineArity => CalibrationType.LineArity,
+                ServiceTypes.AngleShift => CalibrationType.AngleShift,
                 _ => CalibrationType.DarkNoise, // 默认值，视情况而定
             };
         }

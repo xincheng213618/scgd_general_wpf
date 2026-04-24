@@ -1,0 +1,159 @@
+<UserControl x:Class="ColorVision.ImageEditor.EditorTools.ThreeD.ModelViewer3DControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Focusable="True"
+             d:DesignHeight="700" d:DesignWidth="1100">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ThreeDStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Background="#1a1a1a">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Margin="8,8,0,8" Background="#C8181818" CornerRadius="6"
+                BorderBrush="#30FFFFFF" BorderThickness="1" Panel.ZIndex="90">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
+                    <TextBlock Text="模型结构" Foreground="#DDFFFFFF" FontSize="12" VerticalAlignment="Center"/>
+                    <Button Style="{StaticResource PanelActionBtn}" Content="隔离选中" Click="IsolateSelected_Click"/>
+                    <Button Style="{StaticResource PanelActionBtn}" Content="恢复全部" Click="ShowAllNodes_Click"/>
+                </StackPanel>
+                <TreeView x:Name="ModelTreeView" Margin="8,0,8,8"
+                          Style="{StaticResource DarkTreeView}"
+                          ItemContainerStyle="{StaticResource DarkTreeViewItem}"
+                          SelectedItemChanged="ModelTreeView_SelectedItemChanged">
+                    <TreeView.Resources>
+                        <HierarchicalDataTemplate DataType="{x:Type TreeViewItem}" ItemsSource="{Binding Children}"/>
+                    </TreeView.Resources>
+                </TreeView>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1" x:Name="ContentGrid"/>
+        <Grid Grid.ColumnSpan="2" x:Name="OverlayRoot"/>
+
+        <!-- Toolbar overlay panel -->
+        <Border x:Name="ToolbarPanel" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Panel.ZIndex="99"
+                Background="#C8181818" CornerRadius="6" Padding="8"
+                BorderBrush="#30FFFFFF" BorderThickness="1">
+            <StackPanel Width="122">
+                <TextBlock Text="文件" Style="{StaticResource SectionLabel}"/>
+                <Button Style="{StaticResource ActionBtn}" Content="打开模型" Click="OpenModel_Click" ToolTip="打开模型文件"/>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <TextBlock Text="相机位置" Style="{StaticResource SectionLabel}"/>
+                <Grid HorizontalAlignment="Center" Width="96">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/><RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左移 (L)" Click="CameraMoveLeft_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="前进 (T)" Click="CameraMoveForward_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右移 (R)" Click="CameraMoveRight_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="后退 (B)" Click="CameraMoveBack_Click"/>
+                </Grid>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <TextBlock Text="视角方向" Style="{StaticResource SectionLabel}"/>
+                <Grid HorizontalAlignment="Center" Width="96">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/><RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左看 (D)" Click="LookLeft_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="上看 (A)" Click="LookUp_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右看 (F)" Click="LookRight_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="下看 (C)" Click="LookDown_Click"/>
+                </Grid>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <TextBlock Text="预设视角" Style="{StaticResource SectionLabel}"/>
+                <Grid HorizontalAlignment="Center" Width="120">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/><RowDefinition/><RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="前" ToolTip="前视图" Click="FrontView_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="上" ToolTip="上视图" Click="TopView_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="右" ToolTip="右视图" Click="RightView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="左" ToolTip="左视图" Click="LeftView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="ISO" ToolTip="等轴视图" Click="IsoView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="后" ToolTip="后视图" Click="BackView_Click"/>
+                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="下" ToolTip="下视图" Click="BottomView_Click"/>
+                </Grid>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <TextBlock Text="投影" Style="{StaticResource SectionLabel}"/>
+                <ToggleButton x:Name="ProjectionToggle" Style="{StaticResource ToggleActionBtn}"
+                              Content="正交投影" Checked="ProjectionToggle_Checked"
+                              Unchecked="ProjectionToggle_Unchecked"/>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <TextBlock Text="渲染" Style="{StaticResource SectionLabel}"/>
+                <ToggleButton x:Name="WireframeToggle" Style="{StaticResource ToggleActionBtn}"
+                              Content="线框模式" Checked="WireframeToggle_Checked"
+                              Unchecked="WireframeToggle_Unchecked"/>
+                <ToggleButton x:Name="TextureToggle" Style="{StaticResource ToggleActionBtn}"
+                              Content="显示贴图" Checked="TextureToggle_Checked"
+                              Unchecked="TextureToggle_Unchecked"/>
+                <ToggleButton x:Name="MaterialToggle" Style="{StaticResource ToggleActionBtn}"
+                              Content="显示材质" Checked="MaterialToggle_Checked"
+                              Unchecked="MaterialToggle_Unchecked"/>
+
+                <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                <Button Style="{StaticResource ActionBtn}" Content="重置视角" Click="ResetView_Click" ToolTip="重置视角 (Home)"/>
+                <Button Style="{StaticResource ActionBtn}" Content="截图" Click="Screenshot_Click"/>
+                <Button Style="{StaticResource ActionBtn}" Content="导出模型" Click="ExportModel_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Model info panel -->
+        <Border Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="8,8,8,36" Panel.ZIndex="99"
+                Background="#C8181818" CornerRadius="4" Padding="8,4"
+                BorderBrush="#30FFFFFF" BorderThickness="1">
+            <TextBlock x:Name="ModelInfoText" Foreground="#99FFFFFF" FontSize="11"
+                       LineHeight="16" LineStackingStrategy="BlockLineHeight"/>
+        </Border>
+
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="8" Panel.ZIndex="99"
+                Background="#C8181818" CornerRadius="4" Padding="8,4"
+                BorderBrush="#30FFFFFF" BorderThickness="1">
+            <DockPanel>
+                <TextBlock x:Name="StatusProjectionText" Foreground="#99FFFFFF" FontSize="11" Margin="0,0,12,0"/>
+                <TextBlock x:Name="StatusViewText" Foreground="#99FFFFFF" FontSize="11" Margin="0,0,12,0"/>
+                <TextBlock x:Name="StatusCameraText" Foreground="#99FFFFFF" FontSize="11"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Loading progress overlay -->
+        <Grid x:Name="LoadingOverlay" Panel.ZIndex="100" Background="#E0000000" Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock x:Name="LoadingText" Text="Loading model..." Foreground="#FFFFFF" FontSize="14" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+                <ProgressBar x:Name="LoadingProgressBar" Width="280" Height="6" IsIndeterminate="True"
+                             Background="#333333" BorderThickness="0" Foreground="#4CAF50"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

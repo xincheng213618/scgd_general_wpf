@@ -77,7 +77,7 @@ ColorVision/
 - `ColorVision.csproj` - 项目文件
 
 **技术栈**：
-- .NET 8.0 (net8.0-windows)
+- .NET 10.0 (net10.0-windows) / .NET 8.0 (net8.0-windows)
 - WPF (Windows Presentation Foundation)
 - 平台：x64
 
@@ -288,7 +288,7 @@ ColorVision/
 
 ## 📦 技术栈总览
 
-- **主框架**：.NET 8.0, WPF
+- **主框架**：.NET 10.0 / .NET 8.0, WPF
 - **平台**：Windows x64/ARM64
 - **UI库**：HandyControl, WPF Extended Toolkit
 - **数据库**：MySQL, SQLite (MySqlConnector)

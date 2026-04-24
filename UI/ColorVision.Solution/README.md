@@ -1,389 +1,65 @@
 # ColorVision.Solution
 
-> 版本: 1.5.1.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows | UI框架: WPF
+> 版本: 1.5.5.1 | 目标框架: .NET 10.0 Windows
 
-## 🎯 功能定位
+## 功能定位
 
-解决方案和工程文件管理模块，提供项目文件的组织、管理和预览功能。类似于 Visual Studio 的解决方案资源管理器，为 ColorVision 系统提供强大的工程管理能力。
+解决方案和工程文件管理模块，类似 Visual Studio 的解决方案资源管理器。提供项目文件组织、多编辑器集成、RBAC 权限控制和终端集成。
 
-## 作用范围
+## 主要功能
 
-工程管理层，为用户提供类似IDE的工程文件管理能力，支持文件的浏览、编辑、搜索和批量操作。
+### 解决方案管理
+- **创建/打开/保存** — .cvsln 格式解决方案文件
+- **文件树视图** — 树形结构展示工程文件
+- **文件监控** — FileSystemWatcher 实时同步
 
-## 主要功能点
+### 编辑器系统 (Editor/)
+| 编辑器 | 文件扩展名 | 说明 |
+|--------|-----------|------|
+| TextEditor | .txt, .log, .cs, ... | AvalonEdit 代码编辑 |
+| ImageEditor | .png, .jpg, .bmp, ... | 图像查看/编辑 |
+| HexEditor | .bin, .dat, ... | 十六进制编辑 |
+| WebEditor | .html, .url, ... | WebView2 预览 |
+| Model3DEditor | .obj, .stl | 3D 模型查看（嵌入 ModelViewer3DControl） |
+| ProjectEditor | .cvsln, .json | 项目配置编辑 |
 
-### 核心功能
-- **解决方案管理** - 创建、打开、保存解决方案文件（.cvsln格式）
-- **文件树视图** - 树形结构展示工程文件组织，支持文件夹和文件的可视化管理
-- **多编辑器支持** - 集成文本、图像、Hex、Web等多种编辑器
-- **文件搜索** - 快速定位工程中的文件和内容
-- **工程配置** - 管理工程相关的配置信息
+**Model3DEditor 内存管理**
+- 使用命名委托 + `Closing` 事件中主动取消订阅，打破 lambda 闭包引用链
+- 关闭时调用 `DisposeViewer()` 释放 3D 资源（网格缓冲区、材质纹理）
+- 置空 `LayoutDocument.Content` 断开内容引用，确保 GC 可回收
 
-### 扩展功能
-- **权限控制（RBAC）** - 基于角色的访问控制，支持用户、角色、权限管理
-- **插件系统** - 支持插件动态加载和管理
-- **最近文件** - 记录和管理最近打开的解决方案
-- **文件监控** - 实时监控文件系统变化并自动更新视图
-- **终端集成** - 内置基于 ConPTY 的交互式终端，支持 PowerShell/CMD 和脚本运行
+### RBAC 权限系统 (Rbac/)
+- **用户/角色/权限** — 完整的 RBAC 模型
+- **多租户** — TenantEntity 支持
+- **会话管理** — SessionEntity + 审计日志
+- **登录/注册窗口** — LoginWindow / RegisterWindow
+- **密码安全** — PasswordHashing (BCrypt)
 
-### 新增功能 (v1.5+)
-- **多图像查看器** (`MultiImageViewer`) - 支持文件夹内多张图片的预览和缩略图缓存
-- **缩略图缓存管理** (`ThumbnailCacheManager`) - 高效的图像缩略图生成和缓存
-- **Markdown 查看器** (`MarkdownViewWindow`) - 支持 Markdown 文件的预览
-- **工作区管理** (`WorkspaceManager`) - 多工作区切换管理
-- **可编辑文本块** (`EditableTextBlock`) - 支持点击编辑的文件名显示
+### 多图像查看器 (MultiImageViewer/)
+- 文件夹内多图预览
+- 缩略图缓存管理 (ThumbnailCacheManager)
 
-## 技术架构
+### 最近文件 (RecentFile/)
+- 最近打开的解决方案列表
+- 注册表持久化 (RegistryPersister)
 
-### 核心组件
+### 终端集成 (Terminal/)
+- 基于 Windows ConPTY 的内置终端
+- VT100/xterm 转义序列解析
+- 持久化命令历史
 
-```
-ColorVision.Solution/
-├── V/                          # 可视化对象模型
-│   ├── VObject.cs              # 基础可视化对象
-│   ├── VFile.cs                # 文件对象
-│   ├── VFolder.cs              # 文件夹对象
-│   ├── SolutionExplorer.cs     # 解决方案资源管理器
-│   ├── SolutionEnvironments.cs # 解决方案环境变量
-│   └── VObjectFactory.cs       # 对象工厂
-├── Editor/                     # 编辑器系统
-│   ├── EditorManager.cs        # 编辑器管理器
-│   ├── IEditor.cs              # 编辑器接口
-│   ├── TextEditor.cs           # 文本编辑器
-│   ├── ImageEditor.cs          # 图像编辑器
-│   ├── HexEditor.cs            # Hex编辑器
-│   ├── WebEditor.cs            # Web编辑器
-│   ├── ProjectEditor.cs        # 项目编辑器
-│   ├── SystemEditor.cs         # 系统编辑器
-│   ├── EditorSelectionWindow   # 编辑器选择窗口
-│   ├── FolderEditorSelectionWindow # 文件夹编辑器选择
-│   └── AvalonEditor/           # AvalonEdit 集成
-│       ├── AvalonEditWindow    # 代码编辑窗口
-│       ├── AvalonEditControll  # 代码编辑控件
-│       └── TextJsonPropertiesEditor # JSON属性编辑
-├── FileMeta/                   # 文件元数据
-│   ├── IFileMeta.cs            # 文件元数据接口
-│   ├── FileMetaRegistry.cs     # 文件元数据注册表
-│   ├── CommonFile.cs           # 通用文件
-│   ├── FileImage.cs            # 图像文件
-│   ├── FileProcessorImage.cs   # 图像处理器
-│   └── FileProcessorText.cs    # 文本处理器
-├── FolderMeta/                 # 文件夹元数据
-│   ├── IFolderMeta.cs          # 文件夹元数据接口
-│   ├── FolderMetaRegistry.cs   # 文件夹元数据注册表
-│   ├── BaseFolder.cs           # 基础文件夹
-│   └── ProjectFolders.cs       # 项目文件夹
-├── Rbac/                       # 权限控制系统
-│   ├── RbacManager.cs          # RBAC管理器
-│   ├── RbacManagerConfig.cs    # RBAC配置
-│   ├── LoginWindow             # 登录窗口
-│   ├── RegisterWindow          # 注册窗口
-│   ├── UserManagerWindow       # 用户管理窗口
-│   ├── CreateUserWindow        # 创建用户窗口
-│   ├── EditUserRolesWindow     # 编辑用户角色窗口
-│   ├── PermissionManagerWindow # 权限管理窗口
-│   ├── Entity/                 # 实体模型
-│   │   ├── UserEntity.cs       # 用户实体
-│   │   ├── RoleEntity.cs       # 角色实体
-│   │   ├── PermissionEntity.cs # 权限实体
-│   │   ├── UserRoleEntity.cs   # 用户角色关联
-│   │   ├── UserDetailEntity.cs # 用户详情
-│   │   ├── TenantEntity.cs     # 租户实体
-│   │   ├── UserTenantEntity.cs # 用户租户关联
-│   │   ├── SessionEntity.cs    # 会话实体
-│   │   └── AuditLogEntity.cs   # 审计日志实体
-│   ├── Services/               # 服务层
-│   │   ├── AuthService         # 认证服务
-│   │   ├── UserService         # 用户服务
-│   │   ├── RoleService         # 角色服务
-│   │   ├── PermissionService   # 权限服务
-│   │   ├── SessionService      # 会话服务
-│   │   ├── TenantService       # 租户服务
-│   │   ├── AuditLogService     # 审计日志服务
-│   │   └── PermissionChecker   # 权限检查器
-│   └── Security/               # 安全相关
-│       └── PasswordHashing.cs  # 密码哈希
-├── MultiImageViewer/           # 多图像查看器 (v1.5+)
-│   ├── MultiImageViewer        # 多图像查看控件
-│   ├── MultiImageViewerConfig  # 查看器配置
-│   ├── ImageFileInfo           # 图像文件信息
-│   ├── ThumbnailCacheManager   # 缩略图缓存管理
-│   └── ThumbnailCacheEntry     # 缓存条目
-├── RecentFile/                 # 最近文件管理
-│   ├── RecentFileList.cs       # 最近文件列表
-│   ├── IRecentFile.cs          # 最近文件接口
-│   ├── MenuRecentFile.cs       # 菜单最近文件
-│   └── RegistryPersister.cs    # 注册表持久化
-├── Workspace/                  # 工作区管理
-│   ├── WorkspaceManager.cs     # 工作区管理器
-│   ├── WorkspaceMainView       # 工作区主视图
-│   └── SoloutionEditorControl  # 解决方案编辑控件
-├── Terminal/                   # 内置终端 (v1.5+)
-│   ├── ConPtyTerminal.cs       # Windows ConPTY API 封装
-│   ├── TerminalScreenBuffer.cs # VT100 屏幕缓冲区解析
-│   ├── CommandHistory.cs       # 持久化命令历史管理
-│   ├── TerminalControl.xaml    # 终端 UI 控件
-│   └── TerminalService.cs      # 终端单例服务 + 停靠面板注册
-├── TreeViewControl             # 树视图控件
-├── SolutionManager             # 解决方案管理器
-├── NewCreatWindow              # 新建解决方案窗口
-├── OpenSolutionWindow          # 打开解决方案窗口
-└── MarkdownViewWindow          # Markdown查看窗口
-```
+### 其他
+- **MarkdownViewWindow** — Markdown 预览（Markdig）
+- **EditableTextBlock** — 可点击编辑的文本块
+- **WorkspaceManager** — 多工作区管理
 
-## 终端集成 (Terminal)
+## 依赖关系
 
-基于 Windows **ConPTY（Pseudo Console）** API 实现的内置交互式终端，要求 Windows 10 1809+。
+- **引用**: ColorVision.UI, ColorVision.UI.Desktop, ColorVision.Database, ColorVision.ImageEditor, AvalonEdit, WPFHexaEditor, WebView2, Markdig
+- **被引用**: 作为顶层 UI 模块
 
-### 组件职责
+## 构建
 
-| 类 | 职责 |
-|----|------|
-| `ConPtyTerminal` | Win32 ConPTY 封装：管道创建、进程启动、读线程、Resize/Kill |
-| `TerminalScreenBuffer` | VT100/xterm 屏幕缓冲区：解析 CSI/OSC 转义序列，维护光标位置和滚动历史（3000行） |
-| `CommandHistory` | 持久化命令历史：保存到 `%AppData%\ColorVision\terminal_history.txt`，最大 1000 条 |
-| `TerminalControl` | WPF UserControl：键盘映射（VT序列）、输出批量刷新（30ms Timer）、滚动控制 |
-| `TerminalService` | 单例服务：对外暴露 `RunScript()` / `SendCommand()` API |
-| `TerminalPanelProvider` | `IDockPanelProvider` 实现，自动注册为工作区底部停靠面板 |
-
-### 快速使用
-
-```csharp
-// 在终端中运行脚本文件
-TerminalService.GetInstance().RunScript(@"C:\Projects\train.py");
-
-// 发送任意命令
-TerminalService.GetInstance().SendCommand("git status");
-```
-
-### 当前限制与优化方向
-
-- **无动态尺寸调整**：终端固定 120×30，PSReadLine 换行可能错位；应监听 `SizeChanged` 调用 `ConPtyTerminal.Resize()`
-- **无颜色渲染**：SGR 颜色序列被忽略，文本单色显示；可改用 `FlowDocument` 支持彩色
-- **单会话**："+ 新终端"会终止当前会话；可扩展为多标签页
-- **CommandHistory 未使用**：历史导航由 Shell 处理，`CommandHistory` 类目前未被 UI 调用
-
-> 详细文档：[终端面板用户指南](../../docs/01-user-guide/interface/terminal.md)
-
-## 与主程序的依赖关系
-
-**被引用方式**:
-- ColorVision 主程序通过 `SolutionManager` 集成解决方案管理
-- 通过菜单或快捷键打开解决方案窗口
-- 支持命令行参数启动时自动打开解决方案
-
-**引用的程序集**:
-- `ColorVision.UI` - 基础UI组件和扩展
-- `ColorVision.UI.Desktop` - 桌面应用程序服务
-- `ColorVision.Database` - 数据库支持
-- `ColorVision.ImageEditor` - 图像编辑功能
-- `ColorVision.Themes` - 主题支持
-- `AvalonEdit` - 代码编辑器控件
-- `WPFHexaEditor` - Hex编辑器控件
-- `Microsoft.Web.WebView2` - Web视图支持
-- `Markdig` - Markdown解析
-
-## 使用方式
-
-### 引用方式
-```xml
-<ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
-```
-
-### 基础使用
-
-#### 创建和打开解决方案
-```csharp
-// 获取解决方案管理器实例
-var solutionManager = SolutionManager.GetInstance();
-
-// 创建新解决方案
-string solutionPath = @"C:\Projects\MySolution";
-solutionManager.CreateSolution(solutionPath);
-
-// 打开现有解决方案
-string existingSolution = @"C:\Projects\MySolution\MySolution.cvsln";
-bool success = solutionManager.OpenSolution(existingSolution);
-
-// 访问当前解决方案
-var currentSolution = solutionManager.CurrentSolutionExplorer;
-```
-
-#### 使用文件树控件
-```csharp
-// 在XAML中使用
-<solution:TreeViewControl x:Name="TreeView" />
-
-// 在代码中访问
-var treeView = new TreeViewControl();
-// 树视图自动绑定到 SolutionManager.SolutionExplorers
-```
-
-#### 注册自定义编辑器
-```csharp
-// 使用特性注册编辑器
-[EditorForExtension(".txt", ".log", ".md")]
-public class MyCustomEditor : EditorBase
-{
-    public override void Open(string filePath)
-    {
-        // 编辑器打开逻辑
-    }
-}
-
-// 获取文件的编辑器
-var editor = EditorManager.Instance.GetDefaultEditor(".txt");
-```
-
-#### 使用多图像查看器 (v1.5+)
-```csharp
-// 创建多图像查看器
-var viewer = new MultiImageViewer();
-viewer.LoadFolder(@"C:\Images");
-viewer.Show();
-
-// 或使用配置
-var config = new MultiImageViewerConfig
-{
-    ThumbnailSize = 128,
-    CacheEnabled = true,
-    ShowFileName = true
-};
-viewer.ApplyConfig(config);
-```
-
-#### 处理解决方案事件
-```csharp
-var solutionManager = SolutionManager.GetInstance();
-
-// 监听解决方案创建事件
-solutionManager.SolutionCreated += (sender, args) =>
-{
-    Console.WriteLine("解决方案已创建");
-};
-
-// 监听解决方案加载事件
-solutionManager.SolutionLoaded += (sender, args) =>
-{
-    Console.WriteLine("解决方案已加载");
-};
-```
-
-#### RBAC 权限使用
-```csharp
-// 登录
-var authService = new AuthService();
-var result = await authService.LoginAsync("username", "password");
-
-// 检查权限
-if (RbacManager.Instance.HasPermission("FILE_DELETE"))
-{
-    // 允许删除文件
-}
-
-// 记录审计日志
-var auditService = new AuditLogService();
-auditService.LogAction("FILE_DELETE", $"删除文件: {filePath}");
-```
-
-## 开发调试
-
-### 构建项目
 ```bash
-# 构建解决方案模块
 dotnet build UI/ColorVision.Solution/ColorVision.Solution.csproj
-
-# 构建整个解决方案
-dotnet build scgd_general_wpf.sln
 ```
-
-### 运行测试
-```bash
-# 如果有测试项目
-dotnet test
-```
-
-## 目录说明
-
-- `V/` - 可视化对象模型（VObject, VFile, VFolder等）
-- `Editor/` - 编辑器系统及各类编辑器实现
-- `FileMeta/` - 文件元数据定义和注册
-- `FolderMeta/` - 文件夹元数据定义和注册
-- `Rbac/` - 基于角色的访问控制系统
-- `MultiImageViewer/` - 多图像查看器
-- `RecentFile/` - 最近文件历史管理
-- `Workspace/` - 工作区管理
-- `Properties/` - 资源文件和多语言支持
-
-## 配置文件
-
-解决方案配置文件（.cvsln）采用 JSON 格式：
-```json
-{
-  "FilePath": "",
-  "VirtualPath": "",
-  "IsSetting": false,
-  "IsSetting1": false,
-  "Paths": []
-}
-```
-
-## 多语言支持
-
-支持以下语言：
-- 简体中文 (zh-Hans)
-- 繁体中文 (zh-Hant)
-- 英语 (en)
-- 法语 (fr)
-- 日语 (ja)
-- 韩语 (ko)
-- 俄语 (ru)
-
-## 相关文档链接
-
-- [详细架构文档](../../docs/04-api-reference/ui-components/ColorVision.Solution.md)
-- [用户界面指南](../../docs/01-user-guide/)
-- [入门指南](../../docs/00-getting-started/README.md)
-
-## 技术特性
-
-- ✅ MVVM 架构模式
-- ✅ 依赖注入和服务定位
-- ✅ 文件系统监控（FileSystemWatcher）
-- ✅ 工厂模式和注册表模式
-- ✅ 命令模式（RelayCommand）
-- ✅ 事件驱动架构
-- ✅ 可扩展的插件系统
-- ✅ 多语言支持（7种语言）
-- ✅ 缩略图缓存管理
-- ✅ 完整的 RBAC 权限系统
-
-## 更新日志
-
-### v1.5.1.1 (2025-02)
-- ✅ 新增多图像查看器 (`MultiImageViewer`)
-- ✅ 新增缩略图缓存管理 (`ThumbnailCacheManager`)
-- ✅ 新增 Markdown 查看器 (`MarkdownViewWindow`)
-- ✅ 新增工作区管理 (`WorkspaceManager`)
-- ✅ 新增可编辑文本块 (`EditableTextBlock`)
-- ✅ 支持 .NET 10.0
-- ✅ 优化文件系统监控性能
-- ✅ 改进 RBAC 权限系统
-
-### v1.4.1.1 (2025-02)
-- 新增图像文件夹预览
-- 优化解决方案加载速度
-- 改进编辑器选择逻辑
-
-### v1.3.18.1 (2025-02)
-- 增加 RBAC 权限系统
-- 增加多语言支持
-- 增加 AvalonEdit 代码编辑器
-
-## 维护者
-
-ColorVision UI团队
-
-## License
-
-参见项目根目录的 LICENSE 文件

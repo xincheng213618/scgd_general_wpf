@@ -64,7 +64,7 @@ features:
 
 ## 技术栈
 
-![.NET Version](https://img.shields.io/badge/.NET-8.0-blue.svg)
+![.NET Version](https://img.shields.io/badge/.NET-10.0-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
 ![WPF](https://img.shields.io/badge/UI-WPF-blue.svg)
 ![License](https://img.shields.io/github/license/xincheng213618/scgd_general_wpf.svg)

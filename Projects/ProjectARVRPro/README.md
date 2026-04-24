@@ -1,265 +1,232 @@
 # ProjectARVRPro
 
-[![Version](https://img.shields.io/badge/version-1.0.4.7-blue.svg)](./ProjectARVRPro.csproj)
-[![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
-[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
+AR/VR 显示设备光学性能专业测试系统 — 基于 ColorVision 平台的全面光学质量检测插件，涵盖亮度、均匀性、色彩、对比度、MTF（清晰度）、畸变、缺陷检测等全方位测试。
 
-## 🎯 功能定位
+## 技术栈
 
-ARVR Pro 专业版测试系统 - 针对AR/VR显示设备的全面光学性能测试解决方案。
+| 项目 | 说明 |
+|------|------|
+| 框架 | .NET 10.0 / WPF (Windows x64) |
+| 架构 | ColorVision 平台插件 |
+| 版本 | 1.1.4.44 (csproj) / 1.2.0.0 (CHANGELOG 最新) |
+| 插件要求 | ColorVision >= 1.3.15.15 |
+| 数据库 | MySQL (SqlSugar) — 批次/算法数据；SQLite — 本地测试结果 |
+| 配置持久化 | JSON 文件 (ProcessGroups / Recipe / Fix / Summary) |
 
-## 📋 作用范围
+## 支持的测试项目
 
-专为AR/VR显示设备提供专业级光学测试，涵盖显示质量、光学性能、缺陷检测等全方位测试需求。
+| 测试类型 | Process 类 | 测量参数 |
+|----------|-----------|---------|
+| White 255 | `White255Process` | 全白亮度、均匀性、色度 (CIE xyuv) |
+| White 51 | `White51Process` | 低亮度白屏测试 |
+| W25 | `W25Process` | 25% 白色色度测试 |
+| Black | `BlackProcess` | 暗电流、FOFO 对比度（依赖 W255 结果） |
+| Red / Green / Blue | `RedProcess` / `GreenProcess` / `BlueProcess` | 单通道色度、均匀性 |
+| Chessboard | `ChessboardProcess` | 像素缺陷检测、棋盘格对比度 |
+| Distortion | `DistortionProcess` | SMIA TV 光学畸变 |
+| MTF H/V | `MTFHVProcess` | 调制传递函数 0F/0.3F/0.6F/0.8F |
+| MTF H/V 048 | `MTFHV048Process` | 048 产品 MTF 0F/0.5F/0.8F |
+| MTF H/V 058 | `MTFHV058Process` | 058 产品 MTF 0F/0.5F/0.8F |
+| MTF H | `MTFHProcess` | 水平方向 MTF |
+| MTF V | `MTFVProcess` | 垂直方向 MTF |
+| Optical Center | `OpticCenterProcess` | 光轴中心对准 |
+| OLED AOI | `OLEDAOIProcess` | OLED 自动光学检测 |
 
-## ✨ 主要功能点
-
-### 测试模式处理
-
-- **初始化管理** - 通过ProjectARVRProInit进行完整的测试参数初始化
-- **多模式处理** - 支持多种测试模式和图像处理算法：
-
-| 处理模块 | 功能描述 | 支持的测试项 |
-|---------|---------|-------------|
-| **White255Process** | 白色255灰度测试处理 | 亮度、均匀性 |
-| **White51Process** | 白色51灰度测试处理 | 低亮度测试 |
-| **W25Process** | W25测试模式处理 | 色度测试 |
-| **BlackProcess** | 黑色画面测试处理 | 对比度、暗电流 |
-| **ChessboardProcess** | 棋盘格测试处理 | 像素缺陷检测 |
-| **DistortionProcess** | 畸变测试处理 | 光学畸变分析 |
-| **MTFHVProcess** | 水平垂直MTF测试处理 | 清晰度/解析力(0F/0.3F/0.6F/0.8F) |
-| **MTFHV058Process** | 058产品MTF测试处理 | 清晰度/解析力(0F/0.5F/0.8F) |
-| **OpticCenterProcess** | 光轴中心测试处理 | 光轴对准 |
-| **RedProcess** | 红色通道测试处理 | 红色色度 |
-| **GreenProcess** | 绿色通道测试处理 | 绿色色度 |
-| **BlueProcess** | 蓝色通道测试处理 | 蓝色色度 |
-
-### 配置管理
-
-- **Recipe管理** - 完整的测试配方管理系统，支持参数化配置
-- **Fix修正** - 数据分析和修正功能，支持校准系数配置
-- **ProcessConfig** - 每个Process模块独立的配置，支持自定义解析Key
-
-### 流程管理
-
-- **流程管理** - 基于大流程模板的测试执行
-  - **ProcessMeta管理** - 支持多流程配置和选择性执行
-  - **IsEnabled属性** - 可选择性启用/禁用特定测试步骤
-  - **配置独立性** - 每个ProcessMeta拥有独立的Process实例和Config配置
-- **结果管理** - 测试结果的存储、查询和展示
-
-## 🔗 与主程序的依赖关系
-
-### 引用的程序集
-
-| 程序集 | 功能 |
-|-------|------|
-| `ColorVision.Engine` | 核心引擎功能 |
-| `ColorVision.Engine.Templates` | 模板管理支持 |
-| `ColorVision.Engine.Templates.Jsons.LargeFlow` | 大流程模板支持 |
-| `ColorVision.UI` | 基础UI组件 |
-| `CVCommCore` | 通信核心组件 |
-
-### 被引用方式
-
-- 作为插件集成到主程序
-- 支持独立窗口和大流程模式
-
-## 🚀 使用方式
-
-### 引用方式
-
-作为独立插件项目，通过插件系统加载。
-
-### 在主程序中的启用
-
-- 插件自动加载和注册
-- 支持模板编辑器和流程工具集成
-
-### 初始化流程
-
-传入`ProjectARVRProInit`参数，系统会自动初始化整个测试参数信息，包括：
-- 测试配方配置
-- 算法参数设定
-- 硬件设备初始化
-- 流程模板加载
-
-## 🛠️ 开发调试
-
-```bash
-# 构建项目
-dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
-
-# 或使用VS2022打开解决方案
-# 选择 x64 平台配置
-```
-
-## 📁 目录说明
-
-### 核心文件
-
-| 文件 | 说明 |
-|-----|------|
-| `ProjectARVRProConfig.cs` | 项目主配置类 |
-| `ARVRWindow.xaml/.cs` | 主测试窗口 |
-| `ViewResultManager.cs` | 结果视图管理 |
-| `ObjectiveTestResult.cs` | 客观测试结果数据模型 |
-| `TestResultViewWindow.xaml/.cs` | 测试结果查看窗口 |
-
-### 子目录
-
-| 目录 | 说明 |
-|-----|------|
-| `Process/` | 测试流程处理模块 |
-| `Recipe/` | 测试配方管理 |
-| `Fix/` | 修正参数管理 |
-| `Services/` | 服务模块(Socket通信等) |
-| `PluginConfig/` | 插件配置 |
-
-### Process目录结构
+## 架构概览
 
 ```
-Process/
-├── IProcess.cs              # 流程接口定义
-├── IProcessConfig.cs        # 流程配置基类
-├── IProcessExecutionContext.cs  # 执行上下文
-├── ProcessManager.cs        # 流程管理器
-├── ProcessManagerWindow.xaml/.cs  # 流程管理窗口
-├── ProcessMeta.cs           # 流程元数据
-├── ProcessMetaPersist.cs    # 流程持久化
-├── Black/                   # 黑屏测试
-├── Blue/                    # 蓝色测试
-├── Chessboard/              # 棋盘格测试
-├── Distortion/              # 畸变测试
-├── Green/                   # 绿色测试
-├── MTFHV/                   # MTF水平垂直测试
-├── MTFHV058/                # 058产品MTF测试
-├── OpticCenter/             # 光轴中心测试
-├── Red/                     # 红色测试
-├── W25/                     # W25测试
-└── W255/                    # W255测试
+ProjectARVRPro
+├── App.xaml.cs                     # 入口：配置初始化 → 授权 → 主题 → 语言 → 加载引擎 → 启动窗口
+├── ARVRWindow.xaml/.cs             # 主测试窗口：SN 输入 → 流程组选择 → 执行 → 结果处理
+├── ProjectARVRProConfig.cs         # 全局配置 (SN / 重试次数 / 结果路径 / 模板 / Legacy 输出开关)
+│
+├── PluginConfig/                   # 插件集成层
+│   ├── ProjectARVRPlugin.cs        #   IFeatureLauncherBase — 注册为 "ARVRPro" 功能
+│   ├── ProjectARVRMenu.cs          #   MenuItemBase — Tools 菜单 "模组检测"
+│   ├── SocketRelayMenu.cs          #   MenuItemBase — Tools 菜单 "Socket中转服务器"
+│   └── ProjectWindowInstance.cs    #   窗口单例持有
+│
+├── Process/                        # 测试流程框架（核心领域）
+│   ├── IProcess.cs                 #   核心接口：Execute / Render / GenText / GetRecipeConfig / GetFixConfig
+│   ├── IProcessExecutionContext.cs  #   执行上下文 (Batch / Result / Recipe / Fix / ImageView)
+│   ├── ProcessManager.cs           #   单例：管理 ProcessGroup / ProcessMeta，反射发现 IProcess
+│   ├── ProcessMeta.cs              #   流程元数据：名称、模板、IsEnabled、InterStepAction、配置
+│   ├── ProcessGroup.cs             #   流程组：按产品/场景组织测试方案
+│   ├── InterStepAction.cs          #   步间通信指令 (Socket/Serial/SwitchPG/Delay/DeviceChannel)
+│   └── [各测试子目录]              #   每个测试类型 5 文件：Process / ProcessConfig / TestResult / RecipeConfig / FixConfig
+│
+├── Recipe/                         # Recipe（合格/不合格限值）系统
+│   ├── RecipeBase.cs               #   Min/Max 限值对
+│   ├── RecipeConfig.cs             #   IRecipeConfig 字典容器
+│   └── RecipeManager.cs            #   单例管理器，JSON 持久化
+│
+├── Fix/                            # 修正/校准因子系统
+│   ├── FixConfig.cs                #   IFixConfig 字典容器
+│   └── FixManager.cs               #   单例管理器，JSON 持久化
+│
+├── Services/                       # 通信服务层
+│   ├── SocketControl.cs            #   TCP Socket 命令分发器 (ISocketJsonHandler)
+│   ├── SocketRelayManager.cs       #   TCP 中转服务器（流程引擎 ↔ 外部客户端双向转发）
+│   ├── SwitchGroupSocket.cs        #   Socket 处理器：SwitchGroup 事件
+│   ├── RunAllSocket.cs             #   Socket 处理器：RunAll 一键执行
+│   └── AOITestSwitchImageHandler.cs #  Socket 处理器：AOI 图像切换完成
+│
+├── ThunderbirdSerialController.cs  # Thunderbird 设备串口控制器
+├── SerialPortHelper.cs             # 串口通信辅助类
+├── ObjectiveTestResult.cs          # 测试结果聚合模型 + CSV 导出
+├── ProjectARVRReuslt.cs            # 测试结果实体 (SQLite 持久化)
+├── ViewResultManager.cs            # 结果查询与管理
+├── Summary.cs                      # 生产摘要 (产线 / 工人 / 产能 / 良率)
+├── TestResultViewWindow.xaml       # 测试结果查看器 (CSV/PDF 导出)
+├── SocketRelayWindow.xaml          # Socket 中转服务器 UI
+├── ThunderbirdSerialDebugWindow.xaml # 串口调试 UI
+└── LegacyARVR/                     # 向后兼容：旧版扁平输出格式
 ```
 
-## ⚙️ 配置说明
+## 核心设计模式
 
-### 测试配方管理 (Recipe)
+- **策略模式** — 每个测试类型实现 `IProcess` 接口，Execute / Render / GenText 可插拔替换
+- **服务定位器** — `RecipeConfig.GetRequiredService<T>()` / `FixConfig.GetRequiredService<T>()` 获取类型化配置
+- **单例管理器** — ProcessManager / RecipeManager / FixManager / ViewResultManager / SummaryManager
+- **反射发现** — ProcessManager 扫描所有已加载程序集发现 `IProcess` / `IRecipeConfig` / `IFixConfig` 实现
+- **插件架构** — 实现 `IFeatureLauncherBase` / `MenuItemBase`，由 ColorVision 宿主运行时发现
+- **MVVM** — WPF 数据绑定，ViewModelBase / RelayCommand / OnPropertyChanged()
+- **三层配置** — 每个测试独立的 Recipe（限值）+ Fix（校准）+ ProcessConfig（行为），均可通过 PropertyGrid 编辑
 
-- 支持多种测试配方的创建和编辑
-- 参数化的测试流程配置
-- 结果数据的自动分析和修正
+## 测试执行流程
 
-### 大流程支持 (LargeFlow)
+### 外部触发模式（产线自动化）
 
-- 基于LargeFlow模板的复杂测试流程
-- 支持模板编辑和流程可视化配置
-- ProcessMeta选择性执行：通过IsEnabled属性控制步骤是否执行，系统自动跳过禁用步骤
+```
+1. 外部系统发送 "ProjectARVRInit" + SN
+   → ARVRWindow.InitTest(SN)，返回第一个启用步骤的 SwitchPG 信息
 
-### ProcessMeta管理
+2. 外部系统切换图案完成，发送 "SwitchPGCompleted"
+   → ARVRWindow.SwitchPGCompleted()
+   → 查找下一个启用的 ProcessMeta
+   → 运行 FlowEngine 模板 → 执行 IProcess.Execute()
+   → 解析结果、应用 Fix 修正系数
+   → 返回 "SwitchPG"（下一步）或 "ProjectARVRResult"（全部完成）
 
-- **流程配置**：支持创建、更新、删除和排序多个测试流程
-- **选择性执行**：每个ProcessMeta都有IsEnabled属性（默认启用）
-- **智能跳过**：执行时自动跳过已禁用的步骤
-- **完成检测**：仅基于启用的步骤判断测试是否完成
-- **配置独立性**：每个ProcessMeta拥有独立的Process实例和Config配置
-- **示例**：如果配置了8个步骤(0-7)，仅启用第0和第7步，执行流程将是：0→7（跳过1-6）
+3. 重复直到所有启用步骤完成
+   → 最终结果保存到 SQLite + CSV/Text 导出
+```
 
-### ProcessConfig可配置Key
+### 一键执行模式 (RunAll)
 
-从v1.0.4.4开始，MTFHVProcess和MTFHV058Process支持用户自定义配置解析使用的变量名：
+```
+1. Socket "RunAll" 或 UI 按钮 → RunAllAsync()
+2. 顺序遍历所有启用的 ProcessMeta
+3. 每步：运行模板 → 执行流程 → 收集结果
+4. 步间自动执行 InterStepAction（如已配置）
+5. 聚合结果保存
+```
+
+### Socket 中转服务器
+
+`SocketRelayManager` 作为 TCP 中转/桥接，连接流程引擎（客户端）和外部系统（通过 SocketControl.Current.Stream），双向转发消息并记录完整日志。
+
+## Socket 协议
+
+ARVRPro 作为 **TCP 服务器**（默认端口 6666），外部系统（产线 PLC 等）作为客户端连接。
+
+**协议格式** — JSON over TCP，UTF-8 编码：
+- 请求：`{Version, MsgID, EventName, SerialNumber, Params}`
+- 响应：`{Version, MsgID, EventName, SerialNumber, Code, Msg, Data}`
+
+**注册的事件处理器：**
+
+| EventName | Handler | 功能 |
+|-----------|---------|------|
+| `ProjectARVRInit` | `FlowInit` | 初始化测试（设置 SN），返回第一个启用步骤的 SwitchPG |
+| `SwitchPGCompleted` | `SwitchPGSocket` | 外部确认图案切换完成，触发下一步测试执行 |
+| `SwitchGroup` | `SwitchGroupSocket` | 按名称切换当前激活的流程组 |
+| `RunAll` | `RunAllSocket` | 一键执行所有启用的步骤 |
+| `AOITestSwitchImageComplete` | `AOITestSwitchImageCompleteHandler` | 中转 AOI 图像切换完成事件 |
+
+## ProcessGroup（流程组）
+
+`ProcessManager` 管理多个 `ProcessGroup`，每个组包含独立的 `ProcessMeta` 列表：
+
+- 按产品/场景组织不同的测试方案（如 "产品A"、"产品B"、"调试"）
+- 支持组的添加、删除、重命名、复制
+- 通过 UI ComboBox 或 Socket `SwitchGroup` 事件切换
+- 旧版 `ProcessMetas.json` 自动迁移为 Default 组，完全向后兼容
+
+## InterStepAction（步间通信指令）
+
+支持在两个测试步骤之间插入通信指令，触发外部设备操作：
+
+| 类型 | 说明 |
+|------|------|
+| `None` | 无操作 |
+| `Socket` | TCP Socket 命令（指定 host/port、期望响应、超时） |
+| `SerialPort` | 串口命令（指定端口名、波特率） |
+| `SwitchPG` | 使用 SwitchPG 协议切换测试图案 |
+| `Delay` | 简单延时 |
+| `DeviceChannel` | 命名设备通道（Thunderbird 串口、通用串口、Socket） |
+
+## 依赖关系
+
+### 项目引用
+| 依赖 | 用途 |
+|------|------|
+| `ColorVision.Engine` | 核心引擎：设备服务、MQTT、批次处理、模板、流程引擎、数据库 |
+| `FlowEngineLib.dll` | 可视化流程引擎（节点式测试流程执行） |
+| `ST.Library.UI.dll` | 节点编辑器 UI 组件 |
+| `CVCommCore.dll` | 通信核心库 |
+
+### 主要 NuGet 包
+SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、iText (PDF 导出)、CsvHelper、MathNet.Numerics、HelixToolkit (3D)、Markdig (Markdown 渲染)、Quartz.NET (调度)、GLWpfControl (OpenGL)
+
+## 配置文件说明
+
+| 文件 | 位置 | 说明 |
+|------|------|------|
+| `ProcessGroups.json` | `%APPDATA%/ColorVision/Config/` | 流程组配置 — 按产品/场景组织测试流程 |
+| `ARVRRecipe.json` | `%APPDATA%/ColorVision/Config/` | Recipe 配置 — 各测试项的合格/不合格限值 |
+| `ProjectARVRProFixConfig.json` | `%APPDATA%/ColorVision/Config/` | Fix 配置 — 各测试项的修正因子系数 |
+| `ProjectARVRLiteSummary.json` | `%APPDATA%/ColorVision/Config/` | 生产摘要 — 产线 / 工人 / 产能 / 良率 |
+| `ProjectARVRPro.db` | `%APPDATA%/ColorVision/Config/` | SQLite 数据库 — 测试结果持久化 |
+
+## ProcessConfig 可配置 Key
+
+MTFHVProcess / MTFHV048Process / MTFHV058Process 支持用户自定义解析 Key：
 
 ```csharp
-// MTFHVProcessConfig 示例
 public class MTFHVProcessConfig : ProcessConfigBase
 {
     [Category("解析配置")]
     [DisplayName("Center_0F解析Key")]
     [Description("用于解析Center_0F数据的Key")]
     public string Key_Center_0F { get; set; } = "0F_MTF_HV_Center";
-    
-    // ... 更多配置项
+    // ... 更多视场角 Key 配置
 }
 ```
 
-**支持的配置项：**
-- `Key_Center_0F` - 中心0F位置解析Key
-- `Key_LeftUp_0_3F/0_5F/0_6F/0_8F` - 左上角各视场角解析Key
-- `Key_LeftDown_0_3F/0_5F/0_6F/0_8F` - 左下角各视场角解析Key
-- `Key_RightUp_0_3F/0_5F/0_6F/0_8F` - 右上角各视场角解析Key
-- `Key_RightDown_0_3F/0_5F/0_6F/0_8F` - 右下角各视场角解析Key
+## Legacy 兼容模式
 
-## 🏗️ 架构设计
+通过 `ProjectARVRProConfig.UseLegacyARVROutput` 开关，可切换为旧版扁平 CSV 输出格式（`LegacyARVRObjectiveTestResult`），确保与老系统兼容。
 
-### IProcess接口
+## 构建
 
-```csharp
-public interface IProcess
-{
-    // 执行测试流程
-    bool Execute(IProcessExecutionContext ctx);
-    
-    // 渲染结果到图像视图
-    void Render(IProcessExecutionContext ctx);
-    
-    // 生成测试结果文本
-    string GenText(IProcessExecutionContext ctx);
-    
-    // 获取配方配置
-    IRecipeConfig GetRecipeConfig();
-    
-    // 获取修正配置
-    IFixConfig GetFixConfig();
-    
-    // 获取流程配置
-    object GetProcessConfig();
-    
-    // 设置流程配置（从JSON）
-    void SetProcessConfig(string configJson);
-    
-    // 创建新实例
-    IProcess CreateInstance();
-}
+```bash
+# 构建
+dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
+
+# 构建 Release x64
+dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -c Release -p:Platform=x64
 ```
 
-### ProcessBase泛型基类
+## 相关文档
 
-```csharp
-public abstract class ProcessBase<TConfig> : IProcess 
-    where TConfig : ViewModelBase, new()
-{
-    public TConfig Config { get; set; } = new TConfig();
-    
-    // 自动实现配置序列化/反序列化
-}
-```
+| 文档 | 说明 |
+|------|------|
+| [CHANGELOG.md](./CHANGELOG.md) | 版本更新日志 |
+| [ROADMAP.md](./ROADMAP.md) | 开发路线图 |
+| [DESIGN_ProcessGroup.md](./DESIGN_ProcessGroup.md) | ProcessGroup 功能设计文档 |
+| [ARVRPRO TCP 通讯协议手册.md](./ARVRPRO%20TCP%20通讯协议手册.md) | TCP 通信协议详细说明 |
 
-## 📚 相关文档链接
-
-- [IsEnabled功能说明](./Process/README_IsEnabled_Feature.md) - 流程步骤启用/禁用功能
-- [CHANGELOG](./CHANGELOG.md) - 版本更新日志
-- [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
-
-## 📝 版本历史
-
-查看完整的版本更新记录请参阅 [CHANGELOG.md](./CHANGELOG.md)
-
-### 最新版本 v1.0.4.7
-
-- 文档更新和优化
-
-### v1.0.4.4
-
-- 新增MTFHV058Process模块
-- MTF ProcessConfig支持可配置Key
-- ProcessManager配置独立性修复
-
-## 🔮 开发路线图
-
-详见 [ROADMAP.md](./ROADMAP.md)
-
-## 👥 维护者
+## 维护者
 
 ColorVision 项目团队
-
----
-
-*如有问题或建议，请提交 [GitHub Issues](https://github.com/xincheng213618/scgd_general_wpf/issues)*

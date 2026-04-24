@@ -1,0 +1,72 @@
+using AvalonDock.Layout;
+using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor.EditorTools.ThreeD;
+using ColorVision.Solution.Workspace;
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Windows;
+
+namespace ColorVision.Solution.Editor
+{
+    [EditorForExtension(".obj|.stl", "3D模型查看器", isDefault: true)]
+    public class Model3DEditor : EditorBase
+    {
+        public override void Open(string filePath)
+        {
+            if (!File.Exists(filePath)) return;
+
+            string guidId = Tool.GetMD5(filePath);
+            var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, guidId.ToString());
+
+            if (existingDocument != null)
+            {
+                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+                {
+                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument);
+                }
+                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
+                {
+                    var window = Window.GetWindow(layoutFloatingWindow);
+                    window?.Activate();
+                }
+            }
+            else
+            {
+                var control = new ModelViewer3DControl();
+                control.SetInitialFile(filePath);
+
+                var layoutDocument = new LayoutDocument()
+                {
+                    ContentId = guidId,
+                    Title = Path.GetFileName(filePath)
+                };
+                layoutDocument.Content = control;
+                WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
+                WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
+
+                // Use named handlers so we can unsubscribe in Closing
+                EventHandler isActiveChangedHandler = (s, e) =>
+                {
+                    if (layoutDocument.IsActive)
+                        WorkspaceManager.OnContentIdSelected(filePath);
+                };
+
+                EventHandler<CancelEventArgs> closingHandler = null!;
+                closingHandler = (s, e) =>
+                {
+                    // Unsubscribe both handlers to break closure references
+                    layoutDocument.IsActiveChanged -= isActiveChangedHandler;
+                    layoutDocument.Closing -= closingHandler;
+
+                    control.DisposeViewer();
+
+                    layoutDocument.Content = null;
+                };
+
+                layoutDocument.IsActiveChanged += isActiveChangedHandler;
+                layoutDocument.Closing += closingHandler;
+            }
+        }
+    }
+}

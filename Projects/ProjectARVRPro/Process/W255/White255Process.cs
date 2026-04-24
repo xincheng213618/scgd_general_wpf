@@ -207,6 +207,26 @@ namespace ProjectARVRPro.Process.W255
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
+            if (testResult.AlgResultLightAreaModels.Count > 0)
+            {
+                DVPolygon polygon = new DVPolygon();
+                List<System.Windows.Point> point1s = new List<System.Windows.Point>();
+
+                foreach (var item in testResult.AlgResultLightAreaModels)
+                {
+                    point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                }
+                foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                {
+                    polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                }
+                polygon.Attribute.Brush = Brushes.Transparent;
+                polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                polygon.Attribute.Id = -1;
+                polygon.IsComple = true;
+                polygon.Render();
+                ctx.ImageView.AddVisual(polygon);
+            }
 
             foreach (var poiResultCIExyuvData in testResult.ViewPoixyuvDatas)
             {
@@ -253,26 +273,7 @@ namespace ProjectARVRPro.Process.W255
             W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
 
-            if (testResult.AlgResultLightAreaModels.Count > 0)
-            {
-                DVPolygon polygon = new DVPolygon();
-                List<System.Windows.Point> point1s = new List<System.Windows.Point>();
 
-                foreach (var item in testResult.AlgResultLightAreaModels)
-                {
-                    point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
-                }
-                foreach (var item in GrahamScan.ComputeConvexHull(point1s))
-                {
-                    polygon.Attribute.Points.Add(new Point(item.X, item.Y));
-                }
-                polygon.Attribute.Brush = Brushes.Transparent;
-                polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
-                polygon.Attribute.Id = -1;
-                polygon.IsComple = true;
-                polygon.Render();
-                ctx.ImageView.AddVisual(polygon);
-            }
 
             foreach (var item in testResult.ViewPoixyuvDatas)
             {

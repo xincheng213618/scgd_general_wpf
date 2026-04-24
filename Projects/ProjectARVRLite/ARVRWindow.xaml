@@ -255,9 +255,6 @@
                 <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="日志" Command="{Binding OpenLogCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
                 <Button Content="InitTest" Command="{Binding InitTestCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
@@ -271,12 +268,6 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="测试类型配置" Command="{Binding TestTypeConfigManager.EditCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
         </StatusBar>
 
