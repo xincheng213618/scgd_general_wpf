@@ -59,7 +59,6 @@ public abstract class BaseStartNode : CVCommonNode
 		}
 		m_op_start.Connected += m_op_start_Connected;
 		m_op_start.DisConnected += m_op_start_DisConnected;
-		ThreadPool.SetMinThreads(8, 8);
 	}
 
 	public void DoLoopNextAction(CVLoopCFC next)
@@ -365,6 +364,8 @@ public abstract class BaseStartNode : CVCommonNode
 		{
 			message = startAction.Data["Msg"].ToString();
 		}
+		logger.InfoFormat("Fire Flow Finished Before");
 		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message));
+		logger.InfoFormat("Fire Flow Finished End");
 	}
 }

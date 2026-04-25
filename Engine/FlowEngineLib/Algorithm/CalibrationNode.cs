@@ -6,8 +6,6 @@ namespace FlowEngineLib.Algorithm;
 [STNode("/03_3 校正")]
 public class CalibrationNode : CVBaseServerNode
 {
-	protected string _GlobalVariableName;
-
 	private int _OrderIndex;
 
 	private string _ExpTempName;
@@ -140,7 +138,7 @@ public class CalibrationNode : CVBaseServerNode
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		CalibrationData calibrationData = new CalibrationData(_ExpTempName, param, _GlobalVariableName, _OrderIndex);
+		CalibrationData calibrationData = new CalibrationData(_ExpTempName, param, _OrderIndex);
 		BuildImageParam(calibrationData);
 		if (!string.IsNullOrEmpty(_POITempName))
 		{

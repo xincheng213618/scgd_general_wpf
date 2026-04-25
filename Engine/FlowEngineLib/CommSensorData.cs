@@ -4,14 +4,14 @@ public class CommSensorData : TempCommSensorData
 {
 	public CVPhySensorCmd Cmd { get; set; }
 
-	public CommSensorData(int tempId, string tempName, int cmdType, string cmdSend, string cmdReceive)
+	public CommSensorData(int tempId, string tempName, CommCmdType cmdType, string cmdSend, string cmdReceive)
 		: base(tempId, tempName)
 	{
-		if (cmdType != 0 && !string.IsNullOrEmpty(cmdSend))
+		if (cmdType != CommCmdType.None && !string.IsNullOrEmpty(cmdSend))
 		{
 			Cmd = new CVPhySensorCmd
 			{
-				CmdType = (CommSensorCmdType)cmdType,
+				CmdType = cmdType,
 				Request = cmdSend,
 				Response = cmdReceive,
 				Delay = 0,
