@@ -823,36 +823,20 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected bool GetRecvMasterResult(AlgorithmPreStepParam param)
 	{
-		if (svrRecvResp != null)
+		if (param == null || svrRecvResp?.Data == null)
 		{
-			dynamic data = svrRecvResp.Data;
-			_ = (string)data.MasterValue;
-			int masterResultType = -1;
-			int masterId = data.MasterId;
-			if (data.MasterResultType == null && data.ResultType == null)
-			{
-				string nodeType = base.NodeType;
-				if (!(nodeType == "Spectrum"))
-				{
-					if (nodeType == "SMU")
-					{
-						masterResultType = 200;
-					}
-				}
-				else
-				{
-					masterResultType = 300;
-				}
-			}
-			else
-			{
-				masterResultType = ((data.MasterResultType != null) ? data.MasterResultType : data.ResultType);
-			}
-			param.MasterId = masterId;
-			param.MasterResultType = masterResultType;
-			return true;
+			return false;
 		}
-		return false;
+
+		if (!MasterResultDataHelper.TryRead(svrRecvResp.Data, base.NodeType, out string masterValue, out int masterId, out int masterResultType))
+		{
+			return false;
+		}
+
+		param.MasterValue = masterValue;
+		param.MasterId = masterId;
+		param.MasterResultType = masterResultType;
+		return true;
 	}
 
 	protected bool getPreStepParam(int idx, AlgorithmPreStepParam param)
@@ -860,8 +844,7 @@ public class CVBaseServerNode : CVCommonNode
 		CVBaseServerNode inputOpOwnerSvrNode = GetInputOpOwnerSvrNode(idx);
 		if (inputOpOwnerSvrNode != null)
 		{
-			inputOpOwnerSvrNode.GetRecvMasterResult(param);
-			return true;
+			return inputOpOwnerSvrNode.GetRecvMasterResult(param);
 		}
 		return false;
 	}

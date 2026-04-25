@@ -407,7 +407,7 @@ namespace ProjectKB
                     }
 
                     KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(mod.JsonVal);
-                    log.Info(JsonConvert.SerializeObject(kBJson));
+                    log.Debug(JsonConvert.SerializeObject(kBJson));
                     if (kBJson != null)
                     {
                         foreach (var keyRect in kBJson.KBKeyRects)
@@ -452,7 +452,7 @@ namespace ProjectKB
                     {
                         foreach (var poi in pois)
                         {
-                            log.Info(poi.Value);
+                            log.Debug(poi.Value);
                             var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
 
                             var key = KBItemMaster.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
@@ -618,11 +618,14 @@ namespace ProjectKB
             }
             ViewResultManager.Save(KBItemMaster);
 
-            string resultPath = ViewResultManager.Config.TextSavePath + $"\\{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt";
-            string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
+            if (ViewResultManager.Config.SaveText)
+            {
+                string resultPath = Path.Combine(ViewResultManager.Config.TextSavePath, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
+                string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
+                log.Info($"结果正在写入{resultPath},result:{result}");
+                File.WriteAllText(resultPath, result);
+            }
 
-            log.Debug($"结果正在写入{resultPath},result:{result}");
-            File.WriteAllText(resultPath, result);
 
             if (ViewResultManager.Config.SaveSummary)
             {
@@ -635,7 +638,7 @@ namespace ProjectKB
                     Directory.CreateDirectory(summaryDir);
                     string summaryPath = Path.Combine(summaryDir, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
                     string summaryText = BuildSummaryText(KBItemMaster);
-                    log.Debug($"Summary 正在写入 {summaryPath}");
+                    log.Info($"Summary 正在写入 {summaryPath}");
                     File.WriteAllText(summaryPath, summaryText);
                 }
                 catch (Exception ex)
@@ -652,7 +655,7 @@ namespace ProjectKB
                 string csvpath = ViewResultManager.Config.CsvSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
 
                 KBItemMaster.SaveCsv(csvpath);
-                log.Debug($"writecsv:{csvpath}");
+                log.Info($"writecsv:{csvpath}");
             });
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
