@@ -3,37 +3,71 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ProjectStarkSemi.Conoscope
 {
     public class ConoscopeConfig : ViewModelBase, IConfig
     {
-        public ConoscopeModelType CurrentModel { get => _CurrentModel; set { if (_CurrentModel == value) return;  _CurrentModel = value; OnPropertyChanged(); ModelTypeChanged?.Invoke(this, _CurrentModel); } }
-        private ConoscopeModelType _CurrentModel = ConoscopeModelType.VA80;
+        // CurrentModel 作为 Key，同时触发 ModelTypeChanged
+        public ConoscopeModelType CurrentModel
+        {
+            get => _CurrentModel;
+            set
+            {
+                if (_CurrentModel == value) return;
+                _CurrentModel = value;
+                OnPropertyChanged();
+                // Ensure the profile exists
+                EnsureProfile(value);
+                // Notify subscribers
+                ModelTypeChanged?.Invoke(this, _CurrentModel);
+            }
+        }
+        private ConoscopeModelType _CurrentModel = ConoscopeModelType.VA60;
 
         public event EventHandler<ConoscopeModelType> ModelTypeChanged;
 
-
-        public double ConoscopeCoefficient { get => _ConoscopeCoefficient; set { _ConoscopeCoefficient = value; OnPropertyChanged(); } }
-        private double _ConoscopeCoefficient = 0.02645;
-
-
+        // Model-specific configuration profiles
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public ObservableCollection<double> DefaultAngles { get => _DefaultAngles; set { _DefaultAngles = value; OnPropertyChanged(); } }
-        private ObservableCollection<double> _DefaultAngles = new ObservableCollection<double>() { 0,20,40,90,110,130,150 };
+        public ObservableCollection<ConoscopeModelProfile> ModelProfiles
+        {
+            get => _ModelProfiles;
+            set { _ModelProfiles = value; OnPropertyChanged(); }
+        }
+        private ObservableCollection<ConoscopeModelProfile> _ModelProfiles = new();
 
-        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public ObservableCollection<double> DefaultRAngles { get => _DefaultRAngles; set { _DefaultRAngles = value; OnPropertyChanged(); } }
-        private ObservableCollection<double> _DefaultRAngles = new ObservableCollection<double>() {10 ,20,30,40,50,60,70,80};
+        /// <summary>
+        /// Current model profile accessor
+        /// </summary>
+        public ConoscopeModelProfile CurrentModelProfile
+        {
+            get
+            {
+                EnsureProfile(CurrentModel);
+                return ModelProfiles.FirstOrDefault(p => p.ModelType == CurrentModel)!;
+            }
+        }
 
-        public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
-        private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
+        /// <summary>
+        /// Ensure profile exists for given model type
+        /// </summary>
+        private void EnsureProfile(ConoscopeModelType modelType)
+        {
+            if (!ModelProfiles.Any(p => p.ModelType == modelType))
+            {
+                ModelProfiles.Add(ConoscopeModelProfile.CreateDefault(modelType));
+            }
+        }
 
+        // Global display settings (not model-specific)
         public bool IsShowRedChannel { get => _IsShowRedChannel; set { _IsShowRedChannel = value; OnPropertyChanged(); } }
         private bool _IsShowRedChannel;
+
         public bool IsShowGreenChannel { get => _IsShowGreenChannel; set { _IsShowGreenChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowGreenChannel ;
+        private bool _IsShowGreenChannel;
 
         public bool IsShowBlueChannel { get => _IsShowBlueChannel; set { _IsShowBlueChannel = value; OnPropertyChanged(); } }
         private bool _IsShowBlueChannel;
@@ -45,14 +79,66 @@ namespace ProjectStarkSemi.Conoscope
         private bool _IsShowYChannel = true;
 
         public bool IsShowZChannel { get => _IsShowZChannel; set { _IsShowZChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowZChannel ;
+        private bool _IsShowZChannel;
 
         /// <summary>
-        /// 是否允许多选通道显示
-        /// true: 允许多选（当前行为）
-        /// false: 只允许单选（互斥切换模式）
+        /// Whether to allow multiple channel selection (true) or single selection only (false)
         /// </summary>
         public bool AllowMultipleChannelSelection { get => _AllowMultipleChannelSelection; set { _AllowMultipleChannelSelection = value; OnPropertyChanged(); } }
         private bool _AllowMultipleChannelSelection = true;
+
+        // ReferenceLineParam is model-specific, store it in profile
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public ReferenceLineParam ReferenceLineParam
+        {
+            get => CurrentModelProfile.ReferenceLineParam;
+            set
+            {
+                var profile = CurrentModelProfile;
+                profile.ReferenceLineParam = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // Backward compatibility: delegate to profile
+        // These properties delegate to CurrentModelProfile for backward compatibility
+        // TODO: Remove after migration or keep for compatibility with existing code
+
+        /// <summary>
+        /// MaxAngle for current model - delegates to profile
+        /// </summary>
+        [JsonIgnore]
+        public int MaxAngle => CurrentModelProfile.MaxAngle;
+
+        /// <summary>
+        /// ConoscopeCoefficient for current model - delegates to profile
+        /// </summary>
+        [JsonIgnore]
+        public double ConoscopeCoefficient => CurrentModelProfile.ConoscopeCoefficient;
+
+        /// <summary>
+        /// Whether current model has observation camera - delegates to profile
+        /// </summary>
+        [JsonIgnore]
+        public bool HasObservationCamera => CurrentModelProfile.HasObservationCamera;
+
+        /// <summary>
+        /// Default angles for current model - delegates to profile
+        /// </summary>
+        [JsonIgnore]
+        public ObservableCollection<double> DefaultAngles => CurrentModelProfile.DefaultAngles;
+
+        /// <summary>
+        /// Default R angles for current model - delegates to profile
+        /// </summary>
+        [JsonIgnore]
+        public ObservableCollection<double> DefaultRAngles => CurrentModelProfile.DefaultRAngles;
+
+        public ConoscopeConfig()
+        {
+            // Ensure default profiles exist
+            EnsureProfile(ConoscopeModelType.VA60);
+            EnsureProfile(ConoscopeModelType.VA80);
+        }
     }
 }

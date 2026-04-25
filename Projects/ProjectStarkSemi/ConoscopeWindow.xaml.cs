@@ -76,21 +76,90 @@ namespace ProjectStarkSemi
         private OpenCvSharp.Mat? OriginalYMat;
         private OpenCvSharp.Mat? OriginalZMat;
 
-        public double MaxAngle
+        public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
+
+        public ConoscopeModelProfile CurrentModelProfile => ConoscopeConfig.CurrentModelProfile;
+
+        private void RefreshReferenceLineProfileBinding()
         {
-            get
+            GridSetting.Children.Clear();
+            GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.ReferenceLineParam));
+
+            try
             {
-                if (ConoscopeConfig.CurrentModel == ConoscopeModelType.VA80)
+                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
                 {
-                    return 80;
+                    toolReferenceLine.ReferenceLine = new ReferenceLine(CurrentModelProfile.ReferenceLineParam);
                 }
-                else if (ConoscopeConfig.CurrentModel == ConoscopeModelType.VA60)
-                {
-                    return 60;
-                }
-                return 80;
+            }
+            catch (Exception ex)
+            {
+                log.Info(ex);
             }
         }
+
+        private void RefreshModelDependentUi()
+        {
+            if (tbCurrentModel != null)
+            {
+                tbCurrentModel.Text = CurrentModelProfile.DisplayName;
+            }
+
+            if (btnOpenObservationCamera != null)
+            {
+                btnOpenObservationCamera.Visibility = CurrentModelProfile.HasObservationCamera
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+
+            RefreshReferenceLineProfileBinding();
+            wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+            wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
+        }
+
+        private double GetConoscopeCoefficient() => CurrentModelProfile.ConoscopeCoefficient;
+
+        private string GetCurrentModelForExport() => CurrentModelProfile.DisplayName;
+
+        private string GetCurrentModelForFilename() => ConoscopeConfig.CurrentModel.ToString();
+
+        private bool CurrentModelSupportsObservationCamera() => CurrentModelProfile.HasObservationCamera;
+
+        private double GetCurrentObservationScaleCoefficient() => CurrentModelProfile.ObservationCameraScaleCoefficient;
+
+        private double GetCurrentObservationCenterX() => CurrentModelProfile.ObservationCameraCenterX;
+
+        private double GetCurrentObservationCenterY() => CurrentModelProfile.ObservationCameraCenterY;
+
+        private void UpdateModelSpecificUi() => RefreshModelDependentUi();
+
+        private void ApplyCurrentModelPlotLimits()
+        {
+            wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+            wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
+        }
+
+        private string CurrentModelName() => CurrentModelProfile.DisplayName;
+
+        private string CurrentModelEnumName() => ConoscopeConfig.CurrentModel.ToString();
+
+        private double CurrentConoscopeCoefficient() => CurrentModelProfile.ConoscopeCoefficient;
+
+        private int CurrentModelAngleLimit() => CurrentModelProfile.MaxAngle;
+
+        private bool IsObservationCameraEnabledForCurrentModel() => CurrentModelProfile.HasObservationCamera;
+
+        private void RefreshModelProfileUiState() => UpdateModelSpecificUi();
+
+        private void UpdateUiForModelProfile() => UpdateModelSpecificUi();
+
+        private void ApplyModelProfileToUi() => UpdateModelSpecificUi();
+
+        private void UpdateUiByModelProfile() => UpdateModelSpecificUi();
+
+        private void HandleModelProfileChange() => UpdateModelSpecificUi();
+
+        private void End() => UpdateModelSpecificUi();
 
         public ConoscopeWindow()
         {
@@ -102,6 +171,7 @@ namespace ProjectStarkSemi
             this.Closing += (s, e) => LayoutManager?.SaveLayout();
             this.Closed += (s, e) => Instance = null;
         }
+
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -147,24 +217,10 @@ namespace ProjectStarkSemi
             FlowEngineManager.GetInstance().BatchRecord -= ConoscopeWindow_BatchRecord;
             FlowEngineManager.GetInstance().BatchRecord += ConoscopeWindow_BatchRecord;
 
-
             ImageView.SetBackGround(Brushes.Transparent);
-            try
-            {
-                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-                {
-                    toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
-                }
+            RefreshReferenceLineProfileBinding();
 
-            }
-            catch(Exception ex)
-            {
-                log.Info(ex);
-            }
-
-            GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(ConoscopeConfig.ReferenceLineParam));
-
-            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() is MouseMagnifierManager  mouseMagnifierManager)
+            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() is MouseMagnifierManager mouseMagnifierManager)
             {
                 mouseMagnifierManager.IsChecked = true;
             }
@@ -188,26 +244,14 @@ namespace ProjectStarkSemi
             {
                 ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             };
-            InitializePlot(wpfPlotDiameterLine, "方位角分布曲线 (Azimuth Distribution)"); ;
+            InitializePlot(wpfPlotDiameterLine, "方位角分布曲线 (Azimuth Distribution)");
             InitializePlot(wpfPlotRCircle, "极角分布曲线 (Polar Angle Distribution)");
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
         {
             if (tbCurrentModel == null) return;
-            tbCurrentModel.Text = ConoscopeConfig.CurrentModel.ToString();
-            switch (ConoscopeConfig.CurrentModel)
-            {
-                case ConoscopeModelType.VA60:
-                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
-                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
-                    break;
-
-                case ConoscopeModelType.VA80:
-                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
-                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
-                    break;
-            }
+            RefreshModelDependentUi();
         }
 
         private void Item_MsgRecordChanged(object? sender, MsgRecord e)
@@ -251,6 +295,7 @@ namespace ProjectStarkSemi
                 });
             };
         }
+
 
         private void ConoscopeWindow_BatchRecord(object? sender, MeasureBatchModel e)
         {
@@ -297,22 +342,7 @@ namespace ProjectStarkSemi
         private void LoadCameraServices()
         {
             var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
-            
-            cbMeasurementCamera.ItemsSource = cameras;
-            cbMeasurementCamera.DisplayMemberPath = "Name";
-            if (cameras.Count > 0)
-                cbMeasurementCamera.SelectedIndex = 0;
-        }
-
-
-        private void cbMeasurementCamera_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            Device = cbMeasurementCamera.SelectedItem as DeviceCamera;
-            if (Device != null)
-            {
-                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
-                ComboxCalibrationTemplate.SelectedIndex = 0;
-            }
+           
         }
 
 
@@ -329,95 +359,6 @@ namespace ProjectStarkSemi
         {
             observationCameraWindow = new MVSViewWindow();
             observationCameraWindow.Show();
-        }
-
-        private void btnOpenMeasurementCamera_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (Device == null)
-                {
-                    MessageBox.Show("请先选择测量相机", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-
-                if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-                {
-
-                }
-                else
-                {
-                    param = new CalibrationParam() { Id = -1, Name = "Empty" };
-                }
-                log.Info($"准备获取图像 - 相机: {Device.Name}, 校正: {param.Name}");
-              
-                double[] expTime = new double[] { Device.DisplayConfig.ExpTime };
-                AutoExpTimeParam autoExpTimeParam = new AutoExpTimeParam { Id = -1 };
-                ParamBase hdrParam = new ParamBase { Id = -1 };
-
-                MsgRecord msgRecord = Device.DService.GetData(expTime, param, autoExpTimeParam, hdrParam);
-
-                if (msgRecord != null)
-                {
-                    tbMeasurementCameraStatus.Text = "正在获取...";
-                    tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Orange);
-                    msgRecord.MsgSucessed += (s,e) =>
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            int masterId = Convert.ToInt32(e.Data.MasterId);
-                            List<MeasureResultImgModel> resultMaster = null;
-                            
-                            if (masterId > 0)
-                            {
-                                resultMaster = new List<MeasureResultImgModel>();
-                                MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                                if (model != null)
-                                    resultMaster.Add(model);
-                            }
-                            
-                            if (resultMaster != null && resultMaster.Count > 0)
-                            {
-                                string filename = string.Empty;
-                                foreach (MeasureResultImgModel result in resultMaster)
-                                {
-                                    if (CVFileUtil.IsCVCIEFile(result.FileUrl))
-                                    {
-                                        filename = result.FileUrl;
-                                        break;
-                                    }
-                                }
-                                if (string.IsNullOrEmpty(filename))
-                                {
-                                    filename = resultMaster[0].FileUrl;
-                                }
-                                OpenConoscope(filename);
-                            }
-                            else
-                            {
-                                tbMeasurementCameraStatus.Text = "无数据";
-                                tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
-                                log.Warn("未获取到图像数据");
-                            }
-                        });
-                    };
-                }
-                else
-                {
-                    tbMeasurementCameraStatus.Text = "失败";
-                    tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
-                    MessageBox.Show("发送命令失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    log.Error("发送GetData命令失败");
-                }
-            }
-            catch (Exception ex)
-            {
-                tbMeasurementCameraStatus.Text = "异常";
-                tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
-                log.Error($"打开测量相机失败: {ex.Message}", ex);
-                MessageBox.Show($"打开测量相机失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
         }
 
         private void cbFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -628,22 +569,6 @@ namespace ProjectStarkSemi
             }
         }
 
-
-        private void MenuItem_Template(object sender, RoutedEventArgs e)
-        {
-            if (Device.PhyCamera == null)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
-                return;
-            }
-
-            var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
-            var windowTemplate = new TemplateEditorWindow(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
-
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
-        }
-
         public OpenCvSharp.Mat XMat { get; set; }
         public OpenCvSharp.Mat YMat { get; set; }
         public OpenCvSharp.Mat ZMat { get; set; }
@@ -756,7 +681,7 @@ namespace ProjectStarkSemi
                 int imageHeight = bitmapSource.PixelHeight;
 
                 // Use the smaller dimension for circular symmetry
-                int radius = (int)(MaxAngle / ConoscopeConfig.ConoscopeCoefficient);
+                int radius = (int)(MaxAngle / CurrentModelProfile.ConoscopeCoefficient);
 
                 // Calculate center point
                 Point center = new Point(imageWidth / 2.0, imageHeight / 2.0);
@@ -771,7 +696,7 @@ namespace ProjectStarkSemi
                 // Clear existing displayed circles
                 ClearDisplayedCircles();
 
-                foreach (var item in ConoscopeConfig.DefaultRAngles)
+                foreach (var item in CurrentModelProfile.DefaultRAngles)
                 {
                     CircleProperties circleProperties = new CircleProperties
                     {
@@ -810,7 +735,7 @@ namespace ProjectStarkSemi
                 ClearPolarLines();
 
                 // Create lines for each angle
-                foreach (double angle in ConoscopeConfig.DefaultAngles)
+                foreach (double angle in CurrentModelProfile.DefaultAngles)
                 {
                     CreatePolarLine(angle, center, radius, bitmapSource);
                 }
@@ -940,7 +865,7 @@ namespace ProjectStarkSemi
 
                 // Clear text box
                 txtAngle.Text = "";
-                ConoscopeConfig.DefaultAngles.Add(angle);
+                CurrentModelProfile.DefaultAngles.Add(angle);
                 log.Info($"成功添加角度线: {angle:F1}°");
             }
             catch (Exception ex)
@@ -1077,9 +1002,9 @@ namespace ProjectStarkSemi
                 UpdatePlotForCircle();
 
                 // Add to config for persistence
-                if (!ConoscopeConfig.DefaultRAngles.Contains(radiusAngle))
+                if (!CurrentModelProfile.DefaultRAngles.Contains(radiusAngle))
                 {
-                    ConoscopeConfig.DefaultRAngles.Add(radiusAngle);
+                    CurrentModelProfile.DefaultRAngles.Add(radiusAngle);
                 }
 
                 // Clear text box
@@ -1119,7 +1044,7 @@ namespace ProjectStarkSemi
                 displayedCircles.Remove(selectedCircleLine);
 
                 // Remove from config
-                ConoscopeConfig.DefaultRAngles.Remove(removedAngle);
+                CurrentModelProfile.DefaultRAngles.Remove(removedAngle);
 
                 // Select first circle if available
                 if (displayedCircles.Count > 0)
@@ -1383,7 +1308,7 @@ namespace ProjectStarkSemi
                 // Sample from center (theta=0) to edge (theta=MaxAngle)
                 for (int theta = 0; theta <= (int)MaxAngle; theta++)
                 {
-                    double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                    double radiusPixels = theta / CurrentModelProfile.ConoscopeCoefficient;
                     double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
                     double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
 
@@ -1538,7 +1463,7 @@ namespace ProjectStarkSemi
                 else
                 {
                     // Calculate radius in pixels for this degree angle
-                    double radiusPixels = degree / ConoscopeConfig.ConoscopeCoefficient;
+                    double radiusPixels = degree / CurrentModelProfile.ConoscopeCoefficient;
 
                     // Sample points along the circle (360 samples for full circle, one per degree)
                     for (int anglePos = 0; anglePos <= 360; anglePos++)
@@ -1738,7 +1663,7 @@ namespace ProjectStarkSemi
                 int imageHeight = YMat.Height;
 
                 // Calculate radius in pixels
-                double radiusPixels = radiusAngle / ConoscopeConfig.ConoscopeCoefficient;
+                double radiusPixels = radiusAngle / CurrentModelProfile.ConoscopeCoefficient;
 
                 int numSamples = 360;
                 for (int i = 0; i < numSamples; i++)
@@ -1989,10 +1914,6 @@ namespace ProjectStarkSemi
             this.Dispose();
         }
 
-        private void RibbonButton_Click_1(object sender, RoutedEventArgs e)
-        {
-            this.Close();
-        }
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             FlowEngineManager.GetInstance().DisplayFlow.RunFlow();
@@ -2177,7 +2098,7 @@ namespace ProjectStarkSemi
 
                     for (double theta = 0; theta <= MaxAngle; theta += radialStep)
                     {
-                        double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                        double radiusPixels = theta / CurrentModelProfile.ConoscopeCoefficient;
                         double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
                         double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
 
@@ -2270,7 +2191,7 @@ namespace ProjectStarkSemi
                 foreach (var polarAngle in polarAngles)
                 {
                     var samples = new List<RgbSample>();
-                    double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
+                    double radiusPixels = polarAngle / CurrentModelProfile.ConoscopeCoefficient;
 
                     for (double theta = 0; theta <= 360; theta += circumStep)
                     {
@@ -2352,7 +2273,7 @@ namespace ProjectStarkSemi
                 // Sample from center to edge
                 for (int theta = -(int)MaxAngle; theta <= (int)MaxAngle; theta++)
                 {
-                    double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                    double radiusPixels = theta / CurrentModelProfile.ConoscopeCoefficient;
                     double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
                     double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
 
@@ -2398,7 +2319,7 @@ namespace ProjectStarkSemi
                 // Write CSV header
                 writer.WriteLine("Circumferential Angle (degrees),Value");
 
-                double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
+                double radiusPixels = polarAngle / CurrentModelProfile.ConoscopeCoefficient;
 
                 // Sample around the circle
                 for (int theta = 0; theta <= 360; theta++)

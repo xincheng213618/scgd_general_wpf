@@ -38,7 +38,6 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-                    <Button Click="RibbonButton_Click_1" Padding="10,4" Margin="0,0,4,0" Content="退出" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -50,7 +49,6 @@
                     <Button Content="高级导出" Click="btnAdvancedExport_Click" Padding="10,4" Margin="0,0,10,0"/>
                     <TextBlock Text="型号" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <ComboBox x:Name="cbModelType" Width="100" SelectionChanged="cbModelType_SelectionChanged" SelectedValue="{Binding Config.CurrentModel}" Margin="0,0,10,0"/>
-                    <ComboBox x:Name="cbMeasurementCamera" Width="170" SelectionChanged="cbMeasurementCamera_SelectionChanged" Margin="0,0,6,0"/>
                     <Grid Width="20" Margin="0,0,6,0" VerticalAlignment="Center">
                         <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
                             <TextBlock.RenderTransform>
@@ -69,8 +67,6 @@
                             </Button.Triggers>
                         </Button>
                     </Grid>
-                    <ComboBox x:Name="ComboxCalibrationTemplate" Width="180" SelectedIndex="{Binding CalibrationTemplateIndex}" SelectedValuePath="Value" DisplayMemberPath="Key" Margin="0,0,6,0"/>
-                    <Button x:Name="btnOpenMeasurementCamera" Content="{x:Static properties:Resources.CaptureImage}" Click="btnOpenMeasurementCamera_Click" Padding="10,4" Margin="0,0,6,0"/>
                     <Button x:Name="btnOpenObservationCamera" Content="{x:Static properties:Resources.OpenObservationCamera}" Click="btnOpenObservationCamera_Click" Padding="10,4"/>
                 </StackPanel>
             </DockPanel>
