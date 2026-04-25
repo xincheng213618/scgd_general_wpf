@@ -69,7 +69,19 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.CommonSensorNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
-            context.AddTemplateCollectionPanel(name => node.TempName = name, node.TempName, "模板名称", TemplateSensor.AllParams);
+            context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, "模板名称",
+                () => ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(x => x.Code == node.DeviceCode)?.Config?.Category);
+        }
+    }
+
+    [NodeConfigurator(typeof(FlowEngineLib.TempCommonSensorNode))]
+    public class TempCommonSensorNodeConfigurator : NodeConfiguratorBase
+    {
+        public override void Configure(NodeConfiguratorContext context)
+        {
+            var node = (FlowEngineLib.TempCommonSensorNode)context.Node;
+            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
+            context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, "模板名称");
         }
     }
 

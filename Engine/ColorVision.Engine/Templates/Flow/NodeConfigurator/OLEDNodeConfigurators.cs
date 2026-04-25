@@ -25,6 +25,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         }
     }
 
+
+    
+
+
+
     [NodeConfigurator(typeof(FlowEngineLib.Node.OLED.OLEDImageCroppingNode))]
     public class OLEDImageCroppingNodeConfigurator : NodeConfiguratorBase
     {

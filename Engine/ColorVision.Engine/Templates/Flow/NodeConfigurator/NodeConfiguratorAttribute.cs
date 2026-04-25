@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
@@ -264,6 +265,114 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                 updateStorageAction(selectedName);
                 RefreshPropertyEditor();
             };
+
+            dockPanel.Children.Add(comboBox);
+            SignStackPanel.Children.Add(dockPanel);
+        }
+
+        public void AddSensorTemplatePanel(Action<string> updateStorageAction, string tempName, string signName, Func<string?>? getCategory = null)
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+            };
+
+            void RefreshItemsSource()
+            {
+                var allParams = TemplateSensor.AllParams;
+                comboBox.ItemsSource = allParams;
+                var selectedItem = allParams.FirstOrDefault(x => x.Key == tempName);
+                comboBox.SelectedIndex = selectedItem == null ? -1 : allParams.IndexOf(selectedItem);
+            }
+
+            TemplateSensor ResolveTemplate(string? selectedTemplateName)
+            {
+                var category = getCategory?.Invoke();
+                if (!string.IsNullOrWhiteSpace(category))
+                    return new TemplateSensor(category);
+
+                if (!string.IsNullOrWhiteSpace(selectedTemplateName))
+                {
+                    var matchedCategory = TemplateSensor.Params.FirstOrDefault(x => x.Value.Any(item => item.Key == selectedTemplateName)).Key;
+                    if (!string.IsNullOrWhiteSpace(matchedCategory))
+                        return new TemplateSensor(matchedCategory);
+                }
+
+                var firstCategory = TemplateSensor.Params.Keys.FirstOrDefault();
+                return new TemplateSensor(string.IsNullOrWhiteSpace(firstCategory) ? "Sensor.Default" : firstCategory);
+            }
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            RefreshItemsSource();
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is SensorParam templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+                tempName = selectedName;
+                updateStorageAction(selectedName);
+                RefreshPropertyEditor();
+            };
+
+            Grid grid = new Grid
+            {
+                Width = 20,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+
+            Image image = new Image
+            {
+                Source = (ImageSource)Application.Current.Resources["DrawingImageEdit"],
+                Width = 12,
+                Margin = new Thickness(0)
+            };
+
+            grid.Children.Add(image);
+
+            Button buttonEdit = new Button
+            {
+                Name = "ButtonEdit",
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
+            buttonEdit.Click += (s, e) =>
+            {
+                var template = ResolveTemplate(tempName);
+                var defaultIndex = comboBox.SelectedIndex >= 0 ? comboBox.SelectedIndex : 0;
+                if (!string.IsNullOrWhiteSpace(tempName))
+                {
+                    var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
+                    if (selectedItem != null)
+                    {
+                        defaultIndex = template.TemplateParams.IndexOf(selectedItem);
+                    }
+                }
+
+                if (template.TemplateParams.Count == 0)
+                {
+                    defaultIndex = 0;
+                }
+                else if (defaultIndex >= template.TemplateParams.Count)
+                {
+                    defaultIndex = 0;
+                }
+
+                new TemplateEditorWindow(template, defaultIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                RefreshItemsSource();
+            };
+
+            grid.Children.Add(buttonEdit);
+            DockPanel.SetDock(grid, Dock.Right);
+            dockPanel.Children.Add(grid);
 
             dockPanel.Children.Add(comboBox);
             SignStackPanel.Children.Add(dockPanel);
