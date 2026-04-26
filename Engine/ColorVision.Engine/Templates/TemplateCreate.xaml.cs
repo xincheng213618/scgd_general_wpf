@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -17,8 +18,47 @@ namespace ColorVision.Engine.Templates
 
     public partial class TemplateCreate : Window
     {
+        private const string AllGroupName = "全部";
+        private const string SystemGroupName = "系统默认";
+        private const string FileGroupName = "本地文件";
+
         bool IsImport;
         public ITemplate ITemplate { get; set; }
+        private readonly List<TemplateCreateSource> TemplateSources = new List<TemplateCreateSource>();
+        private TemplateCreateSource? SelectedTemplateSource;
+        private TemplateCreateSource? AppliedTemplateSource;
+        private bool IsRefreshingGroups;
+
+        private enum TemplateCreateSourceKind
+        {
+            Default,
+            File,
+            Sample
+        }
+
+        private sealed class TemplateCreateSource
+        {
+            public TemplateCreateSourceKind Kind { get; set; }
+            public string Title { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public string GroupName { get; set; } = string.Empty;
+            public string FilePath { get; set; } = string.Empty;
+            public TemplateSampleRecord? Sample { get; set; }
+
+            public string Icon => Kind switch
+            {
+                TemplateCreateSourceKind.Default => "\uE8A5",
+                TemplateCreateSourceKind.File => "\uE8B7",
+                _ => "\uE8D7"
+            };
+
+            public string SourceLabel => Kind switch
+            {
+                TemplateCreateSourceKind.Default => SystemGroupName,
+                TemplateCreateSourceKind.File => FileGroupName,
+                _ => GroupName
+            };
+        }
 
         public TemplateCreate(ITemplate template,bool isImport =false)  
         {
@@ -27,14 +67,13 @@ namespace ColorVision.Engine.Templates
             InitializeComponent();
  
         }
-        private string TemplateFile { get; set;  }
-
-        private RadioButton CreateTemplateCard(string title, string description, bool isChecked)
+        private RadioButton CreateTemplateCard(TemplateCreateSource source, bool isChecked)
         {
             RadioButton radioButton = new RadioButton()
             {
-                IsChecked = isChecked,
-                Margin = new Thickness(3)
+                Margin = new Thickness(3),
+                GroupName = "TemplateCreateSource",
+                Tag = source
             };
 
             // Try to find and apply the RadioButtonBaseStyle if it exists
@@ -56,7 +95,8 @@ namespace ColorVision.Engine.Templates
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(10, 8, 10, 8),
-                MinWidth = 120,
+                Width = 170,
+                MinHeight = 112,
                 Background = (System.Windows.Media.Brush)Application.Current.Resources["RegionBrush"],
                 BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["BorderBrush"]
             };
@@ -67,18 +107,28 @@ namespace ColorVision.Engine.Templates
             // Template icon
             TextBlock iconBlock = new TextBlock()
             {
-                Text = "\uE8A5", // Document icon from Segoe MDL2 Assets
+                Text = source.Icon,
                 FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
-                FontSize = 24,
+                FontSize = 22,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Foreground = (System.Windows.Media.Brush)Application.Current.Resources["PrimaryBrush"],
                 Margin = new Thickness(0, 0, 0, 5)
             };
 
+            TextBlock sourceBlock = new TextBlock()
+            {
+                Text = source.SourceLabel,
+                FontSize = 10,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Foreground = (System.Windows.Media.Brush)Application.Current.Resources["ThirdlyTextBrush"],
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+
             // Template title
             TextBlock titleBlock = new TextBlock()
             {
-                Text = title,
+                Text = source.Title,
                 FontWeight = FontWeights.Bold,
                 FontSize = 13,
                 TextAlignment = TextAlignment.Center,
@@ -89,7 +139,7 @@ namespace ColorVision.Engine.Templates
             // Template description
             TextBlock descBlock = new TextBlock()
             {
-                Text = description,
+                Text = source.Description,
                 FontSize = 10,
                 TextAlignment = TextAlignment.Center,
                 TextWrapping = TextWrapping.Wrap,
@@ -98,6 +148,7 @@ namespace ColorVision.Engine.Templates
             };
 
             contentStack.Children.Add(iconBlock);
+            contentStack.Children.Add(sourceBlock);
             contentStack.Children.Add(titleBlock);
             contentStack.Children.Add(descBlock);
 
@@ -109,6 +160,7 @@ namespace ColorVision.Engine.Templates
             {
                 card.BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["PrimaryBrush"];
                 card.BorderThickness = new Thickness(2);
+                ApplyTemplateSource(source, true);
             };
 
             radioButton.Unchecked += (s, e) =>
@@ -122,67 +174,130 @@ namespace ColorVision.Engine.Templates
             {
                 card.BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["PrimaryBrush"];
                 card.BorderThickness = new Thickness(2);
+                radioButton.IsChecked = true;
             }
 
             return radioButton;
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private void BuildTemplateSources(string templateFolder)
         {
-            string AssemblyCompanyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Environments.AssemblyCompany);
-            if (!Directory.Exists(AssemblyCompanyFolder))
-                Directory.CreateDirectory(AssemblyCompanyFolder);
+            TemplateSources.Clear();
+            TemplateSources.Add(new TemplateCreateSource
+            {
+                Kind = TemplateCreateSourceKind.Default,
+                Title = ColorVision.Engine.Properties.Resources.DefaultTemplate,
+                Description = ColorVision.Engine.Properties.Resources.UseSystemDefaultTemplate,
+                GroupName = SystemGroupName
+            });
 
-            string TemplateFolders = Path.Combine(AssemblyCompanyFolder, "Templates");
-            if (!Directory.Exists(TemplateFolders))
-                Directory.CreateDirectory(TemplateFolders);
-            string TemplateFolder = Path.Combine(TemplateFolders, ITemplate.Code);
-            if (!Directory.Exists(TemplateFolder))
-                Directory.CreateDirectory(TemplateFolder);
-
-            // Create default template card
-            var defaultTemplateCard = CreateTemplateCard(ColorVision.Engine.Properties.Resources.DefaultTemplate,ColorVision.Engine.Properties.Resources.UseSystemDefaultTemplate, true);
-            defaultTemplateCard.Checked += (s, e) => TemplateFile = string.Empty;
-            TemplateStackPanels.Children.Add(defaultTemplateCard);
-
-            // Create cards for each template file
-            foreach (var item in Directory.GetFiles(TemplateFolder))
+            foreach (string item in Directory.GetFiles(templateFolder))
             {
                 string fileName = Path.GetFileNameWithoutExtension(item);
                 FileInfo fileInfo = new FileInfo(item);
-                string fileDescription = $"CreateTime: {fileInfo.CreationTime:yyyy-MM-dd}";
-                
-                var templateCard = CreateTemplateCard(fileName, fileDescription, false);
-                templateCard.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
-                TemplateStackPanels.Children.Add(templateCard);
+                TemplateSources.Add(new TemplateCreateSource
+                {
+                    Kind = TemplateCreateSourceKind.File,
+                    Title = fileName,
+                    Description = $"文件创建时间: {fileInfo.CreationTime:yyyy-MM-dd}",
+                    GroupName = FileGroupName,
+                    FilePath = Path.GetFullPath(item)
+                });
             }
-            if (IsImport)
-            {
-                TemplateStackPanels.Visibility = Visibility.Collapsed;
-                this.Title = $"{Properties.Resources.Import} {ITemplate.Title} "+ ColorVision.Engine.Properties.Resources.Template;
 
-            }
-            else
+            foreach (TemplateSampleRecord sample in TemplateSampleLibrary.GetInstance().GetSamples(ITemplate))
             {
-                this.Title += ITemplate.Title + " " + ColorVision.Engine.Properties.Resources.Template;
+                TemplateSources.Add(new TemplateCreateSource
+                {
+                    Kind = TemplateCreateSourceKind.Sample,
+                    Title = sample.Name,
+                    Description = string.IsNullOrWhiteSpace(sample.Description) ? $"SQLite样例: {sample.UpdatedAt:yyyy-MM-dd HH:mm}" : sample.Description,
+                    GroupName = sample.GroupName,
+                    Sample = sample
+                });
             }
-            List<string> list =
-            [
-                ITemplate.NewCreateFileName(ITemplate.Code),
-                ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateSetting.Instance.DefaultCreateTemplateName),
-                ITemplate.NewCreateFileName(TemplateSetting.Instance.DefaultCreateTemplateName),
-            ];
-            if (!string.IsNullOrWhiteSpace(ITemplate.ImportName))
-                list.Insert(0, ITemplate.ImportName);
+        }
 
-            CreateCode.ItemsSource = list;
-            CreateCode.SelectedIndex = 0;
+        private void ConfigureSourceGroups()
+        {
+            IsRefreshingGroups = true;
+            List<string> groups = new List<string> { AllGroupName };
+            groups.AddRange(TemplateSources
+                .Select(it => it.GroupName)
+                .Where(it => !string.IsNullOrWhiteSpace(it))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(it => it == SystemGroupName ? 0 : it == FileGroupName ? 1 : 2)
+                .ThenBy(it => it));
+
+            SourceGroupComboBox.ItemsSource = groups;
+            SourceGroupComboBox.SelectedIndex = 0;
+            IsRefreshingGroups = false;
+        }
+
+        private void RenderTemplateSourceCards()
+        {
+            TemplateStackPanels.Children.Clear();
+
+            string selectedGroup = SourceGroupComboBox.SelectedItem?.ToString() ?? AllGroupName;
+            List<TemplateCreateSource> visibleSources = TemplateSources
+                .Where(source => selectedGroup == AllGroupName || source.GroupName.Equals(selectedGroup, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            TemplateSourceCountText.Text = $"{visibleSources.Count}/{TemplateSources.Count}";
+            TemplateCreateSource? sourceToSelect = visibleSources.Contains(SelectedTemplateSource) ? SelectedTemplateSource : visibleSources.FirstOrDefault();
+
+            foreach (TemplateCreateSource source in visibleSources)
+            {
+                TemplateStackPanels.Children.Add(CreateTemplateCard(source, source == sourceToSelect));
+            }
+
+            if (sourceToSelect == null)
+            {
+                ITemplate.ClearCreateTemplateSource();
+                AppliedTemplateSource = null;
+                UpdateCreatePreview();
+            }
+        }
+
+        private bool ApplyTemplateSource(TemplateCreateSource source, bool refreshPreview)
+        {
+            SelectedTemplateSource = source;
+            ITemplate.ClearCreateTemplateSource();
+
+            bool isApplied = true;
+            if (source.Kind == TemplateCreateSourceKind.File)
+            {
+                isApplied = ITemplate.ImportFile(source.FilePath);
+            }
+            else if (source.Kind == TemplateCreateSourceKind.Sample && source.Sample != null)
+            {
+                isApplied = ITemplate.ImportJsonContent(source.Sample.Name, source.Sample.Content);
+            }
+
+            if (!isApplied)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "模板来源加载失败", "ColorVision");
+                return false;
+            }
+
+            AppliedTemplateSource = source;
+            if (refreshPreview)
+                UpdateCreatePreview();
+            return true;
+        }
+
+        private void UpdateCreatePreview()
+        {
             if (ITemplate.IsSideHide)
             {
                 GridProperty.Children.Clear();
-                GridProperty.Margin = new Thickness(5, 5, 5, 5);
+                GridProperty.Margin = new Thickness(0);
+                PropertyColumn.Width = new GridLength(0);
+                return;
             }
-            else if (ITemplate.IsUserControl)
+
+            PropertyColumn.Width = new GridLength(400);
+            if (ITemplate.IsUserControl)
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
@@ -202,6 +317,52 @@ namespace ColorVision.Engine.Templates
             }
         }
 
+        private void SourceGroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsRefreshingGroups) return;
+            RenderTemplateSourceCards();
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            string AssemblyCompanyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Environments.AssemblyCompany);
+            if (!Directory.Exists(AssemblyCompanyFolder))
+                Directory.CreateDirectory(AssemblyCompanyFolder);
+
+            string TemplateFolders = Path.Combine(AssemblyCompanyFolder, "Templates");
+            if (!Directory.Exists(TemplateFolders))
+                Directory.CreateDirectory(TemplateFolders);
+            string TemplateFolder = Path.Combine(TemplateFolders, ITemplate.Code);
+            if (!Directory.Exists(TemplateFolder))
+                Directory.CreateDirectory(TemplateFolder);
+
+            BuildTemplateSources(TemplateFolder);
+            if (IsImport)
+            {
+                TemplateSourcePanel.Visibility = Visibility.Collapsed;
+                this.Title = $"{Properties.Resources.Import} {ITemplate.Title} "+ ColorVision.Engine.Properties.Resources.Template;
+
+            }
+            else
+            {
+                ConfigureSourceGroups();
+                RenderTemplateSourceCards();
+                this.Title += ITemplate.Title + " " + ColorVision.Engine.Properties.Resources.Template;
+            }
+            List<string> list =
+            [
+                ITemplate.NewCreateFileName(ITemplate.Code),
+                ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateSetting.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(TemplateSetting.Instance.DefaultCreateTemplateName),
+            ];
+            if (!string.IsNullOrWhiteSpace(ITemplate.ImportName))
+                list.Insert(0, ITemplate.ImportName);
+
+            CreateCode.ItemsSource = list;
+            CreateCode.SelectedIndex = 0;
+            UpdateCreatePreview();
+        }
+
 
         public string CreateName { get; set; }
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -219,10 +380,10 @@ namespace ColorVision.Engine.Templates
                 return;
             }
 
-
-            if (File.Exists(TemplateFile))
+            if (!IsImport && SelectedTemplateSource != null && AppliedTemplateSource != SelectedTemplateSource)
             {
-                ITemplate.ImportFile(TemplateFile);
+                if (!ApplyTemplateSource(SelectedTemplateSource, false))
+                    return;
             }
 
             ITemplate.Create(CreateName);

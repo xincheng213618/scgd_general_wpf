@@ -79,30 +79,7 @@ namespace Spectrum
         }
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
-            {
-                Type type = typeof(ViewResultSpectrum);
-
-                var properties = type.GetProperties();
-                foreach (var property in properties)
-                {
-                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
-                    if (attribute != null)
-                    {
-                        string displayName = attribute.DisplayName;
-                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                        if (displayName == gridViewColumnHeader.Content.ToString())
-                        {
-                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
-                            if (item != null)
-                            {
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultSpectrums.SortByProperty(property.Name, item.IsSortD);
-                            }
-                        }
-                    }
-                }
-            }
+            e.Handled = ViewResultSpectrums.SortByGridViewColumn<ViewResultSpectrum>(sender, GridViewColumnVisibilitys, Properties.Resources.ResourceManager);
         }
 
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)

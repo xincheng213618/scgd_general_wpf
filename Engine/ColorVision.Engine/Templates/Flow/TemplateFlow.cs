@@ -326,6 +326,28 @@ namespace ColorVision.Engine.Templates.Flow
             return true;
         }
 
+        public override bool ImportJsonContent(string templateName, string jsonContent)
+        {
+            if (string.IsNullOrWhiteSpace(jsonContent)) return false;
+
+            try
+            {
+                ImportName = templateName;
+                ImportTemp = JsonConvert.DeserializeObject<FlowParam>(jsonContent);
+                if (ImportTemp != null)
+                {
+                    ImportTemp.Id = -1;
+                    return true;
+                }
+            }
+            catch (JsonException ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析流程样例时出错: {ex.Message}", "ColorVision");
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// 导入 .cvflow 流程包文件，自动创建关联模板并更新流程中的模板引用
         /// </summary>

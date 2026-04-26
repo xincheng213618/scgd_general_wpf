@@ -422,7 +422,55 @@ namespace ColorVision.Engine.Templates
 
         private void CreateTemplate_Click(object sender, RoutedEventArgs e)
         {
-            ITemplate.Export(ListView1.SelectedIndex);
+            SaveSelectedTemplatesAsSamples();
+        }
+
+        private void SaveSelectedTemplatesAsSamples()
+        {
+            var templateEntries = ITemplate.ItemsSource
+                .OfType<TemplateBase>()
+                .Select((template, index) => new { Template = template, Index = index })
+                .ToList();
+
+            var selectedEntries = templateEntries.Where(item => item.Template.IsSelected).ToList();
+            if (selectedEntries.Count == 0 && ListView1.SelectedItem is TemplateBase selectedTemplate)
+            {
+                var entry = templateEntries.FirstOrDefault(item => ReferenceEquals(item.Template, selectedTemplate));
+                if (entry != null)
+                    selectedEntries.Add(entry);
+            }
+
+            if (selectedEntries.Count == 0)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                return;
+            }
+
+            TemplateSampleLibrary sampleLibrary = TemplateSampleLibrary.GetInstance();
+            string defaultName = selectedEntries.Count == 1 ? selectedEntries[0].Template.Key : string.Empty;
+            TemplateSampleSaveWindow saveWindow = new TemplateSampleSaveWindow(sampleLibrary.GetGroupNames(ITemplate), defaultName, selectedEntries.Count)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (saveWindow.ShowDialog() != true)
+                return;
+
+            try
+            {
+                foreach (var entry in selectedEntries)
+                {
+                    string sampleName = selectedEntries.Count == 1 ? saveWindow.SampleName : entry.Template.Key;
+                    sampleLibrary.SaveFromTemplate(ITemplate, entry.Index, saveWindow.GroupName, sampleName, saveWindow.Description);
+                }
+
+                HandyControl.Controls.Growl.SuccessGlobal($"已保存 {selectedEntries.Count} 个模板样例");
+            }
+            catch (Exception ex)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), $"保存模板样例失败: {ex.Message}", "ColorVision");
+            }
         }
 
         private void SwapTemplateAndUpdateUI(int newIndex, string errorMessage)

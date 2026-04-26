@@ -199,6 +199,31 @@ namespace ColorVision.Engine.Templates.BuzProduct
         }
 
         public T? ExportTemp { get; set; }
+
+        public override void ClearCreateTemplateSource()
+        {
+            ImportName = string.Empty;
+            CreateTemp = null;
+            ExportTemp = null;
+        }
+
+        public override bool ImportJsonContent(string templateName, string jsonContent)
+        {
+            if (string.IsNullOrWhiteSpace(jsonContent)) return false;
+
+            try
+            {
+                ImportName = templateName;
+                ExportTemp = JsonConvert.DeserializeObject<T>(jsonContent);
+                return ExportTemp != null;
+            }
+            catch (JsonException ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板内容时出错: {ex.Message}", "ColorVision");
+                return false;
+            }
+        }
+
         public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
@@ -217,7 +242,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
             try
             {
                 T Temp = JsonConvert.DeserializeObject<T>(fileContent);
-                ExportTemp = CreateTemp;
+                ExportTemp = Temp;
                 return true;
             }
             catch (JsonException ex)

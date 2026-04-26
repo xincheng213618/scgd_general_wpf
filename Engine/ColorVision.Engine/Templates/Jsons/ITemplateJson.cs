@@ -216,6 +216,14 @@ namespace ColorVision.Engine.Templates.Jsons
         }
 
         public T? ExportTemp { get; set; }
+
+        public override void ClearCreateTemplateSource()
+        {
+            ImportName = string.Empty;
+            CreateTemp = null;
+            ExportTemp = null;
+        }
+
         public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();

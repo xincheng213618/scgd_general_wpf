@@ -432,30 +432,7 @@ namespace ColorVision.Engine
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
-            {
-                Type type = typeof(ViewBatchResult);
-
-                var properties = type.GetProperties();
-                foreach (var property in properties)
-                {
-                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
-                    if (attribute != null)
-                    {
-                        string displayName = attribute.DisplayName;
-                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                        if (displayName == gridViewColumnHeader.Content.ToString())
-                        {
-                            var item = GridViewColumnVisibilities.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
-                            if (item != null)
-                            {
-                                item.IsSortD = !item.IsSortD;
-                                ViewResults.SortByProperty(property.Name, item.IsSortD);
-                            }
-                        }
-                    }
-                }
-            }
+            e.Handled = ViewResults.SortByGridViewColumn<ViewBatchResult>(sender, GridViewColumnVisibilities, Properties.Resources.ResourceManager);
 
         }
         private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
