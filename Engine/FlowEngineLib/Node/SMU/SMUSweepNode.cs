@@ -13,7 +13,13 @@ public class SMUSweepNode : CVBaseServerNode
 
 	protected SourceType _source;
 
-	protected bool m_IsCloseOutput;
+	protected bool _IsCloseOutput;
+
+	protected bool _IsAutoRng;
+
+	protected double _SrcRng;
+
+	protected double _LmtRng;
 
 	protected float m_begin_val;
 
@@ -29,18 +35,7 @@ public class SMUSweepNode : CVBaseServerNode
 
 	protected STNodeEditText<float> m_ctrl_limit;
 
-	[STNodeProperty("模板", "模板", true)]
-	public string ModelName
-	{
-		get
-		{
-			return _TempName;
-		}
-		set
-		{
-			setTempName(value);
-		}
-	}
+	protected STNodeEditText<bool> m_ctrl_closeOut;
 
 	[STNodeProperty("电(压/流)源", "电(压/流)源", true)]
 	public SourceType Source
@@ -131,11 +126,50 @@ public class SMUSweepNode : CVBaseServerNode
 	{
 		get
 		{
-			return m_IsCloseOutput;
+			return _IsCloseOutput;
 		}
 		set
 		{
-			m_IsCloseOutput = value;
+			_IsCloseOutput = value;
+		}
+	}
+
+	[STNodeProperty("自动量程", "自动量程", true)]
+	public bool IsAutoRng
+	{
+		get
+		{
+			return _IsAutoRng;
+		}
+		set
+		{
+			_IsAutoRng = value;
+		}
+	}
+
+	[STNodeProperty("源量程", "源量程", true)]
+	public double SrcRng
+	{
+		get
+		{
+			return _SrcRng;
+		}
+		set
+		{
+			_SrcRng = value;
+		}
+	}
+
+	[STNodeProperty("限量程", "限量程", true)]
+	public double LmtRng
+	{
+		get
+		{
+			return _LmtRng;
+		}
+		set
+		{
+			_LmtRng = value;
 		}
 	}
 
@@ -149,7 +183,8 @@ public class SMUSweepNode : CVBaseServerNode
 		operatorCode = "Scan";
 		_channel = SMUChannelType.A;
 		_source = SourceType.Voltage_V;
-		m_IsCloseOutput = true;
+		_IsCloseOutput = true;
+		_IsAutoRng = true;
 		m_begin_val = 0f;
 		m_end_val = 5f;
 		_limitVal = 5f;
@@ -160,13 +195,13 @@ public class SMUSweepNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		CreateTempControl(m_custom_item);
-		m_custom_item.Y += 25;
 		m_ctrl_type = CreateStringControl(m_custom_item, "类型:", DisTypeString);
 		m_custom_item.Y += 25;
 		m_ctrl_value = CreateStringControl(m_custom_item, "源值:", DisValueString);
 		m_custom_item.Y += 25;
 		m_ctrl_limit = CreateControl(typeof(STNodeEditText<float>), m_custom_item, "限值:", _limitVal);
+		m_custom_item.Y += 25;
+		m_ctrl_closeOut = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "关闭输出:", _IsCloseOutput);
 	}
 
 	private void updateUI()
@@ -178,20 +213,20 @@ public class SMUSweepNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		SMUSweepParam sMUSweepParam = new SMUSweepParam(_TempName, m_IsCloseOutput);
-		if (string.IsNullOrEmpty(_TempName))
+		SMUSweepParam sMUSweepParam = new SMUSweepParam(_TempName, _IsCloseOutput);
+		SweepDataParam deviceParam = new SweepDataParam
 		{
-			SweepDataParam deviceParam = new SweepDataParam
-			{
-				Channel = _channel,
-				IsSourceV = (_source == SourceType.Voltage_V),
-				BeginValue = m_begin_val,
-				EndValue = m_end_val,
-				LimitValue = _limitVal,
-				Points = m_point_num
-			};
-			sMUSweepParam.DeviceParam = deviceParam;
-		}
+			Channel = _channel,
+			IsSourceV = (_source == SourceType.Voltage_V),
+			BeginValue = m_begin_val,
+			EndValue = m_end_val,
+			LimitValue = _limitVal,
+			Points = m_point_num,
+			IsAutoRng = _IsAutoRng,
+			SrcRng = _SrcRng,
+			LmtRng = _LmtRng
+		};
+		sMUSweepParam.DeviceParam = deviceParam;
 		return sMUSweepParam;
 	}
 }

@@ -2,7 +2,7 @@ namespace FlowEngineLib;
 
 public class CVPhySensorCmd
 {
-	public CommSensorCmdType CmdType { get; set; }
+	public CommCmdType CmdType { get; set; }
 
 	public string Request { get; set; }
 

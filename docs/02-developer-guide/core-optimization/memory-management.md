@@ -107,7 +107,7 @@ public:
 };
 ```
 
-### 2. ArrayGuard<T>
+### 2. ArrayGuard\<T\>
 用于管理 `new[]/delete[]` 分配的内存
 
 ```cpp

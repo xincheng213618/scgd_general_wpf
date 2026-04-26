@@ -23,13 +23,15 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 
 	protected STNodeEditText<string> m_ctrl_channel;
 
+	protected STNodeEditText<bool> m_ctrl_closeOut;
+
 	protected string loopName;
 
 	protected SMUChannelType _channel;
 
 	protected SourceType _source;
 
-	protected bool m_IsCloseOutput;
+	protected bool _IsCloseOutput;
 
 	protected bool _IsAutoRng;
 
@@ -74,61 +76,22 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 	{
 		get
 		{
-			return m_IsCloseOutput;
+			return _IsCloseOutput;
 		}
 		set
 		{
-			m_IsCloseOutput = value;
+			_IsCloseOutput = value;
 		}
 	}
 
-	[STNodeProperty("自动量程", "自动量程", true)]
-	public bool IsAutoRng
-	{
-		get
-		{
-			return _IsAutoRng;
-		}
-		set
-		{
-			_IsAutoRng = value;
-		}
-	}
-
-	[STNodeProperty("源量程", "源量程", true)]
-	public double SrcRng
-	{
-		get
-		{
-			return _SrcRng;
-		}
-		set
-		{
-			_SrcRng = value;
-		}
-	}
-
-	[STNodeProperty("限量程", "限量程", true)]
-	public double LmtRng
-	{
-		get
-		{
-			return _LmtRng;
-		}
-		set
-		{
-			_LmtRng = value;
-		}
-	}
-
-	private string DisTypeString => $"{_channel.ToString()}/{_source.ToString()}";
+	protected string DisTypeString => $"{_channel.ToString()}/{_source.ToString()}";
 
 	public SMUBaseNode(string title, string nodeType, string nodeName, string deviceCode)
 		: base(title, nodeType, nodeName, deviceCode)
 	{
 		m_is_out_release = false;
 		m_has_svr_item = false;
-		m_IsCloseOutput = false;
+		_IsCloseOutput = false;
 		IsStarted = false;
 		_IsAutoRng = true;
 		operatorCode = "GetData";
@@ -140,7 +103,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		m_point_num = 5;
 		m_step_idx = 0;
 		loopName = "SMULoop";
-		base.Height += 70;
+		base.Height += 95;
 	}
 
 	protected void CreateSMUNextControl()
@@ -151,16 +114,18 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		m_in_next.DataTransfer += m_in_next_DataTransfer;
 	}
 
-	protected void CreateSMUControl()
+	protected void CreateSMUControl(int y = 50)
 	{
 		CreateSMUNextControl();
 		Rectangle custom_item = m_custom_item;
-		custom_item.Y = 50;
+		custom_item.Y = y;
 		m_ctrl_channel = CreateStringControl(custom_item, "类型:", DisTypeString);
 		custom_item.Y += 25;
 		m_ctrl_curValue = CreateStringControl(custom_item, "当前值:", string.Empty);
 		custom_item.Y += 25;
 		m_ctrl_lpName = CreateStringControl(custom_item, "LoopName:", loopName);
+		custom_item.Y += 25;
+		m_ctrl_closeOut = CreateControl(typeof(STNodeEditText<bool>), custom_item, "关闭输出:", _IsCloseOutput);
 	}
 
 	protected virtual void updateUI()
@@ -351,9 +316,9 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		IsStarted = false;
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("[{0}]Reset,IsCloseOutput={1}", ToShortString(), m_IsCloseOutput);
+			logger.DebugFormat("[{0}]Reset,IsCloseOutput={1}", ToShortString(), _IsCloseOutput);
 		}
-		if (m_IsCloseOutput)
+		if (_IsCloseOutput)
 		{
 			string serialNumber = action.SerialNumber;
 			BaseStartNode startNode = action.GetStartNode();

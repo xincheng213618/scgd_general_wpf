@@ -47,8 +47,18 @@ namespace ColorVision.Database.SqliteLog
             {
                 ConnectionString = $"Data Source={dbPath}",
                 DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true
+                IsAutoCloseConnection = true,
+                InitKeyType = InitKeyType.Attribute
             });
+        }
+
+        public static IDatabaseBrowserProvider CreateBrowserProvider()
+        {
+            return new SqliteDatabaseBrowserProvider(
+                "sqlite.log",
+                "SQLite 日志",
+                () => SqliteDbPath,
+                CreateDbClient);
         }
 
         /// <summary>

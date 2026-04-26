@@ -1,7 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -10,6 +12,21 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Common.ThirdPartyApps
 {
+    public class ThirdPartyAppContextAction
+    {
+        public string Header { get; set; } = string.Empty;
+        public Action? Execute { get; set; }
+        public Func<bool>? CanExecute { get; set; }
+
+        public bool IsEnabled => Execute != null && (CanExecute?.Invoke() ?? true);
+
+        public void Invoke()
+        {
+            if (!IsEnabled) return;
+            Execute?.Invoke();
+        }
+    }
+
     public class ThirdPartyAppInfo : ViewModelBase
     {
         public string Name { get; set; } = string.Empty;
@@ -19,6 +36,11 @@ namespace ColorVision.Common.ThirdPartyApps
         public string? InstalledExePath { get; set; }
         public string? InstallDirectory { get; set; }
         public string[]? RegistryKeys { get; set; }
+        public string[]? RegistryDisplayNames { get; set; }
+        public string[]? KnownExePaths { get; set; }
+        public string? ExecutableFileName { get; set; }
+        public Action? InstallAction { get; set; }
+        public IList<ThirdPartyAppContextAction> ContextActions { get; } = new List<ThirdPartyAppContextAction>();
 
         /// <summary>
         /// Portable apps are standalone executables that don't need installation.
@@ -108,18 +130,49 @@ namespace ColorVision.Common.ThirdPartyApps
             {
                 foreach (var key in RegistryKeys)
                 {
-                    string? path = FindExeFromRegistry(key);
-                    if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                    string? path = FindExeFromRegistry(key, ExecutableFileName);
+                    if (!string.IsNullOrEmpty(path))
                     {
-                        InstalledExePath = path;
-                        InstallDirectory = Path.GetDirectoryName(path);
-                        IsInstalled = true;
+                        SetInstalledPath(path);
+                        break;
+                    }
+                }
+            }
+
+            if (!IsInstalled && RegistryDisplayNames != null)
+            {
+                foreach (var displayName in RegistryDisplayNames)
+                {
+                    string? path = FindExeByDisplayName(displayName, ExecutableFileName);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        SetInstalledPath(path);
+                        break;
+                    }
+                }
+            }
+
+            if (!IsInstalled && KnownExePaths != null)
+            {
+                foreach (var path in KnownExePaths)
+                {
+                    string? existingPath = ResolveExistingFile(path);
+                    if (!string.IsNullOrEmpty(existingPath))
+                    {
+                        SetInstalledPath(existingPath);
                         break;
                     }
                 }
             }
 
             LoadIcon();
+        }
+
+        private void SetInstalledPath(string path)
+        {
+            InstalledExePath = path;
+            InstallDirectory = Path.GetDirectoryName(path);
+            IsInstalled = true;
         }
 
         private void LoadIcon()
@@ -257,7 +310,36 @@ namespace ColorVision.Common.ThirdPartyApps
                     MessageBox.Show($"Failed to launch {Name}: {ex.Message}");
                 }
             }
-            else if (!string.IsNullOrEmpty(InstallerPath) && File.Exists(InstallerPath))
+            else if (CanRunInstaller())
+            {
+                RunInstaller();
+            }
+        }
+
+        public bool CanRunInstaller()
+        {
+            if (InstallAction != null)
+                return true;
+
+            return !string.IsNullOrEmpty(InstallerPath) && File.Exists(InstallerPath);
+        }
+
+        public void RunInstaller()
+        {
+            if (InstallAction != null)
+            {
+                try
+                {
+                    InstallAction.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to run installer for {Name}: {ex.Message}");
+                }
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(InstallerPath) && File.Exists(InstallerPath))
             {
                 try
                 {
@@ -274,6 +356,12 @@ namespace ColorVision.Common.ThirdPartyApps
         {
             if (!string.IsNullOrEmpty(InstallDirectory))
                 return InstallDirectory;
+            if (GetIconPath != null)
+            {
+                string? iconPath = GetIconPath();
+                if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
+                    return Path.GetDirectoryName(Path.GetFullPath(iconPath));
+            }
             if (IsPortable && !string.IsNullOrEmpty(PortableExePath))
                 return Path.GetDirectoryName(Path.GetFullPath(PortableExePath));
             return null;
@@ -295,51 +383,178 @@ namespace ColorVision.Common.ThirdPartyApps
             }
         }
 
-        private static string? FindExeFromRegistry(string registryKey)
+        private static string? FindExeFromRegistry(string registryKey, string? executableFileName)
+        {
+            string? localMachinePath = FindExeFromRegistry(Registry.LocalMachine, registryKey, executableFileName);
+            if (!string.IsNullOrEmpty(localMachinePath))
+                return localMachinePath;
+
+            return FindExeFromRegistry(Registry.CurrentUser, registryKey, executableFileName);
+        }
+
+        private static string? FindExeFromRegistry(RegistryKey rootKey, string registryKey, string? executableFileName)
         {
             try
             {
-                using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(registryKey);
-                if (key != null)
-                {
-                    var val = key.GetValue("DisplayIcon") as string
-                           ?? key.GetValue("InstallLocation") as string;
-                    if (!string.IsNullOrEmpty(val))
-                    {
-                        val = val.Trim('"');
-                        if (File.Exists(val))
-                            return val;
-                        if (Directory.Exists(val))
-                        {
-                            foreach (var exe in Directory.GetFiles(val, "*.exe", SearchOption.TopDirectoryOnly))
-                                return exe;
-                        }
-                    }
-                }
+                using var key = rootKey.OpenSubKey(registryKey);
+                return FindExeFromRegistryKey(key, executableFileName);
             }
             catch { }
 
-            try
+            return null;
+        }
+
+        private static string? FindExeByDisplayName(string displayName, string? executableFileName)
+        {
+            string[] uninstallRoots =
             {
-                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(registryKey);
-                if (key != null)
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+            };
+
+            foreach (var rootKey in new[] { Registry.LocalMachine, Registry.CurrentUser })
+            {
+                foreach (var uninstallRoot in uninstallRoots)
                 {
-                    var val = key.GetValue("DisplayIcon") as string
-                           ?? key.GetValue("InstallLocation") as string;
-                    if (!string.IsNullOrEmpty(val))
+                    try
                     {
-                        val = val.Trim('"');
-                        if (File.Exists(val))
-                            return val;
-                        if (Directory.Exists(val))
+                        using var uninstallKey = rootKey.OpenSubKey(uninstallRoot);
+                        if (uninstallKey == null)
+                            continue;
+
+                        foreach (var subKeyName in uninstallKey.GetSubKeyNames())
                         {
-                            foreach (var exe in Directory.GetFiles(val, "*.exe", SearchOption.TopDirectoryOnly))
-                                return exe;
+                            using var appKey = uninstallKey.OpenSubKey(subKeyName);
+                            string? registryDisplayName = appKey?.GetValue("DisplayName") as string;
+                            if (string.IsNullOrEmpty(registryDisplayName))
+                                continue;
+
+                            if (!registryDisplayName.Contains(displayName, StringComparison.OrdinalIgnoreCase))
+                                continue;
+
+                            string? path = FindExeFromRegistryKey(appKey, executableFileName);
+                            if (!string.IsNullOrEmpty(path))
+                                return path;
                         }
                     }
+                    catch { }
                 }
             }
+
+            return null;
+        }
+
+        private static string? FindExeFromRegistryKey(RegistryKey? key, string? executableFileName)
+        {
+            if (key == null)
+                return null;
+
+            foreach (var valueName in new[] { "DisplayIcon", "InstallLocation", "UninstallString" })
+            {
+                string? path = ResolveExecutableValue(key.GetValue(valueName) as string, executableFileName);
+                if (!string.IsNullOrEmpty(path))
+                    return path;
+            }
+
+            return null;
+        }
+
+        private static string? ResolveExecutableValue(string? value, string? executableFileName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            string text = value.Trim();
+
+            if (text.StartsWith("\"", StringComparison.Ordinal))
+            {
+                int endQuote = text.IndexOf('"', 1);
+                if (endQuote > 1)
+                {
+                    string quotedPath = text.Substring(1, endQuote - 1);
+                    string? resolvedQuotedPath = ResolveExistingFileOrDirectory(quotedPath, executableFileName);
+                    if (!string.IsNullOrEmpty(resolvedQuotedPath))
+                        return resolvedQuotedPath;
+                }
+            }
+
+            string? resolvedText = ResolveExistingFileOrDirectory(text.Trim('"'), executableFileName);
+            if (!string.IsNullOrEmpty(resolvedText))
+                return resolvedText;
+
+            int exeIndex = text.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+            if (exeIndex >= 0)
+            {
+                string exePath = text.Substring(0, exeIndex + 4).Trim().Trim('"');
+                string? resolvedExePath = ResolveExistingFileOrDirectory(exePath, executableFileName);
+                if (!string.IsNullOrEmpty(resolvedExePath))
+                    return resolvedExePath;
+            }
+
+            int commaIndex = text.IndexOf(',', StringComparison.Ordinal);
+            if (commaIndex > 0)
+            {
+                string pathBeforeComma = text.Substring(0, commaIndex).Trim().Trim('"');
+                string? resolvedPathBeforeComma = ResolveExistingFileOrDirectory(pathBeforeComma, executableFileName);
+                if (!string.IsNullOrEmpty(resolvedPathBeforeComma))
+                    return resolvedPathBeforeComma;
+            }
+
+            return null;
+        }
+
+        private static string? ResolveExistingFileOrDirectory(string path, string? executableFileName)
+        {
+            string? filePath = ResolveExistingFile(path);
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                if (string.IsNullOrEmpty(executableFileName) || Path.GetFileName(filePath).Equals(executableFileName, StringComparison.OrdinalIgnoreCase))
+                    return filePath;
+
+                string? directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
+                    return FindExecutableInDirectory(directory, executableFileName);
+
+                return null;
+            }
+
+            try
+            {
+                if (Directory.Exists(path))
+                    return FindExecutableInDirectory(path, executableFileName);
+            }
             catch { }
+
+            return null;
+        }
+
+        private static string? ResolveExistingFile(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return null;
+
+            try
+            {
+                string fullPath = Path.GetFullPath(path);
+                return File.Exists(fullPath) ? fullPath : null;
+            }
+            catch
+            {
+                return File.Exists(path) ? path : null;
+            }
+        }
+
+        private static string? FindExecutableInDirectory(string directory, string? executableFileName)
+        {
+            if (!string.IsNullOrEmpty(executableFileName))
+            {
+                string exactPath = Path.Combine(directory, executableFileName);
+                if (File.Exists(exactPath))
+                    return exactPath;
+            }
+
+            foreach (var exe in Directory.GetFiles(directory, "*.exe", SearchOption.TopDirectoryOnly))
+                return exe;
 
             return null;
         }

@@ -124,6 +124,7 @@ public class RealCommonSensorNode : CVBaseServerNode
 		_Delay = 0;
 		_CmdSend = "";
 		_CmdReceive = "";
+		_CmdType = CommSensorCmdType.Hex;
 		base.Width = 250;
 		base.Height += 125;
 		m_custom_item = new Rectangle(5, 30, 240, 18);
@@ -152,6 +153,6 @@ public class RealCommonSensorNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new RealCommSensorData(_CmdType, _CmdSend, _CmdReceive, _CmdTimeout, _RetryCount, _Delay);
+		return new RealCommSensorData((CommCmdType)_CmdType, _CmdSend, _CmdReceive, _CmdTimeout, _RetryCount, _Delay);
 	}
 }

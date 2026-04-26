@@ -9,6 +9,8 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
     {
         private readonly Type _keyType;
         private readonly Type _valueType;
+        private readonly Type? _keyEditorType;
+        private readonly Type? _valueEditorType;
         private readonly System.Collections.IDictionary _items;
         private readonly System.Collections.IDictionary _originalItems;
         
@@ -47,11 +49,13 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             }
         }
 
-        public DictionaryEditorWindow(IDictionary items, Type keyType, Type valueType)
+        public DictionaryEditorWindow(IDictionary items, Type keyType, Type valueType, Type? keyEditorType = null, Type? valueEditorType = null)
         {
             InitializeComponent();
             _keyType = keyType;
             _valueType = valueType;
+            _keyEditorType = keyEditorType;
+            _valueEditorType = valueEditorType;
             _originalItems = items;
             
             // Create a working copy
@@ -107,7 +111,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             var defaultKey = GetDefaultValue(_keyType);
             var defaultValue = GetDefaultValue(_valueType);
             
-            var editor = new DictionaryItemEditorWindow(_keyType, _valueType, defaultKey, defaultValue, _items.Keys);
+            var editor = new DictionaryItemEditorWindow(_keyType, _valueType, defaultKey, defaultValue, _items.Keys, _keyEditorType, _valueEditorType);
             editor.Owner = this;
             
             if (editor.ShowDialog() == true)
@@ -135,7 +139,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
                     existingKeys.Add(key);
             }
             
-            var editor = new DictionaryItemEditorWindow(_keyType, _valueType, currentKey, currentValue, existingKeys);
+            var editor = new DictionaryItemEditorWindow(_keyType, _valueType, currentKey, currentValue, existingKeys, _keyEditorType, _valueEditorType);
             editor.Owner = this;
             
             if (editor.ShowDialog() == true)

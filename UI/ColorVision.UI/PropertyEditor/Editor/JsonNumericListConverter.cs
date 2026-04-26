@@ -93,7 +93,8 @@ namespace System.ComponentModel
                     if (list != null)
                     {
                         var elementType = property.PropertyType.GetGenericArguments()[0];
-                        var editorWindow = new ListEditorWindow(list, elementType);
+                        var collectionEditorAttr = property.GetCustomAttribute<CollectionEditorTypeAttribute>();
+                        var editorWindow = new ListEditorWindow(list, elementType, collectionEditorAttr?.ItemEditorType);
                         editorWindow.Owner = Window.GetWindow(dockPanel);
                         
                         if (editorWindow.ShowDialog() == true)

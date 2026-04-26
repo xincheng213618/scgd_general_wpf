@@ -2,9 +2,6 @@ namespace FlowEngineLib;
 
 public enum CommSensorCmdType
 {
-	Hex,
-	Ascii,
-	UTF7,
-	UTF8,
-	GBK
+	Hex = 1,
+	Ascii
 }

@@ -7,22 +7,31 @@ namespace System.ComponentModel
 {
     public class TextboxPropertiesEditor : IPropertyEditor
     {
+        private static readonly HashSet<Type> TextEditableTypes = new()
+        {
+            typeof(int),
+            typeof(short),
+            typeof(ushort),
+            typeof(float),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(sbyte),
+            typeof(double),
+            typeof(decimal),
+            typeof(byte),
+            typeof(char),
+            typeof(Guid),
+            typeof(string),
+            typeof(System.Windows.Rect)
+        };
+
         static TextboxPropertiesEditor()
         {
             PropertyEditorHelper.RegisterEditor<TextboxPropertiesEditor>(t =>
             {
                 t = Nullable.GetUnderlyingType(t) ?? t;
-                return t == typeof(int) ||
-                       t == typeof(float) ||
-                       t == typeof(uint) ||
-                       t == typeof(long) ||
-                       t == typeof(ulong) ||
-                       t == typeof(sbyte) ||
-                       t == typeof(double) ||
-                       t == typeof(decimal) ||
-                       t == typeof(byte) ||
-                       t == typeof(string)||
-                       t == typeof(System.Windows.Rect)  ;
+                return TextEditableTypes.Contains(t);
             });
         }
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -36,7 +45,7 @@ namespace System.ComponentModel
             binding.UpdateSourceTrigger = UpdateSourceTrigger.Default;
 
             var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-            if (t == typeof(float) || property.PropertyType == typeof(double))
+            if (t == typeof(float) || t == typeof(double))
             {
                 binding.StringFormat = "0.0################";
             }

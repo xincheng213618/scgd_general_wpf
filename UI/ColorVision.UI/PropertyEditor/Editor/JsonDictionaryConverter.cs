@@ -68,7 +68,13 @@ namespace System.ComponentModel
                     var keyType = genericArgs[0];
                     var valueType = genericArgs[1];
                     
-                    var editorWindow = new DictionaryEditorWindow(dictionary, keyType, valueType);
+                    var collectionEditorAttr = property.GetCustomAttribute<CollectionEditorTypeAttribute>();
+                    var editorWindow = new DictionaryEditorWindow(
+                        dictionary,
+                        keyType,
+                        valueType,
+                        collectionEditorAttr?.KeyEditorType,
+                        collectionEditorAttr?.ValueEditorType ?? collectionEditorAttr?.ItemEditorType);
                     editorWindow.Owner = Window.GetWindow(dockPanel);
                     
                     if (editorWindow.ShowDialog() == true)

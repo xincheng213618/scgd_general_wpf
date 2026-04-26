@@ -2,6 +2,8 @@ namespace FlowEngineLib.Node.POI;
 
 public class RealPOIData
 {
+	public string ImgFileName { get; set; }
+
 	public POITypeData POITypeData { get; set; }
 
 	public int CIE_MasterId { get; set; }
@@ -24,8 +26,9 @@ public class RealPOIData
 
 	public SMUResultData SMUData { get; set; }
 
-	public RealPOIData(string filterTempName, string reviseTempName, string reviseFileName, string outTempName, POITypeData poiData, int cie_mid, int poi_mid, bool isResultAdd, bool isSubPixel, bool isCCTWave)
+	public RealPOIData(string imgFileName, string filterTempName, string reviseTempName, string reviseFileName, string outTempName, POITypeData poiData, int cie_mid, int poi_mid, bool isResultAdd, bool isSubPixel, bool isCCTWave)
 	{
+		ImgFileName = imgFileName;
 		POIReviseFileName = reviseFileName;
 		POITypeData = poiData;
 		CIE_MasterId = cie_mid;

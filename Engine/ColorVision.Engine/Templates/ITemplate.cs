@@ -126,6 +126,34 @@ namespace ColorVision.Engine.Templates
             throw new NotImplementedException();
         }
 
+        public virtual bool ImportJsonContent(string templateName, string jsonContent)
+        {
+            if (string.IsNullOrWhiteSpace(jsonContent)) return false;
+
+            string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDirectory);
+            try
+            {
+                string fileName = Tool.SanitizeFileName(string.IsNullOrWhiteSpace(templateName) ? Code : templateName);
+                if (string.IsNullOrWhiteSpace(fileName))
+                    fileName = "TemplateSample";
+
+                string filePath = Path.Combine(tempDirectory, fileName + ".cfg");
+                File.WriteAllText(filePath, jsonContent);
+                return ImportFile(filePath);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDirectory))
+                    Directory.Delete(tempDirectory, true);
+            }
+        }
+
+        public virtual void ClearCreateTemplateSource()
+        {
+            ImportName = string.Empty;
+        }
+
         public bool IsSideHide { get; set; }
 
         public virtual void PreviewMouseDoubleClick(int index)
@@ -401,6 +429,13 @@ namespace ColorVision.Engine.Templates
         }
 
         public T? ImportTemp { get; set; }
+
+        public override void ClearCreateTemplateSource()
+        {
+            ImportName = string.Empty;
+            CreateTemp = null;
+            ImportTemp = null;
+        }
 
         public override bool Import()
         {

@@ -9,7 +9,7 @@ namespace System.ComponentModel
     {
         static FontStretchPropertiesEditor()
         {
-            PropertyEditorHelper.RegisterEditor<FontFamilyPropertiesEditor>(typeof(FontStretch));
+            PropertyEditorHelper.RegisterEditor<FontStretchPropertiesEditor>(typeof(FontStretch));
         }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {

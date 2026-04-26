@@ -97,60 +97,32 @@ namespace ProjectLUX
             }
         }
 
-        public void RunTemplate(int index,string templatename)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ProjectLUXConfig.Instance.StepIndex = index;
-                var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(templatename));     
-                if (ProjectLUXConfig.Instance.LUXTestOpen && temp !=null)
-                {
-                    FlowTemplate.SelectedValue = temp.Value;
-                    RunTemplate();
-                }
-                else
-                {
-                    log.Error($"cant find {templatename} error");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
-                }
-            });
-        }
-
-        public void RunTemplate(int index)
-        {
-            if (index >= 0 && index < Process.ProcessManager.GetInstance().ProcessMetas.Count)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProcessMeta processMeta = ProcessMetas[index];
-                    ProjectConfig.StepIndex = index;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
-                    RunTemplate();
-                });
-            }
-            else
-            {
-                log.Info("超出范围");
-            }
-        }
-
         /// <summary>
-        /// 根据 SocketCode 查找对应的 ProcessMeta 并执行流程。
+        /// 在当前活动组内根据 SocketCode 查找对应的 ProcessMeta 并执行流程。
         /// </summary>
         public void RunTemplateBySocketCode(string socketCode)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var processMeta = ProcessMetas.FirstOrDefault(m => m.SocketCode == socketCode);
-                if (processMeta == null)
+                var activeGroup = ProcessManager.ActiveGroup;
+                if (activeGroup == null)
                 {
-                    log.Error($"未找到 SocketCode={socketCode} 对应的流程");
+                    log.Error($"未设置活动流程组，无法执行 SocketCode={socketCode}");
                     if (SocketControl.Current.Stream != null)
                         SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     return;
                 }
-                int index = ProcessMetas.IndexOf(processMeta);
+
+                var processMeta = ProcessManager.FindProcessMetaBySocketCode(socketCode);
+                if (processMeta == null)
+                {
+                    log.Error($"未在组 {activeGroup.Name} 中找到 SocketCode={socketCode} 对应的流程");
+                    if (SocketControl.Current.Stream != null)
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    return;
+                }
+
+                int index = activeGroup.ProcessMetas.IndexOf(processMeta);
                 ProjectConfig.StepIndex = index;
                 var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(processMeta.FlowTemplate));
                 if (temp != null)
@@ -179,6 +151,8 @@ namespace ProjectLUX
         private void Window_Initialized(object sender, EventArgs e)
         {
             ProcessManager.GenStepBar(stepBar);
+            ProcessManager.ActiveGroupChanged += ProcessManager_ActiveGroupChanged;
+            UpdateActiveGroupDisplay();
 
             this.DataContext = ProjectLUXConfig.Instance;
 
@@ -206,6 +180,7 @@ namespace ProjectLUX
 
             this.Closed += (s, e) =>
             {
+                ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
 
@@ -218,6 +193,25 @@ namespace ProjectLUX
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
 
+        }
+
+        private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                ProcessManager.GenStepBar(stepBar);
+                ProjectLUXConfig.Instance.StepIndex = 0;
+                UpdateActiveGroupDisplay();
+                log.Info($"切换流程组: {ProcessManager.ActiveGroup?.Name}");
+            });
+        }
+
+        private void UpdateActiveGroupDisplay()
+        {
+            string groupName = ProcessManager.ActiveGroup?.Name;
+            ActiveGroupTextBlock.Text = string.IsNullOrWhiteSpace(groupName)
+                ? "当前组: 未设置"
+                : $"当前组: {groupName}";
         }
 
         public void Delete()
@@ -383,6 +377,16 @@ namespace ProjectLUX
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
             }
+
+            if (!await PreProcessing(FlowName, CurrentFlowResult.Code))
+            {
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                CurrentFlowResult.Msg = "PreProcessFailed";
+                logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                TryCount = 0;
+                return;
+            }
+
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
@@ -394,8 +398,6 @@ namespace ProjectLUX
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
-            PreProcessing(FlowName, CurrentFlowResult.Code);
-
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
@@ -403,64 +405,8 @@ namespace ProjectLUX
 
         private async Task<bool> PreProcessing(string flowName, string serialNumber)
         {
-            try
-            {
-                // Find all enabled pre-processors that apply to this flow template
-                var matchingProcessors = PreProcessManager.GetInstance().Processes
-                    .Where(p => IsValidEnabledPreProcessor(p, flowName))
-                    .ToList();
-
-                if (matchingProcessors.Count > 0)
-                {
-                    log.Info($"匹配到 {matchingProcessors.Count} 个已启用的预处理 {flowName}");
-
-                    var ctx = new IPreProcessContext
-                    {
-                        FlowName = flowName,
-                        SerialNumber = serialNumber,
-                    };
-
-                    // Execute all matching pre-processors sequentially
-                    foreach (var processor in matchingProcessors)
-                    {
-                        var metadata = PreProcessMetadata.FromProcess(processor);
-                        log.Info($"执行预处理 {metadata.DisplayName}");
-                        try
-                        {
-                            bool success = await processor.PreProcess(ctx);
-                            if (!success)
-                            {
-                                log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
-                                return false; // Abort flow if any pre-processor fails
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error($"预处理 {metadata.DisplayName} 执行异常", ex);
-                            return false; // Abort flow on exception
-                        }
-                    }
-                }
-                return true; // All pre-processors succeeded or none configured
-            }
-            catch (Exception ex)
-            {
-                log.Error("匹配/执行预处理出错", ex);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Checks if a pre-processor is valid and enabled for the given flow.
-        /// </summary>
-        private static bool IsValidEnabledPreProcessor(IPreProcess processor, string flowName)
-        {
-            var config = processor.GetConfig();
-            if (config is PreProcessConfigBase baseConfig)
-            {
-                return baseConfig.IsEnabled && baseConfig.AppliesToTemplate(flowName);
-            }
-            return false;
+            var serverNodes = new ObservableCollection<CVBaseServerNode>(STNodeEditorMain.Nodes.OfType<CVBaseServerNode>());
+            return await PreProcessManager.GetInstance().ExecuteAsync(flowName, serialNumber, serverNodes);
         }
 
 

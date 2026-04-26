@@ -70,8 +70,8 @@ namespace ColorVision.UI
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
         
         private string searchText = string.Empty;
-        private Dictionary<UIElement, List<PropertyInfo>> nestedPropertiesMap = new Dictionary<UIElement, List<PropertyInfo>>();
         private PropertySortMode currentSortMode = PropertySortMode.Default;
+        private object CurrentSource => isEdit ? Config : EditConfig;
 
         /// <summary>
         /// Observable collection for TreeView binding
@@ -100,14 +100,7 @@ namespace ColorVision.UI
 
 
             EditConfig = Config.Clone();
-            if (!isEdit)
-            {
-                DisplayProperties(EditConfig);
-            }
-            else
-            {
-                DisplayProperties(Config);
-            }
+            DisplayProperties(CurrentSource);
         }
         private void OK_Click(object sender, RoutedEventArgs e)
         {
@@ -126,40 +119,32 @@ namespace ColorVision.UI
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
+            SearchBox.Text = string.Empty;
             if (!isEdit)
             {
-                SearchBox.Text = string.Empty;  // Clear search when resetting
                 Config.CopyTo(EditConfig);
-                PropertyPanel.Children.Clear();
-                SearchBox.Text = string.Empty;  // Clear search when resetting
-                DisplayProperties(EditConfig);
             }
             else
             {
-                SearchBox.Text = string.Empty;  // Clear search when resetting
                 EditConfig.CopyTo(Config);
-                PropertyPanel.Children.Clear();
-                SearchBox.Text = string.Empty;  // Clear search when resetting
-                DisplayProperties(Config);
             }
+
+            DisplayProperties(CurrentSource);
         }
 
         private void ResetToFactory_Click(object sender, RoutedEventArgs e)
         {
+            SearchBox.Text = string.Empty;
             if (!isEdit)
             {
-                SearchBox.Text = string.Empty;  // Clear search when resetting
                 EditConfig.Reset();
-                PropertyPanel.Children.Clear();
-                DisplayProperties(EditConfig);
             }
             else
             {
-                SearchBox.Text = string.Empty;  // Clear search when resetting
                 Config.Reset();
-                PropertyPanel.Children.Clear();
-                DisplayProperties(Config);
             }
+
+            DisplayProperties(CurrentSource);
   
         }
 
@@ -186,7 +171,7 @@ namespace ColorVision.UI
             // GetInheritanceDepth 越小，说明越靠近基类 (object -> BaseConfig -> DeviceServiceConfig -> ConfigPG)
             // 如果您想要“原始信息”（基类）在最前面，请使用 OrderBy
             // 如果您想要“最上层”（派生类）在最前面，请使用 OrderByDescending
-            var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType));
+            var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType ?? t));
 
             // 如果希望同一类中的属性按元数据Token（近似代码声明顺序）排序，可以再接一个 ThenBy
             //var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType))
@@ -216,143 +201,28 @@ namespace ColorVision.UI
         {
             categoryGroups.Clear();
             TreeNodes.Clear();
-            nestedPropertiesMap.Clear();
             GenCategoryGroups(obj);
+            RebuildDisplay(obj);
+        }
 
+        private void RebuildDisplay()
+        {
+            RebuildDisplay(CurrentSource);
+        }
+
+        private void RebuildDisplay(object source)
+        {
+            PropertyPanel.Children.Clear();
+            TreeNodes.Clear();
 
             foreach (var categoryGroup in categoryGroups)
             {
-                var border = new Border
-                {
-                    Background = (Brush)FindResource("GlobalBorderBrush"),
-                    BorderThickness = new Thickness(1),
-                    BorderBrush = (Brush)FindResource("BorderBrush"),
-                    CornerRadius = new CornerRadius(5),
-                    Margin = new Thickness(0, 0, 0, 5),
-                    Tag = categoryGroup.Key  // Tag with category name for search
-                };
-                var stackPanel = new StackPanel { Margin = new Thickness(10,5,10,0) };
-                border.Child = stackPanel;
-
-
-                var categoryHeader = new TextBlock
-                {
-                    Text = categoryGroup.Key,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = PropertyEditorHelper.GlobalTextBrush,
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-                stackPanel.Children.Add(categoryHeader);
-
-                // Create tree node for binding
-                var treeNode = new PropertyTreeNode(categoryGroup.Key, stackPanel);
+                var border = CreateCategoryBorder(categoryGroup.Key, out var stackPanel);
+                var treeNode = new PropertyTreeNode(categoryGroup.Key, border);
 
                 foreach (var property in categoryGroup.Value)
                 {
-                    var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
-                    
-                    if (browsableAttr?.Browsable ?? true)
-                    {
-                        DockPanel dockPanel = null;
-
-                        var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-                        if (editorAttr?.EditorType != null)
-                        {
-                            try
-                            {
-                                var editor = PropertyEditorHelper.GetOrCreateEditor(editorAttr.EditorType);
-                                dockPanel = editor.GenProperties(property, obj);
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-
-                        if (dockPanel == null)
-                        {
-                            Type? editorType = null;
-                            editorType = PropertyEditorHelper.GetEditorTypeForPropertyType(property.PropertyType);
-                            if (editorType != null)
-                            {
-                                try
-                                {
-                                    var editor = PropertyEditorHelper.GetOrCreateEditor(editorType);
-                                    dockPanel = editor.GenProperties(property, obj);
-                                }
-                                catch (Exception)
-                                {
-                                    continue;
-                                }
-                            }
-                            else if (property.PropertyType == typeof(object))
-                            {
-                                var nestedValue = property.GetValue(obj);
-                                if (nestedValue != null)
-                                {
-                                    stackPanel.Margin = new Thickness(5);
-                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedValue);
-                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
-                                    {
-                                        stackPanel.Children.Add(stackPanel1);
-                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
-                                        treeNode.Children.Add(childNode);
-                                    }
-                                }
-                                continue;
-                            }
-                            else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
-                            {
-                                // 如果属性是ViewModelBase的子类，递归解析
-                                var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
-                                if (nestedObj != null)
-                                {
-                                    stackPanel.Margin = new Thickness(5);
-                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                                    stackPanel.Children.Add(stackPanel1);
-
-                                    var childNode = new PropertyTreeNode(property.Name, stackPanel1);
-                                    treeNode.Children.Add(childNode);
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                continue;
-                            }
-                        }
-
-                        dockPanel.Margin = new Thickness(0, 0, 0, 5);
-                        dockPanel.Tag = property;  // Tag with PropertyInfo for search
-
-                        var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
-                        if (VisibleBlindAttr != null)
-                        {
-                            var binding = new Binding(VisibleBlindAttr.PropertyName)
-                            {
-                                Source = obj,
-                                Mode = BindingMode.OneWay
-                            };
-
-                            // If ExpectedValue is set, this is an enum binding
-                            if (VisibleBlindAttr.ExpectedValue != null)
-                            {
-                                binding.Converter = (IValueConverter)Application.Current.FindResource(
-                                    VisibleBlindAttr.IsInverted ? "enum2VisibilityConverter1" : "enum2VisibilityConverter");
-                                binding.ConverterParameter = VisibleBlindAttr.ExpectedValue;
-                            }
-                            else
-                            {
-                                // Boolean binding - Corrected logic:
-                                // IsInverted=false: use standard converter (true→Visible)
-                                // IsInverted=true: use reversed converter (true→Collapsed)
-                                binding.Converter = (IValueConverter)Application.Current.FindResource(
-                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter1" : "bool2VisibilityConverter");
-                            }
-                            
-                            dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
-                        }
-                        stackPanel.Children.Add(dockPanel);
-                    }
+                    TryAddPropertyEditor(source, property, stackPanel, treeNode);
                 }
 
                 if (stackPanel.Children.Count > 1)
@@ -361,43 +231,86 @@ namespace ColorVision.UI
                     PropertyPanel.Children.Add(border);
                 }
             }
+
+            UpdateTreeViewVisibility();
         }
 
-
-        private void CollectNestedProperties(object obj, List<PropertyInfo> properties)
+        private Border CreateCategoryBorder(string category, out StackPanel stackPanel)
         {
-            if (obj == null) return;
-            
-            var type = obj.GetType();
-            var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                           .Where(p => p.CanRead && p.CanWrite);
-            
-            foreach (var prop in props)
+            var border = new Border
             {
-                var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
-                if (!(browsableAttr?.Browsable ?? true))
-                    continue;
-                
-                properties.Add(prop);
-                
-                // Recursively collect from nested INotifyPropertyChanged objects
-                if (typeof(INotifyPropertyChanged).IsAssignableFrom(prop.PropertyType))
-                {
-                    var nestedObj = prop.GetValue(obj);
-                    if (nestedObj != null)
-                    {
-                        CollectNestedProperties(nestedObj, properties);
-                    }
-                }
-                else if (prop.PropertyType == typeof(object))
-                {
-                    var nestedValue = prop.GetValue(obj);
-                    if (nestedValue != null)
-                    {
-                        CollectNestedProperties(nestedValue, properties);
-                    }
-                }
+                Background = (Brush)FindResource("GlobalBorderBrush"),
+                BorderThickness = new Thickness(1),
+                BorderBrush = (Brush)FindResource("BorderBrush"),
+                CornerRadius = new CornerRadius(5),
+                Margin = new Thickness(0, 0, 0, 5),
+                Tag = category
+            };
+
+            stackPanel = new StackPanel { Margin = new Thickness(10, 5, 10, 0) };
+            stackPanel.Children.Add(new TextBlock
+            {
+                Text = category,
+                FontWeight = FontWeights.Bold,
+                Foreground = PropertyEditorHelper.GlobalTextBrush,
+                Margin = new Thickness(0, 0, 0, 5)
+            });
+
+            border.Child = stackPanel;
+            return border;
+        }
+
+        private bool TryAddPropertyEditor(object source, PropertyInfo property, StackPanel stackPanel, PropertyTreeNode treeNode)
+        {
+            try
+            {
+                stackPanel.Children.Add(PropertyEditorHelper.GenProperties(property, source));
+                return true;
             }
+            catch (NotSupportedException)
+            {
+                return TryAddNestedPropertyEditor(source, property, stackPanel, treeNode);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private bool TryAddNestedPropertyEditor(object source, PropertyInfo property, StackPanel stackPanel, PropertyTreeNode treeNode)
+        {
+            if (property.PropertyType != typeof(object) && !typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
+            {
+                return false;
+            }
+
+            var nestedObj = property.GetValue(source);
+            if (nestedObj == null)
+            {
+                return false;
+            }
+
+            var nestedPanel = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
+            if (!HasEditorContent(nestedPanel))
+            {
+                return false;
+            }
+
+            stackPanel.Margin = new Thickness(5);
+            stackPanel.Children.Add(nestedPanel);
+            treeNode.Children.Add(new PropertyTreeNode(property.Name, nestedPanel));
+            return true;
+        }
+
+        private static bool HasEditorContent(StackPanel panel)
+        {
+            return panel.Children.OfType<Border>()
+                .Any(border => border.Child is StackPanel stackPanel && stackPanel.Children.Count > 1);
+        }
+
+        private void UpdateTreeViewVisibility()
+        {
+            treeView.Visibility = TreeNodes.Count <= 1 ? Visibility.Collapsed : Visibility.Visible;
         }
 
 
@@ -433,15 +346,7 @@ namespace ColorVision.UI
                     node.ShowAll();
                 }
                 
-                // Restore TreeView visibility based on item count
-                if (TreeNodes.Count == 1)
-                {
-                    treeView.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    treeView.Visibility = Visibility.Visible;
-                }
+                UpdateTreeViewVisibility();
                 return;
             }
 
@@ -543,19 +448,6 @@ namespace ColorVision.UI
         {
             bool anyVisible = false;
             
-            // Check if this container has tracked nested properties
-            if (nestedPropertiesMap.TryGetValue(container, out var nestedProperties))
-            {
-                foreach (var property in nestedProperties)
-                {
-                    if (MatchesSearch(property))
-                    {
-                        anyVisible = true;
-                        break;
-                    }
-                }
-            }
-            
             foreach (UIElement child in container.Children)
             {
                 if (child is Border nestedBorder && nestedBorder.Child is StackPanel nestedStackPanel)
@@ -632,11 +524,7 @@ namespace ColorVision.UI
                     break;
                 case PropertySortMode.Default:
                 default:
-                    // Restore default order - regenerate display
-                    PropertyPanel.Children.Clear();
-                    TreeNodes.Clear();
-                    nestedPropertiesMap.Clear();
-                    DisplayProperties(EditConfig);
+                    DisplayProperties(CurrentSource);
                     ApplySearchFilter();
                     return;
             }
@@ -672,167 +560,6 @@ namespace ColorVision.UI
 
             // Rebuild the display
             RebuildDisplay();
-        }
-
-        private void RebuildDisplay()
-        {
-            PropertyPanel.Children.Clear();
-            TreeNodes.Clear();
-            nestedPropertiesMap.Clear();
-
-            var source = EditConfig;
-
-            foreach (var categoryGroup in categoryGroups)
-            {
-                var border = new Border
-                {
-                    Background = (Brush)FindResource("GlobalBorderBrush"),
-                    BorderThickness = new Thickness(1),
-                    BorderBrush = (Brush)FindResource("BorderBrush"),
-                    CornerRadius = new CornerRadius(5),
-                    Margin = new Thickness(0, 0, 0, 5),
-                    Tag = categoryGroup.Key
-                };
-                var stackPanel = new StackPanel { Margin = new Thickness(10, 5, 10, 0) };
-                border.Child = stackPanel;
-
-                var categoryHeader = new TextBlock
-                {
-                    Text = categoryGroup.Key,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = PropertyEditorHelper.GlobalTextBrush,
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-                stackPanel.Children.Add(categoryHeader);
-
-                // Create tree node for binding
-                var treeNode = new PropertyTreeNode(categoryGroup.Key, stackPanel);
-
-                foreach (var property in categoryGroup.Value)
-                {
-                    var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
-
-                    if (browsableAttr?.Browsable ?? true)
-                    {
-                        DockPanel dockPanel = null;
-
-                        var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-                        if (editorAttr?.EditorType != null)
-                        {
-                            try
-                            {
-                                var editor = PropertyEditorHelper.GetOrCreateEditor(editorAttr.EditorType);
-                                dockPanel = editor.GenProperties(property, source);
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-
-                        if (dockPanel == null)
-                        {
-                            Type? editorType = null;
-                            editorType = PropertyEditorHelper.GetEditorTypeForPropertyType(property.PropertyType);
-                            if (editorType != null)
-                            {
-                                try
-                                {
-                                    var editor = PropertyEditorHelper.GetOrCreateEditor(editorType);
-                                    dockPanel = editor.GenProperties(property, source);
-                                }
-                                catch (Exception)
-                                {
-                                    continue;
-                                }
-                            }
-                            else if (property.PropertyType == typeof(object))
-                            {
-                                var nestedValue = property.GetValue(source);
-                                if (nestedValue != null)
-                                {
-                                    stackPanel.Margin = new Thickness(5);
-                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedValue);
-                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
-                                    {
-                                        stackPanel.Children.Add(stackPanel1);
-                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
-                                        treeNode.Children.Add(childNode);
-                                    }
-                                }
-                                continue;
-                            }
-                            else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
-                            {
-                                // 如果属性是ViewModelBase的子类，递归解析
-                                var nestedObj = (INotifyPropertyChanged)property.GetValue(source);
-                                if (nestedObj != null)
-                                {
-                                    stackPanel.Margin = new Thickness(5);
-                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
-                                    {
-                                        stackPanel.Children.Add(stackPanel1);
-                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
-                                        treeNode.Children.Add(childNode);
-                                    }
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                continue;
-                            }
-                        }
-
-                        dockPanel.Margin = new Thickness(0, 0, 0, 5);
-                        dockPanel.Tag = property;
-
-                        var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
-                        if (VisibleBlindAttr != null)
-                        {
-                            var binding = new Binding(VisibleBlindAttr.PropertyName)
-                            {
-                                Source = source,
-                                Mode = BindingMode.OneWay
-                            };
-
-                            // If ExpectedValue is set, this is an enum binding
-                            if (VisibleBlindAttr.ExpectedValue != null)
-                            {
-                                binding.Converter = (IValueConverter)Application.Current.FindResource(
-                                    VisibleBlindAttr.IsInverted ? "enum2VisibilityConverter1" : "enum2VisibilityConverter");
-                                binding.ConverterParameter = VisibleBlindAttr.ExpectedValue;
-                            }
-                            else
-                            {
-                                // Boolean binding - Corrected logic:
-                                // IsInverted=false: use standard converter (true→Visible)
-                                // IsInverted=true: use reversed converter (true→Collapsed)
-                                binding.Converter = (IValueConverter)Application.Current.FindResource(
-                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter1" : "bool2VisibilityConverter");
-                            }
-                            
-                            dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
-                        }
-                        stackPanel.Children.Add(dockPanel);
-                    }
-                }
-
-                if (stackPanel.Children.Count > 1)
-                {
-                    TreeNodes.Add(treeNode);
-                    PropertyPanel.Children.Add(border);
-                }
-            }
-
-            if (TreeNodes.Count == 1)
-            {
-                treeView.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                treeView.Visibility = Visibility.Visible;
-            }
         }
 
         private void TreeViewItem_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)

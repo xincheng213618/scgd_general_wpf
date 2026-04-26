@@ -9,13 +9,14 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
     public partial class ListItemEditorWindow : Window
     {
         private readonly Type _elementType;
+        private readonly Type? _preferredEditorType;
         private readonly ValueWrapper _valueWrapper;
         private List<Type> _availableEditorTypes = new();
 
         public object? EditedValue => _valueWrapper.Value;
 
         // Wrapper class to hold the value as a property so we can use PropertyEditor system
-        private class ValueWrapper : INotifyPropertyChanged
+        private sealed class ValueWrapper : INotifyPropertyChanged
         {
             private object? _value;
 
@@ -35,10 +36,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             public event PropertyChangedEventHandler? PropertyChanged;
         }
 
-        public ListItemEditorWindow(Type elementType, object? initialValue)
+        public ListItemEditorWindow(Type elementType, object? initialValue, Type? preferredEditorType = null)
         {
             InitializeComponent();
             _elementType = elementType;
+            _preferredEditorType = preferredEditorType;
             _valueWrapper = new ValueWrapper { Value = initialValue };
 
             InitializeEditorSelection();
@@ -73,14 +75,19 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
 
         private List<Type> GetAvailableEditorTypes(Type elementType)
         {
+            if (IsValidEditorType(_preferredEditorType))
+            {
+                return new List<Type> { _preferredEditorType! };
+            }
+
             var editorTypes = new List<Type>();
 
             // For strings, manually add specific editors
             if (elementType == typeof(string))
             {
+                editorTypes.Add(typeof(TextboxPropertiesEditor));
                 editorTypes.Add(typeof(TextSelectFilePropertiesEditor));
                 editorTypes.Add(typeof(TextSelectFolderPropertiesEditor));
-                editorTypes.Add(typeof(TextboxPropertiesEditor));
             }
             else
             {
@@ -89,6 +96,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             }
 
             return editorTypes;
+        }
+
+        private static bool IsValidEditorType(Type? editorType)
+        {
+            return editorType != null && typeof(IPropertyEditor).IsAssignableFrom(editorType);
         }
 
         private string GetEditorDisplayName(Type editorType)
@@ -227,7 +239,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             {
                 if (list != null)
                 {
-                    var nestedEditor = new ListEditorWindow(list, innerElementType);
+                    var nestedEditor = new ListEditorWindow(list, innerElementType, _preferredEditorType);
                     nestedEditor.Owner = this;
                     
                     if (nestedEditor.ShowDialog() == true)
@@ -257,10 +269,9 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
 
         private Type? DetermineEditorType(Type elementType)
         {
-            // For strings, use TextSelectFilePropertiesEditor to get file/folder pickers
             if (elementType == typeof(string))
             {
-                return typeof(TextSelectFilePropertiesEditor);
+                return typeof(TextboxPropertiesEditor);
             }
             
             // Otherwise use the registered editor for the type
@@ -352,7 +363,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         }
 
         // Custom PropertyInfo that overrides the PropertyType to return our element type
-        private class CustomPropertyInfo : PropertyInfo
+        private sealed class CustomPropertyInfo : PropertyInfo
         {
             private readonly PropertyInfo _baseProperty;
             private readonly Type _customType;

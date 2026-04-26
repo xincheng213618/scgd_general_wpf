@@ -8,8 +8,8 @@ public class CalibrationData : AlgorithmParam
 
 	public POITemplateParam POIParam { get; set; }
 
-	public CalibrationData(string expTempName, AlgorithmPreStepParam param, string globalVariableName, int orderIndex)
-		: base(param, globalVariableName)
+	public CalibrationData(string expTempName, AlgorithmPreStepParam param, int orderIndex)
+		: base(param, string.Empty)
 	{
 		ExpTemplateParam = new CVTemplateParam
 		{

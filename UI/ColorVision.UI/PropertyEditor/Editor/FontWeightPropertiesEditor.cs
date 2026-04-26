@@ -9,7 +9,7 @@ namespace System.ComponentModel
     {
         static FontWeightPropertiesEditor()
         {
-            PropertyEditorHelper.RegisterEditor<FontFamilyPropertiesEditor>(typeof(FontWeight));
+            PropertyEditorHelper.RegisterEditor<FontWeightPropertiesEditor>(typeof(FontWeight));
         }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {

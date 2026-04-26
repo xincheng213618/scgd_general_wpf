@@ -42,27 +42,11 @@ public class CVTransAction
 
 	public void NodeFinished(string nodeType, dynamic respData)
 	{
-		string masterValue = respData.MasterValue;
-		int masterResultType = -1;
-		int masterId = respData.MasterId;
-		if (respData.MasterResultType == null && respData.ResultType == null)
+		if (!MasterResultDataHelper.TryRead(respData, nodeType, out string masterValue, out int masterId, out int masterResultType))
 		{
-			if (!(nodeType == "Spectrum"))
-			{
-				if (nodeType == "SMU")
-				{
-					masterResultType = 200;
-				}
-			}
-			else
-			{
-				masterResultType = 300;
-			}
+			return;
 		}
-		else
-		{
-			masterResultType = ((respData.MasterResultType != null) ? respData.MasterResultType : respData.ResultType);
-		}
+
 		NodeFinished(masterValue, masterId, masterResultType);
 	}
 

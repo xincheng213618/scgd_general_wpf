@@ -10,6 +10,7 @@ using ColorVision.Engine.Templates.Jsons.OLEDAOI;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIRevise;
+using FlowEngineLib;
 using System.Linq;
 
 namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
@@ -30,6 +31,38 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, "亚像素灯珠检测", new TemplateLedCheck2());
         }
     }
+
+    [NodeConfigurator(typeof(FlowEngineLib.AOILocatePixelsCameraNode))]
+    public class AOILocatePixelsCameraNodeConfigurator : NodeConfiguratorBase
+    {
+        public override void Configure(NodeConfiguratorContext context)
+        {
+            var node = (AOILocatePixelsCameraNode)context.Node;
+            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+
+            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, "曝光模板", new TemplateAutoExpTime());
+            var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
+            if (result?.PhyCamera != null)
+                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
+            context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, "亚像素灯珠检测", new TemplateLedCheck2());
+        }
+    }
+    [NodeConfigurator(typeof(FlowEngineLib.AOILocAndRegPixelsCameraNode))]
+    public class AOILocAndRegPixelsCameraNodeConfigurator : NodeConfiguratorBase
+    {
+        public override void Configure(NodeConfiguratorContext context)
+        {
+            var node = (AOILocAndRegPixelsCameraNode)context.Node;
+            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+
+            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, "曝光模板", new TemplateAutoExpTime());
+            var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
+            if (result?.PhyCamera != null)
+                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
+            context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, "AOI", new TemplateOLEDAOI());
+        }
+    }
+    
 
     [NodeConfigurator(typeof(FlowEngineLib.Node.Camera.CVAOI2CameraNode))]
     public class CVAOI2CameraNodeConfigurator : NodeConfiguratorBase

@@ -82,4 +82,25 @@ namespace System.ComponentModel
         public override int GetHashCode() => HashCode.Combine(EditorType);
         public override bool IsDefaultAttribute() => Equals(Default);
     }
+
+    /// <summary>
+    /// 集合项编辑器类型特性：用于 List&lt;T&gt; 的元素，或 Dictionary&lt;TKey,TValue&gt; 的 Key/Value。
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+    public sealed class CollectionEditorTypeAttribute : Attribute
+    {
+        public Type? ItemEditorType { get; set; }
+        public Type? KeyEditorType { get; set; }
+        public Type? ValueEditorType { get; set; }
+
+        public CollectionEditorTypeAttribute()
+        {
+        }
+
+        public CollectionEditorTypeAttribute(Type itemEditorType)
+        {
+            ItemEditorType = itemEditorType;
+            ValueEditorType = itemEditorType;
+        }
+    }
 }

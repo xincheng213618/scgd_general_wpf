@@ -84,6 +84,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public List<int> NDRate { get; set; } = new List<int>();
 
+        [CollectionEditorType(typeof(TextSelectFilePropertiesEditor))]
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
 
     }

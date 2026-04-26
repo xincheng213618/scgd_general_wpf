@@ -28,20 +28,17 @@ public class SMUModelNode : SMUBaseNode
 		: base("源表[模板]", "SMU", "SVR.SMU.Default", "DEV.SMU.Default")
 	{
 		operatorCode = "ModelGetData";
+		base.Height += 25;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		CreateSMUNextControl();
 		Rectangle custom_item = m_custom_item;
 		custom_item.Y = 50;
 		CreateTempControl(custom_item);
 		custom_item.Y += 25;
-		m_ctrl_curValue = CreateControl(typeof(STNodeEditText<string>), custom_item, "当前值:", string.Empty);
-		custom_item.Y += 25;
-		m_ctrl_lpName = CreateControl(typeof(STNodeEditText<string>), custom_item, "LoopName:", loopName);
-		updateUI();
+		CreateSMUControl(custom_item.Y);
 	}
 
 	protected override void updateUI()

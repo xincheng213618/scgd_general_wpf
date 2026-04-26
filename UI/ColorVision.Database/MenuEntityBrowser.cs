@@ -7,11 +7,11 @@ namespace ColorVision.Database
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 50;
-        public override string Header => "实体浏览器";
+        public override string Header => "数据库浏览器";
 
         public override void Execute()
         {
-            new EntityBrowserWindow
+            new DatabaseBrowserWindow
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner

@@ -223,6 +223,16 @@ namespace ProjectLUX.Process
             SavePersistedGroups();
         }
 
+        public ProcessMeta FindProcessMetaBySocketCode(string socketCode)
+        {
+            if (string.IsNullOrWhiteSpace(socketCode))
+            {
+                return null;
+            }
+
+            return ActiveGroup?.ProcessMetas.FirstOrDefault(meta => string.Equals(meta.SocketCode, socketCode, StringComparison.OrdinalIgnoreCase));
+        }
+
         #endregion
 
         #region ProcessMeta Events

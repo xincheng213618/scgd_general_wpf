@@ -255,6 +255,17 @@ namespace Spectrum.Data
             ReloadCommand = new RelayCommand(a => ReloadData());
             EnsureDatabaseInitialized();
             LoadAll(Config.Count);
+                DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
+                    "sqlite.spectrum",
+                    "光谱结果",
+                    () => SqliteDbPath,
+                    dbPath => new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={dbPath}",
+                        DbType = DbType.Sqlite,
+                        IsAutoCloseConnection = true,
+                        InitKeyType = InitKeyType.Attribute
+                    })));
         }
 
 

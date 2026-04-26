@@ -33,13 +33,7 @@ namespace ProjectLUX
         [JsonIgnore]
         public RelayCommand OpenEditLargeCommand { get; set; }
         [JsonIgnore]
-        public RelayCommand OpenLogCommand { get; set; }
-        [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenChangeLogCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenReadMeCommand { get; set; }
 
         [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
@@ -50,10 +44,7 @@ namespace ProjectLUX
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
-            OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
-            OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
-            OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
 
             InitTestCommand = new RelayCommand(a => InitTest());
         }
@@ -74,19 +65,6 @@ namespace ProjectLUX
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }
         private int _TryCountMax = 2;
 
-        [DisplayName("允许测试失败")]
-        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
-        private bool _AllowTestFailures = true;
-
-        [DisplayName("RefreshResult")]
-        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; OnPropertyChanged(); } }
-        private bool _RefreshResult = true;
-
-
-        [DisplayName("LUXTestOpen")]
-        public bool LUXTestOpen { get => _LUXTestOpen; set { _LUXTestOpen = value; OnPropertyChanged(); } }
-        private bool _LUXTestOpen = true;
-
 
         public void OpenConfig()
         {
@@ -94,52 +72,6 @@ namespace ProjectLUX
             ConfigService.Instance.SaveConfigs();
         }
 
-        public static void OpenResourceName(string title, string resourceName)
-        {
-            // 获取当前执行的程序集
-            Assembly assembly = Assembly.GetExecutingAssembly();
-
-            // 资源文件的完整名称
-
-            // 确保资源名称正确
-            string[] resourceNames = assembly.GetManifestResourceNames();
-
-            // 读取资源文件内容
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                {
-                    Console.WriteLine("资源文件未找到。请检查资源名称。");
-                    return;
-                }
-
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    string content = reader.ReadToEnd();
-
-                    string html = Markdig.Markdown.ToHtml(content);
-                    new MarkdownViewWindow(html) { Title = title, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-                }
-            }
-        }
-
-        public static void OpenChangeLog()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectLUX.CHANGELOG.md";
-            OpenResourceName("CHANGELOG", resourceName);
-        }
-        public static void OpenReadMe()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectLUX.README.md";
-            OpenResourceName("README",resourceName);
-        }
-        public static void OpenLog()
-        {
-            WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
-            windowLog.Show();
-        }
 
         [JsonIgnore]
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
@@ -161,12 +93,14 @@ namespace ProjectLUX
         public string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN = string.Empty;
 
-        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; OnPropertyChanged(); } }
-        private bool _IsAutoUploadSn;
 
         [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; OnPropertyChanged(); } }
         private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),"TestReslut");
+
+        [DisplayName("CSV导出格式")]
+        public ObjectiveTestResultCsvExportProfile CsvExportProfile { get => _CsvExportProfile; set { _CsvExportProfile = value; OnPropertyChanged(); } }
+        private ObjectiveTestResultCsvExportProfile _CsvExportProfile = ObjectiveTestResultCsvExportProfile.Current;
 
 
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
@@ -174,8 +108,6 @@ namespace ProjectLUX
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
-
-
 
     }
 }

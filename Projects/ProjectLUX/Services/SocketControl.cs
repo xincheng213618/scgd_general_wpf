@@ -33,13 +33,14 @@ namespace ProjectLUX.Services
         public string Handle(NetworkStream stream, string request)
         {
             SocketControl.Current.Stream = stream;
-            var list = request.split(",");
+            string payload = request?.Trim().TrimEnd(';') ?? string.Empty;
+            int commaIndex = payload.IndexOf(',');
+            string code = commaIndex >= 0 ? payload[..commaIndex] : payload;
+            string arg = commaIndex >= 0 ? payload[(commaIndex + 1)..] : string.Empty;
 
-            if (list.Length == 2)
+            if (!string.IsNullOrWhiteSpace(code) && !string.IsNullOrWhiteSpace(arg))
             {
-                string code = list[0];
-                string sn = list[1];
-                sn = sn.TrimEnd(';');
+                string sn = arg;
 
                 ProjectLUXConfig.Instance.SN = sn;
 

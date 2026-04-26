@@ -192,7 +192,7 @@ public class CVAOI2CameraNode : CVBaseServerNodeIn2Hub
 
 	private string GetCameraTempDis()
 	{
-		return string.Format("{0}:{1}", "Nor", _CamTempName);
+		return $"{_CamTempName}";
 	}
 
 	private void initCtrl()

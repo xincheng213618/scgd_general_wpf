@@ -191,8 +191,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                         break;
                 }
             }
-            node.nodeEvent -= (s, e) => Refresh();
-            node.nodeEvent += (s, e) => Refresh();
+            context.RebindNodeEvent(node, nameof(AlgorithmARVRNodeConfigurator), Refresh);
             Refresh();
         }
     }
@@ -271,8 +270,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                         break;
                 }
             }
-            node.nodeEvent -= (s, e) => Refresh();
-            node.nodeEvent += (s, e) => Refresh();
+            context.RebindNodeEvent(node, nameof(AlgorithmNodeConfigurator), Refresh);
             Refresh();
         }
     }
@@ -300,8 +298,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                         break;
                 }
             }
-            node.nodeEvent -= (s, e) => Refresh();
-            node.nodeEvent += (s, e) => Refresh();
+            context.RebindNodeEvent(node, nameof(AlgComplianceMathNodeConfigurator), Refresh);
             Refresh();
         }
     }

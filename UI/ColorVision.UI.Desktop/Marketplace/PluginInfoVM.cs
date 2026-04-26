@@ -42,9 +42,6 @@ namespace ColorVision.UI.Desktop.Marketplace
         }.Where(item => !string.IsNullOrWhiteSpace(item))!);
 
         public string? HeaderRightPrimary => PluginInfo?.Manifest?.DllName;
-        public string? HeaderRightSecondary => string.IsNullOrWhiteSpace(PluginInfo.Manifest.Requires.ToString())
-            ? null
-            : $"Build By {PluginInfo?.Manifest?.Requires}";
 
         public string InstalledBadgeText => string.IsNullOrWhiteSpace(AssemblyVersion?.ToString())
             ? "Installed"

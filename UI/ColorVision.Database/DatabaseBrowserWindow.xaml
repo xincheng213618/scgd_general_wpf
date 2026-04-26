@@ -1,0 +1,140 @@
+<Window x:Class="ColorVision.Database.DatabaseBrowserWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Database"
+        mc:Ignorable="d"
+        Title="数据库浏览器" Height="720" Width="1180" MinHeight="560" MinWidth="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+        <HierarchicalDataTemplate DataType="{x:Type local:DatabaseTreeNode}" ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Header}"/>
+                <TextBlock Text="{Binding Detail}" Opacity="0.58" Margin="6,0,0,0"/>
+            </StackPanel>
+        </HierarchicalDataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="310" MinWidth="240"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*" MinWidth="520"/>
+        </Grid.ColumnDefinitions>
+
+        <DockPanel Grid.Column="0">
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="刷新" Padding="8,3" Click="RefreshProviders_Click"/>
+                    <StackPanel>
+                        <TextBlock Text="数据源" FontSize="15" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="ProviderSummaryText" Text="MySQL / SQLite" Opacity="0.65" FontSize="12" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TreeView x:Name="BrowserTree"
+                      ItemsSource="{Binding}"
+                      SelectedItemChanged="BrowserTree_SelectedItemChanged"
+                      TreeViewItem.Expanded="BrowserTreeItem_Expanded"
+                      BorderThickness="0"
+                      Background="Transparent"
+                      Padding="6"/>
+        </DockPanel>
+
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button x:Name="AddButton" Content="新增" Click="AddRow_Click" Padding="8,3" Margin="5,0,0,0" Background="{DynamicResource PrimaryBrush}" Foreground="White" IsEnabled="False"/>
+                        <Button x:Name="SaveButton" Content="保存" Click="SaveChanges_Click" Padding="8,3" Margin="5,0,0,0" IsEnabled="False"/>
+                        <Button x:Name="RevertButton" Content="撤销" Click="RevertChanges_Click" Padding="8,3" Margin="5,0,0,0" IsEnabled="False"/>
+                        <Button x:Name="DeleteButton" Content="删除" Click="DeleteRow_Click" Padding="8,3" Margin="5,0,0,0" Foreground="#E53935" IsEnabled="False"/>
+                        <Button x:Name="RefreshTableButton" Content="刷新" Click="RefreshTable_Click" Padding="8,3" Margin="5,0,0,0" IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="搜索" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBox x:Name="SearchBox" Width="240" Padding="5,2" VerticalAlignment="Center" KeyDown="SearchBox_KeyDown"/>
+                        <Button Content="查询" Click="Search_Click" Padding="8,3" Margin="5,0,0,0"/>
+                        <Button Content="清空" Click="ClearSearch_Click" Padding="8,3" Margin="5,0,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,8">
+                <DockPanel>
+                    <TextBlock x:Name="TableMetaText" DockPanel.Dock="Right" Opacity="0.68" VerticalAlignment="Center"/>
+                    <StackPanel>
+                        <TextBlock x:Name="TableTitleText" Text="请选择一个表" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="TableSourceText" Text="从左侧展开数据源、库和表。" Opacity="0.65" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Row="2">
+                <DataGrid x:Name="RowsDataGrid"
+                          AutoGenerateColumns="True"
+                          AutoGeneratingColumn="RowsDataGrid_AutoGeneratingColumn"
+                          AutoGeneratedColumns="RowsDataGrid_AutoGeneratedColumns"
+                          Sorting="RowsDataGrid_Sorting"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserSortColumns="True"
+                          EnableColumnVirtualization="True"
+                          EnableRowVirtualization="True"
+                          GridLinesVisibility="Horizontal"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          RowBackground="Transparent"
+                          AlternatingRowBackground="{DynamicResource GlobalBackground}"
+                          HeadersVisibility="All"
+                          SelectionMode="Single"
+                          IsReadOnly="True"/>
+                <TextBlock x:Name="PlaceholderText" Text="暂无数据" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.42" FontSize="16" Visibility="Visible"/>
+            </Grid>
+
+            <Border Grid.Row="3" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="8">
+                <DockPanel>
+                    <TextBlock x:Name="RecordCountText" DockPanel.Dock="Left" Text="0 条记录" VerticalAlignment="Center" Opacity="0.72"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="FirstPageButton" Content="&lt;&lt;" Click="FirstPage_Click" Padding="8,3" Margin="0,0,5,0" IsEnabled="False"/>
+                        <Button x:Name="PrevPageButton" Content="&lt;" Click="PrevPage_Click" Padding="8,3" Margin="0,0,5,0" IsEnabled="False"/>
+                        <TextBlock Text="第" VerticalAlignment="Center" Margin="6,0"/>
+                        <TextBox x:Name="PageNumberBox" Text="1" Width="48" TextAlignment="Center" VerticalContentAlignment="Center" KeyDown="PageNumberBox_KeyDown"/>
+                        <TextBlock Text="/" VerticalAlignment="Center" Margin="6,0"/>
+                        <TextBlock x:Name="TotalPagesText" Text="1" VerticalAlignment="Center"/>
+                        <TextBlock Text="页" VerticalAlignment="Center" Margin="6,0"/>
+                        <Button x:Name="NextPageButton" Content="&gt;" Click="NextPage_Click" Padding="8,3" Margin="5,0,0,0" IsEnabled="False"/>
+                        <Button x:Name="LastPageButton" Content="&gt;&gt;" Click="LastPage_Click" Padding="8,3" Margin="5,0,0,0" IsEnabled="False"/>
+                        <ComboBox x:Name="PageSizeBox" Width="92" Margin="12,0,0,0" SelectedIndex="2" SelectionChanged="PageSizeBox_SelectionChanged">
+                            <ComboBoxItem Content="10 条/页"/>
+                            <ComboBoxItem Content="20 条/页"/>
+                            <ComboBoxItem Content="50 条/页"/>
+                            <ComboBoxItem Content="100 条/页"/>
+                        </ComboBox>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <StatusBar Grid.Row="4" Height="26">
+                <StatusBarItem>
+                    <TextBlock x:Name="StatusText" Text="就绪"/>
+                </StatusBarItem>
+            </StatusBar>
+        </Grid>
+    </Grid>
+</Window>

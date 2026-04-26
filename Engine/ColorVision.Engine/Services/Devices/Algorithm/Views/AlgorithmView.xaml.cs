@@ -354,28 +354,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
-            {
-                Type type = typeof(ViewResultAlg);
-
-                var properties = type.GetProperties();
-                foreach (var property in properties)
-                {
-                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
-                    string displayName = attribute?.DisplayName ?? property.Name;
-                    displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                    if (displayName == gridViewColumnHeader.Content.ToString())
-                    {
-                        var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
-                        if (item != null)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByProperty(property.Name, item.IsSortD);
-                            break;
-                        }
-                    }
-                }
-            }
+            e.Handled = ViewResults.SortByGridViewColumn<ViewResultAlg>(sender, GridViewColumnVisibilitys, Properties.Resources.ResourceManager);
         }
 
         public void Dispose()

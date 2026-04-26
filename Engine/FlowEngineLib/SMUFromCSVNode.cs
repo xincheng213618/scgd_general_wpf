@@ -57,6 +57,45 @@ public class SMUFromCSVNode : SMUBaseNode
 		}
 	}
 
+	[STNodeProperty("自动量程", "自动量程", true)]
+	public bool IsAutoRng
+	{
+		get
+		{
+			return _IsAutoRng;
+		}
+		set
+		{
+			_IsAutoRng = value;
+		}
+	}
+
+	[STNodeProperty("源量程", "源量程", true)]
+	public double SrcRng
+	{
+		get
+		{
+			return _SrcRng;
+		}
+		set
+		{
+			_SrcRng = value;
+		}
+	}
+
+	[STNodeProperty("限量程", "限量程", true)]
+	public double LmtRng
+	{
+		get
+		{
+			return _LmtRng;
+		}
+		set
+		{
+			_LmtRng = value;
+		}
+	}
+
 	public SMUFromCSVNode()
 		: base("源表[CSV]", "SMU", "SVR.SMU.Default", "DEV.SMU.Default")
 	{

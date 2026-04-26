@@ -107,6 +107,6 @@ public class CommonSensorNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new CommSensorData(_TempId, _TempName, (int)_CmdType, _CmdSend, _CmdReceive);
+		return new CommSensorData(_TempId, _TempName, _CmdType, _CmdSend, _CmdReceive);
 	}
 }

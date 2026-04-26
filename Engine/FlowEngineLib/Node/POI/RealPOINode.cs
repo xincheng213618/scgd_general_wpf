@@ -36,6 +36,19 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 
 	private STNodeEditText<string> m_ctrl_outtemp;
 
+	[STNodeProperty("图像文件", "图像文件", true)]
+	public string ImgFileName
+	{
+		get
+		{
+			return _ImgFileName;
+		}
+		set
+		{
+			_ImgFileName = value;
+		}
+	}
+
 	[STNodeProperty("过滤模板", "过滤模板", true)]
 	public string FilterTemplateName
 	{
@@ -292,7 +305,7 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		{
 			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
-		return new RealPOIData(_FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
+		return new RealPOIData(_ImgFileName, _FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
 		{
 			SMUData = GetSMUResult(start)
 		};

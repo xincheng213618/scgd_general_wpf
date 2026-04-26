@@ -10,7 +10,7 @@ namespace System.ComponentModel
     {
         static FontStylePropertiesEditor()
         {
-            PropertyEditorHelper.RegisterEditor<FontFamilyPropertiesEditor>(typeof(FontStyle));
+            PropertyEditorHelper.RegisterEditor<FontStylePropertiesEditor>(typeof(FontStyle));
         }
 
         public DockPanel GenProperties(PropertyInfo property, object obj)

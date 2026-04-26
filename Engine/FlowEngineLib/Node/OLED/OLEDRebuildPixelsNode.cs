@@ -15,6 +15,8 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 
 	private string _OutputTemplateName;
 
+	private STNodeEditText<CVOLED_Channel> m_ctrl_channel;
+
 	private STNodeEditText<string> m_ctrl_outtemp;
 
 	[STNodeProperty("通道", "通道", true)]
@@ -80,7 +82,7 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 		_OutputTemplateName = string.Empty;
 		_Channel = CVOLED_Channel.GREEN;
 		_ImgFileName = string.Empty;
-		base.Height += 25;
+		base.Height += 50;
 	}
 
 	protected override void OnCreate()
@@ -89,6 +91,8 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 		CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
 		m_ctrl_outtemp = CreateStringControl(m_custom_item, "输出:", _OutputTemplateName);
+		m_custom_item.Y += 25;
+		m_ctrl_channel = CreateControl(typeof(STNodeEditText<CVOLED_Channel>), m_custom_item, "通道:", _Channel);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
