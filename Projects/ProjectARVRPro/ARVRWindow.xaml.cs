@@ -444,6 +444,16 @@ namespace ProjectARVRPro
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
             }
+
+            if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
+            {
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                CurrentFlowResult.Msg = "PreProcessFailed";
+                logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                TryCount = 0;
+                return;
+            }
+
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
@@ -454,8 +464,6 @@ namespace ProjectARVRPro
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
-
-            PreProcessing(FlowName, sn);
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -478,6 +486,7 @@ namespace ProjectARVRPro
                     {
                         FlowName = flowName,
                         SerialNumber = serialNumber,
+                        CVBaseServerNodes = new ObservableCollection<CVBaseServerNode>(STNodeEditorMain.Nodes.OfType<CVBaseServerNode>()),
                     };
 
                     // Execute all matching pre-processors sequentially
@@ -1224,6 +1233,22 @@ namespace ProjectARVRPro
                         await Refresh();
                     }
 
+                    if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
+                    {
+                        CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                        CurrentFlowResult.Msg = "PreProcessFailed";
+                        logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                        ViewResultManager.Save(CurrentFlowResult);
+
+                        if (!ProjectARVRProConfig.Instance.AllowTestFailures)
+                        {
+                            log.Error($"流程 {meta.Name} 预处理失败且不允许失败，终止一键执行");
+                            break;
+                        }
+
+                        continue;
+                    }
+
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
                     LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
@@ -1234,8 +1259,6 @@ namespace ProjectARVRPro
                         int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
                         CurrentFlowResult.BatchId = id;
                     }
-
-                    await PreProcessing(FlowName, sn);
 
                     flowControl.FlowCompleted += completedHandler;
                     stopwatch.Reset();

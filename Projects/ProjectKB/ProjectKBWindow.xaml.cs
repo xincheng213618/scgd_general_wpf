@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Batch;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
@@ -191,6 +192,7 @@ namespace ProjectKB
             }
             catch (Exception ex)
             {
+                log.Error("刷新流程失败", ex);
                 flowEngine.LoadFromBase64(string.Empty);
             }
         }
@@ -253,7 +255,11 @@ namespace ProjectKB
         int TryCount;
         public async Task RunTemplate()
         {
-            if (flowControl != null && flowControl.IsFlowRun) return;
+            if (flowControl != null && flowControl.IsFlowRun)
+            {
+                log.Info("当前存在流程执行");
+                return;
+            }
 
             TryCount++;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
@@ -266,7 +272,12 @@ namespace ProjectKB
 
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
             await Refresh();
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
+            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName()))
+            {
+                log.Info("找不到完整流程，运行失败");
+                TryCount = 0;
+                return;
+            }
 
             log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
@@ -276,6 +287,16 @@ namespace ProjectKB
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
             }
+
+            if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
+            {
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                CurrentFlowResult.Msg = "PreProcessFailed";
+                logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                TryCount = 0;
+                return;
+            }
+
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
 
@@ -289,6 +310,69 @@ namespace ProjectKB
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
+        }
+
+        private async Task<bool> PreProcessingAsync(string flowName, string serialNumber)
+        {
+            try
+            {
+                var matchingProcessors = PreProcessManager.GetInstance().Processes
+                    .Where(p => IsValidEnabledPreProcessor(p, flowName))
+                    .ToList();
+
+                if (matchingProcessors.Count <= 0)
+                {
+                    return true;
+                }
+
+                log.Info($"匹配到 {matchingProcessors.Count} 个已启用的预处理 {flowName}");
+
+                var ctx = new IPreProcessContext
+                {
+                    FlowName = flowName,
+                    SerialNumber = serialNumber,
+                    CVBaseServerNodes = new ObservableCollection<CVBaseServerNode>(STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+                };
+
+                foreach (var processor in matchingProcessors)
+                {
+                    var metadata = PreProcessMetadata.FromProcess(processor);
+                    log.Info($"执行预处理 {metadata.DisplayName}");
+
+                    try
+                    {
+                        bool success = await processor.PreProcess(ctx);
+                        if (!success)
+                        {
+                            log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
+                            return false;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error($"预处理 {metadata.DisplayName} 执行异常", ex);
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行预处理出错", ex);
+                return false;
+            }
+        }
+
+        private static bool IsValidEnabledPreProcessor(IPreProcess processor, string flowName)
+        {
+            var config = processor.GetConfig();
+            if (config is PreProcessConfigBase baseConfig)
+            {
+                return baseConfig.IsEnabled && baseConfig.AppliesToTemplate(flowName);
+            }
+
+            return false;
         }
 
 
@@ -991,6 +1075,14 @@ namespace ProjectKB
 
         public void Dispose()
         {
+            ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
+            ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+            if (flowControl != null)
+            {
+                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                flowControl.Stop();
+            }
+            STNodeEditorMain?.Dispose();
             timer?.Dispose();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);

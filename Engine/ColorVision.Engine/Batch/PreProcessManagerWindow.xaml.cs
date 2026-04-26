@@ -97,7 +97,7 @@ namespace ColorVision.Engine.Batch
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            // Cleanup event handlers on window close
+            PreProcessManager.GetInstance().SavePersisted();
             CleanupEventHandlers();
         }
 

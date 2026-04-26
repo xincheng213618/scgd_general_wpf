@@ -188,7 +188,7 @@ namespace ColorVision.Engine.Batch
             }
         }
 
-        private void SavePersisted()
+        public void SavePersisted()
         {
             try
             {
