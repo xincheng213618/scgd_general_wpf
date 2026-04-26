@@ -110,6 +110,12 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         private void AppsListBox_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if (e.OriginalSource is DependencyObject source)
+            {
+                if (ItemsControl.ContainerFromElement(AppsListBox, source) is ListBoxItem listBoxItem)
+                    listBoxItem.IsSelected = true;
+            }
+
             if (AppsListBox.SelectedItem is ThirdPartyAppInfo app)
             {
                 ContextMenu contextMenu = new ContextMenu();
@@ -123,6 +129,29 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 openDirItem.Click += (s, args) => app.OpenDirectoryCommand.Execute(null);
                 openDirItem.IsEnabled = app.OpenDirectoryCommand.CanExecute(null);
                 contextMenu.Items.Add(openDirItem);
+
+                if (app.ContextActions.Count > 0)
+                {
+                    contextMenu.Items.Add(new Separator());
+
+                    foreach (var action in app.ContextActions)
+                    {
+                        MenuItem actionItem = new MenuItem { Header = action.Header, IsEnabled = action.IsEnabled };
+                        actionItem.Click += (s, args) =>
+                        {
+                            try
+                            {
+                                action.Invoke();
+                                app.RefreshStatus();
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show(this, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                            }
+                        };
+                        contextMenu.Items.Add(actionItem);
+                    }
+                }
 
                 // Check if this is a custom app — if so, show edit and delete options
                 var customEntry = FindCustomEntry(app);
