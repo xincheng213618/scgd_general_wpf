@@ -346,9 +346,7 @@ namespace ColorVision.UI
                 }
             }
 
-            if (dockPanel == null) dockPanel = new DockPanel(); ;
-
-
+            if (dockPanel == null) return new DockPanel();
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
             dockPanel.Tag = property;
             ApplyVisibilityBinding(dockPanel, property, obj);
