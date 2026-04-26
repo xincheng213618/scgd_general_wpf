@@ -19,11 +19,11 @@ namespace ColorVision.UI
             set => SetProperty(ref _header, value);
         }
 
-        private StackPanel? _associatedBorder;
-        public StackPanel? AssociatedBorder
+        private FrameworkElement? _associatedElement;
+        public FrameworkElement? AssociatedBorder
         {
-            get => _associatedBorder;
-            set => SetProperty(ref _associatedBorder, value);
+            get => _associatedElement;
+            set => SetProperty(ref _associatedElement, value);
         }
 
         private bool _isVisible = true;
@@ -55,10 +55,10 @@ namespace ColorVision.UI
         {
         }
 
-        public PropertyTreeNode(string header, StackPanel? associatedPanel = null)
+        public PropertyTreeNode(string header, FrameworkElement? associatedElement = null)
         {
             Header = header;
-            AssociatedBorder = associatedPanel;
+            AssociatedBorder = associatedElement;
         }
 
         /// <summary>
