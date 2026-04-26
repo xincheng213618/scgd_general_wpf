@@ -331,12 +331,7 @@
                         </DockPanel>
                         <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Top">
                             <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderRightPrimary,Mode=OneWay}" HorizontalAlignment="Right" Padding="3"/>
-                            <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right">
-                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderRightSecondary,Mode=OneWay}"/>
-                            </StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}" Margin="0,0,5,0" Visibility="{Binding OpenLocalPathVisibility, FallbackValue=Visible}"/>
-                                <Button Content="{x:Static properties:Resources.ExtractPlugin}" Background="Transparent" BorderThickness="0" Command="{Binding ExtractPluginCommand}" Margin="0,0,5,0" Visibility="{Binding ExtractPluginVisibility, FallbackValue=Visible}"/>
                                 <Button Content="{Binding PrimaryActionText, FallbackValue={x:Static properties:Resources.Install}}" Background="Transparent" BorderThickness="0" Command="{Binding InstallCommand}" Margin="0,0,5,0" Visibility="{Binding PrimaryActionVisibility, FallbackValue=Collapsed}"/>
                                 <Button Content="{x:Static properties:Resources.Download}" Background="Transparent" BorderThickness="0" Command="{Binding DownloadCommand}" Margin="0,0,5,0" Visibility="{Binding DownloadLatestVisibility, FallbackValue=Collapsed}"/>
                                 <Button Content="OpenUrl" Background="Transparent" BorderThickness="0" Command="{Binding OpenProjectUrlCommand}" Visibility="{Binding OpenProjectUrlVisibility, FallbackValue=Collapsed}"/>

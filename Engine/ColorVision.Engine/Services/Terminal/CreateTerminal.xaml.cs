@@ -1,21 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.Camera.Configs;
-using ColorVision.Engine.Services.Devices.CfwPort;
-using ColorVision.Engine.Services.Devices.FileServer;
-using ColorVision.Engine.Services.Devices.FlowDevice;
-using ColorVision.Engine.Services.Devices.Motor;
-using ColorVision.Engine.Services.Devices.PG;
-using ColorVision.Engine.Services.Devices.Sensor;
-using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Services.Devices.SMU.Configs;
-using ColorVision.Engine.Services.Devices.Spectrum;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
-using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
@@ -50,13 +34,8 @@ namespace ColorVision.Engine.Services.Terminal
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            SysResourceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
+            SysResourceModel saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
             {
-                deviceConfig.Name = CreateCode.Text;
-                deviceConfig.Code = CreateName.Text;
-
-                deviceConfig.SendTopic = TerminalService.Config.SendTopic;
-                deviceConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
@@ -72,7 +51,12 @@ namespace ColorVision.Engine.Services.Terminal
                 MessageBox1.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加","ColorVision");
                 return;
             }
-            DeviceService deviceService = null;
+
+            if (!DeviceServiceFactoryRegistry.TryGetFactory(TerminalService.ServiceType, out IDeviceServiceFactory? deviceServiceFactory) || deviceServiceFactory == null)
+            {
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"暂不支持创建 {TerminalService.ServiceType} 类型设备", "ColorVision");
+                return;
+            }
 
 
             SysResourceModel sysResource = new SysResourceModel();
@@ -82,184 +66,24 @@ namespace ColorVision.Engine.Services.Terminal
             sysResource.Pid = TerminalService.SysResourceModel.Id;
 
 
-            SysResourceModel sysDevModel = null;
-            DeviceServiceConfig deviceConfig;
-            int fromPort;
-            switch (TerminalService.ServiceType)
-            {
-                case ServiceTypes.Camera:
-                    ConfigCamera configCamera = new ConfigCamera()
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(configCamera, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceCamera(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.PG:
-                    ConfigPG pGConfig = new()
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(pGConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DevicePG(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Spectrum:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
-                    deviceConfig = new ConfigSpectrum
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceSpectrum(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.SMU:
-                    deviceConfig = new ConfigSMU
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceSMU(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Sensor:
-                    deviceConfig = new ConfigSensor
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceSensor(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.FileServer:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
-                    deviceConfig = new ConfigFileServer
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                        Endpoint = "127.0.0.1",
-                        PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                        FileBasePath = "D:\\CVTest",
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceFileServer(sysDevModel);
-                    }
+            DeviceServiceCreateContext createContext = new(
+                CreateCode.Text,
+                CreateName.Text,
+                TerminalService.Config.SendTopic,
+                TerminalService.Config.SubscribeTopic);
+            DeviceServiceConfig deviceConfig = deviceServiceFactory.CreateConfig(createContext);
+            SysResourceModel sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+            DeviceService deviceService = deviceServiceFactory.CreateService(sysDevModel);
 
-                    break;
-                case ServiceTypes.Algorithm:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
-                    deviceConfig = new ConfigAlgorithm
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                        IsCCTWave = true,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceAlgorithm(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.FilterWheel:
-                    deviceConfig = new ConfigCfwPort
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceCfwPort(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Calibration:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6200);
-                    deviceConfig = new ConfigCalibration
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceCalibration(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Motor:
-                    deviceConfig = new ConfigMotor
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceMotor(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.ThirdPartyAlgorithms:
-                    deviceConfig = new ConfigThirdPartyAlgorithms
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceThirdPartyAlgorithms(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Flow:
-                    deviceConfig = new ConfigFlowDevice
-                    {
-                        Id = CreateCode.Text,
-                        Name = CreateName.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceFlowDevice(sysDevModel);
-                    }
+            TerminalService.AddChild(deviceService);
+            ServiceManager.GetInstance().DeviceServices.Add(deviceService);
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-                    break;
-                default:
-                    break;
-            };
-            if (deviceService != null)
-            {
-                TerminalService.AddChild(deviceService);
-                ServiceManager.GetInstance().DeviceServices.Add(deviceService);
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            string TypeCode = Db.Queryable<SysDictionaryModel>().Where(x => x.Pid == 1 && x.Value == sysDevModel.Pid).First().Key;
+            string PCode = Db.Queryable<SysResourceModel>().InSingle(sysDevModel.Type).Code;
 
-                string TypeCode = Db.Queryable<SysDictionaryModel>().Where(x => x.Pid == 1 && x.Value == sysDevModel.Pid).First().Key;
-                string PCode = Db.Queryable<SysResourceModel>().InSingle(sysDevModel.Type).Code;
-
-                RC.MqttRCService.GetInstance().RestartServices(TypeCode, PCode, sysDevModel.Code);
-                Close();
-            }
-            else
-            {
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "创建失败", "ColorVision");
-            }
+            RC.MqttRCService.GetInstance().RestartServices(TypeCode, PCode, sysDevModel.Code);
+            Close();
 
         }
 
