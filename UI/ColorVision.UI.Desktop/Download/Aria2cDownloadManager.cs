@@ -33,7 +33,19 @@ namespace ColorVision.UI.Desktop.Download
         {
             lock (_locker)
             {
-                _instance ??= new Aria2cDownloadManager();
+                if (_instance == null)
+                {
+                    var application = Application.Current;
+                    if (application?.Dispatcher != null && !application.Dispatcher.CheckAccess())
+                    {
+                        _instance = application.Dispatcher.Invoke(() => new Aria2cDownloadManager());
+                    }
+                    else
+                    {
+                        _instance = new Aria2cDownloadManager();
+                    }
+                }
+
                 return _instance;
             }
         }

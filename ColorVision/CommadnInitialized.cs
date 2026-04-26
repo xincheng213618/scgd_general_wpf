@@ -25,18 +25,8 @@ namespace ColorVision
                 string cmd = parser.GetValue("cmd");
                 if (cmd != null)
                 {
-                    List<IMenuItem> IMenuItems = new List<IMenuItem>();
-                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                    {
-                        foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
-                        {
-                            if (Activator.CreateInstance(type) is IMenuItem menuitem)
-                            {
-                                IMenuItems.Add(menuitem);
-                            }
-                        }
-                    }
-                    if (IMenuItems.Find(a => a.GuidId == cmd) is IMenuItem menuitem1)
+                    var menuItems = MenuManager.GetInstance().GetAllMenuItems();
+                    if (menuItems.Find(a => a.GuidId == cmd) is IMenuItem menuitem1)
                     {
                         log.Info($"Execute{menuitem1.Header}");
                         menuitem1.Command?.Execute(this);

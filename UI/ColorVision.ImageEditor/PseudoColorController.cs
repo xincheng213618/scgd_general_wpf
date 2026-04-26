@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor
             _owner = owner;
         }
 
-        public bool IsEnabled => _owner.Pseudo.IsChecked == true;
+        public bool IsEnabled => InvokeOnUiThread(IsEnabledCore);
 
         public void ConfigureForImage()
         {
@@ -80,8 +80,14 @@ namespace ColorVision.ImageEditor
 
         public bool TryCreateRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
         {
-            request = CaptureFrameRequest(channelOverride ?? GetSelectedChannel());
-            return IsEnabled;
+            var snapshot = InvokeOnUiThread(() =>
+            {
+                var channel = channelOverride ?? GetSelectedChannel();
+                return (IsEnabled: IsEnabledCore(), Request: CaptureFrameRequest(channel));
+            });
+
+            request = snapshot.Request;
+            return snapshot.IsEnabled;
         }
 
         public void ApplyProcessedImage(HImage pseudoImage)
@@ -145,6 +151,22 @@ namespace ColorVision.ImageEditor
             }
 
             RequestRender(100);
+        }
+
+        private T InvokeOnUiThread<T>(Func<T> action)
+        {
+            var dispatcher = _owner.Pseudo.Dispatcher;
+            if (dispatcher.CheckAccess())
+            {
+                return action();
+            }
+
+            return dispatcher.Invoke(action);
+        }
+
+        private bool IsEnabledCore()
+        {
+            return _owner.Pseudo.IsChecked == true;
         }
 
         private void TryApplyAutoRange()

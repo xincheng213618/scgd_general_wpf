@@ -308,17 +308,24 @@ namespace ColorVision.UI.Desktop.Marketplace
                 {
                     UniformGrid uniformGrid = new UniformGrid() { Margin = new Thickness(5) };
                     uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null))
                     {
-                        if (Activator.CreateInstance(type) is IMenuItem menuItems)
+                        try
                         {
-                            var button = new Button
+                            if (Activator.CreateInstance(type) is IMenuItem menuItems)
                             {
-                                Style = PropertyEditorHelper.ButtonCommandStyle,
-                                Content = menuItems.Header,
-                                Command = menuItems.Command
-                            };
-                            uniformGrid.Children.Add(button);
+                                var button = new Button
+                                {
+                                    Style = PropertyEditorHelper.ButtonCommandStyle,
+                                    Content = menuItems.Header,
+                                    Command = menuItems.Command
+                                };
+                                uniformGrid.Children.Add(button);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Warn($"Create plugin IMenuItem failed: {type.FullName}: {ex.Message}");
                         }
                     }
                     stackPanel.Children.Add(uniformGrid);

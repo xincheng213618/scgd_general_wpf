@@ -37,6 +37,7 @@ namespace ColorVision.UI.Menus
         /// already implement <see cref="IMenuItem"/> or <see cref="IMenuItemProvider"/>.
         /// These are handled via the lazy-loading path.</summary>
         private readonly List<Type> _menuItemAttributeTypeCache = new();
+        private readonly object _typeCacheLock = new();
         // ----------------------------------------------------------------
 
         private MenuManager()
@@ -219,39 +220,67 @@ namespace ColorVision.UI.Menus
         private void EnsureTypeCaches()
         {
             if (_typeCacheBuilt) return;
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            lock (_typeCacheLock)
             {
-                Type[] types;
-                try
+                if (_typeCacheBuilt) return;
+
+                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                 {
-                    types = assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    types = ex.Types.Where(t => t != null).ToArray();
+                    Type[] types;
+                    try
+                    {
+                        types = assembly.GetTypes();
+                    }
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        types = ex.Types.Where(t => t != null).ToArray();
+                    }
+
+                    foreach (var t in types)
+                    {
+                        if (!IsConcreteMenuCandidate(t)) continue;
+
+                        if (typeof(IMenuItem).IsAssignableFrom(t))
+                        {
+                            AddInstantiableType(_menuItemTypeCache, t, nameof(IMenuItem));
+                        }
+                        else if (typeof(IMenuItemProvider).IsAssignableFrom(t))
+                        {
+                            AddInstantiableType(_menuItemProviderTypeCache, t, nameof(IMenuItemProvider));
+                        }
+                        else if (t.IsDefined(typeof(MenuItemAttribute), false))
+                        {
+                            // Attribute-only path: class has [MenuItem] but does not implement
+                            // IMenuItem or IMenuItemProvider — handled via lazy loading.
+                            AddInstantiableType(_menuItemAttributeTypeCache, t, nameof(MenuItemAttribute));
+                        }
+                    }
                 }
 
-                foreach (var t in types)
-                {
-                    if (t == null || t.IsAbstract || t.IsInterface) continue;
-
-                    if (typeof(IMenuItem).IsAssignableFrom(t))
-                    {
-                        _menuItemTypeCache.Add(t);
-                    }
-                    else if (typeof(IMenuItemProvider).IsAssignableFrom(t))
-                    {
-                        _menuItemProviderTypeCache.Add(t);
-                    }
-                    else if (t.IsDefined(typeof(MenuItemAttribute), false))
-                    {
-                        // Attribute-only path: class has [MenuItem] but does not implement
-                        // IMenuItem or IMenuItemProvider — handled via lazy loading.
-                        _menuItemAttributeTypeCache.Add(t);
-                    }
-                }
+                _typeCacheBuilt = true;
             }
-            _typeCacheBuilt = true;
+        }
+
+        private static bool IsConcreteMenuCandidate(Type? type)
+        {
+            return type != null && type.IsClass && !type.IsAbstract && !type.IsInterface && !type.ContainsGenericParameters;
+        }
+
+        private static bool HasPublicParameterlessConstructor(Type type)
+        {
+            return type.GetConstructor(Type.EmptyTypes) != null;
+        }
+
+        private void AddInstantiableType(List<Type> cache, Type type, string discoveryKind)
+        {
+            if (HasPublicParameterlessConstructor(type))
+            {
+                cache.Add(type);
+                return;
+            }
+
+            if (log.IsDebugEnabled)
+                log.Debug($"Skip {discoveryKind} discovery for {type.FullName}: no public parameterless constructor.");
         }
 
         /// <summary>
@@ -265,8 +294,15 @@ namespace ColorVision.UI.Menus
 
         private List<IMenuItem> GetIMenuItemsFiltered()
         {
+            var allMenuItems = CreateAllMenuItems();
+            var allFilteredGuids = GetAllFilteredGuids(allMenuItems, FilteredGuids);
+            return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredGuids.Contains(mi.GuidId)).ToList();
+        }
+
+        private List<IMenuItem> CreateAllMenuItems()
+        {
             EnsureTypeCaches();
-            var allMenuItems = new List<IMenuItem>(_menuItemTypeCache.Count + 16);
+            var allMenuItems = new List<IMenuItem>(_menuItemTypeCache.Count + _menuItemProviderTypeCache.Count + _menuItemAttributeTypeCache.Count + 16);
 
             foreach (var t in _menuItemTypeCache)
             {
@@ -304,7 +340,6 @@ namespace ColorVision.UI.Menus
                 }
             }
 
-            // Attribute-based lazy path: no instantiation until command execution.
             foreach (var t in _menuItemAttributeTypeCache)
             {
                 var attr = t.GetCustomAttribute<MenuItemAttribute>(false);
@@ -312,8 +347,7 @@ namespace ColorVision.UI.Menus
                     allMenuItems.Add(new LazyMenuItemAdapter(attr, t));
             }
 
-            var allFilteredGuids = GetAllFilteredGuids(allMenuItems, FilteredGuids);
-            return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredGuids.Contains(mi.GuidId)).ToList();
+            return allMenuItems;
         }
 
         private HashSet<string> GetAllFilteredGuids(IEnumerable<IMenuItem> allMenuItems, IEnumerable<string> initialGuids)
@@ -342,54 +376,7 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public List<IMenuItem> GetAllMenuItems()
         {
-            EnsureTypeCaches();
-            var allMenuItems = new List<IMenuItem>(_menuItemTypeCache.Count + 16);
-
-            foreach (var t in _menuItemTypeCache)
-            {
-                try
-                {
-                    if (Activator.CreateInstance(t) is IMenuItem item && item.Command != null)
-                        allMenuItems.Add(item);
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Create IMenuItem failed: {t.FullName}: {ex.Message}");
-                }
-            }
-
-            foreach (var t in _menuItemProviderTypeCache)
-            {
-                try
-                {
-                    if (Activator.CreateInstance(t) is IMenuItemProvider provider)
-                    {
-                        var provided = provider.GetMenuItems();
-                        if (provided != null)
-                        {
-                            foreach (var p in provided)
-                            {
-                                if (p != null && p.Command != null && p.Header != null)
-                                    allMenuItems.Add(p);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Create IMenuItemProvider failed: {t.FullName}: {ex.Message}");
-                }
-            }
-
-            // Attribute-based lazy path (unfiltered, for configuration UI).
-            foreach (var t in _menuItemAttributeTypeCache)
-            {
-                var attr = t.GetCustomAttribute<MenuItemAttribute>(false);
-                if (attr?.Header != null)
-                    allMenuItems.Add(new LazyMenuItemAdapter(attr, t));
-            }
-
-            return allMenuItems;
+            return CreateAllMenuItems();
         }
 
         /// <summary>
@@ -398,7 +385,7 @@ namespace ColorVision.UI.Menus
         public void RebuildAllMenus()
         {
             // 遍历字典中所有已注册的窗口标识和对应的 Menu 控件
-            foreach (var kvp in _windowMenus)
+            foreach (var kvp in _windowMenus.ToList())
             {
                 var targetName = kvp.Key;
                 var targetMenuControl = kvp.Value;
