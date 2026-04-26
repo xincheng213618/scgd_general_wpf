@@ -162,7 +162,7 @@ namespace ColorVision.UI
         public static IValueConverter Enum2VisibilityReConverter => Resources.Value.Enum2VisibilityReConverter;
 
 
-        public static ResourceManager? GetResourceManager(object obj, ResourceManager resourceManager =null)
+        public static ResourceManager? GetResourceManager(object obj, ResourceManager? resourceManager = null)
         {
             var type = obj.GetType();
             if (resourceManager == null)
@@ -311,7 +311,10 @@ namespace ColorVision.UI
 
         public static DockPanel GenProperties(PropertyInfo property, object obj)
         {
-            DockPanel dockPanel = null;
+            ArgumentNullException.ThrowIfNull(property);
+            ArgumentNullException.ThrowIfNull(obj);
+
+            DockPanel? dockPanel = null;
             var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
             if (editorAttr?.EditorType != null)
             {
@@ -342,18 +345,113 @@ namespace ColorVision.UI
                     }
                 }
             }
+
+            if (dockPanel == null)
+            {
+                throw new NotSupportedException($"No property editor registered for {obj.GetType().Name}.{property.Name} ({property.PropertyType.Name}).");
+            }
+
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
+            ApplyVisibilityBinding(dockPanel, property, obj);
             return dockPanel;
         }
 
-        public static StackPanel GenPropertyEditorControl(object obj,ResourceManager resourceManager =null)
+        public static DockPanel GenProperties(object obj, string propertyName, ResourceManager? resourceManager = null)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                throw new ArgumentException("Property name cannot be empty.", nameof(propertyName));
+            }
+
+            if (resourceManager != null)
+            {
+                GetResourceManager(obj, resourceManager);
+            }
+
+            var property = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new ArgumentException($"Property '{propertyName}' was not found on type '{obj.GetType().Name}'.", nameof(propertyName));
+
+            if (!property.CanRead || !property.CanWrite)
+            {
+                throw new ArgumentException($"Property '{propertyName}' must be a public readable and writable instance property.", nameof(propertyName));
+            }
+
+            return GenProperties(property, obj);
+        }
+
+        public static DockPanel GenProperties<T>(T obj, System.Linq.Expressions.Expression<Func<T, object?>> propertyExpression, ResourceManager? resourceManager = null)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(propertyExpression);
+
+            if (resourceManager != null)
+            {
+                GetResourceManager(obj, resourceManager);
+            }
+
+            return GenProperties(GetPropertyInfo(propertyExpression), obj);
+        }
+
+        private static PropertyInfo GetPropertyInfo<T>(System.Linq.Expressions.Expression<Func<T, object?>> propertyExpression)
+        {
+            System.Linq.Expressions.Expression body = propertyExpression.Body;
+            if (body is System.Linq.Expressions.UnaryExpression unaryExpression &&
+                (unaryExpression.NodeType == System.Linq.Expressions.ExpressionType.Convert || unaryExpression.NodeType == System.Linq.Expressions.ExpressionType.ConvertChecked))
+            {
+                body = unaryExpression.Operand;
+            }
+
+            if (body is System.Linq.Expressions.MemberExpression memberExpression && memberExpression.Member is PropertyInfo propertyInfo)
+            {
+                return propertyInfo;
+            }
+
+            throw new ArgumentException("Expression must select a property, for example: x => x.Mode.", nameof(propertyExpression));
+        }
+
+        private static void ApplyVisibilityBinding(DockPanel dockPanel, PropertyInfo property, object obj)
+        {
+            var visibleAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
+            if (visibleAttr == null)
+            {
+                return;
+            }
+
+            var binding = new Binding(visibleAttr.PropertyName)
+            {
+                Source = obj,
+                Mode = BindingMode.OneWay
+            };
+
+            IValueConverter? converter;
+            if (visibleAttr.ExpectedValue != null)
+            {
+                converter = visibleAttr.IsInverted ? Enum2VisibilityReConverter : Enum2VisibilityConverter;
+                binding.ConverterParameter = visibleAttr.ExpectedValue;
+            }
+            else
+            {
+                converter = visibleAttr.IsInverted ? Bool2VisibilityReConverter : Bool2VisibilityConverter;
+            }
+
+            if (converter == null)
+            {
+                return;
+            }
+
+            binding.Converter = converter;
+            dockPanel.SetBinding(UIElement.VisibilityProperty, binding);
+        }
+
+        public static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager = null)
         {
             if (obj == null) return new StackPanel();
 
-            bool OrderBy = true;
+            bool orderBy = true;
             if (resourceManager != null)
             {
-                OrderBy = false;
+                orderBy = false;
                 GetResourceManager(obj, resourceManager);
             }
 
@@ -361,14 +459,14 @@ namespace ColorVision.UI
 
             void CollectProperties(object source)
             {
-                var t = source.GetType();
+                var type = source.GetType();
 
                 // 1. 获取属性
-                var allProps = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                var allProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                 .Where(p => p.CanRead && p.CanWrite);
 
 
-                var sortedProps = OrderBy? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType)): allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType));
+                var sortedProps = orderBy ? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType ?? type)) : allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType ?? type));
 
                 foreach (var prop in sortedProps)
                 {
@@ -377,7 +475,7 @@ namespace ColorVision.UI
                         continue;
 
                     var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                    string category = categoryAttr?.Category ?? t.Name;
+                    string category = categoryAttr?.Category ?? type.Name;
 
                     if (!categoryGroups.TryGetValue(category, out var list))
                     {
@@ -421,118 +519,48 @@ namespace ColorVision.UI
 
                 foreach (var property in categoryGroup.Value)
                 {
-                    DockPanel dockPanel = null;
-                    var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-                    if (editorAttr?.EditorType != null)
+                    try
                     {
-                        try
-                        {
-                            var editor = GetOrCreateEditor(editorAttr.EditorType);
-                            dockPanel = editor.GenProperties(property, obj);
-                        }
-                        catch (Exception)
-                        {
-                        }
+                        stackPanel.Children.Add(GenProperties(property, obj));
                     }
-
-                    if (dockPanel == null)
+                    catch (NotSupportedException)
                     {
-                        Type? editorType = null;
-                        editorType = GetEditorTypeForPropertyType(property.PropertyType);
-                        if (editorType != null)
-                        {
-                            try
-                            {
-                                var editor = GetOrCreateEditor(editorType);
-                                dockPanel = editor.GenProperties(property, obj);
-                            }
-                            catch (Exception)
-                            {
-                                continue; 
-                            }
-                        }
-                        else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
-                        {
-                            // 如果属性是ViewModelBase的子类，递归解析
-                            var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
-                            if (nestedObj != null)
-                            {
-                                stackPanel.Margin = new Thickness(5);
-                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
-                                {
-                                    stackPanel.Children.Add(stackPanel1);
-                                }
-                                continue;
-                            }
-                        }
-                        else if (property.PropertyType == typeof(object))
-                        {
-                            stackPanel.Margin = new Thickness(5);
-                            StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(property.GetValue(obj));
-                            if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
-                            {
-                                stackPanel.Children.Add(stackPanel1);
-                            }
-                            continue;
-                        }
-                        else
-                        {
-                            continue;
-                        }
+                        TryAddNestedPropertyEditor(property, obj, stackPanel);
                     }
-
-                    dockPanel.Margin = new Thickness(0, 0, 0, 5);
-
-                    // Visibility binding based on PropertyVisibilityAttribute
-                    var visibleAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
-                    if (visibleAttr != null)
+                    catch (Exception)
                     {
-                        var vb = new Binding(visibleAttr.PropertyName)
-                        {
-                            Source = obj,
-                            Mode = BindingMode.OneWay
-                        };
-
-                        IValueConverter? converter = null;
-                        
-                        // If ExpectedValue is set, this is an enum binding
-                        if (visibleAttr.ExpectedValue != null)
-                        {
-                            converter = visibleAttr.IsInverted ? Enum2VisibilityReConverter : Enum2VisibilityConverter;
-                            vb.ConverterParameter = visibleAttr.ExpectedValue;
-                            
-                            if (converter == null)
-                            {
-                                // Enum converters not available - skip binding
-                                // This can happen if the theme doesn't include them
-                                continue;
-                            }
-                        }
-                        else
-                        {
-                            // Boolean binding - support both normal and inverted
-                            converter = visibleAttr.IsInverted ? Bool2VisibilityReConverter : Bool2VisibilityConverter;
-                            
-                            // If the required converter is not available, we cannot bind correctly
-                            // The standard converter is always available, so only the inverted version might be missing
-                            if (converter == null)
-                            {
-                                // Cannot use IsInverted without the reversed converter - skip binding
-                                // to avoid incorrect visibility behavior
-                                continue;
-                            }
-                        }
-
-                        vb.Converter = converter;
-                        dockPanel.SetBinding(UIElement.VisibilityProperty, vb);
                     }
-
-                    stackPanel.Children.Add(dockPanel);
                 }
             }
 
             return propertyPanel;
+        }
+
+        private static bool TryAddNestedPropertyEditor(PropertyInfo property, object obj, StackPanel stackPanel)
+        {
+            if (property.PropertyType != typeof(object) && !typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
+            {
+                return false;
+            }
+
+            var nestedObj = property.GetValue(obj);
+            if (nestedObj == null)
+            {
+                return false;
+            }
+
+            stackPanel.Margin = new Thickness(5);
+            var nestedPanel = GenPropertyEditorControl(nestedObj);
+            if (nestedPanel.Children.Count == 1 &&
+                nestedPanel.Children[0] is Border nestedBorder &&
+                nestedBorder.Child is StackPanel nestedStackPanel &&
+                nestedStackPanel.Children.Count > 1)
+            {
+                stackPanel.Children.Add(nestedPanel);
+                return true;
+            }
+
+            return false;
         }
 
         // Helpers

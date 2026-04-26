@@ -11,7 +11,7 @@ namespace System.ComponentModel
     {
         static BoolPropertiesEditor()
         {
-            PropertyEditorHelper.RegisterEditor<BoolPropertiesEditor>(typeof(bool));
+            PropertyEditorHelper.RegisterEditor<BoolPropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t) == typeof(bool));
         }
 
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -23,7 +23,8 @@ namespace System.ComponentModel
             var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
             {
                 Margin = new Thickness(5, 0, 0, 0),
-                Background = Brushes.DodgerBlue
+                Background = Brushes.DodgerBlue,
+                IsThreeState = Nullable.GetUnderlyingType(property.PropertyType) != null
             };
             var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
             toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
