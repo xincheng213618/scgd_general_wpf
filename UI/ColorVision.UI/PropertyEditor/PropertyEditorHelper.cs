@@ -346,10 +346,8 @@ namespace ColorVision.UI
                 }
             }
 
-            if (dockPanel == null)
-            {
-                throw new NotSupportedException($"No property editor registered for {obj.GetType().Name}.{property.Name} ({property.PropertyType.Name}).");
-            }
+            if (dockPanel == null) dockPanel = new DockPanel(); ;
+
 
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
             dockPanel.Tag = property;
@@ -520,49 +518,13 @@ namespace ColorVision.UI
 
                 foreach (var property in categoryGroup.Value)
                 {
-                    try
-                    {
-                        stackPanel.Children.Add(GenProperties(property, obj));
-                    }
-                    catch (NotSupportedException)
-                    {
-                        TryAddNestedPropertyEditor(property, obj, stackPanel);
-                    }
-                    catch (Exception)
-                    {
-                    }
+                    stackPanel.Children.Add(GenProperties(property, obj));
                 }
             }
 
             return propertyPanel;
         }
 
-        private static bool TryAddNestedPropertyEditor(PropertyInfo property, object obj, StackPanel stackPanel)
-        {
-            if (property.PropertyType != typeof(object) && !typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
-            {
-                return false;
-            }
-
-            var nestedObj = property.GetValue(obj);
-            if (nestedObj == null)
-            {
-                return false;
-            }
-
-            stackPanel.Margin = new Thickness(5);
-            var nestedPanel = GenPropertyEditorControl(nestedObj);
-            if (nestedPanel.Children.Count == 1 &&
-                nestedPanel.Children[0] is Border nestedBorder &&
-                nestedBorder.Child is StackPanel nestedStackPanel &&
-                nestedStackPanel.Children.Count > 1)
-            {
-                stackPanel.Children.Add(nestedPanel);
-                return true;
-            }
-
-            return false;
-        }
 
         // Helpers
 

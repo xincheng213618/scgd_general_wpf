@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Templates
             GroupComboBox.ItemsSource = groups?.Distinct().OrderBy(it => it).ToList() ?? new List<string>();
             GroupComboBox.Text = TemplateSampleLibrary.DefaultGroupName;
             NameTextBox.Text = defaultName;
-            InfoText.Text = selectedCount > 1 ? $"将保存 {selectedCount} 个模板样例" : "将当前模板保存为可复用样例";
+            InfoText.Text = selectedCount > 1 ? $"将保存 {selectedCount} 个模板样例，可选择已有组或输入新组" : "将当前模板保存为可复用样例，可选择已有组或输入新组";
 
             if (selectedCount > 1)
             {

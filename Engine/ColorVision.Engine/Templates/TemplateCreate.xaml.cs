@@ -1,7 +1,6 @@
 ﻿using ColorVision.UI;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,7 +19,6 @@ namespace ColorVision.Engine.Templates
     {
         private const string AllGroupName = "全部";
         private const string SystemGroupName = "系统默认";
-        private const string FileGroupName = "本地文件";
 
         bool IsImport;
         public ITemplate ITemplate { get; set; }
@@ -32,7 +30,6 @@ namespace ColorVision.Engine.Templates
         private enum TemplateCreateSourceKind
         {
             Default,
-            File,
             Sample
         }
 
@@ -42,20 +39,17 @@ namespace ColorVision.Engine.Templates
             public string Title { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
             public string GroupName { get; set; } = string.Empty;
-            public string FilePath { get; set; } = string.Empty;
             public TemplateSampleRecord? Sample { get; set; }
 
             public string Icon => Kind switch
             {
                 TemplateCreateSourceKind.Default => "\uE8A5",
-                TemplateCreateSourceKind.File => "\uE8B7",
                 _ => "\uE8D7"
             };
 
             public string SourceLabel => Kind switch
             {
                 TemplateCreateSourceKind.Default => SystemGroupName,
-                TemplateCreateSourceKind.File => FileGroupName,
                 _ => GroupName
             };
         }
@@ -180,7 +174,7 @@ namespace ColorVision.Engine.Templates
             return radioButton;
         }
 
-        private void BuildTemplateSources(string templateFolder)
+        private void BuildTemplateSources()
         {
             TemplateSources.Clear();
             TemplateSources.Add(new TemplateCreateSource
@@ -190,20 +184,6 @@ namespace ColorVision.Engine.Templates
                 Description = ColorVision.Engine.Properties.Resources.UseSystemDefaultTemplate,
                 GroupName = SystemGroupName
             });
-
-            foreach (string item in Directory.GetFiles(templateFolder))
-            {
-                string fileName = Path.GetFileNameWithoutExtension(item);
-                FileInfo fileInfo = new FileInfo(item);
-                TemplateSources.Add(new TemplateCreateSource
-                {
-                    Kind = TemplateCreateSourceKind.File,
-                    Title = fileName,
-                    Description = $"文件创建时间: {fileInfo.CreationTime:yyyy-MM-dd}",
-                    GroupName = FileGroupName,
-                    FilePath = Path.GetFullPath(item)
-                });
-            }
 
             foreach (TemplateSampleRecord sample in TemplateSampleLibrary.GetInstance().GetSamples(ITemplate))
             {
@@ -226,7 +206,7 @@ namespace ColorVision.Engine.Templates
                 .Select(it => it.GroupName)
                 .Where(it => !string.IsNullOrWhiteSpace(it))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(it => it == SystemGroupName ? 0 : it == FileGroupName ? 1 : 2)
+                .OrderBy(it => it == SystemGroupName ? 0 : 1)
                 .ThenBy(it => it));
 
             SourceGroupComboBox.ItemsSource = groups;
@@ -265,11 +245,7 @@ namespace ColorVision.Engine.Templates
             ITemplate.ClearCreateTemplateSource();
 
             bool isApplied = true;
-            if (source.Kind == TemplateCreateSourceKind.File)
-            {
-                isApplied = ITemplate.ImportFile(source.FilePath);
-            }
-            else if (source.Kind == TemplateCreateSourceKind.Sample && source.Sample != null)
+            if (source.Kind == TemplateCreateSourceKind.Sample && source.Sample != null)
             {
                 isApplied = ITemplate.ImportJsonContent(source.Sample.Name, source.Sample.Content);
             }
@@ -325,18 +301,7 @@ namespace ColorVision.Engine.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            string AssemblyCompanyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Environments.AssemblyCompany);
-            if (!Directory.Exists(AssemblyCompanyFolder))
-                Directory.CreateDirectory(AssemblyCompanyFolder);
-
-            string TemplateFolders = Path.Combine(AssemblyCompanyFolder, "Templates");
-            if (!Directory.Exists(TemplateFolders))
-                Directory.CreateDirectory(TemplateFolders);
-            string TemplateFolder = Path.Combine(TemplateFolders, ITemplate.Code);
-            if (!Directory.Exists(TemplateFolder))
-                Directory.CreateDirectory(TemplateFolder);
-
-            BuildTemplateSources(TemplateFolder);
+            BuildTemplateSources();
             if (IsImport)
             {
                 TemplateSourcePanel.Visibility = Visibility.Collapsed;
