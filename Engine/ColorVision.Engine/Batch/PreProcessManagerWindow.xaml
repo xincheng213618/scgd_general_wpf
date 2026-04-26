@@ -7,34 +7,51 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PreProcessManager}"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        Title="预处理配置" Height="720" Width="1080"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="预处理配置" Height="720" Width="1120" MinHeight="520" MinWidth="900" Background="{DynamicResource GlobalBackground}">
     <Window.Resources>
         <local:PreTypeNameConverter x:Key="TypeNameConverter"/>
         <local:PreProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
-        <local:PreBoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
-    <Grid Margin="8">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="550" MinWidth="250"/>
-        </Grid.ColumnDefinitions>
-        
-        <!-- Left Panel: List and Controls -->
-        <Grid Grid.Column="0">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12,10">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding LastSaveStatus}" VerticalAlignment="Center" Foreground="Gray" ToolTip="{Binding PersistPath}"/>
+                    <Button Content="立即保存" Padding="12,4" Margin="12,0,0,0" Command="{Binding SaveCommand}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="预处理配置" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ProcessCount, StringFormat={}{0} 个处理器}" Margin="16,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding EnabledCount, StringFormat=已启用 {0} 个}" Margin="12,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,10,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="360"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="460" MinWidth="320"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0 0 0 8">
-                <Button Content="上移" Padding="12 4" Command="{Binding MoveUpCommand}"/>
-                <Button Content="下移" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveDownCommand}"/>
-                <TextBlock Text="  所有预处理器，在右侧配置启用状态和应用模板" 
-                          VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
+                <Button Content="上移" Padding="12,4" Command="{Binding MoveUpCommand}"/>
+                <Button Content="下移" Padding="12,4" Margin="8,0,0,0" Command="{Binding MoveDownCommand}"/>
             </StackPanel>
 
-            <ListView Grid.Row="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" x:Name="lvProcesses" SelectionChanged="ListView_SelectionChanged">
+            <ListView Grid.Row="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" x:Name="lvProcesses" SelectionChanged="ListView_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="序号" Width="50">
@@ -44,7 +61,14 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="处理类" >
+                        <GridViewColumn Header="状态" Width="64">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Enabled}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="处理器" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
@@ -52,35 +76,38 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="描述" >
+                        <GridViewColumn Header="应用模板" Width="130">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}"/>
+                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Templates}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Templates}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="描述" Width="260">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}" TextTrimming="CharacterEllipsis"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                     </GridView>
                 </ListView.View>
             </ListView>
-        </Grid>
-        
-        <!-- GridSplitter -->
-        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
-        
-        <!-- Right Panel: Properties -->
-        <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0">
+            </Grid>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                
-                <!-- Header -->
+
                 <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="12,8">
-                    <TextBlock Text="预处理器配置" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock Text="属性" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                 </Border>
-                
-                <!-- Properties Content -->
+
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
                     <StackPanel x:Name="PropertyPanel">
                         <TextBlock Text="请选择一个预处理器查看配置" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
@@ -88,6 +115,11 @@
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
-        </Border>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="关闭" Padding="18,5" Click="CloseButton_Click"/>
+        </StackPanel>
     </Grid>
 </Window>

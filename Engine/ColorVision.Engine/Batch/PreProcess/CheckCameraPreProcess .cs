@@ -47,107 +47,69 @@ namespace ColorVision.Engine.Batch.PreProcess
             {
                 log.Info(item);
                 DeviceCamera? deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Where(x => x.Code.Equals(item)).FirstOrDefault();
+                if (deviceCamera == null)
+                {
+                    log.Warn($"未找到相机设备 {item}");
+                    continue;
+                }
+
                 if (deviceCamera.DService.IsVideoOpen)
                 {
                     deviceCamera.CameraVideoControl.Close();
                     MsgRecord msgRecord = deviceCamera.DService.Close();
-                    // 创建 TaskCompletionSource 用于等待事件
-                    var tcs = new TaskCompletionSource<bool>();
-
-                    // 定义事件处理程序
-
-                    void MsgRecord_MsgRecordStateChanged(object? sender ,MsgRecordState e)
+                    if (!await WaitForMsgRecordAsync(msgRecord, deviceCamera.Name, "关闭"))
                     {
-                        if (e == MsgRecordState.Success)
-                        {
-                            log.Info($"关闭相机{deviceCamera.Name}成功");
-                            tcs.TrySetResult(true);
-                        }
-                        else if (e == MsgRecordState.Fail)
-                        {
-                            log.Info($"关闭相机{deviceCamera.Name}失败");
-                            tcs.TrySetResult(false);
-                        }
+                        return false;
                     }
 
-                    // 订阅事件
-                    msgRecord.MsgRecordStateChanged += MsgRecord_MsgRecordStateChanged;
-
-                    try
-                    {
-                        // 等待任务完成或超时（例如 5000 毫秒）
-                        var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(5000));
-
-                        if (completedTask == tcs.Task)
-                        {
-                            // 任务正常完成
-                            await tcs.Task;
-                        }
-                        else
-                        {
-                            // 超时处理
-                            log.Warn($"关闭相机{deviceCamera.Name}超时");
-                            MessageBox.Show($"关闭相机{deviceCamera.Name}超时");
-                            return false;
-                        }
-                    }
-                    finally
-                    {
-                        // 务必取消订阅，防止内存泄漏
-                        msgRecord.MsgRecordStateChanged -= MsgRecord_MsgRecordStateChanged;
-                    }
                     deviceCamera.Config.TakeImageMode = TakeImageMode.Measure_Normal;
                     MsgRecord msgRecord1 = deviceCamera.DService.Open(deviceCamera.Config.CameraID, deviceCamera.Config.TakeImageMode, (int)deviceCamera.Config.ImageBpp);
-                    // 创建 TaskCompletionSource 用于等待事件
-                    var tcs1 = new TaskCompletionSource<bool>();
-
-                    // 定义事件处理程序
-
-                    void MsgRecord_MsgRecordStateChanged1(object? sender, MsgRecordState e)
+                    if (!await WaitForMsgRecordAsync(msgRecord1, deviceCamera.Name, "打开"))
                     {
-                        if (e == MsgRecordState.Success)
-                        {
-                            log.Info($"打开相机{deviceCamera.Name}成功");
-                            tcs.TrySetResult(true);
-                        }
-                        else if (e == MsgRecordState.Fail)
-                        {
-                            log.Info($"打开相机{deviceCamera.Name}失败");
-                            tcs.TrySetResult(false);
-                        }
-                    }
-
-                    // 订阅事件
-                    msgRecord1.MsgRecordStateChanged += MsgRecord_MsgRecordStateChanged1;
-
-                    try
-                    {
-                        // 等待任务完成或超时（例如 5000 毫秒）
-                        var completedTask = await Task.WhenAny(tcs1.Task, Task.Delay(5000));
-
-                        if (completedTask == tcs1.Task)
-                        {
-                            // 任务正常完成
-                            await tcs.Task;
-                            return true;
-                        }
-                        else
-                        {
-                            // 超时处理
-                            log.Warn($"关闭相机{deviceCamera.Name}超时");
-                            MessageBox.Show($"关闭相机{deviceCamera.Name}超时");
-                            return false;
-                        }
-                    }
-                    finally
-                    {
-                        // 务必取消订阅，防止内存泄漏
-                        msgRecord1.MsgRecordStateChanged -= MsgRecord_MsgRecordStateChanged1;
+                        return false;
                     }
                 }
             }
 
             return true;
+        }
+
+        private static async Task<bool> WaitForMsgRecordAsync(MsgRecord msgRecord, string cameraName, string actionName)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            void MsgRecord_MsgRecordStateChanged(object? sender, MsgRecordState e)
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    log.Info($"{actionName}相机{cameraName}成功");
+                    tcs.TrySetResult(true);
+                }
+                else if (e == MsgRecordState.Fail)
+                {
+                    log.Info($"{actionName}相机{cameraName}失败");
+                    tcs.TrySetResult(false);
+                }
+            }
+
+            msgRecord.MsgRecordStateChanged += MsgRecord_MsgRecordStateChanged;
+
+            try
+            {
+                var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(5000));
+                if (completedTask == tcs.Task)
+                {
+                    return await tcs.Task;
+                }
+
+                log.Warn($"{actionName}相机{cameraName}超时");
+                MessageBox.Show($"{actionName}相机{cameraName}超时");
+                return false;
+            }
+            finally
+            {
+                msgRecord.MsgRecordStateChanged -= MsgRecord_MsgRecordStateChanged;
+            }
         }
     }
 }

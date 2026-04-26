@@ -15,9 +15,15 @@ namespace ColorVision.Engine.Batch
             if (value is IPreProcess process)
             {
                 var metadata = PreProcessMetadata.FromProcess(process);
-                if (parameter?.ToString() == "Description")
-                    return metadata.Description;
-                return metadata.DisplayName;
+                return parameter?.ToString() switch
+                {
+                    "Description" => metadata.Description,
+                    "Category" => metadata.Category,
+                    "Enabled" => process.GetConfig() is PreProcessConfigBase { IsEnabled: true } ? "启用" : "停用",
+                    "Templates" => GetTemplateText(process),
+                    "TypeName" => metadata.TypeName,
+                    _ => metadata.DisplayName,
+                };
             }
             if (value is ListViewItem item && parameter?.ToString() == "Index")
             {
@@ -42,6 +48,16 @@ namespace ColorVision.Engine.Batch
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             return Binding.DoNothing;
+        }
+
+        private static string GetTemplateText(IPreProcess process)
+        {
+            if (process.GetConfig() is not PreProcessConfigBase config)
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(config.TemplateNames) ? "全部模板" : config.TemplateNames;
         }
     }
 
@@ -85,10 +101,6 @@ namespace ColorVision.Engine.Batch
     /// </summary>
     public partial class PreProcessManagerWindow : Window
     {
-        private IPreProcess _currentSelectedProcess;
-        private INotifyPropertyChanged _currentConfig;
-        private PropertyChangedEventHandler _configPropertyChangedHandler;
-
         public PreProcessManagerWindow()
         {
             InitializeComponent();
@@ -98,22 +110,6 @@ namespace ColorVision.Engine.Batch
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             PreProcessManager.GetInstance().SavePersisted();
-            CleanupEventHandlers();
-        }
-
-        private void CleanupEventHandlers()
-        {
-            if (_currentConfig != null && _configPropertyChangedHandler != null)
-            {
-                _currentConfig.PropertyChanged -= _configPropertyChangedHandler;
-                _currentConfig = null;
-                _configPropertyChangedHandler = null;
-            }
-        }
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-
         }
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -124,14 +120,6 @@ namespace ColorVision.Engine.Batch
         private void RefreshPropertyPanel()
         {
             PropertyPanel.Children.Clear();
-
-            // Cleanup previous config handler
-            if (_currentConfig != null && _configPropertyChangedHandler != null)
-            {
-                _currentConfig.PropertyChanged -= _configPropertyChangedHandler;
-                _currentConfig = null;
-                _configPropertyChangedHandler = null;
-            }
 
             var manager = DataContext as PreProcessManager;
             var selectedProcess = manager?.SelectedProcess;
@@ -148,8 +136,6 @@ namespace ColorVision.Engine.Batch
                 });
                 return;
             }
-
-            _currentSelectedProcess = selectedProcess;
 
             // Add processor info section
             AddProcessorInfoSection(selectedProcess);
@@ -188,6 +174,7 @@ namespace ColorVision.Engine.Batch
 
             // Process Type
             AddLabeledText(stack, "处理类:", metadata.DisplayName);
+            AddLabeledText(stack, "类型:", metadata.TypeName);
 
             // Category
             if (!string.IsNullOrEmpty(metadata.Category))
@@ -228,18 +215,6 @@ namespace ColorVision.Engine.Batch
 
             // Generate property editor controls
             var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
-            
-            // Subscribe to config changes to persist (with proper cleanup)
-            if (config is INotifyPropertyChanged notifyConfig)
-            {
-                _currentConfig = notifyConfig;
-                _configPropertyChangedHandler = (s, e) =>
-                {
-                    // Save happens automatically via PreProcessManager event handlers
-                    // Note: Only works if config implements INotifyPropertyChanged
-                };
-                _currentConfig.PropertyChanged += _configPropertyChangedHandler;
-            }
 
             stack.Children.Add(configPanel);
 
@@ -262,6 +237,11 @@ namespace ColorVision.Engine.Batch
                 TextWrapping = TextWrapping.Wrap
             });
             parent.Children.Add(dock);
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
         }
     }
 }

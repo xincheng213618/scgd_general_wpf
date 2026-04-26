@@ -28,9 +28,9 @@
 #### 使用方法
 
 1. 在流程界面点击"预处理管理"按钮
-2. 选择流程模板和预处理类
-3. 配置预处理参数
-4. 点击"添加"将预处理添加到流程
+2. 在列表中选择预处理器
+3. 在右侧配置启用状态、应用模板和参数
+4. 修改会自动保存，也可以点击"立即保存"
 
 ### 后处理模块 (BatchProcess)
 
@@ -217,6 +217,7 @@ public class MyBatchProcess : BatchProcessBase<MyBatchProcessConfig>
 
 - 预处理配置保存在: `%AppData%\ColorVision\Config\PreProcessConfig.json`
 - 后处理配置保存在: `%AppData%\ColorVision\Config\BatchConfig.json`
+- 预处理器按列表顺序执行；拖动/上移/下移后的顺序会随配置一起保存。
 
 ## 注意事项
 

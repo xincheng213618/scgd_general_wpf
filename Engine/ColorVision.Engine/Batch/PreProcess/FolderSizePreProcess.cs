@@ -1,6 +1,7 @@
 using log4net;
 using Newtonsoft.Json;
 using Quartz.Util;
+using ColorVision.Engine.PropertyEditor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,25 +11,32 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Batch.PreProcess
 {
-
-
-
     /// <summary>
     /// Configuration for folder size monitoring and cleanup
     /// </summary>
     public class FolderSizePreProcessConfig : PreProcessConfigBase
     {
+        private const long OneGb = 1024L * 1024L * 1024L;
+        private const long DefaultTriggerBytes = 100L * OneGb;
+        private const long DefaultTargetBytes = 50L * OneGb;
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         [DisplayName("监控文件夹")]
         [Description("要监控的文件夹路径")]
-        public  List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
-        private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default"};
+        public List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
+        private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default" };
 
-        [DisplayName("大小限制(MB)")]
-        [Description("文件夹大小限制，单位为MB。超过此大小将删除最旧的文件")]
-        public long MaxSizeMB { get => _MaxSizeMB; set { _MaxSizeMB = value; OnPropertyChanged(); } }
-        private long _MaxSizeMB = 102400; // Default 1GB
+        [DisplayName("触发上限")]
+        [Description("当文件夹总大小超过该值时开始清理（字节存储，GB输入）")]
+        [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
+        public long TriggerSizeBytes { get => _TriggerSizeBytes; set { _TriggerSizeBytes = value; OnPropertyChanged(); } }
+        private long _TriggerSizeBytes = DefaultTriggerBytes;
+
+        [DisplayName("清理下限")]
+        [Description("清理到该值以下即停止（字节存储，GB输入，建议小于触发上限）")]
+        [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
+        public long TargetSizeBytes { get => _TargetSizeBytes; set { _TargetSizeBytes = value; OnPropertyChanged(); } }
+        private long _TargetSizeBytes = DefaultTargetBytes;
 
         [DisplayName("文件扩展名")]
         [Description("要监控的文件扩展名（逗号分隔，例如: .jpg,.png,.tiff）。留空表示监控所有文件")]
@@ -45,9 +53,18 @@ namespace ColorVision.Engine.Batch.PreProcess
     public class FolderSizePreProcess : PreProcessBase<FolderSizePreProcessConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FolderSizePreProcess));
+        private const long OneMb = 1024L * 1024L;
 
         public override Task<bool> PreProcess(IPreProcessContext ctx)
         {
+            var (triggerBytes, targetBytes) = NormalizeThresholds();
+
+            if (triggerBytes <= 0)
+            {
+                log.Warn("FolderSizePreProcess: 触发上限必须大于 0");
+                return Task.FromResult(true);
+            }
+
             foreach (var FolderPath in Config.FolderPaths)
             {
                 if (string.IsNullOrWhiteSpace(FolderPath))
@@ -58,7 +75,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                 if (!Directory.Exists(FolderPath))
                 {
-                    log.Warn($"FolderSizePreProcess: 文件夹不存在 {Config.FolderPaths}");
+                    log.Warn($"FolderSizePreProcess: 文件夹不存在 {FolderPath}");
                     continue;
                 }
 
@@ -104,10 +121,11 @@ namespace ColorVision.Engine.Batch.PreProcess
                         continue;
                     }
                     long totalSizeMB = totalSize / (1024 * 1024);
-                    long maxSizeBytes = Config.MaxSizeMB * 1024 * 1024;
+                    long triggerMB = triggerBytes / OneMb;
+                    long targetMB = targetBytes / OneMb;
 
-                    log.Info($"FolderSizePreProcess: 文件夹 {Config.FolderPaths} 当前大小 {totalSizeMB}MB, 限制 {Config.MaxSizeMB}MB");
-                    if (totalSize <= maxSizeBytes)
+                    log.Info($"FolderSizePreProcess: 文件夹 {FolderPath} 当前大小 {totalSizeMB}MB, 触发上限 {triggerMB}MB, 清理下限 {targetMB}MB");
+                    if (totalSize <= triggerBytes)
                     {
                         continue;
                     }
@@ -124,7 +142,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                     foreach (var file in filesByDate)
                     {
-                        if (totalSize - deletedSize <= maxSizeBytes)
+                        if (totalSize - deletedSize <= targetBytes)
                             break;
 
                         try
@@ -151,6 +169,34 @@ namespace ColorVision.Engine.Batch.PreProcess
                 }
             }
             return Task.FromResult(true);
+        }
+
+        private (long TriggerBytes, long TargetBytes) NormalizeThresholds()
+        {
+            long triggerBytes = Config.TriggerSizeBytes;
+            long targetBytes = Config.TargetSizeBytes;
+
+            if (triggerBytes <= 0)
+            {
+                return (0, 0);
+            }
+
+            if (targetBytes <= 0)
+            {
+                targetBytes = Math.Max(OneMb, triggerBytes / 2);
+            }
+
+            if (targetBytes >= triggerBytes)
+            {
+                targetBytes = Math.Max(OneMb, (long)(triggerBytes * 0.8));
+            }
+
+            if (Config.TargetSizeBytes != targetBytes)
+            {
+                Config.TargetSizeBytes = targetBytes;
+            }
+
+            return (triggerBytes, targetBytes);
         }
 
         private HashSet<string> ParseExtensions(string extensionsStr)

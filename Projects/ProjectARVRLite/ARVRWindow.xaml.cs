@@ -452,6 +452,17 @@ namespace ProjectARVRLite
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
             }
+
+            if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
+            {
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                CurrentFlowResult.Msg = "PreProcessFailed";
+                logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                TryCount = 0;
+                flowControl.IsFlowRun = false;
+                return;
+            }
+
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
@@ -464,71 +475,14 @@ namespace ProjectARVRLite
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
-            PreProcessing(FlowName, sn);
-
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
-        }
-        /// <summary>
-        /// Checks if a pre-processor is valid and enabled for the given flow.
-        /// </summary>
-        private static bool IsValidEnabledPreProcessor(IPreProcess processor, string flowName)
-        {
-            var config = processor.GetConfig();
-            if (config is PreProcessConfigBase baseConfig)
-            {
-                return baseConfig.IsEnabled && baseConfig.AppliesToTemplate(flowName);
-            }
-            return false;
         }
 
         private async Task<bool> PreProcessing(string flowName, string serialNumber)
         {
-            try
-            {
-                // Find all enabled pre-processors that apply to this flow template
-                var matchingProcessors = PreProcessManager.GetInstance().Processes
-                    .Where(p => IsValidEnabledPreProcessor(p, flowName))
-                    .ToList();
-
-                if (matchingProcessors.Count > 0)
-                {
-                    log.Info($"匹配到 {matchingProcessors.Count} 个已启用的预处理 {flowName}");
-
-                    var ctx = new IPreProcessContext
-                    {
-                        FlowName = flowName,
-                        SerialNumber = serialNumber,
-                    };
-
-                    // Execute all matching pre-processors sequentially
-                    foreach (var processor in matchingProcessors)
-                    {
-                        var metadata = PreProcessMetadata.FromProcess(processor);
-                        log.Info($"执行预处理 {metadata.DisplayName}");
-                        try
-                        {
-                            bool success = await processor.PreProcess(ctx);
-                            if (!success)
-                            {
-                                log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
-                                return false; // Abort flow if any pre-processor fails
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error($"预处理 {metadata.DisplayName} 执行异常", ex);
-                            return false; // Abort flow on exception
-                        }
-                    }
-                }
-                return true; // All pre-processors succeeded or none configured
-            }
-            catch (Exception ex)
-            {
-                log.Error("匹配/执行预处理出错", ex);
-                return false;
-            }
+            var serverNodes = new ObservableCollection<CVBaseServerNode>(STNodeEditorMain.Nodes.OfType<CVBaseServerNode>());
+            return await PreProcessManager.GetInstance().ExecuteAsync(flowName, serialNumber, serverNodes);
         }
 
 
