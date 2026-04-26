@@ -23,9 +23,6 @@ namespace ColorVision.UI.Plugins
         [JsonProperty("dllpath")]
         public string DllName { get; set; }
 
-        [JsonProperty("requires")]
-        public Version Requires { get; set; }
-
         [JsonProperty("author")]
         public string Author { get; set; }
 

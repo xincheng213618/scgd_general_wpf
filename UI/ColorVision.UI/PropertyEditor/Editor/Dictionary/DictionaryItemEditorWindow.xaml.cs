@@ -11,6 +11,8 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
     {
         private readonly Type _keyType;
         private readonly Type _valueType;
+        private readonly Type? _keyEditorType;
+        private readonly Type? _valueEditorType;
         private readonly KeyValueWrapper _wrapper;
         private readonly ICollection _existingKeys;
 
@@ -52,11 +54,13 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             public event PropertyChangedEventHandler? PropertyChanged;
         }
 
-        public DictionaryItemEditorWindow(Type keyType, Type valueType, object? initialKey, object? initialValue, ICollection existingKeys)
+        public DictionaryItemEditorWindow(Type keyType, Type valueType, object? initialKey, object? initialValue, ICollection existingKeys, Type? keyEditorType = null, Type? valueEditorType = null)
         {
             InitializeComponent();
             _keyType = keyType;
             _valueType = valueType;
+            _keyEditorType = keyEditorType;
+            _valueEditorType = valueEditorType;
             _existingKeys = existingKeys;
             _wrapper = new KeyValueWrapper 
             { 
@@ -88,12 +92,12 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             // For nested lists
             if (IsGenericList(_keyType))
             {
-                CreateNestedListEditor(KeyEditorPanel, _keyType, "Key");
+                CreateNestedListEditor(KeyEditorPanel, _keyType, "Key", _keyEditorType);
                 return;
             }
 
             var keyProperty = typeof(KeyValueWrapper).GetProperty(nameof(KeyValueWrapper.Key))!;
-            var keyEditor = CreateEditorForType(_keyType, keyProperty, _wrapper);
+            var keyEditor = CreateEditorForType(_keyType, keyProperty, _wrapper, _keyEditorType);
             if (keyEditor != null)
             {
                 KeyEditorPanel.Children.Add(keyEditor);
@@ -123,12 +127,12 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             // For nested lists
             if (IsGenericList(_valueType))
             {
-                CreateNestedListEditor(ValueEditorPanel, _valueType, "Value");
+                CreateNestedListEditor(ValueEditorPanel, _valueType, "Value", _valueEditorType);
                 return;
             }
 
             var valueProperty = typeof(KeyValueWrapper).GetProperty(nameof(KeyValueWrapper.Value))!;
-            var valueEditor = CreateEditorForType(_valueType, valueProperty, _wrapper);
+            var valueEditor = CreateEditorForType(_valueType, valueProperty, _wrapper, _valueEditorType);
             if (valueEditor != null)
             {
                 ValueEditorPanel.Children.Add(valueEditor);
@@ -192,7 +196,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             panel.Children.Add(classEditor);
         }
 
-        private void CreateNestedListEditor(StackPanel panel, Type listType, string propertyName)
+        private void CreateNestedListEditor(StackPanel panel, Type listType, string propertyName, Type? itemEditorType)
         {
             var innerElementType = listType.GetGenericArguments()[0];
             
@@ -231,7 +235,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             {
                 if (list != null)
                 {
-                    var nestedEditor = new ListEditorWindow(list, innerElementType);
+                    var nestedEditor = new ListEditorWindow(list, innerElementType, itemEditorType);
                     nestedEditor.Owner = this;
                     
                     if (nestedEditor.ShowDialog() == true)
@@ -245,10 +249,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             panel.Children.Add(editButton);
         }
 
-        private static DockPanel? CreateEditorForType(Type type, PropertyInfo property, object obj)
+        private static DockPanel? CreateEditorForType(Type type, PropertyInfo property, object obj, Type? preferredEditorType)
         {
-            // Try to get a registered editor for this type
-            var editorType = PropertyEditorHelper.GetEditorTypeForPropertyType(type);
+            var editorType = IsValidEditorType(preferredEditorType)
+                ? preferredEditorType
+                : PropertyEditorHelper.GetEditorTypeForPropertyType(type);
             if (editorType != null)
             {
                 try
@@ -294,6 +299,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
 
             // For primitive types, we'll let the fallback textbox handle it
             return null;
+        }
+
+        private static bool IsValidEditorType(Type? editorType)
+        {
+            return editorType != null && typeof(IPropertyEditor).IsAssignableFrom(editorType);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)

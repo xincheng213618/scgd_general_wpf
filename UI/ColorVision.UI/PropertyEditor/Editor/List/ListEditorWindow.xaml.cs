@@ -9,6 +9,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
     public partial class ListEditorWindow : Window
     {
         private readonly Type _elementType;
+        private readonly Type? _itemEditorType;
         private readonly System.Collections.IList _items;
         private readonly System.Collections.IList _originalItems;
         
@@ -41,10 +42,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                 }
             }
         }
-        public ListEditorWindow(IList items, Type elementType)
+        public ListEditorWindow(IList items, Type elementType, Type? itemEditorType = null)
         {
             InitializeComponent();
             _elementType = elementType;
+            _itemEditorType = itemEditorType;
             _originalItems = items;
             
             // Create a working copy
@@ -102,7 +104,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
             var defaultValue = GetDefaultValue(_elementType);
-            var editor = new ListItemEditorWindow(_elementType, defaultValue);
+            var editor = new ListItemEditorWindow(_elementType, defaultValue, _itemEditorType);
             editor.Owner = this;
             
             if (editor.ShowDialog() == true)
@@ -118,7 +120,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             if (ItemsListView.SelectedIndex < 0) return;
 
             var currentValue = _items[ItemsListView.SelectedIndex];
-            var editor = new ListItemEditorWindow(_elementType, currentValue);
+            var editor = new ListItemEditorWindow(_elementType, currentValue, _itemEditorType);
             editor.Owner = this;
             
             if (editor.ShowDialog() == true)
