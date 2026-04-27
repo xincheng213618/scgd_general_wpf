@@ -55,7 +55,7 @@ namespace ProjectStarkSemi
         internal DockLayoutManager? LayoutManager { get; private set; }
 
         private MVSViewWindow? observationCameraWindow;
-        private DeviceCamera? Device;
+
 
         // Polar angle line management
         private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
