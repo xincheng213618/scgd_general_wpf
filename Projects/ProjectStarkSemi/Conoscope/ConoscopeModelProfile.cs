@@ -119,10 +119,20 @@ namespace ProjectStarkSemi.Conoscope
         /// </summary>
         public ReferenceLineParam ReferenceLineParam
         {
-            get => _ReferenceLineParam;
+            get => _ReferenceLineParam ??= new ReferenceLineParam();
             set { _ReferenceLineParam = value; OnPropertyChanged(); }
         }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
+
+        /// <summary>
+        /// Conoscope 图像坐标轴参数（每个型号独立）
+        /// </summary>
+        public ConoscopeCoordinateAxisParam CoordinateAxisParam
+        {
+            get => _CoordinateAxisParam ??= new ConoscopeCoordinateAxisParam();
+            set { _CoordinateAxisParam = value; OnPropertyChanged(); }
+        }
+        private ConoscopeCoordinateAxisParam _CoordinateAxisParam = new ConoscopeCoordinateAxisParam();
 
         /// <summary>
         /// 创建默认配置（静态工厂）
@@ -140,6 +150,13 @@ namespace ProjectStarkSemi.Conoscope
                     HasObservationCamera = true,
                     DefaultAngles = new ObservableCollection<double> { 0, 20, 40, 90, 110, 130, 150 },
                     DefaultRAngles = new ObservableCollection<double> { 10, 20, 30, 40, 50, 60, 70, 80 },
+                    CoordinateAxisParam = new ConoscopeCoordinateAxisParam
+                    {
+                        MaxAngle = 60,
+                        ConoscopeCoefficient = 0.02645,
+                        ReferenceAngle = 90,
+                        ReferenceRadiusAngle = 30
+                    },
                     ObservationCameraScaleCoefficient = 0.02,
                     ObservationCameraCenterX = 640,
                     ObservationCameraCenterY = 512
@@ -153,6 +170,13 @@ namespace ProjectStarkSemi.Conoscope
                     HasObservationCamera = false,
                     DefaultAngles = new ObservableCollection<double> { 0, 20, 40, 60, 90, 110, 130, 150 },
                     DefaultRAngles = new ObservableCollection<double> { 10, 20, 30, 40, 50, 60, 70, 80, 90 },
+                    CoordinateAxisParam = new ConoscopeCoordinateAxisParam
+                    {
+                        MaxAngle = 80,
+                        ConoscopeCoefficient = 0.022,
+                        ReferenceAngle = 90,
+                        ReferenceRadiusAngle = 40
+                    },
                     ObservationCameraScaleCoefficient = 0.02,
                     ObservationCameraCenterX = 640,
                     ObservationCameraCenterY = 512

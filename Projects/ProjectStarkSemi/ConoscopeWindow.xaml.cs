@@ -71,6 +71,10 @@ namespace ProjectStarkSemi
         private Point currentImageCenter;
         private int currentImageRadius;
 
+        private ConoscopeCoordinateAxisController? coordinateAxisController;
+        private PolarAngleLine? coordinateAxisPolarLine;
+        private ConcentricCircleLine? coordinateAxisCircleLine;
+
         // Backup of original Mat data for filter reset
         private OpenCvSharp.Mat? OriginalXMat;
         private OpenCvSharp.Mat? OriginalYMat;
@@ -83,7 +87,20 @@ namespace ProjectStarkSemi
         private void RefreshReferenceLineProfileBinding()
         {
             GridSetting.Children.Clear();
-            GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.ReferenceLineParam));
+            StackPanel settingPanel = new StackPanel();
+            settingPanel.Children.Add(CreateSettingGroup("坐标轴", CurrentModelProfile.CoordinateAxisParam));
+            settingPanel.Children.Add(CreateSettingGroup("参考线", CurrentModelProfile.ReferenceLineParam));
+            GridSetting.Children.Add(settingPanel);
+        }
+
+        private static GroupBox CreateSettingGroup(string header, object source)
+        {
+            return new GroupBox
+            {
+                Header = header,
+                Margin = new Thickness(0, 0, 0, 8),
+                Content = PropertyEditorHelper.GenPropertyEditorControl(source)
+            };
         }
 
         private void RefreshModelDependentUi()
@@ -514,6 +531,7 @@ namespace ProjectStarkSemi
         private void OpenConoscope(string filename)
         {
             Filename = filename;
+            DisposeCoordinateAxis();
             ImageView.Clear();
             ImageView.ImageShow.ImageInitialized -= ImageShow_ImageInitialized;
             ImageView.ImageShow.ImageInitialized += ImageShow_ImageInitialized;
@@ -565,6 +583,164 @@ namespace ProjectStarkSemi
 
             CreateAndAnalyzePolarLines();
         }
+
+        private void InitializeCoordinateAxis(Point center, int radius)
+        {
+            var axisParam = CurrentModelProfile.CoordinateAxisParam;
+            axisParam.MaxAngle = MaxAngle;
+            axisParam.ConoscopeCoefficient = CurrentModelProfile.ConoscopeCoefficient;
+            axisParam.CenterX = center.X;
+            axisParam.CenterY = center.Y;
+            axisParam.AxisRadius = radius;
+            axisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(axisParam.ReferenceRadiusAngle, MaxAngle));
+            axisParam.NormalizeNDApertures();
+
+            coordinateAxisController?.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
+            coordinateAxisController?.Dispose();
+            coordinateAxisController = new ConoscopeCoordinateAxisController(ImageView.ImageShow, ImageView.Zoombox1, axisParam);
+            coordinateAxisController.ReferenceChanged += CoordinateAxisController_ReferenceChanged;
+            coordinateAxisController.Configure(center, radius, MaxAngle, CurrentModelProfile.ConoscopeCoefficient);
+            coordinateAxisController.Show();
+        }
+
+        private void CoordinateAxisController_ReferenceChanged(object? sender, ConoscopeCoordinateReferenceChangedEventArgs e)
+        {
+            if (currentBitmapSource == null)
+            {
+                return;
+            }
+
+            if (e.Mode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            {
+                UpdateCoordinateAxisAzimuth(e.Angle);
+            }
+            else
+            {
+                UpdateCoordinateAxisPolar(e.RadiusAngle);
+            }
+        }
+
+        private void ApplyCoordinateAxisReference()
+        {
+            if (coordinateAxisController == null)
+            {
+                return;
+            }
+
+            if (coordinateAxisController.Axis.Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            {
+                UpdateCoordinateAxisAzimuth(coordinateAxisController.Axis.Attribute.ReferenceAngle);
+            }
+            else
+            {
+                UpdateCoordinateAxisPolar(coordinateAxisController.Axis.Attribute.ReferenceRadiusAngle);
+            }
+        }
+
+        private void UpdateCoordinateAxisAzimuth(double angle)
+        {
+            if (currentBitmapSource == null)
+            {
+                return;
+            }
+
+            angle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
+            txtAngle.Text = angle.ToString("F2");
+
+            var existingLine = polarAngleLines.FirstOrDefault(line => line != coordinateAxisPolarLine && Math.Abs(line.Angle - angle) < 0.05);
+            if (existingLine != null)
+            {
+                if (coordinateAxisPolarLine != null)
+                {
+                    polarAngleLines.Remove(coordinateAxisPolarLine);
+                    coordinateAxisPolarLine = null;
+                }
+
+                cbPolarAngleLines.ItemsSource = polarAngleLines;
+                cbPolarAngleLines.SelectedItem = existingLine;
+                selectedPolarLine = existingLine;
+                UpdatePlot();
+                return;
+            }
+
+            if (coordinateAxisPolarLine == null)
+            {
+                coordinateAxisPolarLine = new PolarAngleLine();
+                polarAngleLines.Add(coordinateAxisPolarLine);
+            }
+
+            coordinateAxisPolarLine.Angle = angle;
+            coordinateAxisPolarLine.RgbData.Clear();
+            coordinateAxisPolarLine.Line = null;
+
+            var endpoints = ConoscopeCoordinateAxisVisual.GetAzimuthLineEndpoints(currentImageCenter, currentImageRadius, angle);
+            ExtractRgbAlongLine(coordinateAxisPolarLine, endpoints.Start, endpoints.End, currentBitmapSource, currentImageRadius);
+
+            cbPolarAngleLines.ItemsSource = polarAngleLines;
+            cbPolarAngleLines.Items.Refresh();
+            cbPolarAngleLines.SelectedItem = coordinateAxisPolarLine;
+            selectedPolarLine = coordinateAxisPolarLine;
+            UpdatePlot();
+        }
+
+        private void UpdateCoordinateAxisPolar(double radiusAngle)
+        {
+            if (currentBitmapSource == null)
+            {
+                return;
+            }
+
+            radiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
+            txtCircleAngle.Text = radiusAngle.ToString("F2");
+
+            var existingCircle = displayedCircles.FirstOrDefault(circle => circle != coordinateAxisCircleLine && Math.Abs(circle.RadiusAngle - radiusAngle) < 0.05);
+            if (existingCircle != null)
+            {
+                if (coordinateAxisCircleLine != null)
+                {
+                    displayedCircles.Remove(coordinateAxisCircleLine);
+                    coordinateAxisCircleLine = null;
+                }
+
+                cbConcentricCircles.ItemsSource = displayedCircles;
+                cbConcentricCircles.SelectedItem = existingCircle;
+                selectedCircleLine = existingCircle;
+                UpdatePlotForCircle();
+                return;
+            }
+
+            if (coordinateAxisCircleLine == null)
+            {
+                coordinateAxisCircleLine = new ConcentricCircleLine();
+                displayedCircles.Add(coordinateAxisCircleLine);
+            }
+
+            coordinateAxisCircleLine.RadiusAngle = radiusAngle;
+            coordinateAxisCircleLine.RgbData.Clear();
+            coordinateAxisCircleLine.Circle = null;
+            ExtractRgbAlongCircle(coordinateAxisCircleLine, currentImageCenter, radiusAngle, currentBitmapSource);
+
+            cbConcentricCircles.ItemsSource = displayedCircles;
+            cbConcentricCircles.Items.Refresh();
+            cbConcentricCircles.SelectedItem = coordinateAxisCircleLine;
+            selectedCircleLine = coordinateAxisCircleLine;
+            UpdatePlotForCircle();
+        }
+
+
+        private void DisposeCoordinateAxis()
+        {
+            if (coordinateAxisController == null)
+            {
+                return;
+            }
+
+            coordinateAxisController.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
+            coordinateAxisController.Dispose();
+            coordinateAxisController = null;
+            coordinateAxisPolarLine = null;
+            coordinateAxisCircleLine = null;
+        }
         
         /// <summary>
         /// 创建极角线并进行分析
@@ -601,35 +777,11 @@ namespace ProjectStarkSemi
                 currentImageCenter = center;
                 currentImageRadius = radius;
 
+                InitializeCoordinateAxis(center, radius);
+
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}");
 
-                // Clear existing displayed circles
                 ClearDisplayedCircles();
-
-                foreach (var item in CurrentModelProfile.DefaultRAngles)
-                {
-                    CircleProperties circleProperties = new CircleProperties
-                    {
-                        Center = center,
-                        Radius = radius * item / MaxAngle,
-                        Pen = new Pen(Brushes.Yellow, 1 / ImageView.EditorContext.ZoomRatio),
-                        Brush = Brushes.Transparent
-                    };
-                    DVCircle circle = new DVCircle(circleProperties);
-                    ImageView.AddVisual(circle);
-                    
-                    // Add to displayed circles collection for management
-                    ConcentricCircleLine circleLine = new ConcentricCircleLine
-                    {
-                        RadiusAngle = item,
-                        Circle = circle
-                    };
-                    
-                    // Extract RGB data along the circle
-                    ExtractRgbAlongCircle(circleLine, center, item, bitmapSource);
-                    
-                    displayedCircles.Add(circleLine);
-                }
                 
                 // Set up circles ComboBox
                 if (displayedCircles.Count > 0)
@@ -637,12 +789,13 @@ namespace ProjectStarkSemi
                     cbConcentricCircles.ItemsSource = displayedCircles;
                     cbConcentricCircles.SelectedIndex = 0;
                     selectedCircleLine = displayedCircles[0];
-                    // Update the R circle plot with the first circle's data
                     UpdatePlotForCircle();
                 }
 
-                // Clear existing lines
-                ClearPolarLines();
+                polarAngleLines.Clear();
+                selectedPolarLine = null;
+                coordinateAxisPolarLine = null;
+
 
                 // Create lines for each angle
                 foreach (double angle in CurrentModelProfile.DefaultAngles)
@@ -658,6 +811,9 @@ namespace ProjectStarkSemi
                     cbPolarAngleLines.SelectedIndex = 0;
                     UpdatePlot();
                 }
+
+                coordinateAxisController?.BringToFront();
+                ApplyCoordinateAxisReference();
             }
             catch (Exception ex)
             {
@@ -793,12 +949,6 @@ namespace ProjectStarkSemi
                 {
                     MessageBox.Show("请先选择要删除的角度", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
-                }
-
-                // Remove from visual
-                if (selectedPolarLine.Line != null)
-                {
-                    ImageView.DrawingVisualLists.Remove(selectedPolarLine.Line);
                 }
 
                 double removedAngle = selectedPolarLine.Angle;
@@ -938,15 +1088,8 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                // Remove from visual
-                if (selectedCircleLine.Circle != null)
-                {
-                    ImageView.DrawingVisualLists.Remove(selectedCircleLine.Circle);
-                }
-
                 double removedAngle = selectedCircleLine.RadiusAngle;
 
-                // Remove from collection
                 displayedCircles.Remove(selectedCircleLine);
 
                 // Remove from config
@@ -1007,15 +1150,9 @@ namespace ProjectStarkSemi
         /// </summary>
         private void ClearDisplayedCircles()
         {
-            foreach (var circleLine in displayedCircles)
-            {
-                if (circleLine.Circle != null)
-                {
-                    ImageView.DrawingVisualLists.Remove(circleLine.Circle);
-                }
-            }
             displayedCircles.Clear();
             selectedCircleLine = null;
+            coordinateAxisCircleLine = null;
         }
 
         /// <summary>
@@ -1601,21 +1738,6 @@ namespace ProjectStarkSemi
             }
         }
 
-        /// <summary>
-        /// 清除所有方位角
-        /// </summary>
-        private void ClearPolarLines()
-        {
-            foreach (var polarLine in polarAngleLines)
-            {
-                if (polarLine.Line != null)
-                {
-                    ImageView.DrawingVisualLists.Remove(polarLine.Line);
-                }
-            }
-            polarAngleLines.Clear();
-            selectedPolarLine = null;
-        }
 
         /// <summary>
         /// 更新ScottPlot显示
@@ -1809,6 +1931,7 @@ namespace ProjectStarkSemi
             OriginalYMat = null;
             OriginalZMat?.Dispose();
             OriginalZMat = null;
+            DisposeCoordinateAxis();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
         }
