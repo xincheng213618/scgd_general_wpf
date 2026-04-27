@@ -58,9 +58,9 @@ namespace ProjectStarkSemi.Conoscope
         public double MaxAngle { get => _MaxAngle; set { _MaxAngle = value; OnPropertyChanged(); } }
         private double _MaxAngle = 60;
 
-        [Category("坐标轴"), DisplayName("视场系数")]
+        [Browsable(false), JsonIgnore]
         public double ConoscopeCoefficient { get => _ConoscopeCoefficient; set { _ConoscopeCoefficient = value; OnPropertyChanged(); } }
-        private double _ConoscopeCoefficient = 0.02845;
+        private double _ConoscopeCoefficient;
 
         [Category("坐标轴"), DisplayName("圆心X")]
         public double CenterX { get => _CenterX; set { _CenterX = value; OnPropertyChanged(); } }

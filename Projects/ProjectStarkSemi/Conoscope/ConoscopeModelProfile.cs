@@ -1,7 +1,9 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw.Special;
 using Newtonsoft.Json;
+using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace ProjectStarkSemi.Conoscope
 {
@@ -32,24 +34,32 @@ namespace ProjectStarkSemi.Conoscope
         private string _DisplayName = "VA60";
 
         /// <summary>
-        /// 最大角度范围（度）
+        /// 视场角范围（度）
         /// </summary>
+        [Category("型号"), DisplayName("视场角(度)"), Description("VA60 默认 60，VA80 默认 80。系数按 计算直径 / (视场角 * 2) 自动计算。")]
         public int MaxAngle
         {
             get => _MaxAngle;
-            set { _MaxAngle = value; OnPropertyChanged(); }
+            set { _MaxAngle = Math.Max(1, value); OnPropertyChanged(); OnPropertyChanged(nameof(ConoscopeCoefficient)); }
         }
         private int _MaxAngle = 60;
 
         /// <summary>
-        /// 视场系数（像素/角度或角度/像素，按具体业务定义）
+        /// 用于计算的图像直径（像素）。0 表示使用图像短边。
         /// </summary>
-        public double ConoscopeCoefficient
+        [Category("型号"), DisplayName("计算直径(像素)"), Description("填 0 时使用当前图像短边；系数 = 计算直径 / (视场角 * 2)。")]
+        public double CalculationDiameterPixels
         {
-            get => _ConoscopeCoefficient;
-            set { _ConoscopeCoefficient = value; OnPropertyChanged(); }
+            get => _CalculationDiameterPixels;
+            set { _CalculationDiameterPixels = Math.Max(0, value); OnPropertyChanged(); OnPropertyChanged(nameof(ConoscopeCoefficient)); }
         }
-        private double _ConoscopeCoefficient = 0.02840;
+        private double _CalculationDiameterPixels;
+
+        /// <summary>
+        /// 视场系数（像素/度），由计算直径和视场角自动推导。
+        /// </summary>
+        [Browsable(false), JsonIgnore]
+        public double ConoscopeCoefficient => CalculateConoscopeCoefficient(CalculationDiameterPixels, MaxAngle);
 
         /// <summary>
         /// 是否包含观察相机
@@ -116,12 +126,11 @@ namespace ProjectStarkSemi.Conoscope
                     ModelType = ConoscopeModelType.VA60,
                     DisplayName = "VA60",
                     MaxAngle = 60,
-                    ConoscopeCoefficient = 0.02645,
+                    CalculationDiameterPixels = 0,
                     HasObservationCamera = true,
                     CoordinateAxisParam = new ConoscopeCoordinateAxisParam
                     {
                         MaxAngle = 60,
-                        ConoscopeCoefficient = 0.02645,
                         ReferenceAngle = 90,
                         ReferenceRadiusAngle = 30
                     },
@@ -134,12 +143,11 @@ namespace ProjectStarkSemi.Conoscope
                     ModelType = ConoscopeModelType.VA80,
                     DisplayName = "VA80",
                     MaxAngle = 80,
-                    ConoscopeCoefficient = 0.022,
+                    CalculationDiameterPixels = 0,
                     HasObservationCamera = false,
                     CoordinateAxisParam = new ConoscopeCoordinateAxisParam
                     {
                         MaxAngle = 80,
-                        ConoscopeCoefficient = 0.022,
                         ReferenceAngle = 90,
                         ReferenceRadiusAngle = 40
                     },
@@ -149,6 +157,31 @@ namespace ProjectStarkSemi.Conoscope
                 },
                 _ => new ConoscopeModelProfile { ModelType = type, DisplayName = type.ToString() }
             };
+        }
+
+        public double GetCalculationDiameterPixels(int imageWidth, int imageHeight)
+        {
+            if (CalculationDiameterPixels > 0)
+            {
+                return CalculationDiameterPixels;
+            }
+
+            return Math.Max(1, Math.Min(imageWidth, imageHeight));
+        }
+
+        public double GetConoscopeCoefficient(int imageWidth, int imageHeight)
+        {
+            return CalculateConoscopeCoefficient(GetCalculationDiameterPixels(imageWidth, imageHeight), MaxAngle);
+        }
+
+        public static double CalculateConoscopeCoefficient(double calculationDiameterPixels, double maxAngle)
+        {
+            if (calculationDiameterPixels <= 0 || maxAngle <= 0)
+            {
+                return 0;
+            }
+
+            return calculationDiameterPixels / (maxAngle * 2.0);
         }
     }
 }

@@ -62,25 +62,17 @@ namespace ProjectStarkSemi
         private PolarAngleLine? selectedPolarLine;
         
         // Concentric circle line management
-        private ObservableCollection<ConcentricCircleLine> concentricCircleLines = new ObservableCollection<ConcentricCircleLine>();
         private ConcentricCircleLine? selectedCircleLine;
-        
-        // Displayed circles for UI management
-        private ObservableCollection<ConcentricCircleLine> displayedCircles = new ObservableCollection<ConcentricCircleLine>();
         
         // Current image state for dynamic angle addition
         private BitmapSource? currentBitmapSource;
         private Point currentImageCenter;
         private int currentImageRadius;
+        private double currentPixelsPerDegree;
 
         private ConoscopeCoordinateAxisController? coordinateAxisController;
         private PolarAngleLine? coordinateAxisPolarLine;
         private ConcentricCircleLine? coordinateAxisCircleLine;
-
-        // Backup of original Mat data for filter reset
-        private OpenCvSharp.Mat? OriginalXMat;
-        private OpenCvSharp.Mat? OriginalYMat;
-        private OpenCvSharp.Mat? OriginalZMat;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
@@ -120,6 +112,16 @@ namespace ProjectStarkSemi
 
             RefreshReferenceLineProfileBinding();
             SetReferencePlotLimits();
+        }
+
+        internal void RefreshConoscopeConfiguration()
+        {
+            RefreshModelDependentUi();
+            UpdateReferencePlotHeader();
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
         }
 
         public ConoscopeWindow()
@@ -433,7 +435,7 @@ namespace ProjectStarkSemi
                 throw new NotSupportedException("当前视图仅支持 CVCIE XYZ 图像文件");
             }
 
-            ClearMatData(true);
+            ClearMatData();
 
             CVFileUtil.Read(filename, out CVCIEFile fileInfo);
             if (fileInfo.Channels < 3)
@@ -452,9 +454,6 @@ namespace ProjectStarkSemi
             XMat = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
             YMat = CreateFloatChannelMat(fileInfo.Data, channelSize, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
             ZMat = CreateFloatChannelMat(fileInfo.Data, channelSize * 2, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-            OriginalXMat = XMat.Clone();
-            OriginalYMat = YMat.Clone();
-            OriginalZMat = ZMat.Clone();
 
             log.Info($"已加载 CVCIE XYZ 数据: {fileInfo.Cols}x{fileInfo.Rows}, Bpp={fileInfo.Bpp}");
         }
@@ -532,17 +531,12 @@ namespace ProjectStarkSemi
 
         private void RestoreOriginalMats()
         {
-            if (OriginalXMat == null || OriginalYMat == null || OriginalZMat == null)
+            if (string.IsNullOrWhiteSpace(Filename))
             {
                 return;
             }
 
-            XMat?.Dispose();
-            YMat?.Dispose();
-            ZMat?.Dispose();
-            XMat = OriginalXMat.Clone();
-            YMat = OriginalYMat.Clone();
-            ZMat = OriginalZMat.Clone();
+            LoadConoscopeData(Filename);
         }
 
         private void RefreshDisplayedImage()
@@ -595,7 +589,7 @@ namespace ProjectStarkSemi
             {
                 for (int col = 0; col < YMat.Cols; col++)
                 {
-                    double value = GetChannelValue(
+                    double value = ConoscopeColorimetry.GetChannelValue(
                         XMat.At<float>(row, col),
                         YMat.At<float>(row, col),
                         ZMat.At<float>(row, col),
@@ -644,7 +638,7 @@ namespace ProjectStarkSemi
             }
         }
 
-        private void ClearMatData(bool includeOriginal)
+        private void ClearMatData()
         {
             XMat?.Dispose();
             XMat = null;
@@ -652,18 +646,6 @@ namespace ProjectStarkSemi
             YMat = null;
             ZMat?.Dispose();
             ZMat = null;
-
-            if (!includeOriginal)
-            {
-                return;
-            }
-
-            OriginalXMat?.Dispose();
-            OriginalXMat = null;
-            OriginalYMat?.Dispose();
-            OriginalYMat = null;
-            OriginalZMat?.Dispose();
-            OriginalZMat = null;
         }
 
         private void InitializeCoordinateAxis(Point center, int radius)
@@ -672,7 +654,7 @@ namespace ProjectStarkSemi
             axisParam.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
             axisParam.PropertyChanged += CoordinateAxisParam_PropertyChanged;
             axisParam.MaxAngle = MaxAngle;
-            axisParam.ConoscopeCoefficient = CurrentModelProfile.ConoscopeCoefficient;
+            axisParam.ConoscopeCoefficient = currentPixelsPerDegree;
             axisParam.CenterX = center.X;
             axisParam.CenterY = center.Y;
             axisParam.AxisRadius = radius;
@@ -687,7 +669,7 @@ namespace ProjectStarkSemi
             coordinateAxisController.ReferenceChanged += CoordinateAxisController_ReferenceChanged;
             coordinateAxisController.PointerMoved += CoordinateAxisController_PointerMoved;
             coordinateAxisController.PointerLeft += CoordinateAxisController_PointerLeft;
-            coordinateAxisController.Configure(center, radius, MaxAngle, CurrentModelProfile.ConoscopeCoefficient);
+            coordinateAxisController.Configure(center, radius, MaxAngle, currentPixelsPerDegree);
             coordinateAxisController.Show();
             UpdateReferencePlotHeader();
         }
@@ -772,7 +754,7 @@ namespace ProjectStarkSemi
             int xyzY = ClampToInt(iy, 0, xyzHeight - 1);
             ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
 
-            CalculateChromaticity(X, Y, Z, out double x, out double y, out double u, out double v, out double cct);
+            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
             ExportChannel displayChannel = GetSelectedDisplayChannel();
             double displayValue = GetChannelValue(X, Y, Z, displayChannel);
             double azimuthAngle = GetFullAzimuthAngle(e.Position);
@@ -784,38 +766,9 @@ namespace ProjectStarkSemi
             builder.AppendLine($"极坐标: 方位={azimuthAngle:F2}°, 极角={polarAngle:F2}°");
             builder.AppendLine($"{GetChannelLabel(displayChannel)}: {displayValue:F6}");
             builder.AppendLine($"XYZ: X={X:F4}, Y={Y:F4}, Z={Z:F4}");
-            builder.AppendLine($"xy: x={x:F6}, y={y:F6}");
-            builder.Append($"uv: u={u:F6}, v={v:F6}, CCT={FormatCct(cct)}");
+            builder.AppendLine($"xy: x={chromaticity.x:F6}, y={chromaticity.y:F6}");
+            builder.Append($"uv: u={chromaticity.u:F6}, v={chromaticity.v:F6}, CCT={ConoscopeColorimetry.FormatCct(chromaticity.Cct)}");
             return builder.ToString();
-        }
-
-        private void CalculateChromaticity(double X, double Y, double Z, out double x, out double y, out double u, out double v, out double cct)
-        {
-            x = y = u = v = cct = 0;
-            double xyzSum = X + Y + Z;
-            if (Math.Abs(xyzSum) > double.Epsilon)
-            {
-                x = X / xyzSum;
-                y = Y / xyzSum;
-            }
-
-            double uvDenominator = X + 15 * Y + 3 * Z;
-            if (Math.Abs(uvDenominator) > double.Epsilon)
-            {
-                u = 4 * X / uvDenominator;
-                v = 9 * Y / uvDenominator;
-            }
-
-            if (Math.Abs(0.1858 - y) > double.Epsilon)
-            {
-                double n = (x - 0.3320) / (0.1858 - y);
-                cct = 449.0 * Math.Pow(n, 3) + 3525.0 * Math.Pow(n, 2) + 6823.3 * n + 5520.33;
-            }
-
-            if (!double.IsFinite(cct) || cct < 0)
-            {
-                cct = 0;
-            }
         }
 
         private double GetFullAzimuthAngle(Point point)
@@ -845,11 +798,6 @@ namespace ProjectStarkSemi
             }
 
             return Math.Max(min, Math.Min(value, max));
-        }
-
-        private static string FormatCct(double cct)
-        {
-            return cct > 0 ? $"{cct:F0}K" : "--";
         }
 
         private void HideCoordinateDragOverlay()
@@ -1006,14 +954,12 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                // Get image dimensions
                 int imageWidth = bitmapSource.PixelWidth;
                 int imageHeight = bitmapSource.PixelHeight;
 
-                // Use the smaller dimension for circular symmetry
-                int radius = (int)(MaxAngle / CurrentModelProfile.ConoscopeCoefficient);
+                currentPixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(imageWidth, imageHeight);
+                int radius = (int)Math.Round(MaxAngle * currentPixelsPerDegree);
 
-                // Calculate center point
                 Point center = new Point(imageWidth / 2.0, imageHeight / 2.0);
 
                 // Store current image state for dynamic angle addition
@@ -1023,7 +969,7 @@ namespace ProjectStarkSemi
 
                 InitializeCoordinateAxis(center, radius);
 
-                log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}");
+                log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}, 系数: {currentPixelsPerDegree:F6}px/deg");
 
                 ClearDisplayedCircles();
 
@@ -1046,7 +992,6 @@ namespace ProjectStarkSemi
         /// </summary>
         private void ClearDisplayedCircles()
         {
-            displayedCircles.Clear();
             selectedCircleLine = null;
             coordinateAxisCircleLine = null;
         }
@@ -1078,7 +1023,7 @@ namespace ProjectStarkSemi
 
                 if (saveFileDialog.ShowDialog() == true)
                 {
-                    ExportAngleModeToCSV(saveFileDialog.FileName, channel);
+                    ConoscopeExportService.ExportAngleModeToCsv(saveFileDialog.FileName, channel, CreateExportContext());
                     MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     log.Info($"成功导出方位角模式CSV: {saveFileDialog.FileName}");
                 }
@@ -1117,7 +1062,7 @@ namespace ProjectStarkSemi
 
                 if (saveFileDialog.ShowDialog() == true)
                 {
-                    ExportCircleModeToCSV(saveFileDialog.FileName, channel);
+                    ConoscopeExportService.ExportCircleModeToCsv(saveFileDialog.FileName, channel, CreateExportContext());
                     MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     log.Info($"成功导出极角模式CSV: {saveFileDialog.FileName}");
                 }
@@ -1144,262 +1089,49 @@ namespace ProjectStarkSemi
             return ExportChannel.Y;
         }
 
-        /// <summary>
-        /// 按角度模式导出数据到CSV文件
-        /// 格式: Phi \ Theta 矩阵格式
-        /// 行: Theta (采样点位置，从0到MaxAngle)
-        /// 列: Phi (角度线，从0°到180°)
-        /// </summary>
-        private void ExportAngleModeToCSV(string filePath, ExportChannel channel)
+        private ConoscopeExportContext CreateExportContext()
         {
             if (YMat == null)
             {
-                log.Warn("没有图像数据，无法导出");
-                return;
+                throw new InvalidOperationException("XYZ 数据未加载");
             }
 
-            // Create angle lines from 0° to 180°
-            var angleLines = CreateAngleLinesForExport();
+            double pixelsPerDegree = currentPixelsPerDegree > 0
+                ? currentPixelsPerDegree
+                : CurrentModelProfile.GetConoscopeCoefficient(YMat.Width, YMat.Height);
 
-            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            return new ConoscopeExportContext
             {
-                if (angleLines.Count == 0)
+                ModelName = ConoscopeConfig.CurrentModel.ToString(),
+                ImageWidth = YMat.Width,
+                ImageHeight = YMat.Height,
+                Center = currentImageCenter,
+                MaxAngle = MaxAngle,
+                PixelsPerDegree = pixelsPerDegree,
+                ReadXyz = (ix, iy) =>
                 {
-                    log.Warn("没有角度线数据可导出");
-                    return;
-                }
-
-                // Write header comments
-                writer.WriteLine($"# Azimuth Export Data (Phi \\ Theta Format)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                writer.WriteLine($"# Phi (Column): Diameter line direction (0°-180°)");
-                writer.WriteLine($"# Theta (Row): Sample point position (0 to MaxAngle)");
-                writer.WriteLine();
-
-                // Write CSV header: Phi \ Theta, followed by each Phi angle (0-180)
-                StringBuilder headerLine = new StringBuilder();
-                headerLine.Append("Phi \\ Theta");
-                foreach (var line in angleLines)
-                {
-                    headerLine.Append($",{line.Angle:F0}");
-                }
-                writer.WriteLine(headerLine.ToString());
-
-                // Find the maximum number of samples across all lines
-                int maxSamples = angleLines.Max(l => l.RgbData.Count);
-                if (maxSamples == 0) return;
-
-                // Export each row (Theta position from 0 to MaxAngle)
-                for (int i = 0; i < maxSamples; i++)
-                {
-                    StringBuilder dataLine = new StringBuilder();
-                    
-                    // Get Theta position from first line
-                    double theta = angleLines[0].RgbData.Count > i ? angleLines[0].RgbData[i].Position : 0;
-                    dataLine.Append($"{theta:F2}");
-
-                    // Add value for each Phi angle
-                    foreach (var line in angleLines)
-                    {
-                        if (line.RgbData.Count > i)
-                        {
-                            double value = GetChannelValue(line.RgbData[i], channel);
-                            dataLine.Append($",{FormatChannelValue(value, channel)}");
-                        }
-                        else
-                        {
-                            dataLine.Append(",");
-                        }
-                    }
-                    writer.WriteLine(dataLine.ToString());
-                }
-
-                log.Info($"方位角模式导出了 {angleLines.Count} 个Phi角度 (0°-180°) 的数据, 通道: {channel}");
-            }
-        }
-
-        /// <summary>
-        /// 为导出创建从0°到180°的方位角数据
-        /// 每条线采样从中心点(0)到边缘(MaxAngle)
-        /// </summary>
-        private List<PolarAngleLine> CreateAngleLinesForExport()
-        {
-            var angleLines = new List<PolarAngleLine>();
-
-            if (YMat == null) return angleLines;
-
-            int imageWidth = YMat.Width;
-            int imageHeight = YMat.Height;
-
-            // Create lines from 0° to 180° (181 lines)
-            for (int phi = 0; phi <= 180; phi++)
-            {
-                PolarAngleLine polarLine = new PolarAngleLine
-                {
-                    Angle = phi
-                };
-
-                double radians = (180 - phi) * Math.PI / 180.0;
-
-                // Sample from center (theta=0) to edge (theta=MaxAngle)
-                for (int theta = 0; theta <= (int)MaxAngle; theta++)
-                {
-                    double radiusPixels = theta / CurrentModelProfile.ConoscopeCoefficient;
-                    double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                    double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
-
                     ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                    polarLine.RgbData.Add(new RgbSample
-                    {
-                        Position = theta,
-                        X = X,
-                        Y = Y,
-                        Z = Z
-                    });
+                    return new ConoscopeXyzValue(X, Y, Z);
                 }
-
-                angleLines.Add(polarLine);
-            }
-
-            log.Info($"创建了 {angleLines.Count} 条方位角 (0°-180°) 用于导出");
-
-            return angleLines;
-        }
-
-        /// <summary>
-        /// 按同心圆模式导出数据到CSV文件
-        /// 格式: Phi \ Theta 矩阵格式
-        /// 行: Theta (圆周角度，0-359°)
-        /// 列: Phi (半径角度，0-60或0-80，包含0度中心点)
-        /// </summary>
-        private void ExportCircleModeToCSV(string filePath, ExportChannel channel)
-        {
-            // Create concentric circles and extract data
-            CreateConcentricCirclesData();
-
-            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
-            {
-                if (concentricCircleLines.Count == 0)
-                {
-                    log.Warn("没有同心圆数据可导出");
-                    return;
-                }
-
-                var sortedCircles = concentricCircleLines.OrderBy(c => c.RadiusAngle).ToList();
-
-                // Write header comments
-                writer.WriteLine($"# Polar Angle Export Data (Phi \\ Theta Format)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                writer.WriteLine($"# Polar Angle Count: {sortedCircles.Count} (including 0-degree center point)");
-                writer.WriteLine($"# Phi (Column): Radius angle (viewing angle, 0-{MaxAngle}°)");
-                writer.WriteLine($"# Theta (Row): Circumferential angle (0-359°)");
-                writer.WriteLine();
-
-                // Write CSV header: Phi \ Theta, followed by each Phi (radius angle)
-                StringBuilder headerLine = new StringBuilder();
-                headerLine.Append("Phi \\ Theta");
-                foreach (var circle in sortedCircles)
-                {
-                    headerLine.Append($",{circle.RadiusAngle:F0}");
-                }
-                writer.WriteLine(headerLine.ToString());
-
-                // Export each row (Theta = 0-359)
-                for (int theta = 0; theta <= 360; theta++)
-                {
-                    StringBuilder dataLine = new StringBuilder();
-                    dataLine.Append($"{theta}");
-
-                    // Add value for each Phi (radius angle)
-                    foreach (var circle in sortedCircles)
-                    {
-                        if (circle.RgbData.Count > theta)
-                        {
-                            double value = GetChannelValue(circle.RgbData[theta], channel);
-                            dataLine.Append($",{FormatChannelValue(value, channel)}");
-                        }
-                        else
-                        {
-                            dataLine.Append(",");
-                        }
-                    }
-                    writer.WriteLine(dataLine.ToString());
-                }
-
-                log.Info($"极角模式导出了 {sortedCircles.Count} 个Phi角度 x 360 Theta的数据, 通道: {channel}");
-            }
+            };
         }
 
         /// <summary>
         /// 获取指定通道的值
         /// </summary>
-        private double GetChannelValue(RgbSample sample, ExportChannel channel)
+        private static double GetChannelValue(RgbSample sample, ExportChannel channel)
         {
             return GetChannelValue(sample.X, sample.Y, sample.Z, channel);
         }
 
         private static double GetChannelValue(double X, double Y, double Z, ExportChannel channel)
         {
-            return channel switch
-            {
-                ExportChannel.X => X,
-                ExportChannel.Y => Y,
-                ExportChannel.Z => Z,
-                ExportChannel.CieX => GetCieX(X, Y, Z),
-                ExportChannel.CieY => GetCieY(X, Y, Z),
-                ExportChannel.CieU => GetCieU(X, Y, Z),
-                ExportChannel.CieV => GetCieV(X, Y, Z),
-                _ => Y
-            };
-        }
-
-        private static double GetCieX(double X, double Y, double Z)
-        {
-            double sum = X + Y + Z;
-            return Math.Abs(sum) > double.Epsilon ? X / sum : 0;
-        }
-
-        private static double GetCieY(double X, double Y, double Z)
-        {
-            double sum = X + Y + Z;
-            return Math.Abs(sum) > double.Epsilon ? Y / sum : 0;
-        }
-
-        private static double GetCieU(double X, double Y, double Z)
-        {
-            double denominator = X + 15 * Y + 3 * Z;
-            return Math.Abs(denominator) > double.Epsilon ? 4 * X / denominator : 0;
-        }
-
-        private static double GetCieV(double X, double Y, double Z)
-        {
-            double denominator = X + 15 * Y + 3 * Z;
-            return Math.Abs(denominator) > double.Epsilon ? 9 * Y / denominator : 0;
+            return ConoscopeColorimetry.GetChannelValue(X, Y, Z, channel);
         }
 
         private static string GetChannelLabel(ExportChannel channel)
         {
-            return channel switch
-            {
-                ExportChannel.X => "X",
-                ExportChannel.Y => "Y",
-                ExportChannel.Z => "Z",
-                ExportChannel.CieX => "x",
-                ExportChannel.CieY => "y",
-                ExportChannel.CieU => "u",
-                ExportChannel.CieV => "v",
-                _ => "Y"
-            };
+            return ConoscopeColorimetry.GetChannelLabel(channel);
         }
 
         private static ScottPlot.Color GetPlotColor(ExportChannel channel)
@@ -1419,78 +1151,9 @@ namespace ProjectStarkSemi
 
         private static string FormatChannelValue(double value, ExportChannel channel)
         {
-            return channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV
-                ? value.ToString("F6")
-                : value.ToString("F2");
+            return ConoscopeColorimetry.FormatChannelValue(value, channel);
         }
 
-
-        private void CreateConcentricCirclesData()
-        {
-            concentricCircleLines.Clear();
-
-            if (YMat == null) return;
-
-            int imageWidth = YMat.Width;
-            int imageHeight = YMat.Height;
-
-            // Calculate the number of concentric circles based on model
-            int numCircles = (int)MaxAngle;
-
-            // For each degree from 0 to MaxAngle, create a concentric circle
-            // 0 degree is center point
-            for (int degree = 0; degree <= numCircles; degree++)
-            {
-                ConcentricCircleLine circleLine = new ConcentricCircleLine
-                {
-                    RadiusAngle = degree
-                };
-
-                if (degree == 0)
-                {
-                    // Center point (0 degree): Use the center pixel value for all 360 samples
-                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(currentImageCenter.X)));
-                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(currentImageCenter.Y)));
-
-                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                    // Fill all 360 samples with the center point value
-                    for (int anglePos = 0; anglePos <= 360; anglePos++)
-                    {
-                        circleLine.RgbData.Add(new RgbSample
-                        {
-                            Position = anglePos,
-                            X = X,
-                            Y = Y,
-                            Z = Z
-                        });
-                    }
-                }
-                else
-                {
-                    // Calculate radius in pixels for this degree angle
-                    double radiusPixels = degree / CurrentModelProfile.ConoscopeCoefficient;
-
-                    // Sample points along the circle (360 samples for full circle, one per degree)
-                    for (int anglePos = 0; anglePos <= 360; anglePos++)
-                    {
-                        double radians = (90 - anglePos) * Math.PI / 180.0;
-                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                        int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
-
-                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-                        circleLine.RgbData.Add(new RgbSample { Position = anglePos, X = X, Y = Y, Z = Z });
-                    }
-                }
-
-                concentricCircleLines.Add(circleLine);
-            }
-
-            log.Info($"创建了 {concentricCircleLines.Count} 个极角数据 (包含0度中心点)");
-        }
 
         /// <summary>
         /// 直接从XMat/YMat/ZMat提取XYZ通道值（参考VAMdemo简洁方式）
@@ -1575,7 +1238,7 @@ namespace ProjectStarkSemi
                 int imageHeight = YMat.Height;
 
                 // Calculate radius in pixels
-                double radiusPixels = radiusAngle / CurrentModelProfile.ConoscopeCoefficient;
+                double radiusPixels = radiusAngle * currentPixelsPerDegree;
 
                 int numSamples = 360;
                 for (int i = 0; i < numSamples; i++)
@@ -1694,12 +1357,6 @@ namespace ProjectStarkSemi
             YMat = null;
             ZMat?.Dispose();
             ZMat = null;
-            OriginalXMat?.Dispose();
-            OriginalXMat = null;
-            OriginalYMat?.Dispose();
-            OriginalYMat = null;
-            OriginalZMat?.Dispose();
-            OriginalZMat = null;
             DisposeCoordinateAxis();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
@@ -1779,11 +1436,12 @@ namespace ProjectStarkSemi
                     // Export azimuth data
                     if (settings.ExportAzimuth)
                     {
+                        ConoscopeExportContext exportContext = CreateExportContext();
                         foreach (var channel in settings.Channels)
                         {
                             string filename = $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv";
                             string filePath = Path.Combine(outputFolder, filename);
-                            ExportAzimuthWithStep(filePath, channel, settings.AzimuthStep, settings.RadialStep);
+                            ConoscopeExportService.ExportAzimuthWithStep(filePath, channel, exportContext, settings.AzimuthStep, settings.RadialStep);
                             filesExported++;
                             log.Info($"方位角导出成功: {filePath}");
                         }
@@ -1792,11 +1450,12 @@ namespace ProjectStarkSemi
                     // Export polar data
                     if (settings.ExportPolar)
                     {
+                        ConoscopeExportContext exportContext = CreateExportContext();
                         foreach (var channel in settings.Channels)
                         {
                             string filename = $"{settings.FilePrefix}_Polar_{channel}_{ConoscopeConfig.CurrentModel}_{timestamp}.csv";
                             string filePath = Path.Combine(outputFolder, filename);
-                            ExportPolarWithStep(filePath, channel, settings.PolarStep, settings.CircumferentialStep);
+                            ConoscopeExportService.ExportPolarWithStep(filePath, channel, exportContext, settings.PolarStep, settings.CircumferentialStep);
                             filesExported++;
                             log.Info($"极角导出成功: {filePath}");
                         }
@@ -1820,6 +1479,7 @@ namespace ProjectStarkSemi
         {
             try
             {
+                ConoscopeExportContext exportContext = CreateExportContext();
                 foreach (var channel in settings.Channels)
                 {
                     string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
@@ -1828,11 +1488,11 @@ namespace ProjectStarkSemi
                     
                     if (settings.CrossSectionType == CrossSectionType.Azimuth)
                     {
-                        ExportAzimuthCrossSection(filePath, channel, settings.CrossSectionAngle);
+                        ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle);
                     }
                     else
                     {
-                        ExportPolarCrossSection(filePath, channel, settings.CrossSectionAngle);
+                        ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle);
                     }
                     filesExported++;
                     log.Info($"截面导出成功: {filePath}");
@@ -1842,302 +1502,6 @@ namespace ProjectStarkSemi
             {
                 log.Error($"截面导出失败: {ex.Message}", ex);
                 throw;
-            }
-        }
-
-        /// <summary>
-        /// 按步进导出方位角数据
-        /// </summary>
-        private void ExportAzimuthWithStep(string filePath, ExportChannel channel, double azimuthStep, double radialStep)
-        {
-            if (YMat == null)
-            {
-                log.Warn("没有图像数据，无法导出");
-                return;
-            }
-
-            int imageWidth = YMat.Width;
-            int imageHeight = YMat.Height;
-
-            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
-            {
-                // Write header comments
-                writer.WriteLine($"# Azimuth Export Data (azimuth step = {azimuthStep}°, radial step = {radialStep}°)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                writer.WriteLine($"# Phi (Column): Azimuth angle (0°-180°, step={azimuthStep}°)");
-                writer.WriteLine($"# Theta (Row): Polar radius (0 to MaxAngle, step={radialStep}°)");
-                writer.WriteLine();
-
-                // Create list of angles to export based on step
-                var anglesToExport = new List<double>();
-                for (double phi = 0; phi <= 180; phi += azimuthStep)
-                {
-                    anglesToExport.Add(phi);
-                }
-
-                // Write CSV header
-                StringBuilder headerLine = new StringBuilder();
-                headerLine.Append("Phi \\ Theta");
-                foreach (var angle in anglesToExport)
-                {
-                    headerLine.Append($",{angle:F2}");
-                }
-                writer.WriteLine(headerLine.ToString());
-
-                // Sample data for each angle
-                var angleData = new List<List<RgbSample>>();
-                foreach (var phi in anglesToExport)
-                {
-                    var samples = new List<RgbSample>();
-                    double radians = (90 - phi) * Math.PI / 180.0;
-
-                    for (double theta = 0; theta <= MaxAngle; theta += radialStep)
-                    {
-                        double radiusPixels = theta / CurrentModelProfile.ConoscopeCoefficient;
-                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                        int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
-
-                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                        samples.Add(new RgbSample
-                        {
-                            Position = theta,
-                            X = X,
-                            Y = Y,
-                            Z = Z
-                        });
-                    }
-                    angleData.Add(samples);
-                }
-
-                // Write data rows
-                int maxSamples = angleData[0].Count;
-                for (int i = 0; i < maxSamples; i++)
-                {
-                    StringBuilder dataLine = new StringBuilder();
-                    dataLine.Append($"{angleData[0][i].Position:F2}");
-
-                    foreach (var samples in angleData)
-                    {
-                        if (samples.Count > i)
-                        {
-                            double value = GetChannelValue(samples[i], channel);
-                            dataLine.Append($",{FormatChannelValue(value, channel)}");
-                        }
-                        else
-                        {
-                            dataLine.Append(",");
-                        }
-                    }
-                    writer.WriteLine(dataLine.ToString());
-                }
-
-                log.Info($"方位角导出完成，步进={azimuthStep}, 角度数={anglesToExport.Count}, 通道={channel}");
-            }
-        }
-
-        /// <summary>
-        /// 按步进导出极角数据
-        /// </summary>
-        private void ExportPolarWithStep(string filePath, ExportChannel channel, double polarStep, double circumStep)
-        {
-            if (YMat == null)
-            {
-                log.Warn("没有图像数据，无法导出");
-                return;
-            }
-
-            int imageWidth = YMat.Width;
-            int imageHeight = YMat.Height;
-
-            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
-            {
-                // Write header comments
-                writer.WriteLine($"# Polar Angle Export Data (ring step = {polarStep}°, circumferential step = {circumStep}°)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                writer.WriteLine($"# Phi (Column): Polar radius angle (0-{MaxAngle}°, step={polarStep}°)");
-                writer.WriteLine($"# Theta (Row): Circumferential angle (0-360°, step={circumStep}°)");
-                writer.WriteLine();
-
-                // Create list of polar angles to export
-                var polarAngles = new List<double>();
-                for (double phi = 0; phi <= MaxAngle; phi += polarStep)
-                {
-                    polarAngles.Add(phi);
-                }
-
-                // Write CSV header
-                StringBuilder headerLine = new StringBuilder();
-                headerLine.Append("Phi \\ Theta");
-                foreach (var angle in polarAngles)
-                {
-                    headerLine.Append($",{angle:F2}");
-                }
-                writer.WriteLine(headerLine.ToString());
-
-                // Sample data for each polar angle
-                var polarData = new List<List<RgbSample>>();
-                foreach (var polarAngle in polarAngles)
-                {
-                    var samples = new List<RgbSample>();
-                    double radiusPixels = polarAngle / CurrentModelProfile.ConoscopeCoefficient;
-
-                    for (double theta = 0; theta <= 360; theta += circumStep)
-                    {
-                        double radians = (90 - theta) * Math.PI / 180.0;
-                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                        int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
-
-                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                        samples.Add(new RgbSample
-                        {
-                            Position = theta,
-                            X = X,
-                            Y = Y,
-                            Z = Z
-                        });
-                    }
-                    polarData.Add(samples);
-                }
-
-                // Write data rows
-                int maxSamples = polarData[0].Count;
-                for (int i = 0; i < maxSamples; i++)
-                {
-                    StringBuilder dataLine = new StringBuilder();
-                    dataLine.Append($"{polarData[0][i].Position:F2}");
-
-                    foreach (var samples in polarData)
-                    {
-                        if (samples.Count > i)
-                        {
-                            double value = GetChannelValue(samples[i], channel);
-                            dataLine.Append($",{FormatChannelValue(value, channel)}");
-                        }
-                        else
-                        {
-                            dataLine.Append(",");
-                        }
-                    }
-                    writer.WriteLine(dataLine.ToString());
-                }
-
-                log.Info($"极角导出完成，极角步进={polarStep}, 圆周步进={circumStep}, 极角数={polarAngles.Count}, 通道={channel}");
-            }
-        }
-
-        /// <summary>
-        /// 导出方位角截面数据
-        /// </summary>
-        private void ExportAzimuthCrossSection(string filePath, ExportChannel channel, double azimuthAngle)
-        {
-            if (YMat == null)
-            {
-                log.Warn("没有图像数据，无法导出");
-                return;
-            }
-
-            int imageWidth = YMat.Width;
-            int imageHeight = YMat.Height;
-
-            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
-            {
-                // Write header comments
-                writer.WriteLine($"# Azimuth Cross-Section Export (Angle = {azimuthAngle}°)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                writer.WriteLine();
-
-                // Write CSV header
-                writer.WriteLine("Polar Radius (degrees),Value");
-
-                double radians = (90 - azimuthAngle) * Math.PI / 180.0;
-
-                // Sample from center to edge
-                for (int theta = -(int)MaxAngle; theta <= (int)MaxAngle; theta++)
-                {
-                    double radiusPixels = theta / CurrentModelProfile.ConoscopeCoefficient;
-                    double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                    double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
-
-                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                    var sample = new RgbSample { X = X, Y = Y, Z = Z };
-                    double value = GetChannelValue(sample, channel);
-                    
-                    writer.WriteLine($"{theta},{FormatChannelValue(value, channel)}");
-                }
-
-                log.Info($"方位角截面导出完成: {azimuthAngle}°, 通道={channel}");
-            }
-        }
-
-        /// <summary>
-        /// 导出极角截面数据
-        /// </summary>
-        private void ExportPolarCrossSection(string filePath, ExportChannel channel, double polarAngle)
-        {
-            if (YMat == null)
-            {
-                log.Warn("没有图像数据，无法导出");
-                return;
-            }
-
-            int imageWidth = YMat.Width;
-            int imageHeight = YMat.Height;
-
-            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
-            {
-                // Write header comments
-                writer.WriteLine($"# Polar Cross-Section Export (Radius Angle = {polarAngle}°)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                writer.WriteLine();
-
-                // Write CSV header
-                writer.WriteLine("Circumferential Angle (degrees),Value");
-
-                double radiusPixels = polarAngle / CurrentModelProfile.ConoscopeCoefficient;
-
-                // Sample around the circle
-                for (int theta = 0; theta <= 360; theta++)
-                {
-                    double radians = (90 - theta) * Math.PI / 180.0;
-                    double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                    double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
-
-                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                    var sample = new RgbSample { X = X, Y = Y, Z = Z };
-                    double value = GetChannelValue(sample, channel);
-                    
-                    writer.WriteLine($"{theta},{FormatChannelValue(value, channel)}");
-                }
-
-                log.Info($"极角截面导出完成: {polarAngle}°, 通道={channel}");
             }
         }
 
@@ -2190,7 +1554,7 @@ namespace ProjectStarkSemi
 
                 if (saveFileDialog.ShowDialog() == true)
                 {
-                    ExportAzimuthCrossSection(saveFileDialog.FileName, channel, selectedPolarLine.Angle);
+                    ConoscopeExportService.ExportAzimuthCrossSection(saveFileDialog.FileName, channel, CreateExportContext(), selectedPolarLine.Angle);
                     MessageBox.Show($"方位角 {selectedPolarLine.Angle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     log.Info($"单个方位角导出成功: {saveFileDialog.FileName}");
                 }
@@ -2236,7 +1600,7 @@ namespace ProjectStarkSemi
 
                 if (saveFileDialog.ShowDialog() == true)
                 {
-                    ExportPolarCrossSection(saveFileDialog.FileName, channel, selectedCircleLine.RadiusAngle);
+                    ConoscopeExportService.ExportPolarCrossSection(saveFileDialog.FileName, channel, CreateExportContext(), selectedCircleLine.RadiusAngle);
                     MessageBox.Show($"极角 {selectedCircleLine.RadiusAngle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     log.Info($"单个极角导出成功: {saveFileDialog.FileName}");
                 }
