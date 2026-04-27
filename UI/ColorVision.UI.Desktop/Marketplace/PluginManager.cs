@@ -341,7 +341,8 @@ namespace ColorVision.UI.Desktop.Marketplace
             // 打开文件选择对话框
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                Filter = "Files (*.zip)|*.zip;plugin(*.cvxp)|*.cvxp",
+                Filter = "Plugin Packages (*.cvxp;*.zip)|*.cvxp;*.zip|Plugin Package (*.cvxp)|*.cvxp|Zip Archive (*.zip)|*.zip|All Files (*.*)|*.*",
+                FilterIndex = 1,
                 Title = "Select a Update file"
             };
 
