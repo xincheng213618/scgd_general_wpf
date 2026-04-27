@@ -41,6 +41,7 @@ namespace ProjectStarkSemi
 
             Assembly.LoadFrom("ColorVision.Engine.dll"); ;
 
+
             ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
             conoscopeWindow.Show();
 

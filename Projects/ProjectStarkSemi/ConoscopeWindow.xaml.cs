@@ -90,7 +90,6 @@ namespace ProjectStarkSemi
             GridSetting.Children.Clear();
             StackPanel settingPanel = new StackPanel();
             settingPanel.Children.Add(CreateSettingGroup("坐标轴", CurrentModelProfile.CoordinateAxisParam));
-            settingPanel.Children.Add(CreateSettingGroup("参考线", CurrentModelProfile.ReferenceLineParam));
             GridSetting.Children.Add(settingPanel);
         }
 
@@ -150,11 +149,14 @@ namespace ProjectStarkSemi
 
             LayoutManager = new DockLayoutManager(DockingManager);
             LayoutManager.RegisterContent("ControlPanel", ControlPanelPane.Content);
-            LayoutManager.RegisterContent("ImageView", ImageView);
+            LayoutManager.RegisterContent("ImageView", ImageViewHost);
             LayoutManager.RegisterContent("ChannelPanel", ChannelPanelPane.Content);
             LayoutManager.RegisterContent("ReferencePlot", ReferencePlotPane.Content);
             LayoutManager.RegisterContent("SettingPanel", SettingPanelPane.Content);
-            LayoutManager.LoadLayout();
+            if (!LayoutManager.LoadLayout())
+            {
+                LayoutManager.ResetLayout();
+            }
 
             MenuManager.GetInstance().LoadMenuForWindow("Conoscope", menu);
 

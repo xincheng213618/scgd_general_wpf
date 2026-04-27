@@ -49,7 +49,7 @@ namespace ProjectStarkSemi.Conoscope
             get => _ConoscopeCoefficient;
             set { _ConoscopeCoefficient = value; OnPropertyChanged(); }
         }
-        private double _ConoscopeCoefficient = 0.02645;
+        private double _ConoscopeCoefficient = 0.02840;
 
         /// <summary>
         /// 是否包含观察相机
@@ -61,27 +61,6 @@ namespace ProjectStarkSemi.Conoscope
         }
         private bool _HasObservationCamera = true;
 
-        /// <summary>
-        /// 默认方位角度列表（度）
-        /// </summary>
-        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public ObservableCollection<double> DefaultAngles
-        {
-            get => _DefaultAngles;
-            set { _DefaultAngles = value; OnPropertyChanged(); }
-        }
-        private ObservableCollection<double> _DefaultAngles = new();
-
-        /// <summary>
-        /// 默认极径列表（像素或按系数的相对值）
-        /// </summary>
-        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public ObservableCollection<double> DefaultRAngles
-        {
-            get => _DefaultRAngles;
-            set { _DefaultRAngles = value; OnPropertyChanged(); }
-        }
-        private ObservableCollection<double> _DefaultRAngles = new();
 
         /// <summary>
         /// 观察相机尺寸系数（mm/像素）
@@ -114,15 +93,6 @@ namespace ProjectStarkSemi.Conoscope
         }
         private double _ObservationCameraCenterY = 512;
 
-        /// <summary>
-        /// 参考线参数（每个型号独立）
-        /// </summary>
-        public ReferenceLineParam ReferenceLineParam
-        {
-            get => _ReferenceLineParam ??= new ReferenceLineParam();
-            set { _ReferenceLineParam = value; OnPropertyChanged(); }
-        }
-        private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
 
         /// <summary>
         /// Conoscope 图像坐标轴参数（每个型号独立）
@@ -148,8 +118,6 @@ namespace ProjectStarkSemi.Conoscope
                     MaxAngle = 60,
                     ConoscopeCoefficient = 0.02645,
                     HasObservationCamera = true,
-                    DefaultAngles = new ObservableCollection<double> { 0, 20, 40, 90, 110, 130, 150 },
-                    DefaultRAngles = new ObservableCollection<double> { 10, 20, 30, 40, 50, 60, 70, 80 },
                     CoordinateAxisParam = new ConoscopeCoordinateAxisParam
                     {
                         MaxAngle = 60,
@@ -168,8 +136,6 @@ namespace ProjectStarkSemi.Conoscope
                     MaxAngle = 80,
                     ConoscopeCoefficient = 0.022,
                     HasObservationCamera = false,
-                    DefaultAngles = new ObservableCollection<double> { 0, 20, 40, 60, 90, 110, 130, 150 },
-                    DefaultRAngles = new ObservableCollection<double> { 10, 20, 30, 40, 50, 60, 70, 80, 90 },
                     CoordinateAxisParam = new ConoscopeCoordinateAxisParam
                     {
                         MaxAngle = 80,

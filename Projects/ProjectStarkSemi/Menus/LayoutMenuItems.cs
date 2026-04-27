@@ -24,7 +24,10 @@ namespace ProjectStarkSemi.Menus
         public override void Execute()
         {
             if (ConoscopeWindow.Instance?.LayoutManager == null) return;
-            ConoscopeWindow.Instance.LayoutManager.LoadLayout();
+            if (!ConoscopeWindow.Instance.LayoutManager.LoadLayout())
+            {
+                ConoscopeWindow.Instance.LayoutManager.ResetLayout();
+            }
         }
     }
 
@@ -64,27 +67,15 @@ namespace ProjectStarkSemi.Menus
         }
     }
 
-    public class MenuToggleAzimuthPlot : ConoscopeMenuIBase
+    public class MenuToggleReferencePlot : ConoscopeMenuIBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "切换方位角图表";
+        public override string Header => "切换参考曲线";
         public override int Order => 112;
 
         public override void Execute()
         {
-            ConoscopeWindow.Instance?.LayoutManager?.TogglePanel("AzimuthPlot");
-        }
-    }
-
-    public class MenuTogglePolarPlot : ConoscopeMenuIBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "切换极角图表";
-        public override int Order => 113;
-
-        public override void Execute()
-        {
-            ConoscopeWindow.Instance?.LayoutManager?.TogglePanel("PolarPlot");
+            ConoscopeWindow.Instance?.LayoutManager?.TogglePanel("ReferencePlot");
         }
     }
 
@@ -92,7 +83,7 @@ namespace ProjectStarkSemi.Menus
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override string Header => "切换设置面板";
-        public override int Order => 114;
+        public override int Order => 113;
 
         public override void Execute()
         {

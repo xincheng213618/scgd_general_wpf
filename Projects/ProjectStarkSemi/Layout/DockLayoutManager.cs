@@ -20,8 +20,9 @@ namespace ProjectStarkSemi.Layout
         private static readonly ILog log = LogManager.GetLogger(typeof(DockLayoutManager));
 
         private const int DefaultControlPanelWidth = 320;
-        private const int DefaultRightPanelWidth = 750;
-        private const int DefaultBottomPaneHeight = 400;
+        private const int DefaultRightPanelWidth = 600;
+        private const int DefaultTopPaneHeight = 320;
+        private const int DefaultReferencePlotHeight = 320;
 
         /// <summary>
         /// Layout file stored in user's AppData directory.
@@ -67,24 +68,39 @@ namespace ProjectStarkSemi.Layout
         /// <summary>
         /// Load saved layout from file.
         /// </summary>
-        public void LoadLayout()
+        public bool LoadLayout()
         {
-            if (!File.Exists(LayoutFilePath)) return;
+            if (!File.Exists(LayoutFilePath)) return false;
             try
             {
                 var serializer = new XmlLayoutSerializer(_dockingManager);
                 serializer.LayoutSerializationCallback += (s, args) =>
                 {
                     if (args.Model.ContentId != null && _contentRegistry.TryGetValue(args.Model.ContentId, out var content))
+                    {
                         args.Content = content;
+                    }
+                    else
+                    {
+                        args.Cancel = true;
+                    }
                 };
                 using var stream = new StreamReader(LayoutFilePath);
                 serializer.Deserialize(stream);
+
+                if (!HasRequiredContent())
+                {
+                    log.Warn("Loaded ConoscopeWindow layout is missing required content, using default");
+                    return false;
+                }
+
                 log.Info("ConoscopeWindow layout loaded");
+                return true;
             }
             catch (Exception ex)
             {
                 log.Warn("Failed to load ConoscopeWindow layout, using default", ex);
+                return false;
             }
         }
 
@@ -101,27 +117,13 @@ namespace ProjectStarkSemi.Layout
                 var defaultLayout = new LayoutRoot();
                 var mainPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
 
-                // Left: Control Panel
                 var leftGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultControlPanelWidth) };
                 var leftPane = new LayoutAnchorablePane();
-                var controlPanel = new LayoutAnchorable
-                {
-                    Title = "控制面板",
-                    ContentId = "ControlPanel",
-                    CanClose = false,
-                    CanAutoHide = true,
-                    CanFloat = true
-                };
-                if (_contentRegistry.TryGetValue("ControlPanel", out var cpContent))
-                    controlPanel.Content = cpContent;
+                var controlPanel = CreateAnchorable("ControlPanel", "控制面板", canClose: false);
                 leftPane.Children.Add(controlPanel);
                 leftGroup.Children.Add(leftPane);
                 mainPanel.Children.Add(leftGroup);
 
-                // Center + Right (vertical split)
-                var centerPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Vertical };
-
-                // Center: Image View (Document)
                 var docGroup = new LayoutDocumentPaneGroup();
                 var docPane = new LayoutDocumentPane();
                 var imageDoc = new LayoutDocument
@@ -134,76 +136,33 @@ namespace ProjectStarkSemi.Layout
                     imageDoc.Content = imgContent;
                 docPane.Children.Add(imageDoc);
                 docGroup.Children.Add(docPane);
-                centerPanel.Children.Add(docGroup);
 
-                // Right side: ChannelPanel + Plots (horizontal)
-                var rightPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+                mainPanel.Children.Add(docGroup);
 
-                // Right: ChannelPanel (Anchorable)
-                var channelGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultRightPanelWidth) };
-                var channelPane = new LayoutAnchorablePane();
-                var channelAnchorable = new LayoutAnchorable
+                var rightGroup = new LayoutAnchorablePaneGroup
                 {
-                    Title = "通道与导出",
-                    ContentId = "ChannelPanel",
-                    CanClose = true,
-                    CanAutoHide = true,
-                    CanFloat = true
+                    Orientation = System.Windows.Controls.Orientation.Vertical,
+                    DockWidth = new GridLength(DefaultRightPanelWidth)
                 };
-                if (_contentRegistry.TryGetValue("ChannelPanel", out var channelContent))
-                    channelAnchorable.Content = channelContent;
-                channelPane.Children.Add(channelAnchorable);
-                channelGroup.Children.Add(channelPane);
-                rightPanel.Children.Add(channelGroup);
 
-                // Bottom right: Plots (Tabbed Anchorables)
-                var plotsGroup = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(DefaultBottomPaneHeight) };
-                var plotsPane = new LayoutAnchorablePane();
+                var topPane = new LayoutAnchorablePane { DockHeight = new GridLength(DefaultTopPaneHeight) };
+                var settingAnchorable = CreateAnchorable("SettingPanel", "设置");
+                var channelAnchorable = CreateAnchorable("ChannelPanel", "通道与导出");
+                topPane.Children.Add(settingAnchorable);
+                topPane.Children.Add(channelAnchorable);
+                rightGroup.Children.Add(topPane);
 
-                var azimuthAnchorable = new LayoutAnchorable
-                {
-                    Title = "方位角",
-                    ContentId = "AzimuthPlot",
-                    CanClose = true,
-                    CanAutoHide = true,
-                    CanFloat = true
-                };
-                if (_contentRegistry.TryGetValue("AzimuthPlot", out var azimuthContent))
-                    azimuthAnchorable.Content = azimuthContent;
-                plotsPane.Children.Add(azimuthAnchorable);
-
-                var polarAnchorable = new LayoutAnchorable
-                {
-                    Title = "极角",
-                    ContentId = "PolarPlot",
-                    CanClose = true,
-                    CanAutoHide = true,
-                    CanFloat = true
-                };
-                if (_contentRegistry.TryGetValue("PolarPlot", out var polarContent))
-                    polarAnchorable.Content = polarContent;
-                plotsPane.Children.Add(polarAnchorable);
-
-                var settingAnchorable = new LayoutAnchorable
-                {
-                    Title = "设置",
-                    ContentId = "SettingPanel",
-                    CanClose = true,
-                    CanAutoHide = true,
-                    CanFloat = true
-                };
-                if (_contentRegistry.TryGetValue("SettingPanel", out var settingContent))
-                    settingAnchorable.Content = settingContent;
-                plotsPane.Children.Add(settingAnchorable);
-
-                plotsGroup.Children.Add(plotsPane);
-                rightPanel.Children.Add(plotsGroup);
-
-                centerPanel.Children.Add(rightPanel);
-                mainPanel.Children.Add(centerPanel);
+                var referencePane = new LayoutAnchorablePane { DockHeight = new GridLength(DefaultReferencePlotHeight) };
+                var referenceAnchorable = CreateAnchorable("ReferencePlot", "参考曲线");
+                referencePane.Children.Add(referenceAnchorable);
+                rightGroup.Children.Add(referencePane);
+                mainPanel.Children.Add(rightGroup);
 
                 defaultLayout.RootPanel = mainPanel;
                 _dockingManager.Layout = defaultLayout;
+                controlPanel.ToggleAutoHide();
+                settingAnchorable.IsSelected = true;
+                referenceAnchorable.IsSelected = true;
 
                 log.Info("ConoscopeWindow layout reset");
             }
@@ -245,8 +204,7 @@ namespace ProjectStarkSemi.Layout
                 {
                     "ControlPanel" => "控制面板",
                     "ChannelPanel" => "通道与导出",
-                    "AzimuthPlot" => "方位角",
-                    "PolarPlot" => "极角",
+                    "ReferencePlot" => "参考曲线",
                     "SettingPanel" => "设置",
                     _ => contentId
                 };
@@ -315,6 +273,33 @@ namespace ProjectStarkSemi.Layout
             }
 
             return null;
+        }
+
+        private LayoutAnchorable CreateAnchorable(string contentId, string title, bool canClose = true)
+        {
+            var anchorable = new LayoutAnchorable
+            {
+                Title = title,
+                ContentId = contentId,
+                CanClose = canClose,
+                CanAutoHide = true,
+                CanFloat = true
+            };
+
+            if (_contentRegistry.TryGetValue(contentId, out var content))
+            {
+                anchorable.Content = content;
+            }
+
+            return anchorable;
+        }
+
+        private bool HasRequiredContent()
+        {
+            return _dockingManager.Layout.Descendents().OfType<LayoutDocument>().Any(item => item.ContentId == "ImageView")
+                && FindAnchorable("SettingPanel") != null
+                && FindAnchorable("ChannelPanel") != null
+                && FindAnchorable("ReferencePlot") != null;
         }
     }
 }

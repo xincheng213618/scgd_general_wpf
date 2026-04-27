@@ -87,56 +87,9 @@ namespace ProjectStarkSemi.Conoscope
         public bool AllowMultipleChannelSelection { get => _AllowMultipleChannelSelection; set { _AllowMultipleChannelSelection = value; OnPropertyChanged(); } }
         private bool _AllowMultipleChannelSelection = true;
 
-        // ReferenceLineParam is model-specific, store it in profile
-        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public ReferenceLineParam ReferenceLineParam
-        {
-            get => CurrentModelProfile.ReferenceLineParam;
-            set
-            {
-                var profile = CurrentModelProfile;
-                profile.ReferenceLineParam = value;
-                OnPropertyChanged();
-            }
-        }
-
-        // Backward compatibility: delegate to profile
-        // These properties delegate to CurrentModelProfile for backward compatibility
-        // TODO: Remove after migration or keep for compatibility with existing code
-
-        /// <summary>
-        /// MaxAngle for current model - delegates to profile
-        /// </summary>
-        [JsonIgnore]
-        public int MaxAngle => CurrentModelProfile.MaxAngle;
-
-        /// <summary>
-        /// ConoscopeCoefficient for current model - delegates to profile
-        /// </summary>
-        [JsonIgnore]
-        public double ConoscopeCoefficient => CurrentModelProfile.ConoscopeCoefficient;
-
-        /// <summary>
-        /// Whether current model has observation camera - delegates to profile
-        /// </summary>
-        [JsonIgnore]
-        public bool HasObservationCamera => CurrentModelProfile.HasObservationCamera;
-
-        /// <summary>
-        /// Default angles for current model - delegates to profile
-        /// </summary>
-        [JsonIgnore]
-        public ObservableCollection<double> DefaultAngles => CurrentModelProfile.DefaultAngles;
-
-        /// <summary>
-        /// Default R angles for current model - delegates to profile
-        /// </summary>
-        [JsonIgnore]
-        public ObservableCollection<double> DefaultRAngles => CurrentModelProfile.DefaultRAngles;
 
         public ConoscopeConfig()
         {
-            // Ensure default profiles exist
             EnsureProfile(ConoscopeModelType.VA60);
             EnsureProfile(ConoscopeModelType.VA80);
         }
