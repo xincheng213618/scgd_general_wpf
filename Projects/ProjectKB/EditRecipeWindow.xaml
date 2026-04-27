@@ -79,7 +79,6 @@
                         <TextBlock x:Name="SelectedTemplateTextBlock" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <TextBlock x:Name="RecipeStatusTextBlock"/>
-                            <TextBlock x:Name="RecipeStateTextBlock" Margin="16,0,0,0" Foreground="OrangeRed"/>
                         </StackPanel>
                     </StackPanel>
                 </Grid>

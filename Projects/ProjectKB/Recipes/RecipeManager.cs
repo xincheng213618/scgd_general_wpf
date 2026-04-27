@@ -45,9 +45,27 @@ namespace ProjectKB
             editRecipeWindow.ShowDialog();
         }
 
-        public void SyncTemplateRecipes()
+        public void SyncTemplateRecipes(bool removeDeletedRecipes = false)
         {
-            foreach (string templateName in GetTemplateNames())
+            HashSet<string> templateNames = GetTemplateNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            bool removedRecipe = false;
+
+            if (removeDeletedRecipes)
+            {
+                foreach (string recipeName in RecipeConfigs.Keys.Where(name => !templateNames.Contains(name)).ToList())
+                {
+                    RecipeConfigs.Remove(recipeName);
+                    removedRecipe = true;
+                }
+
+                if (removedRecipe && !string.IsNullOrWhiteSpace(CurrentTemplateName) && !templateNames.Contains(CurrentTemplateName))
+                {
+                    CurrentTemplateName = string.Empty;
+                    RecipeConfig = new KBRecipeConfig();
+                }
+            }
+
+            foreach (string templateName in templateNames)
             {
                 if (!RecipeConfigs.ContainsKey(templateName))
                 {
@@ -59,17 +77,20 @@ namespace ProjectKB
             {
                 SetCurrentTemplate(CurrentTemplateName);
             }
+
+            if (removedRecipe)
+            {
+                Save();
+            }
         }
 
         public IReadOnlyList<RecipeEditorItem> GetRecipeEditorItems()
         {
-            SyncTemplateRecipes();
+            SyncTemplateRecipes(removeDeletedRecipes: true);
 
             HashSet<string> templateNames = GetTemplateNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
             List<string> names = templateNames
-                .Concat(RecipeConfigs.Keys)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderByDescending(name => string.Equals(name, CurrentTemplateName, StringComparison.OrdinalIgnoreCase))
                 .ThenBy(name => name)
                 .ToList();
@@ -77,7 +98,6 @@ namespace ProjectKB
             return names.Select(name => new RecipeEditorItem(
                     name,
                     EnsureRecipe(name),
-                    templateNames.Contains(name),
                     string.Equals(name, CurrentTemplateName, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
         }

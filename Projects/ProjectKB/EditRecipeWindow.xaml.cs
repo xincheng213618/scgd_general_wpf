@@ -27,7 +27,7 @@ namespace ProjectKB
         private void Window_Initialized(object sender, EventArgs e)
         {
             _recipeManager = RecipeManager.GetInstance();
-            _recipeManager.SyncTemplateRecipes();
+            _recipeManager.SyncTemplateRecipes(removeDeletedRecipes: true);
 
             RecipeDataGrid.ItemsSource = _recipeRows;
             CopySourceComboBox.ItemsSource = _recipeRows;
@@ -186,7 +186,6 @@ namespace ProjectKB
             RecipeDataGrid.Items.Refresh();
 
             SelectedTemplateTextBlock.Text = _selectedRecipeRow.TemplateName;
-            RecipeStateTextBlock.Text = _selectedRecipeRow.TemplateStateText;
             RecipeStatusTextBlock.Text = _selectedRecipeRow.HasLimit ? "当前模板已启用Recipe判定项" : "当前模板未启用任何Recipe判定项，运行时不会做Recipe限制";
             RecipeStatusTextBlock.Foreground = _selectedRecipeRow.HasLimit ? FindResource("GlobalTextBrush") as Brush : Brushes.OrangeRed;
         }
