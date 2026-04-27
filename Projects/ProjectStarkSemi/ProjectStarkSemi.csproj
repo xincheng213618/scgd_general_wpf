@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.4.1.7</VersionPrefix>
+		<VersionPrefix>1.4.2.1</VersionPrefix>
 		<UseWindowsForms>True</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
@@ -18,14 +18,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\Engine\FlowEngineLib\FlowEngineLib.csproj')">
-			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\Engine\ST.Library.UI\ST.Library.UI.csproj')">
-			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>

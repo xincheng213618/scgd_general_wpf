@@ -84,18 +84,6 @@ namespace ProjectStarkSemi
         {
             GridSetting.Children.Clear();
             GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.ReferenceLineParam));
-
-            try
-            {
-                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-                {
-                    toolReferenceLine.ReferenceLine = new ReferenceLine(CurrentModelProfile.ReferenceLineParam);
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Info(ex);
-            }
         }
 
         private void RefreshModelDependentUi()
@@ -116,50 +104,6 @@ namespace ProjectStarkSemi
             wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
             wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
         }
-
-        private double GetConoscopeCoefficient() => CurrentModelProfile.ConoscopeCoefficient;
-
-        private string GetCurrentModelForExport() => CurrentModelProfile.DisplayName;
-
-        private string GetCurrentModelForFilename() => ConoscopeConfig.CurrentModel.ToString();
-
-        private bool CurrentModelSupportsObservationCamera() => CurrentModelProfile.HasObservationCamera;
-
-        private double GetCurrentObservationScaleCoefficient() => CurrentModelProfile.ObservationCameraScaleCoefficient;
-
-        private double GetCurrentObservationCenterX() => CurrentModelProfile.ObservationCameraCenterX;
-
-        private double GetCurrentObservationCenterY() => CurrentModelProfile.ObservationCameraCenterY;
-
-        private void UpdateModelSpecificUi() => RefreshModelDependentUi();
-
-        private void ApplyCurrentModelPlotLimits()
-        {
-            wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
-            wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
-        }
-
-        private string CurrentModelName() => CurrentModelProfile.DisplayName;
-
-        private string CurrentModelEnumName() => ConoscopeConfig.CurrentModel.ToString();
-
-        private double CurrentConoscopeCoefficient() => CurrentModelProfile.ConoscopeCoefficient;
-
-        private int CurrentModelAngleLimit() => CurrentModelProfile.MaxAngle;
-
-        private bool IsObservationCameraEnabledForCurrentModel() => CurrentModelProfile.HasObservationCamera;
-
-        private void RefreshModelProfileUiState() => UpdateModelSpecificUi();
-
-        private void UpdateUiForModelProfile() => UpdateModelSpecificUi();
-
-        private void ApplyModelProfileToUi() => UpdateModelSpecificUi();
-
-        private void UpdateUiByModelProfile() => UpdateModelSpecificUi();
-
-        private void HandleModelProfileChange() => UpdateModelSpecificUi();
-
-        private void End() => UpdateModelSpecificUi();
 
         public ConoscopeWindow()
         {
@@ -182,8 +126,11 @@ namespace ProjectStarkSemi
                     ? new AvalonDock.Themes.Vs2013DarkTheme()
                     : new AvalonDock.Themes.Vs2013LightTheme();
             }
-            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
             ThemeChange(ThemeManager.Current.CurrentUITheme);
+            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
+            this.Closed += (s, e) => ThemeManager.Current.CurrentUIThemeChanged -= ThemeChange;
+
+
 
             LayoutManager = new DockLayoutManager(DockingManager);
             LayoutManager.RegisterContent("ControlPanel", ControlPanelPane.Content);
@@ -196,7 +143,6 @@ namespace ProjectStarkSemi
 
             MenuManager.GetInstance().LoadMenuForWindow("Conoscope", menu);
 
-            this.Closed += (s, e) => ThemeManager.Current.CurrentUIThemeChanged -= ThemeChange;
 
             foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
             {
@@ -217,24 +163,13 @@ namespace ProjectStarkSemi
             FlowEngineManager.GetInstance().BatchRecord -= ConoscopeWindow_BatchRecord;
             FlowEngineManager.GetInstance().BatchRecord += ConoscopeWindow_BatchRecord;
 
-            ImageView.SetBackGround(Brushes.Transparent);
             RefreshReferenceLineProfileBinding();
 
-            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() is MouseMagnifierManager mouseMagnifierManager)
-            {
-                mouseMagnifierManager.IsChecked = true;
-            }
-
-            ImageView.Config.IsToolBarAlVisible = false;
-            ImageView.Config.IsToolBarLeftVisible = false;
-            ImageView.Config.IsToolBarRightVisible = true;
-            ImageView.Config.IsToolBarTopVisible = false;
-            ImageView.Config.IsToolBarDrawVisible = false;
 
             cbModelType.ItemsSource = Enum.GetValues(typeof(ConoscopeModelType));
             this.DataContext = ConoscopeManager.GetInstance();
 
-            LoadCameraServices();
+            var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
 
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -339,12 +274,6 @@ namespace ProjectStarkSemi
             plot.Refresh();
         }
 
-        private void LoadCameraServices()
-        {
-            var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
-           
-        }
-
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -413,7 +342,6 @@ namespace ProjectStarkSemi
         {
             var dst = new OpenCvSharp.Mat();
 
-            // 需要先转换为支持的类型进行滤波，再转回
             OpenCvSharp.Mat src8U = new OpenCvSharp.Mat();
             bool needConvert = src.Depth() != OpenCvSharp.MatType.CV_8U && src.Depth() != OpenCvSharp.MatType.CV_32F;
 
@@ -481,7 +409,6 @@ namespace ProjectStarkSemi
             {
                 var filterType = (ImageFilterType)cbFilterType.SelectedIndex;
 
-                // 选择"无滤波"时，恢复原始数据
                 if (filterType == ImageFilterType.None)
                 {
                     if (OriginalXMat != null || OriginalYMat != null || OriginalZMat != null)
@@ -595,8 +522,6 @@ namespace ProjectStarkSemi
 
         private void ImageShow_ImageInitialized(object? sender, EventArgs e)
         {
-            ImageView.Config.IsPseudo = true;
-
             if (CVFileUtil.IsCVCIEFile(Filename))
             {
                 XMat?.Dispose();
@@ -629,32 +554,18 @@ namespace ProjectStarkSemi
                     Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
                     Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
 
-                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataX);
+                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
 
-                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataY);
+                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
 
-                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataZ);
-                }
-                else
-                {
-                    byte[] dataX = new byte[channelSize];
-                    Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
-                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataX);
+                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
                 }
 
             }
 
             CreateAndAnalyzePolarLines();
-            Application.Current.Dispatcher.Invoke(async () =>
-            {
-                await Task.Delay(200);
-                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-                {
-                    toolReferenceLine.IsChecked = false;
-                    toolReferenceLine.IsChecked = true;
-                }
-            });
         }
+        
         /// <summary>
         /// 创建极角线并进行分析
         /// </summary>
@@ -662,7 +573,6 @@ namespace ProjectStarkSemi
         {
             try
             {
-                // Check if image is loaded
                 if (ImageView.ImageShow.Source == null)
                 {
                     log.Warn("图像未加载，无法创建极角线");
@@ -756,9 +666,6 @@ namespace ProjectStarkSemi
             }
         }
 
-        /// <summary>
-        /// 极角线选择改变事件
-        /// </summary>
         private void cbPolarAngleLines_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (cbPolarAngleLines.SelectedItem is PolarAngleLine selectedLine)
@@ -952,7 +859,6 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                // Check if radius angle already exists
                 if (displayedCircles.Any(circle => Math.Abs(circle.RadiusAngle - radiusAngle) < 0.01))
                 {
                     MessageBox.Show($"半径角度 {radiusAngle:F1}° 已存在", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
