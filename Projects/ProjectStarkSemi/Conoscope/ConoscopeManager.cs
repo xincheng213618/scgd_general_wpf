@@ -21,7 +21,7 @@ namespace ProjectStarkSemi.Conoscope
         public void EditConoscopeConfig()
         {
             new ConoscopeConfigWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConoscopeWindow.Instance?.RefreshConoscopeConfiguration();
+            ConoscopeModuleService.RefreshAllConoscopeConfiguration();
         }
 
         public ConoscopeManager() 

@@ -1,4 +1,5 @@
 using ColorVision.UI.Menus;
+using ProjectStarkSemi.Conoscope;
 using System.Windows;
 
 namespace ProjectStarkSemi.Menus
@@ -11,7 +12,7 @@ namespace ProjectStarkSemi.Menus
 
         public override void Execute()
         {
-            ConoscopeWindow.Instance?.LayoutManager?.SaveLayout();
+            ConoscopeModuleService.ActiveView?.LayoutManager?.SaveLayout();
         }
     }
 
@@ -23,10 +24,11 @@ namespace ProjectStarkSemi.Menus
 
         public override void Execute()
         {
-            if (ConoscopeWindow.Instance?.LayoutManager == null) return;
-            if (!ConoscopeWindow.Instance.LayoutManager.LoadLayout())
+            var layoutManager = ConoscopeModuleService.ActiveView?.LayoutManager;
+            if (layoutManager == null) return;
+            if (!layoutManager.LoadLayout())
             {
-                ConoscopeWindow.Instance.LayoutManager.ResetLayout();
+                layoutManager.ResetLayout();
             }
         }
     }
@@ -39,7 +41,7 @@ namespace ProjectStarkSemi.Menus
 
         public override void Execute()
         {
-            ConoscopeWindow.Instance?.LayoutManager?.ResetLayout();
+            ConoscopeModuleService.ActiveView?.LayoutManager?.ResetLayout();
         }
     }
 
@@ -51,7 +53,7 @@ namespace ProjectStarkSemi.Menus
 
         public override void Execute()
         {
-            ConoscopeWindow.Instance?.LayoutManager?.TogglePanel("ControlPanel");
+            ConoscopeModuleService.ActiveView?.LayoutManager?.TogglePanel("ControlPanel");
         }
     }
 
@@ -63,7 +65,7 @@ namespace ProjectStarkSemi.Menus
 
         public override void Execute()
         {
-            ConoscopeWindow.Instance?.LayoutManager?.TogglePanel("ChannelPanel");
+            ConoscopeModuleService.ActiveView?.LayoutManager?.TogglePanel("ChannelPanel");
         }
     }
 
@@ -75,7 +77,7 @@ namespace ProjectStarkSemi.Menus
 
         public override void Execute()
         {
-            ConoscopeWindow.Instance?.LayoutManager?.TogglePanel("ReferencePlot");
+            ConoscopeModuleService.ActiveView?.LayoutManager?.TogglePanel("ReferencePlot");
         }
     }
 
@@ -87,7 +89,7 @@ namespace ProjectStarkSemi.Menus
 
         public override void Execute()
         {
-            ConoscopeWindow.Instance?.LayoutManager?.TogglePanel("SettingPanel");
+            ConoscopeModuleService.ActiveView?.LayoutManager?.TogglePanel("SettingPanel");
         }
     }
 }

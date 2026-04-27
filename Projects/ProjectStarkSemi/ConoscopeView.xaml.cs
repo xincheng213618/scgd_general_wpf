@@ -49,12 +49,12 @@ namespace ProjectStarkSemi
     /// <summary>
     /// ConoscopeWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class ConoscopeWindow : Window, IDisposable
+    public partial class ConoscopeView : UserControl, IDisposable
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeWindow));
+        private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeView));
 
-        internal static ConoscopeWindow? Instance { get; private set; }
         internal DockLayoutManager? LayoutManager { get; private set; }
+        private ThemeChangedHandler? themeChangedHandler;
 
         private MVSViewWindow? observationCameraWindow;
 
@@ -117,15 +117,10 @@ namespace ProjectStarkSemi
             }
         }
 
-        public ConoscopeWindow()
+        public ConoscopeView()
         {
             InitializeComponent();
-            Instance = this;
-            this.ApplyCaption();
-            ConoscopeWindowConfig.Instance.SetWindow(this);
-            this.Title += Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? "";
-            this.Closing += (s, e) => LayoutManager?.SaveLayout();
-            this.Closed += (s, e) => Instance = null;
+            ConoscopeModuleService.Register(this);
         }
 
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
@@ -138,9 +133,9 @@ namespace ProjectStarkSemi
                     ? new AvalonDock.Themes.Vs2013DarkTheme()
                     : new AvalonDock.Themes.Vs2013LightTheme();
             }
+            themeChangedHandler = ThemeChange;
             ThemeChange(ThemeManager.Current.CurrentUITheme);
-            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
-            this.Closed += (s, e) => ThemeManager.Current.CurrentUIThemeChanged -= ThemeChange;
+            ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
 
 
             LayoutManager = new DockLayoutManager(DockingManager);
@@ -170,11 +165,6 @@ namespace ProjectStarkSemi
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig_ModelTypeChanged(sender, ConoscopeConfig.CurrentModel);
-
-            this.Closed += (s, e) =>
-            {
-                ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
-            };
             InitializePlot(wpfPlotReference, "参考曲线 (Reference Distribution)");
             UpdateReferencePlotHeader();
         }
@@ -478,7 +468,7 @@ namespace ProjectStarkSemi
         }
 
         string Filename = string.Empty;
-        private void OpenConoscope(string filename)
+        public void OpenConoscope(string filename)
         {
             try
             {
@@ -1405,6 +1395,14 @@ namespace ProjectStarkSemi
 
         public void Dispose()
         {
+            ConoscopeModuleService.Unregister(this);
+            if (themeChangedHandler != null)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged -= themeChangedHandler;
+                themeChangedHandler = null;
+            }
+            ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            LayoutManager?.SaveLayout();
             XMat?.Dispose();
             XMat = null;
             YMat?.Dispose();
@@ -1414,13 +1412,6 @@ namespace ProjectStarkSemi
             DisposeCoordinateAxis();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
-        }
-
-
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            LayoutManager?.SaveLayout();
-            this.Dispose();
         }
 
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
@@ -1441,7 +1432,7 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                var dialog = new AdvancedExportDialog { Owner = this };
+                var dialog = new AdvancedExportDialog { Owner = Window.GetWindow(this) };
                 if (dialog.ShowDialog() == true)
                 {
                     var settings = dialog.Settings;

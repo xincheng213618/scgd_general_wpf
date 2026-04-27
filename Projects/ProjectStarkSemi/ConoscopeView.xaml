@@ -1,4 +1,4 @@
-<Window x:Class="ProjectStarkSemi.ConoscopeWindow"
+<UserControl x:Class="ProjectStarkSemi.ConoscopeView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -11,14 +11,14 @@
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
-        Title="" Height="750" Width="1582" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
-        <Window.Resources>
+        Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        <UserControl.Resources>
         <DataTemplate x:Key="DocumentHeaderTemplate">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </DataTemplate>
-    </Window.Resources>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -291,4 +291,4 @@
             </StatusBarItem>
         </StatusBar>
     </Grid>
-</Window>
+</UserControl>
