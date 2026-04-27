@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -129,6 +130,7 @@ namespace ProjectKB
         private FlowEngineControl flowEngine;
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
+        private int _pendingUiUpdate;
 
         public void InitFlow()
         {
@@ -199,31 +201,50 @@ namespace ProjectKB
         string FlowName;
         private void UpdateMsg(object? sender)
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            if (flowControl == null || !flowControl.IsFlowRun)
+                return;
+
+            if (Interlocked.CompareExchange(ref _pendingUiUpdate, 1, 0) != 0)
+                return;
+
+            long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+            TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+            string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+            string msg;
+            if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
+            {
+                msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
+            }
+            else
+            {
+                long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
+                TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+            {
+                Interlocked.Exchange(ref _pendingUiUpdate, 0);
+                return;
+            }
+
+            dispatcher.BeginInvoke(() =>
             {
                 try
                 {
-                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                    string msg;
-                    if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
-                    {
-                        msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
-                    }
-                    else
-                    {
-                        long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
-                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                        msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
-                    }
-                    logTextBox.Text = msg;
+                    if (flowControl != null && flowControl.IsFlowRun)
+                        logTextBox.Text = msg;
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    log.Error("刷新流程日志失败", ex);
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _pendingUiUpdate, 0);
                 }
             });
         }
@@ -297,7 +318,9 @@ namespace ProjectKB
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
 
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
+            Interlocked.Exchange(ref _pendingUiUpdate, 0);
             stopwatch.Reset();
             stopwatch.Start();
             BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
@@ -317,8 +340,21 @@ namespace ProjectKB
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => HandleFlowCompleted(FlowControlData));
+                return;
+            }
+
+            HandleFlowCompleted(FlowControlData);
+        }
+
+        private void HandleFlowCompleted(FlowControlData FlowControlData)
+        {
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
+            Interlocked.Exchange(ref _pendingUiUpdate, 0);
             FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
