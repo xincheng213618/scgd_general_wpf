@@ -260,6 +260,9 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             try
             {
+                if (CreateTemp == null && ExportTemp != null)
+                    CreateDefault();
+
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 var dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
                 if (dictemplate == null)

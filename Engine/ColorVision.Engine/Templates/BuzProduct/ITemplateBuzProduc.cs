@@ -274,6 +274,9 @@ namespace ColorVision.Engine.Templates.BuzProduct
         }
         public override void Create(string templateName)
         {
+            if (CreateTemp == null && ExportTemp != null)
+                CreateDefault();
+
             T? AddParamMode()
             {
                 BuzProductMasterModel buzProductMasterModel = new BuzProductMasterModel();

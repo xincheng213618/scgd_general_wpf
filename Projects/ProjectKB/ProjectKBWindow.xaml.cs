@@ -145,16 +145,8 @@ namespace ProjectKB
                 if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
                 {
                     string Name = TemplateFlow.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
-                    if (RecipeManager.RecipeConfigs.TryGetValue(Name, out KBRecipeConfig sPECConfig))
-                    {
-                        RecipeManager.RecipeConfig = sPECConfig;
-                    }
-                    else
-                    {
-                        sPECConfig = new KBRecipeConfig();
-                        RecipeManager.RecipeConfigs.TryAdd(Name, sPECConfig);
-                        RecipeManager.RecipeConfig = sPECConfig;
-                    }
+                    RecipeManager.SetCurrentTemplate(Name);
+                    RecipeManager.Save();
 
                 }
                 Refresh();
@@ -269,6 +261,8 @@ namespace ProjectKB
             CurrentFlowResult.Model = FlowTemplate.Text;
             CurrentFlowResult.SN = SNtextBox.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
+            RecipeManager.SetCurrentTemplate(FlowName);
 
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
             await Refresh();
@@ -514,42 +508,18 @@ namespace ProjectKB
 
             CalCulLc(KBItemMaster.Items);
 
-
             foreach (var item in KBItemMaster.Items)
             {
-
-                if (RecipeConfig.MinKeyLv != 0)
+                if (RecipeConfig.EnableKeyLvLimit)
                 {
                     item.Result = item.Result && item.Lv >= RecipeConfig.MinKeyLv;
-                }
-                else
-                {
-                    log.Debug("跳过minLv检测");
-                }
-                if (RecipeConfig.MaxKeyLv != 0)
-                {
                     item.Result = item.Result && item.Lv <= RecipeConfig.MaxKeyLv;
                 }
-                else
-                {
-                    log.Debug("跳过MaxLv检测");
-                }
 
-                if (RecipeConfig.MinKeyLc != 0)
+                if (RecipeConfig.EnableKeyLcLimit)
                 {
                     item.Result = item.Result && item.Lc >= RecipeConfig.MinKeyLc / 100;
-                }
-                else
-                {
-                    log.Debug("跳过MinKeyLc检测");
-                }
-                if (RecipeConfig.MaxKeyLc != 0)
-                {
                     item.Result = item.Result && item.Lc <= RecipeConfig.MaxKeyLc / 100;
-                }
-                else
-                {
-                    log.Debug("跳过MaxLv检测");
                 }
             }
 
@@ -571,64 +541,27 @@ namespace ProjectKB
 
             KBItemMaster.Result = true;
 
-            if (RecipeConfig.MinKeyLv != 0)
+            if (RecipeConfig.EnableKeyLvLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MinLv >= RecipeConfig.MinKeyLv;
-            }
-            else
-            {
-                log.Debug("跳过minLv检测");
-            }
-            if (RecipeConfig.MaxKeyLv != 0)
-            {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= RecipeConfig.MaxKeyLv;
             }
-            else
-            {
-                log.Debug("跳过MaxLv检测");
-            }
-            if (RecipeConfig.MinAvgLv != 0)
+
+            if (RecipeConfig.EnableAvgLvLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv >= RecipeConfig.MinAvgLv;
-            }
-            else
-            {
-                log.Debug("跳过MinAvgLv检测");
-            }
-            if (RecipeConfig.MaxAvgLv != 0)
-            {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv <= RecipeConfig.MaxAvgLv;
             }
-            else
-            {
-                log.Debug("跳过MaxAvgLv检测");
-            }
 
-            if (RecipeConfig.MinUniformity != 0)
+            if (RecipeConfig.EnableUniformityLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.LvUniformity >= RecipeConfig.MinUniformity / 100;
             }
-            else
-            {
-                log.Debug("跳过Uniformity检测");
-            }
 
-            if (RecipeConfig.MinKeyLc != 0)
+            if (RecipeConfig.EnableKeyLcLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Min(item => item.Lc) >= RecipeConfig.MinKeyLc / 100;
-            }
-            else
-            {
-                log.Debug("跳过MinKeyLc检测");
-            }
-
-            if (RecipeConfig.MaxKeyLc != 0)
-            {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Max(item => item.Lc) <= RecipeConfig.MaxKeyLc / 100;
-            }
-            else
-            {
-                log.Debug("跳过MaxKeyLc检测");
             }
 
 

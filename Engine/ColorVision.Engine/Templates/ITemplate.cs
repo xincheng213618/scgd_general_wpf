@@ -509,6 +509,9 @@ namespace ColorVision.Engine.Templates
 
         public override void Create(string templateName)
         {
+            if (CreateTemp == null && ImportTemp != null)
+                CreateDefault();
+
             T? AddParamMode()
             {
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });

@@ -364,7 +364,7 @@
                 <Button Content="Socket" Command="{Binding OpenSocketConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="Recipe" Command="{Binding RecipeManager.EditCommand}"/>
+                <Button Content="参数设定" Command="{Binding RecipeManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
