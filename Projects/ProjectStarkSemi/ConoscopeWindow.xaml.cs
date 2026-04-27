@@ -656,9 +656,182 @@ namespace ProjectStarkSemi
         {
             Point screenPoint = ImageView.ImageShow.PointToScreen(e.Position);
             Point overlayPoint = ImageViewHost.PointFromScreen(screenPoint);
-            CoordinateDragOverlay.Margin = new Thickness(overlayPoint.X + 14, overlayPoint.Y + 14, 0, 0);
-            CoordinateDragOverlayText.Text = GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
+            CoordinateDragOverlayText.Text = GetCoordinateDragOverlayText(e);
+
+            CoordinateDragOverlay.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Size overlaySize = CoordinateDragOverlay.DesiredSize;
+            double left = overlayPoint.X + 14;
+            double top = overlayPoint.Y + 14;
+
+            if (left + overlaySize.Width > ImageViewHost.ActualWidth)
+            {
+                left = overlayPoint.X - overlaySize.Width - 14;
+            }
+
+            if (top + overlaySize.Height > ImageViewHost.ActualHeight)
+            {
+                top = overlayPoint.Y - overlaySize.Height - 14;
+            }
+
+            CoordinateDragOverlay.Margin = new Thickness(Math.Max(0, left), Math.Max(0, top), 0, 0);
             CoordinateDragOverlay.Visibility = Visibility.Visible;
+        }
+
+        private string GetCoordinateDragOverlayText(ConoscopeCoordinateReferenceChangedEventArgs e)
+        {
+            if (currentBitmapSource == null)
+            {
+                return GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
+            }
+
+            int imageWidth = currentBitmapSource.PixelWidth;
+            int imageHeight = currentBitmapSource.PixelHeight;
+            int ix = ClampToInt((int)Math.Round(e.Position.X), 0, imageWidth - 1);
+            int iy = ClampToInt((int)Math.Round(e.Position.Y), 0, imageHeight - 1);
+
+            ExtractRgbValues(currentBitmapSource, ix, iy, out double r, out double g, out double b);
+
+            int xyzWidth = YMat?.Width ?? XMat?.Width ?? ZMat?.Width ?? imageWidth;
+            int xyzHeight = YMat?.Height ?? XMat?.Height ?? ZMat?.Height ?? imageHeight;
+            int xyzX = ClampToInt(ix, 0, xyzWidth - 1);
+            int xyzY = ClampToInt(iy, 0, xyzHeight - 1);
+            ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
+
+            CalculateChromaticity(X, Y, Z, out double x, out double y, out double u, out double v, out double cct);
+            double azimuthAngle = GetFullAzimuthAngle(e.Position);
+            double polarAngle = GetPolarRadiusAngle(e.Position);
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"参考: {GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)}");
+            builder.AppendLine($"像素: X={ix}, Y={iy}");
+            builder.AppendLine($"极坐标: 方位={azimuthAngle:F2}°, 极角={polarAngle:F2}°");
+            builder.AppendLine($"RGB: R={r:F0}, G={g:F0}, B={b:F0}");
+            builder.AppendLine($"XYZ: X={X:F4}, Y={Y:F4}, Z={Z:F4}");
+            builder.AppendLine($"xy: x={x:F6}, y={y:F6}");
+            builder.Append($"uv: u={u:F6}, v={v:F6}, CCT={FormatCct(cct)}");
+            return builder.ToString();
+        }
+
+        private static void ExtractRgbValues(BitmapSource bitmapSource, int ix, int iy, out double r, out double g, out double b)
+        {
+            r = g = b = 0;
+            PixelFormat format = bitmapSource.Format;
+
+            if (format == PixelFormats.Bgra32 || format == PixelFormats.Pbgra32 || format == PixelFormats.Bgr32)
+            {
+                byte[] pixel = new byte[4];
+                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 4, 0);
+                b = pixel[0];
+                g = pixel[1];
+                r = pixel[2];
+                return;
+            }
+
+            if (format == PixelFormats.Bgr24)
+            {
+                byte[] pixel = new byte[3];
+                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 3, 0);
+                b = pixel[0];
+                g = pixel[1];
+                r = pixel[2];
+                return;
+            }
+
+            if (format == PixelFormats.Rgb24)
+            {
+                byte[] pixel = new byte[3];
+                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 3, 0);
+                r = pixel[0];
+                g = pixel[1];
+                b = pixel[2];
+                return;
+            }
+
+            if (format == PixelFormats.Gray8)
+            {
+                byte[] pixel = new byte[1];
+                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 1, 0);
+                r = g = b = pixel[0];
+                return;
+            }
+
+            if (format == PixelFormats.Gray16)
+            {
+                byte[] pixel = new byte[2];
+                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 2, 0);
+                r = g = b = BitConverter.ToUInt16(pixel, 0);
+                return;
+            }
+
+            FormatConvertedBitmap converted = new FormatConvertedBitmap(bitmapSource, PixelFormats.Bgra32, null, 0);
+            byte[] convertedPixel = new byte[4];
+            converted.CopyPixels(new Int32Rect(ix, iy, 1, 1), convertedPixel, 4, 0);
+            b = convertedPixel[0];
+            g = convertedPixel[1];
+            r = convertedPixel[2];
+        }
+
+        private void CalculateChromaticity(double X, double Y, double Z, out double x, out double y, out double u, out double v, out double cct)
+        {
+            x = y = u = v = cct = 0;
+            double xyzSum = X + Y + Z;
+            if (Math.Abs(xyzSum) > double.Epsilon)
+            {
+                x = X / xyzSum;
+                y = Y / xyzSum;
+            }
+
+            double uvDenominator = X + 15 * Y + 3 * Z;
+            if (Math.Abs(uvDenominator) > double.Epsilon)
+            {
+                u = 4 * X / uvDenominator;
+                v = 9 * Y / uvDenominator;
+            }
+
+            if (Math.Abs(0.1858 - y) > double.Epsilon)
+            {
+                double n = (x - 0.3320) / (0.1858 - y);
+                cct = 449.0 * Math.Pow(n, 3) + 3525.0 * Math.Pow(n, 2) + 6823.3 * n + 5520.33;
+            }
+
+            if (!double.IsFinite(cct) || cct < 0)
+            {
+                cct = 0;
+            }
+        }
+
+        private double GetFullAzimuthAngle(Point point)
+        {
+            double deltaX = point.X - currentImageCenter.X;
+            double deltaY = currentImageCenter.Y - point.Y;
+            double angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
+            return angle < 0 ? angle + 360.0 : angle;
+        }
+
+        private double GetPolarRadiusAngle(Point point)
+        {
+            if (currentImageRadius <= 0)
+            {
+                return 0;
+            }
+
+            double distance = (point - currentImageCenter).Length;
+            return Math.Max(0, Math.Min(distance / currentImageRadius * MaxAngle, MaxAngle));
+        }
+
+        private static int ClampToInt(int value, int min, int max)
+        {
+            if (max < min)
+            {
+                return min;
+            }
+
+            return Math.Max(min, Math.Min(value, max));
+        }
+
+        private static string FormatCct(double cct)
+        {
+            return cct > 0 ? $"{cct:F0}K" : "--";
         }
 
         private void HideCoordinateDragOverlay()
