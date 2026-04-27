@@ -200,6 +200,25 @@ namespace ColorVision.Engine.Templates.BuzProduct
 
         public T? ExportTemp { get; set; }
 
+        public override bool HasCreateTemplateSource => ExportTemp != null || !string.IsNullOrWhiteSpace(ImportName);
+
+        public override bool CopyTo(int index)
+        {
+            if (index < 0 || index >= TemplateParams.Count) return false;
+
+            T source = TemplateParams[index].Value;
+            source.BuzProductDetailModels.Clear();
+            foreach (var item in BuzProductDetailDao.Instance.GetAllByPid(source.Id))
+            {
+                source.BuzProductDetailModels.Add(item);
+            }
+
+            string fileContent = source.ToJsonN();
+            ExportTemp = JsonConvert.DeserializeObject<T>(fileContent);
+            ResetExportTempIds();
+            return ExportTemp != null;
+        }
+
         public override void ClearCreateTemplateSource()
         {
             ImportName = string.Empty;
@@ -215,6 +234,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
             {
                 ImportName = templateName;
                 ExportTemp = JsonConvert.DeserializeObject<T>(jsonContent);
+                ResetExportTempIds();
                 return ExportTemp != null;
             }
             catch (JsonException ex)
@@ -243,6 +263,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
             {
                 T Temp = JsonConvert.DeserializeObject<T>(fileContent);
                 ExportTemp = Temp;
+                ResetExportTempIds();
                 return true;
             }
             catch (JsonException ex)
@@ -268,7 +289,20 @@ namespace ColorVision.Engine.Templates.BuzProduct
                 BuzProductMasterDao.Instance.Save(buzProductMasterModel);
                 if (buzProductMasterModel.Id > 0)
                 {
-                    return (T)Activator.CreateInstance(typeof(T), new object[] { buzProductMasterModel });
+                    T result = (T)Activator.CreateInstance(typeof(T), new object[] { buzProductMasterModel });
+                    if (CreateTemp != null)
+                    {
+                        foreach (BuzProductDetailModel detail in CreateTemp.BuzProductDetailModels)
+                        {
+                            BuzProductDetailModel detailModel = new BuzProductDetailModel();
+                            detailModel.CopyFrom(detail);
+                            detailModel.Id = -1;
+                            detailModel.Pid = buzProductMasterModel.Id;
+                            BuzProductDetailDao.Instance.Save(detailModel);
+                            result.BuzProductDetailModels.Add(detailModel);
+                        }
+                    }
+                    return result;
                 }
                 return null;
             }
@@ -289,6 +323,19 @@ namespace ColorVision.Engine.Templates.BuzProduct
                         MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
                     }
                 }
+            }
+        }
+
+        private void ResetExportTempIds()
+        {
+            if (ExportTemp == null) return;
+
+            ExportTemp.Id = -1;
+            ExportTemp.BuzProductMasterModel.Id = -1;
+            foreach (BuzProductDetailModel detail in ExportTemp.BuzProductDetailModels)
+            {
+                detail.Id = -1;
+                detail.Pid = -1;
             }
         }
 

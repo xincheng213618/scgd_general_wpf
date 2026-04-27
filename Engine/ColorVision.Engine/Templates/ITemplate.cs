@@ -126,6 +126,8 @@ namespace ColorVision.Engine.Templates
             throw new NotImplementedException();
         }
 
+        public virtual bool HasCreateTemplateSource => !string.IsNullOrWhiteSpace(ImportName);
+
         public virtual bool ImportJsonContent(string templateName, string jsonContent)
         {
             if (string.IsNullOrWhiteSpace(jsonContent)) return false;
@@ -429,6 +431,8 @@ namespace ColorVision.Engine.Templates
         }
 
         public T? ImportTemp { get; set; }
+
+        public override bool HasCreateTemplateSource => ImportTemp != null || !string.IsNullOrWhiteSpace(ImportName);
 
         public override void ClearCreateTemplateSource()
         {
