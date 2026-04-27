@@ -15,7 +15,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
-            new PluginManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new MarketplaceWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 }

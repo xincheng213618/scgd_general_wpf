@@ -14,9 +14,9 @@ using System.Windows;
 namespace ColorVision.UI.Desktop.Marketplace
 {
   
-    public class PluginWindowConfig : WindowConfig
+    public class MarketplaceWindowConfig : WindowConfig
     {
-        public static PluginWindowConfig Instance => ConfigService.Instance.GetRequiredService<PluginWindowConfig>();
+        public static MarketplaceWindowConfig Instance => ConfigService.Instance.GetRequiredService<MarketplaceWindowConfig>();
 
         /// <summary>
         /// 是否自动更新插件
@@ -29,14 +29,14 @@ namespace ColorVision.UI.Desktop.Marketplace
     }
 
 
-    public class PluginManager:ViewModelBase
+    public class MarketplaceManager:ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManager));
-        private static PluginManager _instance;
+        private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceManager));
+        private static MarketplaceManager _instance;
         private static readonly object _locker = new();
-        public static PluginManager GetInstance() { lock (_locker) { _instance ??= new PluginManager(); return _instance; } }
+        public static MarketplaceManager GetInstance() { lock (_locker) { _instance ??= new MarketplaceManager(); return _instance; } }
         public ObservableCollection<PluginInfoVM> Plugins { get; private set; } = new ObservableCollection<PluginInfoVM>();
-        public static PluginWindowConfig Config => PluginWindowConfig.Instance;
+        public static MarketplaceWindowConfig Config => MarketplaceWindowConfig.Instance;
         public RelayCommand EditConfigCommand { get; set; }
         public RelayCommand InstallPackageCommand { get; set; }
         public RelayCommand DownloadPackageCommand { get; set; }
@@ -51,7 +51,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private int _UpdateAvailableCount;
         private readonly SemaphoreSlim _refreshVersionsLock = new(1, 1);
 
-        public PluginManager()
+        public MarketplaceManager()
         {
             log.Info(UI.Properties.Resources.CheckingForAdditionalProjects);
 

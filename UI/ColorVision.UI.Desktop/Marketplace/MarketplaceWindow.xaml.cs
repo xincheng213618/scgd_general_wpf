@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.UI.Desktop.NativeMethods;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Menus;
@@ -9,37 +10,35 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using ColorVision.UI.Desktop.NativeMethods;
-using ColorVision.UI.Desktop.Marketplace;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {
 
     /// <summary>
-    /// PluginManagerWindow.xaml 的交互逻辑
+    /// MarketplaceWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class PluginManagerWindow : Window
+    public partial class MarketplaceWindow : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManagerWindow));
+        private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceWindow));
 
         private List<MarketplacePluginSummary> _marketplacePlugins = new();
         private bool _marketplaceLoaded;
         private int _marketplaceDetailRequestId;
         private bool _isRefreshingVersions;
 
-        public PluginManagerWindow()
+        public MarketplaceWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
-            this.SizeChanged += (s, e) => PluginWindowConfig.Instance.SetConfig(this);
+            this.SizeChanged += (s, e) => MarketplaceWindowConfig.Instance.SetConfig(this);
         }
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = PluginManager.GetInstance(); ;
+            this.DataContext = MarketplaceManager.GetInstance(); ;
             DefalutSearchComboBox.ItemsSource = new List<string>() { "ImageProjector", "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin", "Spectrum" };
             ListViewPlugins.SelectedIndex = 0;
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => MarketplaceManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
         }
 
         private void SearchComboBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -104,7 +103,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             try
             {
-                await PluginManager.GetInstance().RefreshVersionsAsync();
+                await MarketplaceManager.GetInstance().RefreshVersionsAsync();
 
                 if (MainTabControl.SelectedIndex == 1)
                 {
@@ -185,7 +184,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                     return;
 
                 // Check if this plugin is installed locally
-                var installed = PluginManager.GetInstance().Plugins.FirstOrDefault(p => string.Equals(p.PackageName, summary.PluginId, StringComparison.OrdinalIgnoreCase));
+                var installed = MarketplaceManager.GetInstance().Plugins.FirstOrDefault(p => string.Equals(p.PackageName, summary.PluginId, StringComparison.OrdinalIgnoreCase));
                 var ctx = new MarketplaceDetailContext(detail, installed);
                 BorderContent.DataContext = ctx;
 
@@ -291,7 +290,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 _marketplaceDetailRequestId++;
                 IsRefreshChangedX = false;
                 IsRefreshChangedY = false;
-                PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+                PluginInfoVM pluginInfoVM = MarketplaceManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
                 BorderContent.DataContext = pluginInfoVM;
                 Application.Current.Dispatcher.Invoke(async () => await RefreshSelectedDetailAsync());
             }
