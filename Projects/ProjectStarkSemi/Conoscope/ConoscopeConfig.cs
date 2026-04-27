@@ -62,30 +62,11 @@ namespace ProjectStarkSemi.Conoscope
             }
         }
 
-        // Global display settings (not model-specific)
-        public bool IsShowRedChannel { get => _IsShowRedChannel; set { _IsShowRedChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowRedChannel;
+        public ExportChannel DisplayChannel { get => _DisplayChannel; set { _DisplayChannel = value; OnPropertyChanged(); } }
+        private ExportChannel _DisplayChannel = ExportChannel.Y;
 
-        public bool IsShowGreenChannel { get => _IsShowGreenChannel; set { _IsShowGreenChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowGreenChannel;
-
-        public bool IsShowBlueChannel { get => _IsShowBlueChannel; set { _IsShowBlueChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowBlueChannel;
-
-        public bool IsShowXChannel { get => _IsShowXChannel; set { _IsShowXChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowXChannel;
-
-        public bool IsShowYChannel { get => _IsShowYChannel; set { _IsShowYChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowYChannel = true;
-
-        public bool IsShowZChannel { get => _IsShowZChannel; set { _IsShowZChannel = value; OnPropertyChanged(); } }
-        private bool _IsShowZChannel;
-
-        /// <summary>
-        /// Whether to allow multiple channel selection (true) or single selection only (false)
-        /// </summary>
-        public bool AllowMultipleChannelSelection { get => _AllowMultipleChannelSelection; set { _AllowMultipleChannelSelection = value; OnPropertyChanged(); } }
-        private bool _AllowMultipleChannelSelection = true;
+        public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
+        private bool _ApplyFilterOnOpen = true;
 
 
         public ConoscopeConfig()

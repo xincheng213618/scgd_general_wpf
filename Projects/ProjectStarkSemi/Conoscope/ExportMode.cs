@@ -24,21 +24,6 @@ namespace ProjectStarkSemi.Conoscope
     public enum ExportChannel
     {
         /// <summary>
-        /// 红色通道
-        /// </summary>
-        R,
-
-        /// <summary>
-        /// 绿色通道
-        /// </summary>
-        G,
-
-        /// <summary>
-        /// 蓝色通道
-        /// </summary>
-        B,
-
-        /// <summary>
         /// X通道
         /// </summary>
         X,
@@ -51,6 +36,26 @@ namespace ProjectStarkSemi.Conoscope
         /// <summary>
         /// Z通道
         /// </summary>
-        Z
+        Z,
+
+        /// <summary>
+        /// CIE 1931 x色度坐标
+        /// </summary>
+        CieX,
+
+        /// <summary>
+        /// CIE 1931 y色度坐标
+        /// </summary>
+        CieY,
+
+        /// <summary>
+        /// CIE 1976 u色度坐标
+        /// </summary>
+        CieU,
+
+        /// <summary>
+        /// CIE 1976 v色度坐标
+        /// </summary>
+        CieV
     }
 }

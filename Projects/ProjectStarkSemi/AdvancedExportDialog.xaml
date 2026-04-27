@@ -35,12 +35,13 @@
                 <!-- Channel Selection -->
                 <GroupBox Header="通道选择 (可多选)" Margin="0,0,0,10">
                     <StackPanel>
-                        <CheckBox x:Name="chkChannelR" Content="R 通道" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelG" Content="G 通道" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelB" Content="B 通道" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelX" Content="X 通道" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelY" Content="Y 通道" IsChecked="True" Margin="5"/>
                         <CheckBox x:Name="chkChannelZ" Content="Z 通道" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelCieX" Content="x 色度" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelCieY" Content="y 色度" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelCieU" Content="u 色度" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelCieV" Content="v 色度" IsChecked="False" Margin="5"/>
                         <TextBlock Text="提示: 每个选中的通道将生成一个单独的文件" 
                                    Margin="5" FontSize="11" Foreground="Gray"/>
                     </StackPanel>

@@ -421,10 +421,13 @@ namespace ProjectStarkSemi.Conoscope
             drawCanvas.PreviewMouseLeftButtonDown += DrawCanvas_PreviewMouseLeftButtonDown;
             drawCanvas.MouseMove += DrawCanvas_MouseMove;
             drawCanvas.PreviewMouseUp += DrawCanvas_PreviewMouseUp;
+            drawCanvas.MouseLeave += DrawCanvas_MouseLeave;
             zoombox.LayoutUpdated += Zoombox_LayoutUpdated;
         }
 
         public event EventHandler<ConoscopeCoordinateReferenceChangedEventArgs>? ReferenceChanged;
+        public event EventHandler<ConoscopeCoordinateReferenceChangedEventArgs>? PointerMoved;
+        public event EventHandler? PointerLeft;
 
         public ConoscopeCoordinateAxisVisual Axis { get; }
 
@@ -451,6 +454,7 @@ namespace ProjectStarkSemi.Conoscope
             drawCanvas.PreviewMouseLeftButtonDown -= DrawCanvas_PreviewMouseLeftButtonDown;
             drawCanvas.MouseMove -= DrawCanvas_MouseMove;
             drawCanvas.PreviewMouseUp -= DrawCanvas_PreviewMouseUp;
+            drawCanvas.MouseLeave -= DrawCanvas_MouseLeave;
             zoombox.LayoutUpdated -= Zoombox_LayoutUpdated;
 
             if (drawCanvas.ContainsVisual(Axis))
@@ -475,6 +479,7 @@ namespace ProjectStarkSemi.Conoscope
             isDragging = true;
             drawCanvas.CaptureMouse();
             bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
+            PointerLeft?.Invoke(this, EventArgs.Empty);
             RaiseReferenceChanged(false, point, isValueChanged);
 
             e.Handled = true;
@@ -482,15 +487,34 @@ namespace ProjectStarkSemi.Conoscope
 
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (!isDragging || !Axis.Attribute.IsInteractionEnabled)
+            if (!Axis.Attribute.IsInteractionEnabled)
             {
                 return;
             }
 
             Point point = e.GetPosition(drawCanvas);
+            if (!isDragging)
+            {
+                if (Axis.ContainsInteractivePoint(point))
+                {
+                    RaisePointerMoved(point);
+                }
+                else
+                {
+                    PointerLeft?.Invoke(this, EventArgs.Empty);
+                }
+
+                return;
+            }
+
             bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
             RaiseReferenceChanged(false, point, isValueChanged);
             e.Handled = true;
+        }
+
+        private void DrawCanvas_MouseLeave(object sender, MouseEventArgs e)
+        {
+            PointerLeft?.Invoke(this, EventArgs.Empty);
         }
 
         private void DrawCanvas_PreviewMouseUp(object sender, MouseButtonEventArgs e)
@@ -531,6 +555,17 @@ namespace ProjectStarkSemi.Conoscope
             position,
             isFinal,
             isValueChanged));
+        }
+
+        private void RaisePointerMoved(Point position)
+        {
+            PointerMoved?.Invoke(this, new ConoscopeCoordinateReferenceChangedEventArgs(
+                Axis.Attribute.ReferenceMode,
+                Axis.Attribute.ReferenceAngle,
+                Axis.Attribute.ReferenceRadiusAngle,
+                position,
+                false,
+                false));
         }
     }
 }

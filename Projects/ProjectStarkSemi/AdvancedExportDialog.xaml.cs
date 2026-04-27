@@ -40,12 +40,13 @@ namespace ProjectStarkSemi
 
                 // Channels
                 Settings.Channels = new List<Conoscope.ExportChannel>();
-                if (chkChannelR.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.R);
-                if (chkChannelG.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.G);
-                if (chkChannelB.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.B);
                 if (chkChannelX.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.X);
                 if (chkChannelY.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.Y);
                 if (chkChannelZ.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.Z);
+                if (chkChannelCieX.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieX);
+                if (chkChannelCieY.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieY);
+                if (chkChannelCieU.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieU);
+                if (chkChannelCieV.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieV);
 
                 if (Settings.Channels.Count == 0)
                 {

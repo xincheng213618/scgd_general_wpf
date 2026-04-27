@@ -107,12 +107,16 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="5">
-                                                <CheckBox x:Name="chkShowRed" Content="R" Foreground="Red" IsChecked="{Binding Config.IsShowRedChannel}" Margin="5,0" Checked="RgbChannelVisibility_Changed" Unchecked="RgbChannelVisibility_Changed"/>
-                                                <CheckBox x:Name="chkShowGreen" Content="G" Foreground="Green" IsChecked="{Binding Config.IsShowGreenChannel}" Margin="5,0" Checked="RgbChannelVisibility_Changed" Unchecked="RgbChannelVisibility_Changed"/>
-                                                <CheckBox x:Name="chkShowBlue" Content="B" Foreground="Blue" IsChecked="{Binding Config.IsShowBlueChannel}" Margin="5,0" Checked="RgbChannelVisibility_Changed" Unchecked="RgbChannelVisibility_Changed"/>
-                                                <CheckBox x:Name="chkShowXlue" Content="X" Foreground="Gold" IsChecked="{Binding Config.IsShowXChannel}" Margin="5,0" Checked="RgbChannelVisibility_Changed" Unchecked="RgbChannelVisibility_Changed"/>
-                                                <CheckBox x:Name="chkShowYlue" Content="Y" Foreground="Gray" IsChecked="{Binding Config.IsShowYChannel}" Margin="5,0" Checked="RgbChannelVisibility_Changed" Unchecked="RgbChannelVisibility_Changed"/>
-                                                <CheckBox x:Name="chkShowZlue" Content="Z" Foreground="Violet" IsChecked="{Binding Config.IsShowZChannel}" Margin="5,0" Checked="RgbChannelVisibility_Changed" Unchecked="RgbChannelVisibility_Changed"/>
+                                                <TextBlock Text="显示通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                                <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged">
+                                                    <ComboBoxItem Content="X 通道" Tag="X"/>
+                                                    <ComboBoxItem Content="Y 通道" Tag="Y"/>
+                                                    <ComboBoxItem Content="Z 通道" Tag="Z"/>
+                                                    <ComboBoxItem Content="x 色度" Tag="CieX"/>
+                                                    <ComboBoxItem Content="y 色度" Tag="CieY"/>
+                                                    <ComboBoxItem Content="u 色度" Tag="CieU"/>
+                                                    <ComboBoxItem Content="v 色度" Tag="CieV"/>
+                                                </ComboBox>
                                             </StackPanel>
                                         </StackPanel>
                                         <GroupBox Grid.Row="1" Header="导出设置" Margin="0,0,0,5">
@@ -126,13 +130,14 @@
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                                     <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="4">
-                                                        <ComboBoxItem Content="R通道" Tag="R"/>
-                                                        <ComboBoxItem Content="G通道" Tag="G"/>
-                                                        <ComboBoxItem Content="B通道" Tag="B"/>
+                                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1">
                                                         <ComboBoxItem Content="X通道" Tag="X"/>
                                                         <ComboBoxItem Content="Y通道" Tag="Y"/>
                                                         <ComboBoxItem Content="Z通道" Tag="Z"/>
+                                                        <ComboBoxItem Content="x色度" Tag="CieX"/>
+                                                        <ComboBoxItem Content="y色度" Tag="CieY"/>
+                                                        <ComboBoxItem Content="u色度" Tag="CieU"/>
+                                                        <ComboBoxItem Content="v色度" Tag="CieV"/>
                                                     </ComboBox>
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
@@ -169,9 +174,10 @@
                                             <Grid x:Name="GridSetting" Margin="0,0,0,10" />
                                             <GroupBox Header="{x:Static properties:Resources.ImageFilter}">
                                                 <StackPanel>
+                                                    <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用滤波" IsChecked="{Binding Config.ApplyFilterOnOpen}" Margin="0,0,0,8"/>
                                                     <DockPanel Margin="0,0,0,10">
                                                         <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Width="80"/>
-                                                        <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" SelectedIndex="0">
+                                                        <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" SelectedIndex="3">
                                                             <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
                                                             <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
                                                             <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
@@ -183,7 +189,7 @@
                                                     <DockPanel Margin="0,0,0,5">
                                                         <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center" Width="80"/>
                                                         <TextBlock Text="{Binding ElementName=sliderKernelSize, Path=Value}" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                        <Slider x:Name="sliderKernelSize" Minimum="1" Maximum="31" Value="5" TickFrequency="2" IsSnapToTickEnabled="True" Margin="5,0,0,0"/>
+                                                        <Slider x:Name="sliderKernelSize" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True" Margin="5,0,0,0"/>
                                                     </DockPanel>
                                                     <DockPanel Margin="0,0,0,5">
                                                         <TextBlock Text="σ (Sigma)" VerticalAlignment="Center" Width="80"/>

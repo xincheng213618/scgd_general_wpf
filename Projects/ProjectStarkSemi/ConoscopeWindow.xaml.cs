@@ -33,6 +33,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -185,6 +186,8 @@ namespace ProjectStarkSemi
 
             cbModelType.ItemsSource = Enum.GetValues(typeof(ConoscopeModelType));
             this.DataContext = ConoscopeManager.GetInstance();
+            SelectComboBoxItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+            cbFilterType_SelectionChanged(cbFilterType, new SelectionChangedEventArgs(Selector.SelectionChangedEvent, new List<object>(), new List<object>()));
 
             var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
 
@@ -198,6 +201,18 @@ namespace ProjectStarkSemi
             };
             InitializePlot(wpfPlotReference, "参考曲线 (Reference Distribution)");
             UpdateReferencePlotHeader();
+        }
+
+        private static void SelectComboBoxItemByTag(ComboBox comboBox, string tag)
+        {
+            foreach (ComboBoxItem item in comboBox.Items)
+            {
+                if (string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    comboBox.SelectedItem = item;
+                    return;
+                }
+            }
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
@@ -228,7 +243,7 @@ namespace ProjectStarkSemi
                         string filename = string.Empty;
                         foreach (MeasureResultImgModel result in resultMaster)
                         {
-                            if (CVFileUtil.IsCVCIEFile(result.FileUrl))
+                            if (!string.IsNullOrWhiteSpace(result.FileUrl) && CVFileUtil.IsCVCIEFile(result.FileUrl))
                             {
                                 filename = result.FileUrl;
                                 break;
@@ -236,8 +251,15 @@ namespace ProjectStarkSemi
                         }
                         if (string.IsNullOrEmpty(filename))
                         {
-                            filename = resultMaster[0].FileUrl;
+                            filename = resultMaster.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.FileUrl))?.FileUrl ?? string.Empty;
                         }
+
+                        if (string.IsNullOrWhiteSpace(filename))
+                        {
+                            log.Warn("未获取到有效图像路径");
+                            return;
+                        }
+
                         OpenConoscope(filename);
                     }
                     else
@@ -262,8 +284,8 @@ namespace ProjectStarkSemi
                         .ToList();
                     DB.Dispose();
 
-                    var model = MeasureResultImgModels.Last();
-                    if (model != null)
+                    var model = MeasureResultImgModels.LastOrDefault();
+                    if (!string.IsNullOrWhiteSpace(model?.FileUrl))
                     {
                         OpenConoscope(model.FileUrl);
                     }
@@ -424,84 +446,26 @@ namespace ProjectStarkSemi
         {
             try
             {
-                var filterType = (ImageFilterType)cbFilterType.SelectedIndex;
+                var filterType = GetSelectedFilterType();
 
-                if (filterType == ImageFilterType.None)
-                {
-                    if (OriginalXMat != null || OriginalYMat != null || OriginalZMat != null)
-                    {
-                        XMat?.Dispose();
-                        YMat?.Dispose();
-                        ZMat?.Dispose();
-                        XMat = OriginalXMat?.Clone();
-                        YMat = OriginalYMat?.Clone();
-                        ZMat = OriginalZMat?.Clone();
-                        CreateAndAnalyzePolarLines();
-                        log.Info("已恢复原始数据");
-                        MessageBox.Show("已恢复原始数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    return;
-                }
-
-                // 检查数据是否可用
-                bool hasData = XMat != null || YMat != null || ZMat != null;
-                if (!hasData)
+                if (!HasXyzData())
                 {
                     MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
+                if (filterType == ImageFilterType.None)
+                {
+                    RestoreOriginalMats();
+                    RefreshDisplayedImage();
+                    log.Info("已恢复原始数据");
+                    MessageBox.Show("已恢复原始数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
                 log.Info($"开始应用滤波: {filterType}");
-
-                int kernelSize = (int)sliderKernelSize.Value;
-                double sigma = sliderSigma.Value;
-                int d = (int)sliderD.Value;
-                double sigmaColor = sliderSigmaColor.Value;
-                double sigmaSpace = sliderSigmaSpace.Value;
-
-                // Ensure kernel size is odd
-                if (kernelSize % 2 == 0) kernelSize++;
-
-                // 首次滤波时备份原始数据
-                if (OriginalXMat == null && OriginalYMat == null && OriginalZMat == null)
-                {
-                    OriginalXMat = XMat?.Clone();
-                    OriginalYMat = YMat?.Clone();
-                    OriginalZMat = ZMat?.Clone();
-                }
-
-                // 从原始数据开始滤波（避免多次滤波叠加）
-                XMat?.Dispose();
-                YMat?.Dispose();
-                ZMat?.Dispose();
-                XMat = OriginalXMat?.Clone();
-                YMat = OriginalYMat?.Clone();
-                ZMat = OriginalZMat?.Clone();
-
-                // 对每个通道分别应用滤波
-                if (XMat != null)
-                {
-                    var filtered = ApplyFilterToMat(XMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
-                    XMat.Dispose();
-                    XMat = filtered;
-                }
-                if (YMat != null)
-                {
-                    var filtered = ApplyFilterToMat(YMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
-                    YMat.Dispose();
-                    YMat = filtered;
-                }
-                if (ZMat != null)
-                {
-                    var filtered = ApplyFilterToMat(ZMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
-                    ZMat.Dispose();
-                    ZMat = filtered;
-                }
-
-                log.Info($"滤波应用到XYZ通道完成: {filterType}, kernelSize={kernelSize}");
-
-                // 重新分析（重建极角线和同心圆数据）
-                CreateAndAnalyzePolarLines();
+                ApplyFilterToCurrentMats(filterType);
+                RefreshDisplayedImage();
 
                 log.Info("滤波应用成功，数据已更新");
                 MessageBox.Show("滤波应用成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -513,9 +477,9 @@ namespace ProjectStarkSemi
             }
         }
 
-        public OpenCvSharp.Mat XMat { get; set; }
-        public OpenCvSharp.Mat YMat { get; set; }
-        public OpenCvSharp.Mat ZMat { get; set; }
+        public OpenCvSharp.Mat? XMat { get; set; }
+        public OpenCvSharp.Mat? YMat { get; set; }
+        public OpenCvSharp.Mat? ZMat { get; set; }
 
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
@@ -527,61 +491,271 @@ namespace ProjectStarkSemi
                 OpenConoscope(filename);
             }       
         }
-        string Filename;
+
+        string Filename = string.Empty;
         private void OpenConoscope(string filename)
         {
-            Filename = filename;
-            DisposeCoordinateAxis();
-            ImageView.Clear();
-            ImageView.ImageShow.ImageInitialized -= ImageShow_ImageInitialized;
-            ImageView.ImageShow.ImageInitialized += ImageShow_ImageInitialized;
-            ImageView.OpenImage(filename);
+            try
+            {
+                Filename = filename;
+                HideCoordinateDragOverlay();
+                DisposeCoordinateAxis();
+                ImageView.Clear();
+                LoadConoscopeData(filename);
+
+                if (chkApplyFilterOnOpen?.IsChecked == true)
+                {
+                    ConoscopeConfig.ApplyFilterOnOpen = true;
+                    ApplyFilterToCurrentMats(GetSelectedFilterType());
+                }
+
+                RefreshDisplayedImage();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"打开Conoscope图像失败: {ex.Message}", ex);
+                MessageBox.Show($"打开图像失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void ImageShow_ImageInitialized(object? sender, EventArgs e)
+        private void LoadConoscopeData(string filename)
         {
-            if (CVFileUtil.IsCVCIEFile(Filename))
+            if (!CVFileUtil.IsCVCIEFile(filename))
             {
-                XMat?.Dispose();
-                YMat?.Dispose();
-                ZMat?.Dispose();
-
-                CVCIEFile fileInfo = new CVCIEFile();
-                CVFileUtil.Read(Filename, out fileInfo);
-
-                // Calculate the size of a single channel in bytes
-                int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
-
-
-                OpenCvSharp.MatType singleChannelType;
-                switch (fileInfo.Bpp)
-                {
-                    case 8: singleChannelType = OpenCvSharp.MatType.CV_8UC1; break;
-                    case 16: singleChannelType = OpenCvSharp.MatType.CV_16UC1; break;
-                    case 32: singleChannelType = OpenCvSharp.MatType.CV_32FC1; break; // Most likely for XYZ
-                    case 64: singleChannelType = OpenCvSharp.MatType.CV_64FC1; break;
-                    default: throw new NotSupportedException($"Bpp {fileInfo.Bpp} not supported");
-                }
-                if (fileInfo.Channels == 3)
-                {
-                    byte[] dataX = new byte[channelSize];
-                    byte[] dataY = new byte[channelSize];
-                    byte[] dataZ = new byte[channelSize];
-
-                    Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
-                    Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
-                    Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
-
-                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
-
-                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
-
-                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
-                }
-
+                throw new NotSupportedException("当前视图仅支持 CVCIE XYZ 图像文件");
             }
 
+            ClearMatData(true);
+
+            CVFileUtil.Read(filename, out CVCIEFile fileInfo);
+            if (fileInfo.Channels < 3)
+            {
+                throw new NotSupportedException($"CVCIE 文件通道数不足: {fileInfo.Channels}");
+            }
+
+            int bytesPerPixel = fileInfo.Bpp / 8;
+            int channelSize = fileInfo.Cols * fileInfo.Rows * bytesPerPixel;
+            if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
+            {
+                throw new InvalidDataException("CVCIE 文件数据长度不足，无法拆分 XYZ 通道");
+            }
+
+            OpenCvSharp.MatType singleChannelType = GetSingleChannelMatType(fileInfo.Bpp);
+            XMat = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
+            YMat = CreateFloatChannelMat(fileInfo.Data, channelSize, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
+            ZMat = CreateFloatChannelMat(fileInfo.Data, channelSize * 2, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
+            OriginalXMat = XMat.Clone();
+            OriginalYMat = YMat.Clone();
+            OriginalZMat = ZMat.Clone();
+
+            log.Info($"已加载 CVCIE XYZ 数据: {fileInfo.Cols}x{fileInfo.Rows}, Bpp={fileInfo.Bpp}");
+        }
+
+        private static OpenCvSharp.MatType GetSingleChannelMatType(int bpp)
+        {
+            return bpp switch
+            {
+                8 => OpenCvSharp.MatType.CV_8UC1,
+                16 => OpenCvSharp.MatType.CV_16UC1,
+                32 => OpenCvSharp.MatType.CV_32FC1,
+                64 => OpenCvSharp.MatType.CV_64FC1,
+                _ => throw new NotSupportedException($"Bpp {bpp} not supported")
+            };
+        }
+
+        private static OpenCvSharp.Mat CreateFloatChannelMat(byte[] source, int offset, int channelSize, int rows, int cols, OpenCvSharp.MatType sourceType)
+        {
+            byte[] channelData = new byte[channelSize];
+            Buffer.BlockCopy(source, offset, channelData, 0, channelSize);
+
+            using OpenCvSharp.Mat raw = OpenCvSharp.Mat.FromPixelData(rows, cols, sourceType, channelData);
+            OpenCvSharp.Mat copied = raw.Clone();
+            if (copied.Type() == OpenCvSharp.MatType.CV_32FC1)
+            {
+                return copied;
+            }
+
+            OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
+            copied.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
+            copied.Dispose();
+            return floatMat;
+        }
+
+        private void ApplyFilterToCurrentMats(ImageFilterType filterType)
+        {
+            if (filterType == ImageFilterType.None)
+            {
+                return;
+            }
+
+            int kernelSize = NormalizeKernelSize((int)(sliderKernelSize?.Value ?? 55));
+            double sigma = sliderSigma?.Value ?? 0;
+            int d = (int)(sliderD?.Value ?? 9);
+            double sigmaColor = sliderSigmaColor?.Value ?? 75;
+            double sigmaSpace = sliderSigmaSpace?.Value ?? 75;
+
+            if (XMat != null)
+            {
+                OpenCvSharp.Mat filtered = ApplyFilterToMat(XMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
+                XMat.Dispose();
+                XMat = filtered;
+            }
+            if (YMat != null)
+            {
+                OpenCvSharp.Mat filtered = ApplyFilterToMat(YMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
+                YMat.Dispose();
+                YMat = filtered;
+            }
+            if (ZMat != null)
+            {
+                OpenCvSharp.Mat filtered = ApplyFilterToMat(ZMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
+                ZMat.Dispose();
+                ZMat = filtered;
+            }
+
+            log.Info($"滤波应用到XYZ通道完成: {filterType}, kernelSize={kernelSize}");
+        }
+
+        private static int NormalizeKernelSize(int kernelSize)
+        {
+            kernelSize = Math.Max(1, kernelSize);
+            return kernelSize % 2 == 0 ? kernelSize + 1 : kernelSize;
+        }
+
+        private void RestoreOriginalMats()
+        {
+            if (OriginalXMat == null || OriginalYMat == null || OriginalZMat == null)
+            {
+                return;
+            }
+
+            XMat?.Dispose();
+            YMat?.Dispose();
+            ZMat?.Dispose();
+            XMat = OriginalXMat.Clone();
+            YMat = OriginalYMat.Clone();
+            ZMat = OriginalZMat.Clone();
+        }
+
+        private void RefreshDisplayedImage()
+        {
+            if (!HasXyzData())
+            {
+                return;
+            }
+
+            ExportChannel displayChannel = GetSelectedDisplayChannel();
+            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(displayChannel);
+            using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
+
+            OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
+            normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
+            OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, OpenCvSharp.ColormapTypes.Jet);
+            WriteableBitmap bitmap = pseudoColor.ToWriteableBitmap();
+            bitmap.Freeze();
+
+            DisposeCoordinateAxis();
+            ImageView.Clear();
+            ImageView.SetImageSource(bitmap);
             CreateAndAnalyzePolarLines();
+        }
+
+        private OpenCvSharp.Mat CreateDisplayChannelMat(ExportChannel channel)
+        {
+            if (XMat == null || YMat == null || ZMat == null)
+            {
+                throw new InvalidOperationException("XYZ 数据未加载");
+            }
+
+            if (channel == ExportChannel.X)
+            {
+                return XMat.Clone();
+            }
+            if (channel == ExportChannel.Y)
+            {
+                return YMat.Clone();
+            }
+            if (channel == ExportChannel.Z)
+            {
+                return ZMat.Clone();
+            }
+
+            OpenCvSharp.Mat result = new OpenCvSharp.Mat(YMat.Rows, YMat.Cols, OpenCvSharp.MatType.CV_32FC1);
+            for (int row = 0; row < YMat.Rows; row++)
+            {
+                for (int col = 0; col < YMat.Cols; col++)
+                {
+                    double value = GetChannelValue(
+                        XMat.At<float>(row, col),
+                        YMat.At<float>(row, col),
+                        ZMat.At<float>(row, col),
+                        channel);
+                    result.Set(row, col, (float)value);
+                }
+            }
+
+            return result;
+        }
+
+        private bool HasXyzData()
+        {
+            return XMat != null && YMat != null && ZMat != null;
+        }
+
+        private ImageFilterType GetSelectedFilterType()
+        {
+            if (cbFilterType?.SelectedIndex >= 0)
+            {
+                return (ImageFilterType)cbFilterType.SelectedIndex;
+            }
+
+            return ImageFilterType.Gaussian;
+        }
+
+        private ExportChannel GetSelectedDisplayChannel()
+        {
+            if (cbDisplayChannel?.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string channelTag &&
+                Enum.TryParse(channelTag, out ExportChannel channel))
+            {
+                return channel;
+            }
+
+            return ConoscopeConfig.DisplayChannel;
+        }
+
+        private void DisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ExportChannel channel = GetSelectedDisplayChannel();
+            ConoscopeConfig.DisplayChannel = channel;
+
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
+        }
+
+        private void ClearMatData(bool includeOriginal)
+        {
+            XMat?.Dispose();
+            XMat = null;
+            YMat?.Dispose();
+            YMat = null;
+            ZMat?.Dispose();
+            ZMat = null;
+
+            if (!includeOriginal)
+            {
+                return;
+            }
+
+            OriginalXMat?.Dispose();
+            OriginalXMat = null;
+            OriginalYMat?.Dispose();
+            OriginalYMat = null;
+            OriginalZMat?.Dispose();
+            OriginalZMat = null;
         }
 
         private void InitializeCoordinateAxis(Point center, int radius)
@@ -598,9 +772,13 @@ namespace ProjectStarkSemi
             axisParam.NormalizeNDApertures();
 
             coordinateAxisController?.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
+            coordinateAxisController?.PointerMoved -= CoordinateAxisController_PointerMoved;
+            coordinateAxisController?.PointerLeft -= CoordinateAxisController_PointerLeft;
             coordinateAxisController?.Dispose();
             coordinateAxisController = new ConoscopeCoordinateAxisController(ImageView.ImageShow, ImageView.Zoombox1, axisParam);
             coordinateAxisController.ReferenceChanged += CoordinateAxisController_ReferenceChanged;
+            coordinateAxisController.PointerMoved += CoordinateAxisController_PointerMoved;
+            coordinateAxisController.PointerLeft += CoordinateAxisController_PointerLeft;
             coordinateAxisController.Configure(center, radius, MaxAngle, CurrentModelProfile.ConoscopeCoefficient);
             coordinateAxisController.Show();
             UpdateReferencePlotHeader();
@@ -628,14 +806,7 @@ namespace ProjectStarkSemi
                 return;
             }
 
-            if (e.IsFinal)
-            {
-                HideCoordinateDragOverlay();
-            }
-            else
-            {
-                ShowCoordinateDragOverlay(e);
-            }
+            HideCoordinateDragOverlay();
 
             if (!e.IsValueChanged && !e.IsFinal)
             {
@@ -650,6 +821,21 @@ namespace ProjectStarkSemi
             {
                 UpdateCoordinateAxisPolar(e.RadiusAngle);
             }
+        }
+
+        private void CoordinateAxisController_PointerMoved(object? sender, ConoscopeCoordinateReferenceChangedEventArgs e)
+        {
+            if (currentBitmapSource == null)
+            {
+                return;
+            }
+
+            ShowCoordinateDragOverlay(e);
+        }
+
+        private void CoordinateAxisController_PointerLeft(object? sender, EventArgs e)
+        {
+            HideCoordinateDragOverlay();
         }
 
         private void ShowCoordinateDragOverlay(ConoscopeCoordinateReferenceChangedEventArgs e)
@@ -689,8 +875,6 @@ namespace ProjectStarkSemi
             int ix = ClampToInt((int)Math.Round(e.Position.X), 0, imageWidth - 1);
             int iy = ClampToInt((int)Math.Round(e.Position.Y), 0, imageHeight - 1);
 
-            ExtractRgbValues(currentBitmapSource, ix, iy, out double r, out double g, out double b);
-
             int xyzWidth = YMat?.Width ?? XMat?.Width ?? ZMat?.Width ?? imageWidth;
             int xyzHeight = YMat?.Height ?? XMat?.Height ?? ZMat?.Height ?? imageHeight;
             int xyzX = ClampToInt(ix, 0, xyzWidth - 1);
@@ -698,6 +882,8 @@ namespace ProjectStarkSemi
             ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
 
             CalculateChromaticity(X, Y, Z, out double x, out double y, out double u, out double v, out double cct);
+            ExportChannel displayChannel = GetSelectedDisplayChannel();
+            double displayValue = GetChannelValue(X, Y, Z, displayChannel);
             double azimuthAngle = GetFullAzimuthAngle(e.Position);
             double polarAngle = GetPolarRadiusAngle(e.Position);
 
@@ -705,70 +891,11 @@ namespace ProjectStarkSemi
             builder.AppendLine($"参考: {GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)}");
             builder.AppendLine($"像素: X={ix}, Y={iy}");
             builder.AppendLine($"极坐标: 方位={azimuthAngle:F2}°, 极角={polarAngle:F2}°");
-            builder.AppendLine($"RGB: R={r:F0}, G={g:F0}, B={b:F0}");
+            builder.AppendLine($"{GetChannelLabel(displayChannel)}: {displayValue:F6}");
             builder.AppendLine($"XYZ: X={X:F4}, Y={Y:F4}, Z={Z:F4}");
             builder.AppendLine($"xy: x={x:F6}, y={y:F6}");
             builder.Append($"uv: u={u:F6}, v={v:F6}, CCT={FormatCct(cct)}");
             return builder.ToString();
-        }
-
-        private static void ExtractRgbValues(BitmapSource bitmapSource, int ix, int iy, out double r, out double g, out double b)
-        {
-            r = g = b = 0;
-            PixelFormat format = bitmapSource.Format;
-
-            if (format == PixelFormats.Bgra32 || format == PixelFormats.Pbgra32 || format == PixelFormats.Bgr32)
-            {
-                byte[] pixel = new byte[4];
-                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 4, 0);
-                b = pixel[0];
-                g = pixel[1];
-                r = pixel[2];
-                return;
-            }
-
-            if (format == PixelFormats.Bgr24)
-            {
-                byte[] pixel = new byte[3];
-                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 3, 0);
-                b = pixel[0];
-                g = pixel[1];
-                r = pixel[2];
-                return;
-            }
-
-            if (format == PixelFormats.Rgb24)
-            {
-                byte[] pixel = new byte[3];
-                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 3, 0);
-                r = pixel[0];
-                g = pixel[1];
-                b = pixel[2];
-                return;
-            }
-
-            if (format == PixelFormats.Gray8)
-            {
-                byte[] pixel = new byte[1];
-                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 1, 0);
-                r = g = b = pixel[0];
-                return;
-            }
-
-            if (format == PixelFormats.Gray16)
-            {
-                byte[] pixel = new byte[2];
-                bitmapSource.CopyPixels(new Int32Rect(ix, iy, 1, 1), pixel, 2, 0);
-                r = g = b = BitConverter.ToUInt16(pixel, 0);
-                return;
-            }
-
-            FormatConvertedBitmap converted = new FormatConvertedBitmap(bitmapSource, PixelFormats.Bgra32, null, 0);
-            byte[] convertedPixel = new byte[4];
-            converted.CopyPixels(new Int32Rect(ix, iy, 1, 1), convertedPixel, 4, 0);
-            b = convertedPixel[0];
-            g = convertedPixel[1];
-            r = convertedPixel[2];
         }
 
         private void CalculateChromaticity(double X, double Y, double Z, out double x, out double y, out double u, out double v, out double cct)
@@ -959,6 +1086,8 @@ namespace ProjectStarkSemi
             }
 
             coordinateAxisController.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
+            coordinateAxisController.PointerMoved -= CoordinateAxisController_PointerMoved;
+            coordinateAxisController.PointerLeft -= CoordinateAxisController_PointerLeft;
             coordinateAxisController.Axis.Attribute.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
             coordinateAxisController.Dispose();
             coordinateAxisController = null;
@@ -1019,36 +1148,6 @@ namespace ProjectStarkSemi
                 log.Error($"创建极角线失败: {ex.Message}", ex);
                 MessageBox.Show($"创建极角线失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        /// <summary>
-        /// RGB通道可见性改变事件
-        /// </summary>
-        private void RgbChannelVisibility_Changed(object sender, RoutedEventArgs e)
-        {
-            // If multiple selection is not allowed, implement exclusive selection behavior
-            if (!ConoscopeConfig.AllowMultipleChannelSelection && sender is CheckBox changedCheckBox)
-            {
-                // If a checkbox was checked (not unchecked), uncheck all others
-                if (changedCheckBox.IsChecked == true)
-                {
-                    // Uncheck all other checkboxes except the one that was just checked
-                    if (changedCheckBox != chkShowRed)
-                        chkShowRed.IsChecked = false;
-                    if (changedCheckBox != chkShowGreen)
-                        chkShowGreen.IsChecked = false;
-                    if (changedCheckBox != chkShowBlue)
-                        chkShowBlue.IsChecked = false;
-                    if (changedCheckBox != chkShowXlue)
-                        chkShowXlue.IsChecked = false;
-                    if (changedCheckBox != chkShowYlue)
-                        chkShowYlue.IsChecked = false;
-                    if (changedCheckBox != chkShowZlue)
-                        chkShowZlue.IsChecked = false;
-                }
-            }
-            
-            UpdateReferencePlot();
         }
 
         /// <summary>
@@ -1151,7 +1250,7 @@ namespace ProjectStarkSemi
                     return channel;
                 }
             }
-            return ExportChannel.R;
+            return ExportChannel.Y;
         }
 
         /// <summary>
@@ -1217,7 +1316,7 @@ namespace ProjectStarkSemi
                         if (line.RgbData.Count > i)
                         {
                             double value = GetChannelValue(line.RgbData[i], channel);
-                            dataLine.Append($",{value:F2}");
+                            dataLine.Append($",{FormatChannelValue(value, channel)}");
                         }
                         else
                         {
@@ -1336,7 +1435,7 @@ namespace ProjectStarkSemi
                         if (circle.RgbData.Count > theta)
                         {
                             double value = GetChannelValue(circle.RgbData[theta], channel);
-                            dataLine.Append($",{value:F2}");
+                            dataLine.Append($",{FormatChannelValue(value, channel)}");
                         }
                         else
                         {
@@ -1355,16 +1454,83 @@ namespace ProjectStarkSemi
         /// </summary>
         private double GetChannelValue(RgbSample sample, ExportChannel channel)
         {
+            return GetChannelValue(sample.X, sample.Y, sample.Z, channel);
+        }
+
+        private static double GetChannelValue(double X, double Y, double Z, ExportChannel channel)
+        {
             return channel switch
             {
-                ExportChannel.R => sample.R,
-                ExportChannel.G => sample.G,
-                ExportChannel.B => sample.B,
-                ExportChannel.X => sample.X,
-                ExportChannel.Y => sample.Y,
-                ExportChannel.Z => sample.Z,
-                _ => sample.R // Default to R channel
+                ExportChannel.X => X,
+                ExportChannel.Y => Y,
+                ExportChannel.Z => Z,
+                ExportChannel.CieX => GetCieX(X, Y, Z),
+                ExportChannel.CieY => GetCieY(X, Y, Z),
+                ExportChannel.CieU => GetCieU(X, Y, Z),
+                ExportChannel.CieV => GetCieV(X, Y, Z),
+                _ => Y
             };
+        }
+
+        private static double GetCieX(double X, double Y, double Z)
+        {
+            double sum = X + Y + Z;
+            return Math.Abs(sum) > double.Epsilon ? X / sum : 0;
+        }
+
+        private static double GetCieY(double X, double Y, double Z)
+        {
+            double sum = X + Y + Z;
+            return Math.Abs(sum) > double.Epsilon ? Y / sum : 0;
+        }
+
+        private static double GetCieU(double X, double Y, double Z)
+        {
+            double denominator = X + 15 * Y + 3 * Z;
+            return Math.Abs(denominator) > double.Epsilon ? 4 * X / denominator : 0;
+        }
+
+        private static double GetCieV(double X, double Y, double Z)
+        {
+            double denominator = X + 15 * Y + 3 * Z;
+            return Math.Abs(denominator) > double.Epsilon ? 9 * Y / denominator : 0;
+        }
+
+        private static string GetChannelLabel(ExportChannel channel)
+        {
+            return channel switch
+            {
+                ExportChannel.X => "X",
+                ExportChannel.Y => "Y",
+                ExportChannel.Z => "Z",
+                ExportChannel.CieX => "x",
+                ExportChannel.CieY => "y",
+                ExportChannel.CieU => "u",
+                ExportChannel.CieV => "v",
+                _ => "Y"
+            };
+        }
+
+        private static ScottPlot.Color GetPlotColor(ExportChannel channel)
+        {
+            return channel switch
+            {
+                ExportChannel.X => ScottPlot.Color.FromColor(System.Drawing.Color.Gold),
+                ExportChannel.Y => ScottPlot.Color.FromColor(System.Drawing.Color.DimGray),
+                ExportChannel.Z => ScottPlot.Color.FromColor(System.Drawing.Color.Violet),
+                ExportChannel.CieX => ScottPlot.Color.FromColor(System.Drawing.Color.OrangeRed),
+                ExportChannel.CieY => ScottPlot.Color.FromColor(System.Drawing.Color.SeaGreen),
+                ExportChannel.CieU => ScottPlot.Color.FromColor(System.Drawing.Color.DodgerBlue),
+                ExportChannel.CieV => ScottPlot.Color.FromColor(System.Drawing.Color.MediumPurple),
+                _ => ScottPlot.Color.FromColor(System.Drawing.Color.DimGray)
+            };
+        }
+
+        private static string FormatChannelValue(double value, ExportChannel channel)
+        {
+            return channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV
+                ? value.ToString("F6")
+                : value.ToString("F2");
         }
 
 
@@ -1449,100 +1615,6 @@ namespace ProjectStarkSemi
                 Z = ZMat.At<float>(iy, ix);
         }
 
-        /// <summary>
-        /// 从Mat中提取像素值
-        /// </summary>
-        private void ExtractPixelValues(OpenCvSharp.Mat mat, int ix, int iy, out double r, out double g, out double b,out double X,out double Y,out double Z)
-        {
-            r = 0; g = 0; b = 0;
-            X = Y = Z = 0;
-            if (mat.Channels() == 1)
-            {
-                // Grayscale image
-                if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
-                {
-                    byte value = mat.At<byte>(iy, ix);
-                    r = g = b = value;
-                }
-                else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
-                {
-                    ushort value = mat.At<ushort>(iy, ix);
-                    r = g = b = value;
-                }
-                if (YMat != null)
-                    Y = YMat.At<float>(iy, ix);
-            }
-            else if (mat.Channels() >= 3)
-            {
-                // Color image (BGR or BGRA)
-                if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
-                {
-                    OpenCvSharp.Vec3b pixel = mat.At<OpenCvSharp.Vec3b>(iy, ix);
-                    b = pixel.Item0;
-                    g = pixel.Item1;
-                    r = pixel.Item2;
-                }
-                else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
-                {
-                    OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
-                    b = pixel.Item0;
-                    g = pixel.Item1;
-                    r = pixel.Item2;
-                }
-
-                if (XMat != null)
-                    X = XMat.At<float>(iy, ix);
-                if (YMat != null)
-                    Y = YMat.At<float>(iy, ix);
-                if (ZMat != null)
-                    Z = ZMat.At<float>(iy, ix);
-            }
-        }
-
-        /// <summary>
-        /// 创建指定角度的极角线
-        /// </summary>
-        private void CreatePolarLine(double angle, System.Windows.Point center, int radius, BitmapSource bitmapSource)
-        {
-            // Convert angle to radians
-            // Add 90° to place 0° at the top (first quadrant/north)
-            // Negate to make rotation counter-clockwise in screen coordinates
-            double radians = (180 - angle) * Math.PI / 180.0;
-
-            // Calculate line endpoints
-            double dx = radius * Math.Cos(radians);
-            double dy = radius * Math.Sin(radians);
-
-            Point start = new Point(center.X - dx, center.Y - dy);
-            Point end = new Point(center.X + dx, center.Y + dy);
-
-            // Create DVLine
-            DVLine line = new DVLine();
-            line.Points.Add(start);
-            line.Points.Add(end);
-
-            line.Pen = new Pen(Brushes.Yellow,0.5/ ImageView.EditorContext.ZoomRatio);
-
-            line.Render();
-
-
-            ImageView.AddVisual(line);
-
-            // Create PolarAngleLine object
-            PolarAngleLine polarLine = new PolarAngleLine
-            {
-                Angle = angle,
-                Line = line
-            };
-
-            // Extract RGB data along the line
-            ExtractRgbAlongLine(polarLine, start, end, bitmapSource, radius);
-
-            // Add to collection
-            polarAngleLines.Add(polarLine);
-
-            log.Info($"创建极角线: {angle}°, 起点({start.X:F1}, {start.Y:F1}), 终点({end.X:F1}, {end.Y:F1})");
-        }
 
         /// <summary>
         /// 沿线提取RGB数据
@@ -1660,65 +1732,17 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                // Extract position and RGB data
                 double[] positions = selectedPolarLine.RgbData.Select(s => s.Position).ToArray();
+                ExportChannel channel = GetSelectedDisplayChannel();
+                double[] values = selectedPolarLine.RgbData.Select(s => GetChannelValue(s, channel)).ToArray();
+                var scatter = wpfPlotReference.Plot.Add.Scatter(positions, values);
+                scatter.Color = GetPlotColor(channel);
+                scatter.LineWidth = 2;
+                scatter.LegendText = GetChannelLabel(channel);
 
-                // Add scatter plots for each channel based on visibility
-                if (ConoscopeConfig.IsShowRedChannel)
-                {
-                    double[] rValues = selectedPolarLine.RgbData.Select(s => s.R).ToArray();
-                    var redScatter = wpfPlotReference.Plot.Add.Scatter(positions, rValues);
-                    redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
-                    redScatter.LineWidth = 2;
-                    redScatter.LegendText = "R";
-                }
-
-                if (ConoscopeConfig.IsShowGreenChannel)
-                {
-                    double[] gValues = selectedPolarLine.RgbData.Select(s => s.G).ToArray();
-
-                    var greenScatter = wpfPlotReference.Plot.Add.Scatter(positions, gValues);
-                    greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
-                    greenScatter.LineWidth = 2;
-                    greenScatter.LegendText = "G";
-                }
-
-                if (ConoscopeConfig.IsShowBlueChannel)
-                {
-                    double[] bValues = selectedPolarLine.RgbData.Select(s => s.B).ToArray();
-                    var blueScatter = wpfPlotReference.Plot.Add.Scatter(positions, bValues);
-                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
-                    blueScatter.LineWidth = 2;
-                    blueScatter.LegendText = "B";
-                }
-                if (ConoscopeConfig.IsShowXChannel)
-                {
-                    double[] XValues = selectedPolarLine.RgbData.Select(s => s.X).ToArray();
-                    var xScatter = wpfPlotReference.Plot.Add.Scatter(positions, XValues);
-                    xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
-                    xScatter.LineWidth = 2;
-                    xScatter.LegendText = "X";
-                }
-                if (ConoscopeConfig.IsShowYChannel)
-                {
-                    double[] YValues = selectedPolarLine.RgbData.Select(s => s.Y).ToArray();
-                    var yScatter = wpfPlotReference.Plot.Add.Scatter(positions, YValues);
-                    yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
-                    yScatter.LineWidth = 2;
-                    yScatter.LegendText = "Y";
-                }
-                if (ConoscopeConfig.IsShowZChannel)
-                {
-                    double[] ZValues = selectedPolarLine.RgbData.Select(s => s.Z).ToArray();
-                    var zScatter = wpfPlotReference.Plot.Add.Scatter(positions, ZValues);
-                    zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
-                    zScatter.LineWidth = 2;
-                    zScatter.LegendText = "Z";
-                }
-
-                wpfPlotReference.Plot.Title($"方位角 {selectedPolarLine.Angle}°分布曲线");
+                wpfPlotReference.Plot.Title($"方位角 {selectedPolarLine.Angle}° {GetChannelLabel(channel)}分布曲线");
                 wpfPlotReference.Plot.XLabel("角度 (°)");
-                wpfPlotReference.Plot.YLabel("像素值");
+                wpfPlotReference.Plot.YLabel(GetChannelLabel(channel));
                 wpfPlotReference.Plot.Legend.IsVisible = true;
                 wpfPlotReference.Plot.Axes.AutoScale();
 
@@ -1747,67 +1771,17 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                // Extract position (circumferential angle 0-359°) and RGB data
                 double[] positions = selectedCircleLine.RgbData.Select(s => s.Position).ToArray();
+                ExportChannel channel = GetSelectedDisplayChannel();
+                double[] values = selectedCircleLine.RgbData.Select(s => GetChannelValue(s, channel)).ToArray();
+                var scatter = wpfPlotReference.Plot.Add.Scatter(positions, values);
+                scatter.Color = GetPlotColor(channel);
+                scatter.LineWidth = 2;
+                scatter.LegendText = GetChannelLabel(channel);
 
-                // Add scatter plots for each channel based on visibility
-                if (ConoscopeConfig.IsShowRedChannel)
-                {
-                    double[] rValues = selectedCircleLine.RgbData.Select(s => s.R).ToArray();
-                    var redScatter = wpfPlotReference.Plot.Add.Scatter(positions, rValues);
-                    redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
-                    redScatter.LineWidth = 2;
-                    redScatter.LegendText = "R";
-                }
-
-                if (ConoscopeConfig.IsShowGreenChannel)
-                {
-                    double[] gValues = selectedCircleLine.RgbData.Select(s => s.G).ToArray();
-                    var greenScatter = wpfPlotReference.Plot.Add.Scatter(positions, gValues);
-                    greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
-                    greenScatter.LineWidth = 2;
-                    greenScatter.LegendText = "G";
-                }
-
-                if (ConoscopeConfig.IsShowBlueChannel)
-                {
-                    double[] bValues = selectedCircleLine.RgbData.Select(s => s.B).ToArray();
-                    var blueScatter = wpfPlotReference.Plot.Add.Scatter(positions, bValues);
-                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
-                    blueScatter.LineWidth = 2;
-                    blueScatter.LegendText = "B";
-                }
-
-                if (ConoscopeConfig.IsShowXChannel)
-                {
-                    double[] XValues = selectedCircleLine.RgbData.Select(s => s.X).ToArray();
-                    var xScatter = wpfPlotReference.Plot.Add.Scatter(positions, XValues);
-                    xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
-                    xScatter.LineWidth = 2;
-                    xScatter.LegendText = "X";
-                }
-
-                if (ConoscopeConfig.IsShowYChannel)
-                {
-                    double[] YValues = selectedCircleLine.RgbData.Select(s => s.Y).ToArray();
-                    var yScatter = wpfPlotReference.Plot.Add.Scatter(positions, YValues);
-                    yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
-                    yScatter.LineWidth = 2;
-                    yScatter.LegendText = "Y";
-                }
-
-                if (ConoscopeConfig.IsShowZChannel)
-                {
-                    double[] ZValues = selectedCircleLine.RgbData.Select(s => s.Z).ToArray();
-                    var zScatter = wpfPlotReference.Plot.Add.Scatter(positions, ZValues);
-                    zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
-                    zScatter.LineWidth = 2;
-                    zScatter.LegendText = "Z";
-                }
-
-                wpfPlotReference.Plot.Title($"极角 {selectedCircleLine.RadiusAngle}° 圆周分布曲线");
+                wpfPlotReference.Plot.Title($"极角 {selectedCircleLine.RadiusAngle}° {GetChannelLabel(channel)}圆周分布曲线");
                 wpfPlotReference.Plot.XLabel("圆周角度 (°)");
-                wpfPlotReference.Plot.YLabel("像素值");
+                wpfPlotReference.Plot.YLabel(GetChannelLabel(channel));
                 wpfPlotReference.Plot.Legend.IsVisible = true;
                 wpfPlotReference.Plot.Axes.AutoScale();
 
@@ -2065,7 +2039,7 @@ namespace ProjectStarkSemi
                         if (samples.Count > i)
                         {
                             double value = GetChannelValue(samples[i], channel);
-                            dataLine.Append($",{value:F2}");
+                            dataLine.Append($",{FormatChannelValue(value, channel)}");
                         }
                         else
                         {
@@ -2162,7 +2136,7 @@ namespace ProjectStarkSemi
                         if (samples.Count > i)
                         {
                             double value = GetChannelValue(samples[i], channel);
-                            dataLine.Append($",{value:F2}");
+                            dataLine.Append($",{FormatChannelValue(value, channel)}");
                         }
                         else
                         {
@@ -2220,7 +2194,7 @@ namespace ProjectStarkSemi
                     var sample = new RgbSample { X = X, Y = Y, Z = Z };
                     double value = GetChannelValue(sample, channel);
                     
-                    writer.WriteLine($"{theta},{value:F2}");
+                    writer.WriteLine($"{theta},{FormatChannelValue(value, channel)}");
                 }
 
                 log.Info($"方位角截面导出完成: {azimuthAngle}°, 通道={channel}");
@@ -2271,7 +2245,7 @@ namespace ProjectStarkSemi
                     var sample = new RgbSample { X = X, Y = Y, Z = Z };
                     double value = GetChannelValue(sample, channel);
                     
-                    writer.WriteLine($"{theta},{value:F2}");
+                    writer.WriteLine($"{theta},{FormatChannelValue(value, channel)}");
                 }
 
                 log.Info($"极角截面导出完成: {polarAngle}°, 通道={channel}");
