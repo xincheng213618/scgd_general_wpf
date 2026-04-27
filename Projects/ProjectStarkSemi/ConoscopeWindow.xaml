@@ -87,7 +87,12 @@
                         <xcad:LayoutDocumentPaneGroup>
                             <xcad:LayoutDocumentPane>
                                 <xcad:LayoutDocument Title="图像显示" ContentId="ImageView" CanClose="False">
-                                    <im:ImageView x:Name="ImageView" />
+                                    <Grid x:Name="ImageViewHost">
+                                        <im:ImageView x:Name="ImageView" />
+                                        <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
+                                            <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
+                                        </Border>
+                                    </Grid>
                                 </xcad:LayoutDocument>
                             </xcad:LayoutDocumentPane>
                         </xcad:LayoutDocumentPaneGroup>
@@ -139,7 +144,7 @@
                                     </Grid>
                                 </xcad:LayoutAnchorable>
 
-                                <xcad:LayoutAnchorable x:Name="AzimuthPlotPane" Title="方位角" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="AzimuthPlot">
+                                <xcad:LayoutAnchorable x:Name="ReferencePlotPane" Title="参考曲线" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="ReferencePlot">
                                     <Grid Margin="5">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -147,37 +152,14 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="当前角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <ComboBox x:Name="cbPolarAngleLines" MinWidth="100" SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
-                                                <Button Content="导出" Click="btnExportCurrentAzimuth_Click" Padding="10,2" Margin="5,0,5,0"/>
-                                                <Button Content="删除选中" Click="btnRemoveAngle_Click" Padding="10,2" Margin="5,0,5,0"/>
-                                                <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <TextBox x:Name="txtAngle" MinWidth="60" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                <Button Content="添加" Click="btnAddAngle_Click" Padding="10,2" Margin="0,0,5,0"/>
+                                                <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                                <TextBlock x:Name="tbReferenceMode" MinWidth="80" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                                <TextBlock Text="当前值:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                                <TextBlock x:Name="tbReferenceValue" MinWidth="80" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                                <Button Content="导出当前" Click="btnExportCurrentReference_Click" Padding="10,2" Margin="5,0,5,0"/>
                                             </StackPanel>
                                         </StackPanel>
-                                        <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotDiameterLine" />
-                                    </Grid>
-                                </xcad:LayoutAnchorable>
-
-                                <xcad:LayoutAnchorable x:Name="PolarPlotPane" Title="极角" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="PolarPlot">
-                                    <Grid Margin="5">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="当前半径角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <ComboBox x:Name="cbConcentricCircles" MinWidth="100" SelectionChanged="cbConcentricCircles_SelectionChanged"/>
-                                                <Button Content="导出" Click="btnExportCurrentPolar_Click" Padding="10,2" Margin="5,0,5,0"/>
-                                                <Button Content="删除选中" Click="btnRemoveCircleAngle_Click" Padding="10,2" Margin="5,0,5,0"/>
-                                                <TextBlock Text="添加半径角度:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                <TextBox x:Name="txtCircleAngle" MinWidth="60" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                <Button Content="添加" Click="btnAddCircleAngle_Click" Padding="10,2" Margin="0,0,5,0"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                        <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotRCircle"/>
+                                        <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotReference" />
                                     </Grid>
                                 </xcad:LayoutAnchorable>
 

@@ -24,6 +24,7 @@ using ProjectStarkSemi.Layout;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -118,8 +119,7 @@ namespace ProjectStarkSemi
             }
 
             RefreshReferenceLineProfileBinding();
-            wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
-            wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
+            SetReferencePlotLimits();
         }
 
         public ConoscopeWindow()
@@ -148,13 +148,11 @@ namespace ProjectStarkSemi
             this.Closed += (s, e) => ThemeManager.Current.CurrentUIThemeChanged -= ThemeChange;
 
 
-
             LayoutManager = new DockLayoutManager(DockingManager);
             LayoutManager.RegisterContent("ControlPanel", ControlPanelPane.Content);
             LayoutManager.RegisterContent("ImageView", ImageView);
             LayoutManager.RegisterContent("ChannelPanel", ChannelPanelPane.Content);
-            LayoutManager.RegisterContent("AzimuthPlot", AzimuthPlotPane.Content);
-            LayoutManager.RegisterContent("PolarPlot", PolarPlotPane.Content);
+            LayoutManager.RegisterContent("ReferencePlot", ReferencePlotPane.Content);
             LayoutManager.RegisterContent("SettingPanel", SettingPanelPane.Content);
             LayoutManager.LoadLayout();
 
@@ -196,8 +194,8 @@ namespace ProjectStarkSemi
             {
                 ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             };
-            InitializePlot(wpfPlotDiameterLine, "方位角分布曲线 (Azimuth Distribution)");
-            InitializePlot(wpfPlotRCircle, "极角分布曲线 (Polar Angle Distribution)");
+            InitializePlot(wpfPlotReference, "参考曲线 (Reference Distribution)");
+            UpdateReferencePlotHeader();
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
@@ -587,6 +585,8 @@ namespace ProjectStarkSemi
         private void InitializeCoordinateAxis(Point center, int radius)
         {
             var axisParam = CurrentModelProfile.CoordinateAxisParam;
+            axisParam.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
+            axisParam.PropertyChanged += CoordinateAxisParam_PropertyChanged;
             axisParam.MaxAngle = MaxAngle;
             axisParam.ConoscopeCoefficient = CurrentModelProfile.ConoscopeCoefficient;
             axisParam.CenterX = center.X;
@@ -601,11 +601,41 @@ namespace ProjectStarkSemi
             coordinateAxisController.ReferenceChanged += CoordinateAxisController_ReferenceChanged;
             coordinateAxisController.Configure(center, radius, MaxAngle, CurrentModelProfile.ConoscopeCoefficient);
             coordinateAxisController.Show();
+            UpdateReferencePlotHeader();
+        }
+
+        private void CoordinateAxisParam_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceMode))
+            {
+                ApplyCoordinateAxisReference();
+                return;
+            }
+
+            if (e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceAngle) ||
+                e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceRadiusAngle))
+            {
+                UpdateReferencePlotHeader();
+            }
         }
 
         private void CoordinateAxisController_ReferenceChanged(object? sender, ConoscopeCoordinateReferenceChangedEventArgs e)
         {
             if (currentBitmapSource == null)
+            {
+                return;
+            }
+
+            if (e.IsFinal)
+            {
+                HideCoordinateDragOverlay();
+            }
+            else
+            {
+                ShowCoordinateDragOverlay(e);
+            }
+
+            if (!e.IsValueChanged && !e.IsFinal)
             {
                 return;
             }
@@ -618,6 +648,20 @@ namespace ProjectStarkSemi
             {
                 UpdateCoordinateAxisPolar(e.RadiusAngle);
             }
+        }
+
+        private void ShowCoordinateDragOverlay(ConoscopeCoordinateReferenceChangedEventArgs e)
+        {
+            Point screenPoint = ImageView.ImageShow.PointToScreen(e.Position);
+            Point overlayPoint = ImageViewHost.PointFromScreen(screenPoint);
+            CoordinateDragOverlay.Margin = new Thickness(overlayPoint.X + 14, overlayPoint.Y + 14, 0, 0);
+            CoordinateDragOverlayText.Text = GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
+            CoordinateDragOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void HideCoordinateDragOverlay()
+        {
+            CoordinateDragOverlay.Visibility = Visibility.Collapsed;
         }
 
         private void ApplyCoordinateAxisReference()
@@ -635,6 +679,9 @@ namespace ProjectStarkSemi
             {
                 UpdateCoordinateAxisPolar(coordinateAxisController.Axis.Attribute.ReferenceRadiusAngle);
             }
+
+            SetReferencePlotLimits();
+            UpdateReferencePlotHeader();
         }
 
         private void UpdateCoordinateAxisAzimuth(double angle)
@@ -645,28 +692,10 @@ namespace ProjectStarkSemi
             }
 
             angle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
-            txtAngle.Text = angle.ToString("F2");
-
-            var existingLine = polarAngleLines.FirstOrDefault(line => line != coordinateAxisPolarLine && Math.Abs(line.Angle - angle) < 0.05);
-            if (existingLine != null)
-            {
-                if (coordinateAxisPolarLine != null)
-                {
-                    polarAngleLines.Remove(coordinateAxisPolarLine);
-                    coordinateAxisPolarLine = null;
-                }
-
-                cbPolarAngleLines.ItemsSource = polarAngleLines;
-                cbPolarAngleLines.SelectedItem = existingLine;
-                selectedPolarLine = existingLine;
-                UpdatePlot();
-                return;
-            }
 
             if (coordinateAxisPolarLine == null)
             {
                 coordinateAxisPolarLine = new PolarAngleLine();
-                polarAngleLines.Add(coordinateAxisPolarLine);
             }
 
             coordinateAxisPolarLine.Angle = angle;
@@ -676,10 +705,9 @@ namespace ProjectStarkSemi
             var endpoints = ConoscopeCoordinateAxisVisual.GetAzimuthLineEndpoints(currentImageCenter, currentImageRadius, angle);
             ExtractRgbAlongLine(coordinateAxisPolarLine, endpoints.Start, endpoints.End, currentBitmapSource, currentImageRadius);
 
-            cbPolarAngleLines.ItemsSource = polarAngleLines;
-            cbPolarAngleLines.Items.Refresh();
-            cbPolarAngleLines.SelectedItem = coordinateAxisPolarLine;
             selectedPolarLine = coordinateAxisPolarLine;
+            SetReferencePlotLimits();
+            UpdateReferencePlotHeader();
             UpdatePlot();
         }
 
@@ -691,28 +719,10 @@ namespace ProjectStarkSemi
             }
 
             radiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
-            txtCircleAngle.Text = radiusAngle.ToString("F2");
-
-            var existingCircle = displayedCircles.FirstOrDefault(circle => circle != coordinateAxisCircleLine && Math.Abs(circle.RadiusAngle - radiusAngle) < 0.05);
-            if (existingCircle != null)
-            {
-                if (coordinateAxisCircleLine != null)
-                {
-                    displayedCircles.Remove(coordinateAxisCircleLine);
-                    coordinateAxisCircleLine = null;
-                }
-
-                cbConcentricCircles.ItemsSource = displayedCircles;
-                cbConcentricCircles.SelectedItem = existingCircle;
-                selectedCircleLine = existingCircle;
-                UpdatePlotForCircle();
-                return;
-            }
 
             if (coordinateAxisCircleLine == null)
             {
                 coordinateAxisCircleLine = new ConcentricCircleLine();
-                displayedCircles.Add(coordinateAxisCircleLine);
             }
 
             coordinateAxisCircleLine.RadiusAngle = radiusAngle;
@@ -720,11 +730,49 @@ namespace ProjectStarkSemi
             coordinateAxisCircleLine.Circle = null;
             ExtractRgbAlongCircle(coordinateAxisCircleLine, currentImageCenter, radiusAngle, currentBitmapSource);
 
-            cbConcentricCircles.ItemsSource = displayedCircles;
-            cbConcentricCircles.Items.Refresh();
-            cbConcentricCircles.SelectedItem = coordinateAxisCircleLine;
             selectedCircleLine = coordinateAxisCircleLine;
+            SetReferencePlotLimits();
+            UpdateReferencePlotHeader();
             UpdatePlotForCircle();
+        }
+
+        private void UpdateReferencePlotHeader()
+        {
+            var axisParam = CurrentModelProfile.CoordinateAxisParam;
+            tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "方位角直线" : "极角圆";
+            tbReferenceValue.Text = GetReferenceValueText(axisParam.ReferenceMode, axisParam.ReferenceAngle, axisParam.ReferenceRadiusAngle);
+            ReferencePlotPane.Title = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "方位角" : "极角";
+        }
+
+        private static string GetReferenceValueText(ConoscopeCoordinateReferenceMode mode, double angle, double radiusAngle)
+        {
+            return mode == ConoscopeCoordinateReferenceMode.AzimuthLine
+                ? $"{angle:F2}°"
+                : $"R={radiusAngle:F2}°";
+        }
+
+        private void SetReferencePlotLimits()
+        {
+            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            {
+                wpfPlotReference.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+            }
+            else
+            {
+                wpfPlotReference.Plot.Axes.SetLimits(0, 360, 0, 600);
+            }
+        }
+
+        private void UpdateReferencePlot()
+        {
+            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            {
+                UpdatePlot();
+            }
+            else
+            {
+                UpdatePlotForCircle();
+            }
         }
 
 
@@ -736,6 +784,7 @@ namespace ProjectStarkSemi
             }
 
             coordinateAxisController.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
+            coordinateAxisController.Axis.Attribute.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
             coordinateAxisController.Dispose();
             coordinateAxisController = null;
             coordinateAxisPolarLine = null;
@@ -782,35 +831,10 @@ namespace ProjectStarkSemi
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}");
 
                 ClearDisplayedCircles();
-                
-                // Set up circles ComboBox
-                if (displayedCircles.Count > 0)
-                {
-                    cbConcentricCircles.ItemsSource = displayedCircles;
-                    cbConcentricCircles.SelectedIndex = 0;
-                    selectedCircleLine = displayedCircles[0];
-                    UpdatePlotForCircle();
-                }
 
                 polarAngleLines.Clear();
                 selectedPolarLine = null;
                 coordinateAxisPolarLine = null;
-
-
-                // Create lines for each angle
-                foreach (double angle in CurrentModelProfile.DefaultAngles)
-                {
-                    CreatePolarLine(angle, center, radius, bitmapSource);
-                }
-
-                // Select the first line by default
-                if (polarAngleLines.Count > 0)
-                {
-                    selectedPolarLine = polarAngleLines[0];
-                    cbPolarAngleLines.ItemsSource = polarAngleLines;
-                    cbPolarAngleLines.SelectedIndex = 0;
-                    UpdatePlot();
-                }
 
                 coordinateAxisController?.BringToFront();
                 ApplyCoordinateAxisReference();
@@ -819,32 +843,6 @@ namespace ProjectStarkSemi
             {
                 log.Error($"创建极角线失败: {ex.Message}", ex);
                 MessageBox.Show($"创建极角线失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void cbPolarAngleLines_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (cbPolarAngleLines.SelectedItem is PolarAngleLine selectedLine)
-            {
-                // Reset all lines to yellow first
-                foreach (var line in polarAngleLines)
-                {
-                    if (line.Line != null)
-                    {
-                        line.Line.Pen = new Pen(Brushes.Yellow, 0.5 / ImageView.EditorContext.ZoomRatio);
-                        line.Line.Render();
-                    }
-                }
-                
-                // Set selected line to red
-                if (selectedLine.Line != null)
-                {
-                    selectedLine.Line.Pen = new Pen(Brushes.Red, 0.5 / ImageView.EditorContext.ZoomRatio);
-                    selectedLine.Line.Render();
-                }
-                
-                selectedPolarLine = selectedLine;
-                UpdatePlot();
             }
         }
 
@@ -875,274 +873,7 @@ namespace ProjectStarkSemi
                 }
             }
             
-            UpdatePlot();
-            UpdatePlotForCircle();
-        }
-
-        /// <summary>
-        /// 添加角度按钮点击事件
-        /// </summary>
-        private void btnAddAngle_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Check if image is loaded
-                if (currentBitmapSource == null)
-                {
-                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    log.Warn("未加载图像，无法添加角度线");
-                    return;
-                }
-
-                // Parse angle from text box
-                if (!double.TryParse(txtAngle.Text, out double angle))
-                {
-                    MessageBox.Show("请输入有效的角度数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    log.Warn($"无效的角度输入: {txtAngle.Text}");
-                    return;
-                }
-
-                // Normalize angle to 0-360 range
-                angle = angle % 360;
-                if (angle < 0) angle += 360;
-
-                // Check if angle already exists
-                if (polarAngleLines.Any(line => Math.Abs(line.Angle - angle) < 0.01))
-                {
-                    MessageBox.Show($"角度 {angle:F1}° 已存在", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                    log.Info($"角度 {angle:F1}° 已存在，跳过添加");
-                    return;
-                }
-
-
-
-                // Create new line at specified angle
-                CreatePolarLine(angle, currentImageCenter, currentImageRadius, currentBitmapSource);
-
-                // Select the newly added line (ObservableCollection auto-updates the UI)
-                var newLine = polarAngleLines.FirstOrDefault(line => Math.Abs(line.Angle - angle) < 0.01);
-                if (newLine != null)
-                {
-                    cbPolarAngleLines.SelectedItem = newLine;
-                }
-
-                // Clear text box
-                txtAngle.Text = "";
-                CurrentModelProfile.DefaultAngles.Add(angle);
-                log.Info($"成功添加角度线: {angle:F1}°");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"添加角度失败: {ex.Message}", ex);
-                MessageBox.Show($"添加角度失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// 删除选中角度按钮点击事件
-        /// </summary>
-        private void btnRemoveAngle_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (selectedPolarLine == null)
-                {
-                    MessageBox.Show("请先选择要删除的角度", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                double removedAngle = selectedPolarLine.Angle;
-
-                // Remove from collection
-                polarAngleLines.Remove(selectedPolarLine);
-
-                // Select first line if available (ObservableCollection auto-updates the UI)
-                if (polarAngleLines.Count > 0)
-                {
-                    selectedPolarLine = polarAngleLines[0];
-                    cbPolarAngleLines.SelectedIndex = 0;
-                    UpdatePlot();
-                }
-                else
-                {
-                    selectedPolarLine = null;
-                    UpdatePlot();
-                }
-
-                log.Info($"成功删除角度线: {removedAngle:F1}°");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"删除角度失败: {ex.Message}", ex);
-                MessageBox.Show($"删除角度失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// 添加极角角度按钮点击事件
-        /// </summary>
-        private void btnAddCircleAngle_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Check if image is loaded
-                if (currentBitmapSource == null)
-                {
-                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    log.Warn("未加载图像，无法添加极角");
-                    return;
-                }
-
-                // Parse radius angle from text box
-                if (!double.TryParse(txtCircleAngle.Text, out double radiusAngle))
-                {
-                    MessageBox.Show("请输入有效的半径角度数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    log.Warn($"无效的半径角度输入: {txtCircleAngle.Text}");
-                    return;
-                }
-
-                // Validate radius angle is within valid range (0 to MaxAngle)
-                if (radiusAngle < 0 || radiusAngle > MaxAngle)
-                {
-                    MessageBox.Show($"半径角度必须在 0 到 {MaxAngle} 度之间", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    log.Warn($"半径角度超出范围: {radiusAngle}");
-                    return;
-                }
-
-                if (displayedCircles.Any(circle => Math.Abs(circle.RadiusAngle - radiusAngle) < 0.01))
-                {
-                    MessageBox.Show($"半径角度 {radiusAngle:F1}° 已存在", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                    log.Info($"半径角度 {radiusAngle:F1}° 已存在，跳过添加");
-                    return;
-                }
-
-                // Create new circle at specified radius angle
-                CircleProperties circleProperties = new CircleProperties
-                {
-                    Center = currentImageCenter,
-                    Radius = currentImageRadius * radiusAngle / MaxAngle,
-                    Pen = new Pen(Brushes.Yellow, 1 / ImageView.EditorContext.ZoomRatio),
-                    Brush = Brushes.Transparent
-                };
-                DVCircle circle = new DVCircle(circleProperties);
-                ImageView.AddVisual(circle);
-
-                // Add to displayed circles collection
-                ConcentricCircleLine newCircle = new ConcentricCircleLine
-                {
-                    RadiusAngle = radiusAngle,
-                    Circle = circle
-                };
-                
-                // Extract RGB data along the circle
-                ExtractRgbAlongCircle(newCircle, currentImageCenter, radiusAngle, currentBitmapSource);
-                
-                // Insert the circle in sorted order by radius angle
-                int insertIndex = 0;
-                for (int i = 0; i < displayedCircles.Count; i++)
-                {
-                    if (displayedCircles[i].RadiusAngle > radiusAngle)
-                    {
-                        insertIndex = i;
-                        break;
-                    }
-                    insertIndex = i + 1;
-                }
-                displayedCircles.Insert(insertIndex, newCircle);
-
-                // Select the newly added circle
-                cbConcentricCircles.SelectedItem = newCircle;
-                selectedCircleLine = newCircle;
-                
-                // Update the R circle plot with the new circle's data
-                UpdatePlotForCircle();
-
-                // Add to config for persistence
-                if (!CurrentModelProfile.DefaultRAngles.Contains(radiusAngle))
-                {
-                    CurrentModelProfile.DefaultRAngles.Add(radiusAngle);
-                }
-
-                // Clear text box
-                txtCircleAngle.Text = "";
-                
-                log.Info($"成功添加极角: 半径角度 {radiusAngle:F1}°");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"添加极角失败: {ex.Message}", ex);
-                MessageBox.Show($"添加极角失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// 删除选中极角按钮点击事件
-        /// </summary>
-        private void btnRemoveCircleAngle_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (selectedCircleLine == null)
-                {
-                    MessageBox.Show("请先选择要删除的极角", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                double removedAngle = selectedCircleLine.RadiusAngle;
-
-                displayedCircles.Remove(selectedCircleLine);
-
-                // Remove from config
-                CurrentModelProfile.DefaultRAngles.Remove(removedAngle);
-
-                // Select first circle if available
-                if (displayedCircles.Count > 0)
-                {
-                    selectedCircleLine = displayedCircles[0];
-                    cbConcentricCircles.SelectedIndex = 0;
-                }
-                else
-                {
-                    selectedCircleLine = null;
-                }
-
-                log.Info($"成功删除极角: 半径角度 {removedAngle:F1}°");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"删除极角失败: {ex.Message}", ex);
-                MessageBox.Show($"删除极角失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// 极角选择改变事件
-        /// </summary>
-        private void cbConcentricCircles_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (cbConcentricCircles.SelectedItem is ConcentricCircleLine selectedCircle)
-            {
-                // Reset all circles to yellow first
-                foreach (var circle in displayedCircles)
-                {
-                    if (circle.Circle != null)
-                    {
-                        circle.Circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / ImageView.EditorContext.ZoomRatio);
-                        circle.Circle.Render();
-                    }
-                }
-                
-                // Set selected circle to red
-                if (selectedCircle.Circle != null)
-                {
-                    selectedCircle.Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.EditorContext.ZoomRatio);
-                    selectedCircle.Circle.Render();
-                }
-                
-                selectedCircleLine = selectedCircle;
-                log.Info($"选中极角: 半径角度 {selectedCircle.RadiusAngle:F1}°");
-                UpdatePlotForCircle();
-            }
+            UpdateReferencePlot();
         }
 
         /// <summary>
@@ -1746,11 +1477,11 @@ namespace ProjectStarkSemi
         {
             try
             {
-                wpfPlotDiameterLine.Plot.Clear();
+                wpfPlotReference.Plot.Clear();
 
                 if (selectedPolarLine == null || selectedPolarLine.RgbData.Count == 0)
                 {
-                    wpfPlotDiameterLine.Refresh();
+                    wpfPlotReference.Refresh();
                     return;
                 }
 
@@ -1761,7 +1492,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowRedChannel)
                 {
                     double[] rValues = selectedPolarLine.RgbData.Select(s => s.R).ToArray();
-                    var redScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, rValues);
+                    var redScatter = wpfPlotReference.Plot.Add.Scatter(positions, rValues);
                     redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
                     redScatter.LineWidth = 2;
                     redScatter.LegendText = "R";
@@ -1771,7 +1502,7 @@ namespace ProjectStarkSemi
                 {
                     double[] gValues = selectedPolarLine.RgbData.Select(s => s.G).ToArray();
 
-                    var greenScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, gValues);
+                    var greenScatter = wpfPlotReference.Plot.Add.Scatter(positions, gValues);
                     greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
                     greenScatter.LineWidth = 2;
                     greenScatter.LegendText = "G";
@@ -1780,7 +1511,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowBlueChannel)
                 {
                     double[] bValues = selectedPolarLine.RgbData.Select(s => s.B).ToArray();
-                    var blueScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, bValues);
+                    var blueScatter = wpfPlotReference.Plot.Add.Scatter(positions, bValues);
                     blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "B";
@@ -1788,7 +1519,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowXChannel)
                 {
                     double[] XValues = selectedPolarLine.RgbData.Select(s => s.X).ToArray();
-                    var xScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, XValues);
+                    var xScatter = wpfPlotReference.Plot.Add.Scatter(positions, XValues);
                     xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
                     xScatter.LineWidth = 2;
                     xScatter.LegendText = "X";
@@ -1796,7 +1527,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowYChannel)
                 {
                     double[] YValues = selectedPolarLine.RgbData.Select(s => s.Y).ToArray();
-                    var yScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, YValues);
+                    var yScatter = wpfPlotReference.Plot.Add.Scatter(positions, YValues);
                     yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
                     yScatter.LineWidth = 2;
                     yScatter.LegendText = "Y";
@@ -1804,19 +1535,19 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowZChannel)
                 {
                     double[] ZValues = selectedPolarLine.RgbData.Select(s => s.Z).ToArray();
-                    var zScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, ZValues);
+                    var zScatter = wpfPlotReference.Plot.Add.Scatter(positions, ZValues);
                     zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
                     zScatter.LineWidth = 2;
                     zScatter.LegendText = "Z";
                 }
 
-                wpfPlotDiameterLine.Plot.Title($"方位角 {selectedPolarLine.Angle}°分布曲线");
-                wpfPlotDiameterLine.Plot.XLabel("角度 (°)");
-                wpfPlotDiameterLine.Plot.YLabel("像素值");
-                wpfPlotDiameterLine.Plot.Legend.IsVisible = true;
-                wpfPlotDiameterLine.Plot.Axes.AutoScale();
+                wpfPlotReference.Plot.Title($"方位角 {selectedPolarLine.Angle}°分布曲线");
+                wpfPlotReference.Plot.XLabel("角度 (°)");
+                wpfPlotReference.Plot.YLabel("像素值");
+                wpfPlotReference.Plot.Legend.IsVisible = true;
+                wpfPlotReference.Plot.Axes.AutoScale();
 
-                wpfPlotDiameterLine.Refresh();
+                wpfPlotReference.Refresh();
 
                 log.Info($"更新图表: 方位角{selectedPolarLine.Angle}°");
             }
@@ -1833,11 +1564,11 @@ namespace ProjectStarkSemi
         {
             try
             {
-                wpfPlotRCircle.Plot.Clear();
+                wpfPlotReference.Plot.Clear();
 
                 if (selectedCircleLine == null || selectedCircleLine.RgbData.Count == 0)
                 {
-                    wpfPlotRCircle.Refresh();
+                    wpfPlotReference.Refresh();
                     return;
                 }
 
@@ -1848,7 +1579,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowRedChannel)
                 {
                     double[] rValues = selectedCircleLine.RgbData.Select(s => s.R).ToArray();
-                    var redScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, rValues);
+                    var redScatter = wpfPlotReference.Plot.Add.Scatter(positions, rValues);
                     redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
                     redScatter.LineWidth = 2;
                     redScatter.LegendText = "R";
@@ -1857,7 +1588,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowGreenChannel)
                 {
                     double[] gValues = selectedCircleLine.RgbData.Select(s => s.G).ToArray();
-                    var greenScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, gValues);
+                    var greenScatter = wpfPlotReference.Plot.Add.Scatter(positions, gValues);
                     greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
                     greenScatter.LineWidth = 2;
                     greenScatter.LegendText = "G";
@@ -1866,7 +1597,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowBlueChannel)
                 {
                     double[] bValues = selectedCircleLine.RgbData.Select(s => s.B).ToArray();
-                    var blueScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, bValues);
+                    var blueScatter = wpfPlotReference.Plot.Add.Scatter(positions, bValues);
                     blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "B";
@@ -1875,7 +1606,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowXChannel)
                 {
                     double[] XValues = selectedCircleLine.RgbData.Select(s => s.X).ToArray();
-                    var xScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, XValues);
+                    var xScatter = wpfPlotReference.Plot.Add.Scatter(positions, XValues);
                     xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
                     xScatter.LineWidth = 2;
                     xScatter.LegendText = "X";
@@ -1884,7 +1615,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowYChannel)
                 {
                     double[] YValues = selectedCircleLine.RgbData.Select(s => s.Y).ToArray();
-                    var yScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, YValues);
+                    var yScatter = wpfPlotReference.Plot.Add.Scatter(positions, YValues);
                     yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
                     yScatter.LineWidth = 2;
                     yScatter.LegendText = "Y";
@@ -1893,19 +1624,19 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowZChannel)
                 {
                     double[] ZValues = selectedCircleLine.RgbData.Select(s => s.Z).ToArray();
-                    var zScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, ZValues);
+                    var zScatter = wpfPlotReference.Plot.Add.Scatter(positions, ZValues);
                     zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
                     zScatter.LineWidth = 2;
                     zScatter.LegendText = "Z";
                 }
 
-                wpfPlotRCircle.Plot.Title($"极角 {selectedCircleLine.RadiusAngle}° 圆周分布曲线");
-                wpfPlotRCircle.Plot.XLabel("圆周角度 (°)");
-                wpfPlotRCircle.Plot.YLabel("像素值");
-                wpfPlotRCircle.Plot.Legend.IsVisible = true;
-                wpfPlotRCircle.Plot.Axes.AutoScale();
+                wpfPlotReference.Plot.Title($"极角 {selectedCircleLine.RadiusAngle}° 圆周分布曲线");
+                wpfPlotReference.Plot.XLabel("圆周角度 (°)");
+                wpfPlotReference.Plot.YLabel("像素值");
+                wpfPlotReference.Plot.Legend.IsVisible = true;
+                wpfPlotReference.Plot.Axes.AutoScale();
 
-                wpfPlotRCircle.Refresh();
+                wpfPlotReference.Refresh();
 
                 log.Info($"更新图表: 极角半径角度{selectedCircleLine.RadiusAngle}°");
             }
@@ -2369,6 +2100,21 @@ namespace ProjectStarkSemi
                 }
 
                 log.Info($"极角截面导出完成: {polarAngle}°, 通道={channel}");
+            }
+        }
+
+        /// <summary>
+        /// 导出当前参考曲线
+        /// </summary>
+        private void btnExportCurrentReference_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            {
+                btnExportCurrentAzimuth_Click(sender, e);
+            }
+            else
+            {
+                btnExportCurrentPolar_Click(sender, e);
             }
         }
 

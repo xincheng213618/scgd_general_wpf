@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,18 +24,22 @@ namespace ProjectStarkSemi.Conoscope
 
     public class ConoscopeCoordinateReferenceChangedEventArgs : EventArgs
     {
-        public ConoscopeCoordinateReferenceChangedEventArgs(ConoscopeCoordinateReferenceMode mode, double angle, double radiusAngle, bool isFinal)
+        public ConoscopeCoordinateReferenceChangedEventArgs(ConoscopeCoordinateReferenceMode mode, double angle, double radiusAngle, Point position, bool isFinal, bool isValueChanged)
         {
             Mode = mode;
             Angle = angle;
             RadiusAngle = radiusAngle;
+            Position = position;
             IsFinal = isFinal;
+            IsValueChanged = isValueChanged;
         }
 
         public ConoscopeCoordinateReferenceMode Mode { get; }
         public double Angle { get; }
         public double RadiusAngle { get; }
+        public Point Position { get; }
         public bool IsFinal { get; }
+        public bool IsValueChanged { get; }
     }
 
     public class ConoscopeCoordinateAxisParam : ViewModelBase
@@ -471,10 +474,8 @@ namespace ProjectStarkSemi.Conoscope
 
             isDragging = true;
             drawCanvas.CaptureMouse();
-            if (Axis.UpdateReferenceFromPoint(point))
-            {
-                RaiseReferenceChanged(false);
-            }
+            bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
+            RaiseReferenceChanged(false, point, isValueChanged);
 
             e.Handled = true;
         }
@@ -486,11 +487,10 @@ namespace ProjectStarkSemi.Conoscope
                 return;
             }
 
-            if (Axis.UpdateReferenceFromPoint(e.GetPosition(drawCanvas)))
-            {
-                RaiseReferenceChanged(false);
-                e.Handled = true;
-            }
+            Point point = e.GetPosition(drawCanvas);
+            bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
+            RaiseReferenceChanged(false, point, isValueChanged);
+            e.Handled = true;
         }
 
         private void DrawCanvas_PreviewMouseUp(object sender, MouseButtonEventArgs e)
@@ -502,7 +502,9 @@ namespace ProjectStarkSemi.Conoscope
 
             isDragging = false;
             drawCanvas.ReleaseMouseCapture();
-            RaiseReferenceChanged(true);
+            Point point = e.GetPosition(drawCanvas);
+            bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
+            RaiseReferenceChanged(true, point, isValueChanged);
             e.Handled = true;
         }
 
@@ -520,13 +522,15 @@ namespace ProjectStarkSemi.Conoscope
             Axis.Render();
         }
 
-        private void RaiseReferenceChanged(bool isFinal)
+        private void RaiseReferenceChanged(bool isFinal, Point position, bool isValueChanged)
         {
             ReferenceChanged?.Invoke(this, new ConoscopeCoordinateReferenceChangedEventArgs(
                 Axis.Attribute.ReferenceMode,
                 Axis.Attribute.ReferenceAngle,
                 Axis.Attribute.ReferenceRadiusAngle,
-                isFinal));
+            position,
+            isFinal,
+            isValueChanged));
         }
     }
 }
