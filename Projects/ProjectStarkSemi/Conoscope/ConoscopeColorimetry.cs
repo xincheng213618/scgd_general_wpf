@@ -44,17 +44,76 @@ namespace ProjectStarkSemi.Conoscope
 
         public static double GetChannelValue(double X, double Y, double Z, ExportChannel channel)
         {
+            if (channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV)
+            {
+                ConoscopeChromaticity chromaticity = Calculate(X, Y, Z);
+                return channel switch
+                {
+                    ExportChannel.CieX => chromaticity.x,
+                    ExportChannel.CieY => chromaticity.y,
+                    ExportChannel.CieU => chromaticity.u,
+                    ExportChannel.CieV => chromaticity.v,
+                    _ => Y
+                };
+            }
+
             return channel switch
             {
                 ExportChannel.X => X,
                 ExportChannel.Y => Y,
                 ExportChannel.Z => Z,
-                ExportChannel.CieX => Calculate(X, Y, Z).x,
-                ExportChannel.CieY => Calculate(X, Y, Z).y,
-                ExportChannel.CieU => Calculate(X, Y, Z).u,
-                ExportChannel.CieV => Calculate(X, Y, Z).v,
                 _ => Y
             };
+        }
+
+        public static OpenCvSharp.Mat CreateChannelMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, ExportChannel channel)
+        {
+            return channel switch
+            {
+                ExportChannel.X => XMat.Clone(),
+                ExportChannel.Y => YMat.Clone(),
+                ExportChannel.Z => ZMat.Clone(),
+                ExportChannel.CieX => CreateXyChannelMat(XMat, YMat, ZMat, XMat),
+                ExportChannel.CieY => CreateXyChannelMat(XMat, YMat, ZMat, YMat),
+                ExportChannel.CieU => CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0),
+                ExportChannel.CieV => CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0),
+                _ => YMat.Clone()
+            };
+        }
+
+        private static OpenCvSharp.Mat CreateXyChannelMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, OpenCvSharp.Mat numerator)
+        {
+            using OpenCvSharp.Mat denominator = new OpenCvSharp.Mat();
+            OpenCvSharp.Cv2.Add(XMat, YMat, denominator);
+            OpenCvSharp.Cv2.Add(denominator, ZMat, denominator);
+            return DivideWithZeroGuard(numerator, denominator);
+        }
+
+        private static OpenCvSharp.Mat CreateUvChannelMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, OpenCvSharp.Mat sourceNumerator, double numeratorScale)
+        {
+            using OpenCvSharp.Mat denominator = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat scaledZ = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat numerator = new OpenCvSharp.Mat();
+
+            OpenCvSharp.Cv2.AddWeighted(XMat, 1.0, YMat, 15.0, 0, denominator);
+            ZMat.ConvertTo(scaledZ, ZMat.Type(), 3.0);
+            OpenCvSharp.Cv2.Add(denominator, scaledZ, denominator);
+            sourceNumerator.ConvertTo(numerator, sourceNumerator.Type(), numeratorScale);
+
+            return DivideWithZeroGuard(numerator, denominator);
+        }
+
+        private static OpenCvSharp.Mat DivideWithZeroGuard(OpenCvSharp.Mat numerator, OpenCvSharp.Mat denominator)
+        {
+            OpenCvSharp.Mat result = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat zeroMask = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat safeDenominator = denominator.Clone();
+
+            OpenCvSharp.Cv2.Compare(safeDenominator, OpenCvSharp.Scalar.All(0), zeroMask, OpenCvSharp.CmpTypes.EQ);
+            safeDenominator.SetTo(OpenCvSharp.Scalar.All(1), zeroMask);
+            OpenCvSharp.Cv2.Divide(numerator, safeDenominator, result);
+            result.SetTo(OpenCvSharp.Scalar.All(0), zeroMask);
+            return result;
         }
 
         public static string GetChannelLabel(ExportChannel channel)

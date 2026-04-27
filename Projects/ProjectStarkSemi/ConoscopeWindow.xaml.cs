@@ -18,14 +18,15 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using Microsoft.Win32;
+
 using OpenCvSharp.WpfExtensions;
 using ProjectStarkSemi.Conoscope;
 using ProjectStarkSemi.Layout;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -36,6 +37,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ProjectStarkSemi
 {
@@ -73,6 +75,7 @@ namespace ProjectStarkSemi
         private ConoscopeCoordinateAxisController? coordinateAxisController;
         private PolarAngleLine? coordinateAxisPolarLine;
         private ConcentricCircleLine? coordinateAxisCircleLine;
+        private bool isUpdatingQuickControls;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
@@ -81,20 +84,9 @@ namespace ProjectStarkSemi
         private void RefreshReferenceLineProfileBinding()
         {
             GridSetting.Children.Clear();
-            StackPanel settingPanel = new StackPanel();
-            settingPanel.Children.Add(CreateSettingGroup("坐标轴", CurrentModelProfile.CoordinateAxisParam));
-            GridSetting.Children.Add(settingPanel);
+            GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.CoordinateAxisParam));
         }
 
-        private static GroupBox CreateSettingGroup(string header, object source)
-        {
-            return new GroupBox
-            {
-                Header = header,
-                Margin = new Thickness(0, 0, 0, 8),
-                Content = PropertyEditorHelper.GenPropertyEditorControl(source)
-            };
-        }
 
         private void RefreshModelDependentUi()
         {
@@ -111,6 +103,7 @@ namespace ProjectStarkSemi
             }
 
             RefreshReferenceLineProfileBinding();
+            RefreshQuickControlsFromAxisParam();
             SetReferencePlotLimits();
         }
 
@@ -169,6 +162,7 @@ namespace ProjectStarkSemi
             cbModelType.ItemsSource = Enum.GetValues(typeof(ConoscopeModelType));
             this.DataContext = ConoscopeManager.GetInstance();
             SelectComboBoxItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+            RefreshQuickControlsFromAxisParam();
             cbFilterType_SelectionChanged(cbFilterType, new SelectionChangedEventArgs(Selector.SelectionChangedEvent, new List<object>(), new List<object>()));
 
             var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
@@ -195,6 +189,87 @@ namespace ProjectStarkSemi
                     return;
                 }
             }
+        }
+
+        private void RefreshQuickControlsFromAxisParam()
+        {
+            if (cbQuickReferenceMode == null || sliderQuickReferenceAngle == null || sliderQuickReferenceRadius == null || cbQuickNDAperture == null)
+            {
+                return;
+            }
+
+            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+
+            isUpdatingQuickControls = true;
+            try
+            {
+                SelectComboBoxItemByTag(cbQuickReferenceMode, axisParam.ReferenceMode.ToString());
+                sliderQuickReferenceAngle.Value = axisParam.ReferenceAngle;
+                sliderQuickReferenceRadius.Maximum = MaxAngle;
+                sliderQuickReferenceRadius.Value = Math.Max(0, Math.Min(axisParam.ReferenceRadiusAngle, MaxAngle));
+
+                cbQuickNDAperture.ItemsSource = null;
+                cbQuickNDAperture.ItemsSource = axisParam.NDApertures;
+                cbQuickNDAperture.SelectedItem = axisParam.SelectedNDAperture;
+            }
+            finally
+            {
+                isUpdatingQuickControls = false;
+            }
+        }
+
+        private void QuickReferenceMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingQuickControls || cbQuickReferenceMode?.SelectedItem is not ComboBoxItem item)
+            {
+                return;
+            }
+
+            if (Enum.TryParse(item.Tag?.ToString(), out ConoscopeCoordinateReferenceMode mode))
+            {
+                CurrentModelProfile.CoordinateAxisParam.ReferenceMode = mode;
+                ApplyCoordinateAxisReference();
+            }
+        }
+
+        private void QuickReferenceAngle_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (isUpdatingQuickControls || !IsInitialized)
+            {
+                return;
+            }
+
+            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            axisParam.ReferenceAngle = e.NewValue;
+            if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            {
+                ApplyCoordinateAxisReference();
+            }
+        }
+
+        private void QuickReferenceRadius_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (isUpdatingQuickControls || !IsInitialized)
+            {
+                return;
+            }
+
+            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            axisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(e.NewValue, MaxAngle));
+            if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
+            {
+                ApplyCoordinateAxisReference();
+            }
+        }
+
+        private void QuickNDAperture_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingQuickControls || cbQuickNDAperture?.SelectedItem is not int aperture)
+            {
+                return;
+            }
+
+            CurrentModelProfile.CoordinateAxisParam.SelectedNDAperture = aperture;
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
@@ -561,6 +636,8 @@ namespace ProjectStarkSemi
             DisposeCoordinateAxis();
             ImageView.Clear();
             ImageView.SetImageSource(bitmap);
+            ImageView.UpdateZoomAndScale();
+
             CreateAndAnalyzePolarLines();
         }
 
@@ -571,34 +648,7 @@ namespace ProjectStarkSemi
                 throw new InvalidOperationException("XYZ 数据未加载");
             }
 
-            if (channel == ExportChannel.X)
-            {
-                return XMat.Clone();
-            }
-            if (channel == ExportChannel.Y)
-            {
-                return YMat.Clone();
-            }
-            if (channel == ExportChannel.Z)
-            {
-                return ZMat.Clone();
-            }
-
-            OpenCvSharp.Mat result = new OpenCvSharp.Mat(YMat.Rows, YMat.Cols, OpenCvSharp.MatType.CV_32FC1);
-            for (int row = 0; row < YMat.Rows; row++)
-            {
-                for (int col = 0; col < YMat.Cols; col++)
-                {
-                    double value = ConoscopeColorimetry.GetChannelValue(
-                        XMat.At<float>(row, col),
-                        YMat.At<float>(row, col),
-                        ZMat.At<float>(row, col),
-                        channel);
-                    result.Set(row, col, (float)value);
-                }
-            }
-
-            return result;
+            return ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, channel);
         }
 
         private bool HasXyzData()
@@ -676,6 +726,8 @@ namespace ProjectStarkSemi
 
         private void CoordinateAxisParam_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            RefreshQuickControlsFromAxisParam();
+
             if (e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceMode))
             {
                 ApplyCoordinateAxisReference();
@@ -685,7 +737,7 @@ namespace ProjectStarkSemi
             if (e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceAngle) ||
                 e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceRadiusAngle))
             {
-                UpdateReferencePlotHeader();
+                ApplyCoordinateAxisReference();
             }
         }
 
@@ -809,6 +861,8 @@ namespace ProjectStarkSemi
         {
             if (coordinateAxisController == null)
             {
+                SetReferencePlotLimits();
+                UpdateReferencePlotHeader();
                 return;
             }
 
