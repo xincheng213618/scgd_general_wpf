@@ -64,25 +64,6 @@
         <xcad:DockingManager x:Name="DockingManager" Grid.Row="1" Margin="-6,-6" Padding="0" Background="Transparent" BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
-                    <xcad:LayoutAnchorablePaneGroup DockWidth="320">
-                        <xcad:LayoutAnchorablePane>
-                            <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="控制面板" CanAutoHide="True" CanClose="False" CanFloat="True" ContentId="ControlPanel">
-                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                                    <StackPanel x:Name="StackPanelControl" Width="300">
-                                        <StackPanel Margin="0,0,0,5">
-                                            <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}">
-                                                <StackPanel>
-                                                    <Button Content="ExecuteFlow" x:Name="ButtonRun" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
-                                                    <ProgressBar Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
-                                                </StackPanel>
-                                            </Border>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </xcad:LayoutAnchorable>
-                        </xcad:LayoutAnchorablePane>
-                    </xcad:LayoutAnchorablePaneGroup>
-
                     <xcad:LayoutPanel Orientation="Vertical">
                         <xcad:LayoutDocumentPaneGroup>
                             <xcad:LayoutDocumentPane>

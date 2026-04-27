@@ -149,7 +149,6 @@ namespace ProjectStarkSemi
 
 
             LayoutManager = new DockLayoutManager(DockingManager);
-            LayoutManager.RegisterContent("ControlPanel", ControlPanelPane.Content);
             LayoutManager.RegisterContent("ImageView", ImageViewHost);
             LayoutManager.RegisterContent("ChannelPanel", ChannelPanelPane.Content);
             LayoutManager.RegisterContent("ReferencePlot", ReferencePlotPane.Content);
@@ -161,25 +160,6 @@ namespace ProjectStarkSemi
 
             MenuManager.GetInstance().LoadMenuForWindow("Conoscope", menu);
 
-
-            foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
-            {
-                StackPanelControl.Children.Add(item.GetDisplayCamera());
-
-                this.Closed += (s, e) =>
-                {
-                    item.MsgRecordChanged -= Item_MsgRecordChanged;
-                };
-                item.MsgRecordChanged -= Item_MsgRecordChanged;
-                item.MsgRecordChanged += Item_MsgRecordChanged;
-            }
-
-            foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>())
-            {
-                StackPanelControl.Children.Add(item.GetDisplayControl());
-            }
-            FlowEngineManager.GetInstance().BatchRecord -= ConoscopeWindow_BatchRecord;
-            FlowEngineManager.GetInstance().BatchRecord += ConoscopeWindow_BatchRecord;
 
             RefreshReferenceLineProfileBinding();
 
@@ -219,78 +199,6 @@ namespace ProjectStarkSemi
         {
             if (tbCurrentModel == null) return;
             RefreshModelDependentUi();
-        }
-
-        private void Item_MsgRecordChanged(object? sender, MsgRecord e)
-        {
-            e.MsgSucessed += (s,e) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    int masterId = Convert.ToInt32(e.Data.MasterId);
-                    List<MeasureResultImgModel> resultMaster = null;
-
-                    if (masterId > 0)
-                    {
-                        resultMaster = new List<MeasureResultImgModel>();
-                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                        if (model != null)
-                            resultMaster.Add(model);
-                    }
-
-                    if (resultMaster != null && resultMaster.Count > 0)
-                    {
-                        string filename = string.Empty;
-                        foreach (MeasureResultImgModel result in resultMaster)
-                        {
-                            if (!string.IsNullOrWhiteSpace(result.FileUrl) && CVFileUtil.IsCVCIEFile(result.FileUrl))
-                            {
-                                filename = result.FileUrl;
-                                break;
-                            }
-                        }
-                        if (string.IsNullOrEmpty(filename))
-                        {
-                            filename = resultMaster.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.FileUrl))?.FileUrl ?? string.Empty;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(filename))
-                        {
-                            log.Warn("未获取到有效图像路径");
-                            return;
-                        }
-
-                        OpenConoscope(filename);
-                    }
-                    else
-                    {
-                        log.Warn("未获取到图像数据");
-                    }
-                });
-            };
-        }
-
-
-        private void ConoscopeWindow_BatchRecord(object? sender, MeasureBatchModel e)
-        {
-            e.FlowStatusChaned += (s, e1) =>
-            {
-                if (e.FlowStatus == FlowStatus.Completed)
-                {
-                    var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                    var MeasureResultImgModels = DB.Queryable<MeasureResultImgModel>()
-                        .Where(x => x.BatchId == e.Id)
-                        .ToList();
-                    DB.Dispose();
-
-                    var model = MeasureResultImgModels.LastOrDefault();
-                    if (!string.IsNullOrWhiteSpace(model?.FileUrl))
-                    {
-                        OpenConoscope(model.FileUrl);
-                    }
-                }
-            };
         }
 
         private void InitializePlot(ScottPlot.WPF.WpfPlot plot, string title)
@@ -843,23 +751,6 @@ namespace ProjectStarkSemi
             Point screenPoint = ImageView.ImageShow.PointToScreen(e.Position);
             Point overlayPoint = ImageViewHost.PointFromScreen(screenPoint);
             CoordinateDragOverlayText.Text = GetCoordinateDragOverlayText(e);
-
-            CoordinateDragOverlay.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Size overlaySize = CoordinateDragOverlay.DesiredSize;
-            double left = overlayPoint.X + 14;
-            double top = overlayPoint.Y + 14;
-
-            if (left + overlaySize.Width > ImageViewHost.ActualWidth)
-            {
-                left = overlayPoint.X - overlaySize.Width - 14;
-            }
-
-            if (top + overlaySize.Height > ImageViewHost.ActualHeight)
-            {
-                top = overlayPoint.Y - overlaySize.Height - 14;
-            }
-
-            CoordinateDragOverlay.Margin = new Thickness(Math.Max(0, left), Math.Max(0, top), 0, 0);
             CoordinateDragOverlay.Visibility = Visibility.Visible;
         }
 
@@ -1797,8 +1688,6 @@ namespace ProjectStarkSemi
 
         public void Dispose()
         {
-            FlowEngineManager.GetInstance().BatchRecord -= ConoscopeWindow_BatchRecord;
-
             XMat?.Dispose();
             XMat = null;
             YMat?.Dispose();
