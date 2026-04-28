@@ -317,73 +317,83 @@ namespace ColorVision.UI
 
         public static DockPanel GenProperties(PropertyInfo property, object obj)
         {
-            var visited = new HashSet<object>(ReferenceEqualityComparer.Instance) { obj };
-            return GenProperties(property, obj, visited);
-        }
-
-        private static DockPanel GenProperties(PropertyInfo property, object obj, HashSet<object> visited)
-        {
             ArgumentNullException.ThrowIfNull(property);
             ArgumentNullException.ThrowIfNull(obj);
 
-            if (property.GetIndexParameters().Length != 0)
+            var visited = new HashSet<object>(ReferenceEqualityComparer.Instance) { obj };
+            if (TryCreatePropertyDockPanel(property, obj, visited, out var dockPanel))
             {
-                throw new NotSupportedException($"Indexed property '{property.Name}' is not supported.");
+                return dockPanel;
             }
 
-            DockPanel? dockPanel = null;
-            var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-            if (editorAttr?.EditorType != null)
+            throw new NotSupportedException($"No property editor registered for property '{property.Name}' of type '{property.PropertyType.FullName}'.");
+        }
+
+        internal static bool TryCreatePropertyDockPanel(PropertyInfo property, object obj, out DockPanel dockPanel)
+        {
+            var visited = new HashSet<object>(ReferenceEqualityComparer.Instance) { obj };
+            return TryCreatePropertyDockPanel(property, obj, visited, out dockPanel);
+        }
+
+        private static bool TryCreatePropertyDockPanel(PropertyInfo property, object obj, HashSet<object> visited, out DockPanel dockPanel)
+        {
+            dockPanel = null!;
+            if (property == null || obj == null || property.GetIndexParameters().Length != 0)
             {
-                try
-                {
-                    var editor = GetOrCreateEditor(editorAttr.EditorType);
-                    dockPanel = editor.GenProperties(property, obj);
-                }
-                catch (NotSupportedException)
-                {
-                    throw;
-                }
-                catch (Exception)
-                {
-                }
+                return false;
             }
 
-            if (dockPanel == null)
+            try
             {
-                Type? editorType = null;
-                editorType = GetEditorTypeForPropertyType(property.PropertyType);
-                if (editorType != null)
+                DockPanel? createdPanel = null;
+                var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+                if (editorAttr?.EditorType != null)
                 {
                     try
                     {
-                        var editor = GetOrCreateEditor(editorType);
-                        dockPanel = editor.GenProperties(property, obj);
-                    }
-                    catch (NotSupportedException)
-                    {
-                        throw;
+                        var editor = GetOrCreateEditor(editorAttr.EditorType);
+                        createdPanel = editor.GenProperties(property, obj);
                     }
                     catch (Exception)
                     {
-
                     }
                 }
-                else
+
+                if (createdPanel == null)
                 {
-                    TryCreateNestedDockPanel(property, obj, visited, out dockPanel);
+                    var editorType = GetEditorTypeForPropertyType(property.PropertyType);
+                    if (editorType != null)
+                    {
+                        try
+                        {
+                            var editor = GetOrCreateEditor(editorType);
+                            createdPanel = editor.GenProperties(property, obj);
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                    else
+                    {
+                        TryCreateNestedDockPanel(property, obj, visited, out createdPanel);
+                    }
                 }
-            }
 
-            if (dockPanel == null)
+                if (createdPanel == null)
+                {
+                    return false;
+                }
+
+                createdPanel.Margin = new Thickness(0, 0, 0, 5);
+                createdPanel.Tag = property;
+                ApplyVisibilityBinding(createdPanel, property, obj);
+                dockPanel = createdPanel;
+                return true;
+            }
+            catch
             {
-                throw new NotSupportedException($"No property editor registered for property '{property.Name}' of type '{property.PropertyType.FullName}'.");
+                return false;
             }
-
-            dockPanel.Margin = new Thickness(0, 0, 0, 5);
-            dockPanel.Tag = property;
-            ApplyVisibilityBinding(dockPanel, property, obj);
-            return dockPanel;
         }
 
         internal static bool TryCreateNestedPropertyPanel(PropertyInfo property, object obj, out StackPanel nestedPanel)
@@ -664,15 +674,9 @@ namespace ColorVision.UI
 
                     foreach (var property in categoryGroup.Value)
                     {
-                        try
+                        if (TryCreatePropertyDockPanel(property, obj, visited, out var dockPanel))
                         {
-                            stackPanel.Children.Add(GenProperties(property, obj, visited));
-                        }
-                        catch (NotSupportedException)
-                        {
-                        }
-                        catch (Exception)
-                        {
+                            stackPanel.Children.Add(dockPanel);
                         }
                     }
 

@@ -262,24 +262,18 @@ namespace ColorVision.UI
 
         private bool TryAddPropertyEditor(object source, PropertyInfo property, StackPanel stackPanel, PropertyTreeNode treeNode)
         {
-            try
+            if (PropertyEditorHelper.HasEditorForProperty(property))
             {
-                if (!PropertyEditorHelper.HasEditorForProperty(property) && TryAddNestedPropertyEditor(source, property, stackPanel, treeNode))
+                if (PropertyEditorHelper.TryCreatePropertyDockPanel(property, source, out var dockPanel))
                 {
+                    stackPanel.Children.Add(dockPanel);
                     return true;
                 }
 
-                stackPanel.Children.Add(PropertyEditorHelper.GenProperties(property, source));
-                return true;
-            }
-            catch (NotSupportedException)
-            {
                 return TryAddNestedPropertyEditor(source, property, stackPanel, treeNode);
             }
-            catch (Exception)
-            {
-                return false;
-            }
+
+            return TryAddNestedPropertyEditor(source, property, stackPanel, treeNode);
         }
 
         private bool TryAddNestedPropertyEditor(object source, PropertyInfo property, StackPanel stackPanel, PropertyTreeNode treeNode)
