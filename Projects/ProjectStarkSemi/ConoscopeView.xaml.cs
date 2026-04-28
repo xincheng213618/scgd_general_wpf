@@ -1,8 +1,6 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -13,9 +11,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using log4net;
 using Microsoft.Win32;
 
@@ -29,7 +25,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -41,13 +36,8 @@ using System.Windows.Threading;
 
 namespace ProjectStarkSemi
 {
-    public class ConoscopeWindowConfig : WindowConfig
-    {
-        public static ConoscopeWindowConfig Instance => ConfigService.Instance.GetRequiredService<ConoscopeWindowConfig>();
-    }
-
     /// <summary>
-    /// ConoscopeWindow.xaml 的交互逻辑
+    /// ConoscopeView.xaml 的交互逻辑
     /// </summary>
     public partial class ConoscopeView : UserControl, IDisposable
     {
@@ -55,9 +45,6 @@ namespace ProjectStarkSemi
 
         internal DockLayoutManager? LayoutManager { get; private set; }
         private ThemeChangedHandler? themeChangedHandler;
-
-        private MVSViewWindow? observationCameraWindow;
-
 
         // Polar angle line management
         private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
@@ -80,6 +67,7 @@ namespace ProjectStarkSemi
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
         public ConoscopeModelProfile CurrentModelProfile => ConoscopeConfig.CurrentModelProfile;
+        public string FileName => Filename;
 
         private void RefreshReferenceLineProfileBinding()
         {
@@ -90,18 +78,6 @@ namespace ProjectStarkSemi
 
         private void RefreshModelDependentUi()
         {
-            if (tbCurrentModel != null)
-            {
-                tbCurrentModel.Text = CurrentModelProfile.DisplayName;
-            }
-
-            if (btnOpenObservationCamera != null)
-            {
-                btnOpenObservationCamera.Visibility = CurrentModelProfile.HasObservationCamera
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            }
-
             RefreshReferenceLineProfileBinding();
             RefreshQuickControlsFromAxisParam();
             SetReferencePlotLimits();
@@ -148,19 +124,12 @@ namespace ProjectStarkSemi
                 LayoutManager.ResetLayout();
             }
 
-            MenuManager.GetInstance().LoadMenuForWindow("Conoscope", menu);
-
-
             RefreshReferenceLineProfileBinding();
 
-
-            cbModelType.ItemsSource = Enum.GetValues(typeof(ConoscopeModelType));
             this.DataContext = ConoscopeManager.GetInstance();
             SelectComboBoxItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
             RefreshQuickControlsFromAxisParam();
             cbFilterType_SelectionChanged(cbFilterType, new SelectionChangedEventArgs(Selector.SelectionChangedEvent, new List<object>(), new List<object>()));
-
-            var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
 
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -264,7 +233,6 @@ namespace ProjectStarkSemi
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
         {
-            if (tbCurrentModel == null) return;
             RefreshModelDependentUi();
         }
 
@@ -286,22 +254,6 @@ namespace ProjectStarkSemi
             plot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
 
             plot.Refresh();
-        }
-
-
-        private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (cbModelType.SelectedItem is ConoscopeModelType conoscopeModelType)
-            {
-                ConoscopeConfig.CurrentModel = conoscopeModelType;
-            }
-        }
-
-
-        private void btnOpenObservationCamera_Click(object sender, RoutedEventArgs e)
-        {
-            observationCameraWindow = new MVSViewWindow();
-            observationCameraWindow.Show();
         }
 
         private void cbFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -455,17 +407,6 @@ namespace ProjectStarkSemi
         public OpenCvSharp.Mat? XMat { get; set; }
         public OpenCvSharp.Mat? YMat { get; set; }
         public OpenCvSharp.Mat? ZMat { get; set; }
-
-        private void OpenFile_Click(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string filename = openFileDialog.FileName;
-                OpenConoscope(filename);
-            }       
-        }
 
         string Filename = string.Empty;
         public void OpenConoscope(string filename)
@@ -1045,6 +986,11 @@ namespace ProjectStarkSemi
         /// </summary>
         private void btnExportAngleMode_Click(object sender, RoutedEventArgs e)
         {
+            ExportAngleMode();
+        }
+
+        public void ExportAngleMode()
+        {
             try
             {
                 if (currentBitmapSource == null)
@@ -1083,6 +1029,11 @@ namespace ProjectStarkSemi
         /// 按极角模式导出按钮点击事件
         /// </summary>
         private void btnExportCircleMode_Click(object sender, RoutedEventArgs e)
+        {
+            ExportCircleMode();
+        }
+
+        public void ExportCircleMode()
         {
             try
             {
@@ -1423,6 +1374,11 @@ namespace ProjectStarkSemi
         /// 高级导出按钮点击事件
         /// </summary>
         private void btnAdvancedExport_Click(object sender, RoutedEventArgs e)
+        {
+            AdvancedExport();
+        }
+
+        public void AdvancedExport()
         {
             try
             {

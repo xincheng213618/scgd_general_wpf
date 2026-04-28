@@ -19,7 +19,6 @@ namespace ProjectStarkSemi.Layout
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DockLayoutManager));
 
-        private const int DefaultControlPanelWidth = 320;
         private const int DefaultRightPanelWidth = 600;
         private const int DefaultTopPaneHeight = 320;
         private const int DefaultReferencePlotHeight = 320;
@@ -117,13 +116,6 @@ namespace ProjectStarkSemi.Layout
                 var defaultLayout = new LayoutRoot();
                 var mainPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
 
-                var leftGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultControlPanelWidth) };
-                var leftPane = new LayoutAnchorablePane();
-                var controlPanel = CreateAnchorable("ControlPanel", "控制面板", canClose: false);
-                leftPane.Children.Add(controlPanel);
-                leftGroup.Children.Add(leftPane);
-                mainPanel.Children.Add(leftGroup);
-
                 var docGroup = new LayoutDocumentPaneGroup();
                 var docPane = new LayoutDocumentPane();
                 var imageDoc = new LayoutDocument
@@ -160,7 +152,6 @@ namespace ProjectStarkSemi.Layout
 
                 defaultLayout.RootPanel = mainPanel;
                 _dockingManager.Layout = defaultLayout;
-                controlPanel.ToggleAutoHide();
                 settingAnchorable.IsSelected = true;
                 referenceAnchorable.IsSelected = true;
 
@@ -220,7 +211,7 @@ namespace ProjectStarkSemi.Layout
                 {
                     var pane = new LayoutAnchorablePane();
                     pane.Children.Add(newAnchorable);
-                    var group = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultControlPanelWidth) };
+                    var group = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultRightPanelWidth) };
                     group.Children.Add(pane);
                     _dockingManager.Layout.RootPanel.Children.Add(group);
                 }

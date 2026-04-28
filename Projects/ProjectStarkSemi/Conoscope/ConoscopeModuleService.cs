@@ -37,6 +37,15 @@ namespace ProjectStarkSemi.Conoscope
             }
         }
 
+        public static void Activate(ConoscopeView view)
+        {
+            CleanupViews();
+            if (Views.Any(item => item.TryGetTarget(out var target) && ReferenceEquals(target, view)))
+            {
+                ActiveView = view;
+            }
+        }
+
         public static void RefreshAllConoscopeConfiguration()
         {
             CleanupViews();
@@ -111,7 +120,7 @@ namespace ProjectStarkSemi.Conoscope
             {
                 if (layoutDocument.IsActive)
                 {
-                    ActiveView = view;
+                    Activate(view);
                     WorkspaceManager.OnContentIdSelected(filePath);
                 }
             };
@@ -144,7 +153,7 @@ namespace ProjectStarkSemi.Conoscope
             {
                 if (layoutDocument.IsActive)
                 {
-                    ActiveView = view;
+                    Activate(view);
                 }
             };
             layoutDocument.Closing += (s, e) => view.Dispose();
@@ -157,11 +166,9 @@ namespace ProjectStarkSemi.Conoscope
 
         private static void OpenStandalone(string? filePath)
         {
-            ConoscopeWindow window = new ConoscopeWindow();
-            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
-            {
-                window.OpenConoscope(filePath);
-            }
+            ConoscopeWindow window = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath)
+                ? new ConoscopeWindow(filePath)
+                : new ConoscopeWindow();
 
             window.Show();
         }

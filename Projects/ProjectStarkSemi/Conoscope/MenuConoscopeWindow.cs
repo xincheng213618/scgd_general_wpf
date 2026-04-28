@@ -10,7 +10,8 @@ namespace ProjectStarkSemi.Conoscope
 
         public override void Execute()
         {
-            ConoscopeModuleService.OpenModule();
+            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
+            conoscopeWindow.Show();
         }
     }
 }
