@@ -1085,11 +1085,13 @@ namespace ProjectKB
                 string searchtext = textBox.Text;
                 if (string.IsNullOrWhiteSpace(searchtext))
                 {
+                    filteredResults = new List<ISearch>();
+                    ListViewSearch.ItemsSource = null;
+                    ListViewSearch.SelectedIndex = -1;
                     SearchPopup.IsOpen = false;
                 }
                 else
                 {
-                    SearchPopup.IsOpen = true;
                     var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
 
                     filteredResults = Searches
@@ -1104,49 +1106,64 @@ namespace ProjectKB
                     if (filteredResults.Count > 0)
                     {
                         ListViewSearch.SelectedIndex = 0;
+                        SearchPopup.IsOpen = true;
+                    }
+                    else
+                    {
+                        ListViewSearch.SelectedIndex = -1;
+                        SearchPopup.IsOpen = false;
                     }
                 }
             }
+        }
+
+        private void ExecuteSelectedSearchResult()
+        {
+            int selectedIndex = ListViewSearch.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= filteredResults.Count)
+                return;
+
+            ISearch selectedSearch = filteredResults[selectedIndex];
+            Searchbox.Text = string.Empty;
+            SearchPopup.IsOpen = false;
+            selectedSearch.Command?.Execute(this);
         }
 
         private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Enter)
             {
-                if (ListViewSearch.SelectedIndex > -1)
-                {
-                    Searchbox.Text = string.Empty;
-                    filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-                }
+                e.Handled = true;
+                ExecuteSelectedSearchResult();
             }
             if (e.Key == System.Windows.Input.Key.Up)
             {
+                e.Handled = true;
                 if (ListViewSearch.SelectedIndex > 0)
+                {
                     ListViewSearch.SelectedIndex -= 1;
+                    ListViewSearch.ScrollIntoView(filteredResults[ListViewSearch.SelectedIndex]);
+                }
             }
             if (e.Key == System.Windows.Input.Key.Down)
             {
+                e.Handled = true;
                 if (ListViewSearch.SelectedIndex < filteredResults.Count - 1)
+                {
                     ListViewSearch.SelectedIndex += 1;
+                    ListViewSearch.ScrollIntoView(filteredResults[ListViewSearch.SelectedIndex]);
+                }
+            }
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                e.Handled = true;
+                SearchPopup.IsOpen = false;
             }
         }
 
         private void ListViewSearch_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ListViewSearch.SelectedIndex > -1)
-            {
-                Searchbox.Text = string.Empty;
-                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-            }
-        }
-
-        private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ListViewSearch.SelectedIndex > -1)
-            {
-                Searchbox.Text = string.Empty;
-                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-            }
+            ExecuteSelectedSearchResult();
         }
 
         private void UnSNlocked_Click(object sender, RoutedEventArgs e)

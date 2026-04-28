@@ -81,12 +81,8 @@ namespace ProjectKB
             var darkestByLc = item.Items.OrderBy(x => x.Lc).FirstOrDefault();
             var brightestByLc = item.Items.OrderByDescending(x => x.Lc).FirstOrDefault();
 
-            int lvFailures = recipe.EnableKeyLvLimit
-                ? item.Items.Count(key => key.Lv < recipe.MinKeyLv || key.Lv > recipe.MaxKeyLv)
-                : 0;
-            int localContrastFailures = recipe.EnableKeyLcLimit
-                ? item.Items.Count(key => key.Lc < recipe.MinKeyLc / 100 || key.Lc > recipe.MaxKeyLc / 100)
-                : 0;
+            int lvFailures = item.Items.Count(key => key.Lv < recipe.MinKeyLv || key.Lv > recipe.MaxKeyLv);
+            int localContrastFailures = item.Items.Count(key => key.Lc < recipe.MinKeyLc / 100 || key.Lc > recipe.MaxKeyLc / 100);
 
             if (item.SN.Contains(',') || item.SN.Contains('"'))
             {
