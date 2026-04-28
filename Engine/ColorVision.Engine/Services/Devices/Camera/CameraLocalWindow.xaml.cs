@@ -1,3 +1,4 @@
+using ColorVision.Themes.Controls;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
@@ -9,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -102,6 +104,41 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 MessageBox.Show("Fail");
             }
+        }
+        private bool _isRefreshing;
+
+        private void GetAllID_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isRefreshing)
+            {
+                MessageBox.Show("正在遍历支持的相机模式", "ColorVision");
+                return; // 防止重复点击
+            }
+            _isRefreshing = true;
+
+            // 异步执行，避免阻塞UI线程
+            Task.Run((Action)(() =>
+            {
+                int bufferSize = 102400; // 10KB 缓冲区，视你相机的数量而定
+                StringBuilder sbJson = new StringBuilder(bufferSize);
+
+                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5(sbJson, bufferSize);
+                _isRefreshing = false;
+                // 回到UI线程
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    log.Info($"GetAllCameraIDMD5 返回值: {ret}");
+                    if (ret == 1)
+                    {
+                        string cameraIdsMd5 = sbJson.ToString();
+                        MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                });
+            }));
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -727,8 +764,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void Camera_MenuItem_Click(object sender, RoutedEventArgs e)
         {
         }
-
-
 
         private void Channels_MenuItem_Click(object sender, RoutedEventArgs e)
         {
