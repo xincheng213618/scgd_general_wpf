@@ -1,4 +1,5 @@
 using cvColorVision;
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -26,6 +27,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public partial class CameraLocalWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(CameraLocalWindow));
+
         public byte[] rawArray;
         public byte[] srcrawArray;
         public UInt32 ImgWid = 5544, ImgHei = 3684;
@@ -56,10 +59,26 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             formcfg = new FormCfg(m_hCamHandle, strPathSysCfg);
 
-            string szText = "";
             cb_CM_ID.Items.Clear();
+            cb_CM_TYPE.SelectedIndex = (int)Device.Config.CameraModel;
+            cb_CM_MODE.SelectedIndex = (int)Device.Config.CameraMode;
+            cb_get_mode.SelectedIndex = (int)TakeImageMode.Live;
+            cb_bpp.SelectedIndex = 0; // "8"
+
+            btn_close.IsEnabled = false;
+            btn_Meas.IsEnabled = false;
+            btn_MeasTif.IsEnabled = false;
+            button1.IsEnabled = false;
+            btn_CalAutoExp.IsEnabled = true;
+        }
+
+        private void GetID_Click(object sender, RoutedEventArgs e)
+        {
+            string szText = "";
+
             if (cvCameraCSLib.GetAllCameraIDV1(m_eCameraMdl, ref szText))
             {
+                log.Info(szText);
                 JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
 
                 if (jObject["ID"] != null)
@@ -79,18 +98,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                 }
             }
-
-
-            cb_CM_TYPE.SelectedIndex = (int)Device.Config.CameraModel;
-            cb_CM_MODE.SelectedIndex = (int)Device.Config.CameraMode;
-            cb_get_mode.SelectedIndex = (int)TakeImageMode.Live;
-            cb_bpp.SelectedIndex = 0; // "8"
-
-            btn_close.IsEnabled = false;
-            btn_Meas.IsEnabled = false;
-            btn_MeasTif.IsEnabled = false;
-            button1.IsEnabled = false;
-            btn_CalAutoExp.IsEnabled = true;
+            else
+            {
+                MessageBox.Show("Fail");
+            }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -716,6 +727,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void Camera_MenuItem_Click(object sender, RoutedEventArgs e)
         {
         }
+
+
 
         private void Channels_MenuItem_Click(object sender, RoutedEventArgs e)
         {
