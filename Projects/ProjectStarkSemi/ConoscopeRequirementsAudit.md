@@ -17,7 +17,7 @@
 
 | 模块 | 状态 | 说明 |
 |---|---|---|
-| 界面功能分区 | 部分实现 | 现有功能已分散存在，但还没有按“相机/分析/文件/预处理/标定参数”清晰重组 |
+| 界面功能分区 | 部分实现 | 已重构为AvalonDock面板系统（SettingPanel/ChannelPanel/ReferencePlot/ControlPanel），但尚未按”相机/分析/文件/预处理/标定参数”分区 |
 | 型号选择 VA60/VA80 | 已实现 | 已有型号枚举、切换与角度范围联动 |
 | 观察相机界面 | 部分实现 | 已能打开独立窗口，但缺少尺寸圈选、参数联动、仅 VA60 显示等约束 |
 | 图像 3D 图显示 | 未实现 | 当前只有 2D 图像与伪彩显示 |
@@ -29,8 +29,8 @@
 | 色域计算 | 未实现 | 无 RGB 记录、无色域公式与标准色域覆盖计算 |
 | 关注点设置 | 未实现 | 只有参考线/圆辅助图形，没有完整关注点系统 |
 | 色品图显示 | 未实现 | 无 1931/1976 色品图显示 |
-| XYZ/xy/对比度/色差/色域显示 | 部分实现 | 已有 RGB/XYZ 通道切换，无 xy/对比度/色差/色域 |
-| 数据导出 | 部分实现 | 已支持多通道与高级导出，但缺少 xy/uv/对比度/色差/色域按计算状态导出 |
+| XYZ/xy/对比度/色差/色域显示 | 部分实现 | 已有 RGB/XYZ 通道，ExportChannel已定义CieX/CieY(xy)和CieU/CieV(uv)，但无对比度/色差/色域 |
+| 数据导出 | 部分实现 | 已支持多通道与高级导出（含CieX/CieY/CieU/CieV），但缺少对比度/色差/色域按计算状态导出 |
 
 ---
 
@@ -48,15 +48,25 @@
 ### 当前状态
 **部分实现**
 
-当前界面中这些内容大多已经存在，但主要是“功能存在、结构未完成分区”：
+代码已重构为基于AvalonDock的面板系统，由`Layout/DockLayoutManager.cs`管理布局持久化。当前面板结构：
+
+| 面板 | ContentId | 内容 |
+|---|---|---|
+| 图像显示 | ImageView | 锥光镜图像显示（LayoutDocument，不可关闭） |
+| 设置面板 | SettingPanel | 模板选择、参考线参数编辑、标定参数 |
+| 通道与导出 | ChannelPanel | 通道勾选、导出按钮 |
+| 参考曲线 | ReferencePlot | 方位角/极角分布曲线 |
+| 控制面板 | ControlPanel | 其他控制功能 |
 
 | 分区 | 当前情况 | 代码位置 |
 |---|---|---|
-| 相机 | 有测量相机、观察相机、模板选择、取图入口 | `Projects/ProjectStarkSemi/ConoscopeWindow.xaml` |
-| 文件 | 有打开、导出、当前截线导出、高级导出 | `ConoscopeWindow.xaml.cs` 中导出相关方法 |
-| 预处理 | 已有滤波类型和参数 | `ConoscopeWindow.xaml.cs:423`, `:537` |
-| 标定参数 | 有模板选择、参考线参数编辑 | `ConoscopeWindow.xaml.cs:135`, `GridSetting` |
-| 分析 | 当前只有方位角/极角曲线与导出，不包含色差/对比度/色域 | `wpfPlotDiameterLine`, `wpfPlotRCircle` |
+| 相机 | 有测量相机、观察相机、模板选择、取图入口 | `ConoscopeWindow.xaml` |
+| 文件 | 有打开、导出、当前截线导出、高级导出 | `Conoscope/ConoscopeExportService.cs`, `ConoscopeWindow.xaml.cs` |
+| 预处理 | 已有滤波类型和参数 | `Conoscope/ImageFilterType.cs` |
+| 标定参数 | 有模板选择、参考线参数编辑 | `ConoscopeManager.cs`, `ConoscopeConfig.cs` |
+| 分析 | 当前只有方位角/极角曲线与导出，不包含色差/对比度/色域 | `ConoscopeView.xaml.cs` 中图表逻辑 |
+
+布局菜单功能已实现（`Menus/LayoutMenuItems.cs`）：保存/应用/重置布局，切换各面板显隐。
 
 ### 结论
 需要做的是**重新组织界面结构**，不是从零做全部功能。
@@ -297,8 +307,8 @@
 | X | 已实现 | 通道勾选 |
 | Y | 已实现 | 通道勾选 |
 | Z | 已实现 | 通道勾选 |
-| xy | 未实现 | 无计算和显示 |
-| uv | 未实现 | 无显示 |
+| xy (CieX/CieY) | 部分实现 | ExportChannel已定义，导出支持；显示通道切换尚未实现 |
+| uv (CieU/CieV) | 部分实现 | ExportChannel已定义，导出支持；显示通道切换尚未实现 |
 | 对比度 | 未实现 | 无结果通道 |
 | 色差 | 未实现 | 无结果通道 |
 | 色域 | 未实现 | 无结果通道 |
@@ -326,20 +336,20 @@
 | 当前截线导出 | 已实现 |
 | 高级导出弹窗 | 已实现 |
 | R/G/B/X/Y/Z 通道导出 | 已实现 |
-| 按不同模式导出 | 已实现 |
+| xy (CieX/CieY) 导出 | 已实现（`ExportChannel.CieX`, `ExportChannel.CieY`） |
+| uv (CieU/CieV) 导出 | 已实现（`ExportChannel.CieU`, `ExportChannel.CieV`） |
+| 按不同模式导出（Angle/Circle/CrossSection） | 已实现 |
 
 ### 未实现
 | 项目 | 当前情况 |
 |---|---|
-| xy 导出 | 未实现 |
-| uv 导出 | 未实现 |
 | 对比度导出 | 未实现 |
 | 色差导出 | 未实现 |
 | 色域导出 | 未实现 |
 | 按计算状态控制导出字段 | 未实现 |
 | 用户勾选导出数据项 | 当前不完整 |
 
-相关代码：`AdvancedExportDialog.xaml/.cs`、`btnExportAngleMode_Click`、`btnExportCircleMode_Click`
+相关代码：`Conoscope/ConoscopeExportService.cs`、`AdvancedExportDialog.xaml/.cs`
 
 ---
 
@@ -356,8 +366,13 @@
 | 方位角 / 极角图表 | 已有 | `wpfPlotDiameterLine`, `wpfPlotRCircle` |
 | 模板选择 | 已有 | `ComboxCalibrationTemplate` |
 | 预处理滤波 | 已有 | `ImageFilterType`, 相关 UI 和应用逻辑 |
-| 基础导出 / 高级导出 | 已有 | `AdvancedExportDialog` |
+| 基础导出 / 高级导出 | 已有 | `ConoscopeExportService`, `AdvancedExportDialog` |
 | RGB / XYZ 通道显示 | 已有 | 通道勾选和配置 |
+| xy / uv 通道导出 | 已有 | `ExportChannel.CieX`, `CieY`, `CieU`, `CieV` |
+| 布局持久化 | 已有 | `DockLayoutManager`（保存/加载/重置） |
+| 工作区标签页集成 | 已有 | `ConoscopeModuleService` |
+| 配置编辑窗口 | 已有 | `ConoscopeConfigWindow` |
+| 布局菜单项 | 已有 | `Menus/LayoutMenuItems.cs` |
 
 ---
 
@@ -400,7 +415,7 @@
 - 滤波预处理
 - 多种导出
 
-但你这次列的需求里，真正“已经完整做完”的主要只有：
+但经过重构后，已经完整实现的主要有：
 
 | 已完整实现项 |
 |---|
@@ -409,6 +424,11 @@
 | 基础预处理滤波 |
 | 方位角 / 极角分析与导出 |
 | R/G/B/X/Y/Z 通道显示 |
+| xy (CieX/CieY) / uv (CieU/CieV) 通道导出 |
+| AvalonDock可拖拽面板布局系统 |
+| 布局持久化（保存/加载/重置） |
+| 工作区标签页集成 |
+| 配置编辑窗口 |
 
 其余多数属于：
 
