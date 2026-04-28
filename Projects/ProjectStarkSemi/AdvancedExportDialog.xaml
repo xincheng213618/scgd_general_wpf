@@ -42,6 +42,7 @@
                         <CheckBox x:Name="chkChannelCieY" Content="y 色度" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelCieU" Content="u 色度" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelCieV" Content="v 色度" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelColorDifference" Content="色差 Δuv" IsChecked="False" Margin="5"/>
                         <TextBlock Text="提示: 每个选中的通道将生成一个单独的文件" 
                                    Margin="5" FontSize="11" Foreground="Gray"/>
                     </StackPanel>

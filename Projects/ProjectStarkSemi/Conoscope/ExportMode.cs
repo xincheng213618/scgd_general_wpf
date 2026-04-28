@@ -1,24 +1,6 @@
 namespace ProjectStarkSemi.Conoscope
 {
     /// <summary>
-    /// 导出模式枚举
-    /// </summary>
-    public enum ExportMode
-    {
-        /// <summary>
-        /// 按角度导出 (0° 到 180°)
-        /// </summary>
-        Angle,
-
-        /// <summary>
-        /// 按同心圆导出 (从中心点到边缘)
-        /// VA60: 60个同心圆 (0-60°)
-        /// VA80: 80个同心圆 (0-80°)
-        /// </summary>
-        Circle
-    }
-
-    /// <summary>
     /// 导出通道枚举
     /// </summary>
     public enum ExportChannel
@@ -56,6 +38,22 @@ namespace ProjectStarkSemi.Conoscope
         /// <summary>
         /// CIE 1976 v色度坐标
         /// </summary>
-        CieV
+        CieV,
+
+        /// <summary>
+        /// CIE 1976 uv 色差
+        /// </summary>
+        ColorDifference
+    }
+
+    public enum ColorDifferenceReferenceMode
+    {
+        D65,
+        D50,
+        A,
+        D75,
+        ImageCenter,
+        Custom,
+        ReferenceImage
     }
 }

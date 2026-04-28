@@ -18,6 +18,7 @@ namespace ProjectStarkSemi.Conoscope
         public required double MaxAngle { get; init; }
         public required double PixelsPerDegree { get; init; }
         public required Func<int, int, ConoscopeXyzValue> ReadXyz { get; init; }
+        public Func<int, int, double>? ReadColorDifference { get; init; }
     }
 
     public static class ConoscopeExportService
@@ -82,8 +83,7 @@ namespace ProjectStarkSemi.Conoscope
                 double radiusPixels = theta * context.PixelsPerDegree;
                 int ix = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
                 int iy = ClampToInt((int)Math.Round(context.Center.Y + radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
-                ConoscopeXyzValue xyz = context.ReadXyz(ix, iy);
-                double value = ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
+                double value = ReadExportValue(channel, context, ix, iy);
                 writer.WriteLine($"{theta},{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
             }
         }
@@ -100,8 +100,7 @@ namespace ProjectStarkSemi.Conoscope
                 double radians = (90 - theta) * Math.PI / 180.0;
                 int ix = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
                 int iy = ClampToInt((int)Math.Round(context.Center.Y + radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
-                ConoscopeXyzValue xyz = context.ReadXyz(ix, iy);
-                double value = ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
+                double value = ReadExportValue(channel, context, ix, iy);
                 writer.WriteLine($"{theta},{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
             }
         }
@@ -118,7 +117,7 @@ namespace ProjectStarkSemi.Conoscope
                     double radiusPixels = theta * context.PixelsPerDegree;
                     int ix = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
                     int iy = ClampToInt((int)Math.Round(context.Center.Y + radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
-                    line.Samples.Add(new ExportSample(theta, context.ReadXyz(ix, iy)));
+                    line.Samples.Add(new ExportSample(theta, ix, iy, context.ReadXyz(ix, iy)));
                 }
 
                 lines.Add(line);
@@ -139,7 +138,7 @@ namespace ProjectStarkSemi.Conoscope
                     double radians = (90 - theta) * Math.PI / 180.0;
                     int ix = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
                     int iy = ClampToInt((int)Math.Round(context.Center.Y + radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
-                    circle.Samples.Add(new ExportSample(theta, context.ReadXyz(ix, iy)));
+                    circle.Samples.Add(new ExportSample(theta, ix, iy, context.ReadXyz(ix, iy)));
                 }
 
                 circles.Add(circle);
@@ -179,8 +178,8 @@ namespace ProjectStarkSemi.Conoscope
                 {
                     if (line.Samples.Count > index)
                     {
-                        ConoscopeXyzValue xyz = line.Samples[index].Xyz;
-                        double value = ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
+                        ExportSample sample = line.Samples[index];
+                        double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
                         dataLine.Append($",{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
                     }
                     else
@@ -199,6 +198,26 @@ namespace ProjectStarkSemi.Conoscope
             writer.WriteLine($"# Export Channel: {channel}");
             writer.WriteLine($"# Model: {context.ModelName}");
             writer.WriteLine($"# Max Angle: {context.MaxAngle}°");
+        }
+
+        private static double ReadExportValue(ExportChannel channel, ConoscopeExportContext context, int imageX, int imageY)
+        {
+            return ReadExportValue(channel, context, imageX, imageY, context.ReadXyz(imageX, imageY));
+        }
+
+        private static double ReadExportValue(ExportChannel channel, ConoscopeExportContext context, int imageX, int imageY, ConoscopeXyzValue xyz)
+        {
+            if (channel == ExportChannel.ColorDifference)
+            {
+                if (context.ReadColorDifference == null)
+                {
+                    throw new InvalidOperationException("色差通道需要先设置色差基准");
+                }
+
+                return context.ReadColorDifference(imageX, imageY);
+            }
+
+            return ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
         }
 
         private static int ClampToInt(int value, int min, int max)
@@ -227,6 +246,6 @@ namespace ProjectStarkSemi.Conoscope
             }
         }
 
-        private readonly record struct ExportSample(double Position, ConoscopeXyzValue Xyz);
+        private readonly record struct ExportSample(double Position, int ImageX, int ImageY, ConoscopeXyzValue Xyz);
     }
 }

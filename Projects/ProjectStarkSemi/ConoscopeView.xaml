@@ -52,6 +52,7 @@
                                                     <ComboBoxItem Content="y 色度" Tag="CieY"/>
                                                     <ComboBoxItem Content="u 色度" Tag="CieU"/>
                                                     <ComboBoxItem Content="v 色度" Tag="CieV"/>
+                                                    <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
                                                 </ComboBox>
                                                 <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                                 <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
@@ -86,6 +87,32 @@
                                                 <TextBlock Text="ND光圈:" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                                 <ComboBox x:Name="cbQuickNDAperture" MinWidth="90" SelectionChanged="QuickNDAperture_SelectionChanged"/>
                                             </WrapPanel>
+                                        </StackPanel>
+                                    </GroupBox>
+
+                                    <GroupBox Header="色差计算" Margin="0,0,0,6">
+                                        <StackPanel>
+                                            <WrapPanel Margin="0,4,0,4">
+                                                <TextBlock Text="基准:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                                <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
+                                                    <ComboBoxItem Content="D65 光源" Tag="D65"/>
+                                                    <ComboBoxItem Content="D50 光源" Tag="D50"/>
+                                                    <ComboBoxItem Content="A 光源" Tag="A"/>
+                                                    <ComboBoxItem Content="D75 光源" Tag="D75"/>
+                                                    <ComboBoxItem Content="图像中心 50px" Tag="ImageCenter"/>
+                                                    <ComboBoxItem Content="自定义坐标" Tag="Custom"/>
+                                                    <ComboBoxItem Content="实测基准图" Tag="ReferenceImage"/>
+                                                </ComboBox>
+                                                <Button x:Name="btnSaveColorDifferenceReference" Content="保存色差基准图" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
+                                                <Button Content="计算色差" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
+                                            </WrapPanel>
+                                            <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
+                                                <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                                <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                                <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                                                <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                            </WrapPanel>
+                                            <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </GroupBox>
 
@@ -173,6 +200,7 @@
                                                 <ComboBoxItem Content="y色度" Tag="CieY"/>
                                                 <ComboBoxItem Content="u色度" Tag="CieU"/>
                                                 <ComboBoxItem Content="v色度" Tag="CieV"/>
+                                                <ComboBoxItem Content="色差Δuv" Tag="ColorDifference"/>
                                             </ComboBox>
                                             <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
                                             <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4"/>

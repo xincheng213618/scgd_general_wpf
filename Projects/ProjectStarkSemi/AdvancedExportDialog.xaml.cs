@@ -47,6 +47,7 @@ namespace ProjectStarkSemi
                 if (chkChannelCieY.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieY);
                 if (chkChannelCieU.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieU);
                 if (chkChannelCieV.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieV);
+                if (chkChannelColorDifference.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.ColorDifference);
 
                 if (Settings.Channels.Count == 0)
                 {

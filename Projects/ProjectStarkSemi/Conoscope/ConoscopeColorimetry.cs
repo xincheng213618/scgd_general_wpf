@@ -3,6 +3,7 @@ using System;
 namespace ProjectStarkSemi.Conoscope
 {
     public readonly record struct ConoscopeChromaticity(double x, double y, double u, double v, double Cct);
+    public readonly record struct ConoscopeUvReference(double U, double V);
 
     public static class ConoscopeColorimetry
     {
@@ -44,6 +45,11 @@ namespace ProjectStarkSemi.Conoscope
 
         public static double GetChannelValue(double X, double Y, double Z, ExportChannel channel)
         {
+            if (channel == ExportChannel.ColorDifference)
+            {
+                throw new InvalidOperationException("色差通道需要指定 uv 基准");
+            }
+
             if (channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV)
             {
                 ConoscopeChromaticity chromaticity = Calculate(X, Y, Z);
@@ -77,8 +83,81 @@ namespace ProjectStarkSemi.Conoscope
                 ExportChannel.CieY => CreateXyChannelMat(XMat, YMat, ZMat, YMat),
                 ExportChannel.CieU => CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0),
                 ExportChannel.CieV => CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0),
+                ExportChannel.ColorDifference => throw new InvalidOperationException("色差通道需要指定 uv 基准"),
                 _ => YMat.Clone()
             };
+        }
+
+        public static double CalculateColorDifference(double X, double Y, double Z, double referenceU, double referenceV)
+        {
+            ConoscopeChromaticity chromaticity = Calculate(X, Y, Z);
+            return CalculateColorDifferenceFromUv(chromaticity.u, chromaticity.v, referenceU, referenceV);
+        }
+
+        public static double CalculateColorDifferenceFromUv(double u, double v, double referenceU, double referenceV)
+        {
+            double deltaU = u - referenceU;
+            double deltaV = v - referenceV;
+            return Math.Sqrt(deltaU * deltaU + deltaV * deltaV);
+        }
+
+        public static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, double referenceU, double referenceV)
+        {
+            using OpenCvSharp.Mat uMat = CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0);
+            using OpenCvSharp.Mat vMat = CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0);
+            using OpenCvSharp.Mat referenceUMat = new OpenCvSharp.Mat(new OpenCvSharp.Size(uMat.Width, uMat.Height), uMat.Type(), OpenCvSharp.Scalar.All(referenceU));
+            using OpenCvSharp.Mat referenceVMat = new OpenCvSharp.Mat(new OpenCvSharp.Size(vMat.Width, vMat.Height), vMat.Type(), OpenCvSharp.Scalar.All(referenceV));
+            return CreateColorDifferenceMat(uMat, vMat, referenceUMat, referenceVMat);
+        }
+
+        public static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
+        {
+            using OpenCvSharp.Mat uMat = CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0);
+            using OpenCvSharp.Mat vMat = CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0);
+            return CreateColorDifferenceMat(uMat, vMat, referenceUMat, referenceVMat);
+        }
+
+        private static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat uMat, OpenCvSharp.Mat vMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
+        {
+            EnsureSameSize(uMat, referenceUMat, "u 基准图");
+            EnsureSameSize(vMat, referenceVMat, "v 基准图");
+
+            using OpenCvSharp.Mat referenceU = EnsureType(referenceUMat, uMat.Type());
+            using OpenCvSharp.Mat referenceV = EnsureType(referenceVMat, vMat.Type());
+            using OpenCvSharp.Mat deltaU = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat deltaV = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat deltaUSquared = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat deltaVSquared = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat sum = new OpenCvSharp.Mat();
+            OpenCvSharp.Mat result = new OpenCvSharp.Mat();
+
+            OpenCvSharp.Cv2.Subtract(uMat, referenceU, deltaU);
+            OpenCvSharp.Cv2.Subtract(vMat, referenceV, deltaV);
+            OpenCvSharp.Cv2.Multiply(deltaU, deltaU, deltaUSquared);
+            OpenCvSharp.Cv2.Multiply(deltaV, deltaV, deltaVSquared);
+            OpenCvSharp.Cv2.Add(deltaUSquared, deltaVSquared, sum);
+            OpenCvSharp.Cv2.Sqrt(sum, result);
+            return result;
+        }
+
+        private static void EnsureSameSize(OpenCvSharp.Mat source, OpenCvSharp.Mat reference, string referenceName)
+        {
+            if (source.Width != reference.Width || source.Height != reference.Height)
+            {
+                throw new InvalidOperationException($"{referenceName}尺寸与当前图像不一致");
+            }
+        }
+
+        private static OpenCvSharp.Mat EnsureType(OpenCvSharp.Mat source, OpenCvSharp.MatType targetType)
+        {
+            if (source.Type() == targetType)
+            {
+                return source.Clone();
+            }
+
+            OpenCvSharp.Mat converted = new OpenCvSharp.Mat();
+            source.ConvertTo(converted, targetType);
+            return converted;
         }
 
         private static OpenCvSharp.Mat CreateXyChannelMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, OpenCvSharp.Mat numerator)
@@ -127,13 +206,14 @@ namespace ProjectStarkSemi.Conoscope
                 ExportChannel.CieY => "y",
                 ExportChannel.CieU => "u",
                 ExportChannel.CieV => "v",
+                ExportChannel.ColorDifference => "Δuv",
                 _ => "Y"
             };
         }
 
         public static string FormatChannelValue(double value, ExportChannel channel)
         {
-            return channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV
+            return channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV or ExportChannel.ColorDifference
                 ? value.ToString("F6")
                 : value.ToString("F2");
         }

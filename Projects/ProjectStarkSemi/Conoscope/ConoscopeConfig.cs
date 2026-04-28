@@ -68,6 +68,15 @@ namespace ProjectStarkSemi.Conoscope
         public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
         private bool _ApplyFilterOnOpen = true;
 
+        public ColorDifferenceReferenceMode ColorDifferenceReferenceMode { get => _ColorDifferenceReferenceMode; set { _ColorDifferenceReferenceMode = value; OnPropertyChanged(); } }
+        private ColorDifferenceReferenceMode _ColorDifferenceReferenceMode = ColorDifferenceReferenceMode.D65;
+
+        public double ColorDifferenceCustomU { get => _ColorDifferenceCustomU; set { _ColorDifferenceCustomU = value; OnPropertyChanged(); } }
+        private double _ColorDifferenceCustomU = 0.1978;
+
+        public double ColorDifferenceCustomV { get => _ColorDifferenceCustomV; set { _ColorDifferenceCustomV = value; OnPropertyChanged(); } }
+        private double _ColorDifferenceCustomV = 0.4684;
+
 
         public ConoscopeConfig()
         {
