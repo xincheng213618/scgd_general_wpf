@@ -264,6 +264,11 @@ namespace ColorVision.UI
         {
             try
             {
+                if (!PropertyEditorHelper.HasEditorForProperty(property) && TryAddNestedPropertyEditor(source, property, stackPanel, treeNode))
+                {
+                    return true;
+                }
+
                 stackPanel.Children.Add(PropertyEditorHelper.GenProperties(property, source));
                 return true;
             }
@@ -279,33 +284,16 @@ namespace ColorVision.UI
 
         private bool TryAddNestedPropertyEditor(object source, PropertyInfo property, StackPanel stackPanel, PropertyTreeNode treeNode)
         {
-            if (property.PropertyType != typeof(object) && !typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
-            {
-                return false;
-            }
-
-            var nestedObj = property.GetValue(source);
-            if (nestedObj == null)
-            {
-                return false;
-            }
-
-            var nestedPanel = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-            if (!HasEditorContent(nestedPanel))
+            if (!PropertyEditorHelper.TryCreateNestedPropertyPanel(property, source, out var nestedPanel))
             {
                 return false;
             }
 
             stackPanel.Margin = new Thickness(5);
             stackPanel.Children.Add(nestedPanel);
-            treeNode.Children.Add(new PropertyTreeNode(property.Name, nestedPanel));
+            var rm = PropertyEditorHelper.GetResourceManager(source);
+            treeNode.Children.Add(new PropertyTreeNode(PropertyEditorHelper.GetDisplayName(rm, property), nestedPanel));
             return true;
-        }
-
-        private static bool HasEditorContent(StackPanel panel)
-        {
-            return panel.Children.OfType<Border>()
-                .Any(border => border.Child is StackPanel stackPanel && stackPanel.Children.Count > 1);
         }
 
         private void UpdateTreeViewVisibility()

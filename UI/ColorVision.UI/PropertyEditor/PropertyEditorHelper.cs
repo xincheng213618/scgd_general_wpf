@@ -95,6 +95,12 @@ namespace ColorVision.UI
             return editorTypes;
         }
 
+        internal static bool HasEditorForProperty(PropertyInfo property)
+        {
+            var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+            return editorAttr?.EditorType != null || GetEditorTypeForPropertyType(property.PropertyType) != null;
+        }
+
         public static T GetOrCreateEditor<T>() where T : IPropertyEditor, new()
         {
             var type = typeof(T);
@@ -311,8 +317,19 @@ namespace ColorVision.UI
 
         public static DockPanel GenProperties(PropertyInfo property, object obj)
         {
+            var visited = new HashSet<object>(ReferenceEqualityComparer.Instance) { obj };
+            return GenProperties(property, obj, visited);
+        }
+
+        private static DockPanel GenProperties(PropertyInfo property, object obj, HashSet<object> visited)
+        {
             ArgumentNullException.ThrowIfNull(property);
             ArgumentNullException.ThrowIfNull(obj);
+
+            if (property.GetIndexParameters().Length != 0)
+            {
+                throw new NotSupportedException($"Indexed property '{property.Name}' is not supported.");
+            }
 
             DockPanel? dockPanel = null;
             var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
@@ -322,6 +339,10 @@ namespace ColorVision.UI
                 {
                     var editor = GetOrCreateEditor(editorAttr.EditorType);
                     dockPanel = editor.GenProperties(property, obj);
+                }
+                catch (NotSupportedException)
+                {
+                    throw;
                 }
                 catch (Exception)
                 {
@@ -339,18 +360,137 @@ namespace ColorVision.UI
                         var editor = GetOrCreateEditor(editorType);
                         dockPanel = editor.GenProperties(property, obj);
                     }
+                    catch (NotSupportedException)
+                    {
+                        throw;
+                    }
                     catch (Exception)
                     {
 
                     }
                 }
+                else
+                {
+                    TryCreateNestedDockPanel(property, obj, visited, out dockPanel);
+                }
             }
 
-            if (dockPanel == null) return new DockPanel();
+            if (dockPanel == null)
+            {
+                throw new NotSupportedException($"No property editor registered for property '{property.Name}' of type '{property.PropertyType.FullName}'.");
+            }
+
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
             dockPanel.Tag = property;
             ApplyVisibilityBinding(dockPanel, property, obj);
             return dockPanel;
+        }
+
+        internal static bool TryCreateNestedPropertyPanel(PropertyInfo property, object obj, out StackPanel nestedPanel)
+        {
+            var visited = new HashSet<object>(ReferenceEqualityComparer.Instance) { obj };
+            return TryCreateNestedPropertyPanel(property, obj, visited, out nestedPanel);
+        }
+
+        private static bool TryCreateNestedDockPanel(PropertyInfo property, object obj, HashSet<object> visited, out DockPanel? dockPanel)
+        {
+            dockPanel = null;
+            if (!TryCreateNestedPropertyPanel(property, obj, visited, out var nestedPanel))
+            {
+                return false;
+            }
+
+            var rm = GetResourceManager(obj);
+            var label = CreateLabel(property, rm);
+            label.FontWeight = FontWeights.SemiBold;
+            label.Margin = new Thickness(0, 0, 0, 5);
+
+            nestedPanel.Margin = new Thickness(10, 0, 0, 0);
+
+            dockPanel = new DockPanel { LastChildFill = true };
+            DockPanel.SetDock(label, Dock.Top);
+            dockPanel.Children.Add(label);
+            dockPanel.Children.Add(nestedPanel);
+            return true;
+        }
+
+        private static bool TryCreateNestedPropertyPanel(PropertyInfo property, object obj, HashSet<object> visited, out StackPanel nestedPanel)
+        {
+            nestedPanel = new StackPanel();
+            if (!TryGetNestedPropertyValue(property, obj, visited, out var nestedValue))
+            {
+                return false;
+            }
+
+            nestedPanel = GenPropertyEditorControl(nestedValue, null, visited);
+            return HasEditorContent(nestedPanel);
+        }
+
+        private static bool TryGetNestedPropertyValue(PropertyInfo property, object obj, HashSet<object> visited, out object nestedValue)
+        {
+            nestedValue = null!;
+            if (!property.CanRead || property.GetIndexParameters().Length != 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                nestedValue = property.GetValue(obj)!;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (nestedValue == null || visited.Contains(nestedValue))
+            {
+                return false;
+            }
+
+            return CanGenerateNestedEditor(nestedValue.GetType());
+        }
+
+        private static bool CanGenerateNestedEditor(Type type)
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            if (!type.IsClass || type == typeof(string))
+            {
+                return false;
+            }
+
+            if (typeof(Delegate).IsAssignableFrom(type) || typeof(Type).IsAssignableFrom(type) || typeof(ResourceManager).IsAssignableFrom(type))
+            {
+                return false;
+            }
+
+            if (typeof(DependencyObject).IsAssignableFrom(type) || typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
+            {
+                return false;
+            }
+
+            if (IsFrameworkType(type) && !typeof(INotifyPropertyChanged).IsAssignableFrom(type))
+            {
+                return false;
+            }
+
+            return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Any(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0 && (p.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true));
+        }
+
+        private static bool IsFrameworkType(Type type)
+        {
+            var namespaceName = type.Namespace ?? string.Empty;
+            return namespaceName == "System"
+                || namespaceName.StartsWith("System.", StringComparison.Ordinal)
+                || namespaceName.StartsWith("Microsoft.", StringComparison.Ordinal)
+                || namespaceName.StartsWith("MS.", StringComparison.Ordinal);
+        }
+
+        private static bool HasEditorContent(StackPanel panel)
+        {
+            return panel.Children.OfType<Border>()
+                .Any(border => border.Child is StackPanel stackPanel && stackPanel.Children.Count > 1);
         }
 
         public static DockPanel GenProperties(object obj, string propertyName, ResourceManager? resourceManager = null)
@@ -443,84 +583,112 @@ namespace ColorVision.UI
 
         public static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager = null)
         {
+            var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+            return GenPropertyEditorControl(obj, resourceManager, visited);
+        }
+
+        private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited)
+        {
             if (obj == null) return new StackPanel();
+            if (!visited.Add(obj)) return new StackPanel();
 
-            bool orderBy = true;
-            if (resourceManager != null)
+            try
             {
-                orderBy = false;
-                GetResourceManager(obj, resourceManager);
-            }
-
-            var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
-
-            void CollectProperties(object source)
-            {
-                var type = source.GetType();
-
-                // 1. 获取属性
-                var allProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                .Where(p => p.CanRead && p.CanWrite);
-
-
-                var sortedProps = orderBy ? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType ?? type)) : allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType ?? type));
-
-                foreach (var prop in sortedProps)
+                bool orderBy = true;
+                if (resourceManager != null)
                 {
-                    var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
-                    if (!(browsableAttr?.Browsable ?? true))
-                        continue;
+                    orderBy = false;
+                    GetResourceManager(obj, resourceManager);
+                }
 
-                    var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                    string category = categoryAttr?.Category ?? type.Name;
+                var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
 
-                    if (!categoryGroups.TryGetValue(category, out var list))
+                void CollectProperties(object source)
+                {
+                    var type = source.GetType();
+
+                    // 1. 获取属性
+                    var allProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                    .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0);
+
+
+                    var sortedProps = orderBy ? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType ?? type)) : allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType ?? type));
+
+                    foreach (var prop in sortedProps)
                     {
-                        list = new List<PropertyInfo>();
-                        categoryGroups[category] = list;
+                        var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
+                        if (!(browsableAttr?.Browsable ?? true))
+                            continue;
+
+                        var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
+                        string category = categoryAttr?.Category ?? type.Name;
+
+                        if (!categoryGroups.TryGetValue(category, out var list))
+                        {
+                            list = new List<PropertyInfo>();
+                            categoryGroups[category] = list;
+                        }
+                        list.Add(prop);
                     }
-                    list.Add(prop);
                 }
+
+                var propertyPanel = new StackPanel();
+                CollectProperties(obj);
+                
+                foreach (var categoryGroup in categoryGroups)
+                {
+                    var border = new Border
+                    {
+                        BorderThickness = new Thickness(1),
+                        CornerRadius = new CornerRadius(5),
+                        Margin = new Thickness(0, 0, 0, 5)
+                    };
+                    border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+                    border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+
+                    var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
+
+
+                    var categoryHeader = new TextBlock
+                    {
+                        Text = categoryGroup.Key,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = GlobalTextBrush,
+                        Margin = new Thickness(0, 0, 0, 5)
+                    };
+                    categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                    stackPanel.Children.Add(categoryHeader);
+
+
+                    border.Child = stackPanel;
+
+                    foreach (var property in categoryGroup.Value)
+                    {
+                        try
+                        {
+                            stackPanel.Children.Add(GenProperties(property, obj, visited));
+                        }
+                        catch (NotSupportedException)
+                        {
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+
+                    if (stackPanel.Children.Count > 1)
+                    {
+                        propertyPanel.Children.Add(border);
+                    }
+                }
+
+                return propertyPanel;
             }
 
-            var propertyPanel = new StackPanel();
-            CollectProperties(obj);
-            
-            foreach (var categoryGroup in categoryGroups)
+            finally
             {
-                var border = new Border
-                {
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(5),
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-                border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
-                border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-
-                var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
-
-
-                var categoryHeader = new TextBlock
-                {
-                    Text = categoryGroup.Key,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = GlobalTextBrush,
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-                categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                stackPanel.Children.Add(categoryHeader);
-
-
-                border.Child = stackPanel;
-                propertyPanel.Children.Add(border);
-
-                foreach (var property in categoryGroup.Value)
-                {
-                    stackPanel.Children.Add(GenProperties(property, obj));
-                }
+                visited.Remove(obj);
             }
-
-            return propertyPanel;
         }
 
 

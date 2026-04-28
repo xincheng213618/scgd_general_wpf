@@ -653,8 +653,8 @@ namespace cvColorVision
                 yield break;
             }
 
-            JObject? jObject = JsonConvert.DeserializeObject<JObject>(json);
-            JToken? idToken = jObject?["ID"];
+            JObject jObject = JsonConvert.DeserializeObject<JObject>(json);
+            JToken idToken = jObject?["ID"];
             if (idToken == null)
             {
                 yield break;
@@ -672,14 +672,17 @@ namespace cvColorVision
 
         private static string GetMD5(string value)
         {
-            using MD5 md5 = MD5.Create();
-            byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(value));
-            StringBuilder builder = new StringBuilder(32);
-            foreach (byte item in hash)
+            using( MD5 md5 = MD5.Create())
             {
-                builder.Append(item.ToString("x2"));
+                byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(value));
+                StringBuilder builder = new StringBuilder(32);
+                foreach (byte item in hash)
+                {
+                    builder.Append(item.ToString("x2"));
+                }
+                return builder.ToString();
             }
-            return builder.ToString();
+
         }
 
 
