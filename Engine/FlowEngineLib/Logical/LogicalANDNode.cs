@@ -39,6 +39,11 @@ public class LogicalANDNode : STNodeInHub
 				{
 					DoResultOutTransferData(cVStartCFC);
 				}
+				else if (ShouldEndFlowImmediately(cVStartCFC))
+				{
+					clearData();
+					DoResultOutTransferData(cVStartCFC);
+				}
 				else
 				{
 					CVStartCFC data = new CVStartCFC(cVStartCFC);
@@ -85,6 +90,13 @@ public class LogicalANDNode : STNodeInHub
 			DoResultOutTransferData(null);
 		}
 		setDisplayData();
+	}
+
+	private static bool ShouldEndFlowImmediately(CVStartCFC start)
+	{
+		return start.FlowStatus == StatusTypeEnum.Failed
+			|| start.FlowStatus == StatusTypeEnum.Canceled
+			|| start.FlowStatus == StatusTypeEnum.OverTime;
 	}
 
 	private void DoResultOutTransferData(CVStartCFC data)

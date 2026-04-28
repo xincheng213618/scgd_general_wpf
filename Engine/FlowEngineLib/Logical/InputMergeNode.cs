@@ -71,6 +71,11 @@ public class InputMergeNode : STNodeInHub
 				{
 					DoResultOutTransferData(e.TargetOption.Data);
 				}
+				else if (ShouldEndFlowImmediately(cVStartCFC))
+				{
+					clearData();
+					DoResultOutTransferData(cVStartCFC);
+				}
 				else
 				{
 					CVStartCFC data = new CVStartCFC(cVStartCFC);
@@ -121,6 +126,13 @@ public class InputMergeNode : STNodeInHub
 			DoResultOutTransferData(null);
 		}
 		setDisplayData();
+	}
+
+	private static bool ShouldEndFlowImmediately(CVStartCFC start)
+	{
+		return start.FlowStatus == StatusTypeEnum.Failed
+			|| start.FlowStatus == StatusTypeEnum.Canceled
+			|| start.FlowStatus == StatusTypeEnum.OverTime;
 	}
 
 	private void setNextStepParam(CVStartCFC start, List<MergeAlgorithmPreStepParam> master)

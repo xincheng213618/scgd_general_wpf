@@ -54,6 +54,13 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 					DoTransferToServer(cVStartCFC, e);
 					return;
 				}
+				if (ShouldEndFlowImmediately(cVStartCFC))
+				{
+					clearData();
+					clearInCFC();
+					DoNodeEndedTransferData(cVStartCFC);
+					return;
+				}
 				CVStartCFC data = new CVStartCFC(cVStartCFC);
 				sender.Data = data;
 				int num = 0;
@@ -114,6 +121,13 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 			clearInCFC();
 			DoNodeEndedTransferData(null);
 		}
+	}
+
+	private static bool ShouldEndFlowImmediately(CVStartCFC start)
+	{
+		return start.FlowStatus == StatusTypeEnum.Failed
+			|| start.FlowStatus == StatusTypeEnum.Canceled
+			|| start.FlowStatus == StatusTypeEnum.OverTime;
 	}
 
 	private void clearInCFC()

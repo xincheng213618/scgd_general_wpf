@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using cvColorVision;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -40,6 +41,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public static PhyCameraManager GetInstance() { lock (Locker) { return _instance ??= new PhyCameraManager(); } }
         public RelayCommand CreateCommand { get; set; }
 
+        public RelayCommand SearchCameraCommand { get; set; }
+
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand EditCofigCommand { get; set; }
         public RelayCommand OpenDeviceManagerCommand { get; set; }
@@ -53,6 +56,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
+            SearchCameraCommand = new RelayCommand(a => SearchCameraIds());
             ImportCommand = new RelayCommand(a => Import());
 
             EditCofigCommand = new RelayCommand(a => EditCofig());
@@ -180,6 +184,74 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
 
+        private bool _isSearchingCameras;
+
+        public async void SearchCameraIds()
+        {
+            if (_isSearchingCameras)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "正在搜索在线相机", "ColorVision");
+                return;
+            }
+
+            var searchTypeWindow = new CameraSearchTypeWindow
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (searchTypeWindow.ShowDialog() != true)
+            {
+                return;
+            }
+
+            CameraModel[] selectedCameraModels = searchTypeWindow.SelectedCameraModels;
+            if (selectedCameraModels.Length == 0)
+            {
+                return;
+            }
+
+            _isSearchingCameras = true;
+            try
+            {
+                var summary = await Task.Run(() => cvCameraCSLib.SearchCameraIds(selectedCameraModels));
+                LoadPhyCamera();
+                MarkDiscoveredCamerasOnline(summary);
+
+                var resultWindow = new CameraSearchResultWindow(new CameraSearchResultViewModel(summary, this))
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                resultWindow.ShowDialog();
+                RefreshEmptyCamera();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"搜索在线相机失败: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _isSearchingCameras = false;
+            }
+        }
+
+        private void MarkDiscoveredCamerasOnline(cvCameraCSLib.CameraDiscoverySummary summary)
+        {
+            var existingCameras = PhyCameras
+                .Where(a => !string.IsNullOrWhiteSpace(a.Code))
+                .GroupBy(a => a.Code, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(a => a.Key, a => a.First(), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var camera in summary.Cameras)
+            {
+                if (existingCameras.TryGetValue(camera.MD5Id, out var phyCamera))
+                {
+                    phyCamera.SysResourceModel.Remark = "Online";
+                }
+            }
+        }
+
         public void Create()
         {
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
@@ -187,10 +259,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到未创建的相机,请插上相机后在尝试",nameof(PhyCameraManager));
-                foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
-                {
-                    item.RefreshDeviceId();
-                }
+                SearchCameraIds();
                 return;
             }
 
