@@ -651,7 +651,8 @@ namespace ColorVision.UI
                     {
                         BorderThickness = new Thickness(1),
                         CornerRadius = new CornerRadius(5),
-                        Margin = new Thickness(0, 0, 0, 5)
+                        Margin = new Thickness(0, 0, 0, 5),
+                        Tag = categoryGroup.Key
                     };
                     border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
                     border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");

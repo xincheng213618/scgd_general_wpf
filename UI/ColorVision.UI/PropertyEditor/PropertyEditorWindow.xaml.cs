@@ -283,16 +283,30 @@ namespace ColorVision.UI
                 return false;
             }
 
+            var rm = PropertyEditorHelper.GetResourceManager(source);
+            string displayName = PropertyEditorHelper.GetDisplayName(rm, property);
+
+            nestedPanel.Tag = property;
             stackPanel.Margin = new Thickness(5);
             stackPanel.Children.Add(nestedPanel);
-            var rm = PropertyEditorHelper.GetResourceManager(source);
-            treeNode.Children.Add(new PropertyTreeNode(PropertyEditorHelper.GetDisplayName(rm, property), nestedPanel));
+            treeNode.Children.Add(new PropertyTreeNode(displayName, nestedPanel));
             return true;
         }
 
         private void UpdateTreeViewVisibility()
         {
-            treeView.Visibility = TreeNodes.Count <= 1 ? Visibility.Collapsed : Visibility.Visible;
+            treeView.Visibility = ShouldShowTreeView() ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private bool ShouldShowTreeView()
+        {
+            int visibleRootCount = TreeNodes.Count(node => node.IsVisible);
+            return visibleRootCount > 1 || TreeNodes.Any(HasVisibleChildNode);
+        }
+
+        private static bool HasVisibleChildNode(PropertyTreeNode node)
+        {
+            return node.IsVisible && node.Children.Any(child => child.IsVisible || HasVisibleChildNode(child));
         }
 
 
@@ -333,7 +347,6 @@ namespace ColorVision.UI
             }
 
             // Apply search filter
-            int visibleCategories = 0;
             foreach (UIElement child in PropertyPanel.Children)
             {
                 if (child is Border border && border.Child is StackPanel stackPanel && border.Tag is string category)
@@ -341,7 +354,6 @@ namespace ColorVision.UI
                     bool categoryVisible = FilterStackPanelRecursively(stackPanel, category);
 
                     border.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
-                    if (categoryVisible) visibleCategories++;
                 }
             }
             
@@ -351,15 +363,7 @@ namespace ColorVision.UI
                 node.SyncVisibilityFromBorder();
             }
             
-            // Update TreeView visibility based on visible categories during search
-            if (visibleCategories <= 1)
-            {
-                treeView.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                treeView.Visibility = Visibility.Visible;
-            }
+            UpdateTreeViewVisibility();
         }
 
         private void ShowAllItemsRecursively(Panel panel)
@@ -390,8 +394,11 @@ namespace ColorVision.UI
                 foreach (UIElement item in stackPanel.Children)
                 {
                     item.Visibility = Visibility.Visible;
-                    // Also show nested items
-                    if (item is StackPanel nestedContainer)
+                    if (item is Border nestedBorder && nestedBorder.Child is Panel nestedBorderPanel)
+                    {
+                        ShowAllItemsRecursively(nestedBorderPanel);
+                    }
+                    else if (item is StackPanel nestedContainer)
                     {
                         ShowAllItemsRecursively(nestedContainer);
                     }
@@ -413,6 +420,12 @@ namespace ColorVision.UI
                         // Keep category header visible
                         item.Visibility = Visibility.Visible;
                     }
+                    else if (item is Border nestedBorder && nestedBorder.Child is StackPanel nestedStackPanel)
+                    {
+                        bool nestedVisible = FilterBorderRecursively(nestedBorder, nestedStackPanel);
+                        item.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
+                        if (nestedVisible) categoryVisible = true;
+                    }
                     else if (item is StackPanel nestedContainer)
                     {
                         // Handle nested content - search in nested panels
@@ -428,14 +441,19 @@ namespace ColorVision.UI
 
         private bool FilterNestedContainerRecursively(StackPanel container)
         {
+            if (BorderTagMatchesSearch(container.Tag))
+            {
+                ShowAllItemsRecursively(container);
+                return true;
+            }
+
             bool anyVisible = false;
             
             foreach (UIElement child in container.Children)
             {
                 if (child is Border nestedBorder && nestedBorder.Child is StackPanel nestedStackPanel)
                 {
-                    string nestedCategory = nestedBorder.Tag as string ?? string.Empty;
-                    bool nestedVisible = FilterStackPanelRecursively(nestedStackPanel, nestedCategory);
+                    bool nestedVisible = FilterBorderRecursively(nestedBorder, nestedStackPanel);
                     child.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
                     
                     if (nestedVisible) anyVisible = true;
@@ -449,6 +467,33 @@ namespace ColorVision.UI
             }
             
             return anyVisible;
+        }
+
+        private bool FilterBorderRecursively(Border border, StackPanel stackPanel)
+        {
+            if (BorderTagMatchesSearch(border.Tag))
+            {
+                ShowAllItemsRecursively(stackPanel);
+                return true;
+            }
+
+            string category = border.Tag as string ?? string.Empty;
+            return FilterStackPanelRecursively(stackPanel, category);
+        }
+
+        private bool BorderTagMatchesSearch(object tag)
+        {
+            if (tag is string category)
+            {
+                return category.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (tag is PropertyInfo property)
+            {
+                return MatchesSearch(property);
+            }
+
+            return false;
         }
 
         private bool MatchesSearch(PropertyInfo property)
