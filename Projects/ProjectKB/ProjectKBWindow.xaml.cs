@@ -740,32 +740,32 @@ namespace ProjectKB
         public static string BuildSummaryText(KBItemMaster kmitemmaster)
         {
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"Model:{kmitemmaster.Model}");
-            sb.AppendLine($"SN:{kmitemmaster.SN}");
-            sb.AppendLine("Poiints of Interest: ");
-            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM//dd HH:mm:ss}");
-
-            string title1 = "PT";
-            string title2 = "Lv";
-            string title5 = "Lc";
-            sb.AppendLine($"{title1,-20}   {title2,-10} {title5,10}");
+            sb.AppendLine("KB");
+            sb.AppendLine(kmitemmaster.SN);
+            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}");
+            sb.AppendLine(kmitemmaster.Model);
+            sb.AppendLine();
+            sb.AppendLine($"{"PT",-15}{"Lv",-15}{"LC",-15}");
 
             foreach (var item in kmitemmaster.Items)
             {
-                string formattedString = $"[{item.Name}]";
-                sb.AppendLine($"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc * 100,10:F2}%  {(item.Result ? "" : "Fail")}");
+                string key = $"[{item.Name}]";
+                sb.AppendLine($"{key,-15}{item.Lv,-15:F3}{item.Lc * 100,-15:F2}");
             }
 
+            sb.AppendLine();
             sb.AppendLine($"Min Lv= {kmitemmaster.MinLv:F2} cd/m2");
             sb.AppendLine($"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2");
-            sb.AppendLine($"Darkest Key= {kmitemmaster.DrakestKey}");
-            sb.AppendLine($"Brightest Key= {kmitemmaster.BrightestKey}");
+            sb.AppendLine($"Darkest Key= [{kmitemmaster.DrakestKey}]");
+            sb.AppendLine($"Brightest Key= [{kmitemmaster.BrightestKey}]");
             sb.AppendLine();
             sb.AppendLine("Pass/Fail Criteria:");
-            sb.AppendLine($"NbrFail Points={kmitemmaster.NbrFailPoints}");
-            sb.AppendLine($"Avg Lv={kmitemmaster.AvgLv:F2}");
-            sb.AppendLine($"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%");
-            sb.AppendLine(kmitemmaster.Result ? "Pass" : "Fail");
+            sb.AppendLine($"Nbr Failed Points= {kmitemmaster.NbrFailPoints}");
+            sb.AppendLine($"Avg Lv= {kmitemmaster.AvgLv:F2} cd/m2 ");
+            sb.AppendLine($"Lv Uniformity= {kmitemmaster.LvUniformity * 100:F2} % ");
+            sb.AppendLine($"Avg CCT= 0.0000");
+            sb.AppendLine($"ColorDiff= 0.0000  ");
+            sb.AppendLine(kmitemmaster.Result ? "PASS" : "FAIL");
             return sb.ToString();
         }
 
