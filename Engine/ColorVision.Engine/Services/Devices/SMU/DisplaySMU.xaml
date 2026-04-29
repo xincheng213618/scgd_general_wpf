@@ -57,9 +57,7 @@
                 <StackPanel  x:Name="StackPanelOpen" >
 
                     <DockPanel Margin="0,0,0,3" >
-
-                        <TextBlock Text="Channel" VerticalAlignment="Center" Margin="0,0,3,0"/>
-                        <ComboBox Name="CbChannel" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding DisplayConfig.Channel}"   Width="50" />
+                        <ComboBox Name="CbChannel" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding DisplayConfig.Channel}"   Width="80" />
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <RadioButton Content="{x:Static properties:Resources.V}" IsChecked="{Binding DisplayConfig.IsSourceV}"  Margin="0,0,3,0"  />
                             <RadioButton Content="{x:Static properties:Resources.I}" IsChecked="{Binding DisplayConfig.IsSourceV,Converter={StaticResource inverseBooleanConverter}}" />
@@ -72,13 +70,13 @@
                             <TextBlock Text="{x:Static properties:Resources.SourceValue}" Margin="0,0,3,0"  Width="60"/>
                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                            <TextBox Text="{Binding DisplayConfig.MeasureVal}" BorderThickness="0,0,0,1" />
+                            <TextBox Text="{Binding DisplayConfig.CurrentSourceConfig.MeasureVal}" BorderThickness="0,0,0,1" />
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,3" >
                             <TextBlock Text="{x:Static properties:Resources.LimitValue}" Margin="0,0,3,0"   Width="60"/>
                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
                             <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                            <TextBox Text="{Binding DisplayConfig.LmtVal}" BorderThickness="0,0,0,1"/>
+                            <TextBox Text="{Binding DisplayConfig.CurrentSourceConfig.LmtVal}" BorderThickness="0,0,0,1"/>
                         </DockPanel>
 
                         <UniformGrid  Columns="3"  Margin="0,0,0,3">
@@ -89,52 +87,23 @@
                         <UniformGrid Columns="2"  Margin="0,0,0,3">
                             <DockPanel  Margin="0,0,5,0" >
                                 <TextBlock  Text="{x:Static properties:Resources.CurrentVoltageV}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                <TextBox x:Name="TextSourceMeterV" Text="{Binding DisplayConfig.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                                <TextBox x:Name="TextSourceMeterV" Text="{Binding DisplayConfig.CurrentChannelConfig.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
                             </DockPanel>
                             <DockPanel Margin="0,0,5,0" >
                                 <TextBlock  Text="{x:Static properties:Resources.CurrentCurrentMA}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                <TextBox x:Name="TextSourceMeterI" Text="{Binding DisplayConfig.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                                <TextBox x:Name="TextSourceMeterI" Text="{Binding DisplayConfig.CurrentChannelConfig.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
                             </DockPanel>
                         </UniformGrid>
                     </StackPanel>
 
 
                     <StackPanel  x:Name="StackPanelVITemplate">
-                        <UniformGrid Columns="2"  Margin="0,0,0,3">
-                            <DockPanel  >
-                                <TextBlock Text="{x:Static properties:Resources.Start}" />
-                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
-                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                                <TextBox Text="{Binding  DisplayConfig.StartMeasureVal}"  BorderThickness="0,0,0,1"/>
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="{x:Static properties:Resources.End}" />
-                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
-                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                                <TextBox Text="{Binding  DisplayConfig.StopMeasureVal}" BorderThickness="0,0,0,1"/>
-                            </DockPanel>
-                        </UniformGrid>
-                        <UniformGrid Columns="2"  Margin="0,0,0,5">
-                            <DockPanel>
-                                <TextBlock Text="{x:Static properties:Resources.PointCount}"/>
-                                <TextBlock DockPanel.Dock="Right" Width="30"   Text=""/>
-                                <TextBox Text="{Binding DisplayConfig.Number}" BorderThickness="0,0,0,1"/>
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="{x:Static properties:Resources.LimitValue}"/>
-                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
-                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                                <TextBox Text="{Binding DisplayConfig.LimitVal}" BorderThickness="0,0,0,1"/>
-                            </DockPanel>
-                        </UniformGrid>
-
                         <DockPanel >
                             <Button x:Name="VIScanButton" DockPanel.Dock="Right" Content="{x:Static properties:Resources.Scan}" Click="VIScan_Click" Margin="5,0,0,0" />
                             <Grid Width="20" Margin="5,0,0,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                 <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SMUParam" Click="MenuItem_Template"/>
                             </Grid>
-                            <TextBlock Text="{x:Static properties:Resources.Template}" VerticalAlignment="Center" MinWidth="53" Margin="0,0,5,0"/>
                             <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
                         </DockPanel>
                     </StackPanel>

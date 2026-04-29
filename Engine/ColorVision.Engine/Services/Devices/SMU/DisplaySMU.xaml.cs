@@ -8,7 +8,6 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using System;
-using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,36 +41,10 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             DataContext = Device;
             EnsureTimedButtonOperations();
-
-            // When switching between voltage and current modes, swap the source and limit values so that the numbers follow the semantic meaning instead of the textbox position
-            if (Device.DisplayConfig is INotifyPropertyChanged npc)
-            {
-                npc.PropertyChanged += (s, ev) =>
-                {
-                    if (ev.PropertyName == nameof(Device.DisplayConfig.IsSourceV))
-                    {
-                        // Swap MeasureVal (source) and LmtVal (limit)
-                        double oldMeasure = Device.DisplayConfig.MeasureVal;
-                        Device.DisplayConfig.MeasureVal = Device.DisplayConfig.LmtVal;
-                        Device.DisplayConfig.LmtVal = oldMeasure;
-                    }
-                };
-            }
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
             ComboxVITemplate.ItemsSource = TemplateSMUParam.Params;
-            ComboxVITemplate.SelectionChanged += (s, e) =>
-            {
-                if (ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> KeyValue && KeyValue.Value is SMUParam SxParm)
-                {
-                    Device.DisplayConfig.StartMeasureVal = SxParm.StartMeasureVal;
-                    Device.DisplayConfig.StopMeasureVal = SxParm.StopMeasureVal;
-                    Device.DisplayConfig.IsSourceV = SxParm.IsSourceV;
-                    Device.DisplayConfig.LimitVal = SxParm.LmtVal;
-                    Device.DisplayConfig.Number = SxParm.Number;
-                }
-            };
             ComboxVITemplate.SelectedIndex = 0;
 
             CbChannel.ItemsSource = Enum.GetValues(typeof(SMUChannelType));
@@ -174,7 +147,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
             if (sender is Button button)
             {
                 EnsureTimedButtonOperations();
-                MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
+                SMUSourceDisplayConfig sourceConfig = Device.DisplayConfig.CurrentSourceConfig;
+                MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, sourceConfig.MeasureVal, sourceConfig.LmtVal, Device.DisplayConfig.Channel);
                 if(msgRecord != null)
                 {
                     ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
@@ -190,7 +164,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
+            SMUSourceDisplayConfig sourceConfig = Device.DisplayConfig.CurrentSourceConfig;
+            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, sourceConfig.MeasureVal, sourceConfig.LmtVal, Device.DisplayConfig.Channel);
             if (msgRecord != null)
             {
                 msgRecord.MsgRecordStateChanged += (s,e) =>
@@ -211,10 +186,10 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (sender is Button button && ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> templateModel)
             {
                 EnsureTimedButtonOperations();
-                MsgRecord msgRecord = DService.Scan(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.StartMeasureVal, Device.DisplayConfig.StopMeasureVal, Device.DisplayConfig.LimitVal, Device.DisplayConfig.Number, Device.DisplayConfig.Channel);
+                MsgRecord msgRecord = DService.Scan(templateModel.Value, Device.DisplayConfig.Channel);
                 if (msgRecord != null)
                 {
                     ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: async (record, state) =>
