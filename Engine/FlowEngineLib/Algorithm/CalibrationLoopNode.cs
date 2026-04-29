@@ -33,7 +33,7 @@ public class CalibrationLoopNode : CVBaseLoopServerNode<CalibrationNodeProperty>
 		getPreStepParam(start, param);
 		_ImgFileName = property.ImgFileName;
 		_TempName = property.TempName;
-		CalibrationData calibrationData = new CalibrationData(property.ExpTempName, param, -1);
+		CalibrationData calibrationData = new CalibrationData(property.ExpTempName, param, isSaveCIE: true);
 		BuildImageParam(calibrationData);
 		return calibrationData;
 	}

@@ -1,24 +1,20 @@
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
-namespace FlowEngineLib.Algorithm;
+namespace FlowEngineLib.Node.OLED;
 
 [STNode("/03_3 校正")]
-public class CalibrationNode : CVBaseServerNode
+public class Calibration2InNode : CVBaseServerNodeIn2Hub
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(Calibration2InNode));
+
 	private string _ExpTempName;
-
-	private string _POITempName;
-
-	protected string _POIFilterTempName;
-
-	protected string _POIReviseTempName;
 
 	protected bool _IsSaveCIE;
 
 	private STNodeEditText<string> m_ctrl_temp_exp;
-
-	private STNodeEditText<string> m_ctrl_temp_poi;
 
 	private STNodeEditText<bool> m_ctrl_saveCIE;
 
@@ -62,48 +58,6 @@ public class CalibrationNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("POI模板", "POI算法模板", true)]
-	public string POITempName
-	{
-		get
-		{
-			return _POITempName;
-		}
-		set
-		{
-			_POITempName = value;
-			setPOITemp();
-		}
-	}
-
-	[STNodeProperty("POI过滤", "POI过滤模板", true)]
-	public string POIFilterTempName
-	{
-		get
-		{
-			return _POIFilterTempName;
-		}
-		set
-		{
-			_POIFilterTempName = value;
-			setPOITemp();
-		}
-	}
-
-	[STNodeProperty("POI修正", "POI修正模板", true)]
-	public string POIReviseTempName
-	{
-		get
-		{
-			return _POIReviseTempName;
-		}
-		set
-		{
-			_POIReviseTempName = value;
-			setPOITemp();
-		}
-	}
-
 	[STNodeProperty("保存CIE文件", "保存CIE文件", true)]
 	public bool IsSaveCIE
 	{
@@ -118,17 +72,17 @@ public class CalibrationNode : CVBaseServerNode
 		}
 	}
 
-	public CalibrationNode()
-		: base("校正", "Calibration", "SVR.Calibration.Default", "DEV.Calibration.Default")
+	public Calibration2InNode()
+		: base("校正2", "Calibration", "SVR.Calibration.Default", "DEV.Calibration.Default")
 	{
 		operatorCode = "Calibration";
+		_TempName = "";
 		_ExpTempName = "";
-		_POITempName = "";
-		_POIFilterTempName = "";
-		_POIReviseTempName = "";
-		base.Height += 75;
-		_MaxTime = 10000;
+		_TempId = -1;
 		_IsSaveCIE = true;
+		m_in_text = "IN_IMG";
+		m_in2_text = "IN_POI";
+		base.Height += 50;
 	}
 
 	protected override void OnCreate()
@@ -138,36 +92,18 @@ public class CalibrationNode : CVBaseServerNode
 		m_custom_item.Y += 25;
 		m_ctrl_temp_exp = CreateStringControl(m_custom_item, "曝光模板:", _ExpTempName);
 		m_custom_item.Y += 25;
-		m_ctrl_temp_poi = CreateStringControl(m_custom_item, "POI模板:", _POITempName);
-		m_custom_item.Y += 25;
 		m_ctrl_saveCIE = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "保存CIE文件:", _IsSaveCIE);
-	}
-
-	private void setPOITemp()
-	{
-		m_ctrl_temp_poi.Value = GetPOITempDisplay();
-	}
-
-	private string GetPOITempDisplay()
-	{
-		if (string.IsNullOrEmpty(_POITempName))
-		{
-			return string.Empty;
-		}
-		return $"{_POITempName}/{_POIFilterTempName}/{_POIReviseTempName}";
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
+		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
+		getPreStepParam(1, algorithmPreStepParam);
 		CalibrationData calibrationData = new CalibrationData(_ExpTempName, param, _IsSaveCIE);
 		BuildImageParam(calibrationData);
-		if (!string.IsNullOrEmpty(_POITempName))
-		{
-			POITemplateParam pOIParam = new POITemplateParam(_POITempName, _POIFilterTempName, _POIReviseTempName);
-			calibrationData.POIParam = pOIParam;
-		}
+		calibrationData.POI_MasterId = algorithmPreStepParam.MasterId;
 		return calibrationData;
 	}
 }

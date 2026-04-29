@@ -29,6 +29,7 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 		set
 		{
 			_Channel = value;
+			m_ctrl_channel.Value = value;
 		}
 	}
 
