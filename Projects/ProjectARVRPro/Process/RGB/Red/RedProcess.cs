@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.Red
+namespace ProjectARVRPro.Process.RGB.Red
 {
 
 

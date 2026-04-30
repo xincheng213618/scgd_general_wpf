@@ -14,7 +14,7 @@ namespace ProjectARVRPro.Process.W25
         public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
 
         /// <summary>
-        /// ÖÐÐÄµãÁÁ¶È
+        /// ä¸­å¿ƒç‚¹äº®åº¦
         /// </summary>
         public ObjectiveTestItem CenterLunimance { get; set; } = new ObjectiveTestItem() { Name = "Center_Lunimance ", Unit = "cd/m^2" };
         /// <summary>

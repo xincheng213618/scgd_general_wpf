@@ -12,7 +12,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.OLED.AOI
+namespace ProjectARVRPro.Process.AOI
 {
     public class AOIProcess : ProcessBase<AoIProcessConfig>
     {

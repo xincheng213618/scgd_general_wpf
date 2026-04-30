@@ -24,7 +24,7 @@ namespace ProjectARVRPro.Process.Chessboard
 
             try
             {
-                log?.Info("���� Chessboard ���̽��");
+                log?.Info("开始 Chessboard 流程解析");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -120,7 +120,7 @@ namespace ProjectARVRPro.Process.Chessboard
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"���̸� �����" + Environment.NewLine;
+            outtext += "棋盘格结果数据：" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);

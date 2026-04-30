@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.OLED.AOI
+namespace ProjectARVRPro.Process.AOI
 {
     public class AoiRecipeConfig : ViewModelBase, IRecipeConfig
     {

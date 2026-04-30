@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.Green
+namespace ProjectARVRPro.Process.RGB.Green
 {
     public class GreenProcess : ProcessBase<GreenProcessConfig>
     {

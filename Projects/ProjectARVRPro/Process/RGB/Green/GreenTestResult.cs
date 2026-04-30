@@ -1,32 +1,29 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
-namespace ProjectARVRPro.Process.Blue
+namespace ProjectARVRPro.Process.RGB.Green
 {
-
-    public class BlueViewTestResult : BlueTestResult
+    public class GreenViewTestResult : GreenTestResult
     {
-
         public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 
-
-    public class BlueTestResult : ViewModelBase
+    public class GreenTestResult : ViewModelBase
     {
         public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
 
         /// <summary>
-        /// ÁÁ¶È¾ùÔÈĞÔ(%) ²âÊÔÏî
+        /// äº®åº¦å‡åŒ€æ€§(%) æµ‹è¯•é¡¹
         /// </summary>
         public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem();
 
         /// <summary>
-        /// É«²Ê¾ùÔÈĞÔ ²âÊÔÏî
+        /// è‰²å½©å‡åŒ€æ€§ æµ‹è¯•é¡¹
         /// </summary>
         public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem();
 
         /// <summary>
-        /// ÖĞĞÄµãÁÁ¶È
+        /// ä¸­å¿ƒç‚¹äº®åº¦
         /// </summary>
         public ObjectiveTestItem CenterLunimance { get; set; } = new ObjectiveTestItem();
         /// <summary>

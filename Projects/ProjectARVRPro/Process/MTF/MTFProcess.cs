@@ -42,7 +42,7 @@ namespace ProjectARVRPro.Process.MTF
                                 var hItem = new ObjectiveTestItem()
                                 {
                                     Name = mtf.name,
-                                    Unit = "%",
+                                    Unit = Config.Unit,
                                     Value = (mtf.mtfValue ?? 0) * Config.RecipeConfig.UnifiedRecipe.Fix,
                                     LowLimit = Config.RecipeConfig.UnifiedRecipe.Min,
                                     UpLimit = Config.RecipeConfig.UnifiedRecipe.Max,

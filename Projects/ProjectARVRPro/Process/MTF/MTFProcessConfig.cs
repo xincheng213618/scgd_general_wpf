@@ -27,6 +27,10 @@ namespace ProjectARVRPro.Process.MTF
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name = "MTF"; 
 
+        public string Unit { get => _Unit; set { _Unit = value; OnPropertyChanged(); } }
+        private string _Unit = "%";
+
+
         public MTFRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value; OnPropertyChanged(); } }
         private MTFRecipeConfig _RecipeConfig = new MTFRecipeConfig();
 

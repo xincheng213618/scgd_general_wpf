@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.Blue
+namespace ProjectARVRPro.Process.RGB.Blue
 {
 
     public class BlueProcess : ProcessBase<BlueProcessConfig>

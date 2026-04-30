@@ -1,12 +1,12 @@
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.Red
+namespace ProjectARVRPro.Process.RGB.Red
 {
     public class RedProcessConfig : ProcessConfigBase
     {
-        [Category("解析配置")]
-        [DisplayName("Center解析Key")]
-        [Description("用于解析Center数据的Key")]
+        [Category("瑙ｆ瀽閰嶇疆")]
+        [DisplayName("Center瑙ｆ瀽Key")]
+        [Description("鐢ㄤ簬瑙ｆ瀽Center鏁版嵁鐨凨ey")]
         public string Key_Center { get => _Key_Center; set { _Key_Center = value; OnPropertyChanged(); } }
         private string _Key_Center = "P_5";
     }
