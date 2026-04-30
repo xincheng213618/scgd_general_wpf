@@ -84,6 +84,22 @@ namespace ProjectARVRPro
         public bool ThunderbirdAutoConnect { get => _ThunderbirdAutoConnect; set { _ThunderbirdAutoConnect = value; OnPropertyChanged(); } }
         private bool _ThunderbirdAutoConnect;
 
+        [DisplayName("结果点位名称"), Category("结果图层")]
+        public bool ResultOverlayShowName { get => _ResultOverlayShowName; set { _ResultOverlayShowName = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayShowName = true;
+
+        [DisplayName("结果详细数据"), Category("结果图层")]
+        public bool ResultOverlayShowDetail { get => _ResultOverlayShowDetail; set { _ResultOverlayShowDetail = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayShowDetail;
+
+        [DisplayName("结果文字字号"), Category("结果图层")]
+        public double ResultOverlayFontSize { get => _ResultOverlayFontSize; set { _ResultOverlayFontSize = Math.Max(0, value); OnPropertyChanged(); } }
+        private double _ResultOverlayFontSize = 8;
+
+        [DisplayName("缩放时重绘结果"), Category("结果图层")]
+        public bool ResultOverlayFollowZoom { get => _ResultOverlayFollowZoom; set { _ResultOverlayFollowZoom = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayFollowZoom;
+
         public void OpenConfig()
         {
             new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

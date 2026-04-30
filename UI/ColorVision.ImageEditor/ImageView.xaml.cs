@@ -18,6 +18,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor
 {
@@ -76,16 +77,22 @@ namespace ColorVision.ImageEditor
             };
             Config.LayoutUpdatedChanged += (s, e) =>
             {
+                ImageShow.IsLayoutUpdated = e;
+                UpdateDrawingVisualScale();
                 if (e)
-                {
-                    Zoombox1.UpdateLayout();
-                    ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
-                    ImageShow.Sacle = 1 / EditorContext.ZoomRatio;
-                }
+                    ImageShow.ApplyLayoutScaleToVisuals();
             };
-            Zoombox1.LayoutUpdated +=(s,e) => ImageShow.Sacle = 1 / EditorContext.ZoomRatio;
+            Config.DrawingTextFontSizeChanged += (s, e) =>
+            {
+                ImageShow.TextFontSizeOverride = e;
+                if (Config.IsLayoutUpdated)
+                    ImageShow.ApplyLayoutScaleToVisuals();
+            };
+            Zoombox1.ContentMatrixChanged += (s, e) => UpdateDrawingVisualScale();
+            Zoombox1.LayoutUpdated +=(s,e) => UpdateDrawingVisualScale();
             ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
-            ImageShow.Sacle = 1 / EditorContext.ZoomRatio;
+            ImageShow.TextFontSizeOverride = Config.DrawingTextFontSize;
+            UpdateDrawingVisualScale();
 
             Config.ShowMsgChanged += (s, e) =>
             {
@@ -539,7 +546,22 @@ namespace ColorVision.ImageEditor
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
-        public void AddVisual(Visual visual) => ImageShow.AddVisualCommand(visual);
+        public void AddVisual(Visual visual)
+        {
+            ApplyDrawingVisualVisibility(visual);
+            ImageShow.AddVisualCommand(visual);
+        }
+
+        private void ApplyDrawingVisualVisibility(Visual visual)
+        {
+            if (visual is not IDrawingVisual drawingVisual) return;
+
+            if (drawingVisual.BaseAttribute is ITextProperties textProperties)
+                textProperties.IsShowText = Config.IsShowText;
+
+            if (!Config.IsShowMsg)
+                drawingVisual.BaseAttribute.Msg = string.Empty;
+        }
 
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
@@ -591,15 +613,42 @@ namespace ColorVision.ImageEditor
         {
             if (CheckAccess())
             {
-                Zoombox1.ZoomUniform();
+                UpdateZoomAndScaleCore();
             }
             else
             {
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
-                    Zoombox1.ZoomUniform();
+                    UpdateZoomAndScaleCore();
                 });
             }
+        }
+
+        private void UpdateZoomAndScaleCore()
+        {
+            Zoombox1.ZoomUniform();
+            ScheduleApplyLayoutScaleOnce();
+        }
+
+        private void ScheduleApplyLayoutScaleOnce()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+            {
+                UpdateDrawingVisualScale();
+                if (Config.IsLayoutUpdated)
+                    ImageShow.ApplyLayoutScaleToVisuals();
+            }));
+        }
+
+        private void UpdateDrawingVisualScale()
+        {
+            ImageShow.Sacle = GetDrawingVisualScale();
+        }
+
+        private double GetDrawingVisualScale()
+        {
+            double zoomRatio = EditorContext?.ZoomRatio ?? 1;
+            return double.IsFinite(zoomRatio) && Math.Abs(zoomRatio) > 1E-6 ? 1 / zoomRatio : 1;
         }
 
 

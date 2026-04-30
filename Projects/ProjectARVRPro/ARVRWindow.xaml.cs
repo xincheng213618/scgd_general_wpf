@@ -178,6 +178,7 @@ namespace ProjectARVRPro
             ProcessManager.GenStepBar(stepBar);
             ProcessManager.ActiveGroupChanged += (s, ev) => ProcessManager.GenStepBar(stepBar);
             this.DataContext = ProjectARVRProConfig.Instance;
+            ApplyResultOverlayConfig();
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
@@ -923,6 +924,7 @@ namespace ProjectARVRPro
                         {
                             ImageView.OpenImage(result.FileName);
                             ImageView.ImageShow.Clear();
+                            ApplyResultOverlayConfig();
 
                             if (result.FlowStatus != FlowStatus.Completed)
                                 return;
@@ -1005,6 +1007,16 @@ namespace ProjectARVRPro
                 });
 
             }
+        }
+
+        private void ApplyResultOverlayConfig()
+        {
+            var config = ProjectARVRProConfig.Instance;
+            ImageView.Config.IsShowText = config.ResultOverlayShowName;
+            ImageView.Config.IsShowMsg = config.ResultOverlayShowDetail;
+            ImageView.Config.DrawingTextFontSize = config.ResultOverlayFontSize;
+            ImageView.Config.IsLayoutUpdated = true;
+            ImageView.Config.IsLayoutUpdatedOnZoomChanged = config.ResultOverlayFollowZoom;
         }
 
         public void GenoutputText(ProjectARVRReuslt result)
