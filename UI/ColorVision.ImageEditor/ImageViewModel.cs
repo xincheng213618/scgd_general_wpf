@@ -254,12 +254,12 @@ namespace ColorVision.ImageEditor
         private void Zoombox1_ContentMatrixChanged(object? sender, EventArgs e)
         {
             double zoomRatio = EditorContext.ZoomRatio;
-            if (Math.Abs(oldMax - zoomRatio) > 1E-6)
+            if (oldMax != zoomRatio)
             {
                 oldMax = zoomRatio;
-                double scale = double.IsFinite(zoomRatio) && Math.Abs(zoomRatio) > 1E-6 ? 1 / zoomRatio : 1;
+                double scale = double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0 ? 1 : 1 / zoomRatio;
                 EditorContext.DrawCanvas.Sacle = scale;
-                if (EditorContext.Config.IsLayoutUpdated && EditorContext.Config.IsLayoutUpdatedOnZoomChanged)
+                if (EditorContext.Config.IsLayoutUpdated)
                 {
                     DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawingVisualLists));
                 }

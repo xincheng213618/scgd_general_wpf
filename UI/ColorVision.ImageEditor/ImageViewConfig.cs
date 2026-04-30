@@ -139,9 +139,6 @@ namespace ColorVision.ImageEditor
         }
         private bool _IsLayoutUpdated = true;
 
-        public bool IsLayoutUpdatedOnZoomChanged { get => _IsLayoutUpdatedOnZoomChanged; set { _IsLayoutUpdatedOnZoomChanged = value; OnPropertyChanged(); } }
-        private bool _IsLayoutUpdatedOnZoomChanged;
-
         public event EventHandler<double> DrawingTextFontSizeChanged;
         public double DrawingTextFontSize { get => _DrawingTextFontSize; set { _DrawingTextFontSize = Math.Max(0, value); OnPropertyChanged(); DrawingTextFontSizeChanged?.Invoke(this, _DrawingTextFontSize); } }
         private double _DrawingTextFontSize;

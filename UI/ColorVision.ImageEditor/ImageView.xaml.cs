@@ -79,14 +79,12 @@ namespace ColorVision.ImageEditor
             {
                 ImageShow.IsLayoutUpdated = e;
                 UpdateDrawingVisualScale();
-                if (e)
-                    ImageShow.ApplyLayoutScaleToVisuals();
+                ImageShow.ApplyLayoutScaleToVisuals();
             };
             Config.DrawingTextFontSizeChanged += (s, e) =>
             {
                 ImageShow.TextFontSizeOverride = e;
-                if (Config.IsLayoutUpdated)
-                    ImageShow.ApplyLayoutScaleToVisuals();
+                ImageShow.ApplyLayoutScaleToVisuals();
             };
             Zoombox1.ContentMatrixChanged += (s, e) => UpdateDrawingVisualScale();
             Zoombox1.LayoutUpdated +=(s,e) => UpdateDrawingVisualScale();
@@ -635,8 +633,7 @@ namespace ColorVision.ImageEditor
             Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
             {
                 UpdateDrawingVisualScale();
-                if (Config.IsLayoutUpdated)
-                    ImageShow.ApplyLayoutScaleToVisuals();
+                ImageShow.ApplyLayoutScaleToVisuals();
             }));
         }
 
@@ -648,7 +645,7 @@ namespace ColorVision.ImageEditor
         private double GetDrawingVisualScale()
         {
             double zoomRatio = EditorContext?.ZoomRatio ?? 1;
-            return double.IsFinite(zoomRatio) && Math.Abs(zoomRatio) > 1E-6 ? 1 / zoomRatio : 1;
+            return double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0 ? 1 : 1 / zoomRatio;
         }
 
 

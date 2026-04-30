@@ -85,9 +85,9 @@ namespace ProjectARVRPro.Process.Distortion
             {
                 DVCircleText Circle = new();
                 Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
-                Circle.Attribute.Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11;
+                Circle.Attribute.Radius = 200;
                 Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
+                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 );
                 Circle.Attribute.Text = $"{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}";
                 Circle.Render();
                 ctx.ImageView.AddVisual(Circle);

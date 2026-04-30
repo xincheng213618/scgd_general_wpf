@@ -136,7 +136,6 @@ namespace ColorVision.ImageEditor
 
         public double TextFontSizeOverride { get; set; }
 
-        private const double MinScaleDelta = 1E-6;
         private static readonly ConditionalWeakTable<Visual, DrawingVisualLayoutState> DrawingVisualLayoutStates = new();
 
         private sealed class DrawingVisualLayoutState
@@ -147,17 +146,17 @@ namespace ColorVision.ImageEditor
 
         public void ApplyLayoutScaleToVisuals()
         {
-            if (!IsLayoutUpdated) return;
-
             foreach (var visual in visuals)
                 ApplyLayoutScale(visual);
         }
 
         private void ApplyLayoutScale(Visual visual)
         {
-            if (!IsLayoutUpdated || visual is not IDrawingVisual drawingVisual) return;
+            if (visual is not IDrawingVisual drawingVisual) return;
 
-            double scale = CoerceScale(Sacle);
+            double scale = IsLayoutUpdated ? Sacle : 1;
+            if (double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0)
+                scale = 1;
             var state = DrawingVisualLayoutStates.GetValue(visual, _ => CaptureLayoutState(drawingVisual));
             bool isRender = false;
 
@@ -171,7 +170,7 @@ namespace ColorVision.ImageEditor
                 }
 
                 double targetThickness = state.BasePenThickness * scale;
-                if (Math.Abs(pen.Thickness - targetThickness) > MinScaleDelta)
+                if (pen.Thickness != targetThickness)
                 {
                     pen.Thickness = targetThickness;
                     isRender = true;
@@ -181,7 +180,7 @@ namespace ColorVision.ImageEditor
             if (drawingVisual.BaseAttribute is ITextProperties textProperties && state.BaseFontSize is double baseFontSize)
             {
                 double targetFontSize = (TextFontSizeOverride > 0 ? TextFontSizeOverride : baseFontSize) * scale;
-                if (Math.Abs(textProperties.TextAttribute.FontSize - targetFontSize) > MinScaleDelta)
+                if (textProperties.TextAttribute.FontSize != targetFontSize)
                 {
                     textProperties.TextAttribute.FontSize = targetFontSize;
                     isRender = true;
@@ -201,11 +200,6 @@ namespace ColorVision.ImageEditor
                     ? textProperties.TextAttribute.FontSize
                     : null
             };
-        }
-
-        private static double CoerceScale(double scale)
-        {
-            return double.IsFinite(scale) && scale > MinScaleDelta ? scale : 1;
         }
 
         public void AddVisual(Visual visual)

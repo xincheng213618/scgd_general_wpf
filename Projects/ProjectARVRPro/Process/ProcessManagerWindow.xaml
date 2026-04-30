@@ -33,7 +33,7 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="470" MinWidth="400"/>
+                <ColumnDefinition Width="500" MinWidth="400"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="*" MinWidth="520"/>
             </Grid.ColumnDefinitions>
@@ -68,9 +68,6 @@
                                         <Setter Property="Background" Value="Transparent"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="名称" Width="120" DisplayMemberBinding="{Binding Name}"/>
-                                <GridViewColumn Header="流程模板" Width="140" DisplayMemberBinding="{Binding FlowTemplate}"/>
-                                <GridViewColumn Header="处理类" Width="150" DisplayMemberBinding="{Binding ProcessTypeName}"/>
                                 <GridViewColumn Header="启用" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
@@ -78,6 +75,10 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="名称" Width="120" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="流程模板" Width="140" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                                <GridViewColumn Header="处理类" Width="150" DisplayMemberBinding="{Binding ProcessTypeName,Mode=OneWay}"/>
+
                             </GridView>
                         </ListView.View>
                     </ListView>
@@ -102,7 +103,7 @@
                             <TextBlock Text="{Binding SelectedProcessMeta.Name, TargetNullValue=未选择流程}" FontWeight="Bold" FontSize="16"/>
                             <TextBlock Foreground="Gray" Margin="0 4 0 0">
                                 <Run Text="模板: "/><Run Text="{Binding SelectedProcessMeta.FlowTemplate}"/>
-                                <Run Text="    处理类: "/><Run Text="{Binding SelectedProcessMeta.ProcessTypeName}"/>
+                                <Run Text="    处理类: "/><Run Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay}"/>
                             </TextBlock>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

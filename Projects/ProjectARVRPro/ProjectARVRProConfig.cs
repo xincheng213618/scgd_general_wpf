@@ -90,15 +90,15 @@ namespace ProjectARVRPro
 
         [DisplayName("结果详细数据"), Category("结果图层")]
         public bool ResultOverlayShowDetail { get => _ResultOverlayShowDetail; set { _ResultOverlayShowDetail = value; OnPropertyChanged(); } }
-        private bool _ResultOverlayShowDetail;
+        private bool _ResultOverlayShowDetail = true;
 
         [DisplayName("结果文字字号"), Category("结果图层")]
         public double ResultOverlayFontSize { get => _ResultOverlayFontSize; set { _ResultOverlayFontSize = Math.Max(0, value); OnPropertyChanged(); } }
         private double _ResultOverlayFontSize = 8;
 
-        [DisplayName("缩放时重绘结果"), Category("结果图层")]
-        public bool ResultOverlayFollowZoom { get => _ResultOverlayFollowZoom; set { _ResultOverlayFollowZoom = value; OnPropertyChanged(); } }
-        private bool _ResultOverlayFollowZoom;
+        [DisplayName("结果图层自动刷新"), Category("结果图层")]
+        public bool ResultOverlayAutoRefresh { get => _ResultOverlayAutoRefresh; set { _ResultOverlayAutoRefresh = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayAutoRefresh;
 
         public void OpenConfig()
         {

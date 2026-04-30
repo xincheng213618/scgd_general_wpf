@@ -92,6 +92,14 @@ namespace ProjectARVRPro
         // 雷鸟切图控制器
         private ThunderbirdSerialController _thunderbirdController = ThunderbirdSerialController.GetInstance();
 
+        private static readonly HashSet<string> ResultOverlayConfigNames =
+        [
+            nameof(ProjectARVRProConfig.ResultOverlayShowName),
+            nameof(ProjectARVRProConfig.ResultOverlayShowDetail),
+            nameof(ProjectARVRProConfig.ResultOverlayFontSize),
+            nameof(ProjectARVRProConfig.ResultOverlayAutoRefresh)
+        ];
+
         public ARVRWindow()
         {
             InitializeComponent();
@@ -178,6 +186,7 @@ namespace ProjectARVRPro
             ProcessManager.GenStepBar(stepBar);
             ProcessManager.ActiveGroupChanged += (s, ev) => ProcessManager.GenStepBar(stepBar);
             this.DataContext = ProjectARVRProConfig.Instance;
+            ProjectConfig.PropertyChanged += ProjectConfig_PropertyChanged;
             ApplyResultOverlayConfig();
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -1015,8 +1024,17 @@ namespace ProjectARVRPro
             ImageView.Config.IsShowText = config.ResultOverlayShowName;
             ImageView.Config.IsShowMsg = config.ResultOverlayShowDetail;
             ImageView.Config.DrawingTextFontSize = config.ResultOverlayFontSize;
-            ImageView.Config.IsLayoutUpdated = true;
-            ImageView.Config.IsLayoutUpdatedOnZoomChanged = config.ResultOverlayFollowZoom;
+            ImageView.Config.IsLayoutUpdated = config.ResultOverlayAutoRefresh;
+            ImageView.ImageShow.TextFontSizeOverride = config.ResultOverlayFontSize;
+            ImageView.ImageShow.ApplyLayoutScaleToVisuals();
+        }
+
+        private void ProjectConfig_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(e.PropertyName) && !ResultOverlayConfigNames.Contains(e.PropertyName))
+                return;
+
+            ApplyResultOverlayConfig();
         }
 
         public void GenoutputText(ProjectARVRReuslt result)
@@ -1347,6 +1365,7 @@ namespace ProjectARVRPro
 
         public void Dispose()
         {
+            ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
             flowControl.Stop();
             STNodeEditorMain.Dispose();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
