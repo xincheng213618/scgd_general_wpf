@@ -1,8 +1,6 @@
-﻿using ColorVision.Common.MVVM;
-using log4net;
+﻿using log4net;
 using Newtonsoft.Json;
 using System.IO;
-using System.Windows;
 
 namespace ProjectARVRPro
 {
@@ -17,49 +15,45 @@ namespace ProjectARVRPro
 
         public static string RecipeFixPath { get; set; } = DirectoryPath + "ARVRRecipe.json";
 
-        public RelayCommand EditCommand { get; set; }
-
         public RecipeConfig RecipeConfig { get; set; }
 
 
         public RecipeManager()
         {
-            EditCommand = new RelayCommand(a => Edit());
-
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
-            if (LoadFromFile(RecipeFixPath) is RecipeConfig fix)
+            RecipeConfig = LoadFromFile(RecipeFixPath) ?? new RecipeConfig();
+            bool changed = EnsureConfigInstances(RecipeConfig);
+
+            if (changed || !File.Exists(RecipeFixPath))
             {
-                RecipeConfig = fix;
-                var lists = typeof(RecipeConfig).Assembly.GetTypes().Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList();
-                if (RecipeConfig.Configs.Count != lists.Count)
-                {
-                    RecipeConfig.Configs.Clear();
-                    lists.ForEach(t => {
-                        if (Activator.CreateInstance(t) is IRecipeConfig instance)
-                        {
-                            RecipeConfig.Configs[t] = instance;
-                        }
-                    });
-                }
-            }
-            else
-            {
-                RecipeConfig = new RecipeConfig();
-                typeof(RecipeConfig).Assembly.GetTypes().Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList().ForEach(t => {
-                    if (Activator.CreateInstance(t) is IRecipeConfig instance)
-                    {
-                        RecipeConfig.Configs[t] = instance;
-                    }
-                });
                 Save();
             }
         }
-        public static void Edit()
+
+        private static bool EnsureConfigInstances(RecipeConfig recipeConfig)
         {
-            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            EditRecipeWindow.ShowDialog();
+            bool changed = false;
+            foreach (var type in GetConfigTypes())
+            {
+                if (!recipeConfig.Configs.TryGetValue(type, out var service) || service == null)
+                {
+                    if (Activator.CreateInstance(type) is IRecipeConfig instance)
+                    {
+                        recipeConfig.Configs[type] = instance;
+                        changed = true;
+                    }
+                }
+            }
+            return changed;
+        }
+
+        private static IReadOnlyList<Type> GetConfigTypes()
+        {
+            return typeof(RecipeConfig).Assembly.GetTypes()
+                .Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                .ToList();
         }
         public void Save()
         {
@@ -102,5 +96,6 @@ namespace ProjectARVRPro
                 return null;
             }
         }
+
     }
 }

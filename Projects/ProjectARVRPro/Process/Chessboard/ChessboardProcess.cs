@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -20,7 +19,6 @@ namespace ProjectARVRPro.Process.Chessboard
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
-            ChessboardFixConfig fixConfig = ctx.FixConfig.GetRequiredService<ChessboardFixConfig>();
             ChessboardViewTestResult testResult = new ChessboardViewTestResult();
 
 
@@ -52,12 +50,12 @@ namespace ProjectARVRPro.Process.Chessboard
                         if (details.Count == 1)
                         {
                             var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            view.PoiAnalysisResult.result.Value *= fixConfig.ChessboardContrast;
+                            view.PoiAnalysisResult.result.Value *= recipeConfig.ChessboardContrast.Fix;
                             var contrast = new ObjectiveTestItem
                             {
                                 Name = "Chessboard_Contrast",
-                                LowLimit = recipeConfig.ChessboardContras.Min,
-                                UpLimit = recipeConfig.ChessboardContras.Max,
+                                LowLimit = recipeConfig.ChessboardContrast.Min,
+                                UpLimit = recipeConfig.ChessboardContrast.Max,
                                 Value = view.PoiAnalysisResult.result.Value,
                                 TestValue = view.PoiAnalysisResult.result.Value.ToString("F3")
                             };
@@ -140,11 +138,6 @@ namespace ProjectARVRPro.Process.Chessboard
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<ChessboardFixConfig>();
         }
     }
 }

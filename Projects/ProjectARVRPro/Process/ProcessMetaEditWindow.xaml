@@ -1,0 +1,51 @@
+<Window x:Class="ProjectARVRPro.Process.ProcessMetaEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectARVRPro.Process"
+        mc:Ignorable="d"
+        Title="流程项" Height="270" Width="460" ResizeMode="NoResize" Background="{DynamicResource GlobalBackground}"
+        Loaded="Window_Loaded">
+    <Window.Resources>
+        <local:TypeNameConverter x:Key="TypeNameConverter"/>
+    </Window.Resources>
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="12" Padding="14">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="72"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="名称" Grid.Row="0" VerticalAlignment="Center" Margin="0 0 10 10"/>
+            <TextBox x:Name="NameTextBox" Grid.Row="0" Grid.Column="1" Text="{Binding MetaName, UpdateSourceTrigger=PropertyChanged}" Margin="0 0 0 10"/>
+
+            <TextBlock Text="流程模板" Grid.Row="1" VerticalAlignment="Center" Margin="0 0 10 10"/>
+            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Templates}" DisplayMemberPath="Key" SelectedItem="{Binding SelectedTemplate}" Margin="0 0 0 10"/>
+
+            <TextBlock Text="处理类" Grid.Row="2" VerticalAlignment="Center" Margin="0 0 10 10"/>
+            <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Margin="0 0 0 10">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <CheckBox Grid.Row="3" Grid.Column="1" Content="启用" IsChecked="{Binding IsEnabled}" Margin="0 0 0 10"/>
+
+            <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="保存" Padding="18 5" Click="Save_Click"/>
+                <Button Content="取消" Padding="18 5" Margin="8 0 0 0" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

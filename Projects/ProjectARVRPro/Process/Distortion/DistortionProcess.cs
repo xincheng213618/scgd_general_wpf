@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion
@@ -16,7 +15,6 @@ namespace ProjectARVRPro.Process.Distortion
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
-            DistortionFixConfig fixConfig = ctx.FixConfig.GetRequiredService<DistortionFixConfig>();
             DistortionViewTestResult testResult = new DistortionViewTestResult();
 
             try
@@ -34,8 +32,8 @@ namespace ProjectARVRPro.Process.Distortion
                         if (details.Count == 1)
                         {
                             var distortion = new Distortion2View(details[0]);
-                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= fixConfig.HorizontalTVDistortion;
-                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= fixConfig.VerticalTVDistortion;
+                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= recipeConfig.HorizontalTVDistortion.Fix;
+                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= recipeConfig.VerticalTVDistortion.Fix;
 
 
                             foreach (var pt in distortion.DistortionReslut.TVDistortion.FinalPoints)
@@ -115,11 +113,6 @@ namespace ProjectARVRPro.Process.Distortion
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<DistortionFixConfig>();
         }
     }
 }

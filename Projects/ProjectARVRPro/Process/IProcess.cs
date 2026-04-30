@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 
 namespace ProjectARVRPro.Process
 {
@@ -17,15 +16,6 @@ namespace ProjectARVRPro.Process
         /// </summary>
         /// <returns>The recipe configuration, or null if no recipe config is available.</returns>
         public IRecipeConfig GetRecipeConfig()
-        {
-            return null;
-        }
-
-        /// <summary>
-        /// Gets the fix configuration for this process.
-        /// </summary>
-        /// <returns>The fix configuration, or null if no fix config is available.</returns>
-        public IFixConfig GetFixConfig()
         {
             return null;
         }
@@ -113,6 +103,5 @@ namespace ProjectARVRPro.Process
         public abstract string GenText(IProcessExecutionContext ctx);
 
         public virtual IRecipeConfig GetRecipeConfig() => null;
-        public virtual IFixConfig GetFixConfig() => null;
     }
 }

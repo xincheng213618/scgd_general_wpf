@@ -5,7 +5,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -18,7 +17,6 @@ namespace ProjectARVRPro.Process.Black
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
-            BlackFixConfig fixConfig = ctx.FixConfig.GetRequiredService<BlackFixConfig>();
             BlackViewTestResult testResult = new BlackViewTestResult();
 
             try
@@ -62,7 +60,7 @@ namespace ProjectARVRPro.Process.Black
                                     contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.ViewPoixyuvDatas[0].Y;
                             }
 
-                            contrast *= fixConfig.FOFOContrast;
+                            contrast *= recipeConfig.FOFOContrast.Fix;
                             testResult.FOFOContrast.LowLimit = recipeConfig.FOFOContrast.Min;
                             testResult.FOFOContrast.UpLimit = recipeConfig.FOFOContrast.Max;
                             testResult.FOFOContrast.Value = contrast;
@@ -147,11 +145,6 @@ namespace ProjectARVRPro.Process.Black
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<BlackRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<BlackFixConfig>();
         }
     }
 }

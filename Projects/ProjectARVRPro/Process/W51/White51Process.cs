@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -19,7 +18,6 @@ namespace ProjectARVRPro.Process.W51
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             W51RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W51RecipeConfig>();
-            W51FixConfig fixConfig = ctx.FixConfig.GetRequiredService<W51FixConfig>();
             W51ViewTestResult testResult = new W51ViewTestResult();
 
             try
@@ -45,9 +43,9 @@ namespace ProjectARVRPro.Process.W51
                             DFovView view1 = new DFovView(algResultModels[0]);
 
 
-                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * fixConfig.W51DiagonalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * fixConfig.W51HorizontalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * fixConfig.W51VerticalFieldOfViewAngle;
+                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * recipeConfig.DiagonalFieldOfViewAngle.Fix;
+                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * recipeConfig.HorizontalFieldOfViewAngle.Fix;
+                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * recipeConfig.VerticalFieldOfViewAngle.Fix;
 
 
                             testResult.DiagonalFieldOfViewAngle.LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min;
@@ -135,11 +133,6 @@ namespace ProjectARVRPro.Process.W51
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W51RecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<W51FixConfig>();
         }
     }
 }

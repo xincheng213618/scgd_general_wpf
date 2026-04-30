@@ -5,7 +5,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -18,7 +17,6 @@ namespace ProjectARVRPro.Process.W25
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             W25RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W25RecipeConfig>();
-            W25FixConfig fixConfig = ctx.FixConfig.GetRequiredService<W25FixConfig>();
             W25ViewTestResult testResult = new W25ViewTestResult();
 
 
@@ -39,11 +37,11 @@ namespace ProjectARVRPro.Process.W25
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            poi.Y *= fixConfig.CenterLunimance;
-                            poi.x *= fixConfig.CenterCIE1931ChromaticCoordinatesx;
-                            poi.y *= fixConfig.CenterCIE1931ChromaticCoordinatesy;
-                            poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
-                            poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
+                            poi.Y *= recipeConfig.CenterLunimance.Fix;
+                            poi.x *= recipeConfig.CenterCIE1931ChromaticCoordinatesx.Fix;
+                            poi.y *= recipeConfig.CenterCIE1931ChromaticCoordinatesy.Fix;
+                            poi.u *= recipeConfig.CenterCIE1976ChromaticCoordinatesu.Fix;
+                            poi.v *= recipeConfig.CenterCIE1976ChromaticCoordinatesv.Fix;
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
 
@@ -173,11 +171,6 @@ namespace ProjectARVRPro.Process.W25
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W25RecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<W25FixConfig>();
         }
     }
 }

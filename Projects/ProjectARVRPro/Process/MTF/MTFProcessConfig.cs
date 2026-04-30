@@ -1,18 +1,9 @@
 using ColorVision.Common.MVVM;
-using ProjectARVRPro.Fix;
 using ProjectARVRPro.Recipe;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.MTF
 {
-    public class MTFFixConfig : ViewModelBase, IFixConfig
-    {
-        [Category("Fix")]
-        public double UnifiedFix { get => _UnifiedFix; set { _UnifiedFix = value; OnPropertyChanged(); } }
-        private double _UnifiedFix = 1;
-    }
-
     public class MTFRecipeConfig : ViewModelBase, IRecipeConfig
     {
         [Category("上下限配置")]
@@ -35,9 +26,6 @@ namespace ProjectARVRPro.Process.MTF
         [Description("导出CSV时显示的测试画面名称")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name = "MTF"; 
-
-        public MTFFixConfig FixConfig { get => _FixConfig; set { _FixConfig = value; OnPropertyChanged(); } }
-        private MTFFixConfig _FixConfig = new MTFFixConfig();
 
         public MTFRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value; OnPropertyChanged(); } }
         private MTFRecipeConfig _RecipeConfig = new MTFRecipeConfig();

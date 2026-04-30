@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -24,7 +23,6 @@ namespace ProjectARVRPro.Process.MTFH
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             MTFHRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFHRecipeConfig>();
-            MTFHFixConfig fixConfig = ctx.FixConfig.GetRequiredService<MTFHFixConfig>();
             MTFHViewTestResult testResult = new MTFHViewTestResult();
 
             try
@@ -45,7 +43,7 @@ namespace ProjectARVRPro.Process.MTFH
                             if (mtf.name == Config.Key_Center_0F)
                             {
                                 testResult.MTF_H_Center_0F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_Center_0F.Value *= fixConfig.MTF_H_Center_0F;
+                                testResult.MTF_H_Center_0F.Value *= recipeConfig.MTF_H_Center_0F.Fix;
                                 testResult.MTF_H_Center_0F.TestValue = testResult.MTF_H_Center_0F.Value.ToString();
                                 testResult.MTF_H_Center_0F.LowLimit = recipeConfig.MTF_H_Center_0F.Min;
                                 testResult.MTF_H_Center_0F.UpLimit = recipeConfig.MTF_H_Center_0F.Max;
@@ -54,7 +52,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_LeftUp_0_5F)
                             {
                                 testResult.MTF_H_LeftUp_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftUp_0_5F.Value *= fixConfig.MTF_H_LeftUp_0_5F;
+                                testResult.MTF_H_LeftUp_0_5F.Value *= recipeConfig.MTF_H_LeftUp_0_5F.Fix;
                                 testResult.MTF_H_LeftUp_0_5F.TestValue = testResult.MTF_H_LeftUp_0_5F.Value.ToString();
                                 testResult.MTF_H_LeftUp_0_5F.LowLimit = recipeConfig.MTF_H_LeftUp_0_5F.Min;
                                 testResult.MTF_H_LeftUp_0_5F.UpLimit = recipeConfig.MTF_H_LeftUp_0_5F.Max;
@@ -63,7 +61,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_RightUp_0_5F)
                             {
                                 testResult.MTF_H_RightUp_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightUp_0_5F.Value *= fixConfig.MTF_H_RightUp_0_5F;
+                                testResult.MTF_H_RightUp_0_5F.Value *= recipeConfig.MTF_H_RightUp_0_5F.Fix;
                                 testResult.MTF_H_RightUp_0_5F.TestValue = testResult.MTF_H_RightUp_0_5F.Value.ToString();
                                 testResult.MTF_H_RightUp_0_5F.LowLimit = recipeConfig.MTF_H_RightUp_0_5F.Min;
                                 testResult.MTF_H_RightUp_0_5F.UpLimit = recipeConfig.MTF_H_RightUp_0_5F.Max;
@@ -72,7 +70,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_LeftDown_0_5F)
                             {
                                 testResult.MTF_H_LeftDown_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftDown_0_5F.Value *= fixConfig.MTF_H_LeftDown_0_5F;
+                                testResult.MTF_H_LeftDown_0_5F.Value *= recipeConfig.MTF_H_LeftDown_0_5F.Fix;
                                 testResult.MTF_H_LeftDown_0_5F.TestValue = testResult.MTF_H_LeftDown_0_5F.Value.ToString();
                                 testResult.MTF_H_LeftDown_0_5F.LowLimit = recipeConfig.MTF_H_LeftDown_0_5F.Min;
                                 testResult.MTF_H_LeftDown_0_5F.UpLimit = recipeConfig.MTF_H_LeftDown_0_5F.Max;
@@ -81,7 +79,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_RightDown_0_5F)
                             {
                                 testResult.MTF_H_RightDown_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightDown_0_5F.Value *= fixConfig.MTF_H_RightDown_0_5F;
+                                testResult.MTF_H_RightDown_0_5F.Value *= recipeConfig.MTF_H_RightDown_0_5F.Fix;
                                 testResult.MTF_H_RightDown_0_5F.TestValue = testResult.MTF_H_RightDown_0_5F.Value.ToString();
                                 testResult.MTF_H_RightDown_0_5F.LowLimit = recipeConfig.MTF_H_RightDown_0_5F.Min;
                                 testResult.MTF_H_RightDown_0_5F.UpLimit = recipeConfig.MTF_H_RightDown_0_5F.Max;
@@ -90,7 +88,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_LeftUp_0_8F)
                             {
                                 testResult.MTF_H_LeftUp_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftUp_0_8F.Value *= fixConfig.MTF_H_LeftUp_0_8F;
+                                testResult.MTF_H_LeftUp_0_8F.Value *= recipeConfig.MTF_H_LeftUp_0_8F.Fix;
                                 testResult.MTF_H_LeftUp_0_8F.TestValue = testResult.MTF_H_LeftUp_0_8F.Value.ToString();
                                 testResult.MTF_H_LeftUp_0_8F.LowLimit = recipeConfig.MTF_H_LeftUp_0_8F.Min;
                                 testResult.MTF_H_LeftUp_0_8F.UpLimit = recipeConfig.MTF_H_LeftUp_0_8F.Max;
@@ -99,7 +97,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_RightUp_0_8F)
                             {
                                 testResult.MTF_H_RightUp_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightUp_0_8F.Value *= fixConfig.MTF_H_RightUp_0_8F;
+                                testResult.MTF_H_RightUp_0_8F.Value *= recipeConfig.MTF_H_RightUp_0_8F.Fix;
                                 testResult.MTF_H_RightUp_0_8F.TestValue = testResult.MTF_H_RightUp_0_8F.Value.ToString();
                                 testResult.MTF_H_RightUp_0_8F.LowLimit = recipeConfig.MTF_H_RightUp_0_8F.Min;
                                 testResult.MTF_H_RightUp_0_8F.UpLimit = recipeConfig.MTF_H_RightUp_0_8F.Max;
@@ -108,7 +106,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_LeftDown_0_8F)
                             {
                                 testResult.MTF_H_LeftDown_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftDown_0_8F.Value *= fixConfig.MTF_H_LeftDown_0_8F;
+                                testResult.MTF_H_LeftDown_0_8F.Value *= recipeConfig.MTF_H_LeftDown_0_8F.Fix;
                                 testResult.MTF_H_LeftDown_0_8F.TestValue = testResult.MTF_H_LeftDown_0_8F.Value.ToString();
                                 testResult.MTF_H_LeftDown_0_8F.LowLimit = recipeConfig.MTF_H_LeftDown_0_8F.Min;
                                 testResult.MTF_H_LeftDown_0_8F.UpLimit = recipeConfig.MTF_H_LeftDown_0_8F.Max;
@@ -117,7 +115,7 @@ namespace ProjectARVRPro.Process.MTFH
                             else if (mtf.name == Config.Key_RightDown_0_8F)
                             {
                                 testResult.MTF_H_RightDown_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightDown_0_8F.Value *= fixConfig.MTF_H_RightDown_0_8F;
+                                testResult.MTF_H_RightDown_0_8F.Value *= recipeConfig.MTF_H_RightDown_0_8F.Fix;
                                 testResult.MTF_H_RightDown_0_8F.TestValue = testResult.MTF_H_RightDown_0_8F.Value.ToString();
                                 testResult.MTF_H_RightDown_0_8F.LowLimit = recipeConfig.MTF_H_RightDown_0_8F.Min;
                                 testResult.MTF_H_RightDown_0_8F.UpLimit = recipeConfig.MTF_H_RightDown_0_8F.Max;
@@ -207,11 +205,6 @@ namespace ProjectARVRPro.Process.MTFH
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<MTFHFixConfig>();
         }
     }
 }

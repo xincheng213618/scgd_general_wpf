@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
@@ -14,7 +13,6 @@ namespace ProjectARVRPro.Process.MTF
 {
     public class MTFProcess : ProcessBase<MTFProcessConfig>
     {
-        public override IFixConfig GetFixConfig()=> Config.FixConfig;
         public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
 
 
@@ -45,7 +43,7 @@ namespace ProjectARVRPro.Process.MTF
                                 {
                                     Name = mtf.name,
                                     Unit = "%",
-                                    Value = (mtf.mtfValue ??0) * Config.FixConfig.UnifiedFix,
+                                    Value = (mtf.mtfValue ?? 0) * Config.RecipeConfig.UnifiedRecipe.Fix,
                                     LowLimit = Config.RecipeConfig.UnifiedRecipe.Min,
                                     UpLimit = Config.RecipeConfig.UnifiedRecipe.Max,
                                 };

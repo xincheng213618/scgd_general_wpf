@@ -18,8 +18,6 @@ namespace ProjectARVRPro
         public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
-        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static FixManager FixManager => FixManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
 

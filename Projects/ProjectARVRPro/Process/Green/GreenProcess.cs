@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -20,7 +19,6 @@ namespace ProjectARVRPro.Process.Green
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             GreenRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<GreenRecipeConfig>();
-            GreenFixConfig fixConfig = ctx.FixConfig.GetRequiredService<GreenFixConfig>();
             GreenViewTestResult testResult = new GreenViewTestResult();
 
             try
@@ -42,12 +40,12 @@ namespace ProjectARVRPro.Process.Green
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            poi.CCT *= fixConfig.BlackCenterCorrelatedColorTemperature;
-                            poi.Y *= fixConfig.CenterLunimance;
-                            poi.x *= fixConfig.CenterCIE1931ChromaticCoordinatesx;
-                            poi.y *= fixConfig.CenterCIE1931ChromaticCoordinatesy;
-                            poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
-                            poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
+                            poi.CCT *= recipeConfig.CenterCorrelatedColorTemperature.Fix;
+                            poi.Y *= recipeConfig.CenterLunimance.Fix;
+                            poi.x *= recipeConfig.CenterCIE1931ChromaticCoordinatesx.Fix;
+                            poi.y *= recipeConfig.CenterCIE1931ChromaticCoordinatesy.Fix;
+                            poi.u *= recipeConfig.CenterCIE1976ChromaticCoordinatesu.Fix;
+                            poi.v *= recipeConfig.CenterCIE1976ChromaticCoordinatesv.Fix;
 
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
@@ -111,7 +109,7 @@ namespace ProjectARVRPro.Process.Green
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                view.PoiAnalysisResult.result.Value *= fixConfig.LuminanceUniformity;
+                                view.PoiAnalysisResult.result.Value *= recipeConfig.LuminanceUniformity.Fix;
                                 var uniform = new ObjectiveTestItem
                                 {
                                     Name = "Luminance_uniformity(%)",
@@ -130,7 +128,7 @@ namespace ProjectARVRPro.Process.Green
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                view.PoiAnalysisResult.result.Value *= fixConfig.ColorUniformity;
+                                view.PoiAnalysisResult.result.Value *= recipeConfig.ColorUniformity.Fix;
                                 var colorUniform = new ObjectiveTestItem
                                 {
                                     Name = "Color_uniformity",
@@ -221,11 +219,6 @@ namespace ProjectARVRPro.Process.Green
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<GreenRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<GreenFixConfig>();
         }
     }
 }

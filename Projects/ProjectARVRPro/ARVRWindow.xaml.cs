@@ -14,7 +14,6 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using ProjectARVRPro.LegacyARVR;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
@@ -84,7 +83,6 @@ namespace ProjectARVRPro
 
         public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
 
-        public static FixConfig ObjectiveTestResultFix => FixManager.GetInstance().FixConfig;
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
         public static RecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
@@ -659,7 +657,6 @@ namespace ProjectARVRPro
                             Batch = Batch,
                             Result = result,
                             ObjectiveTestResult = ObjectiveTestResult,
-                            FixConfig = ObjectiveTestResultFix,
                             RecipeConfig = RecipeConfig,
                             ImageView =ImageView,
                             Logger = log
@@ -940,7 +937,6 @@ namespace ProjectARVRPro
                                     {
                                         Result = result,
                                         ObjectiveTestResult = ObjectiveTestResult,
-                                        FixConfig = ObjectiveTestResultFix,
                                         RecipeConfig = RecipeConfig,
                                         ImageView = ImageView,
                                         Logger = log
@@ -1038,7 +1034,6 @@ namespace ProjectARVRPro
                     {
                         Result = result,
                         ObjectiveTestResult = ObjectiveTestResult,
-                        FixConfig = ObjectiveTestResultFix,
                         RecipeConfig = RecipeConfig,
                         ImageView = ImageView,
                         Logger = log
@@ -1425,10 +1420,7 @@ namespace ProjectARVRPro
         {
             if (_thunderbirdDebugWindow == null)
             {
-                _thunderbirdDebugWindow = new ThunderbirdSerialDebugWindow
-                {
-                    Owner = this
-                };
+                _thunderbirdDebugWindow = new ThunderbirdSerialDebugWindow();
                 _thunderbirdDebugWindow.Closed += (s, args) => _thunderbirdDebugWindow = null;
                 _thunderbirdDebugWindow.Show();
             }

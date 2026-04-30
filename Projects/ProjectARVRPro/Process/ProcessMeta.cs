@@ -22,9 +22,9 @@ namespace ProjectARVRPro.Process
         /// Gets or sets the JSON representation of the process configuration.
         /// </summary>
         public string ConfigJson { get => _ConfigJson; set { _ConfigJson = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasProcessConfig)); } }
-        private string _ConfigJson;
+        private string _ConfigJson = string.Empty;
 
-        public IProcess Process 
+        public IProcess? Process 
         { 
             get => _Process; 
             set 
@@ -33,23 +33,15 @@ namespace ProjectARVRPro.Process
                 OnPropertyChanged(); 
                 OnPropertyChanged(nameof(ProcessTypeName)); 
                 OnPropertyChanged(nameof(RecipeConfigTypeName));
-                OnPropertyChanged(nameof(FixConfigTypeName));
                 OnPropertyChanged(nameof(ProcessConfigTypeName));
                 OnPropertyChanged(nameof(HasRecipeConfig));
-                OnPropertyChanged(nameof(HasFixConfig));
                 OnPropertyChanged(nameof(HasProcessConfig));
             } 
         }
-        private IProcess _Process;
+        private IProcess? _Process;
 
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
         private bool _IsEnabled = true;
-
-        /// <summary>
-        /// 执行此流程前的步间通信指令（可选）
-        /// </summary>
-        public InterStepAction InterStepAction { get => _InterStepAction; set { _InterStepAction = value; OnPropertyChanged(); } }
-        private InterStepAction _InterStepAction;
 
         /// <summary>
         /// 执行此流程前的切图配置（可选，默认不启用）
@@ -84,12 +76,6 @@ namespace ProjectARVRPro.Process
         public string RecipeConfigTypeName => Process?.GetRecipeConfig()?.GetType().Name ?? string.Empty;
 
         /// <summary>
-        /// Gets the fix config type name from the Process.
-        /// </summary>
-        [JsonIgnore]
-        public string FixConfigTypeName => Process?.GetFixConfig()?.GetType().Name ?? string.Empty;
-
-        /// <summary>
         /// Gets the process config type name from the Process.
         /// </summary>
         [JsonIgnore]
@@ -100,12 +86,6 @@ namespace ProjectARVRPro.Process
         /// </summary>
         [JsonIgnore]
         public bool HasRecipeConfig => Process?.GetRecipeConfig() != null;
-
-        /// <summary>
-        /// Gets a value indicating whether a fix config exists for this process.
-        /// </summary>
-        [JsonIgnore]
-        public bool HasFixConfig => Process?.GetFixConfig() != null;
 
         /// <summary>
         /// Gets a value indicating whether a process config exists for this process.
@@ -122,16 +102,6 @@ namespace ProjectARVRPro.Process
             a => HasRecipeConfig
         );
         private RelayCommand _EditRecipeConfigCommand;
-
-        /// <summary>
-        /// Command to edit the fix configuration.
-        /// </summary>
-        [JsonIgnore]
-        public RelayCommand EditFixConfigCommand => _EditFixConfigCommand ??= new RelayCommand(
-            a => EditFixConfig(),
-            a => HasFixConfig
-        );
-        private RelayCommand _EditFixConfigCommand;
 
         /// <summary>
         /// Command to edit the process configuration.
@@ -159,24 +129,6 @@ namespace ProjectARVRPro.Process
 
             editor.ShowDialog();
             RecipeManager.GetInstance().Save();
-        }
-
-        /// <summary>
-        /// Opens the PropertyEditorWindow to edit the fix configuration.
-        /// </summary>
-        private void EditFixConfig()
-        {
-            var fixConfig = Process?.GetFixConfig();
-            if (fixConfig == null) return;
-
-            var editor = new PropertyEditorWindow(fixConfig)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            editor.ShowDialog();
-            FixManager.GetInstance().Save();
         }
 
         /// <summary>

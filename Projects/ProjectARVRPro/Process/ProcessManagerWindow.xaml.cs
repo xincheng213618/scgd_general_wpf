@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace ProjectARVRPro.Process
 {
@@ -76,36 +77,24 @@ namespace ProjectARVRPro.Process
             RefreshConfigPanels();
         }
 
+        private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is ProcessManager manager && manager.UpdateMetaCommand.CanExecute(null))
+            {
+                manager.UpdateMetaCommand.Execute(null);
+            }
+        }
+
         private void GroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Rebind the ListView when group changes
             RefreshConfigPanels();
         }
 
-        private void EditInterStepAction_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is ProcessMeta meta)
-            {
-                if (meta.InterStepAction == null)
-                {
-                    meta.InterStepAction = new InterStepAction();
-                }
-
-                var editor = new PropertyEditorWindow(meta.InterStepAction)
-                {
-                    Title = $"步间通信指令 - {meta.Name}",
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-                editor.ShowDialog();
-            }
-        }
-
         private void RefreshConfigPanels()
         {
             // Clear all panels
             RecipePanel.Children.Clear();
-            FixPanel.Children.Clear();
             ProcessPanel.Children.Clear();
             PictureSwitchPanel.Children.Clear();
 
@@ -119,7 +108,6 @@ namespace ProjectARVRPro.Process
             {
                 // Show placeholder text in all panels
                 AddPlaceholderText(RecipePanel);
-                AddPlaceholderText(FixPanel);
                 AddPlaceholderText(ProcessPanel);
                 AddPlaceholderText(PictureSwitchPanel);
                 return;
@@ -146,17 +134,6 @@ namespace ProjectARVRPro.Process
             else
             {
                 AddNoConfigText(RecipePanel, "无Recipe配置");
-            }
-
-            // Add Fix config if available
-            var fixConfig = selectedMeta.Process?.GetFixConfig();
-            if (fixConfig != null)
-            {
-                AddConfigToPanel(fixConfig, FixPanel, selectedMeta, ConfigType.Fix);
-            }
-            else
-            {
-                AddNoConfigText(FixPanel, "无Fix配置");
             }
 
             // Add Process config if available
@@ -198,7 +175,6 @@ namespace ProjectARVRPro.Process
         private enum ConfigType
         {
             Recipe,
-            Fix,
             Process
         }
 
@@ -220,7 +196,6 @@ namespace ProjectARVRPro.Process
             Action saveAction = configType switch
             {
                 ConfigType.Recipe => () => RecipeManager.GetInstance().Save(),
-                ConfigType.Fix => () => FixManager.GetInstance().Save(),
                 ConfigType.Process => () => { meta.ConfigJson = JsonConvert.SerializeObject(config); },
                 _ => () => { }
             };

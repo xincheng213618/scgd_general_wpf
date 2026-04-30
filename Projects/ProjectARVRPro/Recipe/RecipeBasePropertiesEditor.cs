@@ -26,12 +26,13 @@ namespace ProjectARVRPro.Recipe
 
             
 
-            UniformGrid uniformGrid = new UniformGrid() { Columns = 2 ,HorizontalAlignment = HorizontalAlignment.Right,Width =200};
+            UniformGrid uniformGrid = new UniformGrid() { Columns = 3, HorizontalAlignment = HorizontalAlignment.Right, Width = 300 };
             
             Binding bindingMin = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Min");
             bindingMin.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingMin.StringFormat = "0.0################";
             var textboxMin = PropertyEditorHelper.CreateSmallTextBox(bindingMin);
+            textboxMin.ToolTip = "Min";
             textboxMin.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             uniformGrid.Children.Add(textboxMin);
 
@@ -39,8 +40,17 @@ namespace ProjectARVRPro.Recipe
             bindingMax.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingMax.StringFormat = "0.0################";
             var textbox = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
+            textbox.ToolTip = "Max";
             textbox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             uniformGrid.Children.Add(textbox);
+
+            Binding bindingFix = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Fix");
+            bindingFix.UpdateSourceTrigger = UpdateSourceTrigger.Default;
+            bindingFix.StringFormat = "0.0################";
+            var textboxFix = PropertyEditorHelper.CreateSmallTextBox(bindingFix);
+            textboxFix.ToolTip = "Fix";
+            textboxFix.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
+            uniformGrid.Children.Add(textboxFix);
             
 
             DockPanel.SetDock(uniformGrid, Dock.Right);
