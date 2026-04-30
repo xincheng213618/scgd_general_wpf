@@ -12,6 +12,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using ProjectStarkSemi.Conoscope;
 using System;
 using System.Collections.Generic;
@@ -207,6 +208,8 @@ namespace ProjectStarkSemi
             {
                 isUpdatingModelSelection = false;
             }
+
+            MenuService.Instance?.RefreshMenuItemsByGuid(MenuItemConstants.View);
         }
 
         private ConoscopeView AddConoscopeView(string? filePath, bool activate)

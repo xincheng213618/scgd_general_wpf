@@ -107,20 +107,21 @@
                                 </StackPanel>
                             </GroupBox>
 
-                            <GroupBox Header="滤波" Margin="0,0,0,6">
+                            <GroupBox Header="预处理 / 滤波" Margin="0,0,0,6">
                                 <StackPanel>
                                     <WrapPanel Margin="0,4,0,6">
-                                        <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用滤波" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
+                                        <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用预处理" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
+                                        <CheckBox x:Name="chkDustRemovalEnabled" Content="灰尘滤除" IsChecked="{Binding Config.DustRemovalEnabled}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
                                         <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" SelectedIndex="3" MinWidth="120">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
+                                        <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" MinWidth="130">
+                                            <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="None"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="LowPass"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="MovingAverage"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="Gaussian"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="Median"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="Bilateral"/>
                                         </ComboBox>
-                                        <Button x:Name="btnApplyFilter" Content="{x:Static properties:Resources.ApplyFilter}" Click="btnApplyFilter_Click" Padding="10,3" Margin="10,0,0,0"/>
+                                        <Button x:Name="btnApplyFilter" Content="应用预处理" Click="btnApplyFilter_Click" Padding="10,3" Margin="10,0,0,0"/>
                                     </WrapPanel>
                                     <Grid x:Name="rowFilterKernel" Margin="5,0,5,0">
                                         <Grid.ColumnDefinitions>
@@ -129,8 +130,8 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                        <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
                                     </Grid>
                                     <Grid x:Name="rowFilterSigma" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
@@ -140,7 +141,7 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="σ" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                        <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                        <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
                                     </Grid>
                                     <Grid x:Name="rowFilterD" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
@@ -149,8 +150,8 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="d" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                        <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
                                     </Grid>
                                     <Grid x:Name="rowFilterSigmaColor" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
@@ -160,7 +161,7 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="σColor" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                        <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                        <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
                                     </Grid>
                                     <Grid x:Name="rowFilterSigmaSpace" Margin="5,4,5,4">
                                         <Grid.ColumnDefinitions>
@@ -170,7 +171,59 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="σSpace" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                        <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                        <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
+                                    </Grid>
+                                    <Grid x:Name="rowDustMode" Margin="5,0,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="灰尘类型" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="cbDustMode" Grid.Column="1" MinWidth="120" HorizontalAlignment="Left" SelectionChanged="FilterParameter_Changed">
+                                            <ComboBoxItem Content="暗斑" Tag="DarkSpot"/>
+                                            <ComboBoxItem Content="亮斑" Tag="BrightSpot"/>
+                                            <ComboBoxItem Content="暗斑 + 亮斑" Tag="Both"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    <Grid x:Name="rowDustThreshold" Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="阈值%" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustThreshold, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="60" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                    </Grid>
+                                    <Grid x:Name="rowDustMinArea" Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="最小面积" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMinArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="1" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                    </Grid>
+                                    <Grid x:Name="rowDustMaxArea" Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="最大面积" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMaxArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="10" Maximum="5000" Value="500" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                    </Grid>
+                                    <Grid x:Name="rowDustRepairRadius" Margin="5,4,5,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="修复半径" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustRepairRadius, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="3" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
                                     </Grid>
                                 </StackPanel>
                             </GroupBox>

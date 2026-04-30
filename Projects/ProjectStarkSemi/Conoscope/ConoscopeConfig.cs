@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 
 namespace ProjectStarkSemi.Conoscope
@@ -68,6 +69,54 @@ namespace ProjectStarkSemi.Conoscope
         public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
         private bool _ApplyFilterOnOpen = true;
 
+        [Category("滤波"), DisplayName("滤波类型"), Description("Conoscope 图像打开或手动应用时使用的预处理滤波类型。")]
+        public ImageFilterType FilterType { get => _FilterType; set { _FilterType = value; OnPropertyChanged(); } }
+        private ImageFilterType _FilterType = ImageFilterType.Gaussian;
+
+        [Category("滤波"), DisplayName("核大小"), Description("均值、高斯、中值滤波使用的核大小，自动修正为奇数。")]
+        public int FilterKernelSize { get => _FilterKernelSize; set { _FilterKernelSize = NormalizeOdd(value, 1, 101); OnPropertyChanged(); } }
+        private int _FilterKernelSize = 55;
+
+        [Category("滤波"), DisplayName("高斯 Sigma"), Description("高斯滤波使用的标准差。")]
+        public double FilterSigma { get => _FilterSigma; set { _FilterSigma = Math.Max(0.1, value); OnPropertyChanged(); } }
+        private double _FilterSigma = 1.0;
+
+        [Category("滤波"), DisplayName("双边 d"), Description("双边滤波邻域直径。")]
+        public int FilterD { get => _FilterD; set { _FilterD = Math.Max(1, value); OnPropertyChanged(); } }
+        private int _FilterD = 5;
+
+        [Category("滤波"), DisplayName("双边 SigmaColor"), Description("双边滤波颜色域 Sigma。")]
+        public double FilterSigmaColor { get => _FilterSigmaColor; set { _FilterSigmaColor = Math.Max(1, value); OnPropertyChanged(); } }
+        private double _FilterSigmaColor = 75;
+
+        [Category("滤波"), DisplayName("双边 SigmaSpace"), Description("双边滤波空间域 Sigma。")]
+        public double FilterSigmaSpace { get => _FilterSigmaSpace; set { _FilterSigmaSpace = Math.Max(1, value); OnPropertyChanged(); } }
+        private double _FilterSigmaSpace = 75;
+
+        [Category("灰尘滤除"), DisplayName("启用灰尘滤除"), Description("灰尘滤除作为独立预处理步骤，可与常规滤波叠加使用。")]
+        public bool DustRemovalEnabled { get => _DustRemovalEnabled; set { _DustRemovalEnabled = value; OnPropertyChanged(); } }
+        private bool _DustRemovalEnabled;
+
+        [Category("灰尘滤除"), DisplayName("灰尘类型"), Description("暗斑用于滤除黑点灰尘，亮斑用于滤除亮点异常。")]
+        public DustRemovalMode DustRemovalMode { get => _DustRemovalMode; set { _DustRemovalMode = value; OnPropertyChanged(); } }
+        private DustRemovalMode _DustRemovalMode = DustRemovalMode.DarkSpot;
+
+        [Category("灰尘滤除"), DisplayName("检测阈值(%)"), Description("基于归一化亮度和局部背景的差异阈值，数值越小越敏感。")]
+        public double DustThresholdPercent { get => _DustThresholdPercent; set { _DustThresholdPercent = Math.Max(0.1, Math.Min(value, 100)); OnPropertyChanged(); } }
+        private double _DustThresholdPercent = 12;
+
+        [Category("灰尘滤除"), DisplayName("最小面积(px)"), Description("低于该面积的候选点会被忽略。")]
+        public int DustMinArea { get => _DustMinArea; set { _DustMinArea = Math.Max(1, value); OnPropertyChanged(); } }
+        private int _DustMinArea = 1;
+
+        [Category("灰尘滤除"), DisplayName("最大面积(px)"), Description("高于该面积的候选区域会被忽略，避免误修大面积结构。")]
+        public int DustMaxArea { get => _DustMaxArea; set { _DustMaxArea = Math.Max(1, value); OnPropertyChanged(); } }
+        private int _DustMaxArea = 500;
+
+        [Category("灰尘滤除"), DisplayName("修复半径(px)"), Description("用于估计局部背景和扩展修复区域的像素半径。")]
+        public int DustRepairRadius { get => _DustRepairRadius; set { _DustRepairRadius = Math.Max(1, Math.Min(value, 31)); OnPropertyChanged(); } }
+        private int _DustRepairRadius = 3;
+
         public ColorDifferenceReferenceMode ColorDifferenceReferenceMode { get => _ColorDifferenceReferenceMode; set { _ColorDifferenceReferenceMode = value; OnPropertyChanged(); } }
         private ColorDifferenceReferenceMode _ColorDifferenceReferenceMode = ColorDifferenceReferenceMode.D65;
 
@@ -82,6 +131,12 @@ namespace ProjectStarkSemi.Conoscope
         {
             EnsureProfile(ConoscopeModelType.VA60);
             EnsureProfile(ConoscopeModelType.VA80);
+        }
+
+        private static int NormalizeOdd(int value, int min, int max)
+        {
+            value = Math.Max(min, Math.Min(value, max));
+            return value % 2 == 0 ? Math.Min(value + 1, max) : value;
         }
     }
 }

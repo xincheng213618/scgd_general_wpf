@@ -64,6 +64,7 @@ namespace ProjectStarkSemi.Conoscope
         /// <summary>
         /// 是否包含观察相机
         /// </summary>
+        [Category("观察相机"), DisplayName("启用观察相机"), Description("VA60 默认启用，VA80 默认关闭。关闭后 Conoscope 窗口不会显示打开观察相机按钮。")]
         public bool HasObservationCamera
         {
             get => _HasObservationCamera;
@@ -76,16 +77,18 @@ namespace ProjectStarkSemi.Conoscope
         /// 观察相机尺寸系数（mm/像素）
         /// 用于在观察相机图像上按 mm 尺寸画圆
         /// </summary>
+        [Category("观察相机"), DisplayName("尺寸系数(mm/像素)"), Description("红圈像素直径 = 选择尺寸(mm) / 尺寸系数。例如 0.5mm / 0.02 = 25px。")]
         public double ObservationCameraScaleCoefficient
         {
             get => _ObservationCameraScaleCoefficient;
-            set { _ObservationCameraScaleCoefficient = value; OnPropertyChanged(); }
+            set { _ObservationCameraScaleCoefficient = Math.Max(0, value); OnPropertyChanged(); }
         }
         private double _ObservationCameraScaleCoefficient = 0.02;
 
         /// <summary>
         /// 观察相机中心点 X 坐标（像素）
         /// </summary>
+        [Category("观察相机"), DisplayName("中心点X(像素)"), Description("红色圆形在观察相机图像中的中心点 X 坐标。")]
         public double ObservationCameraCenterX
         {
             get => _ObservationCameraCenterX;
@@ -96,6 +99,7 @@ namespace ProjectStarkSemi.Conoscope
         /// <summary>
         /// 观察相机中心点 Y 坐标（像素）
         /// </summary>
+        [Category("观察相机"), DisplayName("中心点Y(像素)"), Description("红色圆形在观察相机图像中的中心点 Y 坐标。")]
         public double ObservationCameraCenterY
         {
             get => _ObservationCameraCenterY;

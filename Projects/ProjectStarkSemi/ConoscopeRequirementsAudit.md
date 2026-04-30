@@ -105,22 +105,22 @@
 - 根据尺寸和系数画红色圆
 
 ### 当前状态
-**部分实现**
+**已实现**
 
 | 子项 | 当前情况 | 状态 | 代码位置 |
 |---|---|---|---|
-| 打开观察相机按钮 | 已有 | 已实现 | `btnOpenObservationCamera_Click` |
+| 打开观察相机按钮 | Conoscope 窗口上方已有按钮 | 已实现 | `ConoscopeWindow.xaml`, `btnOpenObservationCamera_Click` |
 | 独立窗口 | 已有 `MVSViewWindow` | 已实现 | `MVSViewWindow.xaml/.cs` |
-| 非阻塞主界面 | `Show()` 打开，不是模态 | 已实现 | `MenuConoscopeWindow`, 打开窗口逻辑 |
+| 非阻塞主界面 | `Show()` 打开，不是模态 | 已实现 | `ConoscopeWindow.xaml.cs`, `MenuMVSVideo` |
 | 窗口拖动/缩放 | 普通 WPF Window，天然支持 | 已实现 | `MVSViewWindow.xaml` |
-| 仅 VA60 显示按钮 | 当前未见限制 | 未实现 | 需与 `CurrentModel` 联动 |
-| 观察相机尺寸系数 | 未见配置项 | 未实现 | 需新增到 `ConoscopeConfig` |
-| 观察相机中心点坐标 | 未见配置项 | 未实现 | 需新增到 `ConoscopeConfig` |
-| 尺寸下拉 3/2/1/0.5mm | 未实现 | 未实现 | `MVSViewWindow` |
-| 红色圆叠加 | 未实现 | 未实现 | `MVSViewWindow` 图像层 |
+| 仅 VA60 显示按钮 | 按 `HasObservationCamera` 显隐，VA60 默认 true，VA80 默认 false；独立菜单入口也做了可见性和执行防护 | 已实现 | `ConoscopeWindow.xaml.cs`, `MVSViewWindow.xaml.cs` |
+| 观察相机尺寸系数 | 已在型号参数中配置，默认 0.02 mm/像素 | 已实现 | `ConoscopeModelProfile.cs` |
+| 观察相机中心点坐标 | 已在型号参数中配置 X/Y，默认 640/512 | 已实现 | `ConoscopeModelProfile.cs` |
+| 尺寸下拉 3/2/1/0.5mm | 观察相机窗口提供四个尺寸选项 | 已实现 | `MVSViewWindow.xaml` |
+| 红色圆叠加 | 按配置中心点绘制红色圆；像素直径 = 选择尺寸 / 尺寸系数 | 已实现 | `MVSViewWindow.xaml.cs` |
 
 ### 结论
-当前只实现了“能打开观察相机窗口”，其余大部分观察相机业务功能还没做。
+观察相机需求已闭环；后续如果要支持隐藏红圈或更多光栅尺寸，可在 `MVSViewWindowConfig` 中扩展选项。
 
 ---
 

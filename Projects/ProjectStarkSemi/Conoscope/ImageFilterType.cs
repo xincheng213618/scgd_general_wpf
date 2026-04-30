@@ -35,4 +35,11 @@
         /// </summary>
         Bilateral
     }
+
+    public enum DustRemovalMode
+    {
+        DarkSpot,
+        BrightSpot,
+        Both
+    }
 }

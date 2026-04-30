@@ -64,6 +64,90 @@ namespace ProjectStarkSemi.Conoscope
                 get => config.ApplyFilterOnOpen;
                 set => config.ApplyFilterOnOpen = value;
             }
+
+            [Category("滤波"), DisplayName("滤波类型")]
+            public ImageFilterType FilterType
+            {
+                get => config.FilterType;
+                set => config.FilterType = value;
+            }
+
+            [Category("滤波"), DisplayName("核大小")]
+            public int FilterKernelSize
+            {
+                get => config.FilterKernelSize;
+                set => config.FilterKernelSize = value;
+            }
+
+            [Category("滤波"), DisplayName("高斯 Sigma")]
+            public double FilterSigma
+            {
+                get => config.FilterSigma;
+                set => config.FilterSigma = value;
+            }
+
+            [Category("滤波"), DisplayName("双边 d")]
+            public int FilterD
+            {
+                get => config.FilterD;
+                set => config.FilterD = value;
+            }
+
+            [Category("滤波"), DisplayName("双边 SigmaColor")]
+            public double FilterSigmaColor
+            {
+                get => config.FilterSigmaColor;
+                set => config.FilterSigmaColor = value;
+            }
+
+            [Category("滤波"), DisplayName("双边 SigmaSpace")]
+            public double FilterSigmaSpace
+            {
+                get => config.FilterSigmaSpace;
+                set => config.FilterSigmaSpace = value;
+            }
+
+            [Category("灰尘滤除"), DisplayName("启用灰尘滤除")]
+            public bool DustRemovalEnabled
+            {
+                get => config.DustRemovalEnabled;
+                set => config.DustRemovalEnabled = value;
+            }
+
+            [Category("灰尘滤除"), DisplayName("灰尘类型")]
+            public DustRemovalMode DustRemovalMode
+            {
+                get => config.DustRemovalMode;
+                set => config.DustRemovalMode = value;
+            }
+
+            [Category("灰尘滤除"), DisplayName("检测阈值(%)")]
+            public double DustThresholdPercent
+            {
+                get => config.DustThresholdPercent;
+                set => config.DustThresholdPercent = value;
+            }
+
+            [Category("灰尘滤除"), DisplayName("最小面积(px)")]
+            public int DustMinArea
+            {
+                get => config.DustMinArea;
+                set => config.DustMinArea = value;
+            }
+
+            [Category("灰尘滤除"), DisplayName("最大面积(px)")]
+            public int DustMaxArea
+            {
+                get => config.DustMaxArea;
+                set => config.DustMaxArea = value;
+            }
+
+            [Category("灰尘滤除"), DisplayName("修复半径(px)")]
+            public int DustRepairRadius
+            {
+                get => config.DustRepairRadius;
+                set => config.DustRepairRadius = value;
+            }
         }
     }
 }

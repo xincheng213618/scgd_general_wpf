@@ -23,11 +23,23 @@ namespace ProjectStarkSemi
         public override string OwnerGuid => MenuItemConstants.View;
         public override int Order => 1000;
         public override string Header => "MVSVideo";
+        public override Visibility Visibility => HasCurrentModelObservationCamera() ? Visibility.Visible : Visibility.Collapsed;
 
         public override void Execute()
         {
+            if (!HasCurrentModelObservationCamera())
+            {
+                MessageBox.Show("当前型号没有观察相机", "观察相机", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             MVSViewWindow mVSViewWindow = new MVSViewWindow();
             mVSViewWindow.Show();
+        }
+
+        private static bool HasCurrentModelObservationCamera()
+        {
+            return Conoscope.ConoscopeManager.GetInstance().Config.CurrentModelProfile.HasObservationCamera;
         }
     }
 
@@ -189,7 +201,8 @@ namespace ProjectStarkSemi
                 return;
             }
 
-            double scaleCoefficient = Conoscope.ConoscopeManager.GetInstance().Config.CurrentModelProfile.ObservationCameraScaleCoefficient;
+            Conoscope.ConoscopeModelProfile currentModelProfile = Conoscope.ConoscopeManager.GetInstance().Config.CurrentModelProfile;
+            double scaleCoefficient = currentModelProfile.ObservationCameraScaleCoefficient;
             if (scaleCoefficient <= double.Epsilon)
             {
                 GratingCircle.Visibility = Visibility.Collapsed;
@@ -203,7 +216,7 @@ namespace ProjectStarkSemi
             if (imgDisplay?.ImageShow.Source != null)
             {
                 Matrix contentMatrix = imgDisplay.Zoombox1.ContentMatrix;
-                Point imageCenter = new Point(imgDisplay.ImageShow.Source.Width / 2.0, imgDisplay.ImageShow.Source.Height / 2.0);
+                Point imageCenter = new Point(currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
                 Point centerInZoombox = contentMatrix.Transform(imageCenter);
                 displayCenter = imgDisplay.Zoombox1.TranslatePoint(centerInZoombox, GratingOverlayCanvas);
                 displayDiameter = imagePixelDiameter * Math.Abs(contentMatrix.M11);

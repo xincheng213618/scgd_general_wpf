@@ -90,11 +90,10 @@
                     <StackPanel Margin="4">
                         <DockPanel Margin="0,0,0,4">
                             <ComboBox x:Name="cbGratingDiameter" DockPanel.Dock="Right" Width="105" SelectionChanged="cbGratingDiameter_SelectionChanged">
-                                <ComboBoxItem Content="不显示" Tag="0"/>
-                                <ComboBoxItem Content="0.5 mm" Tag="0.5"/>
-                                <ComboBoxItem Content="1 mm" Tag="1"/>
-                                <ComboBoxItem Content="2 mm" Tag="2"/>
                                 <ComboBoxItem Content="3 mm" Tag="3"/>
+                                <ComboBoxItem Content="2 mm" Tag="2"/>
+                                <ComboBoxItem Content="1 mm" Tag="1"/>
+                                <ComboBoxItem Content="0.5 mm" Tag="0.5"/>
                             </ComboBox>
                             <TextBlock Text="选择光栅" VerticalAlignment="Center"/>
                         </DockPanel>
