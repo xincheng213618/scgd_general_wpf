@@ -22,10 +22,43 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" WindowChrome.IsHitTestVisibleInChrome="True">
-            <DockPanel Margin="6,2">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="32" Width="32" Margin="0,0,8,0" ToolTip="设置">
+        <Border Grid.Row="0" MinHeight="84" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" WindowChrome.IsHitTestVisibleInChrome="True">
+            <Grid Margin="8,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <WrapPanel Grid.Column="0" VerticalAlignment="Center" ItemHeight="34">
+                    <Button Content="打开" Click="OpenFile_Click" Padding="10,4" Margin="0,0,6,6"/>
+                    <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,6"/>
+                    <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4" Margin="0,0,6,6"/>
+                    <Button Content="高级导出" Click="btnAdvancedExport_Click" Padding="10,4" Margin="0,0,12,6"/>
+
+                    <TextBlock Text="型号" VerticalAlignment="Center" Margin="0,0,6,6"/>
+                    <ComboBox x:Name="cbModelType" Width="100" SelectionChanged="cbModelType_SelectionChanged" Margin="0,0,12,6"/>
+                    <Button x:Name="btnOpenObservationCamera" Content="{x:Static properties:Resources.OpenObservationCamera}" Click="btnOpenObservationCamera_Click" Padding="10,4" Margin="0,0,12,6"/>
+
+                    <TextBlock Text="流程" VerticalAlignment="Center" Margin="0,0,6,6"/>
+                    <ComboBox x:Name="cbFlowTemplate" Width="160" DisplayMemberPath="Key" SelectionChanged="cbFlowTemplate_SelectionChanged" Margin="0,0,6,6"/>
+                    <Button x:Name="btnRunFlow" Content="执行流程" Click="btnRunFlow_Click" Padding="10,4" Margin="0,0,12,6"/>
+
+                    <TextBlock Text="相机" VerticalAlignment="Center" Margin="0,0,6,6"/>
+                    <ComboBox x:Name="cbCameraDevice" Width="150" DisplayMemberPath="Config.Name" SelectionChanged="cbCameraDevice_SelectionChanged" Margin="0,0,6,6"/>
+                    <TextBlock Text="校正" VerticalAlignment="Center" Margin="0,0,6,6"/>
+                    <ComboBox x:Name="cbCalibrationTemplate" Width="150" DisplayMemberPath="Key" Margin="0,0,6,6"/>
+                    <Button x:Name="btnCaptureCamera" Content="拍照" Click="btnCaptureCamera_Click" Padding="10,4" Margin="0,0,12,6"/>
+
+                    <TextBlock Text="ND" VerticalAlignment="Center" Margin="0,0,6,6"/>
+                    <TextBox x:Name="txtNDPort" Width="54" Margin="0,0,6,6" VerticalContentAlignment="Center"/>
+                    <Button x:Name="btnSetNDPort" Content="切换ND" Click="btnSetNDPort_Click" Padding="10,4" Margin="0,0,6,6"/>
+                    <Button x:Name="btnGetNDPort" Content="读取ND" Click="btnGetNDPort_Click" Padding="10,4" Margin="0,0,12,6"/>
+
+                    <Button Content="保存配置" Click="btnSaveWindowConfig_Click" Padding="10,4" Margin="0,0,8,6"/>
+                </WrapPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="34" Width="34" Margin="8,0,0,0" ToolTip="设置">
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
@@ -42,17 +75,7 @@
                         </TextBlock>
                     </Button>
                 </StackPanel>
-
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="打开" Click="OpenFile_Click" Padding="10,4" Margin="0,0,6,0"/>
-                    <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                    <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                    <Button Content="高级导出" Click="btnAdvancedExport_Click" Padding="10,4" Margin="0,0,10,0"/>
-                    <TextBlock Text="型号" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <ComboBox x:Name="cbModelType" Width="100" SelectionChanged="cbModelType_SelectionChanged" Margin="0,0,10,0"/>
-                    <Button x:Name="btnOpenObservationCamera" Content="{x:Static properties:Resources.OpenObservationCamera}" Click="btnOpenObservationCamera_Click" Padding="10,4"/>
-                </StackPanel>
-            </DockPanel>
+            </Grid>
         </Border>
 
         <xcad:DockingManager x:Name="DockingManager" Grid.Row="1" Margin="-6,-6" Padding="0" Background="Transparent" BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
@@ -69,6 +92,10 @@
                     <TextBlock Text="{x:Static properties:Resources.CurrentModel}" Margin="0,0,5,0"/>
                     <TextBlock x:Name="tbCurrentModel" Text="VA60" FontWeight="Bold"/>
                 </StackPanel>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock x:Name="tbOperationStatus" Text="就绪" Foreground="Gray"/>
             </StatusBarItem>
             <Separator />
             <StatusBarItem x:Name="ObservationCameraStatusItem">

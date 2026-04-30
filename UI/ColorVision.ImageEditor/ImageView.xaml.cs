@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using log4net;
@@ -529,6 +530,8 @@ namespace ColorVision.ImageEditor
 
                 Config.AddProperties("PixelFormat", writeableBitmap.Format);
             }
+
+            ImageCalibrationService.ApplyToDefault(EditorContext);
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;

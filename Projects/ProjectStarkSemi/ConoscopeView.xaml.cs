@@ -110,6 +110,8 @@ namespace ProjectStarkSemi
             RefreshQuickControlsFromAxisParam();
             InitializeColorDifferenceControls();
             cbFilterType_SelectionChanged(cbFilterType, new SelectionChangedEventArgs(Selector.SelectionChangedEvent, new List<object>(), new List<object>()));
+            UpdateReferenceControlVisibility();
+            UpdateColorDifferencePanelVisibility();
 
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -145,6 +147,18 @@ namespace ProjectStarkSemi
             }
 
             UpdateColorDifferenceReferenceUi();
+        }
+
+        private void UpdateColorDifferencePanelVisibility()
+        {
+            if (gbColorDifference == null)
+            {
+                return;
+            }
+
+            bool isColorDifferenceSelected = GetSelectedDisplayChannel() == ExportChannel.ColorDifference
+                || GetSelectedExportChannel() == ExportChannel.ColorDifference;
+            gbColorDifference.Visibility = isColorDifferenceSelected ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private ColorDifferenceReferenceMode GetSelectedColorDifferenceReferenceMode()
@@ -325,6 +339,20 @@ namespace ProjectStarkSemi
             {
                 isUpdatingQuickControls = false;
             }
+
+            UpdateReferenceControlVisibility();
+        }
+
+        private void UpdateReferenceControlVisibility()
+        {
+            if (rowReferenceAngle == null || rowReferenceRadius == null)
+            {
+                return;
+            }
+
+            ConoscopeCoordinateReferenceMode mode = CurrentModelProfile.CoordinateAxisParam.ReferenceMode;
+            rowReferenceAngle.Visibility = mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Visibility.Visible : Visibility.Collapsed;
+            rowReferenceRadius.Visibility = mode == ConoscopeCoordinateReferenceMode.PolarCircle ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void QuickReferenceMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -337,6 +365,7 @@ namespace ProjectStarkSemi
             if (Enum.TryParse(item.Tag?.ToString(), out ConoscopeCoordinateReferenceMode mode))
             {
                 CurrentModelProfile.CoordinateAxisParam.ReferenceMode = mode;
+                UpdateReferenceControlVisibility();
                 ApplyCoordinateAxisReference();
             }
         }
@@ -401,8 +430,9 @@ namespace ProjectStarkSemi
             if (cbFilterType == null) return;
             
             var selectedFilter = (ImageFilterType)cbFilterType.SelectedIndex;
-            
-            // Update parameter visibility based on filter type
+
+            UpdateFilterParameterVisibility(selectedFilter);
+
             if (sliderKernelSize != null && sliderSigma != null && sliderD != null && sliderSigmaColor != null && sliderSigmaSpace != null)
             {
                 switch (selectedFilter)
@@ -439,6 +469,24 @@ namespace ProjectStarkSemi
                         break;
                 }
             }
+        }
+
+        private void UpdateFilterParameterVisibility(ImageFilterType selectedFilter)
+        {
+            if (rowFilterKernel == null || rowFilterSigma == null || rowFilterD == null || rowFilterSigmaColor == null || rowFilterSigmaSpace == null)
+            {
+                return;
+            }
+
+            bool showKernel = selectedFilter is ImageFilterType.LowPass or ImageFilterType.MovingAverage or ImageFilterType.Gaussian or ImageFilterType.Median;
+            bool showSigma = selectedFilter == ImageFilterType.Gaussian;
+            bool showBilateral = selectedFilter == ImageFilterType.Bilateral;
+
+            rowFilterKernel.Visibility = showKernel ? Visibility.Visible : Visibility.Collapsed;
+            rowFilterSigma.Visibility = showSigma ? Visibility.Visible : Visibility.Collapsed;
+            rowFilterD.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
+            rowFilterSigmaColor.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
+            rowFilterSigmaSpace.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /// <summary>
@@ -795,6 +843,7 @@ namespace ProjectStarkSemi
         {
             ExportChannel channel = GetSelectedDisplayChannel();
             ConoscopeConfig.DisplayChannel = channel;
+            UpdateColorDifferencePanelVisibility();
 
             if (HasXyzData())
             {
@@ -807,6 +856,25 @@ namespace ProjectStarkSemi
                     log.Error($"刷新显示通道失败: {ex.Message}", ex);
                     MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
+            }
+        }
+
+        private void ExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateColorDifferencePanelVisibility();
+        }
+
+        private void btnSaveConoscopeConfig_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ConfigService.Instance.Save<ConoscopeConfig>();
+                MessageBox.Show("配置已保存", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"保存 Conoscope 配置失败: {ex.Message}", ex);
+                MessageBox.Show($"保存配置失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

@@ -57,7 +57,7 @@
                                         </ComboBox>
                                     </WrapPanel>
 
-                                    <Grid Margin="5,4,5,0">
+                                    <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="42"/>
@@ -68,7 +68,7 @@
                                         <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="2" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceAngle_ValueChanged"/>
                                     </Grid>
 
-                                    <Grid Margin="5,4,5,0">
+                                    <Grid x:Name="rowReferenceRadius" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="42"/>
@@ -81,7 +81,7 @@
                                 </StackPanel>
                             </GroupBox>
 
-                            <GroupBox Header="色差计算" Margin="0,0,0,6">
+                            <GroupBox x:Name="gbColorDifference" Header="色差计算" Margin="0,0,0,6">
                                 <StackPanel>
                                     <WrapPanel Margin="0,4,0,4">
                                         <TextBlock Text="基准:" VerticalAlignment="Center" Margin="5,0,5,0"/>
@@ -122,7 +122,7 @@
                                         </ComboBox>
                                         <Button x:Name="btnApplyFilter" Content="{x:Static properties:Resources.ApplyFilter}" Click="btnApplyFilter_Click" Padding="10,3" Margin="10,0,0,0"/>
                                     </WrapPanel>
-                                    <Grid Margin="5,0,5,0">
+                                    <Grid x:Name="rowFilterKernel" Margin="5,0,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="38"/>
@@ -132,7 +132,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
                                         <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True"/>
                                     </Grid>
-                                    <Grid Margin="5,4,5,0">
+                                    <Grid x:Name="rowFilterSigma" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="38"/>
@@ -142,7 +142,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
                                         <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" IsEnabled="False"/>
                                     </Grid>
-                                    <Grid Margin="5,4,5,0">
+                                    <Grid x:Name="rowFilterD" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="38"/>
@@ -152,7 +152,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
                                         <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
                                     </Grid>
-                                    <Grid Margin="5,4,5,0">
+                                    <Grid x:Name="rowFilterSigmaColor" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="38"/>
@@ -162,7 +162,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
                                         <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
                                     </Grid>
-                                    <Grid Margin="5,4,5,4">
+                                    <Grid x:Name="rowFilterSigmaSpace" Margin="5,4,5,4">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="38"/>
@@ -183,7 +183,7 @@
                                         <ComboBoxItem Content="按极角导出" Tag="Circle"/>
                                     </ComboBox>
                                     <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0">
+                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
                                         <ComboBoxItem Content="X通道" Tag="X"/>
                                         <ComboBoxItem Content="Y通道" Tag="Y"/>
                                         <ComboBoxItem Content="Z通道" Tag="Z"/>
@@ -204,6 +204,7 @@
                 <TabItem Header="设置">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
+                            <Button Content="保存配置" Click="btnSaveConoscopeConfig_Click" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8"/>
                             <Grid x:Name="GridSetting" Margin="0,0,0,10" />
                         </StackPanel>
                     </ScrollViewer>

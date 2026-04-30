@@ -3,6 +3,7 @@ using System.Windows;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
+using ColorVision.ImageEditor.Draw;
 
 namespace ColorVision.ImageEditor.Draw.Ruler
 {
@@ -27,16 +28,38 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public DrawingVisualScaleHost()
         {
             visual = new DrawingVisual();
+            DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
         }
+
+        public DrawingVisualScaleHost(EditorContext editorContext) : this()
+        {
+            EditorContext = editorContext;
+        }
+
+        public EditorContext? EditorContext { get; set; }
 
         public double ParentWidth { get; set; }
         public double ParentHeight { get; set; }
 
         public ScaleLocation ScaleLocation { get; set; } = ScaleLocation.lowerright;
 
-        public double ActualLength { get => DefalutTextAttribute.Defalut.ActualLength; set { DefalutTextAttribute.Defalut.ActualLength = value;  NotifyPropertyChanged(); } }
-        public string PhysicalUnit { get => DefalutTextAttribute.Defalut.PhysicalUnit; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; NotifyPropertyChanged(); } }
-        public bool IsUsePhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit; set { DefalutTextAttribute.Defalut.IsUsePhysicalUnit = value; NotifyPropertyChanged(); } }
+        public double ActualLength { get => DefalutTextAttribute.Defalut.ActualLength; set { DefalutTextAttribute.Defalut.ActualLength = value; SaveCalibration(); NotifyPropertyChanged(); } }
+        public string PhysicalUnit { get => DefalutTextAttribute.Defalut.PhysicalUnit; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; SaveCalibration(); NotifyPropertyChanged(); } }
+        public bool IsUsePhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit; set { DefalutTextAttribute.Defalut.IsUsePhysicalUnit = value; SaveCalibration(); NotifyPropertyChanged(); } }
+
+        private void Defalut_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ActualLength) || e.PropertyName == nameof(PhysicalUnit) || e.PropertyName == nameof(IsUsePhysicalUnit))
+            {
+                NotifyPropertyChanged(e.PropertyName);
+                Render();
+            }
+        }
+
+        private void SaveCalibration()
+        {
+            ImageCalibrationService.SaveCurrent(EditorContext);
+        }
 
         private double Lastlength = 1;
         public void Render() => Render(Lastlength);
