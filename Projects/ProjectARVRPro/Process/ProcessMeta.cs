@@ -7,6 +7,11 @@ namespace ProjectARVRPro.Process
 {
     public class ProcessMeta : ViewModelBase
     {
+        public ProcessMeta()
+        {
+            PictureSwitchConfig = new PictureSwitchConfig();
+        }
+
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
@@ -45,6 +50,29 @@ namespace ProjectARVRPro.Process
         /// </summary>
         public InterStepAction InterStepAction { get => _InterStepAction; set { _InterStepAction = value; OnPropertyChanged(); } }
         private InterStepAction _InterStepAction;
+
+        /// <summary>
+        /// 执行此流程前的切图配置（可选，默认不启用）
+        /// </summary>
+        public PictureSwitchConfig PictureSwitchConfig
+        {
+            get => _PictureSwitchConfig ??= new PictureSwitchConfig();
+            set
+            {
+                if (_PictureSwitchConfig != null)
+                    _PictureSwitchConfig.PropertyChanged -= PictureSwitchConfig_PropertyChanged;
+
+                _PictureSwitchConfig = value ?? new PictureSwitchConfig();
+                _PictureSwitchConfig.PropertyChanged += PictureSwitchConfig_PropertyChanged;
+                OnPropertyChanged();
+            }
+        }
+        private PictureSwitchConfig _PictureSwitchConfig;
+
+        private void PictureSwitchConfig_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(PictureSwitchConfig));
+        }
 
         public string ProcessTypeName => Process?.GetType().Name ?? string.Empty;
         public string ProcessTypeFullName => Process?.GetType().FullName ?? string.Empty;

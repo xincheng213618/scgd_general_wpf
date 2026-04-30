@@ -412,10 +412,13 @@ namespace ProjectARVRPro
             CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
             CurrentFlowResult.Model = FlowTemplate.Text;
 
+            ProcessMeta? runProcessMeta = null;
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
                 {
+                    runProcessMeta = processMeta;
                     CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
                     ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
 
@@ -443,6 +446,15 @@ namespace ProjectARVRPro
                 flowEngine.LoadFromBase64(base64);
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
+            }
+
+            if (!await ExecutePictureSwitchAsync(runProcessMeta))
+            {
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                CurrentFlowResult.Msg = "PictureSwitchFailed";
+                logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
+                TryCount = 0;
+                return;
             }
 
             if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
@@ -802,11 +814,7 @@ namespace ProjectARVRPro
 
         private void TestCompleted()
         {
-            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
-            {
-                log.Info("找不到连接的Socket");
-                return;
-            }
+
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
             if (ViewResultManager.Config.IsSaveCsv)
@@ -864,6 +872,12 @@ namespace ProjectARVRPro
                 MsgID = response.MsgID,
                 ResponseCode = response.Code
             };
+            
+            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
+            {
+                log.Info("找不到连接的Socket");
+                return;
+            }
             SocketMessageManager.GetInstance().AddMessage(sentMsg);
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
         }
@@ -1125,15 +1139,6 @@ namespace ProjectARVRPro
 
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
 
-                    // 执行步间通信指令（如有配置）
-                    if (_thunderbirdController.IsConnected)
-                    {
-                        bool switchResult = await _thunderbirdController.QuickSwitchDownAsync(1000);
-                        log.Info("雷鸟向下切图结果: " + (switchResult ? "成功" : "失败"));
-                        await Task.Delay(1000);
-                        log.Info("执行流程");
-                    }
-
                     var templateParam = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(meta.FlowTemplate));
                     if (templateParam == null)
                     {
@@ -1174,6 +1179,21 @@ namespace ProjectARVRPro
                     {
                         flowEngine.LoadFromBase64(string.Empty);
                         await Refresh();
+                    }
+
+                    if (!await ExecutePictureSwitchAsync(meta))
+                    {
+                        CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                        CurrentFlowResult.Msg = "PictureSwitchFailed";
+                        logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
+
+                        if (!ProjectARVRProConfig.Instance.AllowTestFailures)
+                        {
+                            log.Error($"流程 {meta.Name} 切图失败且不允许失败，终止一键执行");
+                            break;
+                        }
+
+                        continue;
                     }
 
                     if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
@@ -1266,6 +1286,54 @@ namespace ProjectARVRPro
             finally
             {
                 _isRunAllRunning = false;
+            }
+        }
+
+        private async Task<bool> ExecutePictureSwitchAsync(ProcessMeta? meta)
+        {
+            PictureSwitchConfig? config = meta?.PictureSwitchConfig;
+            if (config == null || !config.IsEnabled)
+                return true;
+
+            if (config.Mode != PictureSwitchMode.Thunderbird)
+            {
+                log.Error($"不支持的切图模式: {config.Mode}");
+                return false;
+            }
+
+            if (!_thunderbirdController.IsConnected)
+            {
+                log.Error($"流程 {meta?.Name} 已启用雷鸟切图，但雷鸟串口未连接");
+                return false;
+            }
+
+            try
+            {
+                int timeoutMs = config.TimeoutMs > 0 ? config.TimeoutMs : 1000;
+                ThunderbirdSerialController.CommandResult result = await _thunderbirdController.SendConfiguredCommandAsync(
+                    config.SendCommand,
+                    config.ExpectedResponse,
+                    timeoutMs);
+
+                if (!result.Success)
+                {
+                    log.Error($"流程 {meta?.Name} 雷鸟切图失败: Command={result.Command}, Expected={config.ExpectedResponse}, Response={result.Response ?? "<null>"}");
+                    return false;
+                }
+
+                if (config.SuccessDelayMs > 0)
+                {
+                    log.Info($"流程 {meta?.Name} 雷鸟切图成功，等待图像稳定 {config.SuccessDelayMs}ms");
+                    await Task.Delay(config.SuccessDelayMs);
+                }
+
+                log.Info($"流程 {meta?.Name} 雷鸟切图完成，执行流程");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"流程 {meta?.Name} 雷鸟切图异常", ex);
+                return false;
             }
         }
 

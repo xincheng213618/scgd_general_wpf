@@ -188,6 +188,21 @@ namespace ProjectARVRPro
             return SwitchPictureAsync(pictureIndex.ToString("X"), timeoutMs);
         }
 
+        public async Task<CommandResult> SendConfiguredCommandAsync(string command, string expectedResponse, int timeoutMs = 0)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+                throw new ArgumentException("发送指令不能为空", nameof(command));
+
+            string normalizedCommand = command.Trim();
+            string? response = await SendCommandAsync(normalizedCommand, timeoutMs);
+            if (response != null)
+                ProcessResponse(response);
+
+            bool success = IsExpectedResponse(response, expectedResponse);
+            log.Info($"雷鸟配置指令 {normalizedCommand} 结果: {(success ? "成功" : "失败")}, Expected={expectedResponse}, Response={response ?? "<null>"}");
+            return new CommandResult(normalizedCommand, response, success);
+        }
+
         /// <summary>
         /// 查询当前亮度 (AT+R 30)
         /// </summary>
@@ -395,6 +410,17 @@ namespace ProjectARVRPro
             }
 
             return hasSuccess;
+        }
+
+        public static bool IsExpectedResponse(string? response, string? expectedResponse)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(expectedResponse))
+                return true;
+
+            return response.Contains(expectedResponse.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         public void Dispose()

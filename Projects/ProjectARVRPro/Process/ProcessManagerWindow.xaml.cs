@@ -107,6 +107,7 @@ namespace ProjectARVRPro.Process
             RecipePanel.Children.Clear();
             FixPanel.Children.Clear();
             ProcessPanel.Children.Clear();
+            PictureSwitchPanel.Children.Clear();
 
             // Cleanup previous config handlers
             CleanupConfigSubscriptions();
@@ -120,6 +121,7 @@ namespace ProjectARVRPro.Process
                 AddPlaceholderText(RecipePanel);
                 AddPlaceholderText(FixPanel);
                 AddPlaceholderText(ProcessPanel);
+                AddPlaceholderText(PictureSwitchPanel);
                 return;
             }
 
@@ -167,6 +169,8 @@ namespace ProjectARVRPro.Process
             {
                 AddNoConfigText(ProcessPanel, "无Process配置");
             }
+
+            AddPictureSwitchConfigToPanel(selectedMeta.PictureSwitchConfig, PictureSwitchPanel);
         }
 
         private void AddPlaceholderText(StackPanel panel)
@@ -224,6 +228,95 @@ namespace ProjectARVRPro.Process
             SubscribeRecursively(config, saveAction);
 
             panel.Children.Add(configPanel);
+        }
+
+        private void AddPictureSwitchConfigToPanel(PictureSwitchConfig config, StackPanel panel)
+        {
+            panel.Children.Add(CreateCheckBox("启用切图", config, nameof(PictureSwitchConfig.IsEnabled)));
+
+            var modeBox = new ComboBox
+            {
+                IsEnabled = false,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            modeBox.Items.Add("雷鸟");
+            modeBox.SelectedIndex = 0;
+            panel.Children.Add(CreateLabeledControl("模式", modeBox));
+
+            var presetBox = new ComboBox
+            {
+                ItemsSource = PictureSwitchConfig.Presets,
+                DisplayMemberPath = nameof(PictureSwitchPreset.DisplayText),
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            presetBox.SelectedItem = PictureSwitchConfig.Presets.FirstOrDefault(p => string.Equals(p.Command, config.SendCommand, StringComparison.OrdinalIgnoreCase));
+            presetBox.SelectionChanged += (s, e) =>
+            {
+                if (presetBox.SelectedItem is PictureSwitchPreset preset)
+                    config.SendCommand = preset.Command;
+            };
+            panel.Children.Add(CreateLabeledControl("预设切图", presetBox));
+
+            panel.Children.Add(CreateTextBoxRow("发送值", config, nameof(PictureSwitchConfig.SendCommand)));
+            panel.Children.Add(CreateTextBoxRow("返回值", config, nameof(PictureSwitchConfig.ExpectedResponse)));
+            panel.Children.Add(CreateTextBoxRow("超时(ms)", config, nameof(PictureSwitchConfig.TimeoutMs)));
+            panel.Children.Add(CreateTextBoxRow("成功后延时(ms)", config, nameof(PictureSwitchConfig.SuccessDelayMs)));
+        }
+
+        private static CheckBox CreateCheckBox(string content, object source, string propertyName)
+        {
+            var checkBox = new CheckBox
+            {
+                Content = content,
+                Margin = new Thickness(0, 0, 0, 8),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            checkBox.SetBinding(CheckBox.IsCheckedProperty, new Binding(propertyName)
+            {
+                Source = source,
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+            });
+            return checkBox;
+        }
+
+        private static FrameworkElement CreateTextBoxRow(string label, object source, string propertyName)
+        {
+            var textBox = new TextBox
+            {
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            textBox.SetBinding(TextBox.TextProperty, new Binding(propertyName)
+            {
+                Source = source,
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+            });
+
+            return CreateLabeledControl(label, textBox);
+        }
+
+        private static FrameworkElement CreateLabeledControl(string label, FrameworkElement control)
+        {
+            var grid = new Grid
+            {
+                Margin = new Thickness(0, 0, 0, 2)
+            };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var labelBlock = new TextBlock
+            {
+                Text = label,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 8, 8)
+            };
+
+            Grid.SetColumn(labelBlock, 0);
+            Grid.SetColumn(control, 1);
+            grid.Children.Add(labelBlock);
+            grid.Children.Add(control);
+            return grid;
         }
 
         /// <summary>

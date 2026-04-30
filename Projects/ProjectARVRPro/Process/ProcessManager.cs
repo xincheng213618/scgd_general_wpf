@@ -217,7 +217,8 @@ namespace ProjectARVRPro.Process
                     Process = newProc,
                     IsEnabled = meta.IsEnabled,
                     ConfigJson = meta.ConfigJson,
-                    InterStepAction = meta.InterStepAction?.Clone()
+                    InterStepAction = meta.InterStepAction?.Clone(),
+                    PictureSwitchConfig = meta.PictureSwitchConfig?.Clone()
                 };
                 newGroup.ProcessMetas.Add(newMeta);
             }
@@ -498,7 +499,8 @@ namespace ProjectARVRPro.Process
                 Process = proc,
                 IsEnabled = item.IsEnabled,
                 ConfigJson = item.ConfigJson,
-                InterStepAction = item.InterStepAction
+                InterStepAction = item.InterStepAction,
+                PictureSwitchConfig = item.PictureSwitchConfig ?? new PictureSwitchConfig()
             };
 
             meta.ApplyConfig();
@@ -525,7 +527,8 @@ namespace ProjectARVRPro.Process
                             ProcessTypeFullName = m.Process?.GetType().FullName,
                             IsEnabled = m.IsEnabled,
                             ConfigJson = m.ConfigJson,
-                            InterStepAction = m.InterStepAction
+                            InterStepAction = m.InterStepAction,
+                            PictureSwitchConfig = m.PictureSwitchConfig
                         }).ToList()
                     }).ToList()
                 };

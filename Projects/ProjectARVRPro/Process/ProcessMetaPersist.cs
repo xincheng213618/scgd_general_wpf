@@ -8,5 +8,6 @@
         public bool IsEnabled { get; set; } = true;
         public string ConfigJson { get; set; }
         public InterStepAction InterStepAction { get; set; }
+        public PictureSwitchConfig PictureSwitchConfig { get; set; }
     }
 }
