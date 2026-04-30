@@ -24,6 +24,8 @@ namespace ProjectARVRPro
         private int _currentBaudRate = 9600;
         private int _currentTimeoutMs = 1000;
 
+        public readonly record struct CommandResult(string Command, string? Response, bool Success);
+
         /// <summary>
         /// 当前亮度档位 (0~16, 对应 0x20~0x30)，-1 表示未知
         /// </summary>
@@ -161,6 +163,32 @@ namespace ProjectARVRPro
         }
 
         /// <summary>
+        /// 指定切图：发送 PICx，x 为单个十六进制位号（例如 2、9、A、B）。
+        /// </summary>
+        public async Task<CommandResult> SwitchPictureAsync(string pictureCode, int timeoutMs = 0)
+        {
+            string command = BuildPictureCommand(pictureCode);
+            string? response = await SendCommandAsync(command, timeoutMs);
+            if (response != null)
+                ProcessResponse(response);
+
+            bool success = IsSuccessResponse(response);
+            log.Info($"指定切图 {command} 结果: {(success ? "成功" : "失败")}, Response={response ?? "<null>"}");
+            return new CommandResult(command, response, success);
+        }
+
+        /// <summary>
+        /// 指定切图：pictureIndex 会转换为十六进制位号，例如 10 -> PICA。
+        /// </summary>
+        public Task<CommandResult> SwitchPictureAsync(int pictureIndex, int timeoutMs = 0)
+        {
+            if (pictureIndex < 0 || pictureIndex > 15)
+                throw new ArgumentOutOfRangeException(nameof(pictureIndex), "指定切图编号必须在 0~15 之间");
+
+            return SwitchPictureAsync(pictureIndex.ToString("X"), timeoutMs);
+        }
+
+        /// <summary>
         /// 查询当前亮度 (AT+R 30)
         /// </summary>
         public async Task<bool> QueryBrightnessAsync(int timeoutMs = 0)
@@ -213,9 +241,22 @@ namespace ProjectARVRPro
                     log.Info("操作成功 (OK)");
                     continue;
                 }
+
+                if (l.Equals("succeed", StringComparison.OrdinalIgnoreCase))
+                {
+                    log.Info("切图成功 (succeed)");
+                    continue;
+                }
+
+                if (l.Equals("fail", StringComparison.OrdinalIgnoreCase))
+                {
+                    log.Warn("切图失败：未找到对应名称图片 (fail)");
+                    continue;
+                }
+
                 if (l.Contains("error", StringComparison.OrdinalIgnoreCase))
                 {
-                    log.Warn("操作失败 (error)");
+                    log.Warn("命令错误 (ERROR)");
                     continue;
                 }
 
@@ -276,6 +317,84 @@ namespace ProjectARVRPro
                 log.Error($"快速切图失败: ", ex);
                 return false;
             }
+        }
+
+        public async Task<bool> QuickSwitchPictureAsync(string pictureCode, int timeoutMs = 1000)
+        {
+            try
+            {
+                CommandResult result = await SwitchPictureAsync(pictureCode, timeoutMs);
+                return result.Success;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"快速指定切图失败: {pictureCode}", ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> QuickSwitchPictureAsync(int pictureIndex, int timeoutMs = 1000)
+        {
+            try
+            {
+                CommandResult result = await SwitchPictureAsync(pictureIndex, timeoutMs);
+                return result.Success;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"快速指定切图失败: {pictureIndex}", ex);
+                return false;
+            }
+        }
+
+        public static string BuildPictureCommand(string pictureCode)
+        {
+            if (string.IsNullOrWhiteSpace(pictureCode))
+                throw new ArgumentException("指定切图编号不能为空", nameof(pictureCode));
+
+            string code = pictureCode.Trim().ToUpperInvariant();
+            if (code.StartsWith("PIC", StringComparison.OrdinalIgnoreCase))
+                code = code[3..];
+
+            if (int.TryParse(code, out int decimalIndex))
+            {
+                if (decimalIndex < 0 || decimalIndex > 15)
+                    throw new ArgumentOutOfRangeException(nameof(pictureCode), "指定切图编号必须在 0~15 之间");
+
+                code = decimalIndex.ToString("X");
+            }
+
+            if (code.Length != 1 || !Uri.IsHexDigit(code[0]))
+                throw new ArgumentException("指定切图编号必须是 0~9 或 A~F", nameof(pictureCode));
+
+            return "PIC" + code;
+        }
+
+        private static bool IsSuccessResponse(string? response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+                return false;
+
+            string[] lines = response.Split(ResponseSplitChars, StringSplitOptions.RemoveEmptyEntries);
+            bool hasSuccess = false;
+            foreach (string line in lines)
+            {
+                string value = line.Trim();
+                if (value.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                    value.Contains("fail", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                if (value.Equals("ok", StringComparison.OrdinalIgnoreCase) ||
+                    value.Equals("succeed", StringComparison.OrdinalIgnoreCase) ||
+                    value.Equals("success", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasSuccess = true;
+                }
+            }
+
+            return hasSuccess;
         }
 
         public void Dispose()

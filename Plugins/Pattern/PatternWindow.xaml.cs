@@ -339,7 +339,7 @@ namespace Pattern
                     palette = BitmapPalettes.Gray256;
                     break;
                 default:
-                    return normalized.ToWriteableBitmap();
+                    throw new NotSupportedException($"Unsupported indexed bitmap format: {format}");
             }
 
             int width = normalized.Width;
@@ -408,8 +408,10 @@ namespace Pattern
                 case PatternFormat.bmp1:
                 case PatternFormat.bmp4:
                 case PatternFormat.bmp8:
-                case PatternFormat.bmp24:
                     SaveBitmapUsingEncoder(CreateBmpBitmapSource(source, format), fileName, new BmpBitmapEncoder());
+                    break;
+                case PatternFormat.bmp24:
+                    source.SaveImage(fileName);
                     break;
                 case PatternFormat.png:
                     source.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, 3));
