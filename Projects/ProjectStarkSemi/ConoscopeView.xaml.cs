@@ -10,14 +10,12 @@ using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
 
 using OpenCvSharp.WpfExtensions;
 using ProjectStarkSemi.Conoscope;
-using ProjectStarkSemi.Layout;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -43,9 +41,6 @@ namespace ProjectStarkSemi
     public partial class ConoscopeView : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeView));
-
-        internal DockLayoutManager? LayoutManager { get; private set; }
-        private ThemeChangedHandler? themeChangedHandler;
 
         // Polar angle line management
         private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
@@ -108,27 +103,6 @@ namespace ProjectStarkSemi
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            void ThemeChange(Theme theme)
-            {
-                DockingManager.Theme = theme == Theme.Dark
-                    ? new AvalonDock.Themes.Vs2013DarkTheme()
-                    : new AvalonDock.Themes.Vs2013LightTheme();
-            }
-            themeChangedHandler = ThemeChange;
-            ThemeChange(ThemeManager.Current.CurrentUITheme);
-            ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
-
-
-            LayoutManager = new DockLayoutManager(DockingManager);
-            LayoutManager.RegisterContent("ImageView", ImageViewHost);
-            LayoutManager.RegisterContent("ChannelPanel", ChannelPanelPane.Content);
-            LayoutManager.RegisterContent("ReferencePlot", ReferencePlotPane.Content);
-            LayoutManager.RegisterContent("SettingPanel", SettingPanelPane.Content);
-            if (!LayoutManager.LoadLayout())
-            {
-                LayoutManager.ResetLayout();
-            }
-
             RefreshReferenceLineProfileBinding();
 
             this.DataContext = ConoscopeManager.GetInstance();
@@ -332,7 +306,7 @@ namespace ProjectStarkSemi
 
         private void RefreshQuickControlsFromAxisParam()
         {
-            if (cbQuickReferenceMode == null || sliderQuickReferenceAngle == null || sliderQuickReferenceRadius == null || cbQuickNDAperture == null)
+            if (cbQuickReferenceMode == null || sliderQuickReferenceAngle == null || sliderQuickReferenceRadius == null)
             {
                 return;
             }
@@ -346,10 +320,6 @@ namespace ProjectStarkSemi
                 sliderQuickReferenceAngle.Value = axisParam.ReferenceAngle;
                 sliderQuickReferenceRadius.Maximum = MaxAngle;
                 sliderQuickReferenceRadius.Value = Math.Max(0, Math.Min(axisParam.ReferenceRadiusAngle, MaxAngle));
-
-                cbQuickNDAperture.ItemsSource = null;
-                cbQuickNDAperture.ItemsSource = axisParam.NDApertures;
-                cbQuickNDAperture.SelectedItem = axisParam.SelectedNDAperture;
             }
             finally
             {
@@ -399,16 +369,6 @@ namespace ProjectStarkSemi
             {
                 ApplyCoordinateAxisReference();
             }
-        }
-
-        private void QuickNDAperture_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isUpdatingQuickControls || cbQuickNDAperture?.SelectedItem is not int aperture)
-            {
-                return;
-            }
-
-            CurrentModelProfile.CoordinateAxisParam.SelectedNDAperture = aperture;
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
@@ -969,7 +929,6 @@ namespace ProjectStarkSemi
             axisParam.CenterY = center.Y;
             axisParam.AxisRadius = radius;
             axisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(axisParam.ReferenceRadiusAngle, MaxAngle));
-            axisParam.NormalizeNDApertures();
 
             coordinateAxisController?.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
             coordinateAxisController?.PointerMoved -= CoordinateAxisController_PointerMoved;
@@ -1196,7 +1155,6 @@ namespace ProjectStarkSemi
             var axisParam = CurrentModelProfile.CoordinateAxisParam;
             tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "方位角直线" : "极角圆";
             tbReferenceValue.Text = GetReferenceValueText(axisParam.ReferenceMode, axisParam.ReferenceAngle, axisParam.ReferenceRadiusAngle);
-            ReferencePlotPane.Title = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "方位角" : "极角";
         }
 
         private static string GetReferenceValueText(ConoscopeCoordinateReferenceMode mode, double angle, double radiusAngle)
@@ -1713,13 +1671,7 @@ namespace ProjectStarkSemi
         public void Dispose()
         {
             ConoscopeModuleService.Unregister(this);
-            if (themeChangedHandler != null)
-            {
-                ThemeManager.Current.CurrentUIThemeChanged -= themeChangedHandler;
-                themeChangedHandler = null;
-            }
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
-            LayoutManager?.SaveLayout();
             XMat?.Dispose();
             XMat = null;
             YMat?.Dispose();

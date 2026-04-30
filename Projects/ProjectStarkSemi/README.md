@@ -88,7 +88,7 @@ dotnet run --project Projects/ProjectStarkSemi/ProjectStarkSemi.csproj
 ## 目录说明
 
 - `App.xaml/.cs` - 应用程序入口和初始化
-- `ConoscopeWindow.xaml/.cs` - 锥光镜主测试窗口（AvalonDock布局）
+- `ConoscopeWindow.xaml/.cs` - 锥光镜主测试窗口（多图标签窗口）
 - `ConoscopeView.xaml/.cs` - 锥光镜图像/分析视图
 - `MVSViewWindow.xaml/.cs` - MVS观察相机视频显示窗口
 - `AdvancedExportDialog.xaml/.cs` - 高级数据导出弹窗
@@ -111,11 +111,8 @@ dotnet run --project Projects/ProjectStarkSemi/ProjectStarkSemi.csproj
   - `PolarAngleLine.cs` - 极角参考线模型
   - `ConcentricCircleLine.cs` - 同心圆参考线模型
   - `MenuConoscopeWindow.cs` - 锥光镜窗口菜单项
-- `Layout/` - 布局管理
-  - `DockLayoutManager.cs` - AvalonDock布局持久化管理
 - `Menus/` - 菜单定义
   - `ConoscopeMenuIBase.cs` - 锥光镜菜单基类
-  - `LayoutMenuItems.cs` - 布局切换菜单项
 - `Properties/` - 项目属性和多语言资源文件
 - `Assets/Image/` - 图像资源文件
 

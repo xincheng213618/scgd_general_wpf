@@ -7,238 +7,225 @@
         xmlns:Conoscope="clr-namespace:ProjectStarkSemi.Conoscope"
         xmlns:properties="clr-namespace:ProjectStarkSemi.Properties"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
-        xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
+        d:DataContext="{d:DesignInstance Conoscope:ConoscopeManager}"
         Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
-    <UserControl.Resources>
-        <DataTemplate x:Key="DocumentHeaderTemplate">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-        </DataTemplate>
-    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="420"/>
+            <ColumnDefinition Width="6"/>
+            <ColumnDefinition Width="600" MinWidth="420"/>
+        </Grid.ColumnDefinitions>
 
-    <xcad:DockingManager x:Name="DockingManager" Margin="-6,-6" Padding="0" Background="Transparent" BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
-        <xcad:LayoutRoot x:Name="_layoutRoot">
-            <xcad:LayoutPanel Orientation="Horizontal">
-                <xcad:LayoutDocumentPaneGroup>
-                    <xcad:LayoutDocumentPane>
-                        <xcad:LayoutDocument Title="图像显示" ContentId="ImageView" CanClose="False">
-                            <Grid x:Name="ImageViewHost">
-                                <im:ImageView x:Name="ImageView" />
-                                <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
-                                    <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
-                                </Border>
-                            </Grid>
-                        </xcad:LayoutDocument>
-                    </xcad:LayoutDocumentPane>
-                </xcad:LayoutDocumentPaneGroup>
+        <Grid x:Name="ImageViewHost" Grid.Column="0">
+            <im:ImageView x:Name="ImageView" />
+            <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
+                <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
+            </Border>
+        </Grid>
 
-                <xcad:LayoutAnchorablePaneGroup Orientation="Vertical" DockWidth="600">
-                    <xcad:LayoutAnchorablePane DockHeight="360">
-                        <xcad:LayoutAnchorable x:Name="ChannelPanelPane" Title="通道与导出" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="ChannelPanel">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel Margin="5">
-                                    <GroupBox Header="显示与参考" Margin="0,0,0,6">
-                                        <StackPanel>
-                                            <WrapPanel Margin="0,4,0,2">
-                                                <TextBlock Text="显示通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
-                                                    <ComboBoxItem Content="X 通道" Tag="X"/>
-                                                    <ComboBoxItem Content="Y 通道" Tag="Y"/>
-                                                    <ComboBoxItem Content="Z 通道" Tag="Z"/>
-                                                    <ComboBoxItem Content="x 色度" Tag="CieX"/>
-                                                    <ComboBoxItem Content="y 色度" Tag="CieY"/>
-                                                    <ComboBoxItem Content="u 色度" Tag="CieU"/>
-                                                    <ComboBoxItem Content="v 色度" Tag="CieV"/>
-                                                    <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
-                                                </ComboBox>
-                                                <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
-                                                    <ComboBoxItem Content="方位角直线" Tag="AzimuthLine"/>
-                                                    <ComboBoxItem Content="极角圆" Tag="PolarCircle"/>
-                                                </ComboBox>
-                                            </WrapPanel>
+        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
 
-                                            <Grid Margin="5,4,5,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="42"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="参考方位" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceAngle, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="2" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceAngle_ValueChanged"/>
-                                            </Grid>
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-                                            <Grid Margin="5,4,5,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="42"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="参考极角" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceRadius, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="2" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceRadius_ValueChanged"/>
-                                            </Grid>
+            <TabControl Grid.Row="0" MaxHeight="390">
+                <TabItem Header="通道与导出">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <GroupBox Header="显示与参考" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <WrapPanel Margin="0,4,0,2">
+                                        <TextBlock Text="显示通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
+                                            <ComboBoxItem Content="X 通道" Tag="X"/>
+                                            <ComboBoxItem Content="Y 通道" Tag="Y"/>
+                                            <ComboBoxItem Content="Z 通道" Tag="Z"/>
+                                            <ComboBoxItem Content="x 色度" Tag="CieX"/>
+                                            <ComboBoxItem Content="y 色度" Tag="CieY"/>
+                                            <ComboBoxItem Content="u 色度" Tag="CieU"/>
+                                            <ComboBoxItem Content="v 色度" Tag="CieV"/>
+                                            <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
+                                        </ComboBox>
+                                        <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
+                                            <ComboBoxItem Content="方位角直线" Tag="AzimuthLine"/>
+                                            <ComboBoxItem Content="极角圆" Tag="PolarCircle"/>
+                                        </ComboBox>
+                                    </WrapPanel>
 
-                                            <WrapPanel Margin="0,6,0,2">
-                                                <TextBlock Text="ND光圈:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <ComboBox x:Name="cbQuickNDAperture" MinWidth="90" SelectionChanged="QuickNDAperture_SelectionChanged"/>
-                                            </WrapPanel>
-                                        </StackPanel>
-                                    </GroupBox>
+                                    <Grid Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="42"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="参考方位" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceAngle, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="2" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceAngle_ValueChanged"/>
+                                    </Grid>
 
-                                    <GroupBox Header="色差计算" Margin="0,0,0,6">
-                                        <StackPanel>
-                                            <WrapPanel Margin="0,4,0,4">
-                                                <TextBlock Text="基准:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
-                                                    <ComboBoxItem Content="D65 光源" Tag="D65"/>
-                                                    <ComboBoxItem Content="D50 光源" Tag="D50"/>
-                                                    <ComboBoxItem Content="A 光源" Tag="A"/>
-                                                    <ComboBoxItem Content="D75 光源" Tag="D75"/>
-                                                    <ComboBoxItem Content="图像中心 50px" Tag="ImageCenter"/>
-                                                    <ComboBoxItem Content="自定义坐标" Tag="Custom"/>
-                                                    <ComboBoxItem Content="实测基准图" Tag="ReferenceImage"/>
-                                                </ComboBox>
-                                                <Button x:Name="btnSaveColorDifferenceReference" Content="保存色差基准图" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
-                                                <Button Content="计算色差" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
-                                            </WrapPanel>
-                                            <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
-                                                <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
-                                                <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
-                                                <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
-                                            </WrapPanel>
-                                            <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
-                                        </StackPanel>
-                                    </GroupBox>
-
-                                    <GroupBox Header="滤波" Margin="0,0,0,6">
-                                        <StackPanel>
-                                            <WrapPanel Margin="0,4,0,6">
-                                                <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用滤波" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
-                                                <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                                <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" SelectedIndex="3" MinWidth="120">
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
-                                                </ComboBox>
-                                                <Button x:Name="btnApplyFilter" Content="{x:Static properties:Resources.ApplyFilter}" Click="btnApplyFilter_Click" Padding="10,3" Margin="10,0,0,0"/>
-                                            </WrapPanel>
-                                            <Grid Margin="5,0,5,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True"/>
-                                            </Grid>
-                                            <Grid Margin="5,4,5,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="σ" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" IsEnabled="False"/>
-                                            </Grid>
-                                            <Grid Margin="5,4,5,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="d" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
-                                            </Grid>
-                                            <Grid Margin="5,4,5,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="σColor" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
-                                            </Grid>
-                                            <Grid Margin="5,4,5,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="σSpace" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
-                                            </Grid>
-                                        </StackPanel>
-                                    </GroupBox>
-
-                                    <GroupBox Header="导出设置" Margin="0,0,0,5">
-                                        <WrapPanel Margin="0,4,0,4">
-                                            <TextBlock Text="导出模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                            <ComboBox x:Name="cbExportMode" MinWidth="120" SelectedIndex="0" Margin="0,0,14,0">
-                                                <ComboBoxItem Content="按方位角导出" Tag="Angle"/>
-                                                <ComboBoxItem Content="按极角导出" Tag="Circle"/>
-                                            </ComboBox>
-                                            <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                            <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0">
-                                                <ComboBoxItem Content="X通道" Tag="X"/>
-                                                <ComboBoxItem Content="Y通道" Tag="Y"/>
-                                                <ComboBoxItem Content="Z通道" Tag="Z"/>
-                                                <ComboBoxItem Content="x色度" Tag="CieX"/>
-                                                <ComboBoxItem Content="y色度" Tag="CieY"/>
-                                                <ComboBoxItem Content="u色度" Tag="CieU"/>
-                                                <ComboBoxItem Content="v色度" Tag="CieV"/>
-                                                <ComboBoxItem Content="色差Δuv" Tag="ColorDifference"/>
-                                            </ComboBox>
-                                            <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                                            <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4"/>
-                                        </WrapPanel>
-                                    </GroupBox>
+                                    <Grid Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="42"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="参考极角" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceRadius, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="2" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceRadius_ValueChanged"/>
+                                    </Grid>
                                 </StackPanel>
-                            </ScrollViewer>
-                        </xcad:LayoutAnchorable>
+                            </GroupBox>
 
-                        <xcad:LayoutAnchorable x:Name="SettingPanelPane" Title="设置" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="SettingPanel">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel Margin="5">
-                                    <Grid x:Name="GridSetting" Margin="0,0,0,10" />
+                            <GroupBox Header="色差计算" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <WrapPanel Margin="0,4,0,4">
+                                        <TextBlock Text="基准:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
+                                            <ComboBoxItem Content="D65 光源" Tag="D65"/>
+                                            <ComboBoxItem Content="D50 光源" Tag="D50"/>
+                                            <ComboBoxItem Content="A 光源" Tag="A"/>
+                                            <ComboBoxItem Content="D75 光源" Tag="D75"/>
+                                            <ComboBoxItem Content="图像中心 50px" Tag="ImageCenter"/>
+                                            <ComboBoxItem Content="自定义坐标" Tag="Custom"/>
+                                            <ComboBoxItem Content="实测基准图" Tag="ReferenceImage"/>
+                                        </ComboBox>
+                                        <Button x:Name="btnSaveColorDifferenceReference" Content="保存色差基准图" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
+                                        <Button Content="计算色差" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
+                                    </WrapPanel>
+                                    <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
+                                        <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                        <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                                        <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                    </WrapPanel>
+                                    <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
                                 </StackPanel>
-                            </ScrollViewer>
-                        </xcad:LayoutAnchorable>
-                    </xcad:LayoutAnchorablePane>
+                            </GroupBox>
 
-                    <xcad:LayoutAnchorablePane DockHeight="320">
-                        <xcad:LayoutAnchorable x:Name="ReferencePlotPane" Title="参考曲线" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="ReferencePlot">
-                            <Grid Margin="5">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <TextBlock x:Name="tbReferenceMode" MinWidth="80" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                    <TextBlock Text="当前值:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <TextBlock x:Name="tbReferenceValue" MinWidth="80" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                    <Button Content="导出当前" Click="btnExportCurrentReference_Click" Padding="10,2" Margin="5,0,5,0"/>
+                            <GroupBox Header="滤波" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <WrapPanel Margin="0,4,0,6">
+                                        <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用滤波" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
+                                        <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" SelectedIndex="3" MinWidth="120">
+                                            <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
+                                        </ComboBox>
+                                        <Button x:Name="btnApplyFilter" Content="{x:Static properties:Resources.ApplyFilter}" Click="btnApplyFilter_Click" Padding="10,3" Margin="10,0,0,0"/>
+                                    </WrapPanel>
+                                    <Grid Margin="5,0,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                    </Grid>
+                                    <Grid Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="σ" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                    </Grid>
+                                    <Grid Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="d" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                    </Grid>
+                                    <Grid Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="σColor" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                    </Grid>
+                                    <Grid Margin="5,4,5,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="38"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="σSpace" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False"/>
+                                    </Grid>
                                 </StackPanel>
-                                <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotReference" />
-                            </Grid>
-                        </xcad:LayoutAnchorable>
-                    </xcad:LayoutAnchorablePane>
-                </xcad:LayoutAnchorablePaneGroup>
-            </xcad:LayoutPanel>
-        </xcad:LayoutRoot>
-    </xcad:DockingManager>
+                            </GroupBox>
+
+                            <GroupBox Header="导出设置" Margin="0,0,0,5">
+                                <WrapPanel Margin="0,4,0,4">
+                                    <TextBlock Text="导出模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbExportMode" MinWidth="120" SelectedIndex="0" Margin="0,0,14,0">
+                                        <ComboBoxItem Content="按方位角导出" Tag="Angle"/>
+                                        <ComboBoxItem Content="按极角导出" Tag="Circle"/>
+                                    </ComboBox>
+                                    <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0">
+                                        <ComboBoxItem Content="X通道" Tag="X"/>
+                                        <ComboBoxItem Content="Y通道" Tag="Y"/>
+                                        <ComboBoxItem Content="Z通道" Tag="Z"/>
+                                        <ComboBoxItem Content="x色度" Tag="CieX"/>
+                                        <ComboBoxItem Content="y色度" Tag="CieY"/>
+                                        <ComboBoxItem Content="u色度" Tag="CieU"/>
+                                        <ComboBoxItem Content="v色度" Tag="CieV"/>
+                                        <ComboBoxItem Content="色差Δuv" Tag="ColorDifference"/>
+                                    </ComboBox>
+                                    <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
+                                    <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4"/>
+                                </WrapPanel>
+                            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="设置">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <Grid x:Name="GridSetting" Margin="0,0,0,10" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+
+            <GroupBox Grid.Row="1" Header="参考曲线" Margin="0,6,0,0">
+                <Grid Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                        <TextBlock x:Name="tbReferenceMode" MinWidth="80" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Text="当前值:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                        <TextBlock x:Name="tbReferenceValue" MinWidth="80" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Button Content="导出当前" Click="btnExportCurrentReference_Click" Padding="10,2" Margin="5,0,5,0"/>
+                    </StackPanel>
+                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotReference" />
+                </Grid>
+            </GroupBox>
+        </Grid>
+    </Grid>
 </UserControl>

@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using ProjectStarkSemi.Conoscope;
 using System;
 using System.IO;
@@ -29,7 +28,7 @@ namespace ProjectStarkSemi
         private MVSViewWindow? observationCameraWindow;
 
         public ConoscopeWindow()
-            : this(createInitialView: true)
+            : this(createInitialView: false)
         {
         }
 
@@ -47,7 +46,6 @@ namespace ProjectStarkSemi
             DataContext = ConoscopeManager.GetInstance();
             this.ApplyCaption();
             ConoscopeWindowConfig.Instance.SetWindow(this);
-            MenuManager.GetInstance().LoadMenuForWindow("Conoscope", menu);
             InitializeTheme();
             InitializeModelSelector();
 
@@ -60,7 +58,6 @@ namespace ProjectStarkSemi
                 AddConoscopeView(null, activate: true);
             }
 
-            Closing += (s, e) => SaveAllViewLayouts();
             Closed += (s, e) =>
             {
                 if (ReferenceEquals(Instance, this))
@@ -73,8 +70,6 @@ namespace ProjectStarkSemi
         }
 
         public ConoscopeView? ActiveView => GetActiveView();
-
-        internal ProjectStarkSemi.Layout.DockLayoutManager? LayoutManager => ActiveView?.LayoutManager;
 
         public void OpenConoscope(string filename)
         {
@@ -232,14 +227,6 @@ namespace ProjectStarkSemi
                 .Where(item => item != null)
                 .Cast<ConoscopeView>()
                 .ToArray();
-        }
-
-        private void SaveAllViewLayouts()
-        {
-            foreach (ConoscopeView view in GetOpenViews())
-            {
-                view.LayoutManager?.SaveLayout();
-            }
         }
 
         private static string GetContentId(string filePath)

@@ -85,6 +85,22 @@
                     <TextBox x:Name="tbFrameRate"  DockPanel.Dock="Right" Width="120"  Style="{StaticResource TextBox.Small}" TextChanged="tbFrameRate_TextChanged"/>
                     <TextBlock x:Name="label3" Text="帧率"/>
                 </DockPanel>
+
+                <GroupBox Header="光栅" Margin="0,0,0,5">
+                    <StackPanel Margin="4">
+                        <DockPanel Margin="0,0,0,4">
+                            <ComboBox x:Name="cbGratingDiameter" DockPanel.Dock="Right" Width="105" SelectionChanged="cbGratingDiameter_SelectionChanged">
+                                <ComboBoxItem Content="不显示" Tag="0"/>
+                                <ComboBoxItem Content="0.5 mm" Tag="0.5"/>
+                                <ComboBoxItem Content="1 mm" Tag="1"/>
+                                <ComboBoxItem Content="2 mm" Tag="2"/>
+                                <ComboBoxItem Content="3 mm" Tag="3"/>
+                            </ComboBox>
+                            <TextBlock Text="选择光栅" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <TextBlock x:Name="tbGratingOverlayStatus" Foreground="Gray" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </GroupBox>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
                     <Button x:Name="bnGetParam"  Click="bnGetParam_Click" IsEnabled="False" Content="获取参数" Margin="0,0,5,0" />
                     <Button x:Name="bnSetParam"  Click="bnSetParam_Click" IsEnabled="False" Content="设置参数"/>
@@ -92,7 +108,14 @@
 
             </StackPanel>
         </Grid>
-        <Border x:Name="DisplayGrid" Grid.Column="1" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8"/>
+        <Border x:Name="DisplayGrid" Grid.Column="1" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8" ClipToBounds="True">
+            <Grid x:Name="DisplayHost" SizeChanged="DisplayHost_SizeChanged">
+                <Grid x:Name="ImageDisplayHost"/>
+                <Canvas x:Name="GratingOverlayCanvas" Panel.ZIndex="10" IsHitTestVisible="False">
+                    <Ellipse x:Name="GratingCircle" Visibility="Collapsed" Stroke="Red" StrokeThickness="2" Fill="#10FF0000"/>
+                </Canvas>
+            </Grid>
+        </Border>
 
         <!--<wfHost:WindowsFormsHost x:Name="DisplayWindow" Visibility="Collapsed" Grid.Column="1" IsEnabled="True">
             <wfCtrl:PictureBox x:Name="displayArea"/>

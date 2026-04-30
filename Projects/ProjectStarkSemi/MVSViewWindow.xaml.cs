@@ -6,6 +6,7 @@ using log4net;
 using MvCamCtrl.NET;
 using OpenCvSharp.Dnn;
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -54,6 +55,9 @@ namespace ProjectStarkSemi
 
         public double MaxExposure { get => _MaxExposure; set { _MaxExposure = value; OnPropertyChanged(); } }
         private double _MaxExposure = 2499;
+
+        public double SelectedGratingDiameterMillimeters { get => _SelectedGratingDiameterMillimeters; set { _SelectedGratingDiameterMillimeters = value; OnPropertyChanged(); } }
+        private double _SelectedGratingDiameterMillimeters;
 
 
     }
@@ -117,9 +121,112 @@ namespace ProjectStarkSemi
             MVSViewManager = MVSViewManager.GetInstance();
             this.DataContext = MVSViewManager;
             imgDisplay = new ImageView();
-            DisplayGrid.Child = imgDisplay;
+            ImageDisplayHost.Children.Add(imgDisplay);
+            imgDisplay.Zoombox1.ContentMatrixChanged += ImageDisplay_ContentMatrixChanged;
             cbPixelType.ItemsSource = Enum.GetValues(typeof(PixelType));
+            SelectGratingDiameter(MVSViewManager.Config.SelectedGratingDiameterMillimeters);
+            UpdateGratingOverlay();
 
+        }
+
+        private void SelectGratingDiameter(double diameterMillimeters)
+        {
+            foreach (ComboBoxItem item in cbGratingDiameter.Items)
+            {
+                if (TryGetComboBoxItemDoubleTag(item, out double tagValue) && Math.Abs(tagValue - diameterMillimeters) < 0.0001)
+                {
+                    cbGratingDiameter.SelectedItem = item;
+                    return;
+                }
+            }
+
+            cbGratingDiameter.SelectedIndex = 0;
+        }
+
+        private static bool TryGetComboBoxItemDoubleTag(ComboBoxItem item, out double value)
+        {
+            return double.TryParse(item.Tag?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+        }
+
+        private void DisplayHost_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            GratingOverlayCanvas.Width = e.NewSize.Width;
+            GratingOverlayCanvas.Height = e.NewSize.Height;
+            UpdateGratingOverlay();
+        }
+
+        private void ImageDisplay_ContentMatrixChanged(object? sender, EventArgs e)
+        {
+            UpdateGratingOverlay();
+        }
+
+        private void cbGratingDiameter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (MVSViewManager?.Config == null || cbGratingDiameter.SelectedItem is not ComboBoxItem item)
+            {
+                return;
+            }
+
+            if (TryGetComboBoxItemDoubleTag(item, out double diameterMillimeters))
+            {
+                MVSViewManager.Config.SelectedGratingDiameterMillimeters = diameterMillimeters;
+                UpdateGratingOverlay();
+            }
+        }
+
+        private void UpdateGratingOverlay()
+        {
+            if (GratingCircle == null || MVSViewManager?.Config == null)
+            {
+                return;
+            }
+
+            double diameterMillimeters = MVSViewManager.Config.SelectedGratingDiameterMillimeters;
+            if (diameterMillimeters <= 0)
+            {
+                GratingCircle.Visibility = Visibility.Collapsed;
+                tbGratingOverlayStatus.Text = "未显示光栅位置";
+                return;
+            }
+
+            double scaleCoefficient = Conoscope.ConoscopeManager.GetInstance().Config.CurrentModelProfile.ObservationCameraScaleCoefficient;
+            if (scaleCoefficient <= double.Epsilon)
+            {
+                GratingCircle.Visibility = Visibility.Collapsed;
+                tbGratingOverlayStatus.Text = "观察相机尺寸系数未配置";
+                return;
+            }
+
+            double imagePixelDiameter = diameterMillimeters / scaleCoefficient;
+            Point displayCenter;
+            double displayDiameter;
+            if (imgDisplay?.ImageShow.Source != null)
+            {
+                Matrix contentMatrix = imgDisplay.Zoombox1.ContentMatrix;
+                Point imageCenter = new Point(imgDisplay.ImageShow.Source.Width / 2.0, imgDisplay.ImageShow.Source.Height / 2.0);
+                Point centerInZoombox = contentMatrix.Transform(imageCenter);
+                displayCenter = imgDisplay.Zoombox1.TranslatePoint(centerInZoombox, GratingOverlayCanvas);
+                displayDiameter = imagePixelDiameter * Math.Abs(contentMatrix.M11);
+            }
+            else
+            {
+                displayCenter = new Point(GratingOverlayCanvas.ActualWidth / 2.0, GratingOverlayCanvas.ActualHeight / 2.0);
+                displayDiameter = imagePixelDiameter;
+            }
+
+            if (displayDiameter <= 0 || double.IsNaN(displayDiameter) || double.IsInfinity(displayDiameter))
+            {
+                GratingCircle.Visibility = Visibility.Collapsed;
+                tbGratingOverlayStatus.Text = "光栅尺寸无效";
+                return;
+            }
+
+            GratingCircle.Width = displayDiameter;
+            GratingCircle.Height = displayDiameter;
+            Canvas.SetLeft(GratingCircle, displayCenter.X - displayDiameter / 2.0);
+            Canvas.SetTop(GratingCircle, displayCenter.Y - displayDiameter / 2.0);
+            GratingCircle.Visibility = Visibility.Visible;
+            tbGratingOverlayStatus.Text = $"光栅: {diameterMillimeters:g} mm";
         }
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)
@@ -508,6 +615,7 @@ namespace ProjectStarkSemi
             {
                 imgDisplay.ImageShow.Source = writeableBitmap;
             }
+            UpdateGratingOverlay();
 
             try
             {
@@ -699,6 +807,7 @@ namespace ProjectStarkSemi
         {
             m_bGrabbing = false;
             writeableBitmap = null;
+            imgDisplay.Zoombox1.ContentMatrixChanged -= ImageDisplay_ContentMatrixChanged;
             imgDisplay.Dispose();
             bnClose_Click(null, null);
 

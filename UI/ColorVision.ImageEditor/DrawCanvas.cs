@@ -179,7 +179,9 @@ namespace ColorVision.ImageEditor
 
             if (drawingVisual.BaseAttribute is ITextProperties textProperties && state.BaseFontSize is double baseFontSize)
             {
-                double targetFontSize = (TextFontSizeOverride > 0 ? TextFontSizeOverride : baseFontSize) * scale;
+                double targetFontSize = IsLayoutUpdated
+                    ? baseFontSize * scale
+                    : TextFontSizeOverride > 0 ? TextFontSizeOverride : baseFontSize;
                 if (textProperties.TextAttribute.FontSize != targetFontSize)
                 {
                     textProperties.TextAttribute.FontSize = targetFontSize;

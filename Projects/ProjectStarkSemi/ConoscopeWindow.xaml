@@ -44,8 +44,6 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Menu x:Name="menu" Padding="2" Background="Transparent" VerticalAlignment="Center" />
-                    <Separator Margin="8,0" />
                     <Button Content="打开" Click="OpenFile_Click" Padding="10,4" Margin="0,0,6,0"/>
                     <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
                     <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4" Margin="0,0,6,0"/>

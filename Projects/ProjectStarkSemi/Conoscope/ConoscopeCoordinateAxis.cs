@@ -44,8 +44,6 @@ namespace ProjectStarkSemi.Conoscope
 
     public class ConoscopeCoordinateAxisParam : ViewModelBase
     {
-        private static readonly int[] DefaultNDApertures = { 0, 4, 8, 64, 1000 };
-
         [Browsable(false), JsonIgnore]
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen = new Pen(Brushes.Yellow, 1.0);
@@ -134,29 +132,6 @@ namespace ProjectStarkSemi.Conoscope
         public Brush TextBrush { get => _TextBrush; set { _TextBrush = value; OnPropertyChanged(); } }
         private Brush _TextBrush = Brushes.Yellow;
 
-        [Category("ND光圈"), DisplayName("ND光圈列表")]
-        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public List<int> NDApertures { get => _NDApertures; set { _NDApertures = value ?? new List<int>(); OnPropertyChanged(); } }
-        private List<int> _NDApertures = new List<int>(DefaultNDApertures);
-
-        [Category("ND光圈"), DisplayName("当前ND光圈")]
-        public int SelectedNDAperture { get => _SelectedNDAperture; set { _SelectedNDAperture = value; OnPropertyChanged(); } }
-        private int _SelectedNDAperture;
-
-        public void NormalizeNDApertures()
-        {
-            if (NDApertures.Count == 0)
-            {
-                NDApertures.AddRange(DefaultNDApertures);
-            }
-
-            NDApertures = NDApertures.Distinct().OrderBy(item => item).ToList();
-            if (!NDApertures.Contains(SelectedNDAperture))
-            {
-                SelectedNDAperture = NDApertures[0];
-            }
-        }
-
         public static double NormalizeAzimuthAngle(double angle)
         {
             angle %= 180.0;
@@ -201,7 +176,6 @@ namespace ProjectStarkSemi.Conoscope
             Attribute.MaxAngle = maxAngle;
             Attribute.ConoscopeCoefficient = coefficient;
             Attribute.ReferenceRadiusAngle = Clamp(Attribute.ReferenceRadiusAngle, 0, maxAngle);
-            Attribute.NormalizeNDApertures();
             Render();
         }
 
