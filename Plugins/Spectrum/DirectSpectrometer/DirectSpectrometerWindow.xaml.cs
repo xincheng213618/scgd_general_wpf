@@ -244,8 +244,6 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
                     }
                 }
             }
-
-            cancellationToken.ThrowIfCancellationRequested();
         }, cancellationToken);
     }
 
