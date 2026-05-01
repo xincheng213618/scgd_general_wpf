@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <AssemblyName>YoloObjectDetection</AssemblyName>
+    <RootNamespace>YoloObjectDetection</RootNamespace>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <UseColorVisionNuGet>false</UseColorVisionNuGet>
+    <ColorVisionPackageVersion>1.5.5.1</ColorVisionPackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.0" />
+    <PackageReference Include="OpenCvSharp4.Windows" Version="4.9.0.20240103" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseColorVisionNuGet)' == 'true'">
+    <PackageReference Include="ColorVision.Common" Version="$(ColorVisionPackageVersion)" PrivateAssets="all" />
+    <PackageReference Include="ColorVision.UI" Version="$(ColorVisionPackageVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseColorVisionNuGet)' != 'true'">
+    <ProjectReference Include="..\..\UI\ColorVision.Common\ColorVision.Common.csproj" Private="false" />
+    <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="classes.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="CHANGELOG.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Models\README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="CopyPluginToColorVision" AfterTargets="Build">
+    <PropertyGroup>
+      <ColorVisionRoot Condition="'$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)</ColorVisionRoot>
+      <ColorVisionRoot Condition="'$(ColorVisionRoot)' == ''">$(MSBuildProjectDirectory)\..\..\</ColorVisionRoot>
+      <PluginPlatform Condition="'$(Platform)' == '' Or '$(Platform)' == 'AnyCPU'">x64</PluginPlatform>
+      <PluginPlatform Condition="'$(PluginPlatform)' == ''">$(Platform)</PluginPlatform>
+      <ColorVisionPluginDir>$(ColorVisionRoot)ColorVision\bin\$(PluginPlatform)\$(Configuration)\net10.0-windows\Plugins\$(TargetName)\</ColorVisionPluginDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <PluginCopyFiles Include="$(TargetDir)**\*.*"
+                       Exclude="$(TargetDir)ColorVision*.dll;$(TargetDir)ColorVision*.pdb;$(TargetDir)ColorVision*.xml;$(TargetDir)HandyControl.dll;$(TargetDir)HandyControl.pdb;$(TargetDir)log4net.dll;$(TargetDir)log4net.xml;$(TargetDir)Newtonsoft.Json.dll;$(TargetDir)Newtonsoft.Json.xml;$(TargetDir)Wpf.Ui*.dll;$(TargetDir)Wpf.Ui*.xml;$(TargetDir)en\**\*.*;$(TargetDir)fr\**\*.*;$(TargetDir)ja\**\*.*;$(TargetDir)ko\**\*.*;$(TargetDir)ru\**\*.*;$(TargetDir)zh-Hant\**\*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(ColorVisionPluginDir)" />
+    <Copy SourceFiles="@(PluginCopyFiles)"
+          DestinationFiles="@(PluginCopyFiles->'$(ColorVisionPluginDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <PluginSharedFiles Include="$(ColorVisionPluginDir)ColorVision*.dll;$(ColorVisionPluginDir)ColorVision*.pdb;$(ColorVisionPluginDir)ColorVision*.xml;$(ColorVisionPluginDir)HandyControl.dll;$(ColorVisionPluginDir)HandyControl.pdb;$(ColorVisionPluginDir)log4net.dll;$(ColorVisionPluginDir)log4net.xml;$(ColorVisionPluginDir)Newtonsoft.Json.dll;$(ColorVisionPluginDir)Newtonsoft.Json.xml;$(ColorVisionPluginDir)Wpf.Ui*.dll;$(ColorVisionPluginDir)Wpf.Ui*.xml" />
+      <PluginSharedDirs Include="$(ColorVisionPluginDir)en;$(ColorVisionPluginDir)fr;$(ColorVisionPluginDir)ja;$(ColorVisionPluginDir)ko;$(ColorVisionPluginDir)ru;$(ColorVisionPluginDir)zh-Hant" />
+      <PluginUnusedRuntimeDirs Include="$(ColorVisionPluginDir)runtimes\android;$(ColorVisionPluginDir)runtimes\ios;$(ColorVisionPluginDir)runtimes\linux-arm64;$(ColorVisionPluginDir)runtimes\linux-x64;$(ColorVisionPluginDir)runtimes\osx-arm64;$(ColorVisionPluginDir)runtimes\osx-x64" />
+      <PluginUnusedRuntimeDirs Include="$(ColorVisionPluginDir)runtimes\win-arm64;$(ColorVisionPluginDir)runtimes\win-x86" Condition="'$(PluginPlatform)' == 'x64'" />
+      <PluginUnusedRuntimeDirs Include="$(ColorVisionPluginDir)runtimes\win-x64;$(ColorVisionPluginDir)runtimes\win-x86" Condition="'$(PluginPlatform)' == 'ARM64'" />
+    </ItemGroup>
+    <Delete Files="@(PluginSharedFiles)" TreatErrorsAsWarnings="true" />
+    <RemoveDir Directories="@(PluginSharedDirs)" ContinueOnError="WarnAndContinue" />
+    <RemoveDir Directories="@(PluginUnusedRuntimeDirs)" ContinueOnError="WarnAndContinue" />
+  </Target>
+
+</Project>

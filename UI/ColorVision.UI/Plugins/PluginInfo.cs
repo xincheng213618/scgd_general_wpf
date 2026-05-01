@@ -95,7 +95,7 @@ namespace ColorVision.UI.Plugins
         {
             try
             {
-                string readmePath = Path.Combine(PluginDirectory, "readme.md");
+                string readmePath = FindPluginFile("README.md", "readme.md");
                 if (File.Exists(readmePath))
                 {
                     return File.ReadAllText(readmePath);
@@ -109,7 +109,7 @@ namespace ColorVision.UI.Plugins
         {
             try
             {
-                string changelogPath = Path.Combine(PluginDirectory, "changelog.md");
+                string changelogPath = FindPluginFile("CHANGELOG.md", "changelog.md");
                 if (File.Exists(changelogPath))
                 {
                     return File.ReadAllText(changelogPath);
@@ -123,7 +123,7 @@ namespace ColorVision.UI.Plugins
         {
             try
             {
-                string iconPath = Path.Combine(PluginDirectory, "PackageIcon.png");
+                string iconPath = FindPluginFile("PackageIcon.png", "packageicon.png");
                 if (File.Exists(iconPath))
                 {
                     return new BitmapImage(new Uri(iconPath));
@@ -131,6 +131,28 @@ namespace ColorVision.UI.Plugins
             }
             catch { /* ignore errors */ }
             return null;
+        }
+
+        private string FindPluginFile(params string[] fileNames)
+        {
+            if (string.IsNullOrWhiteSpace(PluginDirectory) || !Directory.Exists(PluginDirectory))
+                return string.Empty;
+
+            foreach (string fileName in fileNames)
+            {
+                string path = Path.Combine(PluginDirectory, fileName);
+                if (File.Exists(path))
+                    return path;
+            }
+
+            foreach (string file in Directory.EnumerateFiles(PluginDirectory))
+            {
+                string name = Path.GetFileName(file);
+                if (fileNames.Any(fileName => string.Equals(name, fileName, StringComparison.OrdinalIgnoreCase)))
+                    return file;
+            }
+
+            return string.Empty;
         }
     }
 }

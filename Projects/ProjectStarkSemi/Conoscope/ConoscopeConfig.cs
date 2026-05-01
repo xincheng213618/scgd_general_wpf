@@ -126,6 +126,14 @@ namespace ProjectStarkSemi.Conoscope
         public double ColorDifferenceCustomV { get => _ColorDifferenceCustomV; set { _ColorDifferenceCustomV = value; OnPropertyChanged(); } }
         private double _ColorDifferenceCustomV = 0.4684;
 
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public ObservableCollection<ConoscopeNdCalibrationBinding> NdCalibrationBindings
+        {
+            get => _NdCalibrationBindings;
+            set { _NdCalibrationBindings = value; OnPropertyChanged(); }
+        }
+        private ObservableCollection<ConoscopeNdCalibrationBinding> _NdCalibrationBindings = new();
+
 
         public ConoscopeConfig()
         {
@@ -138,5 +146,23 @@ namespace ProjectStarkSemi.Conoscope
             value = Math.Max(min, Math.Min(value, max));
             return value % 2 == 0 ? Math.Min(value + 1, max) : value;
         }
+    }
+
+    public class ConoscopeNdCalibrationBinding : ViewModelBase
+    {
+        public string CameraCode { get => _CameraCode; set { _CameraCode = value; OnPropertyChanged(); } }
+        private string _CameraCode = string.Empty;
+
+        public string CameraName { get => _CameraName; set { _CameraName = value; OnPropertyChanged(); } }
+        private string _CameraName = string.Empty;
+
+        public int NdPort { get => _NdPort; set { _NdPort = value; OnPropertyChanged(); } }
+        private int _NdPort;
+
+        public int CalibrationTemplateId { get => _CalibrationTemplateId; set { _CalibrationTemplateId = value; OnPropertyChanged(); } }
+        private int _CalibrationTemplateId = -1;
+
+        public string CalibrationTemplateName { get => _CalibrationTemplateName; set { _CalibrationTemplateName = value; OnPropertyChanged(); } }
+        private string _CalibrationTemplateName = string.Empty;
     }
 }

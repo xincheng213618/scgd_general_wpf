@@ -222,9 +222,7 @@ namespace ProjectStarkSemi
                 return;
             }
 
-            bool isColorDifferenceSelected = GetSelectedDisplayChannel() == ExportChannel.ColorDifference
-                || GetSelectedExportChannel() == ExportChannel.ColorDifference;
-            gbColorDifference.Visibility = isColorDifferenceSelected ? Visibility.Visible : Visibility.Collapsed;
+            gbColorDifference.Visibility = Visibility.Visible;
         }
 
         private ColorDifferenceReferenceMode GetSelectedColorDifferenceReferenceMode()
