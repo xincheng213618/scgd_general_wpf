@@ -9,6 +9,10 @@
         Title="流程处理配置" Height="720" Width="1280" MinHeight="640" MinWidth="1040" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
     </Window.Resources>
     <Grid Margin="8">
         <Grid.RowDefinitions>
@@ -17,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0 0 0 8" Padding="8">
-            <DockPanel>
+            <WrapPanel>
                 <TextBlock Text="流程组管理" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0 0 12 0"/>
                 <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="0 0 5 0"/>
                 <ComboBox ItemsSource="{Binding ProcessGroups}" DisplayMemberPath="Name"
@@ -28,7 +32,7 @@
                 <Button Content="重命名" Padding="8 3" Margin="0 0 5 0" Command="{Binding RenameGroupCommand}"/>
                 <Button Content="复制组" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
                 <Button Content="删除组" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
-            </DockPanel>
+            </WrapPanel>
         </Border>
 
         <Grid Grid.Row="1">
@@ -115,74 +119,27 @@
 
                 <TabControl Grid.Row="1">
                     <TabItem Header="Recipe">
-                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="8">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="10,6">
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="&#xE713;" FontFamily="Segoe MDL2 Assets"
-                                                Command="{Binding SelectedProcessMeta.EditRecipeConfigCommand}"
-                                                Visibility="{Binding SelectedProcessMeta.HasRecipeConfig, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                ToolTip="独立编辑 Recipe"
-                                                Padding="6,4" Margin="8,0,0,0"/>
-                                        <TextBlock Text="Recipe 配置" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                </Border>
-                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
-                                    <StackPanel x:Name="RecipePanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </Grid>
-                        </Border>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
+                            <StackPanel x:Name="RecipePanel">
+                                <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                            </StackPanel>
+                        </ScrollViewer>
                     </TabItem>
 
                     <TabItem Header="Process">
-                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="8">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="10,6">
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="&#xE713;" FontFamily="Segoe MDL2 Assets"
-                                                Command="{Binding SelectedProcessMeta.EditProcessConfigCommand}"
-                                                Visibility="{Binding SelectedProcessMeta.HasProcessConfig, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                ToolTip="独立编辑 Process"
-                                                Padding="6,4" Margin="8,0,0,0"/>
-                                        <TextBlock Text="Process 配置" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                </Border>
-                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
-                                    <StackPanel x:Name="ProcessPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </Grid>
-                        </Border>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
+                            <StackPanel x:Name="ProcessPanel">
+                                <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                            </StackPanel>
+                        </ScrollViewer>
                     </TabItem>
 
                     <TabItem Header="切图">
-                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="8">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="10,6">
-                                    <TextBlock Text="切图配置" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                                </Border>
-                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
-                                    <StackPanel x:Name="PictureSwitchPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </Grid>
-                        </Border>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
+                            <StackPanel x:Name="PictureSwitchPanel">
+                                <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                            </StackPanel>
+                        </ScrollViewer>
                     </TabItem>
                 </TabControl>
             </Grid>

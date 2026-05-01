@@ -9,6 +9,9 @@
         Loaded="Window_Loaded">
     <Window.Resources>
         <local:TypeNameConverter x:Key="TypeNameConverter"/>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
     </Window.Resources>
     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="12" Padding="14">
         <Grid>

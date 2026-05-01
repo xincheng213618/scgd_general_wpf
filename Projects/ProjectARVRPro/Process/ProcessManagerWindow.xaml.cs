@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Themes;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Globalization;
@@ -38,6 +39,7 @@ namespace ProjectARVRPro.Process
         public ProcessManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
             Closing += Window_Closing;
         }
 
