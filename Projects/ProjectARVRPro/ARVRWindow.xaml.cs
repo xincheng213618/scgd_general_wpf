@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Batch;
@@ -219,6 +220,9 @@ namespace ProjectARVRPro
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
 
+            // 构建 ListView 统一的右键菜单（替代原先每个实体各自创建 ContextMenu 的方案）
+            BuildListViewContextMenu();
+
             _thunderbirdController.ConnectionStateChanged += ThunderbirdController_ConnectionStateChanged;
             UpdateThunderbirdStatusIndicator();
             _ = TryAutoConnectThunderbirdAsync();
@@ -298,6 +302,92 @@ namespace ProjectARVRPro
                 log.Info($"删除测试结果 {item.SN}");
             }
         }
+
+        #region ListView ContextMenu
+
+        private void BuildListViewContextMenu()
+        {
+            var openFolderCommand = new RelayCommand(
+                _ => ContextMenu_OpenFolderAndSelectFile(),
+                _ => listView1.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
+
+            var batchHistoryCommand = new RelayCommand(
+                _ => ContextMenu_BatchDataHistory(),
+                _ => listView1.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
+
+            var viewTestResultCommand = new RelayCommand(
+                _ => ContextMenu_ViewTestResult(),
+                _ => listView1.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrEmpty(item.ViewResultJson));
+
+            var contextMenu = new ContextMenu();
+            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
+            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
+            contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = "流程结果查询" });
+            contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = "查看测试结果" });
+
+            // 右键菜单打开时刷新 CanExecute 状态
+            contextMenu.Opened += (s, e) => CommandManager.InvalidateRequerySuggested();
+
+            // 右键菜单打开前确保点击位置的行被选中
+            listView1.PreviewMouseRightButtonDown += (s, e) =>
+            {
+                var element = listView1.InputHitTest(e.GetPosition(listView1)) as DependencyObject;
+                while (element != null && element is not ListViewItem)
+                    element = VisualTreeHelper.GetParent(element);
+
+                if (element is ListViewItem targetItem)
+                {
+                    targetItem.IsSelected = true;
+                }
+            };
+
+            listView1.ContextMenu = contextMenu;
+        }
+
+        private void ContextMenu_OpenFolderAndSelectFile()
+        {
+            if (listView1.SelectedItem is ProjectARVRReuslt item)
+                PlatformHelper.OpenFolderAndSelectFile(item.FileName);
+        }
+
+        private void ContextMenu_BatchDataHistory()
+        {
+            if (listView1.SelectedItem is not ProjectARVRReuslt item) return;
+
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            var Batch = Db.Queryable<MeasureBatchModel>().Where(a => a.Id == item.BatchId).First();
+            if (Batch == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                return;
+            }
+            var frame = new Frame();
+            var batchDataHistory = new MeasureBatchPage(frame, Batch);
+            var window = new Window() { Owner = Application.Current.GetActiveWindow() };
+            window.Content = batchDataHistory;
+            window.Show();
+        }
+
+        private void ContextMenu_ViewTestResult()
+        {
+            if (listView1.SelectedItem is not ProjectARVRReuslt item) return;
+            if (string.IsNullOrEmpty(item.ViewResultJson))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "ViewResultJson为空", "ColorVision");
+                return;
+            }
+            var window = new TestResultViewWindow(item.ViewResultJson)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.ShowDialog();
+        }
+
+        #endregion
 
         private void ServicesChanged(object? sender, EventArgs e)
         {
