@@ -1482,7 +1482,6 @@ namespace Conoscope
 
             coordinateAxisPolarLine.Angle = angle;
             coordinateAxisPolarLine.RgbData.Clear();
-            coordinateAxisPolarLine.Line = null;
 
             var endpoints = ConoscopeCoordinateAxisVisual.GetAzimuthLineEndpoints(currentImageCenter, currentImageRadius, angle);
             ExtractRgbAlongLine(coordinateAxisPolarLine, endpoints.Start, endpoints.End, currentBitmapSource, currentImageRadius);

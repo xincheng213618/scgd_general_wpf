@@ -15,6 +15,7 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using Conoscope.Analysis;
 using Conoscope.Core;
+using Conoscope.MVS;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -28,6 +29,19 @@ using System.Windows.Media;
 
 namespace Conoscope
 {
+    public class MenuConoscopeWindow : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.Tool;
+        public override int Order => 50;
+        public override string Header => "VAM";
+
+        public override void Execute()
+        {
+            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
+            conoscopeWindow.Show();
+        }
+    }
+
     public class ConoscopeWindowConfig : WindowConfig
     {
         public static ConoscopeWindowConfig Instance => ConfigService.Instance.GetRequiredService<ConoscopeWindowConfig>();
@@ -40,6 +54,7 @@ namespace Conoscope
         private ThemeChangedHandler? themeChangedHandler;
         private bool isUpdatingModelSelection;
         private bool isRunningOperation;
+
         private MVSViewWindow? observationCameraWindow;
 
         public ConoscopeWindow()

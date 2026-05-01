@@ -14,19 +14,9 @@ namespace Conoscope.Core
         public double Angle { get; set; }
 
         /// <summary>
-        /// 绘制的线对象
-        /// </summary>
-        public DVLine? Line { get; set; }
-
-        /// <summary>
         /// 沿线采样的RGB数据
         /// </summary>
         public List<RgbSample> RgbData { get; set; } = new List<RgbSample>();
-
-        /// <summary>
-        /// 是否显示此线的数据
-        /// </summary>
-        public bool IsVisible { get; set; } = true;
 
         public override string ToString() => $"{Angle}°";
     }

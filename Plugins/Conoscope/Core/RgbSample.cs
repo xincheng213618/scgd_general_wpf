@@ -13,21 +13,6 @@
 
 
         /// <summary>
-        /// 红色通道值
-        /// </summary>
-        public double R { get; set; }
-
-        /// <summary>
-        /// 绿色通道值
-        /// </summary>
-        public double G { get; set; }
-
-        /// <summary>
-        /// 蓝色通道值
-        /// </summary>
-        public double B { get; set; }
-
-        /// <summary>
         /// X通道值
         /// </summary>
         public double X { get; set; }
