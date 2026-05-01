@@ -12,8 +12,6 @@ using System.IO;
 
 namespace ProjectARVRPro.Process
 {
-
-
     public class ProcessManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));

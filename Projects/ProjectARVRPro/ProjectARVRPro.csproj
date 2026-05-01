@@ -12,7 +12,6 @@
 	<ItemGroup>
 		<None Remove="CHANGELOG.md" />
 		<None Remove="README.md" />
-		<None Remove="ROADMAP.md" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -38,9 +37,6 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<EmbeddedResource Include="README.md">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Include="ROADMAP.md">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</EmbeddedResource>
 	</ItemGroup>
