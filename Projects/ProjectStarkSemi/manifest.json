@@ -1,8 +1,0 @@
-{
-  "manifest_version": 1,
-  "Id": "ProjectStarkSemi",
-  "name": "ProjectStarkSemi",
-  "version": "1.4.2.2",
-  "description": "星钥半导体客户定制 - 锥光镜观察系统和MVS相机控制",
-  "dllpath": "ProjectStarkSemi.dll",
-}

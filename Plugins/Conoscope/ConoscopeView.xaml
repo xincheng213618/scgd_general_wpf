@@ -1,0 +1,341 @@
+<UserControl x:Class="Conoscope.ConoscopeView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
+        xmlns:Conoscope="clr-namespace:Conoscope.Core"
+        xmlns:properties="clr-namespace:Conoscope.Properties"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Conoscope:ConoscopeManager}"
+        Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <UserControl.Resources>
+        <Style x:Key="PanelHeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+        <Style x:Key="PanelMutedTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="PanelCompactButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="MinHeight" Value="26"/>
+        </Style>
+        <Style x:Key="PanelPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="420"/>
+            <ColumnDefinition Width="6"/>
+            <ColumnDefinition Width="540" MinWidth="420"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid x:Name="ImageViewHost" Grid.Column="0">
+            <im:ImageView x:Name="ImageView" />
+            <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
+                <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
+            </Border>
+        </Grid>
+
+        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TabControl Grid.Row="0" MaxHeight="238" MinHeight="128">
+                <TabItem Header="显示">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <TextBlock Text="显示与参考" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,4,0,2">
+                                        <TextBlock Text="显示通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
+                                            <ComboBoxItem Content="X 通道" Tag="X"/>
+                                            <ComboBoxItem Content="Y 通道" Tag="Y"/>
+                                            <ComboBoxItem Content="Z 通道" Tag="Z"/>
+                                            <ComboBoxItem Content="x 色度" Tag="CieX"/>
+                                            <ComboBoxItem Content="y 色度" Tag="CieY"/>
+                                            <ComboBoxItem Content="u 色度" Tag="CieU"/>
+                                            <ComboBoxItem Content="v 色度" Tag="CieV"/>
+                                            <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
+                                        </ComboBox>
+                                        <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
+                                            <ComboBoxItem Content="方位角直线" Tag="AzimuthLine"/>
+                                            <ComboBoxItem Content="极角圆" Tag="PolarCircle"/>
+                                        </ComboBox>
+                                    </WrapPanel>
+
+                                    <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="42"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="参考方位" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceAngle, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="2" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceAngle_ValueChanged"/>
+                                    </Grid>
+
+                                    <Grid x:Name="rowReferenceRadius" Margin="5,4,5,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="42"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="参考极角" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceRadius, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                        <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="2" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceRadius_ValueChanged"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="色差">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <TextBlock Text="色差计算" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,4,0,4">
+                                        <TextBlock Text="基准:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
+                                            <ComboBoxItem Content="D65 光源" Tag="D65"/>
+                                            <ComboBoxItem Content="D50 光源" Tag="D50"/>
+                                            <ComboBoxItem Content="A 光源" Tag="A"/>
+                                            <ComboBoxItem Content="D75 光源" Tag="D75"/>
+                                            <ComboBoxItem Content="图像中心 50px" Tag="ImageCenter"/>
+                                            <ComboBoxItem Content="自定义坐标" Tag="Custom"/>
+                                            <ComboBoxItem Content="实测基准图" Tag="ReferenceImage"/>
+                                        </ComboBox>
+                                        <Button x:Name="btnSaveColorDifferenceReference" Content="保存色差基准图" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
+                                        <Button Content="计算色差" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
+                                    </WrapPanel>
+                                    <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
+                                        <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                        <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                                        <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                    </WrapPanel>
+                                    <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="预处理">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <TextBlock Text="预处理 / 滤波" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,4,0,6">
+                                        <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用预处理" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
+                                        <CheckBox x:Name="chkDustRemovalEnabled" Content="灰尘滤除" IsChecked="{Binding Config.DustRemovalEnabled}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
+                                        <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" MinWidth="130">
+                                            <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="None"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="LowPass"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="MovingAverage"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="Gaussian"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="Median"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="Bilateral"/>
+                                        </ComboBox>
+                                        <Button x:Name="btnApplyFilter" Content="应用预处理" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="10,0,0,0"/>
+                                    </WrapPanel>
+                                    <Expander Header="滤波参数" Margin="5,0,5,0">
+                                        <StackPanel Margin="0,5,0,0">
+                                            <Grid x:Name="rowFilterKernel" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                            <Grid x:Name="rowFilterSigma" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="σ" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                            <Grid x:Name="rowFilterD" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="d" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                            <Grid x:Name="rowFilterSigmaColor" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="σColor" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                            <Grid x:Name="rowFilterSigmaSpace" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="σSpace" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Expander>
+                                    <Expander Header="灰尘滤除参数" Margin="5,4,5,0" IsExpanded="{Binding ElementName=chkDustRemovalEnabled, Path=IsChecked}" IsEnabled="{Binding ElementName=chkDustRemovalEnabled, Path=IsChecked}">
+                                        <StackPanel Margin="0,5,0,0">
+                                            <Grid x:Name="rowDustMode" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="灰尘类型" VerticalAlignment="Center"/>
+                                                <ComboBox x:Name="cbDustMode" Grid.Column="1" MinWidth="120" HorizontalAlignment="Left" SelectionChanged="FilterParameter_Changed">
+                                                    <ComboBoxItem Content="暗斑" Tag="DarkSpot"/>
+                                                    <ComboBoxItem Content="亮斑" Tag="BrightSpot"/>
+                                                    <ComboBoxItem Content="暗斑 + 亮斑" Tag="Both"/>
+                                                </ComboBox>
+                                            </Grid>
+                                            <Grid x:Name="rowDustThreshold" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="阈值%" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustThreshold, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="60" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                            <Grid x:Name="rowDustMinArea" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="最小面积" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMinArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="1" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                            <Grid x:Name="rowDustMaxArea" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="最大面积" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMaxArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="10" Maximum="5000" Value="500" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                            <Grid x:Name="rowDustRepairRadius" Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="38"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="修复半径" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustRepairRadius, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="3" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Expander>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="导出">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,5">
+                                <StackPanel>
+                                    <TextBlock Text="导出设置" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,0,0,0">
+                                    <TextBlock Text="导出模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbExportMode" MinWidth="120" SelectedIndex="0" Margin="0,0,14,0">
+                                        <ComboBoxItem Content="按方位角导出" Tag="Angle"/>
+                                        <ComboBoxItem Content="按极角导出" Tag="Circle"/>
+                                    </ComboBox>
+                                    <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
+                                        <ComboBoxItem Content="X通道" Tag="X"/>
+                                        <ComboBoxItem Content="Y通道" Tag="Y"/>
+                                        <ComboBoxItem Content="Z通道" Tag="Z"/>
+                                        <ComboBoxItem Content="x色度" Tag="CieX"/>
+                                        <ComboBoxItem Content="y色度" Tag="CieY"/>
+                                        <ComboBoxItem Content="u色度" Tag="CieU"/>
+                                        <ComboBoxItem Content="v色度" Tag="CieV"/>
+                                        <ComboBoxItem Content="色差Δuv" Tag="ColorDifference"/>
+                                    </ComboBox>
+                                    <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
+                                    <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="设置">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <Button Content="保存配置" Click="btnSaveConoscopeConfig_Click" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8"/>
+                            <Grid x:Name="GridSetting" Margin="0,0,0,10" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,6,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,5">
+                        <DockPanel LastChildFill="False">
+                            <TextBlock DockPanel.Dock="Left" Text="参考曲线" Style="{StaticResource PanelHeaderTextStyle}"/>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <TextBlock Text="模式" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
+                                <TextBlock x:Name="tbReferenceMode" MinWidth="72" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="当前值" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
+                                <TextBlock x:Name="tbReferenceValue" MinWidth="78" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <Button Content="导出当前" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotReference" Margin="5" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

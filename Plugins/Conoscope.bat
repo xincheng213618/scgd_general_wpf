@@ -1,0 +1,3 @@
+@echo off
+call "%~dp0..\Scripts\package_plugin.bat" Conoscope %*
+exit /b %errorlevel%
