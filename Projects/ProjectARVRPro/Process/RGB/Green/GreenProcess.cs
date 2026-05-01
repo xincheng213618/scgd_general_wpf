@@ -17,7 +17,7 @@ namespace ProjectARVRPro.Process.RGB.Green
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             GreenRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<GreenRecipeConfig>();
             GreenViewTestResult testResult = new GreenViewTestResult();
 

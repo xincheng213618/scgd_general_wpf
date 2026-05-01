@@ -15,7 +15,7 @@ namespace ProjectARVRPro.Process.W25
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             W25RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W25RecipeConfig>();
             W25ViewTestResult testResult = new W25ViewTestResult();
 

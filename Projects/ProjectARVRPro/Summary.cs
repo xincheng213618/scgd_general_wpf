@@ -133,7 +133,7 @@ namespace ProjectARVRPro
             }
             catch
             {
-                // Optionally log or rethrow
+                // Optionally Log or rethrow
             }
         }
 

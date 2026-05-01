@@ -12,7 +12,7 @@ namespace ProjectARVRPro.Process.OpticCenter
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             OpticCenterRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
             OpticCenterTestResult testResult = new OpticCenterTestResult();
 

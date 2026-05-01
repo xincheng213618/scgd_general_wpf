@@ -13,7 +13,7 @@ namespace ProjectARVRPro.Process.Distortion
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
             DistortionViewTestResult testResult = new DistortionViewTestResult();
 

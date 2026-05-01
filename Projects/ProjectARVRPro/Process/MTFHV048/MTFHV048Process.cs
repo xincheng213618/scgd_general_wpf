@@ -17,7 +17,7 @@ namespace ProjectARVRPro.Process.MTFHV048
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             MTFHV048RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFHV048RecipeConfig>();
             MTFHV048ViewTestResult testResult = new MTFHV048ViewTestResult();
 

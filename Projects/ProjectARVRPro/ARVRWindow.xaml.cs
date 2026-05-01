@@ -24,8 +24,6 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Ports;
-using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using System.Windows;
@@ -82,9 +80,6 @@ namespace ProjectARVRPro
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 
         public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
-
-        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static RecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
@@ -667,9 +662,7 @@ namespace ProjectARVRPro
                             Batch = Batch,
                             Result = result,
                             ObjectiveTestResult = ObjectiveTestResult,
-                            RecipeConfig = RecipeConfig,
                             ImageView =ImageView,
-                            Logger = log
                         };
                         executed = meta.Process.Execute(ctx);
                     }
@@ -925,7 +918,7 @@ namespace ProjectARVRPro
                 {
                     log.Error(ex);
                 }
-                Task.Run(async () =>
+                Task.Run((Func<Task?>)(async () =>
                 {
                     if (File.Exists(result.FileName))
                     {
@@ -948,9 +941,7 @@ namespace ProjectARVRPro
                                     {
                                         Result = result,
                                         ObjectiveTestResult = ObjectiveTestResult,
-                                        RecipeConfig = RecipeConfig,
                                         ImageView = ImageView,
-                                        Logger = log
                                     };
                                     meta.Process.Render(ctx);
                                 }
@@ -1013,7 +1004,7 @@ namespace ProjectARVRPro
 
                         });
                     }
-                });
+                }));
 
             }
         }
@@ -1064,9 +1055,7 @@ namespace ProjectARVRPro
                     {
                         Result = result,
                         ObjectiveTestResult = ObjectiveTestResult,
-                        RecipeConfig = RecipeConfig,
                         ImageView = ImageView,
-                        Logger = log
                     };
                     outtext += meta.Process.GenText(ctx);
                 }

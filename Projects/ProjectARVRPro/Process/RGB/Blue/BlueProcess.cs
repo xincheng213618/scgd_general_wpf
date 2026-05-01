@@ -18,7 +18,7 @@ namespace ProjectARVRPro.Process.RGB.Blue
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             BlueRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlueRecipeConfig>();
             BlueViewTestResult testResult = new BlueViewTestResult();
 

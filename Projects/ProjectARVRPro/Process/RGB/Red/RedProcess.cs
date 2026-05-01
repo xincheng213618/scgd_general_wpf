@@ -20,7 +20,7 @@ namespace ProjectARVRPro.Process.RGB.Red
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             RedRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<RedRecipeConfig>();
             RedViewTestResult testResult = new RedViewTestResult();
 

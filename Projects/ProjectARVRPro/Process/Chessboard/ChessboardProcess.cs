@@ -17,7 +17,7 @@ namespace ProjectARVRPro.Process.Chessboard
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
             ChessboardViewTestResult testResult = new ChessboardViewTestResult();
 

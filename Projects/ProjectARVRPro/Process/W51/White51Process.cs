@@ -16,7 +16,7 @@ namespace ProjectARVRPro.Process.W51
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             W51RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W51RecipeConfig>();
             W51ViewTestResult testResult = new W51ViewTestResult();
 

@@ -19,7 +19,7 @@ namespace ProjectARVRPro.Process.MTF
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             MTFViewTestResult testResult = new MTFViewTestResult();
 
             try

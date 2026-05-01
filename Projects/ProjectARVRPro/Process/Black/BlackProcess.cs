@@ -15,7 +15,7 @@ namespace ProjectARVRPro.Process.Black
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
             BlackViewTestResult testResult = new BlackViewTestResult();
 

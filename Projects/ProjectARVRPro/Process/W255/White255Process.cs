@@ -20,7 +20,7 @@ namespace ProjectARVRPro.Process.W255
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             W255RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W255RecipeConfig>();
             W255ViewTestResult testResult = new W255ViewTestResult();
 
