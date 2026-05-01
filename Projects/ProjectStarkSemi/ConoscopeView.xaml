@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
-        xmlns:Conoscope="clr-namespace:ProjectStarkSemi.Conoscope"
+        xmlns:Conoscope="clr-namespace:ProjectStarkSemi.Core"
         xmlns:properties="clr-namespace:ProjectStarkSemi.Properties"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"

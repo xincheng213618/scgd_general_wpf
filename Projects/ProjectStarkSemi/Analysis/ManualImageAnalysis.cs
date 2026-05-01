@@ -1,5 +1,5 @@
 using ColorVision.FileIO;
-using ProjectStarkSemi.Conoscope;
+using ProjectStarkSemi.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,6 +1,6 @@
 ﻿using ColorVision.UI.Menus;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     public class MenuConoscopeWindow : MenuItemBase
     {

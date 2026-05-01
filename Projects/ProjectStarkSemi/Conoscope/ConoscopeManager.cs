@@ -4,7 +4,7 @@ using ColorVision.UI;
 using log4net;
 using System.Windows;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
 
     public class ConoscopeManager : ViewModelBase

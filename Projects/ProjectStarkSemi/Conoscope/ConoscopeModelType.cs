@@ -1,4 +1,4 @@
-﻿namespace ProjectStarkSemi.Conoscope
+﻿namespace ProjectStarkSemi.Core
 {
     /// <summary>
     /// 硬件型号枚举

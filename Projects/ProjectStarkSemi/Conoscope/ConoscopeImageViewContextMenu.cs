@@ -4,7 +4,7 @@ using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     public record class ConoscopeImageViewContextMenu(EditorContext Context) : IIEditorToolContextMenu
     {

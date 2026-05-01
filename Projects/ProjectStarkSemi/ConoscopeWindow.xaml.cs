@@ -14,7 +14,7 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using ProjectStarkSemi.Analysis;
-using ProjectStarkSemi.Conoscope;
+using ProjectStarkSemi.Core;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

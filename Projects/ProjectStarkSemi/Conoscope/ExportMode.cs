@@ -1,4 +1,4 @@
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     /// <summary>
     /// 导出通道枚举

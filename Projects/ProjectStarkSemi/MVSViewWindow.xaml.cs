@@ -39,7 +39,7 @@ namespace ProjectStarkSemi
 
         private static bool HasCurrentModelObservationCamera()
         {
-            return Conoscope.ConoscopeManager.GetInstance().Config.CurrentModelProfile.HasObservationCamera;
+            return Core.ConoscopeManager.GetInstance().Config.CurrentModelProfile.HasObservationCamera;
         }
     }
 
@@ -201,7 +201,7 @@ namespace ProjectStarkSemi
                 return;
             }
 
-            Conoscope.ConoscopeModelProfile currentModelProfile = Conoscope.ConoscopeManager.GetInstance().Config.CurrentModelProfile;
+            Core.ConoscopeModelProfile currentModelProfile = Core.ConoscopeManager.GetInstance().Config.CurrentModelProfile;
             double scaleCoefficient = currentModelProfile.ObservationCameraScaleCoefficient;
             if (scaleCoefficient <= double.Epsilon)
             {

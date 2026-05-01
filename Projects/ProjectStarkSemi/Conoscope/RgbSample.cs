@@ -1,4 +1,4 @@
-﻿namespace ProjectStarkSemi.Conoscope
+﻿namespace ProjectStarkSemi.Core
 {
     /// <summary>
     /// RGB采样点数据

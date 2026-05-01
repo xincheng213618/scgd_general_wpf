@@ -1,4 +1,4 @@
-﻿namespace ProjectStarkSemi.Conoscope
+﻿namespace ProjectStarkSemi.Core
 {
     /// <summary>
     /// 图像滤波类型枚举

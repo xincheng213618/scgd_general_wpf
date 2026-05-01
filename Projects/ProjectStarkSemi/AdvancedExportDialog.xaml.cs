@@ -39,15 +39,15 @@ namespace ProjectStarkSemi
                 Settings.FilePrefix = txtFilePrefix.Text.Trim();
 
                 // Channels
-                Settings.Channels = new List<Conoscope.ExportChannel>();
-                if (chkChannelX.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.X);
-                if (chkChannelY.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.Y);
-                if (chkChannelZ.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.Z);
-                if (chkChannelCieX.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieX);
-                if (chkChannelCieY.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieY);
-                if (chkChannelCieU.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieU);
-                if (chkChannelCieV.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.CieV);
-                if (chkChannelColorDifference.IsChecked == true) Settings.Channels.Add(Conoscope.ExportChannel.ColorDifference);
+                Settings.Channels = new List<Core.ExportChannel>();
+                if (chkChannelX.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.X);
+                if (chkChannelY.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.Y);
+                if (chkChannelZ.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.Z);
+                if (chkChannelCieX.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.CieX);
+                if (chkChannelCieY.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.CieY);
+                if (chkChannelCieU.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.CieU);
+                if (chkChannelCieV.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.CieV);
+                if (chkChannelColorDifference.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.ColorDifference);
 
                 if (Settings.Channels.Count == 0)
                 {
@@ -165,7 +165,7 @@ namespace ProjectStarkSemi
     public class AdvancedExportSettings
     {
         public string FilePrefix { get; set; } = "Conoscope_Export";
-        public List<Conoscope.ExportChannel> Channels { get; set; } = new List<Conoscope.ExportChannel>();
+        public List<Core.ExportChannel> Channels { get; set; } = new List<Core.ExportChannel>();
         public bool ExportAzimuth { get; set; } = true;
         public bool ExportPolar { get; set; } = false;
         public double AzimuthStep { get; set; } = 1;

@@ -1,6 +1,6 @@
 using System;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     public readonly record struct ConoscopeChromaticity(double x, double y, double u, double v, double Cct);
     public readonly record struct ConoscopeUvReference(double U, double V);

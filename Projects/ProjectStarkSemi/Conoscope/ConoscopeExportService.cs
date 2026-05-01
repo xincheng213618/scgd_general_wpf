@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     public readonly record struct ConoscopeXyzValue(double X, double Y, double Z);
 

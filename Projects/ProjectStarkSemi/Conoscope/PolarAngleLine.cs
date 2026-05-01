@@ -1,7 +1,7 @@
 ﻿using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     /// <summary>
     /// 极角线数据类，存储角度、线对象和RGB数据

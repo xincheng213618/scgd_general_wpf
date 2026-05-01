@@ -5,10 +5,10 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     /// <summary>
-    /// Conoscope 型号配置模型，包含每个型号特有的参数。
+    /// Core 型号配置模型，包含每个型号特有的参数。
     /// 每个型号独立维护，全局运行时可按当前型号切换。
     /// </summary>
     public class ConoscopeModelProfile : ViewModelBase
@@ -109,7 +109,7 @@ namespace ProjectStarkSemi.Conoscope
 
 
         /// <summary>
-        /// Conoscope 图像坐标轴参数（每个型号独立）
+        /// Core 图像坐标轴参数（每个型号独立）
         /// </summary>
         public ConoscopeCoordinateAxisParam CoordinateAxisParam
         {

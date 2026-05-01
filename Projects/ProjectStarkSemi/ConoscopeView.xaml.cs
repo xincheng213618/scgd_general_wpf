@@ -1,37 +1,21 @@
-﻿using ColorVision.Database;
-using ColorVision.Engine;
-using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.Devices.CfwPort;
-using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.FileIO;
+﻿using ColorVision.FileIO;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
-
 using OpenCvSharp.WpfExtensions;
-using ProjectStarkSemi.Conoscope;
-using SqlSugar;
+using ProjectStarkSemi.Core;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ProjectStarkSemi
 {
@@ -2069,19 +2053,6 @@ namespace ProjectStarkSemi
             DisposeCoordinateAxis();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
-        }
-
-        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
-        {
-            FlowEngineManager.GetInstance().DisplayFlow.RunFlow();
-        }
-
-        /// <summary>
-        /// 高级导出按钮点击事件
-        /// </summary>
-        private void btnAdvancedExport_Click(object sender, RoutedEventArgs e)
-        {
-            AdvancedExport();
         }
 
         public void AdvancedExport()

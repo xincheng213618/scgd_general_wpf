@@ -1,7 +1,7 @@
 using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
 
-namespace ProjectStarkSemi.Conoscope
+namespace ProjectStarkSemi.Core
 {
     /// <summary>
     /// 同心圆数据类，存储半径角度、圆对象和采样数据
