@@ -20,6 +20,7 @@ import tempfile
 import zipfile
 
 from file_manager import FileManager
+from runtime_filters import should_keep_runtime_path
 
 # ── 路径常量（基于脚本位置自动推导） ──────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -110,10 +111,8 @@ def _should_include(rel_path: str) -> bool:
     if filename in _FILE_EXCLUDE:
         return False
 
-    # 只保留 runtimes/win-x64 和 runtimes/win，排除其它平台
-    if lower.startswith("runtimes/"):
-        if not (lower.startswith("runtimes/win-x64/") or lower.startswith("runtimes/win/")):
-            return False
+    if not should_keep_runtime_path(lower):
+        return False
 
     return True
 
@@ -179,6 +178,8 @@ def build_cvxp(src_dir: str, ref_dir: str, cvxp_path: str) -> bool:
                 continue
             src_file = os.path.join(root, f)
             rel = os.path.relpath(src_file, src_dir)
+            if not should_keep_runtime_path(rel):
+                continue
             ref_file = os.path.join(ref_dir, rel)
 
             if not os.path.exists(ref_file):

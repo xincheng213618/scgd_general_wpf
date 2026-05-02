@@ -1,8 +1,0 @@
-{
-  "manifest_version": 1,
-  "Id": "ProjectStarkSemi",
-  "name": "ProjectStarkSemi",
-  "version": "1.0",
-  "description": "",
-  "dllpath": "ProjectStarkSemi.dll",
-}

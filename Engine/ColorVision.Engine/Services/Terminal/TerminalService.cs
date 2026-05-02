@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes.Controls;
@@ -78,30 +79,10 @@ namespace ColorVision.Engine.Services.Terminal
                 createTerminal.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
-            switch (ServiceType)
+            if (DeviceServiceFactoryRegistry.TryGetFactory(ServiceType, out IDeviceServiceFactory? deviceServiceFactory)
+                && !string.IsNullOrWhiteSpace(deviceServiceFactory?.TerminalIconResourceKey))
             {
-                case ServiceTypes.Camera:
-                    break;
-                case ServiceTypes.Algorithm:
-                    this.SetIconResource("DrawingImageAlgorithm");
-                    break;
-                case ServiceTypes.SMU:
-                    this.SetIconResource("SMUDrawingImage");
-                    break;
-                case ServiceTypes.Motor:
-                    this.SetIconResource("COMDrawingImage");
-                    break;
-                case ServiceTypes.FilterWheel:
-                    this.SetIconResource("CfwPortDrawingImage");
-                    break;
-                case ServiceTypes.Calibration:
-                    this.SetIconResource("DICalibrationIcon");
-                    break;
-                case ServiceTypes.Spectrum:
-                    this.SetIconResource("DISpectrumIcon");
-                    break;
-                default:
-                    break;
+                this.SetIconResource(deviceServiceFactory.TerminalIconResourceKey);
             }
             MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
 

@@ -277,6 +277,21 @@ namespace ColorVision.Engine.Templates.Flow
             return await tcs.Task;
         }
 
+        public async Task<FlowControlData?> RunFlowAndWaitAsync(TemplateModel<FlowParam> flowTemplate)
+        {
+            if (flowTemplate == null)
+            {
+                return null;
+            }
+
+            ComboBoxFlow.SelectedItem = flowTemplate;
+            FlowEngineManager.SlectFlowParam = flowTemplate.Value;
+            FlowEngineManager.TemplateFlowParamsIndex = TemplateFlow.Params.IndexOf(flowTemplate);
+            FlowEngineConfig.Instance.LastSelectFlow = flowTemplate.Id;
+            await Refresh();
+            return await RunFlowAndWaitAsync();
+        }
+
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             stopwatch.Stop();

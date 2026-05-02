@@ -23,28 +23,57 @@ namespace ProjectARVRPro.Recipe
             var dockPanel = new DockPanel();
 
 
+            var grid = new Grid() { HorizontalAlignment = HorizontalAlignment.Right, Width = 312 };
+            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) });
 
-            
+            var labelStyle = new Style(typeof(TextBlock))
+            {
+                Setters =
+                {
+                    new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center),
+                    new Setter(TextBlock.MarginProperty, new Thickness(3, 0, 3, 0)),
+                    new Setter(TextBlock.ForegroundProperty, SystemColors.GrayTextBrush),
+                }
+            };
 
-            UniformGrid uniformGrid = new UniformGrid() { Columns = 2 ,HorizontalAlignment = HorizontalAlignment.Right,Width =200};
-            
+
             Binding bindingMin = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Min");
             bindingMin.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingMin.StringFormat = "0.0################";
             var textboxMin = PropertyEditorHelper.CreateSmallTextBox(bindingMin);
+            textboxMin.ToolTip = "最小值";
             textboxMin.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
-            uniformGrid.Children.Add(textboxMin);
+            Grid.SetColumn(textboxMin, 0);
+            grid.Children.Add(textboxMin);
 
             Binding bindingMax = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Max");
             bindingMax.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingMax.StringFormat = "0.0################";
-            var textbox = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
-            textbox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
-            uniformGrid.Children.Add(textbox);
-            
+            var textboxMax = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
+            textboxMax.ToolTip = "最大值";
+            textboxMax.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
+            Grid.SetColumn(textboxMax, 1);
+            grid.Children.Add(textboxMax);
 
-            DockPanel.SetDock(uniformGrid, Dock.Right);
-            dockPanel.Children.Add(uniformGrid);
+            // Fix
+            var labelFix = new TextBlock() { Text = "Fix", Style = labelStyle};
+            Grid.SetColumn(labelFix, 2);
+            grid.Children.Add(labelFix);
+
+            Binding bindingFix = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Fix");
+            bindingFix.UpdateSourceTrigger = UpdateSourceTrigger.Default;
+            bindingFix.StringFormat = "0.0################";
+            var textboxFix = PropertyEditorHelper.CreateSmallTextBox(bindingFix);
+            textboxFix.ToolTip = "固定值";
+            textboxFix.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
+            Grid.SetColumn(textboxFix, 3);
+            grid.Children.Add(textboxFix);
+
+            DockPanel.SetDock(grid, Dock.Right);
+            dockPanel.Children.Add(grid);
 
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);

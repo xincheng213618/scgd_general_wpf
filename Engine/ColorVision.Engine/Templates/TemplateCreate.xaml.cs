@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Templates
     {
         private const string AllGroupName = "全部";
         private const string SystemGroupName = "系统默认";
+        private const string PreparedGroupName = "当前副本";
 
         bool IsImport;
         public ITemplate ITemplate { get; set; }
@@ -30,6 +31,7 @@ namespace ColorVision.Engine.Templates
         private enum TemplateCreateSourceKind
         {
             Default,
+            Prepared,
             Sample
         }
 
@@ -44,12 +46,14 @@ namespace ColorVision.Engine.Templates
             public string Icon => Kind switch
             {
                 TemplateCreateSourceKind.Default => "\uE8A5",
+                TemplateCreateSourceKind.Prepared => "\uE8EF",
                 _ => "\uE8D7"
             };
 
             public string SourceLabel => Kind switch
             {
                 TemplateCreateSourceKind.Default => SystemGroupName,
+                TemplateCreateSourceKind.Prepared => PreparedGroupName,
                 _ => GroupName
             };
         }
@@ -177,6 +181,17 @@ namespace ColorVision.Engine.Templates
         private void BuildTemplateSources()
         {
             TemplateSources.Clear();
+            if (ITemplate.HasCreateTemplateSource)
+            {
+                TemplateSources.Add(new TemplateCreateSource
+                {
+                    Kind = TemplateCreateSourceKind.Prepared,
+                    Title = string.IsNullOrWhiteSpace(ITemplate.ImportName) ? PreparedGroupName : ITemplate.ImportName,
+                    Description = "使用刚复制的模板内容创建",
+                    GroupName = PreparedGroupName
+                });
+            }
+
             TemplateSources.Add(new TemplateCreateSource
             {
                 Kind = TemplateCreateSourceKind.Default,
@@ -206,7 +221,7 @@ namespace ColorVision.Engine.Templates
                 .Select(it => it.GroupName)
                 .Where(it => !string.IsNullOrWhiteSpace(it))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(it => it == SystemGroupName ? 0 : 1)
+                .OrderBy(it => it == PreparedGroupName ? 0 : it == SystemGroupName ? 1 : 2)
                 .ThenBy(it => it));
 
             SourceGroupComboBox.ItemsSource = groups;
@@ -224,7 +239,9 @@ namespace ColorVision.Engine.Templates
                 .ToList();
 
             TemplateSourceCountText.Text = $"{visibleSources.Count}/{TemplateSources.Count}";
-            TemplateCreateSource? sourceToSelect = visibleSources.Contains(SelectedTemplateSource) ? SelectedTemplateSource : visibleSources.FirstOrDefault();
+            TemplateCreateSource? sourceToSelect = visibleSources.Contains(SelectedTemplateSource)
+                ? SelectedTemplateSource
+                : visibleSources.FirstOrDefault(source => source.Kind == TemplateCreateSourceKind.Prepared) ?? visibleSources.FirstOrDefault();
 
             foreach (TemplateCreateSource source in visibleSources)
             {
@@ -242,7 +259,9 @@ namespace ColorVision.Engine.Templates
         private bool ApplyTemplateSource(TemplateCreateSource source, bool refreshPreview)
         {
             SelectedTemplateSource = source;
-            ITemplate.ClearCreateTemplateSource();
+
+            if (source.Kind != TemplateCreateSourceKind.Prepared)
+                ITemplate.ClearCreateTemplateSource();
 
             bool isApplied = true;
             if (source.Kind == TemplateCreateSourceKind.Sample && source.Sample != null)
@@ -352,6 +371,7 @@ namespace ColorVision.Engine.Templates
             }
 
             ITemplate.Create(CreateName);
+            ITemplate.ClearCreateTemplateSource();
             this.Close();
         }
 

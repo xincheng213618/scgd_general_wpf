@@ -3,6 +3,8 @@ import filecmp
 import zipfile
 import time
 
+from runtime_filters import should_keep_runtime_path
+
 from file_manager import FileManager
 
 # ----------------------
@@ -82,8 +84,15 @@ def get_all_files(directory):
     for root, dirs, files in os.walk(directory):
         dirs[:] = [d for d in dirs if d not in {'log', 'Plugins'}]
         for file in files:
-            if not file.endswith('.pdb'):
-                file_paths.append(os.path.join(root, file))
+            if file.endswith('.pdb'):
+                continue
+
+            absolute_path = os.path.join(root, file)
+            relative_path = os.path.relpath(absolute_path, directory)
+            if not should_keep_runtime_path(relative_path):
+                continue
+
+            file_paths.append(absolute_path)
     return file_paths
 
 def create_directory_if_not_exists(directory):

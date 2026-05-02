@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="雷鸟切图调试" Height="520" Width="460"
+        Title="雷鸟切图调试" Height="650" Width="690"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}">
     <Grid Margin="10">
@@ -63,15 +63,106 @@
         <!-- Row 1: Image Switching -->
         <GroupBox Grid.Row="1" Header="切图操作" Margin="0,0,0,5" Padding="8">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" x:Name="SwitchUpButton" Content="▲ 向上切图" Click="SwitchUp_Click"
-                        Height="40" FontSize="14" FontWeight="Bold" IsEnabled="False"/>
-                <Button Grid.Column="2" x:Name="SwitchDownButton" Content="▼ 向下切图" Click="SwitchDown_Click"
-                        Height="40" FontSize="14" FontWeight="Bold" IsEnabled="False"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" x:Name="SwitchUpButton" Content="▲ 向上切图" Click="SwitchUp_Click"
+                            Height="40" FontSize="14" FontWeight="Bold" IsEnabled="False"/>
+                    <Button Grid.Column="2" x:Name="SwitchDownButton" Content="▼ 向下切图" Click="SwitchDown_Click"
+                            Height="40" FontSize="14" FontWeight="Bold" IsEnabled="False"/>
+                </Grid>
+
+                <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                    <TextBlock Text="指定切图" FontWeight="Bold" Foreground="Gray" Margin="0,0,0,4"/>
+                    <WrapPanel x:Name="PictureSwitchPanel">
+                        <Button Tag="1" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC1" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="十字对位图" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="2" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC2" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="540x280_Solid_W51_FOV" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="3" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC3" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="亮度和亮度均一性" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="4" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC4" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_Nf_H" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="5" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC5" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_Nf_V" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="6" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC6" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_0.5Nf_H" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="7" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC7" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_0.5Nf_V" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="8" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC8" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_0.25Nf_H" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="9" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PIC9" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_0.25Nf_V" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="A" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PICA" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="TV畸变" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="B" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PICB" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_1NF" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="C" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PICC" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_0.5NF" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Tag="D" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
+                            <StackPanel>
+                                <TextBlock Text="PICD" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock Text="MTF_0.25NF" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
             </Grid>
         </GroupBox>
 

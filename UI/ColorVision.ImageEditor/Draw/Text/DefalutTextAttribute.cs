@@ -9,11 +9,26 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class DefalutTextAttribute : ViewModelBase,IConfig
     {
-        public static DefalutTextAttribute Defalut => new DefalutTextAttribute();
+        private static readonly DefalutTextAttribute Fallback = new();
 
-        public double ActualLength { get => _ActualLength; set { _ActualLength = value; OnPropertyChanged(); } }
+        public static DefalutTextAttribute Defalut
+        {
+            get
+            {
+                try
+                {
+                    return ConfigService.Instance?.GetRequiredService<DefalutTextAttribute>() ?? Fallback;
+                }
+                catch
+                {
+                    return Fallback;
+                }
+            }
+        }
+
+        public double ActualLength { get => _ActualLength; set { _ActualLength = value <= 0 ? 1 : value; OnPropertyChanged(); } }
         private double _ActualLength = 1;
-        public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = value; OnPropertyChanged(); } }
+        public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = string.IsNullOrWhiteSpace(value) ? "Px" : value; OnPropertyChanged(); } }
         private string _PhysicalUnit = "Px";
         
         public bool IsUsePhysicalUnit { get => _IsUsePhysicalUnit; set { _IsUsePhysicalUnit = value; OnPropertyChanged(); } }

@@ -146,12 +146,12 @@ namespace ColorVision.Engine.Templates.Jsons
         public override bool CopyTo(int index)
         {
             string fileContent = TemplateParams[index].Value.ToJsonN();
-            CreateTemp = JsonConvert.DeserializeObject<T>(fileContent);
-            if (CreateTemp != null)
+            ExportTemp = JsonConvert.DeserializeObject<T>(fileContent);
+            if (ExportTemp != null)
             {
-                CreateTemp.Id = -1;
+                ExportTemp.Id = -1;
             }
-            return true;
+            return ExportTemp != null;
         }
 
         public override void Export(int index)
@@ -217,6 +217,8 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public T? ExportTemp { get; set; }
 
+        public override bool HasCreateTemplateSource => ExportTemp != null || !string.IsNullOrWhiteSpace(ImportName);
+
         public override void ClearCreateTemplateSource()
         {
             ImportName = string.Empty;
@@ -258,6 +260,9 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             try
             {
+                if (CreateTemp == null && ExportTemp != null)
+                    CreateDefault();
+
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 var dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
                 if (dictemplate == null)

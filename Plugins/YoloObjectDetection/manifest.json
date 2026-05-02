@@ -1,0 +1,12 @@
+{
+  "manifest_version": 1,
+  "id": "YoloObjectDetection",
+  "name": "YOLO 工业检测",
+  "version": "0.1.0",
+  "description": "基于 YOLO ONNX 的图片、视频、摄像头实时检测与 OK/NG ROI 判定插件。",
+  "dllpath": "YoloObjectDetection.dll",
+  "requires": "1.4.6.23",
+  "author": "xincheng",
+  "entry_point": "YoloObjectDetection.YoloObjectDetectionMenuProvider",
+  "icon": "PackageIcon.png"
+}

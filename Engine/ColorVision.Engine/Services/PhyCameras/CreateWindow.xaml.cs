@@ -23,39 +23,63 @@ namespace ColorVision.Engine.Services.PhyCameras
         public ConfigPhyCamera CreateConfig { get; set; }
 
         public PhyCameraManager PhyCameraManager { get; set; }
+        private readonly string? _InitialCameraCode;
+        private readonly string? _InitialCameraId;
+        private readonly CameraModel? _InitialCameraModel;
+
         public CreateWindow(PhyCameraManager phyCameraManager)
+            : this(phyCameraManager, null, null, null)
+        {
+        }
+
+        public CreateWindow(PhyCameraManager phyCameraManager, string cameraCode, string cameraId, CameraModel cameraModel)
+            : this(phyCameraManager, cameraCode, cameraId, (CameraModel?)cameraModel)
+        {
+        }
+
+        private CreateWindow(PhyCameraManager phyCameraManager, string? cameraCode, string? cameraId, CameraModel? cameraModel)
         {
             PhyCameraManager = phyCameraManager;
+            _InitialCameraCode = cameraCode;
+            _InitialCameraId = cameraId;
+            _InitialCameraModel = cameraModel;
             InitializeComponent();
             this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.CreateConfig = new ConfigPhyCamera
-            {
-                TakeImageMode = TakeImageMode.Measure_Normal,
-                ImageBpp = ImageBpp.bpp16,
-                Channel = ImageChannel.One,
-                CameraMode = CameraMode.BV_MODE,
-                CFW = new CFWPORT() { BaudRate = 9600, CFWNum = 1, ChannelCfgs = new List<Configs.ChannelCfg>() },
+            this.CreateConfig = CreateDefaultConfig();
+            ApplyInitialCamera();
 
-            };
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var list = Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).ToList();
-
-            if (list != null)
+            var cameraCandidates = Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).ToList();
+            if (!string.IsNullOrWhiteSpace(_InitialCameraCode) && !cameraCandidates.Any(a => string.Equals(a.Code, _InitialCameraCode, StringComparison.OrdinalIgnoreCase)))
             {
-                CameraCode.ItemsSource = list;
+                cameraCandidates.Insert(0, new SysResourceModel
+                {
+                    Code = _InitialCameraCode,
+                    Name = _InitialCameraId,
+                    Type = 101,
+                    TenantId = 0
+                });
+            }
+
+            if (cameraCandidates.Count > 0)
+            {
+                CameraCode.ItemsSource = cameraCandidates;
                 CameraCode.DisplayMemberPath = "Code";
                 CameraCode.SelectedValuePath = "Name";
-                CreateConfig.Code = list[0].Code ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(CreateConfig.Code))
+                {
+                    CreateConfig.Code = cameraCandidates[0].Code ?? string.Empty;
+                }
                 CameraCode.SelectionChanged += (s, e) =>
                 {
                     if (CameraCode.SelectedIndex >= 0)
                     {
-                        var model = PhyLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code ?? string.Empty)?.Model;
+                        var model = PhyLicenseDao.Instance.GetByMAC(cameraCandidates[CameraCode.SelectedIndex].Code ?? string.Empty)?.Model;
                         if (model != null)
                         {
                             DeviceName.Text = model;
@@ -78,7 +102,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                     }
                 };
-                CameraCode.SelectedIndex = 0;
+                int selectedIndex = cameraCandidates.FindIndex(a => string.Equals(a.Code, CreateConfig.Code, StringComparison.OrdinalIgnoreCase));
+                CameraCode.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
 
             }
@@ -157,6 +182,36 @@ namespace ColorVision.Engine.Services.PhyCameras
             DataContext = this;
         }
 
+        private static ConfigPhyCamera CreateDefaultConfig()
+        {
+            return new ConfigPhyCamera
+            {
+                TakeImageMode = TakeImageMode.Measure_Normal,
+                ImageBpp = ImageBpp.bpp16,
+                Channel = ImageChannel.One,
+                CameraMode = CameraMode.BV_MODE,
+                CFW = new CFWPORT() { BaudRate = 9600, CFWNum = 1, ChannelCfgs = new List<Configs.ChannelCfg>() },
+            };
+        }
+
+        private void ApplyInitialCamera()
+        {
+            if (!string.IsNullOrWhiteSpace(_InitialCameraCode))
+            {
+                CreateConfig.Code = _InitialCameraCode;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_InitialCameraId))
+            {
+                CreateConfig.CameraID = _InitialCameraId;
+            }
+
+            if (_InitialCameraModel.HasValue)
+            {
+                CreateConfig.CameraModel = _InitialCameraModel.Value;
+            }
+        }
+
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(CreateConfig.Code))
@@ -214,6 +269,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             PhyCameraManager.CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();
+            DialogResult = true;
             Close();
         }
     }

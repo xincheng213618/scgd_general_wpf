@@ -106,9 +106,14 @@
                     <Separator Margin="0,5" />
 
                     <!--  Buttons: Connect / Reset / Close  -->
-                    <UniformGrid Margin="0,3" Columns="2">
+                    <UniformGrid Margin="0,3" Columns="4">
                         <Button x:Name="btn_Connect" Margin="0,0,3,0" Padding="5" Click="btn_Connect_Click" Content="连接" />
                         <Button x:Name="btn_reset" Margin="3,0,0,0" Padding="5" Click="btn_reset_Click" Content="复位" />
+
+                        <Button  Margin="3,0,0,0" Padding="5" Click="GetID_Click" Content="GetID" />
+                        <Button  Margin="3,0,0,0" Padding="5" Click="GetAllID_Click" Content="GetAllID" />
+
+
                     </UniformGrid>
                     <Button x:Name="btn_close" Margin="0,3" Padding="5" Click="btn_close_Click" Content="关闭" IsEnabled="False" />
 

@@ -126,6 +126,8 @@ namespace ColorVision.Engine.Templates
             throw new NotImplementedException();
         }
 
+        public virtual bool HasCreateTemplateSource => !string.IsNullOrWhiteSpace(ImportName);
+
         public virtual bool ImportJsonContent(string templateName, string jsonContent)
         {
             if (string.IsNullOrWhiteSpace(jsonContent)) return false;
@@ -430,6 +432,8 @@ namespace ColorVision.Engine.Templates
 
         public T? ImportTemp { get; set; }
 
+        public override bool HasCreateTemplateSource => ImportTemp != null || !string.IsNullOrWhiteSpace(ImportName);
+
         public override void ClearCreateTemplateSource()
         {
             ImportName = string.Empty;
@@ -505,6 +509,9 @@ namespace ColorVision.Engine.Templates
 
         public override void Create(string templateName)
         {
+            if (CreateTemp == null && ImportTemp != null)
+                CreateDefault();
+
             T? AddParamMode()
             {
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });

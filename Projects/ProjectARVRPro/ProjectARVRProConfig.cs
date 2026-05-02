@@ -18,8 +18,6 @@ namespace ProjectARVRPro
         public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
-        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static FixManager FixManager => FixManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
 
@@ -30,11 +28,6 @@ namespace ProjectARVRPro
         [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
         [JsonIgnore]
-        public RelayCommand OpenChangeLogCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenReadMeCommand { get; set; }
-
-        [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
 
         public ProjectARVRProConfig()
@@ -43,8 +36,6 @@ namespace ProjectARVRPro
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
-            OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
-            OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
             InitTestCommand = new RelayCommand(a => InitTest());
 
         }
@@ -86,58 +77,28 @@ namespace ProjectARVRPro
         public bool ThunderbirdAutoConnect { get => _ThunderbirdAutoConnect; set { _ThunderbirdAutoConnect = value; OnPropertyChanged(); } }
         private bool _ThunderbirdAutoConnect;
 
+        [DisplayName("结果点位名称"), Category("结果图层")]
+        public bool ResultOverlayShowName { get => _ResultOverlayShowName; set { _ResultOverlayShowName = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayShowName = true;
+
+        [DisplayName("结果详细数据"), Category("结果图层")]
+        public bool ResultOverlayShowDetail { get => _ResultOverlayShowDetail; set { _ResultOverlayShowDetail = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayShowDetail = true;
+
+        [DisplayName("结果文字字号"), Category("结果图层")]
+        public double ResultOverlayFontSize { get => _ResultOverlayFontSize; set { _ResultOverlayFontSize = Math.Max(0, value); OnPropertyChanged(); } }
+        private double _ResultOverlayFontSize = 8;
+
+        [DisplayName("结果图层自动刷新"), Category("结果图层")]
+        public bool ResultOverlayAutoRefresh { get => _ResultOverlayAutoRefresh; set { _ResultOverlayAutoRefresh = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayAutoRefresh;
+
         public void OpenConfig()
         {
             new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
         }
 
-        public static void OpenResourceName(string title, string resourceName)
-        {
-            // 获取当前执行的程序集
-            Assembly assembly = Assembly.GetExecutingAssembly();
-
-            // 资源文件的完整名称
-
-            // 确保资源名称正确
-            string[] resourceNames = assembly.GetManifestResourceNames();
-
-            // 读取资源文件内容
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                {
-                    Console.WriteLine("资源文件未找到。请检查资源名称。");
-                    return;
-                }
-
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    string content = reader.ReadToEnd();
-
-                    string html = Markdig.Markdown.ToHtml(content);
-                    new MarkdownViewWindow(html) { Title = title, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-                }
-            }
-        }
-
-        public static void OpenChangeLog()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectARVRPro.CHANGELOG.md";
-            OpenResourceName("CHANGELOG", resourceName);
-        }
-        public static void OpenReadMe()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectARVRPro.README.md";
-            OpenResourceName("README",resourceName);
-        }
-        public static void OpenLog()
-        {
-            WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
-            windowLog.Show();
-        }
 
         [JsonIgnore]
         [Browsable(false)]
@@ -155,7 +116,6 @@ namespace ProjectARVRPro
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
 
         public event EventHandler<string> SNChanged;
 

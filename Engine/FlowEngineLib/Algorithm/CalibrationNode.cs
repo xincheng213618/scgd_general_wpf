@@ -6,8 +6,6 @@ namespace FlowEngineLib.Algorithm;
 [STNode("/03_3 校正")]
 public class CalibrationNode : CVBaseServerNode
 {
-	private int _OrderIndex;
-
 	private string _ExpTempName;
 
 	private string _POITempName;
@@ -16,7 +14,13 @@ public class CalibrationNode : CVBaseServerNode
 
 	protected string _POIReviseTempName;
 
+	protected bool _IsSaveCIE;
+
 	private STNodeEditText<string> m_ctrl_temp_exp;
+
+	private STNodeEditText<string> m_ctrl_temp_poi;
+
+	private STNodeEditText<bool> m_ctrl_saveCIE;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
@@ -100,6 +104,20 @@ public class CalibrationNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("保存CIE文件", "保存CIE文件", true)]
+	public bool IsSaveCIE
+	{
+		get
+		{
+			return _IsSaveCIE;
+		}
+		set
+		{
+			_IsSaveCIE = value;
+			m_ctrl_saveCIE.Value = value;
+		}
+	}
+
 	public CalibrationNode()
 		: base("校正", "Calibration", "SVR.Calibration.Default", "DEV.Calibration.Default")
 	{
@@ -108,21 +126,26 @@ public class CalibrationNode : CVBaseServerNode
 		_POITempName = "";
 		_POIFilterTempName = "";
 		_POIReviseTempName = "";
-		base.Height += 25;
+		base.Height += 75;
 		_MaxTime = 10000;
-		_OrderIndex = -1;
+		_IsSaveCIE = true;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		CreateTempControl(m_custom_item, "校正:");
+		CreateTempControl(m_custom_item, "校正模板:");
 		m_custom_item.Y += 25;
-		m_ctrl_temp_exp = CreateStringControl(m_custom_item, "曝光:", _ExpTempName);
+		m_ctrl_temp_exp = CreateStringControl(m_custom_item, "曝光模板:", _ExpTempName);
+		m_custom_item.Y += 25;
+		m_ctrl_temp_poi = CreateStringControl(m_custom_item, "POI模板:", _POITempName);
+		m_custom_item.Y += 25;
+		m_ctrl_saveCIE = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "保存CIE文件:", _IsSaveCIE);
 	}
 
 	private void setPOITemp()
 	{
+		m_ctrl_temp_poi.Value = GetPOITempDisplay();
 	}
 
 	private string GetPOITempDisplay()
@@ -138,7 +161,7 @@ public class CalibrationNode : CVBaseServerNode
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		CalibrationData calibrationData = new CalibrationData(_ExpTempName, param, _OrderIndex);
+		CalibrationData calibrationData = new CalibrationData(_ExpTempName, param, _IsSaveCIE);
 		BuildImageParam(calibrationData);
 		if (!string.IsNullOrEmpty(_POITempName))
 		{

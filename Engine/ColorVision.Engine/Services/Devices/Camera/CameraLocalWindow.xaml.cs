@@ -1,4 +1,6 @@
+using ColorVision.Themes.Controls;
 using cvColorVision;
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -8,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -26,6 +29,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public partial class CameraLocalWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(CameraLocalWindow));
+
         public byte[] rawArray;
         public byte[] srcrawArray;
         public UInt32 ImgWid = 5544, ImgHei = 3684;
@@ -56,10 +61,26 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             formcfg = new FormCfg(m_hCamHandle, strPathSysCfg);
 
-            string szText = "";
             cb_CM_ID.Items.Clear();
+            cb_CM_TYPE.SelectedIndex = (int)Device.Config.CameraModel;
+            cb_CM_MODE.SelectedIndex = (int)Device.Config.CameraMode;
+            cb_get_mode.SelectedIndex = (int)TakeImageMode.Live;
+            cb_bpp.SelectedIndex = 0; // "8"
+
+            btn_close.IsEnabled = false;
+            btn_Meas.IsEnabled = false;
+            btn_MeasTif.IsEnabled = false;
+            button1.IsEnabled = false;
+            btn_CalAutoExp.IsEnabled = true;
+        }
+
+        private void GetID_Click(object sender, RoutedEventArgs e)
+        {
+            string szText = "";
+
             if (cvCameraCSLib.GetAllCameraIDV1(m_eCameraMdl, ref szText))
             {
+                log.Info(szText);
                 JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
 
                 if (jObject["ID"] != null)
@@ -79,18 +100,45 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                 }
             }
+            else
+            {
+                MessageBox.Show("Fail");
+            }
+        }
+        private bool _isRefreshing;
 
+        private void GetAllID_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isRefreshing)
+            {
+                MessageBox.Show("正在遍历支持的相机模式", "ColorVision");
+                return; // 防止重复点击
+            }
+            _isRefreshing = true;
 
-            cb_CM_TYPE.SelectedIndex = (int)Device.Config.CameraModel;
-            cb_CM_MODE.SelectedIndex = (int)Device.Config.CameraMode;
-            cb_get_mode.SelectedIndex = (int)TakeImageMode.Live;
-            cb_bpp.SelectedIndex = 0; // "8"
+            // 异步执行，避免阻塞UI线程
+            Task.Run((Action)(() =>
+            {
+                int bufferSize = 102400; // 10KB 缓冲区，视你相机的数量而定
+                StringBuilder sbJson = new StringBuilder(bufferSize);
 
-            btn_close.IsEnabled = false;
-            btn_Meas.IsEnabled = false;
-            btn_MeasTif.IsEnabled = false;
-            button1.IsEnabled = false;
-            btn_CalAutoExp.IsEnabled = true;
+                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5(sbJson, bufferSize);
+                _isRefreshing = false;
+                // 回到UI线程
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    log.Info($"GetAllCameraIDMD5 返回值: {ret}");
+                    if (ret == 1)
+                    {
+                        string cameraIdsMd5 = sbJson.ToString();
+                        MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                });
+            }));
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

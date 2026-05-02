@@ -61,7 +61,7 @@ namespace ColorVision.ImageEditor
             Image.ContextMenuOpening += HandleContextMenuOpening;
             Image.ContextMenu = EditorContext.ContextMenu;
             EditorContext.Zoombox.ContextMenu = EditorContext.ContextMenu;
-            EditorContext.Zoombox.LayoutUpdated += Zoombox1_LayoutUpdated;
+            EditorContext.Zoombox.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
 
         }
 
@@ -251,14 +251,16 @@ namespace ColorVision.ImageEditor
 
 
         double oldMax;
-        private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
+        private void Zoombox1_ContentMatrixChanged(object? sender, EventArgs e)
         {
-            if (oldMax != EditorContext.ZoomRatio)
+            double zoomRatio = EditorContext.ZoomRatio;
+            if (oldMax != zoomRatio)
             {
+                oldMax = zoomRatio;
+                double scale = double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0 ? 1 : 1 / zoomRatio;
+                EditorContext.DrawCanvas.Sacle = scale;
                 if (EditorContext.Config.IsLayoutUpdated)
                 {
-                    oldMax = EditorContext.ZoomRatio;
-                    double scale = 1 / EditorContext.ZoomRatio;
                     DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawingVisualLists));
                 }
             }
@@ -269,20 +271,16 @@ namespace ColorVision.ImageEditor
         public void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)
         {
             if (IsUpdatedRender) return;
-            IsUpdatedRender = true;
-            if (DrawingVisualLists != null)
+            try
             {
-                foreach (var item in DrawingVisualLists)
-                {
-                    if (item.BaseAttribute is ITextProperties textProperties)
-                    {
-                        textProperties.TextAttribute.FontSize = 10 * scale;
-                    }
-                    item.Pen.Thickness = scale;
-                    item.Render();
-                }
+                IsUpdatedRender = true;
+                EditorContext.DrawCanvas.Sacle = scale;
+                EditorContext.DrawCanvas.ApplyLayoutScaleToVisuals();
             }
-            IsUpdatedRender = false;
+            finally
+            {
+                IsUpdatedRender = false;
+            }
         }
 
 
@@ -322,7 +320,7 @@ namespace ColorVision.ImageEditor
 
             EditorContext.DrawingVisualLists?.Clear();
             EditorContext.DrawingVisualLists = null;
-            EditorContext.Zoombox.LayoutUpdated -= Zoombox1_LayoutUpdated;
+            EditorContext.Zoombox.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
 
 
             if (Image != null)

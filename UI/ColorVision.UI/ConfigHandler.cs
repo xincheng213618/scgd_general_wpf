@@ -33,11 +33,27 @@ namespace ColorVision.UI
             {
                 if (_instance != null) return _instance;
                 _instance = new ConfigHandler();
+                _instance.Load();
                 ConfigService.SetInstance(_instance);
                 AssemblyHandler.GetInstance();
                 return _instance;
             }
         }
+        public static ConfigHandler GetInstance(string ConfigDIFileName)
+        {
+            if (_instance != null) return _instance;
+            lock (_locker)
+            {
+                if (_instance != null) return _instance;
+                _instance = new ConfigHandler();
+                _instance.ConfigDIFileName = ConfigDIFileName;
+                _instance.Load();
+                ConfigService.SetInstance(_instance);
+                AssemblyHandler.GetInstance();
+                return _instance;
+            }
+        }
+
         public ConfigOptions Options => GetRequiredService<ConfigOptions>();
 
         public string ConfigFilePath { get; set; }
@@ -49,14 +65,21 @@ namespace ColorVision.UI
 
         public ConfigHandler()
         {
-            JsonSerializerSettings  = new JsonSerializerSettings { Formatting = Formatting.Indented };
+        }
+
+        public void Load()
+        {
+            JsonSerializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented };
             JsonSerializerSettings.Converters.Add(new BrushJsonConverter());
             JsonSerializerSettings.ContractResolver = new WpfContractResolver();
 
 
             InitDateTime = DateTime.Now;
             string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? Assembly.GetEntryAssembly()?.GetName().Name;
-            ConfigDIFileName =  $"{Assembly.GetEntryAssembly()?.GetName().Name ?? AssemblyCompany}Config";
+            if (ConfigDIFileName == null)
+            {
+                ConfigDIFileName = $"{Assembly.GetEntryAssembly()?.GetName().Name ?? AssemblyCompany}Config";
+            }
             string backupDirName = "Backup";
             if (Directory.Exists("Config"))
             {
@@ -68,7 +91,7 @@ namespace ColorVision.UI
                 string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\Config\\";
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
-                ConfigFilePath = DirectoryPath + ConfigDIFileName +".json";
+                ConfigFilePath = DirectoryPath + ConfigDIFileName + ".json";
                 BackupFolderPath = DirectoryPath + backupDirName + "\\";
             }
 

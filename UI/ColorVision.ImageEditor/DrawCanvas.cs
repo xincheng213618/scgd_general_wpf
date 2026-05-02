@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -133,26 +134,81 @@ namespace ColorVision.ImageEditor
 
         public double Sacle { get; set; } = 1;
 
+        public double TextFontSizeOverride { get; set; }
+
+        private static readonly ConditionalWeakTable<Visual, DrawingVisualLayoutState> DrawingVisualLayoutStates = new();
+
+        private sealed class DrawingVisualLayoutState
+        {
+            public double BasePenThickness { get; init; }
+            public double? BaseFontSize { get; init; }
+        }
+
+        public void ApplyLayoutScaleToVisuals()
+        {
+            foreach (var visual in visuals)
+                ApplyLayoutScale(visual);
+        }
+
+        private void ApplyLayoutScale(Visual visual)
+        {
+            if (visual is not IDrawingVisual drawingVisual) return;
+
+            double scale = IsLayoutUpdated ? Sacle : 1;
+            if (double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0)
+                scale = 1;
+            var state = DrawingVisualLayoutStates.GetValue(visual, _ => CaptureLayoutState(drawingVisual));
+            bool isRender = false;
+
+            if (drawingVisual.Pen != null)
+            {
+                var pen = drawingVisual.Pen;
+                if (pen.IsFrozen)
+                {
+                    pen = pen.Clone();
+                    drawingVisual.Pen = pen;
+                }
+
+                double targetThickness = state.BasePenThickness * scale;
+                if (pen.Thickness != targetThickness)
+                {
+                    pen.Thickness = targetThickness;
+                    isRender = true;
+                }
+            }
+
+            if (drawingVisual.BaseAttribute is ITextProperties textProperties && state.BaseFontSize is double baseFontSize)
+            {
+                double targetFontSize = IsLayoutUpdated
+                    ? baseFontSize * scale
+                    : TextFontSizeOverride > 0 ? TextFontSizeOverride : baseFontSize;
+                if (textProperties.TextAttribute.FontSize != targetFontSize)
+                {
+                    textProperties.TextAttribute.FontSize = targetFontSize;
+                    isRender = true;
+                }
+            }
+
+            if (isRender)
+                drawingVisual.Render();
+        }
+
+        private static DrawingVisualLayoutState CaptureLayoutState(IDrawingVisual drawingVisual)
+        {
+            return new DrawingVisualLayoutState
+            {
+                BasePenThickness = drawingVisual.Pen?.Thickness ?? 1,
+                BaseFontSize = drawingVisual.BaseAttribute is ITextProperties textProperties
+                    ? textProperties.TextAttribute.FontSize
+                    : null
+            };
+        }
+
         public void AddVisual(Visual visual)
         {
             if (visual == null || visuals.Contains(visual)) return;
 
-            if (IsLayoutUpdated && visual is IDrawingVisual drawingVisual)
-            {
-                bool isRender = false;
-                if (drawingVisual.BaseAttribute is ITextProperties textProperties && textProperties.TextAttribute.FontSize != 10 * Sacle)
-                {
-                    isRender = true;
-                    textProperties.TextAttribute.FontSize = 10 * Sacle;
-                }
-                if (drawingVisual.Pen.Thickness != Sacle)
-                {
-                    isRender = true;
-                    drawingVisual.Pen.Thickness = Sacle;
-                }
-                if (isRender)
-                    drawingVisual.Render();
-            }
+            ApplyLayoutScale(visual);
             visuals.Add(visual);
             AddVisualTree(visual);
         }
@@ -172,22 +228,7 @@ namespace ColorVision.ImageEditor
             if (index < 0) index = 0;
             if (index > visuals.Count) index = visuals.Count;
 
-            if (IsLayoutUpdated && visual is IDrawingVisual drawingVisual)
-            {
-                bool isRender = false;
-                if (drawingVisual.BaseAttribute is ITextProperties textProperties && textProperties.TextAttribute.FontSize != 10 * Sacle)
-                {
-                    isRender = true;
-                    textProperties.TextAttribute.FontSize = 10 * Sacle;
-                }
-                if (drawingVisual.Pen.Thickness != Sacle)
-                {
-                    isRender = true;
-                    drawingVisual.Pen.Thickness = Sacle;
-                }
-                if (isRender)
-                    drawingVisual.Render();
-            }
+            ApplyLayoutScale(visual);
 
             visuals.Insert(index, visual);
             AddVisualTree(visual);
@@ -201,22 +242,7 @@ namespace ColorVision.ImageEditor
         {
             if (visual == null || visuals.Contains(visual)) return;
 
-            if (IsLayoutUpdated && visual is IDrawingVisual drawingVisual)
-            {
-                bool isRender = false;
-                if (drawingVisual.BaseAttribute is ITextProperties textProperties && textProperties.TextAttribute.FontSize != 10 * Sacle)
-                {
-                    isRender = true;
-                    textProperties.TextAttribute.FontSize = 10 * Sacle;
-                }
-                if (drawingVisual.Pen.Thickness != Sacle)
-                {
-                    isRender = true;
-                    drawingVisual.Pen.Thickness = Sacle;
-                }
-                if (isRender)
-                    drawingVisual.Render();
-            }
+            ApplyLayoutScale(visual);
 
             visuals.Add(visual);
             AddVisualTree(visual);
@@ -326,6 +352,7 @@ namespace ColorVision.ImageEditor
             Clear();
             MouseLeftButtonDown -= OnMouseLeftButtonDown;
             this.CommandBindings.Clear();
+            GC.SuppressFinalize(this);
         }
     }
 

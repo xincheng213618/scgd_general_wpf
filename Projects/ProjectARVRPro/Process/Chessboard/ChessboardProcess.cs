@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -18,15 +17,14 @@ namespace ProjectARVRPro.Process.Chessboard
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
-            ChessboardFixConfig fixConfig = ctx.FixConfig.GetRequiredService<ChessboardFixConfig>();
             ChessboardViewTestResult testResult = new ChessboardViewTestResult();
 
 
             try
             {
-                log?.Info("���� Chessboard ���̽��");
+                log?.Info("开始 Chessboard 流程解析");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -52,12 +50,12 @@ namespace ProjectARVRPro.Process.Chessboard
                         if (details.Count == 1)
                         {
                             var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            view.PoiAnalysisResult.result.Value *= fixConfig.ChessboardContrast;
+                            view.PoiAnalysisResult.result.Value *= recipeConfig.ChessboardContrast.Fix;
                             var contrast = new ObjectiveTestItem
                             {
                                 Name = "Chessboard_Contrast",
-                                LowLimit = recipeConfig.ChessboardContras.Min,
-                                UpLimit = recipeConfig.ChessboardContras.Max,
+                                LowLimit = recipeConfig.ChessboardContrast.Min,
+                                UpLimit = recipeConfig.ChessboardContrast.Max,
                                 Value = view.PoiAnalysisResult.result.Value,
                                 TestValue = view.PoiAnalysisResult.result.Value.ToString("F3")
                             };
@@ -122,7 +120,7 @@ namespace ProjectARVRPro.Process.Chessboard
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"���̸� �����" + Environment.NewLine;
+            outtext += "棋盘格结果数据：" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
@@ -140,11 +138,6 @@ namespace ProjectARVRPro.Process.Chessboard
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<ChessboardFixConfig>();
         }
     }
 }

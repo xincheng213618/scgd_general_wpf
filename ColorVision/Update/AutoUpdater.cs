@@ -356,17 +356,9 @@ namespace ColorVision.Update
                 // 创建批处理文件内容
                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
-                string? executableName = Path.GetFileName(Environment.ProcessPath);
+                string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
 
-                string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 3
-xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
-start """" ""{Path.Combine(programDirectory, executableName)}""
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
+                string batchContent = CreateIncrementalUpdateBatch(tempDirectory, programDirectory, executableName);
 
                 File.WriteAllText(batchFilePath, batchContent);
 
@@ -397,6 +389,74 @@ del ""%~f0"" & exit
             {
                 MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
             }
+        }
+
+        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName)
+        {
+            string executablePath = Path.Combine(programDirectory, executableName);
+            StringBuilder sb = new();
+            sb.AppendLine("@echo off");
+            sb.AppendLine("setlocal enabledelayedexpansion");
+            sb.AppendLine("title ColorVision Incremental Updater");
+            sb.AppendLine($"set \"STAGE={tempDirectory}\"");
+            sb.AppendLine($"set \"TARGET={programDirectory}\"");
+            sb.AppendLine($"set \"EXE={executableName}\"");
+            sb.AppendLine($"set \"EXEPATH={executablePath}\"");
+            sb.AppendLine("set \"NEED_RESTART_EXPLORER=0\"");
+            sb.AppendLine();
+            sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
+            sb.AppendLine("timeout /t 2 /nobreak >nul");
+            sb.AppendLine();
+            sb.AppendLine("dir /b /s \"%STAGE%\\ColorVision.ShellExtension*\" >nul 2>nul");
+            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
+            sb.AppendLine("  call :release_shell_hosts");
+            sb.AppendLine("  call :copy_shell_extension");
+            sb.AppendLine("  if !ERRORLEVEL! NEQ 0 goto fail");
+            sb.AppendLine(")");
+            sb.AppendLine();
+            sb.AppendLine("call :copy_application_files");
+            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
+            sb.AppendLine("goto success");
+            sb.AppendLine();
+            sb.AppendLine(":release_shell_hosts");
+            sb.AppendLine("taskkill /f /im explorer.exe >nul 2>nul");
+            sb.AppendLine("taskkill /f /im dllhost.exe >nul 2>nul");
+            sb.AppendLine("set \"NEED_RESTART_EXPLORER=1\"");
+            sb.AppendLine("timeout /t 2 /nobreak >nul");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine();
+            sb.AppendLine(":copy_shell_extension");
+            sb.AppendLine("where robocopy >nul 2>nul");
+            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
+            sb.AppendLine("  robocopy \"%STAGE%\" \"%TARGET%\" ColorVision.ShellExtension* /E /NFL /NDL /NP /NJH /NJS /R:5 /W:1");
+            sb.AppendLine("  set \"RC=!ERRORLEVEL!\"");
+            sb.AppendLine("  if !RC! LSS 8 exit /b 0");
+            sb.AppendLine("  exit /b !RC!");
+            sb.AppendLine(")");
+            sb.AppendLine("copy /y \"%STAGE%\\ColorVision.ShellExtension*\" \"%TARGET%\\\" >nul");
+            sb.AppendLine("exit /b !ERRORLEVEL!");
+            sb.AppendLine();
+            sb.AppendLine(":copy_application_files");
+            sb.AppendLine("where robocopy >nul 2>nul");
+            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
+            sb.AppendLine("  robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /XF update.bat ColorVision.ShellExtension* /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
+            sb.AppendLine("  set \"RC=!ERRORLEVEL!\"");
+            sb.AppendLine("  if !RC! LSS 8 exit /b 0");
+            sb.AppendLine("  exit /b !RC!");
+            sb.AppendLine(")");
+            sb.AppendLine("xcopy /y /e /i \"%STAGE%\\*\" \"%TARGET%\\\" >nul");
+            sb.AppendLine("exit /b !ERRORLEVEL!");
+            sb.AppendLine();
+            sb.AppendLine(":success");
+            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
+            sb.AppendLine("start \"\" \"%EXEPATH%\"");
+            sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine();
+            sb.AppendLine(":fail");
+            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
+            sb.AppendLine("exit /b 1");
+            return sb.ToString();
         }
 
         public static void RestartApplication(string downloadPath)

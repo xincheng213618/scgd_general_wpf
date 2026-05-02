@@ -1,0 +1,8 @@
+{
+  "manifest_version": 1,
+  "Id": "Conoscope",
+  "name": "Conoscope",
+  "version": "1.4.2.2",
+  "description": "Conoscope",
+  "dllpath": "Conoscope.dll"
+}

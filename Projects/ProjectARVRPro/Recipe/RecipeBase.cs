@@ -5,19 +5,24 @@ namespace ProjectARVRPro.Recipe
 {
     public class RecipeBase : ViewModelBase
     {
+        private double _Fix = 1;
+
         public RecipeBase()
         {
 
         }
-        public RecipeBase(double min,double max)
+        public RecipeBase(double min, double max, double fix = 1)
         {
             _Min = min;
             _Max = max;
+            _Fix = fix;
         }
         public double Min { get => _Min; set { _Min = value; OnPropertyChanged(); } }
         private double _Min;
 
         public double Max { get => _Max; set { _Max = value; OnPropertyChanged(); } }
         private double _Max;
+
+        public double Fix { get => _Fix; set { _Fix = value; OnPropertyChanged(); } }
     }
 }

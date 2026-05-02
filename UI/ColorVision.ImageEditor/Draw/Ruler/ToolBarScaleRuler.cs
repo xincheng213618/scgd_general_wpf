@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             EditorContext = editorContext;
             this.Parent = editorContext.ImageView;
 
-            ScalRuler = new DrawingVisualScaleHost();
+            ScalRuler = new DrawingVisualScaleHost(editorContext);
             if (editorContext.Zoombox.Parent is Grid grid)
             {
                 GridEx = grid;

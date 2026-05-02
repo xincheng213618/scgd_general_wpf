@@ -9,8 +9,8 @@ namespace ProjectKB
     {
         public static void SaveCsv(this KBItemMaster KBItems, string FileName)
         {
-            // LvFailures是 MaxKeyLv 和 MinKeyLv  失败的数量, 都失败算1个，不都统计
-            // LocalContrastFailures  MinKeyLc 和 MaxKeyLc 是失败的数量，都失败算1个，不都统计
+            // LvFailures 是单键亮度上下限失败的按键数量
+            // LocalContrastFailures 是局部对比度上下限失败的按键数量
             // DarkKeyLocalContrast 是最暗Key的Lc
             // BrightKeyLocalContrast 是最亮Key的Lc
 
@@ -72,22 +72,22 @@ namespace ProjectKB
                 csvBuilder.AppendLine(newHeaders);
             }
             var item = KBItems;
-            var recipe = RecipeManager.GetInstance().RecipeConfig;
+            RecipeManager recipeManager = RecipeManager.GetInstance();
+            KBRecipeConfig recipe = recipeManager.RecipeConfigs.TryGetValue(item.Model, out KBRecipeConfig? matchedRecipe)
+                ? matchedRecipe
+                : recipeManager.RecipeConfig;
             var darkestByLv = item.Items.OrderBy(x => x.Lv).FirstOrDefault();
             var brightestByLv = item.Items.OrderByDescending(x => x.Lv).FirstOrDefault();
             var darkestByLc = item.Items.OrderBy(x => x.Lc).FirstOrDefault();
             var brightestByLc = item.Items.OrderByDescending(x => x.Lc).FirstOrDefault();
 
-            double minLc = item.Items.Count > 0 ? item.Items.Min(x => x.Lc) : 0;
-            double maxLc = item.Items.Count > 0 ? item.Items.Max(x => x.Lc) : 0;
+            int lvFailures = recipe.EnableKeyLvLimit
+                ? item.Items.Count(key => key.Lv < recipe.MinKeyLv || key.Lv > recipe.MaxKeyLv)
+                : 0;
 
-            bool minLvFailed = recipe.MinKeyLv != 0 && item.MinLv < recipe.MinKeyLv;
-            bool maxLvFailed = recipe.MaxKeyLv != 0 && item.MaxLv > recipe.MaxKeyLv;
-            int lvFailures = (minLvFailed || maxLvFailed) ? 1 : 0;
-
-            bool minLcFailed = recipe.MinKeyLc != 0 && minLc < recipe.MinKeyLc / 100;
-            bool maxLcFailed = recipe.MaxKeyLc != 0 && maxLc > recipe.MaxKeyLc / 100;
-            int localContrastFailures = (minLcFailed || maxLcFailed) ? 1 : 0;
+            int localContrastFailures = recipe.EnableKeyLcLimit
+                ? item.Items.Count(key => key.Lc < recipe.MinKeyLc / 100 || key.Lc > recipe.MaxKeyLc / 100)
+                : 0;
 
             if (item.SN.Contains(',') || item.SN.Contains('"'))
             {
@@ -113,8 +113,8 @@ namespace ProjectKB
                     item.NbrFailPoints.ToString(CultureInfo.InvariantCulture),
                     lvFailures.ToString(CultureInfo.InvariantCulture),
                     localContrastFailures.ToString(CultureInfo.InvariantCulture),
-                    (darkestByLv?.Lc ?? 0).ToString("F2", CultureInfo.InvariantCulture),
-                    (brightestByLv?.Lc ?? 0).ToString("F2", CultureInfo.InvariantCulture),
+                    ((darkestByLv?.Lc ?? 0) * 100).ToString("F2", CultureInfo.InvariantCulture),
+                    ((brightestByLv?.Lc ?? 0) * 100).ToString("F2", CultureInfo.InvariantCulture),
                     darkestByLc?.Name ?? string.Empty,
                     brightestByLc?.Name ?? string.Empty,
                     "",

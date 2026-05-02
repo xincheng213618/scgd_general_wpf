@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Types
         LineArity = 41,
         [Description("ColorDiff")]
         ColorDiff = 42,
-        [Description("ColorDiff")]
+        [Description("AngleShift")]
         AngleShift = 43,
         Group = 1000,
         SpCalibration =201,

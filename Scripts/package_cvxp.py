@@ -10,6 +10,8 @@ from urllib.parse import quote
 
 import pefile
 
+from runtime_filters import should_keep_runtime_path
+
 
 EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json", "PackageIcon.png"]
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -292,9 +294,13 @@ def package_plugin(src_dir: Path, plugin_root: Path, shared_files: set[str], out
         project_path.mkdir(parents=True, exist_ok=True)
 
         stripped_files: list[str] = []
+        skipped_runtime_files = 0
         for file_path in sorted(path for path in src_dir.rglob("*") if path.is_file()):
             relative_path = normalize_relative_path(str(file_path.relative_to(src_dir)))
             if file_path.suffix.lower() == ".pdb":
+                continue
+            if not should_keep_runtime_path(relative_path):
+                skipped_runtime_files += 1
                 continue
             if relative_path in shared_files:
                 stripped_files.append(relative_path)
@@ -315,7 +321,7 @@ def package_plugin(src_dir: Path, plugin_root: Path, shared_files: set[str], out
             for file_path in sorted(path for path in temp_dir.rglob("*") if path.is_file()):
                 zip_file.write(file_path, file_path.relative_to(temp_dir).as_posix())
 
-    return output_file, len(stripped_files)
+    return output_file, len(stripped_files), skipped_runtime_files
 
 
 def main() -> None:
@@ -371,13 +377,14 @@ def main() -> None:
 
     shared_files = load_shared_files_manifest(shared_files_path)
     output_file = output_dir / f"{project_name}-{version}.cvxp"
-    output_file, stripped_count = package_plugin(src_dir, plugin_root, shared_files, output_file, project_name)
+    output_file, stripped_count, skipped_runtime_count = package_plugin(src_dir, plugin_root, shared_files, output_file, project_name)
 
     print(f"Source directory: {src_dir}")
     print(f"Plugin root: {plugin_root}")
     print(f"Shared files manifest: {shared_files_path}")
     print(f"Shared file count: {len(shared_files)}")
     print(f"Stripped file count: {stripped_count}")
+    print(f"Skipped runtime file count: {skipped_runtime_count}")
     print(f"Packaged: {output_file}")
 
     if args.no_upload:

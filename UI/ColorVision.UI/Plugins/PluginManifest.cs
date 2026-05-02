@@ -17,6 +17,9 @@ namespace ColorVision.UI.Plugins
         [JsonProperty("version")]
         public string Version { get; set; }
 
+        [JsonProperty("requires")]
+        public string Requires { get; set; }
+
         [JsonProperty("description")]
         public string Description { get; set; }
 

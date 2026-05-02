@@ -22,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
     public class MQTTSMU : MQTTDeviceService<ConfigSMU>
     {
         public DeviceSMU Device { get; set; }
+        private SMUScanParam? _lastScanParam;
         public MQTTSMU(DeviceSMU deviceSMU) : base(deviceSMU.Config)
         {
             Device = deviceSMU;
@@ -71,13 +72,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
                                     if (model.ChannelType == SMUChannelType.A)
                                     {
-                                        Device.DisplayConfig.AV = model.VResult;
-                                        Device.DisplayConfig.AI = model.IResult;
+                                        Device.DisplayConfig.ChannelA.V = model.VResult;
+                                        Device.DisplayConfig.ChannelA.I = model.IResult;
                                     }
                                     else if (model.ChannelType == SMUChannelType.B)
                                     {
-                                        Device.DisplayConfig.BV = model.VResult;
-                                        Device.DisplayConfig.BI = model.IResult;
+                                        Device.DisplayConfig.ChannelB.V = model.VResult;
+                                        Device.DisplayConfig.ChannelB.I = model.IResult;
                                     }
 
                                     if (model.ChannelType == Device.DisplayConfig.Channel)
@@ -127,10 +128,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                ViewResultSMU viewResultSMU = new ViewResultSMU(Device.DisplayConfig.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Device.DisplayConfig.StopMeasureVal, data.VList, data.IList);
-                                viewResultSMU.CreateTime = DateTime.Now;
-                                viewResultSMU.Id = -1;
-                                Device.View.AddViewResultSMU(viewResultSMU);
+                                if (_lastScanParam != null)
+                                {
+                                    ViewResultSMU viewResultSMU = new ViewResultSMU(_lastScanParam.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)_lastScanParam.EndValue, data.VList, data.IList);
+                                    viewResultSMU.CreateTime = DateTime.Now;
+                                    viewResultSMU.Id = -1;
+                                    Device.View.AddViewResultSMU(viewResultSMU);
+                                }
                             });
                         }
 
@@ -216,8 +220,14 @@ namespace ColorVision.Engine.Services.Devices.SMU
             public SMUChannelType Channel { get; set; }
 
         }
-        public MsgRecord? Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number, SMUChannelType channel)
+        public MsgRecord? Scan(SMUParam smuParam, SMUChannelType channel)
         {
+            bool isSourceV = smuParam.IsSourceV;
+            double startMeasureVal = smuParam.StartMeasureVal;
+            double stopMeasureVal = smuParam.StopMeasureVal;
+            double lmtVal = smuParam.LmtVal;
+            int number = smuParam.Number;
+
             if (Device.DisplayConfig.IsUseLimitSigned)
             {
                 double V = isSourceV ? stopMeasureVal : lmtVal;
@@ -226,7 +236,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
             }
 
             var Params = new Dictionary<string, object>();
-            Params.Add("DeviceParam", new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number, Channel = channel });
+            _lastScanParam = new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number, Channel = channel };
+            Params.Add("DeviceParam", _lastScanParam);
             MsgSend msg = new()
             {
                 EventName = "Scan",

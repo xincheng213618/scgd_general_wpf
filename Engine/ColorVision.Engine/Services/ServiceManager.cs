@@ -1,16 +1,8 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.CfwPort;
-using ColorVision.Engine.Services.Devices.FileServer;
-using ColorVision.Engine.Services.Devices.FlowDevice;
-using ColorVision.Engine.Services.Devices.Motor;
-using ColorVision.Engine.Services.Devices.PG;
-using ColorVision.Engine.Services.Devices.Sensor;
-using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Services.Devices.Spectrum;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
@@ -146,49 +138,7 @@ namespace ColorVision.Engine.Services
                 var sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == terminalService.SysResourceModel.Id && it.TenantId == 0 && it.IsEnable == true && it.IsDelete == false).ToList();
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    DeviceService deviceService =null;
-
-                    switch ((ServiceTypes)sysResourceModel.Type)
-                    {
-                        case ServiceTypes.Camera:
-                            deviceService = new DeviceCamera(sysResourceModel);
-                            break;
-                        case ServiceTypes.PG:
-                            deviceService = new DevicePG(sysResourceModel);
-                            break;
-                        case ServiceTypes.Spectrum:
-                            deviceService = new DeviceSpectrum(sysResourceModel);
-                            break;
-                        case ServiceTypes.SMU:
-                            deviceService = new DeviceSMU(sysResourceModel);
-                            break;
-                        case ServiceTypes.Sensor:
-                            deviceService = new DeviceSensor(sysResourceModel);
-                            break;
-                        case ServiceTypes.FileServer:
-                            deviceService = new DeviceFileServer(sysResourceModel);
-                            break;
-                        case ServiceTypes.Algorithm:
-                            deviceService = new DeviceAlgorithm(sysResourceModel);
-                            break;
-                        case ServiceTypes.Calibration:
-                            deviceService = new DeviceCalibration(sysResourceModel);
-                            break;
-                        case ServiceTypes.FilterWheel:
-                            deviceService = new DeviceCfwPort(sysResourceModel);
-                            break;
-                        case ServiceTypes.Motor:
-                            deviceService = new DeviceMotor(sysResourceModel);
-                            break;
-                        case ServiceTypes.ThirdPartyAlgorithms:
-                            deviceService = new DeviceThirdPartyAlgorithms(sysResourceModel);
-                            break;
-                        case ServiceTypes.Flow:
-                            deviceService = new DeviceFlowDevice(sysResourceModel);
-                            break;
-                        default:
-                            break;
-                    }
+                    DeviceService? deviceService = DeviceServiceFactoryRegistry.CreateService(sysResourceModel);
 
                     if (deviceService != null  )
                     {

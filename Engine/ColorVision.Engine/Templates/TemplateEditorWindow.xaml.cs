@@ -367,8 +367,17 @@ namespace ColorVision.Engine.Templates
 
         private void CreateCopy()
         {
-            if (ITemplate.CopyTo(ListView1.SelectedIndex))
+            int selectedIndex = GetSelectedTemplateSourceIndex();
+            if (selectedIndex < 0)
             {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                return;
+            }
+
+            string sourceName = ITemplate.GetTemplateName(selectedIndex);
+            if (ITemplate.CopyTo(selectedIndex))
+            {
+                ITemplate.ImportName = ITemplate.NewCreateFileName($"{sourceName}_Copy");
                 int oldnum = ITemplate.Count;
                 ITemplate.OpenCreate();
                 if (oldnum != ITemplate.Count)
@@ -379,6 +388,22 @@ namespace ColorVision.Engine.Templates
 
                 }
             }
+        }
+
+        private int GetSelectedTemplateSourceIndex()
+        {
+            if (ListView1.SelectedItem is TemplateBase selectedTemplate)
+            {
+                int index = 0;
+                foreach (var template in ITemplate.ItemsSource.OfType<TemplateBase>())
+                {
+                    if (ReferenceEquals(template, selectedTemplate))
+                        return index;
+                    index++;
+                }
+            }
+
+            return ListView1.SelectedIndex;
         }
 
         private void Button_CreateCopy_Click(object sender, RoutedEventArgs e)

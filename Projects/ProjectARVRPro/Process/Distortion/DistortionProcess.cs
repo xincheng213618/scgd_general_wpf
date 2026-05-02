@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion
@@ -14,9 +13,8 @@ namespace ProjectARVRPro.Process.Distortion
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
-            DistortionFixConfig fixConfig = ctx.FixConfig.GetRequiredService<DistortionFixConfig>();
             DistortionViewTestResult testResult = new DistortionViewTestResult();
 
             try
@@ -34,8 +32,8 @@ namespace ProjectARVRPro.Process.Distortion
                         if (details.Count == 1)
                         {
                             var distortion = new Distortion2View(details[0]);
-                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= fixConfig.HorizontalTVDistortion;
-                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= fixConfig.VerticalTVDistortion;
+                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= recipeConfig.HorizontalTVDistortion.Fix;
+                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= recipeConfig.VerticalTVDistortion.Fix;
 
 
                             foreach (var pt in distortion.DistortionReslut.TVDistortion.FinalPoints)
@@ -87,9 +85,9 @@ namespace ProjectARVRPro.Process.Distortion
             {
                 DVCircleText Circle = new();
                 Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
-                Circle.Attribute.Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11;
+                Circle.Attribute.Radius = 200;
                 Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
+                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 );
                 Circle.Attribute.Text = $"{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}";
                 Circle.Render();
                 ctx.ImageView.AddVisual(Circle);
@@ -115,11 +113,6 @@ namespace ProjectARVRPro.Process.Distortion
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<DistortionFixConfig>();
         }
     }
 }

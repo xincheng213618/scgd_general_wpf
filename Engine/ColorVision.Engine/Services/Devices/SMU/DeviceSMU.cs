@@ -8,121 +8,85 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {
+    public class SMUSourceDisplayConfig : ViewModelBase
+    {
+        public double MeasureVal { get => _measureVal; set => SetProperty(ref _measureVal, value); }
+        private double _measureVal = 5;
+
+        public double LmtVal { get => _lmtVal; set => SetProperty(ref _lmtVal, value); }
+        private double _lmtVal = 5;
+    }
+
+    public class SMUChannelDisplayConfig : ViewModelBase
+    {
+        public SMUSourceDisplayConfig VoltageSource { get => _voltageSource; set { _voltageSource = value ?? new SMUSourceDisplayConfig(); OnPropertyChanged(); } }
+        private SMUSourceDisplayConfig _voltageSource = new();
+
+        public SMUSourceDisplayConfig CurrentSource { get => _currentSource; set { _currentSource = value ?? new SMUSourceDisplayConfig(); OnPropertyChanged(); } }
+        private SMUSourceDisplayConfig _currentSource = new();
+
+        public double? V { get => _v; set => SetProperty(ref _v, value); }
+        private double? _v;
+
+        public double? I { get => _i; set => SetProperty(ref _i, value); }
+        private double? _i;
+
+        public SMUSourceDisplayConfig GetSourceConfig(bool isSourceV)
+        {
+            return isSourceV ? VoltageSource : CurrentSource;
+        }
+    }
+
     public class DisplaySMUConfig : IDisplayConfigBase
     {
         public bool IsUseLimitSigned { get => _IsUseLimitSigned; set { _IsUseLimitSigned = value; OnPropertyChanged(); } }
         private bool _IsUseLimitSigned = true;
 
-        public double MeasureVal { get => _MeasureVal; set { 
-                _MeasureVal = value; OnPropertyChanged();
-                if (_Channel == SMUChannelType.A)
-                    AMeasureVal = value;
-                else if (_Channel == SMUChannelType.B)
-                    BMeasureVal = value;
-            } }
-        private double _MeasureVal = 5;
-
-        public double LmtVal { get => _lmtVal; set { 
-                _lmtVal = value; OnPropertyChanged();
-                if (_Channel == SMUChannelType.A)
-                    ALmtVal = value;
-                else if (_Channel == SMUChannelType.B)
-                    BLmtVal = value;
-            } }
-        private double _lmtVal = 5;
-
-
-        public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; OnPropertyChanged(); } }
+        public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; OnPropertyChanged(); NotifySelectedSourceChanged(); } }
         private bool _IsSourceV = true;
 
-
-        public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; OnPropertyChanged(); } }
-        private double _startMeasureVal;
-        public double StopMeasureVal { get => _stopMeasureVal; set { _stopMeasureVal = value; OnPropertyChanged(); } }
-        private double _stopMeasureVal;
-
-        public int Number { get => _number; set { _number = value; OnPropertyChanged(); } }
-        private int _number;
-        public double LimitVal { get => _limitVal; set { _limitVal = value; OnPropertyChanged(); } }
-        private double _limitVal = 5;
-
-        public SMUChannelType Channel { get => _Channel; set {
-                _Channel = value; OnPropertyChanged(); 
-                if (value == SMUChannelType.A)
-                {
-                    V = AV;
-                    I = AI;
-                    MeasureVal = AMeasureVal;
-                    LmtVal = ALmtVal;
-                }else if (value == SMUChannelType.B)
-                {
-                    V = BV;
-                    I = BI;
-                    MeasureVal = BMeasureVal;
-                    LmtVal = BLmtVal;
-                }
-            } }
+        public SMUChannelType Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); NotifySelectedChannelChanged(); } }
         private SMUChannelType _Channel = SMUChannelType.A;
 
+        [Browsable(false)]
+        public SMUChannelDisplayConfig ChannelA { get => _channelA; set { _channelA = value ?? new SMUChannelDisplayConfig(); OnPropertyChanged(); NotifySelectedChannelChanged(); } }
+        private SMUChannelDisplayConfig _channelA = new();
 
+        [Browsable(false)]
+        public SMUChannelDisplayConfig ChannelB { get => _channelB; set { _channelB = value ?? new SMUChannelDisplayConfig(); OnPropertyChanged(); NotifySelectedChannelChanged(); } }
+        private SMUChannelDisplayConfig _channelB = new();
 
-        public double? AV { get => _AV; set { _AV = value; OnPropertyChanged(); } }
-        private double? _AV;
-        public double? AI { get => _AI; set { _AI = value; OnPropertyChanged(); } }
-        private double? _AI;
+        [JsonIgnore, Browsable(false)]
+        public SMUChannelDisplayConfig CurrentChannelConfig => Channel == SMUChannelType.A ? ChannelA : ChannelB;
 
-        public double? BV { get => _BV; set { _BV = value; OnPropertyChanged(); } }
-        private double? _BV;
-        public double? BI { get => _BI; set { _BI = value; OnPropertyChanged(); } }
-        private double? _BI;
+        [JsonIgnore, Browsable(false)]
+        public SMUSourceDisplayConfig CurrentSourceConfig => CurrentChannelConfig.GetSourceConfig(IsSourceV);
 
-        public double AMeasureVal { get => _AMeasureVal; set { _AMeasureVal = value; OnPropertyChanged(); } }
-        private double _AMeasureVal = 5;
-        public double ALmtVal { get => _ALmtVal; set { _ALmtVal = value; OnPropertyChanged(); } }
-        private double _ALmtVal = 5;
+        [JsonIgnore, Browsable(false)]
+        public double? V { get => CurrentChannelConfig.V; set { CurrentChannelConfig.V = value; OnPropertyChanged(); } }
 
-        public double BMeasureVal { get => _BMeasureVal; set { _BMeasureVal = value; OnPropertyChanged(); } }
-        private double _BMeasureVal = 5;
-        public double BLmtVal { get => _BLmtVal; set { _BLmtVal = value; OnPropertyChanged(); } }
-        private double _BLmtVal = 5;
+        [JsonIgnore, Browsable(false)]
+        public double? I { get => CurrentChannelConfig.I; set { CurrentChannelConfig.I = value; OnPropertyChanged(); } }
 
-
-        public double? V { get => _V; set
-            { 
-                _V = value;
-                OnPropertyChanged();
-                if (_Channel == SMUChannelType.A)
-                {
-                    AV = value;
-                }
-                else if (_Channel == SMUChannelType.B)
-                {
-                    BV = value; 
-                }
-            }
+        private void NotifySelectedChannelChanged()
+        {
+            OnPropertyChanged(nameof(CurrentChannelConfig));
+            OnPropertyChanged(nameof(V));
+            OnPropertyChanged(nameof(I));
+            NotifySelectedSourceChanged();
         }
-        private double? _V;
-        public double? I { get => _I; set
-            { 
-                _I = value; 
-                OnPropertyChanged();
-                if (_Channel == SMUChannelType.A)
-                {
-                    AI = value;
-                }
-                else if (_Channel == SMUChannelType.B)
-                {
-                    BI = value;
-                }
-            } 
+
+        private void NotifySelectedSourceChanged()
+        {
+            OnPropertyChanged(nameof(CurrentSourceConfig));
         }
-        private double? _I;
     }
 
     public class DeviceSMU : DeviceService<ConfigSMU>

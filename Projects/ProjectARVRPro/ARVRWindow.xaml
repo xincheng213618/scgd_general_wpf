@@ -92,9 +92,7 @@
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
-                                </Style>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" />
                             </ListView.ItemContainerStyle>
                             <ListView.View>
                                 <GridView>
@@ -194,7 +192,6 @@
                             <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                         </Grid>
                         <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
-                            <TextBlock Text="SN" Margin="0,0,5,0"/>
                             <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                         </DockPanel>
                         <Button Content="测试"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" Margin="5,0,0,0" />

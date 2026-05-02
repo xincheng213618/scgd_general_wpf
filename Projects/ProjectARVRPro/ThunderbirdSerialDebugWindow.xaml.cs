@@ -235,12 +235,22 @@ namespace ProjectARVRPro
         {
             SwitchUpButton.IsEnabled = enabled;
             SwitchDownButton.IsEnabled = enabled;
+            SetPictureSwitchButtonsEnabled(enabled);
             BrightnessUpButton.IsEnabled = enabled;
             BrightnessDownButton.IsEnabled = enabled;
             BrightnessSlider.IsEnabled = enabled;
             BrightnessComboBox.IsEnabled = enabled;
             SetBrightnessButton.IsEnabled = enabled;
             QueryBrightnessButton.IsEnabled = enabled;
+        }
+
+        private void SetPictureSwitchButtonsEnabled(bool enabled)
+        {
+            foreach (UIElement child in PictureSwitchPanel.Children)
+            {
+                if (child is Button button)
+                    button.IsEnabled = enabled;
+            }
         }
 
         // ─── Command Sending ─────────────────────────
@@ -298,6 +308,38 @@ namespace ProjectARVRPro
             {
                 if (_controller.IsConnected)
                     SwitchDownButton.IsEnabled = true;
+            }
+        }
+
+        private async void SwitchPicture_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.Tag == null)
+                return;
+
+            string pictureCode = button.Tag.ToString() ?? string.Empty;
+            SetPictureSwitchButtonsEnabled(false);
+            try
+            {
+                string command = ThunderbirdSerialController.BuildPictureCommand(pictureCode);
+                AppendLog($"[TX] {command}");
+
+                ThunderbirdSerialController.CommandResult result = await _controller.SwitchPictureAsync(pictureCode, GetConfiguredTimeout());
+                AppendLog($"[RX] {result.Response ?? "<timeout>"}");
+
+                if (result.Success)
+                    UpdateStatus($"{result.Command} 指定切图完成");
+                else
+                    UpdateStatus($"{result.Command} 指定切图失败");
+            }
+            catch (Exception ex)
+            {
+                UpdateStatus($"指定切图失败: {ex.Message}");
+                log.Error($"指定切图失败: {pictureCode}", ex);
+            }
+            finally
+            {
+                if (_controller.IsConnected)
+                    SetPictureSwitchButtonsEnabled(true);
             }
         }
 

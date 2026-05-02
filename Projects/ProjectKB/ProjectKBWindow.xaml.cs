@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -129,6 +130,7 @@ namespace ProjectKB
         private FlowEngineControl flowEngine;
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
+        private int _pendingUiUpdate;
 
         public void InitFlow()
         {
@@ -145,16 +147,8 @@ namespace ProjectKB
                 if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
                 {
                     string Name = TemplateFlow.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
-                    if (RecipeManager.RecipeConfigs.TryGetValue(Name, out KBRecipeConfig sPECConfig))
-                    {
-                        RecipeManager.RecipeConfig = sPECConfig;
-                    }
-                    else
-                    {
-                        sPECConfig = new KBRecipeConfig();
-                        RecipeManager.RecipeConfigs.TryAdd(Name, sPECConfig);
-                        RecipeManager.RecipeConfig = sPECConfig;
-                    }
+                    RecipeManager.SetCurrentTemplate(Name);
+                    RecipeManager.Save();
 
                 }
                 Refresh();
@@ -207,31 +201,50 @@ namespace ProjectKB
         string FlowName;
         private void UpdateMsg(object? sender)
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            if (flowControl == null || !flowControl.IsFlowRun)
+                return;
+
+            if (Interlocked.CompareExchange(ref _pendingUiUpdate, 1, 0) != 0)
+                return;
+
+            long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+            TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+            string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+            string msg;
+            if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
+            {
+                msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
+            }
+            else
+            {
+                long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
+                TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+            {
+                Interlocked.Exchange(ref _pendingUiUpdate, 0);
+                return;
+            }
+
+            dispatcher.BeginInvoke(() =>
             {
                 try
                 {
-                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                    string msg;
-                    if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
-                    {
-                        msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
-                    }
-                    else
-                    {
-                        long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
-                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                        msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
-                    }
-                    logTextBox.Text = msg;
+                    if (flowControl != null && flowControl.IsFlowRun)
+                        logTextBox.Text = msg;
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    log.Error("刷新流程日志失败", ex);
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _pendingUiUpdate, 0);
                 }
             });
         }
@@ -270,6 +283,8 @@ namespace ProjectKB
             CurrentFlowResult.SN = SNtextBox.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
+            RecipeManager.SetCurrentTemplate(FlowName);
+
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
             await Refresh();
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName()))
@@ -303,7 +318,9 @@ namespace ProjectKB
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
 
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
+            Interlocked.Exchange(ref _pendingUiUpdate, 0);
             stopwatch.Reset();
             stopwatch.Start();
             BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
@@ -323,8 +340,21 @@ namespace ProjectKB
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => HandleFlowCompleted(FlowControlData));
+                return;
+            }
+
+            HandleFlowCompleted(FlowControlData);
+        }
+
+        private void HandleFlowCompleted(FlowControlData FlowControlData)
+        {
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
+            Interlocked.Exchange(ref _pendingUiUpdate, 0);
             FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
@@ -514,42 +544,18 @@ namespace ProjectKB
 
             CalCulLc(KBItemMaster.Items);
 
-
             foreach (var item in KBItemMaster.Items)
             {
-
-                if (RecipeConfig.MinKeyLv != 0)
+                if (RecipeConfig.EnableKeyLvLimit)
                 {
                     item.Result = item.Result && item.Lv >= RecipeConfig.MinKeyLv;
-                }
-                else
-                {
-                    log.Debug("跳过minLv检测");
-                }
-                if (RecipeConfig.MaxKeyLv != 0)
-                {
                     item.Result = item.Result && item.Lv <= RecipeConfig.MaxKeyLv;
                 }
-                else
-                {
-                    log.Debug("跳过MaxLv检测");
-                }
 
-                if (RecipeConfig.MinKeyLc != 0)
+                if (RecipeConfig.EnableKeyLcLimit)
                 {
                     item.Result = item.Result && item.Lc >= RecipeConfig.MinKeyLc / 100;
-                }
-                else
-                {
-                    log.Debug("跳过MinKeyLc检测");
-                }
-                if (RecipeConfig.MaxKeyLc != 0)
-                {
                     item.Result = item.Result && item.Lc <= RecipeConfig.MaxKeyLc / 100;
-                }
-                else
-                {
-                    log.Debug("跳过MaxLv检测");
                 }
             }
 
@@ -564,73 +570,36 @@ namespace ProjectKB
 
             KBItemMaster.LvUniformity = KBItemMaster.MaxLv == 0 ? 0 : KBItemMaster.MinLv / KBItemMaster.MaxLv;
             KBItemMaster.SN = SNtextBox.Text;
-            KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
 
 
             CalCulLc(KBItemMaster.Items);
 
             KBItemMaster.Result = true;
 
-            if (RecipeConfig.MinKeyLv != 0)
+            if (RecipeConfig.EnableKeyLvLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MinLv >= RecipeConfig.MinKeyLv;
-            }
-            else
-            {
-                log.Debug("跳过minLv检测");
-            }
-            if (RecipeConfig.MaxKeyLv != 0)
-            {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= RecipeConfig.MaxKeyLv;
             }
-            else
-            {
-                log.Debug("跳过MaxLv检测");
-            }
-            if (RecipeConfig.MinAvgLv != 0)
+
+            if (RecipeConfig.EnableAvgLvLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv >= RecipeConfig.MinAvgLv;
-            }
-            else
-            {
-                log.Debug("跳过MinAvgLv检测");
-            }
-            if (RecipeConfig.MaxAvgLv != 0)
-            {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv <= RecipeConfig.MaxAvgLv;
             }
-            else
-            {
-                log.Debug("跳过MaxAvgLv检测");
-            }
 
-            if (RecipeConfig.MinUniformity != 0)
+            if (RecipeConfig.EnableUniformityLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.LvUniformity >= RecipeConfig.MinUniformity / 100;
             }
-            else
-            {
-                log.Debug("跳过Uniformity检测");
-            }
 
-            if (RecipeConfig.MinKeyLc != 0)
+            if (RecipeConfig.EnableKeyLcLimit)
             {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Min(item => item.Lc) >= RecipeConfig.MinKeyLc / 100;
-            }
-            else
-            {
-                log.Debug("跳过MinKeyLc检测");
-            }
-
-            if (RecipeConfig.MaxKeyLc != 0)
-            {
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Max(item => item.Lc) <= RecipeConfig.MaxKeyLc / 100;
             }
-            else
-            {
-                log.Debug("跳过MaxKeyLc检测");
-            }
 
+            KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
 
             KBItemMaster.Exposure = "50";
 
@@ -771,32 +740,32 @@ namespace ProjectKB
         public static string BuildSummaryText(KBItemMaster kmitemmaster)
         {
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"Model:{kmitemmaster.Model}");
-            sb.AppendLine($"SN:{kmitemmaster.SN}");
-            sb.AppendLine("Poiints of Interest: ");
-            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM//dd HH:mm:ss}");
-
-            string title1 = "PT";
-            string title2 = "Lv";
-            string title5 = "Lc";
-            sb.AppendLine($"{title1,-20}   {title2,-10} {title5,10}");
+            sb.AppendLine("KB");
+            sb.AppendLine(kmitemmaster.SN);
+            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}");
+            sb.AppendLine(kmitemmaster.Model);
+            sb.AppendLine();
+            sb.AppendLine($"{"PT",-15}{"Lv",-15}{"LC",-15}");
 
             foreach (var item in kmitemmaster.Items)
             {
-                string formattedString = $"[{item.Name}]";
-                sb.AppendLine($"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc * 100,10:F2}%  {(item.Result ? "" : "Fail")}");
+                string key = $"[{item.Name}]";
+                sb.AppendLine($"{key,-15}{item.Lv,-15:F3}{item.Lc * 100,-15:F2}");
             }
 
+            sb.AppendLine();
             sb.AppendLine($"Min Lv= {kmitemmaster.MinLv:F2} cd/m2");
             sb.AppendLine($"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2");
-            sb.AppendLine($"Darkest Key= {kmitemmaster.DrakestKey}");
-            sb.AppendLine($"Brightest Key= {kmitemmaster.BrightestKey}");
+            sb.AppendLine($"Darkest Key= [{kmitemmaster.DrakestKey}]");
+            sb.AppendLine($"Brightest Key= [{kmitemmaster.BrightestKey}]");
             sb.AppendLine();
             sb.AppendLine("Pass/Fail Criteria:");
-            sb.AppendLine($"NbrFail Points={kmitemmaster.NbrFailPoints}");
-            sb.AppendLine($"Avg Lv={kmitemmaster.AvgLv:F2}");
-            sb.AppendLine($"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%");
-            sb.AppendLine(kmitemmaster.Result ? "Pass" : "Fail");
+            sb.AppendLine($"Nbr Failed Points= {kmitemmaster.NbrFailPoints}");
+            sb.AppendLine($"Avg Lv= {kmitemmaster.AvgLv:F2} cd/m2 ");
+            sb.AppendLine($"Lv Uniformity= {kmitemmaster.LvUniformity * 100:F2} % ");
+            sb.AppendLine($"Avg CCT= 0.0000");
+            sb.AppendLine($"ColorDiff= 0.0000  ");
+            sb.AppendLine(kmitemmaster.Result ? "PASS" : "FAIL");
             return sb.ToString();
         }
 
@@ -1116,11 +1085,13 @@ namespace ProjectKB
                 string searchtext = textBox.Text;
                 if (string.IsNullOrWhiteSpace(searchtext))
                 {
+                    filteredResults = new List<ISearch>();
+                    ListViewSearch.ItemsSource = null;
+                    ListViewSearch.SelectedIndex = -1;
                     SearchPopup.IsOpen = false;
                 }
                 else
                 {
-                    SearchPopup.IsOpen = true;
                     var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
 
                     filteredResults = Searches
@@ -1135,49 +1106,64 @@ namespace ProjectKB
                     if (filteredResults.Count > 0)
                     {
                         ListViewSearch.SelectedIndex = 0;
+                        SearchPopup.IsOpen = true;
+                    }
+                    else
+                    {
+                        ListViewSearch.SelectedIndex = -1;
+                        SearchPopup.IsOpen = false;
                     }
                 }
             }
+        }
+
+        private void ExecuteSelectedSearchResult()
+        {
+            int selectedIndex = ListViewSearch.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= filteredResults.Count)
+                return;
+
+            ISearch selectedSearch = filteredResults[selectedIndex];
+            Searchbox.Text = string.Empty;
+            SearchPopup.IsOpen = false;
+            selectedSearch.Command?.Execute(this);
         }
 
         private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Enter)
             {
-                if (ListViewSearch.SelectedIndex > -1)
-                {
-                    Searchbox.Text = string.Empty;
-                    filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-                }
+                e.Handled = true;
+                ExecuteSelectedSearchResult();
             }
             if (e.Key == System.Windows.Input.Key.Up)
             {
+                e.Handled = true;
                 if (ListViewSearch.SelectedIndex > 0)
+                {
                     ListViewSearch.SelectedIndex -= 1;
+                    ListViewSearch.ScrollIntoView(filteredResults[ListViewSearch.SelectedIndex]);
+                }
             }
             if (e.Key == System.Windows.Input.Key.Down)
             {
+                e.Handled = true;
                 if (ListViewSearch.SelectedIndex < filteredResults.Count - 1)
+                {
                     ListViewSearch.SelectedIndex += 1;
+                    ListViewSearch.ScrollIntoView(filteredResults[ListViewSearch.SelectedIndex]);
+                }
+            }
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                e.Handled = true;
+                SearchPopup.IsOpen = false;
             }
         }
 
         private void ListViewSearch_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ListViewSearch.SelectedIndex > -1)
-            {
-                Searchbox.Text = string.Empty;
-                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-            }
-        }
-
-        private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ListViewSearch.SelectedIndex > -1)
-            {
-                Searchbox.Text = string.Empty;
-                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-            }
+            ExecuteSelectedSearchResult();
         }
 
         private void UnSNlocked_Click(object sender, RoutedEventArgs e)

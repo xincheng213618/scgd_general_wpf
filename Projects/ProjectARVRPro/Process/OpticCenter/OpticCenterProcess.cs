@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
@@ -13,9 +12,8 @@ namespace ProjectARVRPro.Process.OpticCenter
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
-            var log = ctx.Logger;
+            var log = ctx.Log;
             OpticCenterRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
-            OpticCenterFixConfig fixConfig = ctx.FixConfig.GetRequiredService<OpticCenterFixConfig>();
             OpticCenterTestResult testResult = new OpticCenterTestResult();
 
             try
@@ -38,9 +36,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                         if (AlgResultModels.Count >= 1)
                         {
                             BinocularFusionModel binocularFusionModel = AlgResultModels[0];
-                            testResult.OptCenterXTilt = Build("OptCenterXTilt", binocularFusionModel.XDegree * fixConfig.OptCenterXTilt, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max, "F4");
-                            testResult.OptCenterYTilt = Build("OptCenterYTilt", binocularFusionModel.YDegree * fixConfig.OptCenterYTilt, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max, "F4");
-                            testResult.OptCenterRotation = Build("OptCenterRotation", binocularFusionModel.ZDegree * fixConfig.OptCenterRotation, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max, "F4");
+                            testResult.OptCenterXTilt = Build("OptCenterXTilt", binocularFusionModel.XDegree * recipeConfig.OptCenterXTilt.Fix, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max, "F4");
+                            testResult.OptCenterYTilt = Build("OptCenterYTilt", binocularFusionModel.YDegree * recipeConfig.OptCenterYTilt.Fix, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max, "F4");
+                            testResult.OptCenterRotation = Build("OptCenterRotation", binocularFusionModel.ZDegree * recipeConfig.OptCenterRotation.Fix, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max, "F4");
                             ctx.Result.Result &= testResult.OptCenterXTilt.TestResult;
                             ctx.Result.Result &= testResult.OptCenterYTilt.TestResult;
                             ctx.Result.Result &= testResult.OptCenterRotation.TestResult;
@@ -56,9 +54,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                             var find = new FindCrossDetailViewReslut(details[0]);
                             if (master.TName == "optCenter")
                             {
-                                find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.OptCenterXTilt;
-                                find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.OptCenterYTilt;
-                                find.FindCrossResult.result[0].rotationAngle *= fixConfig.OptCenterRotation;
+                                find.FindCrossResult.result[0].tilt.tilt_x *= recipeConfig.OptCenterXTilt.Fix;
+                                find.FindCrossResult.result[0].tilt.tilt_y *= recipeConfig.OptCenterYTilt.Fix;
+                                find.FindCrossResult.result[0].rotationAngle *= recipeConfig.OptCenterRotation.Fix;
                                 testResult.OptCenterXTilt = Build("OptCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max, "F4");
                                 testResult.OptCenterYTilt = Build("OptCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max, "F4");
                                 testResult.OptCenterRotation = Build("OptCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max, "F4");
@@ -68,9 +66,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                             }
                             else if (master.TName == "ImageCenter")
                             {
-                                find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.ImageCenterXTilt;
-                                find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.ImageCenterYTilt;
-                                find.FindCrossResult.result[0].rotationAngle *= fixConfig.ImageCenterRotation;
+                                find.FindCrossResult.result[0].tilt.tilt_x *= recipeConfig.ImageCenterXTilt.Fix;
+                                find.FindCrossResult.result[0].tilt.tilt_y *= recipeConfig.ImageCenterYTilt.Fix;
+                                find.FindCrossResult.result[0].rotationAngle *= recipeConfig.ImageCenterRotation.Fix;
                                 testResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.ImageCenterXTilt.Min, recipeConfig.ImageCenterXTilt.Max, "F4");
                                 testResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.ImageCenterYTilt.Min, recipeConfig.ImageCenterYTilt.Max, "F4");
                                 testResult.ImageCenterRotation = Build("ImageCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.ImageCenterRotation.Min, recipeConfig.ImageCenterRotation.Max, "F4");
@@ -135,11 +133,6 @@ namespace ProjectARVRPro.Process.OpticCenter
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
-        }
-
-        public override IFixConfig GetFixConfig()
-        {
-            return FixManager.GetInstance().FixConfig.GetRequiredService<OpticCenterFixConfig>();
         }
     }
 }

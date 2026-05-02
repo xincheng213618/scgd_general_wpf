@@ -12,6 +12,10 @@
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -287,7 +291,7 @@
                             </Grid>
                             <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
                                 <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="210" Height="500">
-                                    <ListView  x:Name="ListViewSearch" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListViewSearch_SelectionChanged" MouseDoubleClick="ListViewSearch_MouseDoubleClick">
+                                    <ListView  x:Name="ListViewSearch" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" MouseDoubleClick="ListViewSearch_MouseDoubleClick">
                                         <ListView.ItemContainerStyle>
                                             <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                                                 <Setter Property="Background" Value="Transparent"/>
@@ -364,7 +368,7 @@
                 <Button Content="Socket" Command="{Binding OpenSocketConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="Recipe" Command="{Binding RecipeManager.EditCommand}"/>
+                <Button Content="参数设定" Command="{Binding RecipeManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
