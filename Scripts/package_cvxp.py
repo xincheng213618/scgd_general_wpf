@@ -5,12 +5,10 @@ import subprocess
 import tempfile
 import time
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
 import pefile
-
-from runtime_filters import should_keep_runtime_path
 
 
 EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json", "PackageIcon.png"]
@@ -25,6 +23,10 @@ DEFAULT_CONNECT_TIMEOUT = 10
 DEFAULT_READ_TIMEOUT = 1800
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_CHUNK_SIZE = 1024 * 1024
+ALLOWED_RUNTIME_PREFIXES = (
+    "runtimes/win/",
+    "runtimes/win-x64/",
+)
 
 
 def get_requests_module():
@@ -48,6 +50,18 @@ def write_json_file(file_path: Path, data) -> None:
 
 def normalize_relative_path(path_value: str) -> str:
     return Path(path_value.replace("\\", "/")).as_posix()
+
+
+def normalize_archive_relative_path(path_value: str) -> str:
+    return PurePosixPath(path_value.replace("\\", "/")).as_posix()
+
+
+def should_keep_runtime_path(path_value: str) -> bool:
+    normalized = normalize_archive_relative_path(path_value).lower()
+    if not normalized.startswith("runtimes/"):
+        return True
+
+    return normalized.startswith(ALLOWED_RUNTIME_PREFIXES)
 
 
 def build_upload_url(base_url: str, folder_name: str, file_name: str) -> str:

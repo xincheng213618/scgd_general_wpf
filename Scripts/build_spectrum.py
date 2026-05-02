@@ -18,9 +18,15 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from pathlib import PurePosixPath
 
 from file_manager import FileManager
-from runtime_filters import should_keep_runtime_path
+
+
+ALLOWED_RUNTIME_PREFIXES = (
+    "runtimes/win/",
+    "runtimes/win-x64/",
+)
 
 # ── 路径常量（基于脚本位置自动推导） ──────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -51,6 +57,18 @@ _FILE_EXCLUDE = {
     "opencv_videoio_ffmpeg4110_64.dll",
     "opencv_videoio_ffmpeg4130_64.dll",
 }
+
+
+def normalize_archive_relative_path(path_value: str) -> str:
+    return PurePosixPath(path_value.replace("\\", "/")).as_posix()
+
+
+def should_keep_runtime_path(path_value: str) -> bool:
+    normalized = normalize_archive_relative_path(path_value).lower()
+    if not normalized.startswith("runtimes/"):
+        return True
+
+    return normalized.startswith(ALLOWED_RUNTIME_PREFIXES)
 
 
 # ── 版本号 ────────────────────────────────────────────────────────

@@ -2,10 +2,15 @@ import os
 import filecmp
 import zipfile
 import time
-
-from runtime_filters import should_keep_runtime_path
+from pathlib import PurePosixPath
 
 from file_manager import FileManager
+
+
+ALLOWED_RUNTIME_PREFIXES = (
+    'runtimes/win/',
+    'runtimes/win-x64/',
+)
 
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
@@ -23,6 +28,18 @@ exe_path = os.path.join(new_version_dir, 'ColorVision.exe')
 history_dir = os.path.join(desktop_dir, 'History')
 update_dir = os.path.join(history_dir, 'update')
 file_manager = FileManager()
+
+
+def normalize_archive_relative_path(path_value: str) -> str:
+    return PurePosixPath(path_value.replace('\\', '/')).as_posix()
+
+
+def should_keep_runtime_path(path_value: str) -> bool:
+    normalized = normalize_archive_relative_path(path_value).lower()
+    if not normalized.startswith('runtimes/'):
+        return True
+
+    return normalized.startswith(ALLOWED_RUNTIME_PREFIXES)
 
 def upload_file(file_path, folder_name):
     return file_manager.upload_file(file_path, folder_name)
