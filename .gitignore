@@ -388,3 +388,6 @@ Backend/**/marketplace.db-shm
 Backend/**/marketplace.db-wal
 Backend/**/storage/
 Backend/**/__pycache__/
+
+dist/
+build/

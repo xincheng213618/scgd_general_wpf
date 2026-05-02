@@ -29,6 +29,17 @@ DEFAULT_CONNECT_TIMEOUT = 10
 DEFAULT_READ_TIMEOUT = 1800
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_CHUNK_SIZE = 1024 * 1024
+DISCOVERY_IGNORED_DIR_NAMES = {
+    ".git",
+    ".idea",
+    ".vs",
+    ".vscode",
+    "__pycache__",
+    "bin",
+    "dist",
+    "obj",
+    "packages",
+}
 ALLOWED_RUNTIME_PREFIXES = (
     "runtimes/win/",
     "runtimes/win-x64/",
@@ -102,9 +113,9 @@ def resolve_project_file_path(project_path_value: str | Path, base_dir: Path) ->
         return candidate
 
     if candidate.is_dir():
-        project_files = sorted(candidate.glob("*.csproj"))
+        project_files = discover_project_candidates(candidate)
         if len(project_files) == 1:
-            return project_files[0].resolve()
+            return project_files[0]
         if not project_files:
             raise FileNotFoundError(f"No .csproj file found under: {candidate}")
         raise ValueError(f"Multiple .csproj files found under: {candidate}. Please pass --project-file explicitly.")
@@ -112,11 +123,52 @@ def resolve_project_file_path(project_path_value: str | Path, base_dir: Path) ->
     raise FileNotFoundError(f"Project path not found: {candidate}")
 
 
+def should_skip_discovery_dir(dir_name: str) -> bool:
+    normalized_name = dir_name.lower()
+    return normalized_name.startswith(".") or normalized_name in DISCOVERY_IGNORED_DIR_NAMES
+
+
+def find_project_files_under(directory: Path) -> list[Path]:
+    project_files: list[Path] = []
+    for current_root, dir_names, file_names in os.walk(directory):
+        dir_names[:] = sorted(
+            dir_name
+            for dir_name in dir_names
+            if not should_skip_discovery_dir(dir_name)
+        )
+        for file_name in sorted(file_names):
+            if file_name.lower().endswith(".csproj"):
+                project_files.append((Path(current_root) / file_name).resolve())
+    return project_files
+
+
+def discover_project_candidates(base_dir: Path) -> list[Path]:
+    top_level_projects = sorted(project_file.resolve() for project_file in base_dir.glob("*.csproj"))
+    if top_level_projects:
+        return top_level_projects
+
+    nested_projects: list[Path] = []
+    for child_dir in sorted(path for path in base_dir.iterdir() if path.is_dir() and not should_skip_discovery_dir(path.name)):
+        nested_projects.extend(find_project_files_under(child_dir))
+    return nested_projects
+
+
 def try_find_single_project_file(base_dir: Path) -> Path | None:
-    project_files = sorted(base_dir.glob("*.csproj"))
+    project_files = discover_project_candidates(base_dir)
     if len(project_files) == 1:
-        return project_files[0].resolve()
+        return project_files[0]
     return None
+
+
+def try_resolve_project_candidate(selection: str, candidate_projects: list[Path]) -> Path | None:
+    if not selection or not candidate_projects or not selection.isdigit():
+        return None
+
+    selected_index = int(selection)
+    if 1 <= selected_index <= len(candidate_projects):
+        return candidate_projects[selected_index - 1]
+
+    raise ValueError(f"Please choose a number between 1 and {len(candidate_projects)}.")
 
 
 def prompt_yes_no(prompt_text: str, default: bool) -> bool:
@@ -157,6 +209,7 @@ def print_config_summary(config_data: dict) -> None:
 def create_interactive_config(config_path: Path) -> dict | None:
     base_dir = config_path.parent.resolve()
     default_project_file = try_find_single_project_file(base_dir)
+    project_candidates = discover_project_candidates(base_dir)
     project_file: Path | None = None
     build_command: str | None = None
     build_working_dir: Path | None = None
@@ -164,14 +217,19 @@ def create_interactive_config(config_path: Path) -> dict | None:
     print("No config file was found. A new pluginkit.config.json will be created in the current folder.")
     build_enabled = prompt_yes_no("Configure a build step before packaging", True)
     if build_enabled:
+        default_build_source = make_config_path_value(default_project_file, base_dir) if default_project_file else None
         if default_project_file:
-            print(f"Press Enter to use the current project: {default_project_file.name}")
+            print(f"Press Enter to use the detected project: {default_build_source}")
         else:
             print("No single .csproj was found in the current folder.")
+            if project_candidates:
+                print("Project candidates:")
+                for index, candidate_project in enumerate(project_candidates, start=1):
+                    print(f"  {index}. {make_config_path_value(candidate_project, base_dir)}")
         print("You can also enter another .csproj path, a folder that contains one .csproj, or use cmd:<command> for a custom build command.")
 
         while True:
-            build_source = prompt_optional_value("Build source", default_project_file.name if default_project_file else None).strip()
+            build_source = prompt_optional_value("Build source", default_build_source).strip()
             if build_source.lower().startswith("cmd:"):
                 build_command = build_source[4:].strip()
                 if not build_command:
@@ -180,7 +238,7 @@ def create_interactive_config(config_path: Path) -> dict | None:
                 build_working_dir = base_dir
                 break
             try:
-                project_file = resolve_project_file_path(build_source, base_dir)
+                project_file = try_resolve_project_candidate(build_source, project_candidates) or resolve_project_file_path(build_source, base_dir)
                 break
             except (FileNotFoundError, ValueError) as exc:
                 print(exc)
@@ -192,7 +250,7 @@ def create_interactive_config(config_path: Path) -> dict | None:
     upload_enabled = prompt_yes_no("Upload after packaging", True)
     keep_package_after_upload = True
     if upload_enabled:
-        keep_package_after_upload = prompt_yes_no("Keep local .cvxp after successful upload", True)
+        keep_package_after_upload = prompt_yes_no("Keep local .cvxp after successful upload", False)
 
     config_data: dict[str, object] = {
         "configuration": DEFAULT_CONFIGURATION,
@@ -245,7 +303,7 @@ def build_default_config(project_file: Path, config_path: Path) -> dict:
         "outputDir": make_config_path_value((base_dir / "packages").resolve(), base_dir),
         "buildEnabled": True,
         "uploadEnabled": True,
-        "keepPackageAfterUpload": True,
+        "keepPackageAfterUpload": False,
         "dotnet": os.environ.get("DOTNET_EXE", "dotnet"),
         "uploadUrl": os.environ.get("COLORVISION_UPLOAD_URL", DEFAULT_UPLOAD_URL),
         "username": os.environ.get("COLORVISION_UPLOAD_USERNAME", DEFAULT_UPLOAD_USERNAME),
