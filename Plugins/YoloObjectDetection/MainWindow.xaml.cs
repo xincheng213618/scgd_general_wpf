@@ -14,6 +14,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using ColorVision.Themes;
 
 namespace YoloObjectDetection;
 
@@ -50,6 +51,7 @@ public partial class MainWindow : Window, IDisposable
     public MainWindow()
     {
         InitializeComponent();
+        this.ApplyCaption();
         Loaded += OnLoaded;
         Closed += OnClosed;
     }
