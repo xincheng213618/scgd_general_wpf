@@ -1,10 +1,13 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,9 +17,12 @@ namespace ColorVision.Copilot
 {
     public class CopilotChatViewModel : ViewModelBase
     {
+        private const int AttachmentContentLimit = 12000;
+
         private readonly CopilotChatService _chatService;
         private readonly CopilotConfig _config;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
+        private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private CancellationTokenSource? _currentRequestCts;
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
@@ -48,6 +54,12 @@ namespace ColorVision.Copilot
             CancelCommand = new RelayCommand(_ => CancelCurrentReply());
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
+            AddFileAttachmentCommand = new RelayCommand(_ => AddFileAttachment(), _ => !IsBusy);
+            AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
+            RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
+            RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
+            DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
+            TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _config.Conversations;
@@ -55,6 +67,8 @@ namespace ColorVision.Copilot
         public ObservableCollection<CopilotProfileConfig> Profiles => _config.Profiles;
 
         public ObservableCollection<CopilotChatMessage> Messages => SelectedConversation?.Messages ?? _emptyMessages;
+
+        public ObservableCollection<CopilotAttachmentItem> Attachments => SelectedConversation?.Attachments ?? _emptyAttachments;
 
         public ICommand SendCommand { get; }
 
@@ -66,7 +80,21 @@ namespace ColorVision.Copilot
 
         public ICommand OpenSettingsCommand { get; }
 
+        public ICommand AddFileAttachmentCommand { get; }
+
+        public ICommand AddContextAttachmentCommand { get; }
+
+        public ICommand RemoveAttachmentCommand { get; }
+
+        public ICommand RenameConversationCommand { get; }
+
+        public ICommand DeleteConversationCommand { get; }
+
+        public ICommand TogglePinConversationCommand { get; }
+
         public bool IsConversationEmpty => Messages.Count == 0;
+
+        public bool HasAttachments => Attachments.Count > 0;
 
         public string EmptyStateText => _config.IsConfigured
             ? "从右侧选择历史会话，或点击 + 新建会话。"
@@ -81,7 +109,7 @@ namespace ColorVision.Copilot
             get => _selectedConversation;
             set => SelectConversation(value, persist: true);
         }
-        
+
         public CopilotProfileConfig? SelectedProfile
         {
             get => _selectedProfile;
@@ -281,12 +309,21 @@ namespace ColorVision.Copilot
 
         private List<CopilotRequestMessage> BuildConversationHistory()
         {
-            return Messages
+            var history = new List<CopilotRequestMessage>();
+
+            var attachmentContext = BuildAttachmentContextBlock();
+            if (!string.IsNullOrWhiteSpace(attachmentContext))
+            {
+                history.Add(new CopilotRequestMessage("user", attachmentContext));
+            }
+
+            history.AddRange(Messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.Content))
                 .Select(message => new CopilotRequestMessage(
                     message.IsUser ? "user" : "assistant",
-                    message.Content.Trim()))
-                .ToList();
+                    message.Content.Trim())));
+
+            return history;
         }
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -315,6 +352,8 @@ namespace ColorVision.Copilot
 
             OnPropertyChanged(nameof(SelectedConversation));
             OnPropertyChanged(nameof(Messages));
+            OnPropertyChanged(nameof(Attachments));
+            OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
 
             _config.ActiveConversationId = conversation?.Id ?? string.Empty;
@@ -372,7 +411,7 @@ namespace ColorVision.Copilot
         {
             var profile = SelectedProfile ?? ResolveProfile(_config.ActiveProfileId) ?? Profiles.FirstOrDefault();
             var conversation = CopilotConversationRecord.CreateEmpty(profile?.Id ?? string.Empty, profile?.DisplayLabel ?? string.Empty);
-            Conversations.Insert(0, conversation);
+            Conversations.Insert(GetUnpinnedInsertIndex(), conversation);
             return conversation;
         }
 
@@ -393,11 +432,119 @@ namespace ColorVision.Copilot
 
         private void BringConversationToFront(CopilotConversationRecord conversation)
         {
-            var index = Conversations.IndexOf(conversation);
-            if (index > 0)
-                Conversations.Move(index, 0);
-
+            MoveConversationToPreferredIndex(conversation);
             _config.ActiveConversationId = conversation.Id;
+        }
+
+        private void RenameConversation(CopilotConversationRecord? conversation)
+        {
+            if (conversation == null)
+                return;
+
+            var window = new CopilotTextInputWindow("重命名会话", "输入新的会话名称", conversation.Title)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+
+            if (window.ShowDialog() != true || string.IsNullOrWhiteSpace(window.ResultText))
+                return;
+
+            conversation.SetCustomTitle(window.ResultText);
+            PersistState();
+        }
+
+        private void DeleteConversation(CopilotConversationRecord? conversation)
+        {
+            if (conversation == null)
+                return;
+
+            if (MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                $"确定要删除会话“{conversation.Title}”吗？",
+                "ColorVision",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            var currentIndex = Conversations.IndexOf(conversation);
+            Conversations.Remove(conversation);
+
+            if (Conversations.Count == 0)
+            {
+                var replacement = CreateConversation();
+                SelectConversation(replacement, persist: false);
+            }
+            else
+            {
+                var nextIndex = Math.Clamp(currentIndex, 0, Conversations.Count - 1);
+                SelectConversation(Conversations[nextIndex], persist: false);
+            }
+
+            PersistState();
+        }
+
+        private void TogglePinConversation(CopilotConversationRecord? conversation)
+        {
+            if (conversation == null)
+                return;
+
+            conversation.IsPinned = !conversation.IsPinned;
+            MoveConversationToPreferredIndex(conversation);
+            PersistState();
+        }
+
+        private void AddFileAttachment()
+        {
+            var conversation = EnsureConversation();
+            var dialog = new OpenFileDialog
+            {
+                Multiselect = true,
+                CheckFileExists = true,
+                Filter = "所有文件|*.*",
+            };
+
+            if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
+                return;
+
+            foreach (var fileName in dialog.FileNames.Where(fileName => !string.IsNullOrWhiteSpace(fileName)))
+            {
+                if (conversation.Attachments.Any(item => item.Type == CopilotAttachmentType.File && string.Equals(item.Value, fileName, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                conversation.Attachments.Add(CopilotAttachmentItem.CreateFile(fileName));
+            }
+
+            UpdateAttachmentsState(conversation);
+        }
+
+        private void AddContextAttachment()
+        {
+            var conversation = EnsureConversation();
+            var window = new CopilotTextInputWindow("挂载上下文", "输入要附加到当前会话的上下文说明", string.Empty, isMultiline: true)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+
+            if (window.ShowDialog() != true || string.IsNullOrWhiteSpace(window.ResultText))
+                return;
+
+            conversation.Attachments.Add(CopilotAttachmentItem.CreateContext(window.ResultText));
+            UpdateAttachmentsState(conversation);
+        }
+
+        private void RemoveAttachment(CopilotAttachmentItem? attachment)
+        {
+            if (attachment == null || SelectedConversation == null)
+                return;
+
+            if (!SelectedConversation.Attachments.Remove(attachment))
+                return;
+
+            UpdateAttachmentsState(SelectedConversation);
         }
 
         private CopilotProfileConfig? ResolveProfile(string? profileId)
@@ -418,6 +565,95 @@ namespace ColorVision.Copilot
         {
             ConfigHandler.GetInstance().Save<CopilotConfig>();
             OnPropertyChanged(nameof(EmptyStateText));
+            OnPropertyChanged(nameof(HasAttachments));
+        }
+
+        private void UpdateAttachmentsState(CopilotConversationRecord conversation)
+        {
+            conversation.RefreshSummary();
+            OnPropertyChanged(nameof(Attachments));
+            OnPropertyChanged(nameof(HasAttachments));
+            PersistState();
+        }
+
+        private void MoveConversationToPreferredIndex(CopilotConversationRecord conversation)
+        {
+            var currentIndex = Conversations.IndexOf(conversation);
+            if (currentIndex < 0)
+                return;
+
+            var targetIndex = conversation.IsPinned ? 0 : GetUnpinnedInsertIndex(conversation);
+            if (currentIndex == targetIndex)
+                return;
+
+            Conversations.Move(currentIndex, targetIndex);
+        }
+
+        private int GetUnpinnedInsertIndex(CopilotConversationRecord? exclude = null)
+        {
+            var count = 0;
+            foreach (var conversation in Conversations)
+            {
+                if (ReferenceEquals(conversation, exclude))
+                    continue;
+
+                if (!conversation.IsPinned)
+                    break;
+
+                count++;
+            }
+
+            return count;
+        }
+
+        private string BuildAttachmentContextBlock()
+        {
+            if (SelectedConversation == null || SelectedConversation.Attachments.Count == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            builder.AppendLine("以下是当前会话挂载的附加上下文。它们是用户明确提供的参考信息，回答时请按需使用：");
+
+            foreach (var attachment in SelectedConversation.Attachments)
+            {
+                if (attachment.Type == CopilotAttachmentType.File)
+                {
+                    builder.AppendLine(BuildFileAttachmentBlock(attachment));
+                    continue;
+                }
+
+                builder.AppendLine($"[上下文] {attachment.DisplayLabel}");
+                builder.AppendLine(attachment.Value);
+                builder.AppendLine();
+            }
+
+            return builder.ToString().Trim();
+        }
+
+        private static string BuildFileAttachmentBlock(CopilotAttachmentItem attachment)
+        {
+            try
+            {
+                if (!File.Exists(attachment.Value))
+                    return $"[文件] {attachment.Value}\n文件当前不存在，无法读取。\n";
+
+                var content = File.ReadAllText(attachment.Value);
+                if (content.Length > AttachmentContentLimit)
+                    content = content[..AttachmentContentLimit] + "\n...<已截断>";
+
+                var fence = ResolveCodeFence(attachment.Value);
+                return $"[文件] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
+            }
+            catch (Exception ex)
+            {
+                return $"[文件] {attachment.Value}\n读取失败：{ex.Message}\n";
+            }
+        }
+
+        private static string ResolveCodeFence(string filePath)
+        {
+            var extension = Path.GetExtension(filePath).Trim().TrimStart('.');
+            return string.IsNullOrWhiteSpace(extension) ? string.Empty : extension;
         }
     }
 }
