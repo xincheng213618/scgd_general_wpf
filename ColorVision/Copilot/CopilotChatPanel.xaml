@@ -14,6 +14,40 @@
             <Setter Property="TextTrimming" Value="None" />
             <Setter Property="Opacity" Value="0.94" />
         </Style>
+        <Style x:Key="ReadOnlyMessageTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="IsReadOnlyCaretVisible" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+        </Style>
+        <Style x:Key="MessageActionButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Opacity" Value="0.54" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.84" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.28" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="ComposerComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -122,8 +156,18 @@
                                             CornerRadius="12"
                                             Visibility="Collapsed">
                                         <StackPanel>
-                                            <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Content}" TextWrapping="Wrap" />
+                                            <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                                     Text="{Binding Content, Mode=OneWay}" />
                                             <TextBlock Margin="0,8,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.48" Text="{Binding TimeLabel}" />
+                                            <StackPanel Margin="0,8,0,0"
+                                                        Orientation="Horizontal"
+                                                        HorizontalAlignment="Right">
+                                                <Button Style="{StaticResource MessageActionButtonStyle}"
+                                                        Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="复制"
+                                                        ToolTip="复制当前消息" />
+                                            </StackPanel>
                                         </StackPanel>
                                     </Border>
 
@@ -143,12 +187,35 @@
                                                   IsExpanded="{Binding IsReasoningExpanded, Mode=TwoWay}"
                                                   Visibility="{Binding HasReasoning, Converter={StaticResource bool2VisibilityConverter}}">
                                             <Border Margin="0,6,0,0" Padding="10,8" Background="#11161D" BorderBrush="#273141" BorderThickness="1" CornerRadius="8">
-                                                <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.88" Text="{Binding ReasoningContent}" TextWrapping="Wrap" />
+                                                <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                                         Opacity="0.88"
+                                                         Text="{Binding ReasoningContent, Mode=OneWay}" />
                                             </Border>
                                         </Expander>
 
-                                        <TextBlock Style="{StaticResource AssistantPlainTextStyle}"
-                                                   Text="{Binding Content}" />
+                                        <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                                 Opacity="0.94"
+                                                 Text="{Binding Content, Mode=OneWay}" />
+
+                    <StackPanel Margin="0,10,0,0"
+                            Orientation="Horizontal">
+                        <Button Style="{StaticResource MessageActionButtonStyle}"
+                            Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
+                            CommandParameter="{Binding}"
+                            Content="复制"
+                            ToolTip="复制当前消息" />
+                        <Button Style="{StaticResource MessageActionButtonStyle}"
+                            Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
+                            CommandParameter="{Binding}"
+                            Content="重试"
+                            ToolTip="重新生成当前轮回答" />
+                        <Button Style="{StaticResource MessageActionButtonStyle}"
+                            Margin="0"
+                            Command="{Binding DataContext.RefreshMessageCommand, Source={x:Reference Root}}"
+                            CommandParameter="{Binding}"
+                            Content="刷新"
+                            ToolTip="重新抓取网页上下文并生成回答" />
+                    </StackPanel>
                                     </StackPanel>
                                 </Grid>
 
@@ -167,12 +234,12 @@
             </Grid>
 
                 <Border Grid.Row="2"
-                    Margin="12,0,12,12"
-                    Padding="12,10"
+                    Margin="5,0,5,5"
+                    Padding="5,5"
                     Background="#10151B"
                     BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="14">
+                    CornerRadius="6">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -183,7 +250,7 @@
                     <StackPanel Grid.Row="0" Margin="0,0,0,10">
                         <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
                                    Opacity="0.48"
-                                   Text="未挂载文件、图片或上下文"
+                                   Text="未挂载文件、图片、网页或上下文"
                                    TextTrimming="CharacterEllipsis">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -197,7 +264,10 @@
                             </TextBlock.Style>
                         </TextBlock>
 
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ScrollViewer x:Name="AttachmentScrollViewer"
+                                      MaxHeight="104"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto">
                             <ScrollViewer.Style>
                                 <Style TargetType="ScrollViewer">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -209,10 +279,11 @@
                                 </Style>
                             </ScrollViewer.Style>
 
-                            <ItemsControl ItemsSource="{Binding Attachments}">
+                            <ItemsControl Width="{Binding ViewportWidth, ElementName=AttachmentScrollViewer}"
+                                          ItemsSource="{Binding Attachments}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" />
+                                        <WrapPanel />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
@@ -247,21 +318,22 @@
                                             </Border>
 
                                             <Border x:Name="ImageAttachmentCard"
-                                                    Width="152"
-                                                    Padding="8"
-                                                    Background="#151A21"
-                                                    BorderBrush="#2C394A"
+                                                    Padding="6"
+                                                    Background="#161C24"
+                                                    BorderBrush="#334154"
                                                     BorderThickness="1"
-                                                    CornerRadius="12"
+                                                    CornerRadius="14"
                                                     ToolTip="{Binding TooltipText}"
                                                     Visibility="Collapsed">
                                                 <Grid>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="76" />
-                                                        <RowDefinition Height="Auto" />
-                                                    </Grid.RowDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="40" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
 
-                                                    <Border Grid.Row="0"
+                                                    <Border Width="36"
+                                                            Height="36"
                                                             Background="#0E1319"
                                                             CornerRadius="10"
                                                             ClipToBounds="True">
@@ -269,38 +341,47 @@
                                                             <Image Source="{Binding PreviewImage}" Stretch="UniformToFill" />
                                                             <TextBlock HorizontalAlignment="Center"
                                                                        VerticalAlignment="Center"
+                                                                       Margin="4"
+                                                                       FontSize="10"
                                                                        Foreground="{DynamicResource GlobalTextBrush}"
                                                                        Opacity="0.52"
-                                                                       Text="{Binding ImageFallbackText}" />
+                                                                       Text="{Binding ImageFallbackText}"
+                                                                       TextAlignment="Center"
+                                                                       TextWrapping="Wrap" />
                                                         </Grid>
                                                     </Border>
 
-                                                    <DockPanel Grid.Row="1" Margin="0,8,0,0" LastChildFill="False">
-                                                        <StackPanel>
-                                                            <TextBlock MaxWidth="106"
-                                                                       FontWeight="SemiBold"
-                                                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                                                       Text="{Binding DisplayLabel}"
-                                                                       TextTrimming="CharacterEllipsis" />
-                                                            <TextBlock Margin="0,2,0,0"
-                                                                       FontSize="11"
-                                                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                                                       Opacity="0.52"
-                                                                       Text="{Binding ImageMetaText}" />
-                                                        </StackPanel>
-                                                        <Button DockPanel.Dock="Right"
-                                                                Width="18"
-                                                                Height="18"
+                                                    <StackPanel Grid.Column="1"
                                                                 Margin="8,0,0,0"
-                                                                Padding="0"
-                                                                Background="Transparent"
-                                                                BorderBrush="Transparent"
-                                                                BorderThickness="0"
-                                                                Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
-                                                                CommandParameter="{Binding}"
-                                                                Content="×"
-                                                                Foreground="{DynamicResource GlobalTextBrush}" />
-                                                    </DockPanel>
+                                                                VerticalAlignment="Center">
+                                                        <TextBlock MaxWidth="76"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                                   Text="{Binding DisplayLabel}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock MaxWidth="76"
+                                                                   Margin="0,1,0,0"
+                                                                   FontSize="10"
+                                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                                   Opacity="0.5"
+                                                                   Text="{Binding ImageMetaText}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+
+                                                    <Button Grid.Column="2"
+                                                            Width="18"
+                                                            Height="18"
+                                                            Margin="8,0,0,0"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            Background="Transparent"
+                                                            BorderBrush="Transparent"
+                                                            BorderThickness="0"
+                                                            Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="×"
+                                                            Foreground="{DynamicResource GlobalTextBrush}" />
                                                 </Grid>
                                             </Border>
                                         </Grid>
@@ -357,6 +438,7 @@
                             <Button.ContextMenu>
                                 <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                     <MenuItem Header="粘贴图片" Command="{Binding PasteImageAttachmentCommand}" />
+                                    <MenuItem Header="指定网页" Command="{Binding AddWebPageAttachmentCommand}" />
                                     <Separator />
                                     <MenuItem Header="添加文件" Command="{Binding AddFileAttachmentCommand}" />
                                     <MenuItem Header="添加上下文" Command="{Binding AddContextAttachmentCommand}" />

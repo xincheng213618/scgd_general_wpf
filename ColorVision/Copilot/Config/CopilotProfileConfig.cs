@@ -9,7 +9,8 @@ namespace ColorVision.Copilot
     {
         public const int DefaultMaxTokens = 2048;
         public const double DefaultTemperature = 0.2;
-        public const string DefaultSystemPrompt = "你是 ColorVision 内嵌 AI 助手，请用简洁、专业的中文回答，并尽量结合设备、流程、算法和插件场景给出建议。";
+
+        public const string DefaultSystemPrompt = "你是 AI 助手，请使用简洁、专业、准确的中文回答。优先回答用户当前问题";
 
         public string Id
         {

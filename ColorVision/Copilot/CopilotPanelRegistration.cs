@@ -48,25 +48,9 @@ namespace ColorVision.Copilot
             layoutManager.RegisterPanel(
                 CopilotPanelService.PanelId,
                 CopilotPanelService.GetInstance().GetOrCreatePanel(),
-                "AI 对话",
+                "对话助手",
                 PanelPosition.Right);
         }
     }
 
-    public sealed class CopilotMainWindowInitializer : MainWindowInitializedBase
-    {
-        public override int Order { get; set; } = 900;
-
-        public override Task Initialize()
-        {
-            var config = CopilotConfig.Instance;
-            if (!config.AutoShowPanelOnFirstLaunch)
-                return Task.CompletedTask;
-
-            CopilotPanelService.GetInstance().ShowPanel();
-            config.AutoShowPanelOnFirstLaunch = false;
-            ConfigHandler.GetInstance().Save<CopilotConfig>();
-            return Task.CompletedTask;
-        }
-    }
 }

@@ -20,6 +20,7 @@ namespace ColorVision.Copilot
         File,
         Context,
         Image,
+        WebPage,
     }
 
     public readonly record struct CopilotStreamDelta(string ReasoningContent, string Content)
@@ -98,6 +99,16 @@ namespace ColorVision.Copilot
         }
         private string _content;
 
+        public string RequestContent
+        {
+            get => _requestContent;
+            set => SetProperty(ref _requestContent, value ?? string.Empty);
+        }
+        private string _requestContent = string.Empty;
+
+        [JsonIgnore]
+        public string ModelContent => string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
+
         public string ReasoningContent
         {
             get => _reasoningContent;
@@ -152,6 +163,12 @@ namespace ColorVision.Copilot
             if (_reasoningContent == null)
             {
                 ReasoningContent = string.Empty;
+                changed = true;
+            }
+
+            if (_requestContent == null)
+            {
+                RequestContent = string.Empty;
                 changed = true;
             }
 
@@ -404,6 +421,17 @@ namespace ColorVision.Copilot
         }
         private string _value = string.Empty;
 
+        public string Source
+        {
+            get => _source;
+            set
+            {
+                if (SetProperty(ref _source, value?.Trim() ?? string.Empty))
+                    OnPropertyChanged(nameof(TooltipText));
+            }
+        }
+        private string _source = string.Empty;
+
         public DateTime CreatedAt
         {
             get => _createdAt;
@@ -416,6 +444,7 @@ namespace ColorVision.Copilot
         {
             CopilotAttachmentType.File => "文件",
             CopilotAttachmentType.Image => "图片",
+            CopilotAttachmentType.WebPage => "网页",
             _ => "上下文",
         };
 
@@ -430,12 +459,17 @@ namespace ColorVision.Copilot
                 if (Type == CopilotAttachmentType.File || Type == CopilotAttachmentType.Image)
                     return Path.GetFileName(Value);
 
+                if (Type == CopilotAttachmentType.WebPage)
+                    return TryGetHostLabel(Source);
+
                 return BuildPreview(Value, 20);
             }
         }
 
         [JsonIgnore]
-        public string TooltipText => Value;
+        public string TooltipText => Type == CopilotAttachmentType.WebPage && !string.IsNullOrWhiteSpace(Source)
+            ? Source
+            : Value;
 
         [JsonIgnore]
         public ImageSource? PreviewImage
@@ -517,6 +551,12 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (_source == null)
+            {
+                Source = string.Empty;
+                changed = true;
+            }
+
             return changed;
         }
 
@@ -553,6 +593,18 @@ namespace ColorVision.Copilot
             };
         }
 
+        public static CopilotAttachmentItem CreateWebPage(string url, string title, string content)
+        {
+            return new CopilotAttachmentItem
+            {
+                Type = CopilotAttachmentType.WebPage,
+                Title = title,
+                Source = url,
+                Value = content,
+                CreatedAt = DateTime.Now,
+            };
+        }
+
         private void ResetPreviewImage()
         {
             _previewImage = null;
@@ -569,6 +621,14 @@ namespace ColorVision.Copilot
                 return normalized;
 
             return normalized[..maxLength] + "...";
+        }
+
+        private static string TryGetHostLabel(string? value)
+        {
+            if (Uri.TryCreate(value, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.Host))
+                return uri.Host;
+
+            return BuildPreview(value ?? string.Empty, 20);
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
