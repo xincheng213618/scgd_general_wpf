@@ -156,10 +156,7 @@ namespace ColorVision.Copilot
                 SearchRootPaths = request.SearchRootPaths,
                 ActiveDocumentPath = request.ActiveDocumentPath,
                 ReadableLocalFilePaths = readableLocalFilePaths.ToArray(),
-                SelectedLocalFilePath = plan?.LocalFilePath ?? string.Empty,
-                SelectedLocalFileStartLine = plan?.StartLine,
-                SelectedLocalFileEndLine = plan?.EndLine,
-                SelectedToolQuery = plan?.ToolQuery ?? string.Empty,
+                SelectedToolInput = plan?.ToolInput ?? CopilotAgentToolInput.Empty,
                 Mode = request.Mode,
             };
         }
@@ -222,9 +219,9 @@ namespace ColorVision.Copilot
                 return string.Join("|", new[]
                 {
                     toolName,
-                    request.SelectedLocalFilePath ?? string.Empty,
-                    request.SelectedLocalFileStartLine?.ToString() ?? string.Empty,
-                    request.SelectedLocalFileEndLine?.ToString() ?? string.Empty,
+                    request.SelectedToolInput?.Path ?? string.Empty,
+                    request.SelectedToolInput?.StartLine?.ToString() ?? string.Empty,
+                    request.SelectedToolInput?.EndLine?.ToString() ?? string.Empty,
                 });
             }
 
@@ -234,7 +231,7 @@ namespace ColorVision.Copilot
                 return string.Join("|", new[]
                 {
                     toolName,
-                    request.SelectedToolQuery ?? string.Empty,
+                    request.SelectedToolInput?.Query ?? string.Empty,
                 });
             }
 
@@ -243,7 +240,7 @@ namespace ColorVision.Copilot
                 return string.Join("|", new[]
                 {
                     toolName,
-                    request.SelectedToolQuery ?? string.Empty,
+                    request.SelectedToolInput?.Query ?? string.Empty,
                 });
             }
 

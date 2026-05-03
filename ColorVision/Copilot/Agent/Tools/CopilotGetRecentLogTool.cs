@@ -34,7 +34,7 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
 
-            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
+            if (!string.IsNullOrWhiteSpace(request.SelectedToolInput?.Query))
                 return true;
 
             if (request.Mode == CopilotAgentMode.Diagnose)
@@ -48,7 +48,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var query = (request.SelectedToolQuery ?? string.Empty).Trim();
+            var query = (request.SelectedToolInput?.Query ?? string.Empty).Trim();
 
             var latestLog = GetCandidateLogDirectories()
                 .Where(Directory.Exists)

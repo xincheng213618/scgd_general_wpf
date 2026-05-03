@@ -51,7 +51,7 @@ namespace ColorVision.Copilot
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 OpenAICompatibleBaseUrl = "https://api.deepseek.com/v1",
                 AnthropicCompatibleBaseUrl = "https://api.deepseek.com/anthropic",
-                ModelPresets = new[] { "deepseek-v4-flash", "deepseek-v4-pro", "deepseek-v3.1" },
+                ModelPresets = new[] { "deepseek-v4-flash", "deepseek-v4-pro" },
             },
             new CopilotVendorPreset
             {
@@ -59,7 +59,7 @@ namespace ColorVision.Copilot
                 Label = "OpenAI",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://api.openai.com/v1",
-                ModelPresets = new[] { "gpt-4.1", "gpt-4.1-mini", "gpt-4o", "gpt-4o-mini", "o4-mini" },
+                ModelPresets = new[] { "gpt-5.5", "gpt-4o"},
             },
             new CopilotVendorPreset
             {
@@ -67,7 +67,7 @@ namespace ColorVision.Copilot
                 Label = "Claude",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 AnthropicCompatibleBaseUrl = "https://api.anthropic.com",
-                ModelPresets = new[] { "claude-sonnet-4-0", "claude-opus-4-0", "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest" },
+                ModelPresets = new[] { "claude-sonnet-4-7", "claude-opus-4-7" },
             },
             new CopilotVendorPreset
             {

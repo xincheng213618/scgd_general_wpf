@@ -316,7 +316,7 @@ for step in 1..N:
 
 ### 2. ICopilotTool.cs
 
-当前问题：虽然运行链路已经能给部分工具注入结构化参数，但 `ICopilotTool.ExecuteAsync(request, ...)` 仍然依赖 request 聚合对象，没有统一的 tool-args 抽象。
+当前状态：运行链路已经引入最小的统一工具参数对象，用来承载 query/path/startLine/endLine；现有已结构化工具已经直接消费该对象，但 `ICopilotTool.ExecuteAsync(request, ...)` 仍然依赖 request 聚合对象，兼容访问器也还保留在 request 模型上。
 
 建议演进成：
 
@@ -445,4 +445,4 @@ Phase 4
 2. 更强的多步 planner-executor 闭环
 3. 面向代码场景的便宜检索工具集
 
-如果只是为了尽快继续逼近 ReAct，最佳下一步不是直接上完整 coding agent，而是把当前已覆盖 ReadLocalFile / SearchFiles / GrepText / GetRecentLog 的结构化参数模式，继续扩展到更多诊断工具，并逐步从 request 聚合参数过渡到统一的 tool-args 模型。
+如果只是为了尽快继续逼近 ReAct，最佳下一步不是直接上完整 coding agent，而是在当前统一工具参数兼容层的基础上，让更多诊断工具接入结构化参数，并逐步把 `ICopilotTool` 接口本身迁移到真正的 tool-args 模型。

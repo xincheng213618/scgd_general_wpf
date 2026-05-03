@@ -20,13 +20,15 @@ namespace ColorVision.Copilot
 
         public string ToolName { get; init; } = string.Empty;
 
-        public string ToolQuery { get; init; } = string.Empty;
+        public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
 
-        public string LocalFilePath { get; init; } = string.Empty;
+        public string ToolQuery => ToolInput?.Query ?? string.Empty;
 
-        public int? StartLine { get; init; }
+        public string LocalFilePath => ToolInput?.Path ?? string.Empty;
 
-        public int? EndLine { get; init; }
+        public int? StartLine => ToolInput?.StartLine;
+
+        public int? EndLine => ToolInput?.EndLine;
 
         public string Reason { get; init; } = string.Empty;
 
@@ -216,10 +218,7 @@ namespace ColorVision.Copilot
                         {
                             Action = CopilotAgentPlanAction.Tool,
                             ToolName = selectedTool.Name,
-                            ToolQuery = RequiresQuery(selectedTool.Name) ? toolQuery : string.Empty,
-                            LocalFilePath = string.Equals(selectedTool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? localFilePath : string.Empty,
-                            StartLine = string.Equals(selectedTool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? startLine : null,
-                            EndLine = string.Equals(selectedTool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? NormalizeEndLine(startLine, endLine) : null,
+                            ToolInput = BuildToolInput(selectedTool.Name, toolQuery, localFilePath, startLine, endLine),
                             Reason = string.IsNullOrWhiteSpace(reason) ? $"优先执行 {selectedTool.Name} 获取缺失信息。" : reason,
                         };
                     }
@@ -340,6 +339,17 @@ namespace ColorVision.Copilot
                 return endLine.Value;
 
             return Math.Max(startLine.Value, endLine.Value);
+        }
+
+        private static CopilotAgentToolInput BuildToolInput(string toolName, string toolQuery, string localFilePath, int? startLine, int? endLine)
+        {
+            return new CopilotAgentToolInput
+            {
+                Query = RequiresQuery(toolName) ? toolQuery : string.Empty,
+                Path = string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? localFilePath : string.Empty,
+                StartLine = string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? startLine : null,
+                EndLine = string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? NormalizeEndLine(startLine, endLine) : null,
+            };
         }
 
         private static bool RequiresQuery(string toolName)

@@ -48,7 +48,7 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat || request.SearchRootPaths.Count == 0)
                 return false;
 
-            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
+            if (!string.IsNullOrWhiteSpace(request.SelectedToolInput?.Query))
                 return true;
 
             var patterns = ExtractPatterns(request.UserText);
@@ -140,8 +140,9 @@ namespace ColorVision.Copilot
 
         private static IReadOnlyList<string> ResolvePatterns(CopilotAgentRequest request)
         {
-            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
-                return ExtractPatterns(request.SelectedToolQuery);
+            var toolQuery = request.SelectedToolInput?.Query;
+            if (!string.IsNullOrWhiteSpace(toolQuery))
+                return ExtractPatterns(toolQuery);
 
             return ExtractPatterns(request.UserText);
         }

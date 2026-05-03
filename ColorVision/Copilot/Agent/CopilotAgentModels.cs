@@ -41,6 +41,19 @@ namespace ColorVision.Copilot
         }
     }
 
+    public sealed class CopilotAgentToolInput
+    {
+        public static CopilotAgentToolInput Empty { get; } = new();
+
+        public string Query { get; init; } = string.Empty;
+
+        public string Path { get; init; } = string.Empty;
+
+        public int? StartLine { get; init; }
+
+        public int? EndLine { get; init; }
+    }
+
     public sealed class CopilotAgentRequest
     {
         public string UserText { get; init; } = string.Empty;
@@ -57,13 +70,15 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
-        public string SelectedLocalFilePath { get; init; } = string.Empty;
+        public CopilotAgentToolInput SelectedToolInput { get; init; } = CopilotAgentToolInput.Empty;
 
-        public int? SelectedLocalFileStartLine { get; init; }
+        public string SelectedLocalFilePath => SelectedToolInput?.Path ?? string.Empty;
 
-        public int? SelectedLocalFileEndLine { get; init; }
-        
-        public string SelectedToolQuery { get; init; } = string.Empty;
+        public int? SelectedLocalFileStartLine => SelectedToolInput?.StartLine;
+
+        public int? SelectedLocalFileEndLine => SelectedToolInput?.EndLine;
+
+        public string SelectedToolQuery => SelectedToolInput?.Query ?? string.Empty;
 
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
     }

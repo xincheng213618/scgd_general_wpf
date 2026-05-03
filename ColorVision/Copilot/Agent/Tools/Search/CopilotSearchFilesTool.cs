@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
+            if (!string.IsNullOrWhiteSpace(request.SelectedToolInput?.Query))
                 return true;
 
             if (request.ReadableLocalFilePaths.Count > 0)
@@ -130,8 +130,9 @@ namespace ColorVision.Copilot
 
         private static IReadOnlyList<string> ResolveSearchTerms(CopilotAgentRequest request)
         {
-            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
-                return ExtractSearchTerms(request.SelectedToolQuery);
+            var toolQuery = request.SelectedToolInput?.Query;
+            if (!string.IsNullOrWhiteSpace(toolQuery))
+                return ExtractSearchTerms(toolQuery);
 
             return ExtractSearchTerms(request.UserText);
         }

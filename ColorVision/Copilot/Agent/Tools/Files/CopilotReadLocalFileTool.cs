@@ -25,6 +25,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
+            var toolInput = request.SelectedToolInput ?? CopilotAgentToolInput.Empty;
+
             var allowedPaths = request.ReadableLocalFilePaths
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Select(path => NormalizePath(path))
@@ -32,7 +34,7 @@ namespace ColorVision.Copilot
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            var selectedPath = NormalizePath(request.SelectedLocalFilePath);
+            var selectedPath = NormalizePath(toolInput.Path);
             string[] paths;
 
             if (!string.IsNullOrWhiteSpace(selectedPath))
@@ -80,8 +82,8 @@ namespace ColorVision.Copilot
                 var useSelectedRange = !string.IsNullOrWhiteSpace(selectedPath) && string.Equals(path, selectedPath, StringComparison.OrdinalIgnoreCase);
                 var result = await CopilotLocalFileToolSupport.ReadTextFileAsync(
                     path,
-                    useSelectedRange ? request.SelectedLocalFileStartLine : null,
-                    useSelectedRange ? request.SelectedLocalFileEndLine : null,
+                    useSelectedRange ? toolInput.StartLine : null,
+                    useSelectedRange ? toolInput.EndLine : null,
                     cancellationToken);
                 builder.AppendLine($"[文件] {result.FullPath}");
 
