@@ -7,6 +7,7 @@
 ### 核心概念
 理解 ColorVision 的核心概念和设计：
 - [扩展性](./core-concepts/extensibility.md) - 扩展系统和插件机制
+- [Copilot Agent 与 ReAct 演进路线](./core-concepts/copilot-agent-react-roadmap.md) - 当前 Agent 实现、与 ReAct 的差异，以及本地文件读取的演进方案
 
 ### 性能优化
 优化应用程序性能：

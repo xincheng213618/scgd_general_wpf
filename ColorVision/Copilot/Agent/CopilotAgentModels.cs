@@ -51,6 +51,12 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotAttachmentItem> Attachments { get; init; } = Array.Empty<CopilotAttachmentItem>();
 
+        public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
+
+        public string ActiveDocumentPath { get; init; } = string.Empty;
+
+        public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
     }
 

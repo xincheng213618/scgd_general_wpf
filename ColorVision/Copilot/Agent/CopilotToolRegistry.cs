@@ -21,7 +21,7 @@ namespace ColorVision.Copilot
 
             return _tools
                 .Where(tool => tool.CanHandle(request))
-                .Take(5)
+                .Take(6)
                 .ToArray();
         }
 
@@ -30,6 +30,9 @@ namespace ColorVision.Copilot
             return new CopilotToolRegistry(new ICopilotTool[]
             {
                 new CopilotFetchUrlTool(),
+                new CopilotSearchFilesTool(),
+                new CopilotGrepTextTool(),
+                new CopilotReadLocalFileTool(),
                 new CopilotReadAttachedFileTool(),
                 new CopilotGetRecentLogTool(),
             });

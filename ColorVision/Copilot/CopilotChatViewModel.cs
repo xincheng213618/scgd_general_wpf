@@ -1,3 +1,5 @@
+using ColorVision.Solution;
+using ColorVision.Solution.Workspace;
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using HtmlAgilityPack;
@@ -37,6 +39,7 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
         private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Chat;
+        private string _activeDocumentPath = string.Empty;
 
         public CopilotChatViewModel()
             : this(new CopilotChatService())
@@ -49,6 +52,9 @@ namespace ColorVision.Copilot
             _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), new CopilotAgentContextBuilder());
             _config = CopilotConfig.Instance;
             _stateStore = CopilotChatStateStore.Instance;
+
+            WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
+            WorkspaceManager.ContentIdSelected += WorkspaceManager_ContentIdSelected;
 
             if (_config.EnsureInitialized())
                 PersistConfig();
@@ -348,12 +354,17 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var explicitLocalFilePaths = CopilotLocalFileToolSupport.ExtractExplicitLocalFilePaths(userMessage.Content);
+
             var agentRequest = new CopilotAgentRequest
             {
                 UserText = (userMessage.Content ?? string.Empty).Trim(),
                 Profile = requestProfile,
                 History = BuildVisibleConversationHistory(conversation, userMessage, 8),
                 Attachments = conversation.Attachments.ToArray(),
+                SearchRootPaths = BuildSearchRootPaths(conversation, explicitLocalFilePaths),
+                ActiveDocumentPath = _activeDocumentPath,
+                ReadableLocalFilePaths = explicitLocalFilePaths,
                 Mode = userMessage.RequestMode,
             };
 
@@ -363,6 +374,60 @@ namespace ColorVision.Copilot
                 cancellationToken);
 
             userMessage.RequestContent = result.PreparedUserMessageContent;
+        }
+
+        private void WorkspaceManager_ContentIdSelected(object? sender, string contentId)
+        {
+            _activeDocumentPath = contentId ?? string.Empty;
+        }
+
+        private IReadOnlyList<string> BuildSearchRootPaths(
+            CopilotConversationRecord conversation,
+            IReadOnlyList<string> explicitLocalFilePaths)
+        {
+            var roots = new List<string>();
+
+            AddSearchCandidate(roots, SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName);
+            AddSearchCandidate(roots, _activeDocumentPath);
+
+            foreach (var path in explicitLocalFilePaths)
+            {
+                AddSearchCandidate(roots, path);
+            }
+
+            foreach (var attachment in conversation.Attachments.Where(item => item.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value)))
+            {
+                AddSearchCandidate(roots, attachment.Value);
+            }
+
+            return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+        }
+
+        private static void AddSearchCandidate(List<string> roots, string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return;
+
+            try
+            {
+                var fullPath = Path.GetFullPath(path);
+
+                if (Directory.Exists(fullPath))
+                {
+                    roots.Add(fullPath);
+                    return;
+                }
+
+                if (File.Exists(fullPath))
+                {
+                    var directory = Path.GetDirectoryName(fullPath);
+                    if (!string.IsNullOrWhiteSpace(directory))
+                        roots.Add(directory);
+                }
+            }
+            catch
+            {
+            }
         }
 
         private void ApplyAgentEvent(CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
