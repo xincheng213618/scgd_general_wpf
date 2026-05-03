@@ -62,6 +62,8 @@ namespace ColorVision.Copilot
         public int? SelectedLocalFileStartLine { get; init; }
 
         public int? SelectedLocalFileEndLine { get; init; }
+        
+        public string SelectedToolQuery { get; init; } = string.Empty;
 
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
     }

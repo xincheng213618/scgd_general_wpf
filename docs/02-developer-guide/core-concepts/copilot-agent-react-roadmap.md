@@ -9,7 +9,7 @@
 它已经具备最小工具层和最小 planner-executor 雏形，但还没有以下能力：
 
 - 像代码代理那样继续做检索、修改、构建、看错误、再迭代
-- 让模型对 SearchFiles、GrepText、GetRecentLog 等工具也输出真正结构化的参数，而不只是给 ReadLocalFile 指定 path/startLine/endLine
+- 让模型对更多诊断/环境工具也输出真正结构化的参数，而不只是目前对 ReadLocalFile、SearchFiles、GrepText、GetRecentLog 生效
 - 支持更强的多工具连续规划，而不是当前这种每轮偏单步的最小 planner
 
 ## 当前实际执行链路
@@ -153,7 +153,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 1. 当前仍然不能让模型跳出允许列表，去读取任意新路径
 2. request 里还没有通用的工具参数对象和更明确的权限策略对象
-3. 结构化参数目前只覆盖 ReadLocalFile，SearchFiles、GrepText、GetRecentLog 仍主要依赖请求级触发
+3. 结构化参数目前已覆盖 ReadLocalFile 的 path/startLine/endLine，以及 SearchFiles、GrepText、GetRecentLog 的 query；但更多诊断工具仍主要依赖请求级触发
 4. 服务层虽然已经能做最小 planner-executor 循环，但还不是更强的多工具规划闭环
 5. 当前文件读取虽然支持按行范围精读，但还没有更细的片段定位、symbol 级读取和 AST 级上下文
 
@@ -316,7 +316,7 @@ for step in 1..N:
 
 ### 2. ICopilotTool.cs
 
-当前问题：ExecuteAsync 没有结构化参数。
+当前问题：虽然运行链路已经能给部分工具注入结构化参数，但 `ICopilotTool.ExecuteAsync(request, ...)` 仍然依赖 request 聚合对象，没有统一的 tool-args 抽象。
 
 建议演进成：
 
@@ -445,4 +445,4 @@ Phase 4
 2. 更强的多步 planner-executor 闭环
 3. 面向代码场景的便宜检索工具集
 
-如果只是为了尽快继续逼近 ReAct，最佳下一步不是直接上完整 coding agent，而是把当前只对 ReadLocalFile 生效的结构化参数模式，扩展到 SearchFiles、GrepText 和诊断工具上。
+如果只是为了尽快继续逼近 ReAct，最佳下一步不是直接上完整 coding agent，而是把当前已覆盖 ReadLocalFile / SearchFiles / GrepText / GetRecentLog 的结构化参数模式，继续扩展到更多诊断工具，并逐步从 request 聚合参数过渡到统一的 tool-args 模型。

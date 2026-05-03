@@ -20,6 +20,8 @@ namespace ColorVision.Copilot
 
         public string ToolName { get; init; } = string.Empty;
 
+        public string ToolQuery { get; init; } = string.Empty;
+
         public string LocalFilePath { get; init; } = string.Empty;
 
         public int? StartLine { get; init; }
@@ -93,13 +95,13 @@ namespace ColorVision.Copilot
             builder.AppendLine("你现在要为 Agent 选择下一步动作。只返回 JSON。不要回答用户问题。");
             builder.AppendLine();
             builder.AppendLine("JSON 格式：");
-            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"path\":\"仅在 ReadLocalFile 时填写\",\"startLine\":0,\"endLine\":0}}");
+            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog 等工具可填写\",\"path\":\"仅在 ReadLocalFile 时填写\",\"startLine\":0,\"endLine\":0}}");
             builder.AppendLine();
             builder.AppendLine("决策规则：");
             builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
             builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
             builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=ReadLocalFile 时，尽量填写 input.path、input.startLine、input.endLine；path 必须来自可读文件列表。只有需要局部上下文时，优先小范围读取，例如 1-120 或 200-320。否则 input 置空或写 0。\n5. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText 或 GetRecentLog 时，尽量填写 input.query，使用更短、更聚焦的搜索词，而不是原样重复整段用户问题。\n5. 当 toolName=ReadLocalFile 时，尽量填写 input.path、input.startLine、input.endLine；path 必须来自可读文件列表。只有需要局部上下文时，优先小范围读取，例如 1-120 或 200-320。否则 input 置空或写 0。\n6. reason 保持一句话，20 到 60 字优先。");
             builder.AppendLine();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
@@ -181,12 +183,14 @@ namespace ColorVision.Copilot
                 var reason = root.TryGetProperty("reason", out var reasonElement)
                     ? (reasonElement.GetString() ?? string.Empty).Trim()
                     : string.Empty;
+                var toolQuery = TryReadString(root, "query");
                 var localFilePath = TryReadString(root, "path");
                 var startLine = TryReadPositiveInt(root, "startLine");
                 var endLine = TryReadPositiveInt(root, "endLine");
 
                 if (root.TryGetProperty("input", out var inputElement) && inputElement.ValueKind == JsonValueKind.Object)
                 {
+                    toolQuery = string.IsNullOrWhiteSpace(toolQuery) ? TryReadString(inputElement, "query") : toolQuery;
                     localFilePath = string.IsNullOrWhiteSpace(localFilePath) ? TryReadString(inputElement, "path") : localFilePath;
                     startLine ??= TryReadPositiveInt(inputElement, "startLine");
                     endLine ??= TryReadPositiveInt(inputElement, "endLine");
@@ -212,6 +216,7 @@ namespace ColorVision.Copilot
                         {
                             Action = CopilotAgentPlanAction.Tool,
                             ToolName = selectedTool.Name,
+                            ToolQuery = RequiresQuery(selectedTool.Name) ? toolQuery : string.Empty,
                             LocalFilePath = string.Equals(selectedTool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? localFilePath : string.Empty,
                             StartLine = string.Equals(selectedTool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? startLine : null,
                             EndLine = string.Equals(selectedTool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? NormalizeEndLine(startLine, endLine) : null,
@@ -335,6 +340,13 @@ namespace ColorVision.Copilot
                 return endLine.Value;
 
             return Math.Max(startLine.Value, endLine.Value);
+        }
+
+        private static bool RequiresQuery(string toolName)
+        {
+            return string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string TruncateObservation(string text, int maxCharacters)

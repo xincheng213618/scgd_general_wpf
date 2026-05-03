@@ -48,6 +48,9 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat || request.SearchRootPaths.Count == 0)
                 return false;
 
+            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
+                return true;
+
             var patterns = ExtractPatterns(request.UserText);
             return patterns.Count > 0 && HasGrepIntent(request.UserText);
         }
@@ -57,7 +60,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.SearchRootPaths);
-            var patterns = ExtractPatterns(request.UserText);
+            var patterns = ResolvePatterns(request);
             if (searchRoots.Count == 0 || patterns.Count == 0)
             {
                 return Task.FromResult(new CopilotToolResult
@@ -133,6 +136,14 @@ namespace ColorVision.Copilot
                     .Take(3)
                     .ToArray(),
             });
+        }
+
+        private static IReadOnlyList<string> ResolvePatterns(CopilotAgentRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
+                return ExtractPatterns(request.SelectedToolQuery);
+
+            return ExtractPatterns(request.UserText);
         }
 
         private static bool HasGrepIntent(string text)

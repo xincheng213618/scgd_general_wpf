@@ -159,6 +159,7 @@ namespace ColorVision.Copilot
                 SelectedLocalFilePath = plan?.LocalFilePath ?? string.Empty,
                 SelectedLocalFileStartLine = plan?.StartLine,
                 SelectedLocalFileEndLine = plan?.EndLine,
+                SelectedToolQuery = plan?.ToolQuery ?? string.Empty,
                 Mode = request.Mode,
             };
         }
@@ -187,23 +188,31 @@ namespace ColorVision.Copilot
 
         private static string BuildPlanDetail(CopilotAgentPlan plan)
         {
-            if (!string.Equals(plan.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
-                || string.IsNullOrWhiteSpace(plan.LocalFilePath))
+            if (string.Equals(plan.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(plan.LocalFilePath))
             {
-                return string.Empty;
+                var builder = new System.Text.StringBuilder();
+                builder.Append(" 目标文件：").Append(Path.GetFileName(plan.LocalFilePath));
+
+                if (plan.StartLine.HasValue)
+                {
+                    builder.Append(" 行号：").Append(plan.StartLine.Value);
+                    if (plan.EndLine.HasValue)
+                        builder.Append('-').Append(plan.EndLine.Value);
+                }
+
+                return builder.ToString();
             }
 
-            var builder = new System.Text.StringBuilder();
-            builder.Append(" 目标文件：").Append(Path.GetFileName(plan.LocalFilePath));
-
-            if (plan.StartLine.HasValue)
+            if ((string.Equals(plan.ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(plan.ToolName, "GrepText", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(plan.ToolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase))
+                && !string.IsNullOrWhiteSpace(plan.ToolQuery))
             {
-                builder.Append(" 行号：").Append(plan.StartLine.Value);
-                if (plan.EndLine.HasValue)
-                    builder.Append('-').Append(plan.EndLine.Value);
+                return $" 查询词：{plan.ToolQuery}";
             }
 
-            return builder.ToString();
+            return string.Empty;
         }
 
         private static string BuildToolExecutionSignature(string toolName, CopilotAgentRequest request)
@@ -216,6 +225,25 @@ namespace ColorVision.Copilot
                     request.SelectedLocalFilePath ?? string.Empty,
                     request.SelectedLocalFileStartLine?.ToString() ?? string.Empty,
                     request.SelectedLocalFileEndLine?.ToString() ?? string.Empty,
+                });
+            }
+
+            if (string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Join("|", new[]
+                {
+                    toolName,
+                    request.SelectedToolQuery ?? string.Empty,
+                });
+            }
+
+            if (string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Join("|", new[]
+                {
+                    toolName,
+                    request.SelectedToolQuery ?? string.Empty,
                 });
             }
 

@@ -36,11 +36,16 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
-                || request.SearchRootPaths.Count == 0
-                || request.ReadableLocalFilePaths.Count > 0)
+                || request.SearchRootPaths.Count == 0)
             {
                 return false;
             }
+
+            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
+                return true;
+
+            if (request.ReadableLocalFilePaths.Count > 0)
+                return false;
 
             var terms = ExtractSearchTerms(request.UserText);
             return terms.Count > 0 && HasFileSearchIntent(request.UserText);
@@ -51,7 +56,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.SearchRootPaths);
-            var terms = ExtractSearchTerms(request.UserText);
+            var terms = ResolveSearchTerms(request);
             if (searchRoots.Count == 0 || terms.Count == 0)
             {
                 return Task.FromResult(new CopilotToolResult
@@ -121,6 +126,14 @@ namespace ColorVision.Copilot
                     .Take(3)
                     .ToArray(),
             });
+        }
+
+        private static IReadOnlyList<string> ResolveSearchTerms(CopilotAgentRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.SelectedToolQuery))
+                return ExtractSearchTerms(request.SelectedToolQuery);
+
+            return ExtractSearchTerms(request.UserText);
         }
 
         private static bool HasFileSearchIntent(string text)
