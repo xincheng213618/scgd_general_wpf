@@ -2,7 +2,7 @@ using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using System.Threading.Tasks;
 
-namespace ColorVision
+namespace ColorVision.Copilot
 {
     public sealed class CopilotPanelService
     {

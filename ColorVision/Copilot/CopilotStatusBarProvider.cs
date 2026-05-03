@@ -1,10 +1,11 @@
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.UI
+namespace ColorVision.Copilot
 {
     public class CopilotStatusBarProvider : IStatusBarProvider
     {

@@ -1,0 +1,138 @@
+<Window x:Class="ColorVision.Copilot.CopilotSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:ColorVision.Copilot"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        Title="语言模型"
+        Width="960"
+        Height="620"
+        MinWidth="860"
+        MinHeight="540"
+        Background="{DynamicResource GlobalBackground}"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Margin="16,16,16,0" Padding="14,10" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+            <StackPanel>
+                <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="语言模型" />
+                <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="可同时保存多个模型配置；保存后，右侧 AI 面板会直接使用这里的模型列表。" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="16,12,16,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="12,12,12,10" Orientation="Horizontal">
+                        <Button Padding="10,4" Command="{Binding AddProfileCommand}" Content="+ 添加模型" />
+                        <Button Margin="8,0,0,0" Padding="10,4" Command="{Binding DuplicateProfileCommand}" Content="复制" IsEnabled="{Binding CanEditSelectedProfile}" />
+                        <Button Margin="8,0,0,0" Padding="10,4" Command="{Binding DeleteProfileCommand}" Content="删除" IsEnabled="{Binding CanEditSelectedProfile}" />
+                    </StackPanel>
+
+                    <ListBox Margin="8,0,8,8" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:CopilotProfileConfig}">
+                                <Border Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding DisplayLabel}" />
+                                        <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding SecondaryLabel}" />
+                                        <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.55" Text="{Binding BaseUrl}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+                <Grid Margin="14" IsEnabled="{Binding CanEditSelectedProfile}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="名称" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.Name, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Grid.Row="1" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="协议" />
+                    <ComboBox Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="0,0,0,10"
+                              ItemsSource="{Binding ProviderOptions}"
+                              DisplayMemberPath="Label"
+                              SelectedValuePath="Value"
+                              SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Grid.Row="2" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Base URL" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Grid.Row="3" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="API Key" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.ApiKey, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Grid.Row="4" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="模型" />
+                    <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.Model, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Grid Grid.Row="5" Grid.ColumnSpan="2" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="最大 Token" />
+                        <TextBox Grid.Column="1" Text="{Binding SelectedProfile.MaxTokens, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <TextBlock Grid.Column="3" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="温度" />
+                        <TextBox Grid.Column="4" Text="{Binding SelectedProfile.Temperature, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+
+                    <TextBlock Grid.Row="6" Margin="0,8,12,0" VerticalAlignment="Top" Foreground="{DynamicResource GlobalTextBrush}" Text="系统提示词" />
+                    <TextBox Grid.Row="6"
+                             Grid.Column="1"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap"
+                             Text="{Binding SelectedProfile.SystemPrompt, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Margin="16,0,16,16" Padding="12,10" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="支持多模型并存；右侧 AI 面板发送前可直接切换模型。" TextWrapping="Wrap" />
+                <Button Grid.Column="1" Margin="0,0,8,0" Padding="14,6" Click="CancelButton_Click" Content="取消" />
+                <Button Grid.Column="2" Padding="14,6" Click="SaveButton_Click" Content="保存" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

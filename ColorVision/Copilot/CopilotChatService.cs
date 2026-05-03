@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision
+namespace ColorVision.Copilot
 {
     public sealed class CopilotChatService
     {
@@ -19,9 +19,9 @@ namespace ColorVision
         };
 
         public async Task StreamReplyAsync(
-            CopilotConfig config,
+            CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
-            Action<string> onDelta,
+            Action<CopilotStreamDelta> onDelta,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(config);
@@ -45,14 +45,14 @@ namespace ColorVision
             }
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            var text = ExtractTextFromFinalResponse(config.ProviderType, body);
-            if (string.IsNullOrWhiteSpace(text))
+            var delta = ExtractFinalResponseDelta(config.ProviderType, body);
+            if (!delta.HasAny)
                 throw new InvalidOperationException("接口返回成功，但没有可显示的文本内容。");
 
-            onDelta(text);
+            onDelta(delta);
         }
 
-        private static HttpRequestMessage CreateRequest(CopilotConfig config, IReadOnlyList<CopilotRequestMessage> messages)
+        private static HttpRequestMessage CreateRequest(CopilotProfileConfig config, IReadOnlyList<CopilotRequestMessage> messages)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(config));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
@@ -112,7 +112,7 @@ namespace ColorVision
             return request;
         }
 
-        private static Uri BuildEndpoint(CopilotConfig config)
+        private static Uri BuildEndpoint(CopilotProfileConfig config)
         {
             var baseUrl = (config.BaseUrl ?? string.Empty).Trim().TrimEnd('/');
             if (string.IsNullOrWhiteSpace(baseUrl))
@@ -141,7 +141,7 @@ namespace ColorVision
         private static async Task ReadStreamingResponseAsync(
             CopilotProviderType providerType,
             HttpResponseMessage response,
-            Action<string> onDelta,
+            Action<CopilotStreamDelta> onDelta,
             CancellationToken cancellationToken)
         {
             using var cancellationRegistration = cancellationToken.Register(static state =>
@@ -158,7 +158,7 @@ namespace ColorVision
                 string? line;
                 try
                 {
-                    line = await reader.ReadLineAsync();
+                    line = await reader.ReadLineAsync(cancellationToken);
                 }
                 catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -183,38 +183,42 @@ namespace ColorVision
                     break;
 
                 var delta = providerType == CopilotProviderType.AnthropicCompatible
-                    ? ExtractAnthropicStreamingText(payload)
-                    : ExtractOpenAiStreamingText(payload);
+                    ? ExtractAnthropicStreamingDelta(payload)
+                    : ExtractOpenAiStreamingDelta(payload);
 
-                if (!string.IsNullOrWhiteSpace(delta))
+                if (delta.HasAny)
                     onDelta(delta);
             }
         }
 
-        private static string ExtractOpenAiStreamingText(string payload)
+        private static CopilotStreamDelta ExtractOpenAiStreamingDelta(string payload)
         {
             try
             {
                 using var document = JsonDocument.Parse(payload);
                 var root = document.RootElement;
-                if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
-                    return string.Empty;
+                if (!root.TryGetProperty("choices", out var choices)
+                    || choices.ValueKind != JsonValueKind.Array
+                    || choices.GetArrayLength() == 0)
+                {
+                    return CopilotStreamDelta.Empty;
+                }
 
                 var choice = choices[0];
                 if (choice.TryGetProperty("delta", out var delta))
-                    return ExtractTextFromElement(delta);
+                    return ExtractOpenAiDeltaFromElement(delta);
 
                 if (choice.TryGetProperty("message", out var message))
-                    return ExtractTextFromElement(message);
+                    return ExtractOpenAiDeltaFromElement(message);
             }
             catch (JsonException)
             {
             }
 
-            return string.Empty;
+            return CopilotStreamDelta.Empty;
         }
 
-        private static string ExtractAnthropicStreamingText(string payload)
+        private static CopilotStreamDelta ExtractAnthropicStreamingDelta(string payload)
         {
             try
             {
@@ -222,31 +226,25 @@ namespace ColorVision
                 var root = document.RootElement;
 
                 if (root.TryGetProperty("delta", out var delta))
-                {
-                    if (delta.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
-                        return text.GetString() ?? string.Empty;
-
-                    if (delta.TryGetProperty("output_text", out var outputText) && outputText.ValueKind == JsonValueKind.String)
-                        return outputText.GetString() ?? string.Empty;
-                }
+                    return ExtractAnthropicDeltaFromDeltaElement(delta);
 
                 if (root.TryGetProperty("content_block", out var block))
-                    return ExtractTextFromElement(block);
+                    return ExtractAnthropicDeltaFromContentBlock(block);
 
                 if (root.TryGetProperty("message", out var message))
-                    return ExtractTextFromElement(message);
+                    return ExtractAnthropicDeltaFromMessage(message);
             }
             catch (JsonException)
             {
             }
 
-            return string.Empty;
+            return CopilotStreamDelta.Empty;
         }
 
-        private static string ExtractTextFromFinalResponse(CopilotProviderType providerType, string body)
+        private static CopilotStreamDelta ExtractFinalResponseDelta(CopilotProviderType providerType, string body)
         {
             if (string.IsNullOrWhiteSpace(body))
-                return string.Empty;
+                return CopilotStreamDelta.Empty;
 
             try
             {
@@ -254,45 +252,170 @@ namespace ColorVision
                 var root = document.RootElement;
 
                 if (providerType == CopilotProviderType.AnthropicCompatible)
-                {
-                    if (root.TryGetProperty("content", out var content))
-                        return ExtractTextFromElement(content);
+                    return ExtractAnthropicDeltaFromMessage(root);
 
-                    if (root.TryGetProperty("message", out var message))
-                        return ExtractTextFromElement(message);
-                }
-                else
+                if (root.TryGetProperty("choices", out var choices)
+                    && choices.ValueKind == JsonValueKind.Array
+                    && choices.GetArrayLength() > 0)
                 {
-                    if (root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array && choices.GetArrayLength() > 0)
-                    {
-                        var choice = choices[0];
-                        if (choice.TryGetProperty("message", out var message))
-                            return ExtractTextFromElement(message);
+                    var choice = choices[0];
+                    if (choice.TryGetProperty("message", out var message))
+                        return ExtractOpenAiDeltaFromElement(message);
 
-                        if (choice.TryGetProperty("delta", out var delta))
-                            return ExtractTextFromElement(delta);
-                    }
+                    if (choice.TryGetProperty("delta", out var delta))
+                        return ExtractOpenAiDeltaFromElement(delta);
                 }
+
+                return ExtractOpenAiDeltaFromElement(root);
             }
             catch (JsonException)
             {
             }
 
-            return string.Empty;
+            return CopilotStreamDelta.Empty;
         }
 
-        private static string ExtractTextFromElement(JsonElement element)
+        private static CopilotStreamDelta ExtractOpenAiDeltaFromElement(JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                return CopilotStreamDelta.Empty;
+
+            var reasoning = element.TryGetProperty("reasoning_content", out var reasoningElement)
+                ? ExtractStringFromElement(reasoningElement)
+                : string.Empty;
+
+            var content = element.TryGetProperty("content", out var contentElement)
+                ? ExtractStringFromElement(contentElement)
+                : element.TryGetProperty("text", out var textElement)
+                    ? ExtractStringFromElement(textElement)
+                    : string.Empty;
+
+            return new CopilotStreamDelta(reasoning, content);
+        }
+
+        private static CopilotStreamDelta ExtractAnthropicDeltaFromMessage(JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                return CopilotStreamDelta.Empty;
+
+            if (element.TryGetProperty("content", out var content))
+                return ExtractAnthropicDeltaFromContentArray(content);
+
+            return ExtractAnthropicDeltaFromContentBlock(element);
+        }
+
+        private static CopilotStreamDelta ExtractAnthropicDeltaFromContentArray(JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Array)
+                return ExtractAnthropicDeltaFromContentBlock(element);
+
+            var reasoningBuilder = new StringBuilder();
+            var contentBuilder = new StringBuilder();
+
+            foreach (var item in element.EnumerateArray())
+            {
+                var delta = ExtractAnthropicDeltaFromContentBlock(item);
+                if (delta.HasReasoning)
+                    reasoningBuilder.Append(delta.ReasoningContent);
+                if (delta.HasContent)
+                    contentBuilder.Append(delta.Content);
+            }
+
+            return new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString());
+        }
+
+        private static CopilotStreamDelta ExtractAnthropicDeltaFromContentBlock(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.String)
+                return new CopilotStreamDelta(string.Empty, element.GetString() ?? string.Empty);
+
+            if (element.ValueKind != JsonValueKind.Object)
+                return CopilotStreamDelta.Empty;
+
+            var type = element.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String
+                ? typeElement.GetString()
+                : string.Empty;
+
+            if (string.Equals(type, "thinking", StringComparison.OrdinalIgnoreCase))
+            {
+                var reasoning = element.TryGetProperty("thinking", out var thinkingElement)
+                    ? ExtractStringFromElement(thinkingElement)
+                    : string.Empty;
+                return new CopilotStreamDelta(reasoning, string.Empty);
+            }
+
+            if (string.Equals(type, "text", StringComparison.OrdinalIgnoreCase))
+            {
+                var text = element.TryGetProperty("text", out var textElement)
+                    ? ExtractStringFromElement(textElement)
+                    : string.Empty;
+                return new CopilotStreamDelta(string.Empty, text);
+            }
+
+            if (element.TryGetProperty("thinking", out var directThinking))
+                return new CopilotStreamDelta(ExtractStringFromElement(directThinking), string.Empty);
+
+            if (element.TryGetProperty("text", out var directText))
+                return new CopilotStreamDelta(string.Empty, ExtractStringFromElement(directText));
+
+            return CopilotStreamDelta.Empty;
+        }
+
+        private static CopilotStreamDelta ExtractAnthropicDeltaFromDeltaElement(JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                return CopilotStreamDelta.Empty;
+
+            var type = element.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String
+                ? typeElement.GetString()
+                : string.Empty;
+
+            if (string.Equals(type, "thinking_delta", StringComparison.OrdinalIgnoreCase))
+            {
+                var thinking = element.TryGetProperty("thinking", out var thinkingElement)
+                    ? ExtractStringFromElement(thinkingElement)
+                    : string.Empty;
+                return new CopilotStreamDelta(thinking, string.Empty);
+            }
+
+            if (string.Equals(type, "text_delta", StringComparison.OrdinalIgnoreCase))
+            {
+                var text = element.TryGetProperty("text", out var textElement)
+                    ? ExtractStringFromElement(textElement)
+                    : string.Empty;
+                return new CopilotStreamDelta(string.Empty, text);
+            }
+
+            if (element.TryGetProperty("thinking", out var directThinking))
+                return new CopilotStreamDelta(ExtractStringFromElement(directThinking), string.Empty);
+
+            if (element.TryGetProperty("text", out var directText))
+                return new CopilotStreamDelta(string.Empty, ExtractStringFromElement(directText));
+
+            if (element.TryGetProperty("output_text", out var outputText))
+                return new CopilotStreamDelta(string.Empty, ExtractStringFromElement(outputText));
+
+            return CopilotStreamDelta.Empty;
+        }
+
+        private static string ExtractStringFromElement(JsonElement element)
         {
             if (element.ValueKind == JsonValueKind.String)
                 return element.GetString() ?? string.Empty;
 
             if (element.ValueKind == JsonValueKind.Object)
             {
+                if (element.TryGetProperty("reasoning_content", out var reasoningContent))
+                    return ExtractStringFromElement(reasoningContent);
+
+                if (element.TryGetProperty("thinking", out var thinking))
+                    return ExtractStringFromElement(thinking);
+
                 if (element.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
                     return text.GetString() ?? string.Empty;
 
                 if (element.TryGetProperty("content", out var content))
-                    return ExtractTextFromElement(content);
+                    return ExtractStringFromElement(content);
             }
 
             if (element.ValueKind != JsonValueKind.Array)
@@ -310,10 +433,12 @@ namespace ColorVision
                 if (item.ValueKind != JsonValueKind.Object)
                     continue;
 
-                if (item.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
+                if (item.TryGetProperty("thinking", out var thinking))
+                    builder.Append(ExtractStringFromElement(thinking));
+                else if (item.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
                     builder.Append(text.GetString());
                 else if (item.TryGetProperty("content", out var nestedContent))
-                    builder.Append(ExtractTextFromElement(nestedContent));
+                    builder.Append(ExtractStringFromElement(nestedContent));
             }
 
             return builder.ToString();

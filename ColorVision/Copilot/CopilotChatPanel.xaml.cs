@@ -1,12 +1,16 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision
+namespace ColorVision.Copilot
 {
     public partial class CopilotChatPanel : UserControl
     {
+        private CopilotChatViewModel? _attachedViewModel;
+        private INotifyCollectionChanged? _attachedMessages;
+
         public CopilotChatPanel()
         {
             InitializeComponent();
@@ -31,11 +35,9 @@ namespace ColorVision
             if (viewModel == null)
                 return;
 
-            viewModel.Messages.CollectionChanged += Messages_CollectionChanged;
-            foreach (var message in viewModel.Messages)
-            {
-                message.PropertyChanged += Message_PropertyChanged;
-            }
+            _attachedViewModel = viewModel;
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            ResetMessageSubscriptions(viewModel.Messages);
         }
 
         private void DetachViewModel(CopilotChatViewModel? viewModel)
@@ -43,10 +45,46 @@ namespace ColorVision
             if (viewModel == null)
                 return;
 
-            viewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
-            foreach (var message in viewModel.Messages)
+            viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            _attachedViewModel = null;
+            ResetMessageSubscriptions(null);
+        }
+
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_attachedViewModel == null)
+                return;
+
+            if (e.PropertyName == nameof(CopilotChatViewModel.Messages))
             {
-                message.PropertyChanged -= Message_PropertyChanged;
+                ResetMessageSubscriptions(_attachedViewModel.Messages);
+                ScrollToBottom();
+            }
+        }
+
+        private void ResetMessageSubscriptions(INotifyCollectionChanged? messages)
+        {
+            if (_attachedMessages != null)
+                _attachedMessages.CollectionChanged -= Messages_CollectionChanged;
+
+            if (_attachedViewModel != null)
+            {
+                foreach (var message in _attachedViewModel.Messages)
+                {
+                    message.PropertyChanged -= Message_PropertyChanged;
+                }
+            }
+
+            _attachedMessages = messages;
+            if (_attachedMessages != null)
+                _attachedMessages.CollectionChanged += Messages_CollectionChanged;
+
+            if (_attachedViewModel == null)
+                return;
+
+            foreach (var message in _attachedViewModel.Messages)
+            {
+                message.PropertyChanged += Message_PropertyChanged;
             }
         }
 
@@ -75,8 +113,12 @@ namespace ColorVision
 
         private void Message_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(CopilotChatMessage.Content))
+            if (e.PropertyName == nameof(CopilotChatMessage.Content)
+                || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent)
+                || e.PropertyName == nameof(CopilotChatMessage.IsReasoningExpanded))
+            {
                 ScrollToBottom();
+            }
         }
 
         private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -92,7 +134,7 @@ namespace ColorVision
 
         private void ScrollToBottom()
         {
-            Dispatcher.BeginInvoke(() => MessagesScrollViewer.ScrollToEnd());
+            Dispatcher.BeginInvoke(() => MessagesScrollViewer.ScrollToEnd(), System.Windows.Threading.DispatcherPriority.Background);
         }
     }
 }
