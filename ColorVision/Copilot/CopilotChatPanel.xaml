@@ -6,14 +6,27 @@
              xmlns:local="clr-namespace:ColorVision.Copilot"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance Type=local:CopilotChatViewModel}">
+             d:DataContext="{d:DesignInstance Type=local:CopilotChatViewModel}" d:Height="500" d:Width="600">
     <UserControl.Resources>
+        <Style x:Key="AssistantPlainTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="TextTrimming" Value="None" />
+            <Setter Property="Opacity" Value="0.94" />
+        </Style>
+        <Style x:Key="ComposerComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
     </UserControl.Resources>
 
-    <Grid Background="{DynamicResource GlobalBackground}">
+    <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="248" />
+            <ColumnDefinition Width="148" />
         </Grid.ColumnDefinitions>
 
         <Grid Grid.Column="0">
@@ -55,7 +68,11 @@
 
                                     <StackPanel x:Name="AssistantPanel" Visibility="Collapsed">
                                         <DockPanel Margin="0,0,0,6">
-                                            <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="AI" />
+                                            <TextBlock MaxWidth="320"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Text="{Binding Header}"
+                                                       TextTrimming="CharacterEllipsis" />
                                             <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.48" Text="{Binding TimeLabel}" />
                                         </DockPanel>
 
@@ -69,7 +86,8 @@
                                             </Border>
                                         </Expander>
 
-                                        <local:CopilotMarkdownView Markdown="{Binding Content}" />
+                                        <TextBlock Style="{StaticResource AssistantPlainTextStyle}"
+                                                   Text="{Binding Content}" />
                                     </StackPanel>
                                 </Grid>
 
@@ -98,16 +116,11 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                        <StackPanel DockPanel.Dock="Left" Margin="0,0,12,0" Orientation="Horizontal">
-                            <Button Padding="8,2" Command="{Binding AddFileAttachmentCommand}" Content="+ 文件" />
-                            <Button Margin="6,0,0,0" Padding="8,2" Command="{Binding AddContextAttachmentCommand}" Content="+ 上下文" />
-                        </StackPanel>
-
-                        <TextBlock VerticalAlignment="Center"
-                                   Foreground="{DynamicResource GlobalTextBrush}"
+                    <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                        <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
                                    Opacity="0.48"
                                    Text="未挂载文件或上下文"
                                    TextTrimming="CharacterEllipsis">
@@ -158,66 +171,98 @@
                                                            Text="{Binding DisplayLabel}"
                                                            TextTrimming="CharacterEllipsis" />
                                                 <Button Margin="8,0,0,0"
+                                                        Width="16"
+                                                        Height="16"
                                                         Padding="0"
+                                                        Background="Transparent"
+                                                        BorderBrush="Transparent"
+                                                        BorderThickness="0"
                                                         Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="x"
-                                                        Width="16"
-                                                        Height="16" />
+                                                        Content="x" />
                                             </DockPanel>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                    </DockPanel>
+                    </StackPanel>
 
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="170" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="40" />
-                        </Grid.ColumnDefinitions>
+                    <TextBox x:Name="PromptTextBox"
+                             Grid.Row="1"
+                             MinHeight="20"
+                             MaxHeight="68"
+                             Padding="0,4,0,4"
+                             AcceptsReturn="True"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Foreground="{DynamicResource GlobalTextBrush}"
+                             PreviewKeyDown="PromptTextBox_PreviewKeyDown"
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                             TextWrapping="Wrap"
+                             VerticalContentAlignment="Top"
+                             VerticalScrollBarVisibility="Auto" />
 
-                        <ComboBox Grid.Column="0" Background="Transparent" BorderThickness="0"
-                                  VerticalAlignment="Bottom"
+                    <DockPanel Grid.Row="2" Margin="0,0,0,0">
+                        <Button DockPanel.Dock="Right" Grid.Column="6"
+                                Width="40"
+                                Padding="0"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0"
+                                Command="{Binding PrimaryActionCommand}"
+                                Content="{Binding PrimaryActionGlyph}"
+                                FontSize="16"
+                                Foreground="{DynamicResource GlobalTextBrush}"
+                                ToolTip="{Binding PrimaryActionToolTip}" />
+                        <Button x:Name="AttachMenuButton"
+                                Grid.Column="0"  Width="36"
+                                Padding="0"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0"
+                                Click="AttachMenuButton_Click"
+                                ToolTip="挂载文件或上下文">
+                            <Button.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="添加文件" Command="{Binding AddFileAttachmentCommand}" />
+                                    <MenuItem Header="添加上下文" Command="{Binding AddContextAttachmentCommand}" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="18"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Text="✚" />
+                        </Button>
+
+                        <ComboBox Grid.Column="2"
+                                  Style="{StaticResource ComposerComboBoxStyle}"
+                                  VerticalAlignment="Center"
                                   ItemsSource="{Binding Profiles}"
                                   DisplayMemberPath="DisplayLabel"
                                   SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
                                   IsEnabled="{Binding CanSelectProfile}" />
 
-                        <TextBox x:Name="PromptTextBox"
-                                 Grid.Column="2"
-                                 MinHeight="40"
-                                 MaxHeight="150"
-                                 Padding="0,7,0,7"
-                                 AcceptsReturn="True"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 Foreground="{DynamicResource GlobalTextBrush}"
-                                 PreviewKeyDown="PromptTextBox_PreviewKeyDown"
-                                 Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
-                                 TextWrapping="Wrap"
-                                 VerticalContentAlignment="Center"
-                                 VerticalScrollBarVisibility="Auto" />
-
                         <Button Grid.Column="4"
-                                Width="40"
-                                Height="40"
-                                Padding="0" Background="Transparent" BorderThickness="0"
-                                  VerticalAlignment="Bottom"
-                                Command="{Binding PrimaryActionCommand}"
-                                Content="{Binding PrimaryActionGlyph}"
-                                FontSize="16"
-                                ToolTip="{Binding PrimaryActionToolTip}" />
-                    </Grid>
+                                Margin="0,0,8,0"
+                                Padding="10,2"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0"
+                                HorizontalAlignment="Left"
+                                Command="{Binding OpenSettingsCommand}"
+                                Content="配置"
+                                Foreground="{DynamicResource GlobalTextBrush}"
+                                IsEnabled="{Binding CanSwitchConversation}" />
+
+
+                    </DockPanel>
                 </Grid>
             </Border>
         </Grid>
 
-        <Border Grid.Column="1" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0">
+        <Border Grid.Column="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -225,8 +270,19 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Margin="8,8,8,6" Orientation="Horizontal">
-                    <Button Width="34" Margin="0,0,6,0" Padding="0" Command="{Binding NewChatCommand}" Content="+" />
-                    <Button Padding="10,4" Command="{Binding OpenSettingsCommand}" Content="配置" IsEnabled="{Binding CanSwitchConversation}" />
+                    <Button Width="34"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            Command="{Binding NewChatCommand}"
+                            ToolTip="新建会话">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="18"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Text="✚" />
+                    </Button>
                 </StackPanel>
 
                 <ListBox Grid.Row="1"

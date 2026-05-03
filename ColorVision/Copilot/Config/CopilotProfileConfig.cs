@@ -1,152 +1,10 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 
 namespace ColorVision.Copilot
 {
-    public class CopilotConfig : ViewModelBase, IConfigSecure
-    {
-        public const string ConfigAESKey = "ColorVision";
-        public const string ConfigAESVector = "CopilotConfig";
-
-        public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
-
-        public ObservableCollection<CopilotProfileConfig> Profiles { get; set; } = new();
-
-        public ObservableCollection<CopilotConversationRecord> Conversations { get; set; } = new();
-
-        public string ActiveProfileId
-        {
-            get => _activeProfileId;
-            set => SetProperty(ref _activeProfileId, NormalizeText(value));
-        }
-        private string _activeProfileId = string.Empty;
-
-        public string ActiveConversationId
-        {
-            get => _activeConversationId;
-            set => SetProperty(ref _activeConversationId, NormalizeText(value));
-        }
-        private string _activeConversationId = string.Empty;
-
-        [JsonIgnore]
-        public bool IsConfigured => Profiles.Any(profile => profile.IsConfigured);
-
-        [Browsable(false)]
-        public bool AutoShowPanelOnFirstLaunch
-        {
-            get => _autoShowPanelOnFirstLaunch;
-            set
-            {
-                _autoShowPanelOnFirstLaunch = value;
-                OnPropertyChanged();
-            }
-        }
-        private bool _autoShowPanelOnFirstLaunch = true;
-
-        public bool EnsureInitialized()
-        {
-            var changed = false;
-
-            Profiles ??= new ObservableCollection<CopilotProfileConfig>();
-            Conversations ??= new ObservableCollection<CopilotConversationRecord>();
-
-            if (Profiles.Count == 0)
-            {
-                Profiles.Add(CopilotProfileConfig.CreateDefault());
-                changed = true;
-            }
-
-            foreach (var profile in Profiles)
-            {
-                changed |= profile.EnsureValid();
-            }
-
-            if (Profiles.Count > 0 && (string.IsNullOrWhiteSpace(ActiveProfileId) || Profiles.All(profile => profile.Id != ActiveProfileId)))
-            {
-                ActiveProfileId = Profiles[0].Id;
-                changed = true;
-            }
-
-            foreach (var conversation in Conversations)
-            {
-                changed |= conversation.EnsureValid();
-
-                if (string.IsNullOrWhiteSpace(conversation.ProfileId) || Profiles.All(profile => profile.Id != conversation.ProfileId))
-                {
-                    conversation.ProfileId = ActiveProfileId;
-                    changed = true;
-                }
-
-                var profile = FindProfile(conversation.ProfileId);
-                var profileName = profile?.DisplayLabel ?? string.Empty;
-                if (!string.Equals(conversation.ProfileDisplayName, profileName, StringComparison.Ordinal))
-                {
-                    conversation.ProfileDisplayName = profileName;
-                    changed = true;
-                }
-
-                var previousTitle = conversation.Title;
-                var previousPreview = conversation.PreviewText;
-                conversation.RefreshSummary();
-                if (!string.Equals(previousTitle, conversation.Title, StringComparison.Ordinal)
-                    || !string.Equals(previousPreview, conversation.PreviewText, StringComparison.Ordinal))
-                {
-                    changed = true;
-                }
-            }
-
-            if (Conversations.Count == 0)
-            {
-                var conversation = CopilotConversationRecord.CreateEmpty(ActiveProfileId, FindProfile(ActiveProfileId)?.DisplayLabel ?? string.Empty);
-                Conversations.Add(conversation);
-                ActiveConversationId = conversation.Id;
-                changed = true;
-            }
-            else if (string.IsNullOrWhiteSpace(ActiveConversationId) || Conversations.All(conversation => conversation.Id != ActiveConversationId))
-            {
-                ActiveConversationId = Conversations[0].Id;
-                changed = true;
-            }
-
-            OnPropertyChanged(nameof(IsConfigured));
-            return changed;
-        }
-
-        public CopilotProfileConfig? FindProfile(string? profileId)
-        {
-            if (string.IsNullOrWhiteSpace(profileId))
-                return null;
-
-            return Profiles.FirstOrDefault(profile => string.Equals(profile.Id, profileId, StringComparison.Ordinal));
-        }
-
-        public void Encryption()
-        {
-            foreach (var profile in Profiles)
-            {
-                if (!string.IsNullOrWhiteSpace(profile.ApiKey))
-                    profile.ApiKey = Cryptography.AESEncrypt(profile.ApiKey, ConfigAESKey, ConfigAESVector);
-            }
-        }
-
-        public void Decrypt()
-        {
-            foreach (var profile in Profiles)
-            {
-                if (!string.IsNullOrWhiteSpace(profile.ApiKey))
-                    profile.ApiKey = Cryptography.AESDecrypt(profile.ApiKey, ConfigAESKey, ConfigAESVector);
-            }
-        }
-
-        private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
-    }
-
     public sealed class CopilotProfileConfig : ViewModelBase
     {
         public const int DefaultMaxTokens = 2048;
@@ -350,13 +208,5 @@ namespace ColorVision.Copilot
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
-    }
-
-    public enum CopilotProviderType
-    {
-        [Description("OpenAI Compatible")]
-        OpenAICompatible,
-        [Description("Anthropic Compatible")]
-        AnthropicCompatible,
     }
 }

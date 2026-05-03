@@ -21,9 +21,11 @@ namespace ColorVision.Copilot
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotConfig _config;
+        private readonly CopilotChatStateStore _stateStore;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private CancellationTokenSource? _currentRequestCts;
+        private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
 
@@ -36,18 +38,23 @@ namespace ColorVision.Copilot
         {
             _chatService = chatService;
             _config = CopilotConfig.Instance;
+            _stateStore = CopilotChatStateStore.Instance;
 
             if (_config.EnsureInitialized())
+                PersistConfig();
+
+            _state = _stateStore.Load();
+            if (_state.EnsureInitialized(_config))
                 PersistState();
 
             var initialConversation = Conversations.Count > 0
                 ? Conversations[0]
-                : CopilotConversationRecord.CreateEmpty(_config.ActiveProfileId, string.Empty);
+                : CopilotConversationRecord.CreateEmpty(_state.ActiveProfileId, string.Empty);
 
             if (Conversations.Count == 0)
                 Conversations.Add(initialConversation);
 
-            SelectConversation(Conversations.FirstOrDefault(conversation => conversation.Id == _config.ActiveConversationId) ?? initialConversation, persist: false);
+            SelectConversation(Conversations.FirstOrDefault(conversation => conversation.Id == _state.ActiveConversationId) ?? initialConversation, persist: false);
 
             SendCommand = new RelayCommand(_ => _ = SendAsync());
             NewChatCommand = new RelayCommand(_ => StartNewChat());
@@ -62,7 +69,7 @@ namespace ColorVision.Copilot
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
         }
 
-        public ObservableCollection<CopilotConversationRecord> Conversations => _config.Conversations;
+        public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
 
         public ObservableCollection<CopilotProfileConfig> Profiles => _config.Profiles;
 
@@ -170,7 +177,10 @@ namespace ColorVision.Copilot
 
             var history = BuildConversationHistory();
 
-            var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+            var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+            {
+                AssistantName = ResolveAssistantHeader(requestProfile),
+            };
             Messages.Add(assistantMessage);
             InputText = string.Empty;
 
@@ -199,6 +209,7 @@ namespace ColorVision.Copilot
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
+                QueueConversationTitleGeneration(conversation, requestProfile);
             }
             catch (OperationCanceledException)
             {
@@ -290,10 +301,14 @@ namespace ColorVision.Copilot
 
         private void ReloadStateFromConfig()
         {
-            var preferredConversationId = SelectedConversation?.Id ?? _config.ActiveConversationId;
-            var preferredProfileId = SelectedProfile?.Id ?? _config.ActiveProfileId;
+            var preferredConversationId = SelectedConversation?.Id ?? _state.ActiveConversationId;
+            var preferredProfileId = SelectedProfile?.Id ?? _state.ActiveProfileId;
 
             if (_config.EnsureInitialized())
+                PersistConfig();
+
+            _state = _stateStore.Load();
+            if (_state.EnsureInitialized(_config))
                 PersistState();
 
             OnPropertyChanged(nameof(Profiles));
@@ -356,14 +371,16 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
 
-            _config.ActiveConversationId = conversation?.Id ?? string.Empty;
+            _state.ActiveConversationId = conversation?.Id ?? string.Empty;
 
             var profile = ResolveProfile(preferredProfileId)
                 ?? ResolveProfile(conversation?.ProfileId)
-                ?? ResolveProfile(_config.ActiveProfileId)
+                ?? ResolveProfile(_state.ActiveProfileId)
                 ?? Profiles.FirstOrDefault();
 
             SelectProfile(profile, syncConversation: false, persist: false);
+
+            var shouldPersist = persist;
 
             if (conversation != null && profile != null)
             {
@@ -372,7 +389,10 @@ namespace ColorVision.Copilot
                 conversation.RefreshSummary();
             }
 
-            if (persist)
+            if (conversation != null && EnsureAssistantHeaders(conversation, profile))
+                shouldPersist = true;
+
+            if (shouldPersist)
                 PersistState();
         }
 
@@ -384,16 +404,21 @@ namespace ColorVision.Copilot
             _selectedProfile = profile;
             OnPropertyChanged(nameof(SelectedProfile));
 
-            _config.ActiveProfileId = profile?.Id ?? string.Empty;
+            _state.ActiveProfileId = profile?.Id ?? string.Empty;
+
+            var shouldPersist = persist;
 
             if (syncConversation && SelectedConversation != null && profile != null)
             {
                 SelectedConversation.ProfileId = profile.Id;
                 SelectedConversation.ProfileDisplayName = profile.DisplayLabel;
                 SelectedConversation.RefreshSummary();
+
+                if (EnsureAssistantHeaders(SelectedConversation, profile))
+                    shouldPersist = true;
             }
 
-            if (persist)
+            if (shouldPersist)
                 PersistState();
         }
 
@@ -409,7 +434,7 @@ namespace ColorVision.Copilot
 
         private CopilotConversationRecord CreateConversation()
         {
-            var profile = SelectedProfile ?? ResolveProfile(_config.ActiveProfileId) ?? Profiles.FirstOrDefault();
+            var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? Profiles.FirstOrDefault();
             var conversation = CopilotConversationRecord.CreateEmpty(profile?.Id ?? string.Empty, profile?.DisplayLabel ?? string.Empty);
             Conversations.Insert(GetUnpinnedInsertIndex(), conversation);
             return conversation;
@@ -430,10 +455,72 @@ namespace ColorVision.Copilot
             BringConversationToFront(conversation);
         }
 
+        private void QueueConversationTitleGeneration(CopilotConversationRecord conversation, CopilotProfileConfig requestProfile)
+        {
+            if (!ShouldGenerateConversationTitle(conversation))
+                return;
+
+            _ = GenerateConversationTitleAsync(conversation, requestProfile.Clone());
+        }
+
+        private static bool ShouldGenerateConversationTitle(CopilotConversationRecord conversation)
+        {
+            if (conversation.HasCustomTitle)
+                return false;
+
+            var userMessageCount = conversation.Messages.Count(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
+            var assistantMessageCount = conversation.Messages.Count(message => message.Role == CopilotChatRole.Assistant && !string.IsNullOrWhiteSpace(message.Content));
+            return userMessageCount == 1 && assistantMessageCount == 1;
+        }
+
+        private async Task GenerateConversationTitleAsync(CopilotConversationRecord conversation, CopilotProfileConfig requestProfile)
+        {
+            var titlePrompt = BuildConversationTitlePrompt(conversation);
+            if (string.IsNullOrWhiteSpace(titlePrompt))
+                return;
+
+            try
+            {
+                requestProfile.SystemPrompt = "你是会话标题生成器。请根据给定对话生成一个简短、自然的中文标题。只返回标题本身，不要解释。";
+                requestProfile.MaxTokens = Math.Min(requestProfile.MaxTokens, 32);
+                requestProfile.Temperature = 0.2;
+
+                var titleBuilder = new StringBuilder();
+                await _chatService.StreamReplyAsync(
+                    requestProfile,
+                    new[]
+                    {
+                        new CopilotRequestMessage("user", titlePrompt),
+                    },
+                    delta =>
+                    {
+                        if (delta.HasContent)
+                            titleBuilder.Append(delta.Content);
+                    },
+                    CancellationToken.None);
+
+                var generatedTitle = NormalizeGeneratedTitle(titleBuilder.ToString());
+                if (string.IsNullOrWhiteSpace(generatedTitle) || Application.Current == null)
+                    return;
+
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    if (!Conversations.Contains(conversation) || conversation.HasCustomTitle)
+                        return;
+
+                    conversation.SetGeneratedTitle(generatedTitle);
+                    PersistState();
+                });
+            }
+            catch
+            {
+            }
+        }
+
         private void BringConversationToFront(CopilotConversationRecord conversation)
         {
             MoveConversationToPreferredIndex(conversation);
-            _config.ActiveConversationId = conversation.Id;
+            _state.ActiveConversationId = conversation.Id;
         }
 
         private void RenameConversation(CopilotConversationRecord? conversation)
@@ -547,6 +634,91 @@ namespace ColorVision.Copilot
             UpdateAttachmentsState(SelectedConversation);
         }
 
+        private static bool EnsureAssistantHeaders(CopilotConversationRecord conversation, CopilotProfileConfig? profile)
+        {
+            var assistantHeader = ResolveAssistantHeader(conversation, profile);
+            var changed = false;
+
+            foreach (var message in conversation.Messages)
+            {
+                if (message.IsUser || !string.IsNullOrWhiteSpace(message.AssistantName))
+                    continue;
+
+                message.AssistantName = assistantHeader;
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private static string ResolveAssistantHeader(CopilotProfileConfig profile)
+        {
+            if (!string.IsNullOrWhiteSpace(profile.Model))
+                return profile.Model;
+
+            if (!string.IsNullOrWhiteSpace(profile.DisplayLabel))
+                return profile.DisplayLabel;
+
+            return "AI";
+        }
+
+        private static string ResolveAssistantHeader(CopilotConversationRecord conversation, CopilotProfileConfig? profile)
+        {
+            if (profile != null)
+                return ResolveAssistantHeader(profile);
+
+            if (!string.IsNullOrWhiteSpace(conversation.ProfileDisplayName))
+                return conversation.ProfileDisplayName;
+
+            if (!string.IsNullOrWhiteSpace(conversation.ProfileId))
+                return conversation.ProfileId;
+
+            return "AI";
+        }
+
+        private static string BuildConversationTitlePrompt(CopilotConversationRecord conversation)
+        {
+            var firstUserMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
+            var firstAssistantMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.Assistant && !string.IsNullOrWhiteSpace(message.Content));
+            if (firstUserMessage == null || firstAssistantMessage == null)
+                return string.Empty;
+
+            return string.Join(Environment.NewLine, new[]
+            {
+                "请为下面这段对话生成一个简短中文会话标题。",
+                "要求：6 到 14 个字，直接返回标题，不要解释，不要引号，不要句号。",
+                $"用户：{TruncateForTitlePrompt(firstUserMessage.Content, 180)}",
+                $"助手：{TruncateForTitlePrompt(firstAssistantMessage.Content, 260)}",
+            });
+        }
+
+        private static string NormalizeGeneratedTitle(string rawTitle)
+        {
+            var title = (rawTitle ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
+            title = title.Trim('"', '\'', '“', '”', '‘', '’', '《', '》', '【', '】', '「', '」');
+
+            if (title.StartsWith("标题", StringComparison.Ordinal))
+            {
+                var separatorIndex = title.IndexOfAny(new[] { ':', '：', '-', ' ' });
+                if (separatorIndex >= 0 && separatorIndex < title.Length - 1)
+                    title = title[(separatorIndex + 1)..].Trim();
+            }
+
+            if (title.Length > 18)
+                title = title[..18].Trim();
+
+            return title;
+        }
+
+        private static string TruncateForTitlePrompt(string content, int maxLength)
+        {
+            var normalized = (content ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
+            if (normalized.Length <= maxLength)
+                return normalized;
+
+            return normalized[..maxLength] + "...";
+        }
+
         private CopilotProfileConfig? ResolveProfile(string? profileId)
         {
             if (string.IsNullOrWhiteSpace(profileId))
@@ -563,9 +735,15 @@ namespace ColorVision.Copilot
 
         private void PersistState()
         {
+            _stateStore.Save(_state);
+            OnPropertyChanged(nameof(HasAttachments));
+        }
+
+        private void PersistConfig()
+        {
             ConfigHandler.GetInstance().Save<CopilotConfig>();
             OnPropertyChanged(nameof(EmptyStateText));
-            OnPropertyChanged(nameof(HasAttachments));
+            OnPropertyChanged(nameof(CanSelectProfile));
         }
 
         private void UpdateAttachmentsState(CopilotConversationRecord conversation)

@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace ColorVision.Copilot
@@ -114,11 +115,20 @@ namespace ColorVision.Copilot
         private void Message_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CopilotChatMessage.Content)
-                || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent)
-                || e.PropertyName == nameof(CopilotChatMessage.IsReasoningExpanded))
+                || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent))
             {
-                ScrollToBottom();
+                ScrollToBottom(forceIfNearBottomOnly: true);
             }
+        }
+
+        private void AttachMenuButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.ContextMenu == null)
+                return;
+
+            element.ContextMenu.PlacementTarget = element;
+            element.ContextMenu.Placement = PlacementMode.Top;
+            element.ContextMenu.IsOpen = true;
         }
 
         private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -132,8 +142,17 @@ namespace ColorVision.Copilot
             e.Handled = true;
         }
 
-        private void ScrollToBottom()
+        private bool IsNearBottom()
         {
+            const double threshold = 36;
+            return MessagesScrollViewer.ScrollableHeight - MessagesScrollViewer.VerticalOffset <= threshold;
+        }
+
+        private void ScrollToBottom(bool forceIfNearBottomOnly = false)
+        {
+            if (forceIfNearBottomOnly && !IsNearBottom())
+                return;
+
             Dispatcher.BeginInvoke(() => MessagesScrollViewer.ScrollToEnd(), System.Windows.Threading.DispatcherPriority.Background);
         }
     }

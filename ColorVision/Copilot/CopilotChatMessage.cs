@@ -61,7 +61,18 @@ namespace ColorVision.Copilot
         public bool IsUser => Role == CopilotChatRole.User;
 
         [JsonIgnore]
-        public string Header => IsUser ? "你" : "AI";
+        public string Header => IsUser ? "你" : string.IsNullOrWhiteSpace(AssistantName) ? "AI" : AssistantName;
+
+        public string AssistantName
+        {
+            get => _assistantName;
+            set
+            {
+                if (SetProperty(ref _assistantName, value ?? string.Empty))
+                    OnPropertyChanged(nameof(Header));
+            }
+        }
+        private string _assistantName = string.Empty;
 
         public DateTime CreatedAt
         {
@@ -138,6 +149,12 @@ namespace ColorVision.Copilot
             if (_reasoningContent == null)
             {
                 ReasoningContent = string.Empty;
+                changed = true;
+            }
+
+            if (_assistantName == null)
+            {
+                AssistantName = string.Empty;
                 changed = true;
             }
 
@@ -297,6 +314,12 @@ namespace ColorVision.Copilot
         }
 
         public void SetCustomTitle(string title)
+        {
+            Title = title;
+            HasCustomTitle = true;
+        }
+
+        public void SetGeneratedTitle(string title)
         {
             Title = title;
             HasCustomTitle = true;

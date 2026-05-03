@@ -25,7 +25,8 @@ namespace ColorVision.Copilot
             if (Profiles.Count == 0)
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
 
-            SelectedProfile = Profiles.FirstOrDefault(profile => profile.Id == CopilotConfig.Instance.ActiveProfileId) ?? Profiles.FirstOrDefault();
+            var state = CopilotChatStateStore.Instance.Load();
+            SelectedProfile = Profiles.FirstOrDefault(profile => profile.Id == state.ActiveProfileId) ?? Profiles.FirstOrDefault();
 
             AddProfileCommand = new RelayCommand(_ => AddProfile());
             DuplicateProfileCommand = new RelayCommand(_ => DuplicateSelectedProfile());
@@ -65,9 +66,14 @@ namespace ColorVision.Copilot
                 config.Profiles.Add(profile);
             }
 
-            config.ActiveProfileId = SelectedProfile?.Id ?? config.ActiveProfileId;
             config.EnsureInitialized();
             ConfigHandler.GetInstance().Save<CopilotConfig>();
+
+            var stateStore = CopilotChatStateStore.Instance;
+            var state = stateStore.Load();
+            state.ActiveProfileId = SelectedProfile?.Id ?? state.ActiveProfileId;
+            state.EnsureInitialized(config);
+            stateStore.Save(state);
             return true;
         }
 
