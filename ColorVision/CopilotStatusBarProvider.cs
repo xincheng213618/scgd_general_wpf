@@ -1,3 +1,5 @@
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
@@ -14,11 +16,13 @@ namespace ColorVision.UI
                 {
                     Id = "CopilotAgent",
                     Name = "GitHub Copilot",
-                    Description = "GitHub Copilot Agent",
+                    Description = "打开 AI 对话面板",
                     Type = StatusBarType.Icon,
                     Alignment = StatusBarAlignment.Right,
                     Order = 9999, // 最右侧
                     ActionType = StatusBarActionType.Command,
+                    TargetName = MenuItemConstants.MainWindowTarget,
+                    Command = new RelayCommand(_ => CopilotPanelService.GetInstance().ShowPanel()),
                     IconContent = CreateCopilotIcon(),
                 }
             };
