@@ -55,6 +55,24 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
             <Setter Property="Padding" Value="0" />
         </Style>
+        <Style x:Key="UserMessageTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ReadOnlyMessageTextBoxStyle}">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style x:Key="UserMessageMetaTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Opacity" Value="0.72" />
+        </Style>
+        <Style x:Key="UserMessageActionButtonStyle" TargetType="Button" BasedOn="{StaticResource MessageActionButtonStyle}">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Opacity" Value="0.72" />
+        </Style>
+        <Style x:Key="CopilotSurfaceBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        </Style>
+        <Style x:Key="CopilotInsetBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotSurfaceBorderStyle}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -150,19 +168,23 @@
                                             MaxWidth="560"
                                             Padding="14,12"
                                             HorizontalAlignment="Right"
-                                            Background="#153B66"
-                                            BorderBrush="#316BA8"
+                                            Background="{DynamicResource PrimaryBrush}"
+                                            BorderBrush="{DynamicResource PrimaryBrush}"
                                             BorderThickness="1"
                                             CornerRadius="12"
                                             Visibility="Collapsed">
                                         <StackPanel>
-                                            <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                            <TextBox Style="{StaticResource UserMessageTextBoxStyle}"
                                                      Text="{Binding Content, Mode=OneWay}" />
-                                            <TextBlock Margin="0,8,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.48" Text="{Binding TimeLabel}" />
+                                            <TextBlock Margin="0,8,0,0"
+                                                       HorizontalAlignment="Right"
+                                                       FontSize="11"
+                                                       Style="{StaticResource UserMessageMetaTextStyle}"
+                                                       Text="{Binding TimeLabel}" />
                                             <StackPanel Margin="0,8,0,0"
                                                         Orientation="Horizontal"
                                                         HorizontalAlignment="Right">
-                                                <Button Style="{StaticResource MessageActionButtonStyle}"
+                                                <Button Style="{StaticResource UserMessageActionButtonStyle}"
                                                         Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
                                                         CommandParameter="{Binding}"
                                                         Content="复制"
@@ -186,7 +208,11 @@
                                                   Header="{Binding ExecutionHeader}"
                                                   IsExpanded="{Binding IsExecutionExpanded, Mode=TwoWay}"
                                                   Visibility="{Binding HasExecutionTrace, Converter={StaticResource bool2VisibilityConverter}}">
-                                            <Border Margin="0,6,0,0" Padding="10,8" Background="#101820" BorderBrush="#30404F" BorderThickness="1" CornerRadius="8">
+                                            <Border Margin="0,6,0,0"
+                                                    Padding="10,8"
+                                                    Style="{StaticResource CopilotSurfaceBorderStyle}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8">
                                                 <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
                                                          Opacity="0.9"
                                                          Text="{Binding ExecutionContent, Mode=OneWay}" />
@@ -198,7 +224,11 @@
                                                   Header="{Binding ReasoningHeader}"
                                                   IsExpanded="{Binding IsReasoningExpanded, Mode=TwoWay}"
                                                   Visibility="{Binding HasReasoning, Converter={StaticResource bool2VisibilityConverter}}">
-                                            <Border Margin="0,6,0,0" Padding="10,8" Background="#11161D" BorderBrush="#273141" BorderThickness="1" CornerRadius="8">
+                                            <Border Margin="0,6,0,0"
+                                                    Padding="10,8"
+                                                    Style="{StaticResource CopilotSurfaceBorderStyle}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8">
                                                 <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
                                                          Opacity="0.88"
                                                          Text="{Binding ReasoningContent, Mode=OneWay}" />
@@ -248,8 +278,7 @@
                 <Border Grid.Row="2"
                     Margin="5,0,5,5"
                     Padding="5,5"
-                    Background="#10151B"
-                    BorderBrush="{DynamicResource BorderBrush}"
+                    Style="{StaticResource CopilotSurfaceBorderStyle}"
                     BorderThickness="1"
                     CornerRadius="6">
                 <Grid>
@@ -303,8 +332,7 @@
                                         <Grid Margin="0,0,8,0">
                                             <Border x:Name="AttachmentChip"
                                                     Padding="8,4"
-                                                    Background="#171B22"
-                                                    BorderBrush="#273141"
+                                                    Style="{StaticResource CopilotSurfaceBorderStyle}"
                                                     BorderThickness="1"
                                                     CornerRadius="999"
                                                     ToolTip="{Binding TooltipText}"
@@ -325,14 +353,14 @@
                                                             BorderThickness="0"
                                                             Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
                                                             CommandParameter="{Binding}"
+                                                            Foreground="{DynamicResource GlobalTextBrush}"
                                                             Content="×" />
                                                 </DockPanel>
                                             </Border>
 
                                             <Border x:Name="ImageAttachmentCard"
                                                     Padding="6"
-                                                    Background="#161C24"
-                                                    BorderBrush="#334154"
+                                                        Style="{StaticResource CopilotSurfaceBorderStyle}"
                                                     BorderThickness="1"
                                                     CornerRadius="14"
                                                     ToolTip="{Binding TooltipText}"
@@ -346,7 +374,7 @@
 
                                                     <Border Width="36"
                                                             Height="36"
-                                                            Background="#0E1319"
+                                                            Style="{StaticResource CopilotInsetBorderStyle}"
                                                             CornerRadius="10"
                                                             ClipToBounds="True">
                                                         <Grid>

@@ -57,6 +57,12 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
+        public string SelectedLocalFilePath { get; init; } = string.Empty;
+
+        public int? SelectedLocalFileStartLine { get; init; }
+
+        public int? SelectedLocalFileEndLine { get; init; }
+
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
     }
 
@@ -71,6 +77,8 @@ namespace ColorVision.Copilot
         public string Content { get; init; } = string.Empty;
 
         public string ErrorMessage { get; init; } = string.Empty;
+
+        public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
     }
 
     public enum CopilotAgentEventType

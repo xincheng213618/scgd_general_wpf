@@ -18,6 +18,30 @@ namespace ColorVision.Copilot
             Timeout = TimeSpan.FromMinutes(5),
         };
 
+        public async Task<CopilotStreamDelta> CompleteReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            CancellationToken cancellationToken)
+        {
+            var reasoningBuilder = new StringBuilder();
+            var contentBuilder = new StringBuilder();
+
+            await StreamReplyAsync(
+                config,
+                messages,
+                delta =>
+                {
+                    if (delta.HasReasoning)
+                        reasoningBuilder.Append(delta.ReasoningContent);
+
+                    if (delta.HasContent)
+                        contentBuilder.Append(delta.Content);
+                },
+                cancellationToken);
+
+            return new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString());
+        }
+
         public async Task StreamReplyAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,

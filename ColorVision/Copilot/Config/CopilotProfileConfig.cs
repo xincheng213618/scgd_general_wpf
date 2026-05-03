@@ -19,6 +19,21 @@ namespace ColorVision.Copilot
         }
         private string _id = Guid.NewGuid().ToString("N");
 
+        [DisplayName("厂商")]
+        public CopilotVendorType VendorType
+        {
+            get => _vendorType;
+            set
+            {
+                if (SetProperty(ref _vendorType, value))
+                {
+                    OnPropertyChanged(nameof(VendorLabel));
+                    OnPropertyChanged(nameof(SecondaryLabel));
+                }
+            }
+        }
+        private CopilotVendorType _vendorType = CopilotVendorType.Custom;
+
         [DisplayName("名称")]
         public string Name
         {
@@ -127,6 +142,9 @@ namespace ColorVision.Copilot
             !string.IsNullOrWhiteSpace(Model);
 
         [JsonIgnore]
+        public string VendorLabel => CopilotVendorCatalog.GetLabel(VendorType);
+
+        [JsonIgnore]
         public string ProviderLabel => ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
 
         [JsonIgnore]
@@ -145,7 +163,7 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string SecondaryLabel => $"{ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? "未设置模型" : Model)}";
+        public string SecondaryLabel => $"{VendorLabel} · {ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? "未设置模型" : Model)}";
 
         public bool EnsureValid()
         {
@@ -175,6 +193,22 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (!Enum.IsDefined(VendorType))
+            {
+                VendorType = CopilotVendorType.Custom;
+                changed = true;
+            }
+
+            if (VendorType == CopilotVendorType.Custom)
+            {
+                var inferredVendor = CopilotVendorCatalog.InferVendorType(BaseUrl, Model);
+                if (inferredVendor != CopilotVendorType.Custom)
+                {
+                    VendorType = inferredVendor;
+                    changed = true;
+                }
+            }
+
             return changed;
         }
 
@@ -183,6 +217,7 @@ namespace ColorVision.Copilot
             return new CopilotProfileConfig
             {
                 Id = Id,
+                VendorType = VendorType,
                 Name = Name,
                 ProviderType = ProviderType,
                 ApiKey = ApiKey,
@@ -198,6 +233,7 @@ namespace ColorVision.Copilot
         {
             return new CopilotProfileConfig
             {
+                VendorType = CopilotVendorType.DeepSeek,
                 Name = "DeepSeek 默认",
                 ProviderType = CopilotProviderType.AnthropicCompatible,
                 BaseUrl = "https://api.deepseek.com/anthropic",

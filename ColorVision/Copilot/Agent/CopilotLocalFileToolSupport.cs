@@ -13,7 +13,9 @@ namespace ColorVision.Copilot
         bool Success,
         bool WasTruncated,
         string Content,
-        string ErrorMessage);
+        string ErrorMessage,
+        int StartLine,
+        int EndLine);
 
     public static class CopilotLocalFileToolSupport
     {
@@ -35,7 +37,16 @@ namespace ColorVision.Copilot
             return results;
         }
 
-        public static async Task<CopilotLocalFileReadResult> ReadTextFileAsync(string path, CancellationToken cancellationToken)
+        public static Task<CopilotLocalFileReadResult> ReadTextFileAsync(string path, CancellationToken cancellationToken)
+        {
+            return ReadTextFileAsync(path, null, null, cancellationToken);
+        }
+
+        public static async Task<CopilotLocalFileReadResult> ReadTextFileAsync(
+            string path,
+            int? startLine,
+            int? endLine,
+            CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -44,7 +55,9 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    "文件路径为空。");
+                    "文件路径为空。",
+                    0,
+                    0);
             }
 
             string fullPath;
@@ -59,7 +72,9 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    $"路径格式无效：{ex.Message}");
+                    $"路径格式无效：{ex.Message}",
+                    0,
+                    0);
             }
 
             if (Directory.Exists(fullPath))
@@ -69,7 +84,9 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    "目标路径是文件夹，不是文件。");
+                    "目标路径是文件夹，不是文件。",
+                    0,
+                    0);
             }
 
             if (!File.Exists(fullPath))
@@ -79,7 +96,9 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    "文件不存在。");
+                    "文件不存在。",
+                    0,
+                    0);
             }
 
             try
@@ -96,18 +115,69 @@ namespace ColorVision.Copilot
                         false,
                         false,
                         string.Empty,
-                        "目标文件看起来不是可直接读取的文本文件。");
+                        "目标文件看起来不是可直接读取的文本文件。",
+                        0,
+                        0);
                 }
 
                 stream.Position = 0;
                 using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
-                var content = await reader.ReadToEndAsync();
+                var normalizedStartLine = Math.Max(1, startLine ?? 1);
+                var normalizedEndLine = endLine.HasValue
+                    ? Math.Max(normalizedStartLine, endLine.Value)
+                    : int.MaxValue;
                 var wasTruncated = false;
+                var builder = new System.Text.StringBuilder();
+                var currentLine = 0;
+                var actualStartLine = 0;
+                var actualEndLine = 0;
 
-                if (content.Length > MaxReadCharacters)
+                while (!reader.EndOfStream)
                 {
-                    content = content[..MaxReadCharacters] + Environment.NewLine + $"...<内容已截断，仅保留前 {MaxReadCharacters} 字符。>";
-                    wasTruncated = true;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var line = await reader.ReadLineAsync() ?? string.Empty;
+                    currentLine++;
+
+                    if (currentLine < normalizedStartLine)
+                        continue;
+
+                    if (currentLine > normalizedEndLine)
+                        break;
+
+                    actualStartLine = actualStartLine == 0 ? currentLine : actualStartLine;
+                    actualEndLine = currentLine;
+
+                    var lineWithBreak = line + Environment.NewLine;
+                    if (builder.Length + lineWithBreak.Length > MaxReadCharacters)
+                    {
+                        var remaining = Math.Max(0, MaxReadCharacters - builder.Length);
+                        if (remaining > 0)
+                            builder.Append(lineWithBreak[..Math.Min(remaining, lineWithBreak.Length)]);
+
+                        wasTruncated = true;
+                        break;
+                    }
+
+                    builder.Append(lineWithBreak);
+                }
+
+                if (actualStartLine == 0 && currentLine < normalizedStartLine)
+                {
+                    return new CopilotLocalFileReadResult(
+                        fullPath,
+                        false,
+                        false,
+                        string.Empty,
+                        $"请求的起始行 {normalizedStartLine} 超出了文件总行数。",
+                        0,
+                        0);
+                }
+
+                var content = builder.ToString().TrimEnd();
+
+                if (wasTruncated)
+                {
+                    content += Environment.NewLine + $"...<内容已截断，仅保留前 {MaxReadCharacters} 字符。>";
                 }
 
                 return new CopilotLocalFileReadResult(
@@ -115,7 +185,9 @@ namespace ColorVision.Copilot
                     true,
                     wasTruncated,
                     content.TrimEnd(),
-                    string.Empty);
+                    string.Empty,
+                    actualStartLine,
+                    actualEndLine);
             }
             catch (OperationCanceledException)
             {
@@ -128,7 +200,9 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    $"读取失败：{ex.Message}");
+                    $"读取失败：{ex.Message}",
+                    0,
+                    0);
             }
         }
 

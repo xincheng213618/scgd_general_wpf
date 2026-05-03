@@ -71,6 +71,7 @@ namespace ColorVision.Copilot
 
             var scannedFiles = 0;
             var matches = new List<string>();
+            var matchedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var entry in CopilotWorkspaceSearchSupport.EnumerateFiles(searchRoots, textFilesOnly: true, cancellationToken))
             {
@@ -90,6 +91,7 @@ namespace ColorVision.Copilot
                             continue;
 
                         matches.Add($"[命中] {CopilotWorkspaceSearchSupport.GetDisplayPath(entry.RootPath, entry.FullPath)}:{lineNumber} {CopilotWorkspaceSearchSupport.TruncateLine(line, 220)}");
+                        matchedFilePaths.Add(entry.FullPath);
                         if (matches.Count >= MaxMatches)
                             break;
                     }
@@ -127,6 +129,9 @@ namespace ColorVision.Copilot
                 Success = true,
                 Summary = $"扫描 {scannedFiles} 个文本文件，找到 {matches.Count} 条命中。",
                 Content = builder.ToString().TrimEnd(),
+                SuggestedReadableLocalFilePaths = matchedFilePaths
+                    .Take(3)
+                    .ToArray(),
             });
         }
 

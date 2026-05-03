@@ -4,14 +4,13 @@
 
 ## 一句话结论
 
-当前实现不是标准的 ReAct Agent，而是“规则挑工具 + 一次性执行 + 一次性压缩上下文 + 一次性调用大模型”的单轮只读 Agent。
+当前实现不是标准的 ReAct Agent，而是“静态候选筛选 + 最小模型 planner + 最多几轮工具执行 + 局部结构化文件读取参数 + 一次性压缩上下文 + 一次性调用大模型”的只读 Agent。
 
-它已经具备最小工具层，但还没有以下能力：
+它已经具备最小工具层和最小 planner-executor 雏形，但还没有以下能力：
 
-- 让模型先规划下一步动作，再逐步调用工具
-- 在工具观察结果出来后继续决定下一步
-- 根据模型规划主动选择本地文件，并按路径/行号精确读取
 - 像代码代理那样继续做检索、修改、构建、看错误、再迭代
+- 让模型对 SearchFiles、GrepText、GetRecentLog 等工具也输出真正结构化的参数，而不只是给 ReadLocalFile 指定 path/startLine/endLine
+- 支持更强的多工具连续规划，而不是当前这种每轮偏单步的最小 planner
 
 ## 当前实际执行链路
 
@@ -152,11 +151,11 @@ CopilotAgentService.RunAsync 的模式是：
 
 当前版本已经能处理“请读取 C:\\Users\\...\\remote_control.py”这类明确路径输入，但仍然有明显边界：
 
-1. 当前只能读取“用户当前消息里明确出现的路径”，不能让模型自己扩展出新路径
-2. request 里还没有 workspace root、允许目录、按行读取范围、单次工具步数等运行时上下文
-3. 工具接口仍然是请求级触发，不是结构化的 read_file(path, startLine, endLine)
-4. 服务层仍然没有 planner-executor 循环，无法读完一个文件后继续自主决定下一步
-5. 当前读取仍偏向整文件文本截断，不支持更精细的候选检索和片段定位
+1. 当前仍然不能让模型跳出允许列表，去读取任意新路径
+2. request 里还没有通用的工具参数对象和更明确的权限策略对象
+3. 结构化参数目前只覆盖 ReadLocalFile，SearchFiles、GrepText、GetRecentLog 仍主要依赖请求级触发
+4. 服务层虽然已经能做最小 planner-executor 循环，但还不是更强的多工具规划闭环
+5. 当前文件读取虽然支持按行范围精读，但还没有更细的片段定位、symbol 级读取和 AST 级上下文
 
 所以它已经迈出了第一步，但还不是一个真正的代码检索 Agent。
 
@@ -168,9 +167,9 @@ CopilotAgentService.RunAsync 的模式是：
 
 目标：当用户明确给出一个路径时，Agent 能安全地读取该文件。
 
-这一步不要求完整 ReAct，只需要把当前单轮 Agent 扩一下即可。
+这一步不要求完整 ReAct，只需要把当前最小多轮 Agent 扩一下即可。
 
-当前状态：已实现最小版本，能够从当前用户消息里提取显式本地路径，并读取最多 3 个文本文件后再交给模型回答；也已经补上基于解决方案搜索根的 SearchFiles 和 GrepText，用于先收集候选上下文。
+当前状态：已实现最小版本，能够从当前用户消息里提取显式本地路径，并读取最多 3 个文本文件后再交给模型回答；也已经补上基于解决方案搜索根的 SearchFiles 和 GrepText，用于先收集候选上下文，并支持 `SearchFiles/GrepText -> ReadLocalFile(path, startLine, endLine)` 这种最小两轮链式执行。
 
 #### 建议新增能力
 
@@ -345,7 +344,7 @@ public interface ICopilotTool
 
 ### 4. CopilotAgentService.cs
 
-当前问题：单轮执行，不是循环。
+当前问题：虽然已经有最小模型驱动循环，但还不是完整的 planner-executor。
 
 建议拆成三段：
 
@@ -396,7 +395,7 @@ public interface ICopilotTool
 4. 只允许工作区内路径默认直读
 5. 工作区外路径弹一次确认或要求用户先授权
 6. 在执行过程面板展示更结构化的检索摘要
-7. 最后再把单轮 Agent 升级成 Planner-Executor 循环
+7. 最后把最小 planner 升级成支持结构化参数和多工具决策的完整 Planner-Executor 循环
 
 这样收益最大，风险最低。
 
@@ -443,7 +442,7 @@ Phase 4
 但它离 ReAct 还差三个关键层：
 
 1. 结构化工具调用
-2. 多步 planner-executor 闭环
+2. 更强的多步 planner-executor 闭环
 3. 面向代码场景的便宜检索工具集
 
-如果只是为了尽快支持本地文件读取，最佳下一步不是直接上完整 ReAct，而是先引入带权限边界的 ReadLocalFile 工具，并把它接入当前单轮 Agent。
+如果只是为了尽快继续逼近 ReAct，最佳下一步不是直接上完整 coding agent，而是把当前只对 ReadLocalFile 生效的结构化参数模式，扩展到 SearchFiles、GrepText 和诊断工具上。

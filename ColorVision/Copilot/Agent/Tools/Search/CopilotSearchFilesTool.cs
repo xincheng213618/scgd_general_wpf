@@ -114,6 +114,12 @@ namespace ColorVision.Copilot
                 Success = true,
                 Summary = $"扫描 {scannedFiles} 个文件，找到 {topMatches.Length} 个候选文件。",
                 Content = builder.ToString().TrimEnd(),
+                SuggestedReadableLocalFilePaths = topMatches
+                    .Select(item => item.FullPath)
+                    .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(3)
+                    .ToArray(),
             });
         }
 
