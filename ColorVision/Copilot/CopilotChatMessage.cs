@@ -106,8 +106,50 @@ namespace ColorVision.Copilot
         }
         private string _requestContent = string.Empty;
 
+        public CopilotAgentMode RequestMode
+        {
+            get => _requestMode;
+            set => SetProperty(ref _requestMode, value);
+        }
+        private CopilotAgentMode _requestMode = CopilotAgentMode.Chat;
+
         [JsonIgnore]
         public string ModelContent => string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
+
+        public string ExecutionContent
+        {
+            get => _executionContent;
+            set
+            {
+                SetProperty(ref _executionContent, value ?? string.Empty);
+                OnPropertyChanged(nameof(HasExecutionTrace));
+            }
+        }
+        private string _executionContent = string.Empty;
+
+        [JsonIgnore]
+        public bool HasExecutionTrace => !string.IsNullOrWhiteSpace(ExecutionContent);
+
+        public bool IsExecutionExpanded
+        {
+            get => _isExecutionExpanded;
+            set => SetProperty(ref _isExecutionExpanded, value);
+        }
+        private bool _isExecutionExpanded = true;
+
+        public bool IsExecutionInProgress
+        {
+            get => _isExecutionInProgress;
+            set
+            {
+                SetProperty(ref _isExecutionInProgress, value);
+                OnPropertyChanged(nameof(ExecutionHeader));
+            }
+        }
+        private bool _isExecutionInProgress;
+
+        [JsonIgnore]
+        public string ExecutionHeader => IsExecutionInProgress ? "执行中" : "执行过程";
 
         public string ReasoningContent
         {
@@ -166,6 +208,12 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (_executionContent == null)
+            {
+                ExecutionContent = string.Empty;
+                changed = true;
+            }
+
             if (_requestContent == null)
             {
                 RequestContent = string.Empty;
@@ -175,6 +223,12 @@ namespace ColorVision.Copilot
             if (_assistantName == null)
             {
                 AssistantName = string.Empty;
+                changed = true;
+            }
+
+            if (!Enum.IsDefined(RequestMode))
+            {
+                RequestMode = CopilotAgentMode.Chat;
                 changed = true;
             }
 

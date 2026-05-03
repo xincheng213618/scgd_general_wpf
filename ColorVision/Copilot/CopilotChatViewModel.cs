@@ -12,7 +12,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -24,23 +23,20 @@ namespace ColorVision.Copilot
     public class CopilotChatViewModel : ViewModelBase
     {
         private const int AttachmentContentLimit = 12000;
-        private const int MaxWebPageDownloadBytes = 256 * 1024;
         private const int MaxWebPageInjectionChars = 8000;
-        private static readonly Regex HttpUrlRegex = new(@"https?://[^\s\""""'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '，', '。', '；', '：', '！', '？', '）', '】', '》', '、' };
-        private static readonly HttpClient WebPageHttpClient = CreateWebPageHttpClient();
-
-        private readonly record struct CopilotFetchedWebPage(string Url, string Title, string Description, string Content);
 
         private readonly CopilotChatService _chatService;
+        private readonly CopilotAgentService _agentService;
         private readonly CopilotConfig _config;
         private readonly CopilotChatStateStore _stateStore;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
+        private readonly IReadOnlyList<CopilotAgentModeOption> _agentModes = CopilotAgentModeOption.CreateDefaultOptions();
         private CancellationTokenSource? _currentRequestCts;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
+        private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Chat;
 
         public CopilotChatViewModel()
             : this(new CopilotChatService())
@@ -50,6 +46,7 @@ namespace ColorVision.Copilot
         public CopilotChatViewModel(CopilotChatService chatService)
         {
             _chatService = chatService;
+            _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), new CopilotAgentContextBuilder());
             _config = CopilotConfig.Instance;
             _stateStore = CopilotChatStateStore.Instance;
 
@@ -95,6 +92,8 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotAttachmentItem> Attachments => SelectedConversation?.Attachments ?? _emptyAttachments;
 
+        public IReadOnlyList<CopilotAgentModeOption> AgentModes => _agentModes;
+
         public ICommand SendCommand { get; }
 
         public ICommand NewChatCommand { get; }
@@ -137,7 +136,7 @@ namespace ColorVision.Copilot
 
         public string PrimaryActionGlyph => IsBusy ? "■" : "↑";
 
-        public string PrimaryActionToolTip => IsBusy ? "停止生成" : "发送";
+        public string PrimaryActionToolTip => IsBusy ? "停止生成" : SelectedAgentMode == CopilotAgentMode.Chat ? "发送" : "执行 Agent";
 
         public CopilotConversationRecord? SelectedConversation
         {
@@ -150,6 +149,21 @@ namespace ColorVision.Copilot
             get => _selectedProfile;
             set => SelectProfile(value, syncConversation: true, persist: true);
         }
+
+        public CopilotAgentMode SelectedAgentMode
+        {
+            get => _selectedAgentMode;
+            set
+            {
+                if (SetProperty(ref _selectedAgentMode, value))
+                {
+                    OnPropertyChanged(nameof(SelectedAgentModeDescription));
+                    OnPropertyChanged(nameof(PrimaryActionToolTip));
+                }
+            }
+        }
+
+        public string SelectedAgentModeDescription => AgentModes.FirstOrDefault(option => option.Mode == SelectedAgentMode)?.Description ?? string.Empty;
 
         public string InputText
         {
@@ -167,6 +181,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanSwitchConversation));
                 OnPropertyChanged(nameof(CanSelectProfile));
+                OnPropertyChanged(nameof(CanSelectAgentMode));
                 OnPropertyChanged(nameof(PrimaryActionGlyph));
                 OnPropertyChanged(nameof(PrimaryActionToolTip));
                 CommandManager.InvalidateRequerySuggested();
@@ -177,6 +192,8 @@ namespace ColorVision.Copilot
         public bool CanSwitchConversation => !IsBusy;
 
         public bool CanSelectProfile => !IsBusy && Profiles.Count > 0;
+
+        public bool CanSelectAgentMode => !IsBusy;
 
         private async Task SendAsync()
         {
@@ -198,49 +215,27 @@ namespace ColorVision.Copilot
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
 
-            IsBusy = true;
+            var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
+            {
+                RequestMode = SelectedAgentMode,
+            };
+            var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+            {
+                AssistantName = ResolveAssistantHeader(requestProfile),
+            };
 
-            _currentRequestCts?.Cancel();
-            _currentRequestCts?.Dispose();
-            _currentRequestCts = new CancellationTokenSource();
+            Messages.Add(userMessage);
+            Messages.Add(assistantMessage);
+            UpdateConversationMetadata(conversation, touch: true);
+            PersistState();
+            InputText = string.Empty;
 
-            CopilotChatMessage? assistantMessage = null;
+            BeginRequest();
 
             try
             {
-                var requestContent = await BuildUserRequestContentAsync(prompt, _currentRequestCts.Token);
-
-                var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
-                {
-                    RequestContent = requestContent,
-                };
-                Messages.Add(userMessage);
-                UpdateConversationMetadata(conversation, touch: true);
-                PersistState();
-
-                var history = BuildConversationHistory();
-
-                assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
-                {
-                    AssistantName = ResolveAssistantHeader(requestProfile),
-                };
-                Messages.Add(assistantMessage);
-                InputText = string.Empty;
-
-                await _chatService.StreamReplyAsync(
-                    requestProfile,
-                    history,
-                    delta => ApplyAssistantDelta(assistantMessage, delta),
-                    _currentRequestCts.Token);
-
-                assistantMessage.IsReasoningInProgress = false;
-
-                if (string.IsNullOrWhiteSpace(assistantMessage.Content))
-                {
-                    assistantMessage.Content = assistantMessage.HasReasoning
-                        ? "未收到最终回答，只拿到了推理内容。"
-                        : "接口返回成功，但没有可显示的文本。";
-                }
+                await RunConversationTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext: true);
+                FinalizeAssistantMessage(assistantMessage);
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -248,9 +243,7 @@ namespace ColorVision.Copilot
             }
             catch (OperationCanceledException)
             {
-                if (assistantMessage == null)
-                    return;
-
+                assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
 
                 if (string.IsNullOrWhiteSpace(assistantMessage.Content))
@@ -261,15 +254,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                if (assistantMessage == null)
-                {
-                    assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, $"请求失败：{ex.Message}")
-                    {
-                        AssistantName = ResolveAssistantHeader(requestProfile),
-                    };
-                    Messages.Add(assistantMessage);
-                }
-
+                assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
                 assistantMessage.Content = string.IsNullOrWhiteSpace(assistantMessage.Content)
                     ? $"请求失败：{ex.Message}"
@@ -280,10 +265,184 @@ namespace ColorVision.Copilot
             }
             finally
             {
-                IsBusy = false;
-                _currentRequestCts?.Dispose();
-                _currentRequestCts = null;
+                EndRequest();
             }
+        }
+
+        private void BeginRequest()
+        {
+            IsBusy = true;
+
+            _currentRequestCts?.Cancel();
+            _currentRequestCts?.Dispose();
+            _currentRequestCts = new CancellationTokenSource();
+        }
+
+        private void EndRequest()
+        {
+            IsBusy = false;
+            _currentRequestCts?.Dispose();
+            _currentRequestCts = null;
+        }
+
+        private async Task RunConversationTurnAsync(
+            CopilotConversationRecord conversation,
+            CopilotProfileConfig requestProfile,
+            CopilotChatMessage userMessage,
+            CopilotChatMessage assistantMessage,
+            bool refreshExternalContext)
+        {
+            if (_currentRequestCts == null)
+                throw new InvalidOperationException("请求上下文尚未初始化。");
+
+            if (userMessage.RequestMode == CopilotAgentMode.Chat)
+            {
+                await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
+                return;
+            }
+
+            await RunAgentTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
+        }
+
+        private async Task RunChatTurnAsync(
+            CopilotProfileConfig requestProfile,
+            CopilotChatMessage userMessage,
+            CopilotChatMessage assistantMessage,
+            bool refreshExternalContext,
+            CancellationToken cancellationToken)
+        {
+            var prompt = (userMessage.Content ?? string.Empty).Trim();
+            if (refreshExternalContext || string.IsNullOrWhiteSpace(userMessage.RequestContent))
+                userMessage.RequestContent = await BuildUserRequestContentAsync(prompt, cancellationToken);
+
+            var history = BuildConversationHistory(includeAttachmentContext: true);
+            await _chatService.StreamReplyAsync(
+                requestProfile,
+                history,
+                delta => ApplyAssistantDelta(assistantMessage, delta),
+                cancellationToken);
+        }
+
+        private async Task RunAgentTurnAsync(
+            CopilotConversationRecord conversation,
+            CopilotProfileConfig requestProfile,
+            CopilotChatMessage userMessage,
+            CopilotChatMessage assistantMessage,
+            bool refreshExternalContext,
+            CancellationToken cancellationToken)
+        {
+            if (!refreshExternalContext && !string.IsNullOrWhiteSpace(userMessage.RequestContent))
+            {
+                AppendAssistantExecutionTrace(assistantMessage, "复用上次执行得到的上下文，未重新调用工具。");
+                assistantMessage.IsExecutionInProgress = true;
+                assistantMessage.IsExecutionExpanded = true;
+
+                var history = BuildVisibleConversationHistory(conversation, userMessage, 8);
+                history.Add(new CopilotRequestMessage("user", userMessage.RequestContent.Trim()));
+
+                await _chatService.StreamReplyAsync(
+                    requestProfile,
+                    history,
+                    delta => ApplyAssistantDelta(assistantMessage, delta),
+                    cancellationToken);
+                return;
+            }
+
+            var agentRequest = new CopilotAgentRequest
+            {
+                UserText = (userMessage.Content ?? string.Empty).Trim(),
+                Profile = requestProfile,
+                History = BuildVisibleConversationHistory(conversation, userMessage, 8),
+                Attachments = conversation.Attachments.ToArray(),
+                Mode = userMessage.RequestMode,
+            };
+
+            var result = await _agentService.RunAsync(
+                agentRequest,
+                agentEvent => ApplyAgentEvent(assistantMessage, agentEvent),
+                cancellationToken);
+
+            userMessage.RequestContent = result.PreparedUserMessageContent;
+        }
+
+        private void ApplyAgentEvent(CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
+        {
+            switch (agentEvent.Type)
+            {
+                case CopilotAgentEventType.Status:
+                    AppendAssistantExecutionTrace(assistantMessage, agentEvent.Text);
+                    assistantMessage.IsExecutionInProgress = true;
+                    assistantMessage.IsExecutionExpanded = true;
+                    break;
+                case CopilotAgentEventType.ToolResult:
+                    AppendAssistantExecutionTrace(assistantMessage, BuildToolTraceText(agentEvent.ToolResult));
+                    assistantMessage.IsExecutionInProgress = true;
+                    assistantMessage.IsExecutionExpanded = true;
+                    break;
+                case CopilotAgentEventType.ReasoningDelta:
+                    ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(agentEvent.Text, string.Empty));
+                    break;
+                case CopilotAgentEventType.AnswerDelta:
+                    ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(string.Empty, agentEvent.Text));
+                    break;
+                case CopilotAgentEventType.Error:
+                    AppendAssistantExecutionTrace(assistantMessage, agentEvent.Text);
+                    assistantMessage.IsExecutionInProgress = false;
+                    assistantMessage.IsReasoningInProgress = false;
+                    break;
+                case CopilotAgentEventType.Completed:
+                    assistantMessage.IsExecutionInProgress = false;
+                    assistantMessage.IsReasoningInProgress = false;
+                    break;
+            }
+        }
+
+        private static void AppendAssistantExecutionTrace(CopilotChatMessage assistantMessage, string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return;
+
+            if (!string.IsNullOrWhiteSpace(assistantMessage.ExecutionContent))
+                assistantMessage.ExecutionContent += Environment.NewLine + Environment.NewLine;
+
+            assistantMessage.ExecutionContent += text.Trim();
+        }
+
+        private static string BuildToolTraceText(CopilotToolResult? result)
+        {
+            if (result == null)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            builder.Append('[').Append(result.ToolName).Append(']').AppendLine();
+            builder.Append("状态：").AppendLine(result.Success ? "成功" : "失败");
+
+            if (!string.IsNullOrWhiteSpace(result.Summary))
+                builder.Append("摘要：").AppendLine(result.Summary);
+
+            if (!string.IsNullOrWhiteSpace(result.Content))
+            {
+                builder.AppendLine("结果：");
+                builder.AppendLine(result.Content.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+                builder.Append("错误：").Append(result.ErrorMessage);
+
+            return builder.ToString().TrimEnd();
+        }
+
+        private static void FinalizeAssistantMessage(CopilotChatMessage assistantMessage)
+        {
+            assistantMessage.IsExecutionInProgress = false;
+            assistantMessage.IsReasoningInProgress = false;
+
+            if (!string.IsNullOrWhiteSpace(assistantMessage.Content))
+                return;
+
+            assistantMessage.Content = assistantMessage.HasReasoning || assistantMessage.HasExecutionTrace
+                ? "未收到最终回答，只拿到了执行过程或推理内容。"
+                : "接口返回成功，但没有可显示的文本。";
         }
 
         private void ApplyAssistantDelta(CopilotChatMessage assistantMessage, CopilotStreamDelta delta)
@@ -369,14 +528,15 @@ namespace ColorVision.Copilot
             SelectConversation(conversation, persist: false, preferredProfileId: preferredProfileId);
         }
 
-        private List<CopilotRequestMessage> BuildConversationHistory()
+        private List<CopilotRequestMessage> BuildConversationHistory(bool includeAttachmentContext)
         {
             var history = new List<CopilotRequestMessage>();
 
-            var attachmentContext = BuildAttachmentContextBlock();
-            if (!string.IsNullOrWhiteSpace(attachmentContext))
+            if (includeAttachmentContext)
             {
-                history.Add(new CopilotRequestMessage("user", attachmentContext));
+                var attachmentContext = BuildAttachmentContextBlock();
+                if (!string.IsNullOrWhiteSpace(attachmentContext))
+                    history.Add(new CopilotRequestMessage("user", attachmentContext));
             }
 
             history.AddRange(Messages
@@ -386,6 +546,28 @@ namespace ColorVision.Copilot
                     message.ModelContent.Trim())));
 
             return history;
+        }
+
+        private static List<CopilotRequestMessage> BuildVisibleConversationHistory(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage? stopBeforeMessage,
+            int maxMessages)
+        {
+            var messages = conversation.Messages.AsEnumerable();
+            if (stopBeforeMessage != null)
+            {
+                var index = conversation.Messages.IndexOf(stopBeforeMessage);
+                if (index >= 0)
+                    messages = conversation.Messages.Take(index);
+            }
+
+            return messages
+                .Where(message => !string.IsNullOrWhiteSpace(message.Content))
+                .TakeLast(maxMessages)
+                .Select(message => new CopilotRequestMessage(
+                    message.IsUser ? "user" : "assistant",
+                    message.Content.Trim()))
+                .ToList();
         }
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -830,19 +1012,12 @@ namespace ColorVision.Copilot
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
 
-            IsBusy = true;
-
-            _currentRequestCts?.Cancel();
-            _currentRequestCts?.Dispose();
-            _currentRequestCts = new CancellationTokenSource();
-
             CopilotChatMessage? replacementAssistantMessage = null;
+
+            BeginRequest();
 
             try
             {
-                if (refreshWebContext || string.IsNullOrWhiteSpace(userMessage.RequestContent))
-                    userMessage.RequestContent = await BuildUserRequestContentAsync(prompt, _currentRequestCts.Token);
-
                 if (assistantMessage != null)
                     conversation.Messages.Remove(assistantMessage);
 
@@ -852,22 +1027,8 @@ namespace ColorVision.Copilot
                 };
                 conversation.Messages.Add(replacementAssistantMessage);
 
-                var history = BuildConversationHistory();
-
-                await _chatService.StreamReplyAsync(
-                    requestProfile,
-                    history,
-                    delta => ApplyAssistantDelta(replacementAssistantMessage, delta),
-                    _currentRequestCts.Token);
-
-                replacementAssistantMessage.IsReasoningInProgress = false;
-
-                if (string.IsNullOrWhiteSpace(replacementAssistantMessage.Content))
-                {
-                    replacementAssistantMessage.Content = replacementAssistantMessage.HasReasoning
-                        ? "未收到最终回答，只拿到了推理内容。"
-                        : "接口返回成功，但没有可显示的文本。";
-                }
+                await RunConversationTurnAsync(conversation, requestProfile, userMessage, replacementAssistantMessage, refreshWebContext);
+                FinalizeAssistantMessage(replacementAssistantMessage);
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -878,6 +1039,7 @@ namespace ColorVision.Copilot
                 if (replacementAssistantMessage == null)
                     return;
 
+                replacementAssistantMessage.IsExecutionInProgress = false;
                 replacementAssistantMessage.IsReasoningInProgress = false;
 
                 if (string.IsNullOrWhiteSpace(replacementAssistantMessage.Content))
@@ -897,6 +1059,7 @@ namespace ColorVision.Copilot
                     conversation.Messages.Add(replacementAssistantMessage);
                 }
 
+                replacementAssistantMessage.IsExecutionInProgress = false;
                 replacementAssistantMessage.IsReasoningInProgress = false;
                 replacementAssistantMessage.Content = string.IsNullOrWhiteSpace(replacementAssistantMessage.Content)
                     ? $"请求失败：{ex.Message}"
@@ -907,9 +1070,7 @@ namespace ColorVision.Copilot
             }
             finally
             {
-                IsBusy = false;
-                _currentRequestCts?.Dispose();
-                _currentRequestCts = null;
+                EndRequest();
             }
         }
 
@@ -962,22 +1123,39 @@ namespace ColorVision.Copilot
         private static string BuildMessageClipboardText(CopilotChatMessage message)
         {
             var content = (message.Content ?? string.Empty).Trim();
+            var execution = (message.ExecutionContent ?? string.Empty).Trim();
             var reasoning = (message.ReasoningContent ?? string.Empty).Trim();
 
-            if (message.IsUser || string.IsNullOrWhiteSpace(reasoning))
+            if (message.IsUser || string.IsNullOrWhiteSpace(execution) && string.IsNullOrWhiteSpace(reasoning))
                 return content;
 
-            if (string.IsNullOrWhiteSpace(content))
-                return reasoning;
+            var sections = new List<string>();
 
-            return string.Join(Environment.NewLine, new[]
+            if (!string.IsNullOrWhiteSpace(execution))
             {
-                "推理：",
-                reasoning,
-                string.Empty,
-                "回答：",
-                content,
-            });
+                sections.Add("执行过程：");
+                sections.Add(execution);
+            }
+
+            if (!string.IsNullOrWhiteSpace(reasoning))
+            {
+                if (sections.Count > 0)
+                    sections.Add(string.Empty);
+
+                sections.Add("推理：");
+                sections.Add(reasoning);
+            }
+
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                if (sections.Count > 0)
+                    sections.Add(string.Empty);
+
+                sections.Add("回答：");
+                sections.Add(content);
+            }
+
+            return string.Join(Environment.NewLine, sections);
         }
 
         private void RemoveAttachment(CopilotAttachmentItem? attachment)
@@ -1287,59 +1465,16 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static string BuildFetchedWebPageContextBlock(CopilotFetchedWebPage page)
-        {
-            var builder = new StringBuilder();
-            builder.AppendLine($"[网页抓取成功] {page.Url}");
-            builder.AppendLine($"标题：{page.Title}");
-            if (!string.IsNullOrWhiteSpace(page.Description))
-                builder.AppendLine($"描述：{page.Description}");
-            builder.AppendLine("正文：");
-            builder.AppendLine(page.Content);
-            return builder.ToString().TrimEnd();
-        }
+        private static string BuildFetchedWebPageContextBlock(CopilotFetchedWebPageContent page) =>
+            CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(page);
 
-        private static string BuildFailedWebPageContextBlock(string url, string failureMessage)
-        {
-            return string.Join(Environment.NewLine, new[]
-            {
-                $"[网页抓取失败] {url}",
-                $"失败原因：{failureMessage}",
-                "本地程序未能抓取到真实网页内容。你必须明确说明无法基于真实网页内容分析该网页，不能假设网页中存在任何未抓取到的信息。",
-            });
-        }
+        private static string BuildFailedWebPageContextBlock(string url, string failureMessage) =>
+            CopilotWebPageToolSupport.BuildFailedWebPageContextBlock(url, failureMessage);
 
-        private static List<string> ExtractHttpUrls(string text)
-        {
-            var results = new List<string>();
-            if (string.IsNullOrWhiteSpace(text))
-                return results;
+        private static List<string> ExtractHttpUrls(string text) => CopilotWebPageToolSupport.ExtractHttpUrls(text);
 
-            foreach (Match match in HttpUrlRegex.Matches(text))
-            {
-                var candidate = match.Value.Trim().TrimEnd(UrlTrimCharacters);
-                if (!string.IsNullOrWhiteSpace(candidate)
-                    && !results.Contains(candidate, StringComparer.OrdinalIgnoreCase))
-                {
-                    results.Add(candidate);
-                }
-            }
-
-            return results;
-        }
-
-        private static string BuildStoredWebPageContent(CopilotFetchedWebPage page)
-        {
-            var builder = new StringBuilder();
-            if (!string.IsNullOrWhiteSpace(page.Description))
-            {
-                builder.AppendLine($"描述：{page.Description}");
-                builder.AppendLine();
-            }
-
-            builder.Append(page.Content);
-            return builder.ToString();
-        }
+        private static string BuildStoredWebPageContent(CopilotFetchedWebPageContent page) =>
+            CopilotWebPageToolSupport.BuildStoredWebPageContent(page);
 
         private string SaveClipboardImage(BitmapSource image)
         {
@@ -1391,207 +1526,9 @@ namespace ColorVision.Copilot
             return string.IsNullOrWhiteSpace(extension) ? string.Empty : extension;
         }
 
-        private static HttpClient CreateWebPageHttpClient()
-        {
-            var client = new HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(20),
-            };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-Copilot/1.0");
-            return client;
-        }
+        private static string NormalizeWebPageUrl(string value) => CopilotWebPageToolSupport.NormalizeWebPageUrl(value);
 
-        private static string NormalizeWebPageUrl(string value)
-        {
-            var normalized = (value ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(normalized))
-                return string.Empty;
-
-            if (!normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                normalized = "https://" + normalized;
-            }
-
-            return normalized;
-        }
-
-        private static async Task<CopilotFetchedWebPage> LoadWebPageContentAsync(string url, CancellationToken cancellationToken)
-        {
-            var uri = NormalizeAndValidateWebPageUri(url);
-            await EnsureAllowedWebPageUriAsync(uri, cancellationToken);
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            using var response = await WebPageHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(mediaType)
-                && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase)
-                && !mediaType.Contains("text/plain", StringComparison.OrdinalIgnoreCase)
-                && !mediaType.Contains("xhtml", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException($"目标地址返回的内容类型不受支持：{mediaType}");
-            }
-
-            var html = await ReadWebPageContentAsync(response, cancellationToken);
-            return ExtractWebPageContent(uri, html);
-        }
-
-        private static CopilotFetchedWebPage ExtractWebPageContent(Uri uri, string html)
-        {
-            var document = new HtmlDocument();
-            document.LoadHtml(html ?? string.Empty);
-
-            foreach (var removableNode in document.DocumentNode.SelectNodes("//script|//style|//noscript|//svg") ?? Enumerable.Empty<HtmlNode>())
-            {
-                removableNode.Remove();
-            }
-
-            var title = HtmlEntity.DeEntitize(document.DocumentNode.SelectSingleNode("//title")?.InnerText ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(title))
-                title = uri.Host;
-
-            var description = ExtractWebPageDescription(document);
-
-            var bodyNode = document.DocumentNode.SelectSingleNode("//main")
-                ?? document.DocumentNode.SelectSingleNode("//article")
-                ?? document.DocumentNode.SelectSingleNode("//body")
-                ?? document.DocumentNode;
-            var lines = bodyNode
-                .DescendantsAndSelf()
-                .Where(node => node.NodeType == HtmlNodeType.Text)
-                .Select(node => HtmlEntity.DeEntitize(node.InnerText))
-                .Select(NormalizeWebPageLine)
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .ToList();
-
-            var content = string.Join(Environment.NewLine, lines).Trim();
-            if (string.IsNullOrWhiteSpace(content))
-                throw new InvalidOperationException("未能提取网页正文。当前网页可能需要脚本渲染。");
-
-            if (content.Length > MaxWebPageInjectionChars)
-                content = content[..MaxWebPageInjectionChars] + "\n...<已截断>";
-
-            return new CopilotFetchedWebPage(uri.ToString(), title, description, content);
-        }
-
-        private static string ExtractWebPageDescription(HtmlDocument document)
-        {
-            var descriptionNode = document.DocumentNode.SelectSingleNode("//meta[translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='description']")
-                ?? document.DocumentNode.SelectSingleNode("//meta[translate(@property, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='og:description']")
-                ?? document.DocumentNode.SelectSingleNode("//meta[translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='twitter:description']");
-
-            return HtmlEntity.DeEntitize(descriptionNode?.GetAttributeValue("content", string.Empty) ?? string.Empty).Trim();
-        }
-
-        private static string NormalizeWebPageLine(string value)
-        {
-            var normalized = (value ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
-            if (normalized.Length == 0)
-                return string.Empty;
-
-            while (normalized.Contains("  ", StringComparison.Ordinal))
-            {
-                normalized = normalized.Replace("  ", " ", StringComparison.Ordinal);
-            }
-
-            return normalized;
-        }
-
-        private static Uri NormalizeAndValidateWebPageUri(string url)
-        {
-            var normalized = NormalizeWebPageUrl(url);
-            if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri))
-                throw new InvalidOperationException("网页地址格式不正确。");
-
-            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("只允许抓取 http/https 网页地址。");
-            }
-
-            if (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("禁止抓取 localhost 或本机回环地址。");
-
-            return uri;
-        }
-
-        private static async Task EnsureAllowedWebPageUriAsync(Uri uri, CancellationToken cancellationToken)
-        {
-            if (IPAddress.TryParse(uri.Host, out var parsedAddress))
-            {
-                if (IsBlockedWebPageAddress(parsedAddress))
-                    throw new InvalidOperationException("禁止抓取内网、本地或保留 IP 地址。");
-
-                return;
-            }
-
-            var addresses = await Dns.GetHostAddressesAsync(uri.DnsSafeHost, cancellationToken);
-            if (addresses.Length == 0)
-                throw new InvalidOperationException("无法解析目标网页地址。");
-
-            if (addresses.Any(IsBlockedWebPageAddress))
-                throw new InvalidOperationException("目标网页地址解析到了本地、内网或保留 IP，已拒绝访问。");
-        }
-
-        private static bool IsBlockedWebPageAddress(IPAddress address)
-        {
-            if (IPAddress.IsLoopback(address))
-                return true;
-
-            if (address.AddressFamily == AddressFamily.InterNetworkV6)
-            {
-                if (address.IsIPv6LinkLocal || address.IsIPv6SiteLocal)
-                    return true;
-
-                var bytes = address.GetAddressBytes();
-                return bytes.Length > 0 && (bytes[0] & 0xFE) == 0xFC;
-            }
-
-            if (address.AddressFamily != AddressFamily.InterNetwork)
-                return true;
-
-            var bytesV4 = address.GetAddressBytes();
-            if (bytesV4.Length != 4)
-                return true;
-
-            return bytesV4[0] switch
-            {
-                0 => true,
-                10 => true,
-                127 => true,
-                169 when bytesV4[1] == 254 => true,
-                172 when bytesV4[1] >= 16 && bytesV4[1] <= 31 => true,
-                192 when bytesV4[1] == 168 => true,
-                100 when bytesV4[1] >= 64 && bytesV4[1] <= 127 => true,
-                _ => false,
-            };
-        }
-
-        private static async Task<string> ReadWebPageContentAsync(HttpResponseMessage response, CancellationToken cancellationToken)
-        {
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var buffer = new MemoryStream();
-            var chunk = new byte[8192];
-            var totalBytes = 0;
-
-            while (true)
-            {
-                var bytesRead = await stream.ReadAsync(chunk.AsMemory(0, chunk.Length), cancellationToken);
-                if (bytesRead <= 0)
-                    break;
-
-                totalBytes += bytesRead;
-                if (totalBytes > MaxWebPageDownloadBytes)
-                    throw new InvalidOperationException($"网页内容超过大小限制（{MaxWebPageDownloadBytes / 1024} KB）。");
-
-                await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
-            }
-
-            buffer.Position = 0;
-            using var reader = new StreamReader(buffer, Encoding.UTF8, true);
-            return await reader.ReadToEndAsync(cancellationToken);
-        }
+        private static Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken) =>
+            CopilotWebPageToolSupport.LoadWebPageContentAsync(url, cancellationToken);
     }
 }

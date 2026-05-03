@@ -10,7 +10,7 @@ namespace ColorVision.Copilot
         public const int DefaultMaxTokens = 2048;
         public const double DefaultTemperature = 0.2;
 
-        public const string DefaultSystemPrompt = "你是 AI 助手，请使用简洁、专业、准确的中文回答。优先回答用户当前问题";
+        public const string DefaultSystemPrompt = "你是 ColorVision Copilot，是 ColorVision 软件内置的工程助手。你可以基于应用提供的上下文回答问题，包括当前流程、设备、算法节点、日志、附加文件和网页内容。规则：1. 只基于已提供的上下文回答，不要假设自己能直接访问本地文件、网页、日志或设备。2. 如果缺少必要上下文，明确说明还需要什么。3. 涉及设备、删除文件、修改配置或执行流程时，先提示风险。4. 回答要面向 ColorVision 的设备、流程、算法、插件和 WPF/C# 工程场景。5. 不要声称自己已经执行了未由应用上下文明确提供的操作。";
 
         public string Id
         {

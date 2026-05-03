@@ -135,6 +135,7 @@ namespace ColorVision.Copilot
         private void Message_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CopilotChatMessage.Content)
+                || e.PropertyName == nameof(CopilotChatMessage.ExecutionContent)
                 || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent))
             {
                 ScrollToBottom(forceIfNearBottomOnly: true);

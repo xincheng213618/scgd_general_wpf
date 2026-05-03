@@ -183,6 +183,18 @@
 
                                         <Expander Margin="0,0,0,8"
                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                  Header="{Binding ExecutionHeader}"
+                                                  IsExpanded="{Binding IsExecutionExpanded, Mode=TwoWay}"
+                                                  Visibility="{Binding HasExecutionTrace, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <Border Margin="0,6,0,0" Padding="10,8" Background="#101820" BorderBrush="#30404F" BorderThickness="1" CornerRadius="8">
+                                                <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                                         Opacity="0.9"
+                                                         Text="{Binding ExecutionContent, Mode=OneWay}" />
+                                            </Border>
+                                        </Expander>
+
+                                        <Expander Margin="0,0,0,8"
+                                                  Foreground="{DynamicResource GlobalTextBrush}"
                                                   Header="{Binding ReasoningHeader}"
                                                   IsExpanded="{Binding IsReasoningExpanded, Mode=TwoWay}"
                                                   Visibility="{Binding HasReasoning, Converter={StaticResource bool2VisibilityConverter}}">
@@ -451,7 +463,19 @@
                                        Text="✚" />
                         </Button>
 
+                            <ComboBox Width="76"
+                                    Margin="6,0,8,0"
+                                    Style="{StaticResource ComposerComboBoxStyle}"
+                                    VerticalAlignment="Center"
+                                    ItemsSource="{Binding AgentModes}"
+                                    DisplayMemberPath="Label"
+                                    SelectedValuePath="Mode"
+                                    SelectedValue="{Binding SelectedAgentMode, Mode=TwoWay}"
+                                    IsEnabled="{Binding CanSelectAgentMode}"
+                                    ToolTip="{Binding SelectedAgentModeDescription}" />
+
                         <ComboBox Grid.Column="2"
+                                    Margin="0,0,6,0"
                                   Style="{StaticResource ComposerComboBoxStyle}"
                                   VerticalAlignment="Center"
                                   ItemsSource="{Binding Profiles}"
