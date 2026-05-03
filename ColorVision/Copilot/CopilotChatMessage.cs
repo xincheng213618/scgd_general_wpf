@@ -4,6 +4,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Copilot
 {
@@ -17,6 +19,7 @@ namespace ColorVision.Copilot
     {
         File,
         Context,
+        Image,
     }
 
     public readonly record struct CopilotStreamDelta(string ReasoningContent, string Content)
@@ -366,7 +369,11 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _type, value))
+                {
+                    ResetPreviewImage();
                     OnPropertyChanged(nameof(BadgeText));
+                    OnPropertyChanged(nameof(DisplayLabel));
+                }
             }
         }
         private CopilotAttachmentType _type;
@@ -389,6 +396,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _value, value?.Trim() ?? string.Empty))
                 {
+                    ResetPreviewImage();
                     OnPropertyChanged(nameof(DisplayLabel));
                     OnPropertyChanged(nameof(TooltipText));
                 }
@@ -404,7 +412,12 @@ namespace ColorVision.Copilot
         private DateTime _createdAt = DateTime.Now;
 
         [JsonIgnore]
-        public string BadgeText => Type == CopilotAttachmentType.File ? "文件" : "上下文";
+        public string BadgeText => Type switch
+        {
+            CopilotAttachmentType.File => "文件",
+            CopilotAttachmentType.Image => "图片",
+            _ => "上下文",
+        };
 
         [JsonIgnore]
         public string DisplayLabel
@@ -414,7 +427,7 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(Title))
                     return Title;
 
-                if (Type == CopilotAttachmentType.File)
+                if (Type == CopilotAttachmentType.File || Type == CopilotAttachmentType.Image)
                     return Path.GetFileName(Value);
 
                 return BuildPreview(Value, 20);
@@ -423,6 +436,58 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string TooltipText => Value;
+
+        [JsonIgnore]
+        public ImageSource? PreviewImage
+        {
+            get
+            {
+                if (Type != CopilotAttachmentType.Image || string.IsNullOrWhiteSpace(Value) || !File.Exists(Value))
+                    return null;
+
+                if (_previewImage != null && string.Equals(_previewImagePath, Value, StringComparison.OrdinalIgnoreCase))
+                    return _previewImage;
+
+                try
+                {
+                    using var stream = new FileStream(Value, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    var image = new BitmapImage();
+                    image.BeginInit();
+                    image.CacheOption = BitmapCacheOption.OnLoad;
+                    image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                    image.StreamSource = stream;
+                    image.EndInit();
+                    image.Freeze();
+
+                    _previewImage = image;
+                    _previewImagePath = Value;
+                    return _previewImage;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
+
+        [JsonIgnore]
+        public bool HasPreviewImage => PreviewImage != null;
+
+        [JsonIgnore]
+        public bool IsImage => Type == CopilotAttachmentType.Image;
+
+        [JsonIgnore]
+        public bool IsStoredImageFile => Type == CopilotAttachmentType.Image && !string.IsNullOrWhiteSpace(Value);
+
+        [JsonIgnore]
+        public string ImageFallbackText => HasPreviewImage ? string.Empty : "图片预览不可用";
+
+        [JsonIgnore]
+        public string ImageMetaText => CreatedAt.ToString("M/d HH:mm");
+
+        private ImageSource? _previewImage;
+
+        private string _previewImagePath = string.Empty;
 
         public bool EnsureValid()
         {
@@ -475,6 +540,26 @@ namespace ColorVision.Copilot
                 Value = text,
                 CreatedAt = DateTime.Now,
             };
+        }
+
+        public static CopilotAttachmentItem CreateImage(string imagePath, string? title = null)
+        {
+            return new CopilotAttachmentItem
+            {
+                Type = CopilotAttachmentType.Image,
+                Title = string.IsNullOrWhiteSpace(title) ? Path.GetFileNameWithoutExtension(imagePath) : title,
+                Value = imagePath,
+                CreatedAt = DateTime.Now,
+            };
+        }
+
+        private void ResetPreviewImage()
+        {
+            _previewImage = null;
+            _previewImagePath = string.Empty;
+            OnPropertyChanged(nameof(PreviewImage));
+            OnPropertyChanged(nameof(HasPreviewImage));
+            OnPropertyChanged(nameof(ImageFallbackText));
         }
 
         private static string BuildPreview(string content, int maxLength)

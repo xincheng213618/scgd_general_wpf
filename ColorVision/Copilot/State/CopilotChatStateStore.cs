@@ -22,11 +22,14 @@ namespace ColorVision.Copilot
 
         public string StateFilePath { get; }
 
+        public string AttachmentDirectoryPath { get; }
+
         private CopilotChatStateStore()
         {
             RootDirectoryPath = Path.Combine(Environments.DirLocalAppData, "Copilot");
             StateDirectoryPath = Path.Combine(RootDirectoryPath, "State");
             StateFilePath = Path.Combine(StateDirectoryPath, "chat-state.json");
+            AttachmentDirectoryPath = Path.Combine(StateDirectoryPath, "Attachments");
         }
 
         public CopilotChatState Load()
@@ -60,6 +63,9 @@ namespace ColorVision.Copilot
         {
             if (!Directory.Exists(StateDirectoryPath))
                 Directory.CreateDirectory(StateDirectoryPath);
+
+            if (!Directory.Exists(AttachmentDirectoryPath))
+                Directory.CreateDirectory(AttachmentDirectoryPath);
         }
     }
 }

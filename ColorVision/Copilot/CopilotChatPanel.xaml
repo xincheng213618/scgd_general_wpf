@@ -23,19 +23,80 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid >
+    <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="148" />
+            <ColumnDefinition x:Name="SidebarColumnDefinition" Width="184" />
         </Grid.ColumnDefinitions>
 
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0">
+                <Border Grid.Row="0"
+                    Margin="12,12,12,0"
+                    Padding="2,0,2,10"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,0,1">
+                <DockPanel LastChildFill="False">
+                    <Button x:Name="TitleBarConversationButton"
+                        DockPanel.Dock="Right"
+                        Width="28"
+                        Height="28"
+                        Padding="0"
+                        Margin="8,0,0,0"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="0"
+                        Click="ToggleConversationSidebarButton_Click"
+                        ToolTip="展开会话列表"
+                        Visibility="Collapsed">
+                    <Grid Width="18" Height="16">
+                        <Border Width="10"
+                            Height="6"
+                            Margin="8,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Background="#2E3A49"
+                            BorderBrush="#445063"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Opacity="0.38" />
+                        <Border Width="10"
+                            Height="6"
+                            Margin="4,4,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Background="#354150"
+                            BorderBrush="#4C5A71"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Opacity="0.7" />
+                        <Border Width="10"
+                            Height="6"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Background="#4A5A73"
+                            BorderBrush="#6E80A0"
+                            BorderThickness="1"
+                            CornerRadius="2" />
+                    </Grid>
+                    </Button>
+
+                    <TextBlock MaxWidth="520"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource GlobalTextBrush}"
+                           Text="{Binding SelectedConversation.Title, FallbackValue=新会话, TargetNullValue=新会话}"
+                           TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                </Border>
+
+            <Grid Grid.Row="1">
                 <TextBlock HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            MaxWidth="320"
@@ -105,7 +166,7 @@
                 </ScrollViewer>
             </Grid>
 
-            <Border Grid.Row="1"
+                <Border Grid.Row="2"
                     Margin="12,0,12,12"
                     Padding="12,10"
                     Background="#10151B"
@@ -122,7 +183,7 @@
                     <StackPanel Grid.Row="0" Margin="0,0,0,10">
                         <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
                                    Opacity="0.48"
-                                   Text="未挂载文件或上下文"
+                                   Text="未挂载文件、图片或上下文"
                                    TextTrimming="CharacterEllipsis">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -156,32 +217,102 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type local:CopilotAttachmentItem}">
-                                        <Border Margin="0,0,8,0"
-                                                Padding="8,4"
-                                                Background="#171B22"
-                                                BorderBrush="#273141"
-                                                BorderThickness="1"
-                                                CornerRadius="999"
-                                                ToolTip="{Binding TooltipText}">
-                                            <DockPanel LastChildFill="False">
-                                                <TextBlock Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.52" Text="{Binding BadgeText}" />
-                                                <TextBlock Margin="8,0,0,0"
-                                                           MaxWidth="180"
-                                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                                           Text="{Binding DisplayLabel}"
-                                                           TextTrimming="CharacterEllipsis" />
-                                                <Button Margin="8,0,0,0"
-                                                        Width="16"
-                                                        Height="16"
-                                                        Padding="0"
-                                                        Background="Transparent"
-                                                        BorderBrush="Transparent"
-                                                        BorderThickness="0"
-                                                        Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
-                                                        CommandParameter="{Binding}"
-                                                        Content="x" />
-                                            </DockPanel>
-                                        </Border>
+                                        <Grid Margin="0,0,8,0">
+                                            <Border x:Name="AttachmentChip"
+                                                    Padding="8,4"
+                                                    Background="#171B22"
+                                                    BorderBrush="#273141"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    ToolTip="{Binding TooltipText}"
+                                                    Visibility="Collapsed">
+                                                <DockPanel LastChildFill="False">
+                                                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.52" Text="{Binding BadgeText}" />
+                                                    <TextBlock Margin="8,0,0,0"
+                                                               MaxWidth="180"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Text="{Binding DisplayLabel}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <Button Margin="8,0,0,0"
+                                                            Width="16"
+                                                            Height="16"
+                                                            Padding="0"
+                                                            Background="Transparent"
+                                                            BorderBrush="Transparent"
+                                                            BorderThickness="0"
+                                                            Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="×" />
+                                                </DockPanel>
+                                            </Border>
+
+                                            <Border x:Name="ImageAttachmentCard"
+                                                    Width="152"
+                                                    Padding="8"
+                                                    Background="#151A21"
+                                                    BorderBrush="#2C394A"
+                                                    BorderThickness="1"
+                                                    CornerRadius="12"
+                                                    ToolTip="{Binding TooltipText}"
+                                                    Visibility="Collapsed">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="76" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <Border Grid.Row="0"
+                                                            Background="#0E1319"
+                                                            CornerRadius="10"
+                                                            ClipToBounds="True">
+                                                        <Grid>
+                                                            <Image Source="{Binding PreviewImage}" Stretch="UniformToFill" />
+                                                            <TextBlock HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                                       Opacity="0.52"
+                                                                       Text="{Binding ImageFallbackText}" />
+                                                        </Grid>
+                                                    </Border>
+
+                                                    <DockPanel Grid.Row="1" Margin="0,8,0,0" LastChildFill="False">
+                                                        <StackPanel>
+                                                            <TextBlock MaxWidth="106"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                                       Text="{Binding DisplayLabel}"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Margin="0,2,0,0"
+                                                                       FontSize="11"
+                                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                                       Opacity="0.52"
+                                                                       Text="{Binding ImageMetaText}" />
+                                                        </StackPanel>
+                                                        <Button DockPanel.Dock="Right"
+                                                                Width="18"
+                                                                Height="18"
+                                                                Margin="8,0,0,0"
+                                                                Padding="0"
+                                                                Background="Transparent"
+                                                                BorderBrush="Transparent"
+                                                                BorderThickness="0"
+                                                                Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="×"
+                                                                Foreground="{DynamicResource GlobalTextBrush}" />
+                                                    </DockPanel>
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsImage}" Value="True">
+                                                <Setter TargetName="ImageAttachmentCard" Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsImage}" Value="False">
+                                                <Setter TargetName="AttachmentChip" Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -222,9 +353,11 @@
                                 BorderBrush="Transparent"
                                 BorderThickness="0"
                                 Click="AttachMenuButton_Click"
-                                ToolTip="挂载文件或上下文">
+                            ToolTip="挂载文件、图片或上下文">
                             <Button.ContextMenu>
                                 <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="粘贴图片" Command="{Binding PasteImageAttachmentCommand}" />
+                                    <Separator />
                                     <MenuItem Header="添加文件" Command="{Binding AddFileAttachmentCommand}" />
                                     <MenuItem Header="添加上下文" Command="{Binding AddContextAttachmentCommand}" />
                                 </ContextMenu>
@@ -245,16 +378,23 @@
                                   IsEnabled="{Binding CanSelectProfile}" />
 
                         <Button Grid.Column="4"
-                                Margin="0,0,8,0"
-                                Padding="10,2"
+                            Width="28"
+                            Height="28"
+                            Margin="6,0,8,0"
+                            Padding="0"
                                 Background="Transparent"
                                 BorderBrush="Transparent"
                                 BorderThickness="0"
                                 HorizontalAlignment="Left"
                                 Command="{Binding OpenSettingsCommand}"
-                                Content="配置"
                                 Foreground="{DynamicResource GlobalTextBrush}"
-                                IsEnabled="{Binding CanSwitchConversation}" />
+                            IsEnabled="{Binding CanSwitchConversation}"
+                            ToolTip="配置">
+                            <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   FontSize="16"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Text="&#xE713;" />
+                        </Button>
 
 
                     </DockPanel>
@@ -262,84 +402,143 @@
             </Border>
         </Grid>
 
-        <Border Grid.Column="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+        <Grid Grid.Column="1">
+            <Border x:Name="ConversationSidebarBorder" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Margin="8,8,8,6" Orientation="Horizontal">
-                    <Button Width="34"
-                            Padding="0"
-                            Background="Transparent"
-                            BorderBrush="Transparent"
-                            BorderThickness="0"
-                            Command="{Binding NewChatCommand}"
-                            ToolTip="新建会话">
-                        <TextBlock HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontSize="18"
-                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                   Text="✚" />
-                    </Button>
-                </StackPanel>
+                    <DockPanel Grid.Row="0" Margin="8,8,8,6" LastChildFill="False">
+                        <Button x:Name="CompactSidebarToggleButton"
+                                Width="28"
+                                Height="28"
+                                Margin="0,0,6,0"
+                                Padding="0"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0"
+                                Click="ToggleConversationSidebarButton_Click"
+                                ToolTip="收起会话列表"
+                                Visibility="Collapsed">
+                            <Grid Width="18" Height="16">
+                                <Border Width="10"
+                                        Height="6"
+                                        Margin="8,0,0,0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top"
+                                        Background="#2E3A49"
+                                        BorderBrush="#445063"
+                                        BorderThickness="1"
+                                        CornerRadius="2"
+                                        Opacity="0.38" />
+                                <Border Width="10"
+                                        Height="6"
+                                        Margin="4,4,0,0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top"
+                                        Background="#354150"
+                                        BorderBrush="#4C5A71"
+                                        BorderThickness="1"
+                                        CornerRadius="2"
+                                        Opacity="0.7" />
+                                <Border Width="10"
+                                        Height="6"
+                                        Margin="0,8,0,0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top"
+                                        Background="#4A5A73"
+                                        BorderBrush="#6E80A0"
+                                        BorderThickness="1"
+                                        CornerRadius="2" />
+                            </Grid>
+                        </Button>
 
-                <ListBox Grid.Row="1"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         ItemsSource="{Binding Conversations}"
-                         SelectedItem="{Binding SelectedConversation, Mode=TwoWay}"
-                         IsEnabled="{Binding CanSwitchConversation}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate DataType="{x:Type local:CopilotConversationRecord}">
-                            <Border Padding="10,8">
-                                <Border.ContextMenu>
-                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                        <MenuItem Header="重命名"
-                                                  Command="{Binding DataContext.RenameConversationCommand, Source={x:Reference Root}}"
-                                                  CommandParameter="{Binding}" />
-                                        <MenuItem Header="{Binding PinMenuText}"
-                                                  Command="{Binding DataContext.TogglePinConversationCommand, Source={x:Reference Root}}"
-                                                  CommandParameter="{Binding}" />
-                                        <Separator />
-                                        <MenuItem Header="删除"
-                                                  Command="{Binding DataContext.DeleteConversationCommand, Source={x:Reference Root}}"
-                                                  CommandParameter="{Binding}" />
-                                    </ContextMenu>
-                                </Border.ContextMenu>
+                        <Button Width="34"
+                                Padding="0"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0"
+                                Command="{Binding NewChatCommand}"
+                                DockPanel.Dock="Right"
+                                ToolTip="新建会话">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="18"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Text="✚" />
+                        </Button>
+                    </DockPanel>
 
-                                <StackPanel>
-                                    <DockPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Margin="6,0,0,0"
+                    <ListBox Grid.Row="1"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             ItemsSource="{Binding Conversations}"
+                             SelectedItem="{Binding SelectedConversation, Mode=TwoWay}"
+                             IsEnabled="{Binding CanSwitchConversation}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:CopilotConversationRecord}">
+                                <Border Padding="10,8">
+                                    <Border.ContextMenu>
+                                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                            <MenuItem Header="重命名"
+                                                      Command="{Binding DataContext.RenameConversationCommand, Source={x:Reference Root}}"
+                                                      CommandParameter="{Binding}" />
+                                            <MenuItem Header="{Binding PinMenuText}"
+                                                      Command="{Binding DataContext.TogglePinConversationCommand, Source={x:Reference Root}}"
+                                                      CommandParameter="{Binding}" />
+                                            <Separator />
+                                            <MenuItem Header="删除"
+                                                      Command="{Binding DataContext.DeleteConversationCommand, Source={x:Reference Root}}"
+                                                      CommandParameter="{Binding}" />
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
+
+                                    <StackPanel>
+                                        <DockPanel LastChildFill="False">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Margin="6,0,0,0"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           FontSize="11"
+                                                           Opacity="0.48"
+                                                           Text="{Binding PinLabel}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </DockPanel>
+
+                                        <DockPanel Margin="0,4,0,0" LastChildFill="False">
+                                            <TextBlock MaxWidth="104"
                                                        Foreground="{DynamicResource GlobalTextBrush}"
                                                        FontSize="11"
-                                                       Opacity="0.48"
-                                                       Text="{Binding PinLabel}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </StackPanel>
-                                        <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.55" Text="{Binding UpdatedLabel}" />
-                                    </DockPanel>
-                                    <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.62" Text="{Binding ProfileDisplayName}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.78" Text="{Binding PreviewText}" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </Grid>
-        </Border>
+                                                       Opacity="0.72"
+                                                       Text="{Binding PreviewText}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock DockPanel.Dock="Right"
+                                                       Margin="8,0,0,0"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       FontSize="11"
+                                                       Opacity="0.5"
+                                                       Text="{Binding UpdatedLabel}" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

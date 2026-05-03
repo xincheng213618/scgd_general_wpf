@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Copilot
 {
@@ -63,6 +64,7 @@ namespace ColorVision.Copilot
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
             AddFileAttachmentCommand = new RelayCommand(_ => AddFileAttachment(), _ => !IsBusy);
             AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
+            PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
@@ -90,6 +92,8 @@ namespace ColorVision.Copilot
         public ICommand AddFileAttachmentCommand { get; }
 
         public ICommand AddContextAttachmentCommand { get; }
+
+        public ICommand PasteImageAttachmentCommand { get; }
 
         public ICommand RemoveAttachmentCommand { get; }
 
@@ -556,6 +560,8 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            RemoveManagedAttachmentFiles(conversation.Attachments);
+
             var currentIndex = Conversations.IndexOf(conversation);
             Conversations.Remove(conversation);
 
@@ -623,6 +629,52 @@ namespace ColorVision.Copilot
             UpdateAttachmentsState(conversation);
         }
 
+        private void PasteImageAttachment()
+        {
+            if (TryPasteClipboardImageAttachment())
+                return;
+
+            MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                "剪贴板里没有可挂载的图片。",
+                "ColorVision",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        public bool TryPasteClipboardImageAttachment()
+        {
+            if (IsBusy)
+                return false;
+
+            try
+            {
+                if (!Clipboard.ContainsImage())
+                    return false;
+
+                var image = Clipboard.GetImage();
+                if (image == null)
+                    return false;
+
+                var conversation = EnsureConversation();
+                var imagePath = SaveClipboardImage(image);
+                var title = $"粘贴图片 {DateTime.Now:HH:mm:ss}";
+                conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(imagePath, title));
+                UpdateAttachmentsState(conversation);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"粘贴图片失败：{ex.Message}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+        }
+
         private void RemoveAttachment(CopilotAttachmentItem? attachment)
         {
             if (attachment == null || SelectedConversation == null)
@@ -630,6 +682,8 @@ namespace ColorVision.Copilot
 
             if (!SelectedConversation.Attachments.Remove(attachment))
                 return;
+
+            TryDeleteManagedAttachmentFile(attachment);
 
             UpdateAttachmentsState(SelectedConversation);
         }
@@ -800,6 +854,12 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (attachment.Type == CopilotAttachmentType.Image)
+                {
+                    builder.AppendLine(BuildImageAttachmentBlock(attachment));
+                    continue;
+                }
+
                 builder.AppendLine($"[上下文] {attachment.DisplayLabel}");
                 builder.AppendLine(attachment.Value);
                 builder.AppendLine();
@@ -825,6 +885,64 @@ namespace ColorVision.Copilot
             catch (Exception ex)
             {
                 return $"[文件] {attachment.Value}\n读取失败：{ex.Message}\n";
+            }
+        }
+
+        private static string BuildImageAttachmentBlock(CopilotAttachmentItem attachment)
+        {
+            if (!File.Exists(attachment.Value))
+                return $"[图片] {attachment.DisplayLabel}\n本地图片附件不存在：{attachment.Value}\n";
+
+            return string.Join(Environment.NewLine, new[]
+            {
+                $"[图片] {attachment.DisplayLabel}",
+                $"本地图片路径：{attachment.Value}",
+                "当前版本会在界面显示图片预览，但不会自动把像素内容上传给模型。",
+                string.Empty,
+            });
+        }
+
+        private string SaveClipboardImage(BitmapSource image)
+        {
+            Directory.CreateDirectory(_stateStore.AttachmentDirectoryPath);
+
+            var filePath = Path.Combine(
+                _stateStore.AttachmentDirectoryPath,
+                $"clipboard-{DateTime.Now:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}.png");
+
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(image));
+
+            using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            encoder.Save(stream);
+
+            return filePath;
+        }
+
+        private void RemoveManagedAttachmentFiles(IEnumerable<CopilotAttachmentItem> attachments)
+        {
+            foreach (var attachment in attachments.ToList())
+            {
+                TryDeleteManagedAttachmentFile(attachment);
+            }
+        }
+
+        private void TryDeleteManagedAttachmentFile(CopilotAttachmentItem attachment)
+        {
+            if (!attachment.IsStoredImageFile || string.IsNullOrWhiteSpace(attachment.Value))
+                return;
+
+            try
+            {
+                var attachmentRoot = Path.GetFullPath(_stateStore.AttachmentDirectoryPath);
+                var filePath = Path.GetFullPath(attachment.Value);
+                if (!filePath.StartsWith(attachmentRoot, StringComparison.OrdinalIgnoreCase) || !File.Exists(filePath))
+                    return;
+
+                File.Delete(filePath);
+            }
+            catch
+            {
             }
         }
 
