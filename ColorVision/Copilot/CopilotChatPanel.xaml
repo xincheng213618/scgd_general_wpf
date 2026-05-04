@@ -286,6 +286,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Margin="0,0,0,10">
@@ -455,7 +456,16 @@
                              VerticalContentAlignment="Top"
                              VerticalScrollBarVisibility="Auto" />
 
-                    <DockPanel Grid.Row="2" Margin="0,0,0,0">
+                    <TextBlock Grid.Row="2"
+                               Margin="0,2,0,6"
+                               FontSize="11"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               Opacity="0.58"
+                               Text="{Binding ComposerTokenSummary}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding ComposerTokenDetails}" />
+
+                    <DockPanel Grid.Row="3" Margin="0,0,0,0">
                         <Button DockPanel.Dock="Right" Grid.Column="6"
                                 Width="40"
                                 Padding="0"

@@ -33,6 +33,7 @@ namespace ColorVision.Copilot
                 new CopilotSearchFilesTool(),
                 new CopilotGrepTextTool(),
                 new CopilotReadLocalFileTool(),
+                new CopilotListDirectoryTool(),
                 new CopilotReadAttachedFileTool(),
                 new CopilotGetRecentLogTool(),
             });

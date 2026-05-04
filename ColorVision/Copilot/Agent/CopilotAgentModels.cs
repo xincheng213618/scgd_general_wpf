@@ -70,6 +70,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();
+
         public CopilotAgentToolInput SelectedToolInput { get; init; } = CopilotAgentToolInput.Empty;
 
         public string SelectedLocalFilePath => SelectedToolInput?.Path ?? string.Empty;
@@ -187,5 +189,7 @@ namespace ColorVision.Copilot
     public sealed class CopilotAgentRunResult
     {
         public string PreparedUserMessageContent { get; init; } = string.Empty;
+
+        public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
     }
 }

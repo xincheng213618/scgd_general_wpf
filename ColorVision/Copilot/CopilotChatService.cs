@@ -18,7 +18,7 @@ namespace ColorVision.Copilot
             Timeout = TimeSpan.FromMinutes(5),
         };
 
-        public async Task<CopilotStreamDelta> CompleteReplyAsync(
+        public async Task<CopilotChatReply> CompleteReplyAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             CancellationToken cancellationToken)
@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
             var reasoningBuilder = new StringBuilder();
             var contentBuilder = new StringBuilder();
 
-            await StreamReplyAsync(
+            var usage = await StreamReplyAsync(
                 config,
                 messages,
                 delta =>
@@ -39,10 +39,12 @@ namespace ColorVision.Copilot
                 },
                 cancellationToken);
 
-            return new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString());
+            return new CopilotChatReply(
+                new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString()),
+                usage);
         }
 
-        public async Task StreamReplyAsync(
+        public async Task<CopilotTokenUsage> StreamReplyAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
@@ -63,17 +65,15 @@ namespace ColorVision.Copilot
 
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
             if (mediaType.Contains("event-stream", StringComparison.OrdinalIgnoreCase))
-            {
-                await ReadStreamingResponseAsync(config.ProviderType, response, onDelta, cancellationToken);
-                return;
-            }
+                return await ReadStreamingResponseAsync(config.ProviderType, response, onDelta, cancellationToken);
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            var delta = ExtractFinalResponseDelta(config.ProviderType, body);
-            if (!delta.HasAny)
+            var reply = ExtractFinalResponseReply(config.ProviderType, body);
+            if (!reply.Delta.HasAny)
                 throw new InvalidOperationException("接口返回成功，但没有可显示的文本内容。");
 
-            onDelta(delta);
+            onDelta(reply.Delta);
+            return reply.Usage;
         }
 
         private static HttpRequestMessage CreateRequest(CopilotProfileConfig config, IReadOnlyList<CopilotRequestMessage> messages)
@@ -128,6 +128,10 @@ namespace ColorVision.Copilot
                     stream = true,
                     temperature = config.Temperature,
                     max_tokens = config.MaxTokens,
+                    stream_options = new
+                    {
+                        include_usage = true,
+                    },
                     messages = payloadMessages,
                 };
             }
@@ -162,7 +166,7 @@ namespace ColorVision.Copilot
             return new Uri(baseUrl + "/v1/chat/completions", UriKind.Absolute);
         }
 
-        private static async Task ReadStreamingResponseAsync(
+        private static async Task<CopilotTokenUsage> ReadStreamingResponseAsync(
             CopilotProviderType providerType,
             HttpResponseMessage response,
             Action<CopilotStreamDelta> onDelta,
@@ -176,6 +180,7 @@ namespace ColorVision.Copilot
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
+            var usage = CopilotTokenUsage.Empty;
 
             while (true)
             {
@@ -206,69 +211,76 @@ namespace ColorVision.Copilot
                 if (string.Equals(payload, "[DONE]", StringComparison.OrdinalIgnoreCase))
                     break;
 
-                var delta = providerType == CopilotProviderType.AnthropicCompatible
-                    ? ExtractAnthropicStreamingDelta(payload)
-                    : ExtractOpenAiStreamingDelta(payload);
+                var reply = providerType == CopilotProviderType.AnthropicCompatible
+                    ? ExtractAnthropicStreamingReply(payload)
+                    : ExtractOpenAiStreamingReply(payload);
 
-                if (delta.HasAny)
-                    onDelta(delta);
+                if (reply.Usage.HasAny)
+                    usage = usage.MergeProgress(reply.Usage);
+
+                if (reply.Delta.HasAny)
+                    onDelta(reply.Delta);
             }
+
+            return usage;
         }
 
-        private static CopilotStreamDelta ExtractOpenAiStreamingDelta(string payload)
+        private static CopilotChatReply ExtractOpenAiStreamingReply(string payload)
         {
             try
             {
                 using var document = JsonDocument.Parse(payload);
                 var root = document.RootElement;
+                var usage = ExtractOpenAiUsage(root);
                 if (!root.TryGetProperty("choices", out var choices)
                     || choices.ValueKind != JsonValueKind.Array
                     || choices.GetArrayLength() == 0)
                 {
-                    return CopilotStreamDelta.Empty;
+                    return new CopilotChatReply(CopilotStreamDelta.Empty, usage);
                 }
 
                 var choice = choices[0];
                 if (choice.TryGetProperty("delta", out var delta))
-                    return ExtractOpenAiDeltaFromElement(delta);
+                    return new CopilotChatReply(ExtractOpenAiDeltaFromElement(delta), usage);
 
                 if (choice.TryGetProperty("message", out var message))
-                    return ExtractOpenAiDeltaFromElement(message);
+                    return new CopilotChatReply(ExtractOpenAiDeltaFromElement(message), usage);
             }
             catch (JsonException)
             {
             }
 
-            return CopilotStreamDelta.Empty;
+            return CopilotChatReply.Empty;
         }
 
-        private static CopilotStreamDelta ExtractAnthropicStreamingDelta(string payload)
+        private static CopilotChatReply ExtractAnthropicStreamingReply(string payload)
         {
             try
             {
                 using var document = JsonDocument.Parse(payload);
                 var root = document.RootElement;
+                var usage = ExtractAnthropicUsage(root);
 
                 if (root.TryGetProperty("delta", out var delta))
-                    return ExtractAnthropicDeltaFromDeltaElement(delta);
+                    return new CopilotChatReply(ExtractAnthropicDeltaFromDeltaElement(delta), usage);
 
                 if (root.TryGetProperty("content_block", out var block))
-                    return ExtractAnthropicDeltaFromContentBlock(block);
+                    return new CopilotChatReply(ExtractAnthropicDeltaFromContentBlock(block), usage);
 
                 if (root.TryGetProperty("message", out var message))
-                    return ExtractAnthropicDeltaFromMessage(message);
+                    return new CopilotChatReply(ExtractAnthropicDeltaFromMessage(message), usage);
             }
             catch (JsonException)
             {
             }
 
-            return CopilotStreamDelta.Empty;
+            return CopilotChatReply.Empty;
         }
 
-        private static CopilotStreamDelta ExtractFinalResponseDelta(CopilotProviderType providerType, string body)
+        private static CopilotChatReply ExtractFinalResponseReply(CopilotProviderType providerType, string body)
         {
             if (string.IsNullOrWhiteSpace(body))
-                return CopilotStreamDelta.Empty;
+                return CopilotChatReply.Empty;
 
             try
             {
@@ -276,27 +288,28 @@ namespace ColorVision.Copilot
                 var root = document.RootElement;
 
                 if (providerType == CopilotProviderType.AnthropicCompatible)
-                    return ExtractAnthropicDeltaFromMessage(root);
+                    return new CopilotChatReply(ExtractAnthropicDeltaFromMessage(root), ExtractAnthropicUsage(root));
 
                 if (root.TryGetProperty("choices", out var choices)
                     && choices.ValueKind == JsonValueKind.Array
                     && choices.GetArrayLength() > 0)
                 {
                     var choice = choices[0];
+                    var usage = ExtractOpenAiUsage(root);
                     if (choice.TryGetProperty("message", out var message))
-                        return ExtractOpenAiDeltaFromElement(message);
+                        return new CopilotChatReply(ExtractOpenAiDeltaFromElement(message), usage);
 
                     if (choice.TryGetProperty("delta", out var delta))
-                        return ExtractOpenAiDeltaFromElement(delta);
+                        return new CopilotChatReply(ExtractOpenAiDeltaFromElement(delta), usage);
                 }
 
-                return ExtractOpenAiDeltaFromElement(root);
+                return new CopilotChatReply(ExtractOpenAiDeltaFromElement(root), ExtractOpenAiUsage(root));
             }
             catch (JsonException)
             {
             }
 
-            return CopilotStreamDelta.Empty;
+            return CopilotChatReply.Empty;
         }
 
         private static CopilotStreamDelta ExtractOpenAiDeltaFromElement(JsonElement element)
@@ -420,6 +433,96 @@ namespace ColorVision.Copilot
                 return new CopilotStreamDelta(string.Empty, ExtractStringFromElement(outputText));
 
             return CopilotStreamDelta.Empty;
+        }
+
+        private static CopilotTokenUsage ExtractOpenAiUsage(JsonElement element)
+        {
+            if (!TryGetUsageElement(element, out var usageElement))
+                return CopilotTokenUsage.Empty;
+
+            return ExtractUsage(
+                usageElement,
+                new[] { "prompt_tokens", "input_tokens" },
+                new[] { "completion_tokens", "output_tokens" });
+        }
+
+        private static CopilotTokenUsage ExtractAnthropicUsage(JsonElement element)
+        {
+            if (TryGetUsageElement(element, out var usageElement))
+                return ExtractUsage(
+                    usageElement,
+                    new[] { "input_tokens" },
+                    new[] { "output_tokens" },
+                    new[] { "cache_creation_input_tokens", "cache_read_input_tokens" });
+
+            if (element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty("message", out var messageElement)
+                && TryGetUsageElement(messageElement, out usageElement))
+            {
+                return ExtractUsage(
+                    usageElement,
+                    new[] { "input_tokens" },
+                    new[] { "output_tokens" },
+                    new[] { "cache_creation_input_tokens", "cache_read_input_tokens" });
+            }
+
+            return CopilotTokenUsage.Empty;
+        }
+
+        private static bool TryGetUsageElement(JsonElement element, out JsonElement usageElement)
+        {
+            usageElement = default;
+            return element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty("usage", out usageElement)
+                && usageElement.ValueKind == JsonValueKind.Object;
+        }
+
+        private static CopilotTokenUsage ExtractUsage(
+            JsonElement usageElement,
+            IReadOnlyList<string> inputKeys,
+            IReadOnlyList<string> outputKeys,
+            IReadOnlyList<string>? extraInputKeys = null)
+        {
+            var inputTokens = ReadFirstInt(usageElement, inputKeys);
+            var outputTokens = ReadFirstInt(usageElement, outputKeys);
+
+            if (extraInputKeys != null)
+            {
+                foreach (var key in extraInputKeys)
+                    inputTokens += ReadFirstInt(usageElement, new[] { key });
+            }
+
+            var totalTokens = TryReadInt(usageElement, "total_tokens", out var total)
+                ? total
+                : Math.Max(0, inputTokens) + Math.Max(0, outputTokens);
+
+            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens);
+        }
+
+        private static int ReadFirstInt(JsonElement element, IReadOnlyList<string> keys)
+        {
+            foreach (var key in keys)
+            {
+                if (TryReadInt(element, key, out var value))
+                    return value;
+            }
+
+            return 0;
+        }
+
+        private static bool TryReadInt(JsonElement element, string propertyName, out int value)
+        {
+            value = 0;
+            if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(propertyName, out var property))
+                return false;
+
+            if (property.ValueKind == JsonValueKind.Number)
+                return property.TryGetInt32(out value);
+
+            if (property.ValueKind == JsonValueKind.String)
+                return int.TryParse(property.GetString(), out value);
+
+            return false;
         }
 
         private static string ExtractStringFromElement(JsonElement element)

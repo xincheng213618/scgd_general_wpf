@@ -9,8 +9,6 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentService
     {
-        private const int MaxToolRounds = 3;
-
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentPlanner _planner;
         private readonly CopilotToolRegistry _toolRegistry;
@@ -42,10 +40,12 @@ namespace ColorVision.Copilot
                 (request.ReadableLocalFilePaths ?? Array.Empty<string>())
                     .Where(path => !string.IsNullOrWhiteSpace(path)),
                 StringComparer.OrdinalIgnoreCase);
+            var maxToolRounds = Math.Clamp(request.Profile?.MaxToolRounds ?? CopilotProfileConfig.DefaultMaxToolRounds, 1, 12);
             var executedStepSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var executedAnyTool = false;
+            var totalUsage = CopilotTokenUsage.Empty;
 
-            for (var round = 1; round <= MaxToolRounds; round++)
+            for (var round = 1; round <= maxToolRounds; round++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -62,12 +62,14 @@ namespace ColorVision.Copilot
                 }
 
                 onEvent(CopilotAgentEvent.Status($"第 {round} 轮：正在规划下一步。"));
-                var plan = await _planner.PlanNextAsync(
+                var planResult = await _planner.PlanNextAsync(
                     roundRequest,
                     tools,
                     toolResults,
                     readableLocalFilePaths,
                     cancellationToken);
+                totalUsage = totalUsage.Add(planResult.Usage);
+                var plan = planResult.Plan;
 
                 if (plan.Action == CopilotAgentPlanAction.Finish)
                 {
@@ -122,7 +124,7 @@ namespace ColorVision.Copilot
             var preparedPrompt = _contextBuilder.BuildMessages(finalRequest, toolResults);
             onEvent(CopilotAgentEvent.Status("正在生成回答..."));
 
-            await _chatService.StreamReplyAsync(
+            var finalUsage = await _chatService.StreamReplyAsync(
                 request.Profile,
                 preparedPrompt.Messages,
                 delta =>
@@ -134,11 +136,13 @@ namespace ColorVision.Copilot
                         onEvent(CopilotAgentEvent.AnswerDelta(delta.Content));
                 },
                 cancellationToken);
+            totalUsage = totalUsage.Add(finalUsage);
 
             onEvent(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
             {
                 PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
+                Usage = totalUsage,
             };
         }
 
@@ -156,6 +160,7 @@ namespace ColorVision.Copilot
                 SearchRootPaths = request.SearchRootPaths,
                 ActiveDocumentPath = request.ActiveDocumentPath,
                 ReadableLocalFilePaths = readableLocalFilePaths.ToArray(),
+                ReadableLocalDirectoryPaths = request.ReadableLocalDirectoryPaths,
                 SelectedToolInput = plan?.ToolInput ?? CopilotAgentToolInput.Empty,
                 Mode = request.Mode,
             };
@@ -201,6 +206,16 @@ namespace ColorVision.Copilot
                 return builder.ToString();
             }
 
+            if (string.Equals(plan.ToolName, "ListDirectory", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(plan.LocalFilePath))
+            {
+                var directoryName = Path.GetFileName(plan.LocalFilePath);
+                if (string.IsNullOrWhiteSpace(directoryName))
+                    directoryName = plan.LocalFilePath;
+
+                return $" 目标目录：{directoryName}";
+            }
+
             if ((string.Equals(plan.ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "GrepText", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase))
@@ -232,6 +247,19 @@ namespace ColorVision.Copilot
                 {
                     toolName,
                     request.SelectedToolInput?.Query ?? string.Empty,
+                });
+            }
+
+            if (string.Equals(toolName, "ListDirectory", StringComparison.OrdinalIgnoreCase))
+            {
+                var directoryPath = request.SelectedToolInput?.Path;
+                if (string.IsNullOrWhiteSpace(directoryPath))
+                    directoryPath = request.ReadableLocalDirectoryPaths.FirstOrDefault() ?? string.Empty;
+
+                return string.Join("|", new[]
+                {
+                    toolName,
+                    directoryPath,
                 });
             }
 

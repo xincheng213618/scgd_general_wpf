@@ -8,6 +8,7 @@ namespace ColorVision.Copilot
     public sealed class CopilotProfileConfig : ViewModelBase
     {
         public const int DefaultMaxTokens = 2048;
+        public const int DefaultMaxToolRounds = 6;
         public const double DefaultTemperature = 0.2;
 
         public const string DefaultSystemPrompt = "你是 ColorVision Copilot，是 ColorVision 软件内置的通用智能助手。你可以回答通用知识、写作、编程、分析、翻译和软件使用等问题，不要因为问题与 ColorVision 无关就拒绝回答。若问题涉及 ColorVision 软件、项目代码、设备、流程、算法、插件、WPF/C# 工程或应用提供的上下文，再优先结合这些上下文给出更贴合的回答。规则：1. 只在应用明确提供了本地文件、网页、日志、设备或执行结果时，才能把它们当作已知事实，不要假设自己可以直接访问这些资源。2. 如果缺少完成任务所需的上下文，明确说明还需要什么。3. 涉及设备控制、删除文件、修改配置或执行流程时，先提示风险与影响。4. 对一般性问题直接正常回答，对 ColorVision 相关问题优先使用 ColorVision 语境。5. 不要声称自己已经执行了未由应用上下文明确提供的操作。";
@@ -135,6 +136,15 @@ namespace ColorVision.Copilot
         }
         private double _temperature = DefaultTemperature;
 
+        [DisplayName("最大工具轮次")]
+        [Description("Agent 模式下单次请求允许调用工具的最大轮数")]
+        public int MaxToolRounds
+        {
+            get => _maxToolRounds;
+            set => SetProperty(ref _maxToolRounds, Math.Clamp(value, 1, 12));
+        }
+        private int _maxToolRounds = DefaultMaxToolRounds;
+
         [JsonIgnore]
         public bool IsConfigured =>
             !string.IsNullOrWhiteSpace(ApiKey) &&
@@ -187,6 +197,12 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (MaxToolRounds <= 0)
+            {
+                MaxToolRounds = DefaultMaxToolRounds;
+                changed = true;
+            }
+
             if (string.IsNullOrWhiteSpace(SystemPrompt))
             {
                 SystemPrompt = DefaultSystemPrompt;
@@ -225,6 +241,7 @@ namespace ColorVision.Copilot
                 Model = Model,
                 SystemPrompt = SystemPrompt,
                 MaxTokens = MaxTokens,
+                MaxToolRounds = MaxToolRounds,
                 Temperature = Temperature,
             };
         }
@@ -240,6 +257,7 @@ namespace ColorVision.Copilot
                 Model = "deepseek-v4-pro",
                 SystemPrompt = DefaultSystemPrompt,
                 MaxTokens = DefaultMaxTokens,
+                MaxToolRounds = DefaultMaxToolRounds,
                 Temperature = DefaultTemperature,
             };
         }

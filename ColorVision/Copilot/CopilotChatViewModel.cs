@@ -24,10 +24,12 @@ namespace ColorVision.Copilot
 {
     public class CopilotChatViewModel : ViewModelBase
     {
+        private const int AgentHistoryMessageLimit = 8;
         private const int AttachmentContentLimit = 12000;
         private const int MaxWebPageInjectionChars = 8000;
 
         private readonly CopilotChatService _chatService;
+        private readonly CopilotAgentContextBuilder _agentContextBuilder;
         private readonly CopilotAgentService _agentService;
         private readonly CopilotConfig _config;
         private readonly CopilotChatStateStore _stateStore;
@@ -49,7 +51,8 @@ namespace ColorVision.Copilot
         public CopilotChatViewModel(CopilotChatService chatService)
         {
             _chatService = chatService;
-            _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), new CopilotAgentContextBuilder());
+            _agentContextBuilder = new CopilotAgentContextBuilder();
+            _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), _agentContextBuilder);
             _config = CopilotConfig.Instance;
             _stateStore = CopilotChatStateStore.Instance;
 
@@ -88,6 +91,8 @@ namespace ColorVision.Copilot
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
+
+            RefreshComposerTokenEstimate();
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
@@ -165,16 +170,35 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(SelectedAgentModeDescription));
                     OnPropertyChanged(nameof(PrimaryActionToolTip));
+                    RefreshComposerTokenEstimate();
                 }
             }
         }
 
         public string SelectedAgentModeDescription => AgentModes.FirstOrDefault(option => option.Mode == SelectedAgentMode)?.Description ?? string.Empty;
 
+        public string ComposerTokenSummary
+        {
+            get => _composerTokenSummary;
+            private set => SetProperty(ref _composerTokenSummary, value ?? string.Empty);
+        }
+        private string _composerTokenSummary = "发送后显示真实 token usage";
+
+        public string ComposerTokenDetails
+        {
+            get => _composerTokenDetails;
+            private set => SetProperty(ref _composerTokenDetails, value ?? string.Empty);
+        }
+        private string _composerTokenDetails = "当前不再做本地预估，只显示接口真实返回的 token usage。";
+
         public string InputText
         {
             get => _inputText;
-            set => SetProperty(ref _inputText, value ?? string.Empty);
+            set
+            {
+                if (SetProperty(ref _inputText, value ?? string.Empty))
+                    RefreshComposerTokenEstimate();
+            }
         }
         private string _inputText = string.Empty;
 
@@ -183,6 +207,9 @@ namespace ColorVision.Copilot
             get => _isBusy;
             set
             {
+                if (_isBusy == value)
+                    return;
+
                 _isBusy = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanSwitchConversation));
@@ -190,6 +217,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(CanSelectAgentMode));
                 OnPropertyChanged(nameof(PrimaryActionGlyph));
                 OnPropertyChanged(nameof(PrimaryActionToolTip));
+                RefreshComposerTokenEstimate();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -240,8 +268,9 @@ namespace ColorVision.Copilot
 
             try
             {
-                await RunConversationTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext: true);
+                var usage = await RunConversationTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext: true);
                 FinalizeAssistantMessage(assistantMessage);
+                UpdateConversationUsage(conversation, usage);
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -255,6 +284,8 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(assistantMessage.Content))
                     assistantMessage.Content = "已取消当前回复。";
 
+                UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
+
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
             }
@@ -265,6 +296,8 @@ namespace ColorVision.Copilot
                 assistantMessage.Content = string.IsNullOrWhiteSpace(assistantMessage.Content)
                     ? $"请求失败：{ex.Message}"
                     : assistantMessage.Content;
+
+                UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -291,7 +324,7 @@ namespace ColorVision.Copilot
             _currentRequestCts = null;
         }
 
-        private async Task RunConversationTurnAsync(
+        private async Task<CopilotTokenUsage> RunConversationTurnAsync(
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
@@ -303,14 +336,13 @@ namespace ColorVision.Copilot
 
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
             {
-                await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
-                return;
+                return await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
             }
 
-            await RunAgentTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
+            return await RunAgentTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
         }
 
-        private async Task RunChatTurnAsync(
+        private async Task<CopilotTokenUsage> RunChatTurnAsync(
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
@@ -322,14 +354,14 @@ namespace ColorVision.Copilot
                 userMessage.RequestContent = await BuildUserRequestContentAsync(prompt, cancellationToken);
 
             var history = BuildConversationHistory(includeAttachmentContext: true);
-            await _chatService.StreamReplyAsync(
+            return await _chatService.StreamReplyAsync(
                 requestProfile,
                 history,
                 delta => ApplyAssistantDelta(assistantMessage, delta),
                 cancellationToken);
         }
 
-        private async Task RunAgentTurnAsync(
+        private async Task<CopilotTokenUsage> RunAgentTurnAsync(
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
@@ -346,15 +378,22 @@ namespace ColorVision.Copilot
                 var history = BuildVisibleConversationHistory(conversation, userMessage, 8);
                 history.Add(new CopilotRequestMessage("user", userMessage.RequestContent.Trim()));
 
-                await _chatService.StreamReplyAsync(
+                return await _chatService.StreamReplyAsync(
                     requestProfile,
                     history,
                     delta => ApplyAssistantDelta(assistantMessage, delta),
                     cancellationToken);
-                return;
             }
 
-            var explicitLocalFilePaths = CopilotLocalFileToolSupport.ExtractExplicitLocalFilePaths(userMessage.Content);
+            var explicitLocalPaths = CopilotLocalFileToolSupport.ExtractExplicitLocalFilePaths(userMessage.Content);
+            var explicitLocalDirectoryPaths = explicitLocalPaths
+                .Where(IsExistingDirectoryPath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            var explicitLocalFilePaths = explicitLocalPaths
+                .Where(path => !IsExistingDirectoryPath(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
             var agentRequest = new CopilotAgentRequest
             {
@@ -362,9 +401,10 @@ namespace ColorVision.Copilot
                 Profile = requestProfile,
                 History = BuildVisibleConversationHistory(conversation, userMessage, 8),
                 Attachments = conversation.Attachments.ToArray(),
-                SearchRootPaths = BuildSearchRootPaths(conversation, explicitLocalFilePaths),
+                SearchRootPaths = BuildSearchRootPaths(conversation, explicitLocalPaths),
                 ActiveDocumentPath = _activeDocumentPath,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
+                ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
                 Mode = userMessage.RequestMode,
             };
 
@@ -374,6 +414,7 @@ namespace ColorVision.Copilot
                 cancellationToken);
 
             userMessage.RequestContent = result.PreparedUserMessageContent;
+            return result.Usage;
         }
 
         private void WorkspaceManager_ContentIdSelected(object? sender, string contentId)
@@ -427,6 +468,21 @@ namespace ColorVision.Copilot
             }
             catch
             {
+            }
+        }
+
+        private static bool IsExistingDirectoryPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            try
+            {
+                return Directory.Exists(Path.GetFullPath(path));
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -638,7 +694,14 @@ namespace ColorVision.Copilot
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             OnPropertyChanged(nameof(IsConversationEmpty));
+            RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            InvalidateChatAttachmentTokenEstimate();
+            RefreshComposerTokenEstimate();
         }
 
         private void SelectConversation(CopilotConversationRecord? conversation, bool persist, string? preferredProfileId = null)
@@ -654,9 +717,15 @@ namespace ColorVision.Copilot
             }
 
             if (_selectedConversation != null)
+                _selectedConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
+
+            if (_selectedConversation != null)
                 _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
 
             _selectedConversation = conversation;
+            if (_selectedConversation != null)
+                _selectedConversation.Attachments.CollectionChanged += Attachments_CollectionChanged;
+
             if (_selectedConversation != null)
                 _selectedConversation.Messages.CollectionChanged += Messages_CollectionChanged;
 
@@ -687,6 +756,9 @@ namespace ColorVision.Copilot
             if (conversation != null && EnsureAssistantHeaders(conversation, profile))
                 shouldPersist = true;
 
+            InvalidateChatAttachmentTokenEstimate();
+            RefreshComposerTokenEstimate();
+
             if (shouldPersist)
                 PersistState();
         }
@@ -715,6 +787,8 @@ namespace ColorVision.Copilot
 
             if (shouldPersist)
                 PersistState();
+
+            RefreshComposerTokenEstimate();
         }
 
         private CopilotConversationRecord EnsureConversation()
@@ -748,6 +822,7 @@ namespace ColorVision.Copilot
 
             conversation.RefreshSummary();
             BringConversationToFront(conversation);
+            RefreshComposerTokenEstimate();
         }
 
         private void QueueConversationTitleGeneration(CopilotConversationRecord conversation, CopilotProfileConfig requestProfile)
@@ -1092,8 +1167,9 @@ namespace ColorVision.Copilot
                 };
                 conversation.Messages.Add(replacementAssistantMessage);
 
-                await RunConversationTurnAsync(conversation, requestProfile, userMessage, replacementAssistantMessage, refreshWebContext);
+                var usage = await RunConversationTurnAsync(conversation, requestProfile, userMessage, replacementAssistantMessage, refreshWebContext);
                 FinalizeAssistantMessage(replacementAssistantMessage);
+                UpdateConversationUsage(conversation, usage);
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -1109,6 +1185,8 @@ namespace ColorVision.Copilot
 
                 if (string.IsNullOrWhiteSpace(replacementAssistantMessage.Content))
                     replacementAssistantMessage.Content = "已取消当前回复。";
+
+                UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -1129,6 +1207,8 @@ namespace ColorVision.Copilot
                 replacementAssistantMessage.Content = string.IsNullOrWhiteSpace(replacementAssistantMessage.Content)
                     ? $"请求失败：{ex.Message}"
                     : replacementAssistantMessage.Content;
+
+                UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
 
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -1278,6 +1358,130 @@ namespace ColorVision.Copilot
             return "AI";
         }
 
+        private void UpdateConversationUsage(CopilotConversationRecord conversation, CopilotTokenUsage usage)
+        {
+            if (usage.HasAny)
+                conversation.SetLastUsage(usage);
+            else
+                conversation.ClearLastUsage();
+
+            if (ReferenceEquals(conversation, SelectedConversation))
+                RefreshComposerTokenEstimate();
+        }
+
+        private void RefreshComposerTokenEstimate()
+        {
+            if (IsBusy)
+            {
+                ComposerTokenSummary = "正在等待接口返回真实 token usage...";
+                ComposerTokenDetails = BuildPendingComposerTokenDetails();
+                return;
+            }
+
+            if (SelectedConversation?.LastUsage.HasAny == true)
+            {
+                ComposerTokenSummary = BuildActualUsageSummary(SelectedConversation.LastUsage);
+                ComposerTokenDetails = BuildActualUsageDetails(SelectedConversation, SelectedConversation.LastUsage);
+                return;
+            }
+
+            if (SelectedProfile == null)
+            {
+                ComposerTokenSummary = "未选择模型";
+                ComposerTokenDetails = "请选择或配置模型后再发送。当前面板只显示接口真实返回的 token usage。";
+                return;
+            }
+
+            if (SelectedConversation?.Messages.Count > 0)
+            {
+                ComposerTokenSummary = "最近一次请求未返回 token usage";
+                ComposerTokenDetails = BuildUnavailableUsageDetails(SelectedConversation);
+                return;
+            }
+
+            ComposerTokenSummary = "发送后显示真实 token usage";
+            ComposerTokenDetails = BuildIdleComposerTokenDetails();
+        }
+
+        private void InvalidateChatAttachmentTokenEstimate()
+        {
+            RefreshComposerTokenEstimate();
+        }
+
+        private string BuildActualUsageSummary(CopilotTokenUsage usage)
+        {
+            return $"最近一次：输入 {CopilotTokenUsage.FormatCount(usage.InputTokens)} · 输出 {CopilotTokenUsage.FormatCount(usage.OutputTokens)} · 总计 {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}";
+        }
+
+        private string BuildActualUsageDetails(CopilotConversationRecord conversation, CopilotTokenUsage usage)
+        {
+            var mode = ResolveLastRequestMode(conversation);
+            var builder = new StringBuilder();
+            builder.AppendLine($"模型：{ResolveUsageModelLabel(conversation)}");
+            builder.AppendLine($"模式：{ResolveModeLabel(mode)}");
+            builder.AppendLine($"输入 tokens：{CopilotTokenUsage.FormatCount(usage.InputTokens)}");
+            builder.AppendLine($"输出 tokens：{CopilotTokenUsage.FormatCount(usage.OutputTokens)}");
+            builder.AppendLine($"总计 tokens：{CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}");
+            builder.AppendLine();
+            builder.Append("说明：这里显示的是接口真实返回的最近一次请求 usage。");
+
+            if (mode != CopilotAgentMode.Chat)
+                builder.Append(" Agent 模式已累计 planner 和最终回答的多次模型调用。");
+
+            return builder.ToString().TrimEnd();
+        }
+
+        private string BuildPendingComposerTokenDetails()
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine($"模型：{SelectedProfile?.DisplayLabel}");
+            builder.AppendLine($"模式：{ResolveModeLabel(SelectedAgentMode)}");
+            builder.AppendLine();
+            builder.Append("说明：当前只显示接口真实返回的 usage，统计会在本次请求完成后刷新。");
+            return builder.ToString();
+        }
+
+        private string BuildUnavailableUsageDetails(CopilotConversationRecord conversation)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine($"模型：{ResolveUsageModelLabel(conversation)}");
+            builder.AppendLine($"模式：{ResolveModeLabel(ResolveLastRequestMode(conversation))}");
+            builder.AppendLine();
+            builder.Append("说明：当前面板不再做本地预估，只显示接口真实返回的 usage。最近一次请求没有返回 usage 字段，所以这里没有可显示的输入/输出 token。");
+            return builder.ToString();
+        }
+
+        private string BuildIdleComposerTokenDetails()
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine($"模型：{SelectedProfile?.DisplayLabel}");
+            builder.AppendLine($"模式：{ResolveModeLabel(SelectedAgentMode)}");
+            builder.AppendLine();
+            builder.Append("说明：发送后如果接口返回 usage 字段，这里会显示真实的输入、输出和总计 tokens。");
+            return builder.ToString();
+        }
+
+        private string ResolveUsageModelLabel(CopilotConversationRecord conversation)
+        {
+            if (!string.IsNullOrWhiteSpace(conversation.ProfileDisplayName))
+                return conversation.ProfileDisplayName;
+
+            if (!string.IsNullOrWhiteSpace(SelectedProfile?.DisplayLabel))
+                return SelectedProfile.DisplayLabel;
+
+            return "未命名模型";
+        }
+
+        private CopilotAgentMode ResolveLastRequestMode(CopilotConversationRecord conversation)
+        {
+            return conversation.Messages.LastOrDefault(message => message.IsUser)?.RequestMode ?? SelectedAgentMode;
+        }
+
+        private string ResolveModeLabel(CopilotAgentMode mode)
+        {
+            return AgentModes.FirstOrDefault(option => option.Mode == mode)?.Label ?? mode.ToString();
+        }
+
         private static string BuildConversationTitlePrompt(CopilotConversationRecord conversation)
         {
             var firstUserMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
@@ -1353,6 +1557,8 @@ namespace ColorVision.Copilot
             conversation.RefreshSummary();
             OnPropertyChanged(nameof(Attachments));
             OnPropertyChanged(nameof(HasAttachments));
+            InvalidateChatAttachmentTokenEstimate();
+            RefreshComposerTokenEstimate();
             PersistState();
         }
 

@@ -34,6 +34,62 @@ namespace ColorVision.Copilot
         public bool HasAny => HasReasoning || HasContent;
     }
 
+    public readonly record struct CopilotTokenUsage(int InputTokens, int OutputTokens, int TotalTokens)
+    {
+        public static CopilotTokenUsage Empty => new(0, 0, 0);
+
+        public bool HasAny => InputTokens > 0 || OutputTokens > 0 || TotalTokens > 0;
+
+        public int EffectiveTotalTokens => TotalTokens > 0 ? TotalTokens : Math.Max(0, InputTokens) + Math.Max(0, OutputTokens);
+
+        public CopilotTokenUsage MergeProgress(CopilotTokenUsage other)
+        {
+            if (!HasAny)
+                return other;
+
+            if (!other.HasAny)
+                return this;
+
+            var inputTokens = other.InputTokens > 0 ? Math.Max(InputTokens, other.InputTokens) : InputTokens;
+            var outputTokens = other.OutputTokens > 0 ? Math.Max(OutputTokens, other.OutputTokens) : OutputTokens;
+            var totalTokens = other.TotalTokens > 0
+                ? Math.Max(EffectiveTotalTokens, other.TotalTokens)
+                : Math.Max(0, inputTokens) + Math.Max(0, outputTokens);
+
+            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens);
+        }
+
+        public CopilotTokenUsage Add(CopilotTokenUsage other)
+        {
+            if (!HasAny)
+                return other;
+
+            if (!other.HasAny)
+                return this;
+
+            var inputTokens = Math.Max(0, InputTokens) + Math.Max(0, other.InputTokens);
+            var outputTokens = Math.Max(0, OutputTokens) + Math.Max(0, other.OutputTokens);
+            return new CopilotTokenUsage(inputTokens, outputTokens, inputTokens + outputTokens);
+        }
+
+        public static string FormatCount(int value)
+        {
+            var normalized = Math.Max(0, value);
+            return normalized >= 1000
+                ? $"{normalized / 1000d:0.#}k"
+                : normalized.ToString();
+        }
+    }
+
+    public readonly record struct CopilotChatReply(CopilotStreamDelta Delta, CopilotTokenUsage Usage)
+    {
+        public static CopilotChatReply Empty => new(CopilotStreamDelta.Empty, CopilotTokenUsage.Empty);
+
+        public string ReasoningContent => Delta.ReasoningContent;
+
+        public string Content => Delta.Content;
+    }
+
     public sealed class CopilotChatMessage : ViewModelBase
     {
         public CopilotChatMessage()
@@ -294,6 +350,27 @@ namespace ColorVision.Copilot
         }
         private string _profileDisplayName = string.Empty;
 
+        public int LastUsageInputTokens
+        {
+            get => _lastUsageInputTokens;
+            set => SetProperty(ref _lastUsageInputTokens, Math.Max(0, value));
+        }
+        private int _lastUsageInputTokens;
+
+        public int LastUsageOutputTokens
+        {
+            get => _lastUsageOutputTokens;
+            set => SetProperty(ref _lastUsageOutputTokens, Math.Max(0, value));
+        }
+        private int _lastUsageOutputTokens;
+
+        public int LastUsageTotalTokens
+        {
+            get => _lastUsageTotalTokens;
+            set => SetProperty(ref _lastUsageTotalTokens, Math.Max(0, value));
+        }
+        private int _lastUsageTotalTokens;
+
         public DateTime CreatedAt
         {
             get => _createdAt;
@@ -324,6 +401,9 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string PinMenuText => IsPinned ? "取消置顶" : "置顶";
+
+        [JsonIgnore]
+        public CopilotTokenUsage LastUsage => new(LastUsageInputTokens, LastUsageOutputTokens, LastUsageTotalTokens);
 
         public bool EnsureValid()
         {
@@ -366,6 +446,20 @@ namespace ColorVision.Copilot
         public void Touch()
         {
             UpdatedAt = DateTime.Now;
+        }
+
+        public void SetLastUsage(CopilotTokenUsage usage)
+        {
+            LastUsageInputTokens = usage.InputTokens;
+            LastUsageOutputTokens = usage.OutputTokens;
+            LastUsageTotalTokens = usage.EffectiveTotalTokens;
+        }
+
+        public void ClearLastUsage()
+        {
+            LastUsageInputTokens = 0;
+            LastUsageOutputTokens = 0;
+            LastUsageTotalTokens = 0;
         }
 
         public void RefreshSummary()

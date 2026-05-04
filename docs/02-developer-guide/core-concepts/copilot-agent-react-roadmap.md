@@ -41,7 +41,7 @@ flowchart TD
 
 ## 当前工具层到底做了什么
 
-当前默认只注册了六个只读工具：
+当前默认只注册了七个只读工具：
 
 1. FetchUrl
    作用：从用户文本里提取 URL，并抓取网页正文。
@@ -52,13 +52,16 @@ flowchart TD
 3. GrepText
    作用：按关键字或标识符在当前解决方案文本文件里找命中行。
 
-4. ReadAttachedFile
+4. ListDirectory
+   作用：列出用户在当前消息中明确提到的本地文件夹内容，并产出后续可读文件候选。
+
+5. ReadAttachedFile
    作用：读取“当前会话已经挂载的文件附件”。
 
-5. ReadLocalFile
+6. ReadLocalFile
    作用：读取用户在当前消息中明确提到的本地文本文件。
 
-6. GetRecentLog
+7. GetRecentLog
    作用：按关键字或 Diagnose 模式读取最近日志。
 
 这说明当前 Agent 的文件读取能力有明确边界：
@@ -152,8 +155,8 @@ CopilotAgentService.RunAsync 的模式是：
 当前版本已经能处理“请读取 C:\\Users\\...\\remote_control.py”这类明确路径输入，但仍然有明显边界：
 
 1. 当前仍然不能让模型跳出允许列表，去读取任意新路径
-2. request 里还没有通用的工具参数对象和更明确的权限策略对象
-3. 结构化参数目前已覆盖 ReadLocalFile 的 path/startLine/endLine，以及 SearchFiles、GrepText、GetRecentLog 的 query；但更多诊断工具仍主要依赖请求级触发
+2. request 里已经有最小的统一工具参数对象，但接口层和权限策略对象还没有彻底独立出来
+3. 结构化参数目前已覆盖 ReadLocalFile 与 ListDirectory 的 path，以及 SearchFiles、GrepText、GetRecentLog 的 query；但更多诊断工具仍主要依赖请求级触发
 4. 服务层虽然已经能做最小 planner-executor 循环，但还不是更强的多工具规划闭环
 5. 当前文件读取虽然支持按行范围精读，但还没有更细的片段定位、symbol 级读取和 AST 级上下文
 
@@ -169,7 +172,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 这一步不要求完整 ReAct，只需要把当前最小多轮 Agent 扩一下即可。
 
-当前状态：已实现最小版本，能够从当前用户消息里提取显式本地路径，并读取最多 3 个文本文件后再交给模型回答；也已经补上基于解决方案搜索根的 SearchFiles 和 GrepText，用于先收集候选上下文，并支持 `SearchFiles/GrepText -> ReadLocalFile(path, startLine, endLine)` 这种最小两轮链式执行。
+当前状态：已实现最小版本，能够从当前用户消息里提取显式本地路径，并把显式文件与显式文件夹分流处理；也已经补上基于解决方案搜索根的 SearchFiles 和 GrepText，以及针对本地文件夹的 ListDirectory，并支持 `ListDirectory(path) -> ReadLocalFile(path, startLine, endLine)` 与 `SearchFiles/GrepText -> ReadLocalFile(path, startLine, endLine)` 这种最小两轮链式执行。
 
 #### 建议新增能力
 

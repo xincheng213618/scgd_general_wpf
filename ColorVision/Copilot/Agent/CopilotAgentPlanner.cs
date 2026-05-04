@@ -35,6 +35,13 @@ namespace ColorVision.Copilot
         public bool IsFallback { get; init; }
     }
 
+    public sealed class CopilotAgentPlanResult
+    {
+        public CopilotAgentPlan Plan { get; init; } = new();
+
+        public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
+    }
+
     public sealed class CopilotAgentPlanner
     {
         private const int MaxObservedTools = 6;
@@ -49,7 +56,7 @@ namespace ColorVision.Copilot
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
         }
 
-        public async Task<CopilotAgentPlan> PlanNextAsync(
+        public async Task<CopilotAgentPlanResult> PlanNextAsync(
             CopilotAgentRequest request,
             IReadOnlyList<ICopilotTool> availableTools,
             IReadOnlyList<CopilotToolResult> toolResults,
@@ -61,11 +68,14 @@ namespace ColorVision.Copilot
 
             if (availableTools.Count == 0)
             {
-                return new CopilotAgentPlan
+                return new CopilotAgentPlanResult
                 {
-                    Action = CopilotAgentPlanAction.Finish,
-                    Reason = "当前没有可用工具。",
-                    IsFallback = true,
+                    Plan = new CopilotAgentPlan
+                    {
+                        Action = CopilotAgentPlanAction.Finish,
+                        Reason = "当前没有可用工具。",
+                        IsFallback = true,
+                    },
                 };
             }
 
@@ -84,7 +94,11 @@ namespace ColorVision.Copilot
                 ? response.Content
                 : response.ReasoningContent;
 
-            return ParsePlannerResponse(plannerText, availableTools);
+            return new CopilotAgentPlanResult
+            {
+                Plan = ParsePlannerResponse(plannerText, availableTools),
+                Usage = response.Usage,
+            };
         }
 
         private static string BuildPlannerPrompt(
@@ -97,13 +111,13 @@ namespace ColorVision.Copilot
             builder.AppendLine("你现在要为 Agent 选择下一步动作。只返回 JSON。不要回答用户问题。");
             builder.AppendLine();
             builder.AppendLine("JSON 格式：");
-            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog 等工具可填写\",\"path\":\"仅在 ReadLocalFile 时填写\",\"startLine\":0,\"endLine\":0}}");
+            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog 等工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
             builder.AppendLine();
             builder.AppendLine("决策规则：");
             builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
             builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
             builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText 或 GetRecentLog 时，尽量填写 input.query，使用更短、更聚焦的搜索词，而不是原样重复整段用户问题。\n5. 当 toolName=ReadLocalFile 时，尽量填写 input.path、input.startLine、input.endLine；path 必须来自可读文件列表。只有需要局部上下文时，优先小范围读取，例如 1-120 或 200-320。否则 input 置空或写 0。\n6. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText 或 GetRecentLog 时，尽量填写 input.query，使用更短、更聚焦的搜索词，而不是原样重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，尽量填写 input.path、input.startLine、input.endLine；path 必须来自可读文件列表。只有需要局部上下文时，优先小范围读取，例如 1-120 或 200-320。否则 input 置空或写 0。\n7. reason 保持一句话，20 到 60 字优先。");
             builder.AppendLine();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
@@ -126,6 +140,18 @@ namespace ColorVision.Copilot
             else
             {
                 foreach (var path in readableLocalFilePaths.Take(5))
+                    builder.Append("- ").AppendLine(path);
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("# 当前可直接列出的本地文件夹");
+            if (request.ReadableLocalDirectoryPaths == null || request.ReadableLocalDirectoryPaths.Count == 0)
+            {
+                builder.AppendLine("- 无");
+            }
+            else
+            {
+                foreach (var path in request.ReadableLocalDirectoryPaths.Take(5))
                     builder.Append("- ").AppendLine(path);
             }
 
@@ -346,10 +372,16 @@ namespace ColorVision.Copilot
             return new CopilotAgentToolInput
             {
                 Query = RequiresQuery(toolName) ? toolQuery : string.Empty,
-                Path = string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? localFilePath : string.Empty,
+                Path = RequiresPath(toolName) ? localFilePath : string.Empty,
                 StartLine = string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? startLine : null,
                 EndLine = string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) ? NormalizeEndLine(startLine, endLine) : null,
             };
+        }
+
+        private static bool RequiresPath(string toolName)
+        {
+            return string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "ListDirectory", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool RequiresQuery(string toolName)
