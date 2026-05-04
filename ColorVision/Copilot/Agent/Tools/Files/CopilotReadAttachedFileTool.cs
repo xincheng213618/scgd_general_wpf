@@ -22,7 +22,10 @@ namespace ColorVision.Copilot
                 && request.Mode != CopilotAgentMode.Chat;
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        public async Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 

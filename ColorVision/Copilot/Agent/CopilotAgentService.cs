@@ -40,7 +40,9 @@ namespace ColorVision.Copilot
                 (request.ReadableLocalFilePaths ?? Array.Empty<string>())
                     .Where(path => !string.IsNullOrWhiteSpace(path)),
                 StringComparer.OrdinalIgnoreCase);
-            var maxToolRounds = Math.Clamp(request.Profile?.MaxToolRounds ?? CopilotProfileConfig.DefaultMaxToolRounds, 1, 12);
+            var maxToolRounds = request.Profile?.MaxToolRounds > 0
+                ? request.Profile.MaxToolRounds
+                : CopilotProfileConfig.DefaultMaxToolRounds;
             var executedStepSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var executedAnyTool = false;
             var totalUsage = CopilotTokenUsage.Empty;
@@ -49,7 +51,7 @@ namespace ColorVision.Copilot
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var roundRequest = CreateRoundRequest(request, readableLocalFilePaths, null);
+                var roundRequest = CreateRoundRequest(request, readableLocalFilePaths);
                 var tools = _toolRegistry.FindTools(roundRequest)
                     .ToArray();
 
@@ -77,10 +79,13 @@ namespace ColorVision.Copilot
                     break;
                 }
 
+                plan = NormalizePlanForExecution(request, readableLocalFilePaths, toolResults, plan);
+
                 var selectedTool = tools.FirstOrDefault(tool => string.Equals(tool.Name, plan.ToolName, StringComparison.OrdinalIgnoreCase))
                     ?? tools[0];
-                var executionRequest = CreateRoundRequest(request, readableLocalFilePaths, plan);
-                var stepSignature = BuildToolExecutionSignature(selectedTool.Name, executionRequest);
+                var executionRequest = CreateRoundRequest(request, readableLocalFilePaths);
+                var executionInput = plan.ToolInput ?? CopilotAgentToolInput.Empty;
+                var stepSignature = BuildToolExecutionSignature(selectedTool.Name, executionRequest, executionInput);
                 if (!executedStepSignatures.Add(stepSignature))
                 {
                     onEvent(CopilotAgentEvent.Status($"第 {round} 轮：规划重复调用同一工具和参数，结束工具阶段。"));
@@ -95,7 +100,7 @@ namespace ColorVision.Copilot
                 CopilotToolResult result;
                 try
                 {
-                    result = await selectedTool.ExecuteAsync(executionRequest, cancellationToken);
+                    result = await selectedTool.ExecuteAsync(executionRequest, executionInput, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -120,7 +125,7 @@ namespace ColorVision.Copilot
                     onEvent(CopilotAgentEvent.Status($"第 {round} 轮：已加入新的候选文件，准备继续规划。"));
             }
 
-                    var finalRequest = CreateRoundRequest(request, readableLocalFilePaths, null);
+                    var finalRequest = CreateRoundRequest(request, readableLocalFilePaths);
             var preparedPrompt = _contextBuilder.BuildMessages(finalRequest, toolResults);
             onEvent(CopilotAgentEvent.Status("正在生成回答..."));
 
@@ -148,8 +153,7 @@ namespace ColorVision.Copilot
 
         private static CopilotAgentRequest CreateRoundRequest(
             CopilotAgentRequest request,
-            HashSet<string> readableLocalFilePaths,
-            CopilotAgentPlan? plan)
+            HashSet<string> readableLocalFilePaths)
         {
             return new CopilotAgentRequest
             {
@@ -161,8 +165,35 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = request.ActiveDocumentPath,
                 ReadableLocalFilePaths = readableLocalFilePaths.ToArray(),
                 ReadableLocalDirectoryPaths = request.ReadableLocalDirectoryPaths,
-                SelectedToolInput = plan?.ToolInput ?? CopilotAgentToolInput.Empty,
+                PreferBatchReadLocalFiles = request.PreferBatchReadLocalFiles,
                 Mode = request.Mode,
+            };
+        }
+
+        private static CopilotAgentPlan NormalizePlanForExecution(
+            CopilotAgentRequest request,
+            IReadOnlyCollection<string> readableLocalFilePaths,
+            IReadOnlyList<CopilotToolResult> toolResults,
+            CopilotAgentPlan plan)
+        {
+            if (!request.PreferBatchReadLocalFiles
+                || !string.Equals(plan.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                || readableLocalFilePaths.Count <= 1
+                || toolResults.Any(result => string.Equals(result.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase) && result.Success)
+                || string.IsNullOrWhiteSpace(plan.LocalFilePath))
+            {
+                return plan;
+            }
+
+            return new CopilotAgentPlan
+            {
+                Action = plan.Action,
+                ToolName = plan.ToolName,
+                ToolInput = CopilotAgentToolInput.Empty,
+                Reason = string.IsNullOrWhiteSpace(plan.Reason)
+                    ? "当前目录下存在多个候选文件，改为本轮批量读取。"
+                    : plan.Reason + " 当前目录下存在多个候选文件，改为本轮批量读取。",
+                IsFallback = plan.IsFallback,
             };
         }
 
@@ -227,16 +258,16 @@ namespace ColorVision.Copilot
             return string.Empty;
         }
 
-        private static string BuildToolExecutionSignature(string toolName, CopilotAgentRequest request)
+        private static string BuildToolExecutionSignature(string toolName, CopilotAgentRequest request, CopilotAgentToolInput toolInput)
         {
             if (string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
             {
                 return string.Join("|", new[]
                 {
                     toolName,
-                    request.SelectedToolInput?.Path ?? string.Empty,
-                    request.SelectedToolInput?.StartLine?.ToString() ?? string.Empty,
-                    request.SelectedToolInput?.EndLine?.ToString() ?? string.Empty,
+                    toolInput?.Path ?? string.Empty,
+                    toolInput?.StartLine?.ToString() ?? string.Empty,
+                    toolInput?.EndLine?.ToString() ?? string.Empty,
                 });
             }
 
@@ -246,13 +277,13 @@ namespace ColorVision.Copilot
                 return string.Join("|", new[]
                 {
                     toolName,
-                    request.SelectedToolInput?.Query ?? string.Empty,
+                    toolInput?.Query ?? string.Empty,
                 });
             }
 
             if (string.Equals(toolName, "ListDirectory", StringComparison.OrdinalIgnoreCase))
             {
-                var directoryPath = request.SelectedToolInput?.Path;
+                var directoryPath = toolInput?.Path;
                 if (string.IsNullOrWhiteSpace(directoryPath))
                     directoryPath = request.ReadableLocalDirectoryPaths.FirstOrDefault() ?? string.Empty;
 
@@ -268,7 +299,7 @@ namespace ColorVision.Copilot
                 return string.Join("|", new[]
                 {
                     toolName,
-                    request.SelectedToolInput?.Query ?? string.Empty,
+                    toolInput?.Query ?? string.Empty,
                 });
             }
 

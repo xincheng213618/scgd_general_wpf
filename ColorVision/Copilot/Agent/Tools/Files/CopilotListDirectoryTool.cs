@@ -11,7 +11,6 @@ namespace ColorVision.Copilot
     public sealed class CopilotListDirectoryTool : ICopilotTool
     {
         private const int MaxListedEntries = 60;
-        private const int MaxSuggestedFiles = 12;
 
         public string Name => "ListDirectory";
 
@@ -23,7 +22,10 @@ namespace ColorVision.Copilot
                 && request.Mode != CopilotAgentMode.Chat;
         }
 
-        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 
@@ -45,7 +47,7 @@ namespace ColorVision.Copilot
                 });
             }
 
-            var selectedDirectory = NormalizePath(request.SelectedToolInput?.Path);
+            var selectedDirectory = NormalizePath(toolInput?.Path);
             if (!string.IsNullOrWhiteSpace(selectedDirectory)
                 && !allowedDirectories.Contains(selectedDirectory, StringComparer.OrdinalIgnoreCase))
             {
@@ -138,7 +140,6 @@ namespace ColorVision.Copilot
                 Content = builder.ToString().TrimEnd(),
                 SuggestedReadableLocalFilePaths = files
                     .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)
-                    .Take(MaxSuggestedFiles)
                     .ToArray(),
             });
         }

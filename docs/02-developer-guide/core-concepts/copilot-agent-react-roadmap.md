@@ -172,7 +172,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 这一步不要求完整 ReAct，只需要把当前最小多轮 Agent 扩一下即可。
 
-当前状态：已实现最小版本，能够从当前用户消息里提取显式本地路径，并把显式文件与显式文件夹分流处理；也已经补上基于解决方案搜索根的 SearchFiles 和 GrepText，以及针对本地文件夹的 ListDirectory，并支持 `ListDirectory(path) -> ReadLocalFile(path, startLine, endLine)` 与 `SearchFiles/GrepText -> ReadLocalFile(path, startLine, endLine)` 这种最小两轮链式执行。
+当前状态：已实现最小版本，能够从当前用户消息里提取显式本地路径，并把显式文件与显式文件夹分流处理；也已经补上基于解决方案搜索根的 SearchFiles 和 GrepText，以及针对本地文件夹的 ListDirectory，并支持 `ListDirectory(path) -> ReadLocalFile(batch-all)` 与 `SearchFiles/GrepText -> ReadLocalFile(path, startLine, endLine)` 这种最小两轮链式执行。对于显式目录分析场景，首个 ReadLocalFile 会优先批量读取当前目录下全部候选文件，而不是继续逐文件消耗轮次。
 
 #### 建议新增能力
 
@@ -448,4 +448,4 @@ Phase 4
 2. 更强的多步 planner-executor 闭环
 3. 面向代码场景的便宜检索工具集
 
-如果只是为了尽快继续逼近 ReAct，最佳下一步不是直接上完整 coding agent，而是在当前统一工具参数兼容层的基础上，让更多诊断工具接入结构化参数，并逐步把 `ICopilotTool` 接口本身迁移到真正的 tool-args 模型。
+如果只是为了尽快继续逼近 ReAct，最佳下一步不是直接上完整 coding agent，而是在当前已落地的显式 tool-args 接口基础上，继续补更多诊断工具、提高 planner-executor 闭环质量，并逐步引入更便宜但更懂代码结构的检索能力。

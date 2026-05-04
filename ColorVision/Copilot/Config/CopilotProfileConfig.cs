@@ -141,7 +141,7 @@ namespace ColorVision.Copilot
         public int MaxToolRounds
         {
             get => _maxToolRounds;
-            set => SetProperty(ref _maxToolRounds, Math.Clamp(value, 1, 12));
+            set => SetProperty(ref _maxToolRounds, Math.Max(1, value));
         }
         private int _maxToolRounds = DefaultMaxToolRounds;
 

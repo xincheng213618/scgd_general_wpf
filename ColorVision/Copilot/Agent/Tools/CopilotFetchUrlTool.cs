@@ -23,7 +23,10 @@ namespace ColorVision.Copilot
             return CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0;
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        public async Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 

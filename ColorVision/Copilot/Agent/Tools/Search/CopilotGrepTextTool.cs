@@ -48,19 +48,19 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat || request.SearchRootPaths.Count == 0)
                 return false;
 
-            if (!string.IsNullOrWhiteSpace(request.SelectedToolInput?.Query))
-                return true;
-
             var patterns = ExtractPatterns(request.UserText);
             return patterns.Count > 0 && HasGrepIntent(request.UserText);
         }
 
-        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 
             var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.SearchRootPaths);
-            var patterns = ResolvePatterns(request);
+            var patterns = ResolvePatterns(request, toolInput);
             if (searchRoots.Count == 0 || patterns.Count == 0)
             {
                 return Task.FromResult(new CopilotToolResult
@@ -138,9 +138,9 @@ namespace ColorVision.Copilot
             });
         }
 
-        private static IReadOnlyList<string> ResolvePatterns(CopilotAgentRequest request)
+        private static IReadOnlyList<string> ResolvePatterns(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
         {
-            var toolQuery = request.SelectedToolInput?.Query;
+            var toolQuery = toolInput?.Query;
             if (!string.IsNullOrWhiteSpace(toolQuery))
                 return ExtractPatterns(toolQuery);
 

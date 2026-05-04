@@ -34,9 +34,6 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
 
-            if (!string.IsNullOrWhiteSpace(request.SelectedToolInput?.Query))
-                return true;
-
             if (request.Mode == CopilotAgentMode.Diagnose)
                 return true;
 
@@ -44,11 +41,14 @@ namespace ColorVision.Copilot
             return DiagnoseKeywords.Any(keyword => text.Contains(keyword, StringComparison.OrdinalIgnoreCase));
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        public async Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var query = (request.SelectedToolInput?.Query ?? string.Empty).Trim();
+            var query = (toolInput?.Query ?? string.Empty).Trim();
 
             var latestLog = GetCandidateLogDirectories()
                 .Where(Directory.Exists)

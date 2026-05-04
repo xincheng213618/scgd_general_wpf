@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotReadLocalFileTool : ICopilotTool
     {
-        private const int MaxFilesPerRequest = 3;
+        private const int DefaultMaxFilesPerRequest = 3;
 
         public string Name => "ReadLocalFile";
 
@@ -21,11 +21,12 @@ namespace ColorVision.Copilot
                 && request.Mode != CopilotAgentMode.Chat;
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        public async Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-
-            var toolInput = request.SelectedToolInput ?? CopilotAgentToolInput.Empty;
 
             var allowedPaths = request.ReadableLocalFilePaths
                 .Where(path => !string.IsNullOrWhiteSpace(path))
@@ -35,6 +36,7 @@ namespace ColorVision.Copilot
                 .ToArray();
 
             var selectedPath = NormalizePath(toolInput.Path);
+            var preferBatchReadAll = request.PreferBatchReadLocalFiles && string.IsNullOrWhiteSpace(selectedPath);
             string[] paths;
 
             if (!string.IsNullOrWhiteSpace(selectedPath))
@@ -54,9 +56,9 @@ namespace ColorVision.Copilot
             }
             else
             {
-                paths = allowedPaths
-                    .Take(MaxFilesPerRequest)
-                    .ToArray();
+                paths = preferBatchReadAll
+                    ? allowedPaths
+                    : allowedPaths.Take(DefaultMaxFilesPerRequest).ToArray();
             }
 
             if (paths.Length == 0)
@@ -113,14 +115,14 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = successCount > 0,
                 Summary = successCount > 0
-                    ? BuildSuccessSummary(paths.Length, selectedPath, lastSuccess)
+                    ? BuildSuccessSummary(successCount, paths.Length, selectedPath, lastSuccess)
                     : $"未能读取本地文件，共 {paths.Length} 个路径。",
                 Content = builder.ToString().TrimEnd(),
                 ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("；", errors),
             };
         }
 
-        private static string BuildSuccessSummary(int pathCount, string selectedPath, CopilotLocalFileReadResult? lastSuccess)
+        private static string BuildSuccessSummary(int successCount, int pathCount, string selectedPath, CopilotLocalFileReadResult? lastSuccess)
         {
             if (!string.IsNullOrWhiteSpace(selectedPath) && lastSuccess.HasValue)
             {
@@ -131,7 +133,7 @@ namespace ColorVision.Copilot
                 return $"已读取 {System.IO.Path.GetFileName(result.FullPath)}。";
             }
 
-            return $"已读取 {Math.Min(pathCount, MaxFilesPerRequest)}/{pathCount} 个本地文件。";
+            return $"已读取 {successCount}/{pathCount} 个本地文件。";
         }
 
         private static string NormalizePath(string? path)

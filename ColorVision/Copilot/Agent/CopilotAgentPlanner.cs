@@ -117,7 +117,7 @@ namespace ColorVision.Copilot
             builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
             builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
             builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText 或 GetRecentLog 时，尽量填写 input.query，使用更短、更聚焦的搜索词，而不是原样重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，尽量填写 input.path、input.startLine、input.endLine；path 必须来自可读文件列表。只有需要局部上下文时，优先小范围读取，例如 1-120 或 200-320。否则 input 置空或写 0。\n7. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText 或 GetRecentLog 时，尽量填写 input.query，使用更短、更聚焦的搜索词，而不是原样重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n7. reason 保持一句话，20 到 60 字优先。");
             builder.AppendLine();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());

@@ -405,6 +405,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = _activeDocumentPath,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
+                PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
                 Mode = userMessage.RequestMode,
             };
 

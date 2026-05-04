@@ -72,15 +72,7 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();
 
-        public CopilotAgentToolInput SelectedToolInput { get; init; } = CopilotAgentToolInput.Empty;
-
-        public string SelectedLocalFilePath => SelectedToolInput?.Path ?? string.Empty;
-
-        public int? SelectedLocalFileStartLine => SelectedToolInput?.StartLine;
-
-        public int? SelectedLocalFileEndLine => SelectedToolInput?.EndLine;
-
-        public string SelectedToolQuery => SelectedToolInput?.Query ?? string.Empty;
+        public bool PreferBatchReadLocalFiles { get; init; }
 
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
     }

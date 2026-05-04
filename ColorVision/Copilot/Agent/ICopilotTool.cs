@@ -11,6 +11,9 @@ namespace ColorVision.Copilot
 
         bool CanHandle(CopilotAgentRequest request);
 
-        Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken);
+        Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken);
     }
 }
