@@ -286,41 +286,14 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="0,0,0,10">
-                        <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
-                                   Opacity="0.48"
-                                   Text="未挂载文件、图片、网页或上下文"
-                                   TextTrimming="CharacterEllipsis">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasAttachments}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-
+                    <StackPanel Grid.Row="0" Margin="0,0,0,10"
+                                Visibility="{Binding HasAttachments, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       MaxHeight="104"
                                       HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto">
-                            <ScrollViewer.Style>
-                                <Style TargetType="ScrollViewer">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasAttachments}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ScrollViewer.Style>
-
                             <ItemsControl Width="{Binding ViewportWidth, ElementName=AttachmentScrollViewer}"
                                           ItemsSource="{Binding Attachments}">
                                 <ItemsControl.ItemsPanel>
@@ -456,27 +429,91 @@
                              VerticalContentAlignment="Top"
                              VerticalScrollBarVisibility="Auto" />
 
-                    <TextBlock Grid.Row="2"
-                               Margin="0,2,0,6"
-                               FontSize="11"
-                               Foreground="{DynamicResource GlobalTextBrush}"
-                               Opacity="0.58"
-                               Text="{Binding ComposerTokenSummary}"
-                               TextTrimming="CharacterEllipsis"
-                               ToolTip="{Binding ComposerTokenDetails}" />
+                    <DockPanel Grid.Row="2" Margin="0,2,0,0">
+                        <StackPanel DockPanel.Dock="Right"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <Button Width="28"
+                                    Height="28"
+                                    Margin="6,0,6,0"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding OpenSettingsCommand}"
+                                    Foreground="{DynamicResource GlobalTextBrush}"
+                                    IsEnabled="{Binding CanSwitchConversation}"
+                                    ToolTip="配置">
+                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                           FontSize="16"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           Text="&#xE713;" />
+                            </Button>
 
-                    <DockPanel Grid.Row="3" Margin="0,0,0,0">
-                        <Button DockPanel.Dock="Right" Grid.Column="6"
-                                Width="40"
-                                Padding="0"
-                                Background="Transparent"
-                                BorderBrush="Transparent"
-                                BorderThickness="0"
-                                Command="{Binding PrimaryActionCommand}"
-                                Content="{Binding PrimaryActionGlyph}"
-                                FontSize="16"
-                                Foreground="{DynamicResource GlobalTextBrush}"
-                                ToolTip="{Binding PrimaryActionToolTip}" />
+                            <Border Width="30"
+                                    Height="30"
+                                    Margin="0,0,8,0"
+                                    CornerRadius="999"
+                                    BorderThickness="1"
+                                    ToolTip="{Binding ComposerTokenDetails}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                                        <Setter Property="Opacity" Value="0.72" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasRealTokenUsage}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                <Setter Property="Opacity" Value="0.92" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsTokenUsagePending}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                <Setter Property="Opacity" Value="0.86" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsTokenUsageUnavailable}" Value="True">
+                                                <Setter Property="Opacity" Value="0.64" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Viewbox Margin="6" StretchDirection="DownOnly">
+                                    <TextBlock FontWeight="SemiBold"
+                                               Text="{Binding TokenUsageBadgeText}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                                <Setter Property="Opacity" Value="0.84" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasRealTokenUsage}" Value="True">
+                                                        <Setter Property="Foreground" Value="White" />
+                                                        <Setter Property="Opacity" Value="1" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsTokenUsagePending}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                                        <Setter Property="Opacity" Value="0.92" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Viewbox>
+                            </Border>
+
+                            <Button Width="40"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding PrimaryActionCommand}"
+                                    Content="{Binding PrimaryActionGlyph}"
+                                    FontSize="16"
+                                    Foreground="{DynamicResource GlobalTextBrush}"
+                                    ToolTip="{Binding PrimaryActionToolTip}" />
+                        </StackPanel>
+
                         <Button x:Name="AttachMenuButton"
                                 Grid.Column="0"  Width="36"
                                 Padding="0"
@@ -501,7 +538,7 @@
                                        Text="✚" />
                         </Button>
 
-                            <ComboBox Width="76"
+                        <ComboBox Width="76"
                                     Margin="6,0,8,0"
                                     Style="{StaticResource ComposerComboBoxStyle}"
                                     VerticalAlignment="Center"
@@ -520,26 +557,6 @@
                                   DisplayMemberPath="DisplayLabel"
                                   SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
                                   IsEnabled="{Binding CanSelectProfile}" />
-
-                        <Button Grid.Column="4"
-                            Width="28"
-                            Height="28"
-                            Margin="6,0,8,0"
-                            Padding="0"
-                                Background="Transparent"
-                                BorderBrush="Transparent"
-                                BorderThickness="0"
-                                HorizontalAlignment="Left"
-                                Command="{Binding OpenSettingsCommand}"
-                                Foreground="{DynamicResource GlobalTextBrush}"
-                            IsEnabled="{Binding CanSwitchConversation}"
-                            ToolTip="配置">
-                            <TextBlock FontFamily="Segoe MDL2 Assets"
-                                   FontSize="16"
-                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                   Text="&#xE713;" />
-                        </Button>
-
 
                     </DockPanel>
                 </Grid>

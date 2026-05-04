@@ -40,7 +40,7 @@ namespace ColorVision.Copilot
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
-        private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Chat;
+        private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Auto;
         private string _activeDocumentPath = string.Empty;
 
         public CopilotChatViewModel()
@@ -190,6 +190,31 @@ namespace ColorVision.Copilot
             private set => SetProperty(ref _composerTokenDetails, value ?? string.Empty);
         }
         private string _composerTokenDetails = "当前不再做本地预估，只显示接口真实返回的 token usage。";
+
+        public string TokenUsageBadgeText
+        {
+            get
+            {
+                if (IsTokenUsagePending)
+                    return "...";
+
+                if (HasRealTokenUsage)
+                    return CopilotTokenUsage.FormatCount(SelectedConversation?.LastUsage.EffectiveTotalTokens ?? 0);
+
+                return SelectedConversation?.Messages.Count > 0
+                    ? "NA"
+                    : "--";
+            }
+        }
+
+        public bool HasRealTokenUsage => SelectedConversation?.LastUsage.HasAny == true;
+
+        public bool IsTokenUsagePending => IsBusy && SelectedProfile != null;
+
+        public bool IsTokenUsageUnavailable => !IsTokenUsagePending
+            && !HasRealTokenUsage
+            && SelectedProfile != null
+            && SelectedConversation?.Messages.Count > 0;
 
         public string InputText
         {
@@ -1372,36 +1397,46 @@ namespace ColorVision.Copilot
 
         private void RefreshComposerTokenEstimate()
         {
+            string summary;
+            string details;
+
             if (IsBusy)
             {
-                ComposerTokenSummary = "正在等待接口返回真实 token usage...";
-                ComposerTokenDetails = BuildPendingComposerTokenDetails();
-                return;
+                summary = "正在等待接口返回真实 token usage...";
+                details = BuildPendingComposerTokenDetails();
             }
-
-            if (SelectedConversation?.LastUsage.HasAny == true)
+            else if (SelectedConversation?.LastUsage.HasAny == true)
             {
-                ComposerTokenSummary = BuildActualUsageSummary(SelectedConversation.LastUsage);
-                ComposerTokenDetails = BuildActualUsageDetails(SelectedConversation, SelectedConversation.LastUsage);
-                return;
+                summary = BuildActualUsageSummary(SelectedConversation.LastUsage);
+                details = BuildActualUsageDetails(SelectedConversation, SelectedConversation.LastUsage);
             }
-
-            if (SelectedProfile == null)
+            else if (SelectedProfile == null)
             {
-                ComposerTokenSummary = "未选择模型";
-                ComposerTokenDetails = "请选择或配置模型后再发送。当前面板只显示接口真实返回的 token usage。";
-                return;
+                summary = "未选择模型";
+                details = "请选择或配置模型后再发送。当前面板只显示接口真实返回的 token usage。";
             }
-
-            if (SelectedConversation?.Messages.Count > 0)
+            else if (SelectedConversation?.Messages.Count > 0)
             {
-                ComposerTokenSummary = "最近一次请求未返回 token usage";
-                ComposerTokenDetails = BuildUnavailableUsageDetails(SelectedConversation);
-                return;
+                summary = "最近一次请求未返回 token usage";
+                details = BuildUnavailableUsageDetails(SelectedConversation);
+            }
+            else
+            {
+                summary = "发送后显示真实 token usage";
+                details = BuildIdleComposerTokenDetails();
             }
 
-            ComposerTokenSummary = "发送后显示真实 token usage";
-            ComposerTokenDetails = BuildIdleComposerTokenDetails();
+            ComposerTokenSummary = summary;
+            ComposerTokenDetails = details;
+            NotifyTokenUsageBadgeChanged();
+        }
+
+        private void NotifyTokenUsageBadgeChanged()
+        {
+            OnPropertyChanged(nameof(TokenUsageBadgeText));
+            OnPropertyChanged(nameof(HasRealTokenUsage));
+            OnPropertyChanged(nameof(IsTokenUsagePending));
+            OnPropertyChanged(nameof(IsTokenUsageUnavailable));
         }
 
         private void InvalidateChatAttachmentTokenEstimate()
