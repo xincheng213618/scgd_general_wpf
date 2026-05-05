@@ -101,19 +101,11 @@ namespace ColorVision.ImageEditor
                 SchedulePixelValueOverlayRefresh();
             };
             Zoombox1.LayoutUpdated +=(s,e) => UpdateDrawingVisualScale();
-            ZoomGrid.SizeChanged += ZoomGrid_SizeChanged;
             ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
             ImageShow.TextFontSizeOverride = Config.DrawingTextFontSize;
             UpdateDrawingVisualScale();
             SetSelectionPropertyPanelVisibility(false);
             PixelValueOverlay.Attach(this);
-
-            _imageSourcePropertyDescriptor = DependencyPropertyDescriptor.FromProperty(Image.SourceProperty, typeof(Image));
-            _imageSourcePropertyDescriptor?.AddValueChanged(ImageShow, ImageShow_SourceChanged);
-            _bitmapScalingModePropertyDescriptor = DependencyPropertyDescriptor.FromProperty(RenderOptions.BitmapScalingModeProperty, typeof(UIElement));
-            _bitmapScalingModePropertyDescriptor?.AddValueChanged(ImageShow, ImageShow_BitmapScalingModeChanged);
-            _defaultImageViewDisplayConfig.PropertyChanged += DefaultImageViewDisplayConfig_PropertyChanged;
-            SchedulePixelValueOverlayRefresh();
 
             Config.ShowMsgChanged += (s, e) =>
             {
@@ -220,37 +212,18 @@ namespace ColorVision.ImageEditor
 
         internal void SchedulePixelValueOverlayRefresh()
         {
-            DebounceTimer.AddOrResetTimerDispatcher(_pixelValueOverlayRefreshDebounceKey, 24, RefreshPixelValueOverlay);
-        }
-
-        private void ImageShow_SourceChanged(object? sender, EventArgs e)
-        {
-            SchedulePixelValueOverlayRefresh();
-        }
-
-        private void ImageShow_BitmapScalingModeChanged(object? sender, EventArgs e)
-        {
-            SchedulePixelValueOverlayRefresh();
-        }
-
-        private void ZoomGrid_SizeChanged(object? sender, SizeChangedEventArgs e)
-        {
-            SchedulePixelValueOverlayRefresh();
-        }
-
-        private void DefaultImageViewDisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(DefaultImageViewDisplayConfig.PixelValueOverlayMinPixelCellSize) ||
-                e.PropertyName == nameof(DefaultImageViewDisplayConfig.PixelValueOverlayMaxVisiblePixelCount))
+            if (RenderOptions.GetBitmapScalingMode(ImageShow) != BitmapScalingMode.NearestNeighbor)
             {
-                SchedulePixelValueOverlayRefresh();
+                DebounceTimer.AddOrResetTimerDispatcher(_pixelValueOverlayRefreshDebounceKey, 24, RefreshPixelValueOverlay);
             }
         }
+
 
         private void RefreshPixelValueOverlay()
         {
             PixelValueOverlay.Refresh();
         }
+
         public void OpenImage()
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -762,7 +735,6 @@ namespace ColorVision.ImageEditor
         private void UpdateDrawingVisualScale()
         {
             ImageShow.Sacle = GetDrawingVisualScale();
-            SchedulePixelValueOverlayRefresh();
         }
 
         private double GetDrawingVisualScale()
@@ -836,15 +808,11 @@ namespace ColorVision.ImageEditor
             Clear();
             ImageViewModel.Dispose();
             Config.Cleared -= Config_Cleared;
-            _imageSourcePropertyDescriptor?.RemoveValueChanged(ImageShow, ImageShow_SourceChanged);
-            _bitmapScalingModePropertyDescriptor?.RemoveValueChanged(ImageShow, ImageShow_BitmapScalingModeChanged);
-            _defaultImageViewDisplayConfig.PropertyChanged -= DefaultImageViewDisplayConfig_PropertyChanged;
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
 
             ImageShow.Dispose();
             Drop -= ImageView_Drop;
-            ZoomGrid.SizeChanged -= ZoomGrid_SizeChanged;
 
             Zoombox1.Child = null;
             ZoomGrid.Children.Clear();

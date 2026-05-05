@@ -182,7 +182,7 @@ namespace ColorVision.ImageEditor
                 return false;
             }
 
-            visiblePixels = new Int32Rect(startX, startY, endX - startX + 1, endY - startY + 1);
+            visiblePixels = new Int32Rect(startX, startY, endX - startX +1, endY - startY +1); 
             return visiblePixels.Width * visiblePixels.Height <= _displayDefaults.PixelValueOverlayMaxVisiblePixelCount;
         }
 
