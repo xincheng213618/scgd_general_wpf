@@ -81,9 +81,6 @@
                 </ToolBarTray>
                 <ToolBarTray x:Name="ToolBarRight" Grid.Row="0" Grid.Column="1" Margin="0,50,2,0" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarRightVisible, Converter={StaticResource bool2VisibilityConverter}}">
                     <ToolBar Padding="2,3" ToolBarTray.IsLocked="True">
-                        <Button x:Name="ImageViewSettingsButton" Margin="0,0,0,2" Padding="5" Click="ImageViewSettingsButton_Click" ToolTip="图像设置">
-                            <Image Source="{DynamicResource DIExpand}" Style="{StaticResource ToolBarImage}" />
-                        </Button>
                         <Button x:Name="Button1931" Margin="0,0,0,2" Padding="5" x:FieldModifier="public">
                             <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Style="{StaticResource ToolBarImage}" />
                         </Button>

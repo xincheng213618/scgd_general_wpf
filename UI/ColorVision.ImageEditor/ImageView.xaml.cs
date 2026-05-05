@@ -168,26 +168,20 @@ namespace ColorVision.ImageEditor
             }));
             InputBindings.Add(new KeyBinding(showAllToolbarsCommand, Key.H, ModifierKeys.Control));
   
-            // Open Toolbar Settings Window (Ctrl+Q)
+            // Open Workspace Settings (Ctrl+Q)
             var openToolbarSettingsCommand = new RoutedCommand();
             CommandBindings.Add(new CommandBinding(openToolbarSettingsCommand, (s, e) => 
             {
-                OpenToolbarSettingsWindow();
+                OpenSettingsWindow("工作台");
             }));
             InputBindings.Add(new KeyBinding(openToolbarSettingsCommand, Key.Q, ModifierKeys.Control));
-        }
-
-        private void OpenToolbarSettingsWindow()
-        {
-            var window = new ToolbarSettingsWindow(this);
-            window.Owner = Window.GetWindow(this);
-            window.ShowDialog();
         }
 
         private void InitializeImageViewSettingProviders()
         {
             RegisterImageViewSettingProvider(new ImageViewDisplaySettingProvider());
             RegisterImageViewSettingProvider(new ImageViewDefaultsSettingProvider());
+            RegisterImageViewSettingProvider(new ImageViewWorkspaceSettingProvider());
         }
 
         public void RegisterImageViewSettingProvider(IImageViewSettingProvider provider)

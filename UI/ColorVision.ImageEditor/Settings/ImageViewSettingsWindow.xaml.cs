@@ -142,14 +142,20 @@ namespace ColorVision.ImageEditor.Settings
 
         private static void AddViewItem(ImageViewSettingMetadata setting, Panel targetPanel)
         {
-            if (setting.ViewType == null)
+            FrameworkElement? view = setting.ViewFactory?.Invoke();
+            if (view == null)
             {
-                return;
-            }
+                if (setting.ViewType == null)
+                {
+                    return;
+                }
 
-            if (Activator.CreateInstance(setting.ViewType) is not FrameworkElement view)
-            {
-                return;
+                if (Activator.CreateInstance(setting.ViewType) is not FrameworkElement createdView)
+                {
+                    return;
+                }
+
+                view = createdView;
             }
 
             Border sectionBorder = CreateSectionContainer();

@@ -1,8 +1,11 @@
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
+using ColorVision.ImageEditor.Tif;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.ImageEditor.Settings
 {
@@ -23,6 +26,7 @@ namespace ColorVision.ImageEditor.Settings
         public string? BindingName { get; set; }
         public object? Source { get; set; }
         public Type? ViewType { get; set; }
+        public Func<FrameworkElement>? ViewFactory { get; set; }
     }
 
     public interface IImageViewSettingProvider
@@ -88,6 +92,45 @@ namespace ColorVision.ImageEditor.Settings
             DefaultBitmapScalingConfig.SaveCurrent();
             DefaultTextStyleConfig.SaveCurrent();
             ImageCalibrationService.SaveCurrent(imageView.EditorContext);
+        }
+    }
+
+    internal sealed class ImageViewWorkspaceSettingProvider : IImageViewSettingProvider, IImageViewSettingPersistence
+    {
+        public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)
+        {
+            yield return new ImageViewSettingMetadata
+            {
+                Group = "工作台",
+                Order = 10,
+                Type = ImageViewSettingType.View,
+                Name = "工具栏、工具与打开器",
+                Description = "统一管理当前 ImageView 的工具栏显示、已加载 IEditorTool 的可见性，以及支持的 IImageOpen 打开器。",
+                ViewFactory = () => new ImageViewWorkspaceSettingsView(imageView),
+            };
+
+            yield return new ImageViewSettingMetadata
+            {
+                Group = "加载器",
+                Order = 10,
+                Type = ImageViewSettingType.Class,
+                Name = "TIF 打开器",
+                Description = "控制 Gray32Float TIFF 加载时是否覆盖图像缩放模式，以及覆盖后使用的具体模式。",
+                Source = TifOpenConfig.Current,
+            };
+        }
+
+        public void SaveImageViewSettings(ImageView imageView)
+        {
+            try
+            {
+                ConfigService.Instance?.Save<EditorToolVisibilityConfig>();
+            }
+            catch
+            {
+            }
+
+            TifOpenConfig.SaveCurrent();
         }
     }
 }
