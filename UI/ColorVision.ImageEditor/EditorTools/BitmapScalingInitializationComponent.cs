@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Settings;
+using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools
 {
@@ -7,7 +8,7 @@ namespace ColorVision.ImageEditor.EditorTools
     {
         public void Execute(ImageView imageView)
         {
-            ImageViewBitmapScalingService.Initialize(imageView);
+            RenderOptions.SetBitmapScalingMode(imageView.ImageShow, DefaultBitmapScalingConfig.Current.DefaultBitmapScalingMode);
         }
     }
 }
