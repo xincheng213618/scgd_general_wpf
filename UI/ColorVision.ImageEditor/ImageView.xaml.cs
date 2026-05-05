@@ -98,9 +98,12 @@ namespace ColorVision.ImageEditor
             Zoombox1.ContentMatrixChanged += (s, e) =>
             {
                 UpdateDrawingVisualScale();
+            };
+            Zoombox1.LayoutUpdated += (s, e) =>
+            {
                 SchedulePixelValueOverlayRefresh();
             };
-            Zoombox1.LayoutUpdated +=(s,e) => UpdateDrawingVisualScale();
+            Zoombox1.LayoutUpdated += (s, e) => UpdateDrawingVisualScale();
             ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
             ImageShow.TextFontSizeOverride = Config.DrawingTextFontSize;
             UpdateDrawingVisualScale();
@@ -212,7 +215,7 @@ namespace ColorVision.ImageEditor
 
         internal void SchedulePixelValueOverlayRefresh()
         {
-            if (RenderOptions.GetBitmapScalingMode(ImageShow) != BitmapScalingMode.NearestNeighbor)
+            if (RenderOptions.GetBitmapScalingMode(ImageShow) == BitmapScalingMode.NearestNeighbor)
             {
                 DebounceTimer.AddOrResetTimerDispatcher(_pixelValueOverlayRefreshDebounceKey, 24, RefreshPixelValueOverlay);
             }

@@ -33,7 +33,6 @@ namespace ColorVision.ImageEditor
         public void Attach(ImageView owner)
         {
             _owner = owner;
-            Refresh();
         }
 
         public void Refresh()
