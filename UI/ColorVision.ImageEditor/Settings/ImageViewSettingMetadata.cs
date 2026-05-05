@@ -48,16 +48,6 @@ namespace ColorVision.ImageEditor.Settings
         }
     }
 
-    internal sealed class ImageViewPseudoColorSettingProvider : IImageViewSettingProvider
-    {
-        public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)
-        {
-            yield return new ImageViewSettingMetadata { Group = "伪彩色", Order = 10, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsPseudo) };
-            yield return new ImageViewSettingMetadata { Group = "伪彩色", Order = 20, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsAutoSetRange) };
-            yield return new ImageViewSettingMetadata { Group = "伪彩色", Order = 30, Source = imageView.Config, BindingName = nameof(ImageViewConfig.ColormapTypes) };
-        }
-    }
-
     internal sealed class ImageViewDefaultsSettingProvider : IImageViewSettingProvider, IImageViewSettingPersistence
     {
         public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)

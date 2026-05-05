@@ -61,7 +61,6 @@ namespace ColorVision.ImageEditor
 
             Config.Cleared += Config_Cleared;
             InitializeImageViewSettingProviders();
-            InitializePseudoColor();
             ApplyDefaultBitmapScalingMode();
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
@@ -138,8 +137,7 @@ namespace ColorVision.ImageEditor
 
         private void Config_Cleared(object? sender, EventArgs e)
         {
-            Config.IsPseudo = false;
-            InvalidatePseudoColorRender();
+            PseudoColorService?.Reset();
             FunctionImage = null;
             if (_hImageCache != null)
             {
@@ -189,7 +187,6 @@ namespace ColorVision.ImageEditor
         private void InitializeImageViewSettingProviders()
         {
             RegisterImageViewSettingProvider(new ImageViewDisplaySettingProvider());
-            RegisterImageViewSettingProvider(new ImageViewPseudoColorSettingProvider());
             RegisterImageViewSettingProvider(new ImageViewDefaultsSettingProvider());
         }
 
@@ -661,7 +658,7 @@ namespace ColorVision.ImageEditor
                 Config.AddProperties("Stride", stride);
                 Config.AddProperties("DpiX", writeableBitmap.DpiX);
                 Config.AddProperties("DpiY", writeableBitmap.DpiY);
-                ConfigurePseudoColorForImage();
+                PseudoColorService?.ConfigureForImage();
 
                 Config.AddProperties("PixelFormat", writeableBitmap.Format);
             }
@@ -686,6 +683,11 @@ namespace ColorVision.ImageEditor
         {
             ApplyDrawingVisualVisibility(visual);
             ImageShow.AddVisualCommand(visual);
+        }
+
+        private void InvalidatePseudoColorRender()
+        {
+            PseudoColorService?.Invalidate();
         }
 
         private void ApplyDrawingVisualVisibility(Visual visual)
@@ -868,7 +870,6 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
-            DisposePseudoColor();
             Clear();
             ImageViewModel.Dispose();
             Config.Cleared -= Config_Cleared;

@@ -87,34 +87,6 @@
                         <Button x:Name="Button1931" Margin="0,0,0,2" Padding="5" x:FieldModifier="public">
                             <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Style="{StaticResource ToolBarImage}" />
                         </Button>
-                        <StackPanel>
-                            <ToggleButton x:Name="Pseudo" Margin="0,0,0,2" Click="ToggleButton_Click" IsChecked="{Binding Config.IsPseudo}">
-                                <Image Margin="-5" Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Style="{StaticResource ToolBarImage}" />
-                            </ToggleButton>
-                            <ToggleButton x:Name="AutoSetRange" Margin="0,0,0,2" Padding="3" HorizontalAlignment="Stretch" Click="AutoSetRange_Click" Content="A" FontSize="9" IsChecked="{Binding Config.IsAutoSetRange}" ToolTip="Auto Range" Visibility="{Binding Config.IsPseudo, Converter={StaticResource bool2VisibilityConverter}}" />
-                            <Grid Height="120" Visibility="{Binding Config.IsPseudo, Converter={StaticResource bool2VisibilityConverter}}">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <TextBox Grid.Row="0" Width="28" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0" FontSize="8" Style="{StaticResource BaseStyle}" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBox Grid.Row="2" Width="28" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0" FontSize="8" Style="{StaticResource BaseStyle}" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <Grid Grid.Row="1" Width="18">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition x:Name="RowDefinitionStart" Height="0" />
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition x:Name="RowDefinitionEnd" Height="0" />
-                                    </Grid.RowDefinitions>
-                                    <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0" />
-                                    <Border Grid.Row="1" Background="Transparent">
-                                        <Image x:Name="ColormapTypesImage" VerticalAlignment="Top" Stretch="Fill" />
-                                    </Border>
-                                    <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 " />
-                                </Grid>
-                                <hc:RangeSlider x:Name="PseudoSlider" Grid.Row="1" HorizontalAlignment="Center" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" hc:TipElement.Visibility="Visible" x:FieldModifier="public" Background="Transparent" FocusVisualStyle="{x:Null}" Maximum="255" Minimum="0" Orientation="Vertical" Style="{StaticResource RangeSliderBaseStyle}" ValueChanged="PseudoSlider_ValueChanged" ValueEnd="255" ValueStart="0" />
-                            </Grid>
-                        </StackPanel>
                     </ToolBar>
                 </ToolBarTray>
 
@@ -128,7 +100,7 @@
                         BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="6"
-                        Visibility="Collapsed">
+                        Visibility="Collapsed" Opacity="0.5">
                     <StackPanel>
                         <TextBlock Margin="0,0,0,8" FontWeight="SemiBold" Text="当前工具属性" />
                         <ScrollViewer MaxWidth="320" MaxHeight="280" VerticalScrollBarVisibility="Auto">

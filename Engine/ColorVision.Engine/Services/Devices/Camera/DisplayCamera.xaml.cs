@@ -835,7 +835,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
 
             // Clean up video display resources
-            Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
             _localFrameProcessor?.Dispose();
             _localFrameProcessor = null;
             this.DisposeTimedButtonOperations();
@@ -968,6 +967,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 var pseudoColorService = Device.View.ImageView.PseudoColorService;
                 bool enablePseudo = pseudoColorService.IsEnabled;
+                if (enablePseudo)
+                {
+                    VideoConfig.IsUseCacheFile = true;
+                }
+
                 bool enableArticulation = VideoConfig.IsCalArtculation;
                 bool shouldProcess = VideoConfig.IsUseCacheFile && (enablePseudo || enableArticulation);
 
@@ -1084,7 +1088,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     Device.DisplayConfig.IsLocalVideoOpen = false;
                     fpsTimer.Stop();
-                    Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
 
                     if (_visualsAdded)
                     {
@@ -1142,14 +1145,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     _visualsAdded = true;
                 }
 
-                if (Device.View.ImageView.Config.IsPseudo)
+                if (Device.View.ImageView.PseudoColorService.IsEnabled)
                 {
                     VideoConfig.IsUseCacheFile = true;
                     VideoConfig.IsCalArtculation = true;
                 }
-
-                Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
-                Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
 
                 button.Content = "Close Video";
                 first = true;
@@ -1167,12 +1167,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 operations.RefreshIdleState(LocalVideoButton);
                 _isOpeningLocalVideo = false;
             }
-        }
-
-        private void VideoConfig_PseudoChanged(object? sender, EventArgs e)
-        {
-            if (Device.View.ImageView.Config.IsPseudo)
-                VideoConfig.IsUseCacheFile = true;
         }
 
         private (bool isSuccess, string errorMessage) OpenLocalVideoInternal()

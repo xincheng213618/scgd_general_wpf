@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Core;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -50,7 +49,6 @@ namespace ColorVision.ImageEditor
 
         public void ClearProperties()
         {
-            IsPseudo = false;
             FilePath = string.Empty;
             Properties.Clear();
             Cleared?.Invoke(this, new EventArgs());
@@ -101,32 +99,6 @@ namespace ColorVision.ImageEditor
 
         [JsonIgnore]
         public string FilePath { get => GetProperties<string>("FilePath"); set { AddProperties("FilePath", value) ; OnPropertyChanged(); } }
-
-
-        public event EventHandler ColormapTypesChanged;
-
-        [DisplayName("伪彩色类型")]
-        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
-        private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
-
-
-        public event EventHandler PseudoChanged;
-
-        [DisplayName("启用伪彩色")]
-        public bool IsPseudo { get => _IsPseudo; set { _IsPseudo = value; OnPropertyChanged(); PseudoChanged?.Invoke(this, new EventArgs()); } }
-        private bool _IsPseudo ;
-
-        public event EventHandler AutoSetRangeChanged;
-
-        [DisplayName("自动范围")]
-        public bool IsAutoSetRange { get => _IsAutoSetRange; set { _IsAutoSetRange = value; OnPropertyChanged(); AutoSetRangeChanged?.Invoke(this, new EventArgs()); } }
-        private bool _IsAutoSetRange;
-
-        [JsonIgnore]
-        public uint DataMin { get; set; }
-
-        [JsonIgnore]
-        public uint DataMax { get; set; }
 
 
         public event EventHandler<bool> LayoutUpdatedChanged;

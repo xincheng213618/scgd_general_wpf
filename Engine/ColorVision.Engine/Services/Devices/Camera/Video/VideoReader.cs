@@ -109,26 +109,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             Image.ImageShow.AddVisualCommand(DVRectangleText);
             Image.ImageShow.AddVisualCommand(DVText);
 
-            if (Image.Config.IsPseudo)
+            if (IsPseudoEnabled())
             {
                 Config.IsUseCacheFile = true;
                 Config.IsCalArtculation = true;
             }
-
-            Image.Config.PseudoChanged -= Config_PseudoChanged;
-            Image.Config.PseudoChanged += Config_PseudoChanged;
             Task.Run(StartupAsync);
 
             return 0;
         }
 
-        private void Config_PseudoChanged(object? sender, EventArgs e)
-        {
-            if (Image.Config.IsPseudo)
-                Config.IsUseCacheFile = true;
-        }
-
     private VideoFrameProcessor? _frameProcessor;
+
+        private bool IsPseudoEnabled()
+        {
+            return Image?.PseudoColorService?.IsEnabled == true;
+        }
 
         public void Close()
         {
@@ -206,7 +202,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             return;
                         }
 
-                        if (!Image.Config.IsPseudo)
+                        if (!IsPseudoEnabled())
                         {
                             WriteableBitmap writeableBitmap = Image.ImageShow.Source as WriteableBitmap;
                             bool needNewBitmap = writeableBitmap == null
@@ -282,7 +278,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 Image.ImageShow.RemoveVisualCommand(DVText);
             });
 
-            Image.Config.PseudoChanged -= Config_PseudoChanged;
             Image = null;
             binaryReader?.Dispose();
             memoryMappedViewStream?.Dispose();
@@ -295,15 +290,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool TryBuildFrameProcessingRequest(int width, int height, out VideoFrameProcessingRequest? request)
         {
             request = null;
-            if (!Config.IsUseCacheFile || Image == null)
+            if (Image == null)
             {
                 return false;
             }
 
             var pseudoColorService = Image.PseudoColorService;
             bool enablePseudo = pseudoColorService.IsEnabled;
+            if (enablePseudo)
+            {
+                Config.IsUseCacheFile = true;
+            }
+
             bool enableArticulation = Config.IsCalArtculation;
-            if (!enablePseudo && !enableArticulation)
+            if (!Config.IsUseCacheFile || (!enablePseudo && !enableArticulation))
             {
                 return false;
             }

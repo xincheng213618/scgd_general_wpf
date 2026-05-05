@@ -144,7 +144,11 @@ namespace ColorVision.ImageEditor
         /// <returns>Button 或 ToggleButton</returns>
         public static FrameworkElement GenIEditorTool(IEditorTool editorTool)
         {
-            if (editorTool is IEditorToggleTool toggleTool)
+            if (editorTool is IEditorCustomControlTool customControlTool)
+            {
+                return customControlTool.CreateToolControl();
+            }
+            else if (editorTool is IEditorToggleTool toggleTool)
             {
                 var tbtn = new ToggleButton
                 {
