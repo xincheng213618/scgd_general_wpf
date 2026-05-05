@@ -1,19 +1,215 @@
-﻿<Window x:Class="ColorVision.FloatingBall.FloatingBallWindow"
+<Window x:Class="ColorVision.FloatingBall.FloatingBallWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:ColorVision.FloatingBall"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" Title="FloatingBallWindow" Width="125"
-        Height="35" AllowDrop="True" AllowsTransparency="True"
-        Background="Transparent" Initialized="Window_Initialized" ShowInTaskbar="False"
-        Topmost="True" WindowStyle="None">
-    <Grid>
-        <Border Background="White" BorderBrush="#AF000000" BorderThickness="1"
-                CornerRadius="10" Opacity="0.8" />
-        <StackPanel Margin="10" VerticalAlignment="Center">
-            <TextBlock Text="" />
-        </StackPanel>
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=local:DesktopPetConfig}"
+        Title="ColorVision Desktop Pet"
+        Width="300"
+        Height="360"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Initialized="Window_Initialized"
+        Loaded="Window_Loaded"
+        Closed="Window_Closed"
+        ShowActivated="False"
+        ShowInTaskbar="False"
+        Topmost="{Binding AlwaysOnTop}"
+        WindowStyle="None"
+        ResizeMode="NoResize">
+    <Grid x:Name="Root"
+          RenderTransformOrigin="0.5,1"
+          Opacity="{Binding PetOpacity}">
+        <Grid.RenderTransform>
+            <ScaleTransform ScaleX="{Binding PetScale}" ScaleY="{Binding PetScale}" />
+        </Grid.RenderTransform>
 
+        <Grid x:Name="MessageBubble"
+              Width="246"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="0,0,0,0"
+              Opacity="0"
+              Visibility="Collapsed"
+              RenderTransformOrigin="0.5,1">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="MessageBubbleTransform" Y="8" />
+            </Grid.RenderTransform>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="10" />
+            </Grid.RowDefinitions>
+            <Border x:Name="MessageBubbleBorder"
+                    Grid.Row="0"
+                    Background="#F7FFFFFF"
+                    BorderBrush="#3B2F5BFF"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="12,9">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18"
+                                      Opacity="0.18"
+                                      ShadowDepth="3"
+                                      Color="#000000" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock x:Name="MessageTitle"
+                               Foreground="#233047"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="MessageText"
+                               Margin="0,4,0,0"
+                               Foreground="#344154"
+                               FontSize="12"
+                               LineHeight="17"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Path Grid.Row="1"
+                  Width="18"
+                  Height="10"
+                  HorizontalAlignment="Center"
+                  Data="M 0 0 L 18 0 L 9 10 Z"
+                  Fill="#F7FFFFFF"
+                  Stroke="#3B2F5BFF"
+                  StrokeThickness="1" />
+        </Grid>
+
+        <Grid x:Name="PetHost"
+              Width="250"
+              Height="268"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Margin="0,0,0,10"
+              Cursor="Hand">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="PetFloatTransform" />
+            </Grid.RenderTransform>
+
+            <wv2:WebView2 x:Name="Live2DView"
+                          Visibility="Collapsed" />
+
+            <Canvas x:Name="FallbackPet"
+                    Width="250"
+                    Height="268"
+                    Visibility="Visible"
+                    RenderTransformOrigin="0.5,0.7">
+                <Canvas.RenderTransform>
+                    <TransformGroup>
+                        <RotateTransform x:Name="PetTiltTransform" Angle="0" />
+                        <ScaleTransform x:Name="PetTapScaleTransform" ScaleX="1" ScaleY="1" />
+                    </TransformGroup>
+                </Canvas.RenderTransform>
+
+                <Ellipse Canvas.Left="54"
+                         Canvas.Top="232"
+                         Width="142"
+                         Height="22"
+                         Fill="#26000000" />
+
+                <Path Fill="#3C6DF0"
+                      Stroke="#254AB5"
+                      StrokeThickness="2"
+                      Data="M 80 147 C 74 174 78 211 101 226 C 116 236 145 236 161 225 C 184 209 188 174 179 147 C 165 129 96 129 80 147 Z" />
+                <Path Fill="#A8D7FF"
+                      Opacity="0.85"
+                      Data="M 105 157 C 116 166 143 166 154 157 C 158 177 154 203 139 211 C 129 216 114 213 106 202 C 97 190 98 171 105 157 Z" />
+                <Path Fill="#2446AA"
+                      Opacity="0.5"
+                      Data="M 84 174 C 67 183 59 199 65 210 C 73 222 89 213 96 199 C 101 188 98 178 84 174 Z" />
+                <Path Fill="#2446AA"
+                      Opacity="0.5"
+                      Data="M 176 174 C 193 183 201 199 195 210 C 187 222 171 213 164 199 C 159 188 162 178 176 174 Z" />
+
+                <Ellipse Canvas.Left="72"
+                         Canvas.Top="36"
+                         Width="112"
+                         Height="116"
+                         Fill="#FFEAD9"
+                         Stroke="#D7A58E"
+                         StrokeThickness="2" />
+                <Path Fill="#28375F"
+                      Data="M 78 70 C 77 38 103 19 131 24 C 164 30 184 54 180 91 C 169 69 149 57 126 56 C 105 55 91 60 78 70 Z" />
+                <Path Fill="#334778"
+                      Data="M 83 65 C 101 52 124 46 150 53 C 140 39 112 34 92 48 C 87 52 84 58 83 65 Z" />
+
+                <Ellipse Canvas.Left="92"
+                         Canvas.Top="87"
+                         Width="16"
+                         Height="20"
+                         Fill="#263047">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="LeftEyeScale" CenterX="8" CenterY="10" ScaleY="1" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Ellipse Canvas.Left="148"
+                         Canvas.Top="87"
+                         Width="16"
+                         Height="20"
+                         Fill="#263047">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="RightEyeScale" CenterX="8" CenterY="10" ScaleY="1" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Ellipse Canvas.Left="97"
+                         Canvas.Top="91"
+                         Width="5"
+                         Height="6"
+                         Fill="#F8FFFFFF" />
+                <Ellipse Canvas.Left="153"
+                         Canvas.Top="91"
+                         Width="5"
+                         Height="6"
+                         Fill="#F8FFFFFF" />
+                <Path Stroke="#D96E7A"
+                      StrokeThickness="3"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Data="M 111 119 C 122 129 139 129 150 119" />
+                <Ellipse Canvas.Left="83"
+                         Canvas.Top="107"
+                         Width="18"
+                         Height="10"
+                         Fill="#40F48B9C" />
+                <Ellipse Canvas.Left="155"
+                         Canvas.Top="107"
+                         Width="18"
+                         Height="10"
+                         Fill="#40F48B9C" />
+
+                <Path Fill="#FFEAD9"
+                      Stroke="#D7A58E"
+                      StrokeThickness="1.6"
+                      Data="M 79 96 C 68 96 62 106 66 116 C 70 126 80 124 84 116 Z" />
+                <Path Fill="#FFEAD9"
+                      Stroke="#D7A58E"
+                      StrokeThickness="1.6"
+                      Data="M 177 96 C 188 96 194 106 190 116 C 186 126 176 124 172 116 Z" />
+
+                <Path Fill="#FFD166"
+                      Stroke="#E4A92F"
+                      StrokeThickness="1.5"
+                      Data="M 117 143 L 139 143 L 147 161 L 128 174 L 109 161 Z" />
+                <Ellipse Canvas.Left="119"
+                         Canvas.Top="150"
+                         Width="18"
+                         Height="18"
+                         Fill="#FFFFFF"
+                         Opacity="0.8" />
+                <Path Stroke="#3C6DF0"
+                      StrokeThickness="2"
+                      StrokeStartLineCap="Round"
+                      Data="M 126 153 L 131 158 L 124 164" />
+
+                <Path Fill="#263A74"
+                      Data="M 97 226 C 101 241 116 246 126 236 C 119 229 109 225 97 226 Z" />
+                <Path Fill="#263A74"
+                      Data="M 160 226 C 156 241 141 246 131 236 C 138 229 148 225 160 226 Z" />
+            </Canvas>
+        </Grid>
     </Grid>
 </Window>
