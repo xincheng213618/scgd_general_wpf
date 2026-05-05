@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System.ComponentModel;
-using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Tif
 {
@@ -49,30 +48,17 @@ namespace ColorVision.ImageEditor.Tif
             }
         }
 
-        [DisplayName("Gray32Float 覆盖缩放模式")]
-        [Description("启用后，打开 Gray32Float TIFF 时会临时覆盖当前图像缩放模式；关闭则回到 ImageView 默认缩放模式。")]
-        public bool OverrideBitmapScalingModeForGray32Float
+        [DisplayName("Gray32Float 转为 Gray16")]
+        [Description("启用后，打开 Gray32Float TIFF 时按当前图像最小值和最大值归一化后转换为 Gray16；关闭后保留原始 Gray32Float 图像。")]
+        public bool ConvertGray32FloatToGray16OnOpen
         {
-            get => _overrideBitmapScalingModeForGray32Float;
+            get => _convertGray32FloatToGray16OnOpen;
             set
             {
-                _overrideBitmapScalingModeForGray32Float = value;
+                _convertGray32FloatToGray16OnOpen = value;
                 OnPropertyChanged();
             }
         }
-        private bool _overrideBitmapScalingModeForGray32Float = true;
-
-        [DisplayName("Gray32Float 缩放模式")]
-        [Description("当启用覆盖时，Gray32Float TIFF 在 ImageView 中使用的 BitmapScalingMode。")]
-        public BitmapScalingMode Gray32FloatBitmapScalingMode
-        {
-            get => _gray32FloatBitmapScalingMode;
-            set
-            {
-                _gray32FloatBitmapScalingMode = value;
-                OnPropertyChanged();
-            }
-        }
-        private BitmapScalingMode _gray32FloatBitmapScalingMode = BitmapScalingMode.NearestNeighbor;
+        private bool _convertGray32FloatToGray16OnOpen = true;
     }
 }

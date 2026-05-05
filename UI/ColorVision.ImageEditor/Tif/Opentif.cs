@@ -168,12 +168,17 @@ namespace ColorVision.ImageEditor.Tif
 
             if (source == null) return;
 
-            // 【修改点】判断格式，应用转换
+            // Gray32Float TIFF 可按打开器配置决定是否先归一化转换为 Gray16。
             if (source.Format == PixelFormats.Gray32Float)
             {
-                ApplyGray32FloatScalingMode(context.ImageView);
-
-                writeableBitmap = ConvertGray32FloatToBitmapSource(source);
+                if (TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen)
+                {
+                    writeableBitmap = ConvertGray32FloatToBitmapSource(source);
+                }
+                else
+                {
+                    writeableBitmap = new WriteableBitmap(source);
+                }
             }
             else
             {
@@ -215,18 +220,6 @@ namespace ColorVision.ImageEditor.Tif
             context.ImageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
             context.ImageView.AddSelectionChangedHandler(context.ImageView.ComboBoxLayersSelectionChanged);
             context.ImageView.UpdateZoomAndScale();
-        }
-
-        private static void ApplyGray32FloatScalingMode(ImageView imageView)
-        {
-            TifOpenConfig config = TifOpenConfig.Current;
-            if (config.OverrideBitmapScalingModeForGray32Float)
-            {
-                imageView.ApplyBitmapScalingMode(config.Gray32FloatBitmapScalingMode);
-                return;
-            }
-
-            imageView.ApplyDefaultBitmapScalingMode();
         }
     }
 }

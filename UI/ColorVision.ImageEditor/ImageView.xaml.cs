@@ -61,7 +61,6 @@ namespace ColorVision.ImageEditor
 
             Config.Cleared += Config_Cleared;
             InitializeImageViewSettingProviders();
-            ApplyDefaultBitmapScalingMode();
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
@@ -167,14 +166,14 @@ namespace ColorVision.ImageEditor
             return _imageViewSettingProviders;
         }
 
-        public void ApplyBitmapScalingMode(BitmapScalingMode bitmapScalingMode)
+        public void OpenSettingsWindow(string? initialGroup = null)
         {
-            RenderOptions.SetBitmapScalingMode(ImageShow, bitmapScalingMode);
-        }
-
-        public void ApplyDefaultBitmapScalingMode()
-        {
-            ApplyBitmapScalingMode(DefaultBitmapScalingConfig.Current.DefaultBitmapScalingMode);
+            ImageViewSettingsWindow window = new(this, initialGroup)
+            {
+                Owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            window.ShowDialog();
         }
 
         internal void SetSelectionPropertyPanelVisibility(bool isVisible)
@@ -417,7 +416,6 @@ namespace ColorVision.ImageEditor
         {
             if (writeableBitmap != null)
             {
-                ApplyDefaultBitmapScalingMode();
                 SetImageSource(writeableBitmap);
             }
             else
@@ -475,7 +473,6 @@ namespace ColorVision.ImageEditor
             Config.ClearProperties();
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
-            ApplyDefaultBitmapScalingMode();
             try
             {
                 if (filePath != null && File.Exists(filePath))

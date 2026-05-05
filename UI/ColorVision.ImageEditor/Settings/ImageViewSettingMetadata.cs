@@ -62,7 +62,7 @@ namespace ColorVision.ImageEditor.Settings
                 Order = 5,
                 Type = ImageViewSettingType.Class,
                 Name = "默认图像缩放",
-                Description = "控制新打开图像时应用的 BitmapScalingMode；个别加载器仍可按格式要求覆盖当前值。",
+                Description = "控制 ImageView 初始化时播种的 BitmapScalingMode。初始化之后保留当前值，只有用户显式调整或特定加载器覆盖时才会变化。",
                 Source = DefaultBitmapScalingConfig.Current,
             };
 
@@ -115,7 +115,7 @@ namespace ColorVision.ImageEditor.Settings
                 Order = 10,
                 Type = ImageViewSettingType.Class,
                 Name = "TIF 打开器",
-                Description = "控制 Gray32Float TIFF 加载时是否覆盖图像缩放模式，以及覆盖后使用的具体模式。",
+                Description = "控制 Gray32Float TIFF 打开时是否转换为 Gray16 等加载策略。",
                 Source = TifOpenConfig.Current,
             };
         }

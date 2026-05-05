@@ -116,13 +116,6 @@ namespace ColorVision.ImageEditor.Draw
                     new PropertyEditorWindow(visual.BaseAttribute) { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog();
                 };
                 MenuItems.Add(menuItem4);
-
-                MenuItem menuItem5 = new MenuItem() { Header = "默认文本样式" };
-                menuItem5.Click += (s, e) =>
-                {
-                    DefaultTextStyleEditor.Open(Application.Current.GetActiveWindow());
-                };
-                MenuItems.Add(menuItem5);
             }
             return MenuItems;
         }
