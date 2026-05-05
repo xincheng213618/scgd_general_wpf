@@ -12,6 +12,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -43,6 +44,9 @@ namespace ColorVision.ImageEditor
         public EditorContext EditorContext { get; set; }
 
         private readonly List<IImageViewSettingProvider> _imageViewSettingProviders = new();
+        private readonly string _pixelValueOverlayRefreshDebounceKey = $"PixelValueOverlayRefresh_{Guid.NewGuid():N}";
+        private DependencyPropertyDescriptor? _imageSourcePropertyDescriptor;
+        private DependencyPropertyDescriptor? _bitmapScalingModePropertyDescriptor;
 
 
         public ImageView()
@@ -90,12 +94,12 @@ namespace ColorVision.ImageEditor
                 ImageShow.TextFontSizeOverride = e;
                 ImageShow.ApplyLayoutScaleToVisuals();
             };
-            Zoombox1.ContentMatrixChanged += (s, e) => UpdateDrawingVisualScale();
             Zoombox1.LayoutUpdated +=(s,e) => UpdateDrawingVisualScale();
             ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
             ImageShow.TextFontSizeOverride = Config.DrawingTextFontSize;
             UpdateDrawingVisualScale();
             SetSelectionPropertyPanelVisibility(false);
+            PixelValueOverlay.Attach(this);
 
             Config.ShowMsgChanged += (s, e) =>
             {
@@ -198,6 +202,16 @@ namespace ColorVision.ImageEditor
                 // 开始打印
                 printDialog.PrintVisual(ImageShow, "Printing");
             }
+        }
+
+        internal void SchedulePixelValueOverlayRefresh()
+        {
+            DebounceTimer.AddOrResetTimerDispatcher(_pixelValueOverlayRefreshDebounceKey, 24, RefreshPixelValueOverlay);
+        }
+
+        private void RefreshPixelValueOverlay()
+        {
+            PixelValueOverlay.Refresh();
         }
         public void OpenImage()
         {
@@ -611,6 +625,7 @@ namespace ColorVision.ImageEditor
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
+            SchedulePixelValueOverlayRefresh();
 
             ImageShow.RaiseImageInitialized();
             CommandManager.InvalidateRequerySuggested();
@@ -657,6 +672,7 @@ namespace ColorVision.ImageEditor
             if (channel == -1)
             {
                 ImageShow.Source = ViewBitmapSource;
+                SchedulePixelValueOverlayRefresh();
                 return;
             }
             if (HImageCache == null) return;
@@ -674,6 +690,7 @@ namespace ColorVision.ImageEditor
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
+                        SchedulePixelValueOverlayRefresh();
                     }
                 });
             });
@@ -707,6 +724,7 @@ namespace ColorVision.ImageEditor
         private void UpdateDrawingVisualScale()
         {
             ImageShow.Sacle = GetDrawingVisualScale();
+            SchedulePixelValueOverlayRefresh();
         }
 
         private double GetDrawingVisualScale()
@@ -725,6 +743,7 @@ namespace ColorVision.ImageEditor
                 ImageShow.Source = ViewBitmapSource; ;
                 HImageCache = writeableBitmap.ToHImage();
                 FunctionImage = null;
+                SchedulePixelValueOverlayRefresh();
             }
         }
 
@@ -779,7 +798,6 @@ namespace ColorVision.ImageEditor
             Clear();
             ImageViewModel.Dispose();
             Config.Cleared -= Config_Cleared;
-
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
 
