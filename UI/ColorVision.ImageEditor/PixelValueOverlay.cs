@@ -8,7 +8,7 @@ namespace ColorVision.ImageEditor
 {
     internal sealed class PixelValueOverlay : FrameworkElement
     {
-        private const double MinPixelCellSize = 25;
+        private const double MinPixelCellSize = 40;
         private const int MaxVisiblePixelCount = 2200;
         private static readonly Typeface OverlayTypeface = new(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
 
