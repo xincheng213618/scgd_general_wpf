@@ -12,7 +12,11 @@ namespace ColorVision.ImageEditor
     {
         private const double MinTextFontSize = 6;
         private const int MaxFormattedTextCacheEntries = 8192;
+        private const double TextHorizontalPadding = 4;
+        private const double TextVerticalPadding = 2;
         private static readonly Typeface OverlayTypeface = new(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+        private static readonly Brush OverlayTextBrush = CreateFrozenBrush(Color.FromArgb(255, 255, 255, 255));
+        private static readonly Brush OverlayBackgroundBrush = CreateFrozenBrush(Color.FromArgb(144, 0, 0, 0));
 
         private readonly DefaultImageViewDisplayConfig _displayDefaults = DefaultImageViewDisplayConfig.Current;
         private readonly Dictionary<FormattedTextCacheKey, CachedFormattedText> _formattedTextCache = new();
@@ -209,7 +213,7 @@ namespace ColorVision.ImageEditor
                    format == PixelFormats.Rgba64;
         }
 
-        private void RenderGray8(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderGray8(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             byte[] pixels = new byte[visiblePixels.Width * visiblePixels.Height];
             source.CopyPixels(visiblePixels, pixels, visiblePixels.Width, 0);
@@ -222,12 +226,12 @@ namespace ColorVision.ImageEditor
                 {
                     int pixelIndex = rowIndex * visiblePixels.Width + columnIndex;
                     byte value = pixels[pixelIndex];
-                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, value.ToString(CultureInfo.InvariantCulture), value, textCache);
+                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, value.ToString(CultureInfo.InvariantCulture), textCache);
                 }
             }
         }
 
-        private void RenderGray16(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderGray16(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             ushort[] pixels = new ushort[visiblePixels.Width * visiblePixels.Height];
             source.CopyPixels(visiblePixels, pixels, visiblePixels.Width * 2, 0);
@@ -240,12 +244,12 @@ namespace ColorVision.ImageEditor
                 {
                     int pixelIndex = rowIndex * visiblePixels.Width + columnIndex;
                     ushort value = pixels[pixelIndex];
-                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, value.ToString(CultureInfo.InvariantCulture), value / 257.0, textCache);
+                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, value.ToString(CultureInfo.InvariantCulture), textCache);
                 }
             }
         }
 
-        private void RenderGray32Float(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderGray32Float(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             float[] pixels = new float[visiblePixels.Width * visiblePixels.Height];
             source.CopyPixels(visiblePixels, pixels, visiblePixels.Width * 4, 0);
@@ -264,30 +268,27 @@ namespace ColorVision.ImageEditor
                         continue;
                     }
 
-                    double brightness = value >= 0 && value <= 1
-                        ? value * 255
-                        : Math.Clamp(value, 0, 255);
-                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, text, brightness, textCache);
+                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, text, textCache);
                 }
             }
         }
 
-        private void RenderBgr24(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderBgr24(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             RenderColor8(drawingContext, source, imageBounds, cellWidth, cellHeight, visiblePixels, 3, isRgbOrder: false, textCache);
         }
 
-        private void RenderRgb24(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderRgb24(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             RenderColor8(drawingContext, source, imageBounds, cellWidth, cellHeight, visiblePixels, 3, isRgbOrder: true, textCache);
         }
 
-        private void RenderBgr32Like(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderBgr32Like(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             RenderColor8(drawingContext, source, imageBounds, cellWidth, cellHeight, visiblePixels, 4, isRgbOrder: false, textCache);
         }
 
-        private void RenderColor8(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, int bytesPerPixel, bool isRgbOrder, OverlayTextCache textCache)
+        private static void RenderColor8(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, int bytesPerPixel, bool isRgbOrder, OverlayTextCache textCache)
         {
             byte[] pixels = new byte[visiblePixels.Width * visiblePixels.Height * bytesPerPixel];
             source.CopyPixels(visiblePixels, pixels, visiblePixels.Width * bytesPerPixel, 0);
@@ -302,13 +303,12 @@ namespace ColorVision.ImageEditor
                     byte r = isRgbOrder ? pixels[pixelIndex] : pixels[pixelIndex + 2];
                     byte g = pixels[pixelIndex + 1];
                     byte b = isRgbOrder ? pixels[pixelIndex + 2] : pixels[pixelIndex];
-                    double brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, FormatRgbText(r, g, b), brightness, textCache);
+                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, FormatRgbText(r, g, b), textCache);
                 }
             }
         }
 
-        private void RenderRgb48(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderRgb48(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             ushort[] pixels = new ushort[visiblePixels.Width * visiblePixels.Height * 3];
             source.CopyPixels(visiblePixels, pixels, visiblePixels.Width * 6, 0);
@@ -323,13 +323,12 @@ namespace ColorVision.ImageEditor
                     ushort r = pixels[pixelIndex];
                     ushort g = pixels[pixelIndex + 1];
                     ushort b = pixels[pixelIndex + 2];
-                    double brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 257.0;
-                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, FormatRgbText(r, g, b), brightness, textCache);
+                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, FormatRgbText(r, g, b), textCache);
                 }
             }
         }
 
-        private void RenderRgba64(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
+        private static void RenderRgba64(DrawingContext drawingContext, BitmapSource source, Rect imageBounds, double cellWidth, double cellHeight, Int32Rect visiblePixels, OverlayTextCache textCache)
         {
             ushort[] pixels = new ushort[visiblePixels.Width * visiblePixels.Height * 4];
             source.CopyPixels(visiblePixels, pixels, visiblePixels.Width * 8, 0);
@@ -344,13 +343,12 @@ namespace ColorVision.ImageEditor
                     ushort r = pixels[pixelIndex];
                     ushort g = pixels[pixelIndex + 1];
                     ushort b = pixels[pixelIndex + 2];
-                    double brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 257.0;
-                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, FormatRgbText(r, g, b), brightness, textCache);
+                    DrawCellText(drawingContext, imageBounds, cellWidth, cellHeight, visiblePixels.X + columnIndex, y, FormatRgbText(r, g, b), textCache);
                 }
             }
         }
 
-        private void DrawCellText(DrawingContext drawingContext, Rect imageBounds, double cellWidth, double cellHeight, int pixelX, int pixelY, string text, double brightness, OverlayTextCache textCache)
+        private static void DrawCellText(DrawingContext drawingContext, Rect imageBounds, double cellWidth, double cellHeight, int pixelX, int pixelY, string text, OverlayTextCache textCache)
         {
             Rect cellRect = new(
                 imageBounds.Left + pixelX * cellWidth,
@@ -358,29 +356,32 @@ namespace ColorVision.ImageEditor
                 cellWidth,
                 cellHeight);
 
-            bool useDarkForeground = brightness > 140;
-            double availableWidth = Math.Max(0, cellRect.Width - 2);
-            double availableHeight = Math.Max(0, cellRect.Height - 2);
-            CachedFormattedText? formattedText = textCache.GetBestFit(text, useDarkForeground, availableWidth, availableHeight);
+            double availableWidth = Math.Max(0, cellRect.Width - TextHorizontalPadding);
+            double availableHeight = Math.Max(0, cellRect.Height - TextVerticalPadding);
+            CachedFormattedText? formattedText = textCache.GetBestFit(text, availableWidth, availableHeight);
             if (formattedText == null)
             {
                 return;
             }
 
-            CachedFormattedText shadowText = textCache.Get(text, !useDarkForeground, formattedText.FontSize);
-
             Point origin = new(
                 cellRect.Left + (cellRect.Width - formattedText.FormattedText.Width) / 2,
                 cellRect.Top + (cellRect.Height - formattedText.FormattedText.Height) / 2);
 
-            drawingContext.DrawText(shadowText.FormattedText, new Point(origin.X + 1, origin.Y + 1));
+            Rect backgroundRect = new(
+                origin.X - TextHorizontalPadding / 2,
+                origin.Y - TextVerticalPadding / 2,
+                formattedText.FormattedText.Width + TextHorizontalPadding,
+                formattedText.FormattedText.Height + TextVerticalPadding);
+
+            drawingContext.DrawRoundedRectangle(OverlayBackgroundBrush, null, backgroundRect, 2, 2);
             drawingContext.DrawText(formattedText.FormattedText, origin);
         }
 
-        private CachedFormattedText GetOrCreateFormattedText(string text, double fontSize, bool useDarkForeground, double pixelsPerDip)
+        private CachedFormattedText GetOrCreateFormattedText(string text, double fontSize, double pixelsPerDip)
         {
             double quantizedFontSize = QuantizeFontSize(fontSize);
-            FormattedTextCacheKey key = new(text, ToFontSizeKey(quantizedFontSize), useDarkForeground, ToPixelsPerDipKey(pixelsPerDip));
+            FormattedTextCacheKey key = new(text, ToFontSizeKey(quantizedFontSize), ToPixelsPerDipKey(pixelsPerDip));
             if (_formattedTextCache.TryGetValue(key, out CachedFormattedText? cached))
             {
                 return cached;
@@ -397,7 +398,7 @@ namespace ColorVision.ImageEditor
                 FlowDirection.LeftToRight,
                 OverlayTypeface,
                 quantizedFontSize,
-                useDarkForeground ? Brushes.Black : Brushes.White,
+                OverlayTextBrush,
                 pixelsPerDip);
 
             cached = new CachedFormattedText(formattedText, quantizedFontSize);
@@ -446,6 +447,17 @@ namespace ColorVision.ImageEditor
             return (int)Math.Round(pixelsPerDip * 1000, MidpointRounding.AwayFromZero);
         }
 
+        private static SolidColorBrush CreateFrozenBrush(Color color)
+        {
+            SolidColorBrush brush = new(color);
+            if (brush.CanFreeze)
+            {
+                brush.Freeze();
+            }
+
+            return brush;
+        }
+
         private sealed class CachedFormattedText
         {
             public CachedFormattedText(FormattedText formattedText, double fontSize)
@@ -459,7 +471,7 @@ namespace ColorVision.ImageEditor
             public double FontSize { get; }
         }
 
-        private readonly record struct FormattedTextCacheKey(string Text, int FontSizeKey, bool UseDarkForeground, int PixelsPerDipKey);
+        private readonly record struct FormattedTextCacheKey(string Text, int FontSizeKey, int PixelsPerDipKey);
 
         private sealed class OverlayTextCache
         {
@@ -474,19 +486,19 @@ namespace ColorVision.ImageEditor
                 _pixelsPerDip = VisualTreeHelper.GetDpi(owner).PixelsPerDip;
             }
 
-            public CachedFormattedText Get(string text, bool useDarkForeground, double fontSize)
+            public CachedFormattedText Get(string text, double fontSize)
             {
-                return _owner.GetOrCreateFormattedText(text, fontSize, useDarkForeground, _pixelsPerDip);
+                return _owner.GetOrCreateFormattedText(text, fontSize, _pixelsPerDip);
             }
 
-            public CachedFormattedText? GetBestFit(string text, bool useDarkForeground, double availableWidth, double availableHeight)
+            public CachedFormattedText? GetBestFit(string text, double availableWidth, double availableHeight)
             {
                 if (availableWidth <= 0 || availableHeight <= 0)
                 {
                     return null;
                 }
 
-                CachedFormattedText candidate = Get(text, useDarkForeground, _baseFontSize);
+                CachedFormattedText candidate = Get(text, _baseFontSize);
                 if (Fits(candidate.FormattedText, availableWidth, availableHeight))
                 {
                     return candidate;
@@ -500,7 +512,7 @@ namespace ColorVision.ImageEditor
                     return null;
                 }
 
-                CachedFormattedText fitted = Get(text, useDarkForeground, scaledFontSize);
+                CachedFormattedText fitted = Get(text, scaledFontSize);
                 return Fits(fitted.FormattedText, availableWidth, availableHeight) ? fitted : null;
             }
 
