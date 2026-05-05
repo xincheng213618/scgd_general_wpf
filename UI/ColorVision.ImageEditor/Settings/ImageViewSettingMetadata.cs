@@ -47,8 +47,6 @@ namespace ColorVision.ImageEditor.Settings
             yield return new ImageViewSettingMetadata { Group = "显示", Order = 20, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowText) };
             yield return new ImageViewSettingMetadata { Group = "显示", Order = 30, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowMsg) };
             yield return new ImageViewSettingMetadata { Group = "显示", Order = 40, Source = imageView.Config, BindingName = nameof(ImageViewConfig.DrawingTextFontSize) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 50, Source = imageView.ImageViewModel, BindingName = nameof(ImageViewModel.MaxZoom) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 60, Source = imageView.ImageViewModel, BindingName = nameof(ImageViewModel.MinZoom) };
         }
     }
 
@@ -71,6 +69,16 @@ namespace ColorVision.ImageEditor.Settings
                 Group = "默认值",
                 Order = 10,
                 Type = ImageViewSettingType.Class,
+                Name = "默认显示参数",
+                Description = "控制 Zoombox 的全局最大/最小缩放，以及 NearestNeighbor 像素值叠层的性能阈值。",
+                Source = DefaultImageViewDisplayConfig.Current,
+            };
+
+            yield return new ImageViewSettingMetadata
+            {
+                Group = "默认值",
+                Order = 20,
+                Type = ImageViewSettingType.Class,
                 Name = "默认文本样式",
                 Description = "控制新建文本和带文字图元的默认字体、颜色和排版。",
                 Source = DefaultTextStyleConfig.Current,
@@ -79,7 +87,7 @@ namespace ColorVision.ImageEditor.Settings
             yield return new ImageViewSettingMetadata
             {
                 Group = "默认值",
-                Order = 20,
+                Order = 30,
                 Type = ImageViewSettingType.Class,
                 Name = "物理尺寸默认值",
                 Description = "控制标尺、网格等物理尺寸换算的默认长度和单位。",
@@ -90,6 +98,7 @@ namespace ColorVision.ImageEditor.Settings
         public void SaveImageViewSettings(ImageView imageView)
         {
             DefaultBitmapScalingConfig.SaveCurrent();
+            DefaultImageViewDisplayConfig.SaveCurrent();
             DefaultTextStyleConfig.SaveCurrent();
             ImageCalibrationService.SaveCurrent(imageView.EditorContext);
         }

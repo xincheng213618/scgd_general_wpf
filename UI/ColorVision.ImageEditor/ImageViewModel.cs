@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -20,6 +21,8 @@ namespace ColorVision.ImageEditor
 {
     public class ImageViewModel : ViewModelBase, IDisposable
     {
+        private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
+
         public DrawCanvas Image { get; set; }
         public Crosshair Crosshair { get; set; }
 
@@ -34,15 +37,42 @@ namespace ColorVision.ImageEditor
         public EditorContext EditorContext { get; set; }
 
         [DisplayName("最大缩放")]
-        public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; OnPropertyChanged(); } }
-        private double _MaxZoom = 20;
+        public double MaxZoom
+        {
+            get => _defaultDisplayConfig.MaxZoom;
+            set
+            {
+                if (_defaultDisplayConfig.MaxZoom == value)
+                {
+                    return;
+                }
+
+                _defaultDisplayConfig.MaxZoom = value;
+                OnPropertyChanged();
+            }
+        }
+
         [DisplayName("最小缩放")]
-        public double MinZoom { get => _MinZoom; set { _MinZoom = value; OnPropertyChanged(); } }
-        private double _MinZoom = 0.005;
+        public double MinZoom
+        {
+            get => _defaultDisplayConfig.MinZoom;
+            set
+            {
+                if (_defaultDisplayConfig.MinZoom == value)
+                {
+                    return;
+                }
+
+                _defaultDisplayConfig.MinZoom = value;
+                OnPropertyChanged();
+            }
+        }
 
 
         public ImageViewModel(ImageView imageView)
         {
+            _defaultDisplayConfig.PropertyChanged += DefaultDisplayConfig_PropertyChanged;
+
             EditorContext = new EditorContext()
             {
                 ImageView = imageView,
@@ -67,6 +97,18 @@ namespace ColorVision.ImageEditor
             EditorContext.Zoombox.ContextMenu = EditorContext.ContextMenu;
             EditorContext.Zoombox.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
 
+        }
+
+        private void DefaultDisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DefaultImageViewDisplayConfig.MaxZoom))
+            {
+                OnPropertyChanged(nameof(MaxZoom));
+            }
+            else if (e.PropertyName == nameof(DefaultImageViewDisplayConfig.MinZoom))
+            {
+                OnPropertyChanged(nameof(MinZoom));
+            }
         }
 
         public void ShowSelectionProperties(params UIElement[] elements)
@@ -334,6 +376,8 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
+            _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
+
             foreach (var item in IEditorToolFactory.IEditorTools.OfType<IDisposable>())
             {
                 item.Dispose();
