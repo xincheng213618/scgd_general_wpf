@@ -81,9 +81,9 @@
                 </ToolBarTray>
                 <ToolBarTray x:Name="ToolBarRight" Grid.Row="0" Grid.Column="1" Margin="0,50,2,0" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarRightVisible, Converter={StaticResource bool2VisibilityConverter}}">
                     <ToolBar Padding="2,3" ToolBarTray.IsLocked="True">
-                        <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2" Padding="5">
+                        <Button x:Name="ImageViewSettingsButton" Margin="0,0,0,2" Padding="5" Click="ImageViewSettingsButton_Click" ToolTip="图像设置">
                             <Image Source="{DynamicResource DIExpand}" Style="{StaticResource ToolBarImage}" />
-                        </ToggleButton>
+                        </Button>
                         <Button x:Name="Button1931" Margin="0,0,0,2" Padding="5" x:FieldModifier="public">
                             <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Style="{StaticResource ToolBarImage}" />
                         </Button>
@@ -117,53 +117,26 @@
                         </StackPanel>
                     </ToolBar>
                 </ToolBarTray>
+
+                <Border x:Name="SelectionPropertyOverlay"
+                        Margin="0,0,12,12"
+                        Padding="10"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Panel.ZIndex="10"
+                        Background="{DynamicResource GlobalBorderBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,8" FontWeight="SemiBold" Text="当前工具属性" />
+                        <ScrollViewer MaxWidth="320" MaxHeight="280" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="SelectionPropertyPanel" />
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
             </Grid>
-        </Grid>
-
-        <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <ScrollViewer Margin="5,0">
-                <StackPanel x:Name="AdvancedStackPanel">
-
-                    <Border Grid.Column="1" Margin="0,5" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
-                        <StackPanel Margin="5">
-                            <Button Command="{Binding Config.ClearCommand}" Content="Clear" />
-                            <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch Background="DodgerBlue" DockPanel.Dock="Right" IsChecked="{Binding Config.IsLayoutUpdated}" />
-                                <TextBlock Width="100" HorizontalAlignment="Left" Text="{x:Static properties:Resources.IsLayoutUpdated}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch Background="DodgerBlue" DockPanel.Dock="Right" IsChecked="{Binding Config.IsShowText}" />
-                                <TextBlock Width="100" HorizontalAlignment="Left" Text="{x:Static properties:Resources.IsShowText}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch Background="DodgerBlue" DockPanel.Dock="Right" IsChecked="{Binding Config.IsShowMsg}" />
-                                <TextBlock Width="100" HorizontalAlignment="Left" Text="{x:Static properties:Resources.IsShowMsg}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Width="100" Text="MaxZoom" />
-                                <TextBox Text="{Binding MaxZoom}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Width="100" Text="MinZoom" />
-                                <TextBox Text="{Binding MinZoom}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Width="100" Text="{x:Static properties:Resources.ColormapTypes}" />
-                                <ComboBox x:Name="ComColormapTypes" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding Config.ColormapTypes}" />
-                            </DockPanel>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-            <StackPanel Grid.Row="1" Margin="5" VerticalAlignment="Bottom" Orientation="Horizontal">
-                <Button Margin="0,0,10,0" Click="Apply_Click" Content="{x:Static properties:Resources.Apply}" />
-                <Button Click="Reload_Click" Content="{x:Static properties:Resources.Reload}" />
-            </StackPanel>
-
         </Grid>
     </Grid>
 </UserControl>

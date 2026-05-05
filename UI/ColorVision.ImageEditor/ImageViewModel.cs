@@ -8,6 +8,7 @@ using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -32,8 +33,10 @@ namespace ColorVision.ImageEditor
 
         public EditorContext EditorContext { get; set; }
 
+        [DisplayName("最大缩放")]
         public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; OnPropertyChanged(); } }
         private double _MaxZoom = 20;
+        [DisplayName("最小缩放")]
         public double MinZoom { get => _MinZoom; set { _MinZoom = value; OnPropertyChanged(); } }
         private double _MinZoom = 0.005;
 
@@ -52,7 +55,8 @@ namespace ColorVision.ImageEditor
 
             Image = EditorContext.DrawCanvas;
 
-            imageView.AdvancedStackPanel.Children.Insert(0,SlectStackPanel);
+            SlectStackPanel = imageView.SelectionPropertyPanel;
+            imageView.SetSelectionPropertyPanelVisibility(false);
 
             EditorContext.DrawCanvas.PreviewKeyDown += HandleKeyDown;
 
@@ -63,6 +67,23 @@ namespace ColorVision.ImageEditor
             EditorContext.Zoombox.ContextMenu = EditorContext.ContextMenu;
             EditorContext.Zoombox.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
 
+        }
+
+        public void ShowSelectionProperties(params UIElement[] elements)
+        {
+            SlectStackPanel.Children.Clear();
+            foreach (UIElement element in elements.Where(element => element != null))
+            {
+                SlectStackPanel.Children.Add(element);
+            }
+
+            EditorContext.ImageView.SetSelectionPropertyPanelVisibility(SlectStackPanel.Children.Count > 0);
+        }
+
+        public void ClearSelectionProperties()
+        {
+            SlectStackPanel.Children.Clear();
+            EditorContext.ImageView.SetSelectionPropertyPanelVisibility(false);
         }
 
         /// <summary>

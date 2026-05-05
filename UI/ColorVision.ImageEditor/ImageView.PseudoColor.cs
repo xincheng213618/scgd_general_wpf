@@ -10,7 +10,6 @@ namespace ColorVision.ImageEditor
 
         private void InitializePseudoColor()
         {
-            ComColormapTypes.ItemsSource = ColormapConstats.PreviewResources;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.AutoSetRangeChanged += Config_AutoSetRangeChanged;
 

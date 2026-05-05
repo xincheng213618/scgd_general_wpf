@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -74,6 +75,10 @@ namespace ColorVision.ImageEditor
                         if (Activator.CreateInstance(type, context) is IEditorTool instance)
                         {
                             IEditorTools.Add(instance);
+                            if (instance is IImageViewSettingProvider settingProvider)
+                            {
+                                imageView.RegisterImageViewSettingProvider(settingProvider);
+                            }
                         }
                     }
                 }

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 
 namespace ColorVision.ImageEditor
@@ -104,17 +105,20 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler ColormapTypesChanged;
 
+        [DisplayName("伪彩色类型")]
         public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
 
         public event EventHandler PseudoChanged;
 
+        [DisplayName("启用伪彩色")]
         public bool IsPseudo { get => _IsPseudo; set { _IsPseudo = value; OnPropertyChanged(); PseudoChanged?.Invoke(this, new EventArgs()); } }
         private bool _IsPseudo ;
 
         public event EventHandler AutoSetRangeChanged;
 
+        [DisplayName("自动范围")]
         public bool IsAutoSetRange { get => _IsAutoSetRange; set { _IsAutoSetRange = value; OnPropertyChanged(); AutoSetRangeChanged?.Invoke(this, new EventArgs()); } }
         private bool _IsAutoSetRange;
 
@@ -126,6 +130,7 @@ namespace ColorVision.ImageEditor
 
 
         public event EventHandler<bool> LayoutUpdatedChanged;
+        [DisplayName("自动刷新")]
         public bool IsLayoutUpdated
         {
             get => _IsLayoutUpdated;
@@ -140,15 +145,18 @@ namespace ColorVision.ImageEditor
         private bool _IsLayoutUpdated = true;
 
         public event EventHandler<double> DrawingTextFontSizeChanged;
+        [DisplayName("绘制文字大小")]
         public double DrawingTextFontSize { get => _DrawingTextFontSize; set { _DrawingTextFontSize = Math.Max(0, value); OnPropertyChanged(); DrawingTextFontSizeChanged?.Invoke(this, _DrawingTextFontSize); } }
         private double _DrawingTextFontSize;
 
 
         public event EventHandler<bool> ShowTextChanged;
+        [DisplayName("显示文字")]
         public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); ShowTextChanged?.Invoke(this, _IsShowText); } }
         private bool _IsShowText = true;
 
         public event EventHandler<bool> ShowMsgChanged;
+        [DisplayName("显示消息")]
         public bool IsShowMsg { get => _IsShowMsg; set { _IsShowMsg = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsShowMsg); } }
         private bool _IsShowMsg = true;
 

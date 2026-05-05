@@ -56,16 +56,17 @@ namespace ColorVision.ImageEditor.Draw
                 if (value)
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    ImageViewModel.SlectStackPanel.Children.Add(new TextBlock { Text = "文本工具", Margin = new Thickness(0, 0, 0, 6), FontWeight = FontWeights.SemiBold });
-                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
-                    ImageViewModel.SlectStackPanel.Children.Add(new TextBlock { Text = "默认文本样式", Margin = new Thickness(0, 12, 0, 6), FontWeight = FontWeights.SemiBold });
-                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(DefaultTextStyle));
+                    ImageViewModel.ShowSelectionProperties(
+                        new TextBlock { Text = "文本工具", Margin = new Thickness(0, 0, 0, 6), FontWeight = FontWeights.SemiBold },
+                        PropertyEditorHelper.GenPropertyEditorControl(Config),
+                        new TextBlock { Text = "默认文本样式", Margin = new Thickness(0, 12, 0, 6), FontWeight = FontWeights.SemiBold },
+                        PropertyEditorHelper.GenPropertyEditorControl(DefaultTextStyle));
                     Load();
                 }
                 else
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    ImageViewModel.SlectStackPanel.Children.Clear();
+                    ImageViewModel.ClearSelectionProperties();
                     UnLoad();
                 }
                 OnPropertyChanged();

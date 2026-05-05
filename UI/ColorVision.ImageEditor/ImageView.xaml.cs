@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
@@ -41,6 +42,7 @@ namespace ColorVision.ImageEditor
 
         public EditorContext EditorContext { get; set; }
         public bool IsShowScaleRuler { get; set; }
+        private readonly List<IImageViewSettingProvider> _imageViewSettingProviders = new();
 
 
         public ImageView()
@@ -58,7 +60,9 @@ namespace ColorVision.ImageEditor
             this.Focus();
 
             Config.Cleared += Config_Cleared;
+            InitializeImageViewSettingProviders();
             InitializePseudoColor();
+            ApplyDefaultBitmapScalingMode();
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
@@ -93,6 +97,7 @@ namespace ColorVision.ImageEditor
             ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
             ImageShow.TextFontSizeOverride = Config.DrawingTextFontSize;
             UpdateDrawingVisualScale();
+            SetSelectionPropertyPanelVisibility(false);
 
             Config.ShowMsgChanged += (s, e) =>
             {
@@ -179,6 +184,60 @@ namespace ColorVision.ImageEditor
             var window = new ToolbarSettingsWindow(this);
             window.Owner = Window.GetWindow(this);
             window.ShowDialog();
+        }
+
+        private void InitializeImageViewSettingProviders()
+        {
+            RegisterImageViewSettingProvider(new ImageViewDisplaySettingProvider());
+            RegisterImageViewSettingProvider(new ImageViewPseudoColorSettingProvider());
+            RegisterImageViewSettingProvider(new ImageViewDefaultsSettingProvider());
+        }
+
+        public void RegisterImageViewSettingProvider(IImageViewSettingProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+
+            if (_imageViewSettingProviders.Any(existing => existing.GetType() == provider.GetType()))
+            {
+                return;
+            }
+
+            _imageViewSettingProviders.Add(provider);
+        }
+
+        public IReadOnlyList<IImageViewSettingProvider> GetImageViewSettingProviders()
+        {
+            return _imageViewSettingProviders;
+        }
+
+        public void OpenSettingsWindow(string? initialGroup = null)
+        {
+            ImageViewSettingsWindow window = new(this, initialGroup)
+            {
+                Owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            window.ShowDialog();
+        }
+
+        public void ApplyBitmapScalingMode(BitmapScalingMode bitmapScalingMode)
+        {
+            RenderOptions.SetBitmapScalingMode(ImageShow, bitmapScalingMode);
+        }
+
+        public void ApplyDefaultBitmapScalingMode()
+        {
+            ApplyBitmapScalingMode(DefaultBitmapScalingConfig.Current.DefaultBitmapScalingMode);
+        }
+
+        internal void SetSelectionPropertyPanelVisibility(bool isVisible)
+        {
+            SelectionPropertyOverlay.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ImageViewSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenSettingsWindow();
         }
         /// <summary>
         /// 打印图像
@@ -413,7 +472,10 @@ namespace ColorVision.ImageEditor
         public void OpenImage(WriteableBitmap? writeableBitmap)
         {
             if (writeableBitmap != null)
+            {
+                ApplyDefaultBitmapScalingMode();
                 SetImageSource(writeableBitmap);
+            }
             else
             {
                 log.Error("传入的 WriteableBitmap 为 null，无法打开图像。");
@@ -427,16 +489,18 @@ namespace ColorVision.ImageEditor
         public void AddOrReplaceAdvancedSettingSection(string key, FrameworkElement section)
         {
             RemoveAdvancedSettingSection(key);
-            AdvancedStackPanel.Children.Add(section);
+            SelectionPropertyPanel.Children.Add(section);
             _advancedSettingSections[key] = section;
+            SetSelectionPropertyPanelVisibility(SelectionPropertyPanel.Children.Count > 0);
         }
 
         public void RemoveAdvancedSettingSection(string key)
         {
             if (_advancedSettingSections.TryGetValue(key, out var section))
             {
-                AdvancedStackPanel.Children.Remove(section);
+                SelectionPropertyPanel.Children.Remove(section);
                 _advancedSettingSections.Remove(key);
+                SetSelectionPropertyPanelVisibility(SelectionPropertyPanel.Children.Count > 0);
             }
         }
 
@@ -467,6 +531,7 @@ namespace ColorVision.ImageEditor
             Config.ClearProperties();
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
+            ApplyDefaultBitmapScalingMode();
             try
             {
                 if (filePath != null && File.Exists(filePath))
@@ -722,7 +787,7 @@ namespace ColorVision.ImageEditor
         }
 
 
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        public void ApplyCurrentImage()
         {
             InvalidatePseudoColorRender();
             if (FunctionImage is WriteableBitmap writeableBitmap)
@@ -734,12 +799,22 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void Reload_Click(object sender, RoutedEventArgs e)
+        public void ReloadImage()
         {
             InvalidatePseudoColorRender();
             string filepath = Config.FilePath;
             Config.ClearProperties();
             OpenImage(filepath);
+        }
+
+        private void Apply_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyCurrentImage();
+        }
+
+        private void Reload_Click(object sender, RoutedEventArgs e)
+        {
+            ReloadImage();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

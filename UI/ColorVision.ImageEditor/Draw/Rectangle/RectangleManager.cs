@@ -59,13 +59,13 @@ namespace ColorVision.ImageEditor.Draw
                 if (value)
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+                    ImageViewModel.ShowSelectionProperties(PropertyEditorHelper.GenPropertyEditorControl(Config));
                     Load();
                 }
                 else
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    ImageViewModel.SlectStackPanel.Children.Clear();
+                    ImageViewModel.ClearSelectionProperties();
                     UnLoad();
                 }
                 OnPropertyChanged();
