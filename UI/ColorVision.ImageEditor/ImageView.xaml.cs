@@ -41,7 +41,7 @@ namespace ColorVision.ImageEditor
         public event EventHandler StatusBarItemsChanged;
 
         public EditorContext EditorContext { get; set; }
-        public bool IsShowScaleRuler { get; set; }
+
         private readonly List<IImageViewSettingProvider> _imageViewSettingProviders = new();
 
 
@@ -115,9 +115,6 @@ namespace ColorVision.ImageEditor
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = true; }));
 
-            //// Setup toolbar visibility toggle commands
-            SetupToolbarToggleCommands();
-
             var _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
 
             // Initialize editor tools visibility list
@@ -146,37 +143,6 @@ namespace ColorVision.ImageEditor
             }
             GC.Collect();
         }
-
-        public void SetBackGround(SolidColorBrush color)
-        {
-            ZoomGrid.Background = color;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        private void SetupToolbarToggleCommands()
-        {
-            // Show All Toolbars (Ctrl+Shift+A)
-            var showAllToolbarsCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, (s, e) => 
-            {
-                Config.IsToolBarAlVisible = !Config.IsToolBarAlVisible;
-                Config.IsToolBarDrawVisible = !Config.IsToolBarDrawVisible;
-                Config.IsToolBarTopVisible = !Config.IsToolBarTopVisible;
-                Config.IsToolBarLeftVisible = !Config.IsToolBarLeftVisible;
-                Config.IsToolBarRightVisible = !Config.IsToolBarRightVisible;
-            }));
-            InputBindings.Add(new KeyBinding(showAllToolbarsCommand, Key.H, ModifierKeys.Control));
-  
-            // Open Workspace Settings (Ctrl+Q)
-            var openToolbarSettingsCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(openToolbarSettingsCommand, (s, e) => 
-            {
-                OpenSettingsWindow("工作台");
-            }));
-            InputBindings.Add(new KeyBinding(openToolbarSettingsCommand, Key.Q, ModifierKeys.Control));
-        }
-
         private void InitializeImageViewSettingProviders()
         {
             RegisterImageViewSettingProvider(new ImageViewDisplaySettingProvider());
@@ -201,16 +167,6 @@ namespace ColorVision.ImageEditor
             return _imageViewSettingProviders;
         }
 
-        public void OpenSettingsWindow(string? initialGroup = null)
-        {
-            ImageViewSettingsWindow window = new(this, initialGroup)
-            {
-                Owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            };
-            window.ShowDialog();
-        }
-
         public void ApplyBitmapScalingMode(BitmapScalingMode bitmapScalingMode)
         {
             RenderOptions.SetBitmapScalingMode(ImageShow, bitmapScalingMode);
@@ -226,10 +182,7 @@ namespace ColorVision.ImageEditor
             SelectionPropertyOverlay.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ImageViewSettingsButton_Click(object sender, RoutedEventArgs e)
-        {
-            OpenSettingsWindow();
-        }
+
         /// <summary>
         /// 打印图像
         /// </summary>
@@ -675,24 +628,12 @@ namespace ColorVision.ImageEditor
 
         public void AddVisual(Visual visual)
         {
-            ApplyDrawingVisualVisibility(visual);
             ImageShow.AddVisualCommand(visual);
         }
 
         private void InvalidatePseudoColorRender()
         {
             PseudoColorService?.Invalidate();
-        }
-
-        private void ApplyDrawingVisualVisibility(Visual visual)
-        {
-            if (visual is not IDrawingVisual drawingVisual) return;
-
-            if (drawingVisual.BaseAttribute is ITextProperties textProperties)
-                textProperties.IsShowText = Config.IsShowText;
-
-            if (!Config.IsShowMsg)
-                drawingVisual.BaseAttribute.Msg = string.Empty;
         }
 
 
@@ -759,11 +700,6 @@ namespace ColorVision.ImageEditor
         private void UpdateZoomAndScaleCore()
         {
             Zoombox1.ZoomUniform();
-            ScheduleApplyLayoutScaleOnce();
-        }
-
-        private void ScheduleApplyLayoutScaleOnce()
-        {
             Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
             {
                 UpdateDrawingVisualScale();
@@ -837,27 +773,6 @@ namespace ColorVision.ImageEditor
         {
             var mode = new TransientSelectMode(ImageShow, Zoombox1, ImageViewModel, shapeType);
             return mode.Start();
-        }
-
-        /// <summary>
-        /// Start a transient rectangle selection on the current image.
-        /// Returns the selected Rect, or null if cancelled.
-        /// </summary>
-        public async Task<Rect?> BeginSelectRectAsync()
-        {
-            var result = await BeginSelectAsync(SelectShapeType.Rectangle);
-            return result?.Rect;
-        }
-
-        /// <summary>
-        /// Start a transient circle selection on the current image.
-        /// Returns (Center, Radius), or null if cancelled.
-        /// </summary>
-        public async Task<(Point Center, double Radius)?> BeginSelectCircleAsync()
-        {
-            var result = await BeginSelectAsync(SelectShapeType.Circle);
-            if (result == null) return null;
-            return (result.Center, result.Radius);
         }
 
         #endregion
