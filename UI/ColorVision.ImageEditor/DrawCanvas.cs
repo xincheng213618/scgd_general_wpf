@@ -153,10 +153,6 @@ namespace ColorVision.ImageEditor
         private void ApplyLayoutScale(Visual visual)
         {
             if (visual is not IDrawingVisual drawingVisual) return;
-
-            double scale = IsLayoutUpdated ? Sacle : 1;
-            if (double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0)
-                scale = 1;
             var state = DrawingVisualLayoutStates.GetValue(visual, _ => CaptureLayoutState(drawingVisual));
             bool isRender = false;
 
@@ -168,8 +164,7 @@ namespace ColorVision.ImageEditor
                     pen = pen.Clone();
                     drawingVisual.Pen = pen;
                 }
-
-                double targetThickness = state.BasePenThickness * scale;
+                double targetThickness = IsLayoutUpdated ? Sacle : TextFontSizeOverride > 0 ? TextFontSizeOverride/10 : state.BasePenThickness;
                 if (pen.Thickness != targetThickness)
                 {
                     pen.Thickness = targetThickness;
@@ -180,7 +175,7 @@ namespace ColorVision.ImageEditor
             if (drawingVisual.BaseAttribute is ITextProperties textProperties && state.BaseFontSize is double baseFontSize)
             {
                 double targetFontSize = IsLayoutUpdated
-                    ? baseFontSize * scale
+                    ? Sacle * 10
                     : TextFontSizeOverride > 0 ? TextFontSizeOverride : baseFontSize;
                 if (textProperties.TextAttribute.FontSize != targetFontSize)
                 {

@@ -9,22 +9,9 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class DefalutTextAttribute : ViewModelBase,IConfig
     {
-        private static readonly DefalutTextAttribute Fallback = new();
 
-        public static DefalutTextAttribute Defalut
-        {
-            get
-            {
-                try
-                {
-                    return ConfigService.Instance?.GetRequiredService<DefalutTextAttribute>() ?? Fallback;
-                }
-                catch
-                {
-                    return Fallback;
-                }
-            }
-        }
+        public static DefalutTextAttribute Defalut { get; set; }= new DefalutTextAttribute();
+
 
         public double ActualLength { get => _ActualLength; set { _ActualLength = value <= 0 ? 1 : value; OnPropertyChanged(); } }
         private double _ActualLength = 1;

@@ -2,8 +2,8 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
-      "nativeDebugging": true,
-      "hotReloadEnabled": true
+      "hotReloadEnabled": true,
+      "debugEngines": "managed-dotnet"
     }
   }
 }
