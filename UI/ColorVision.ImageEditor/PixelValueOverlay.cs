@@ -168,10 +168,10 @@ namespace ColorVision.ImageEditor
                 return false;
             }
 
-            int startX = Math.Max(0, Math.Min(source.PixelWidth - 1, (int)Math.Ceiling((visibleBounds.Left - imageBounds.Left) / cellWidth)));
-            int startY = Math.Max(0, Math.Min(source.PixelHeight - 1, (int)Math.Ceiling((visibleBounds.Top - imageBounds.Top) / cellHeight)));
-            int endX = Math.Max(0, Math.Min(source.PixelWidth - 1, (int)Math.Floor((visibleBounds.Right - imageBounds.Left) / cellWidth) - 1));
-            int endY = Math.Max(0, Math.Min(source.PixelHeight - 1, (int)Math.Floor((visibleBounds.Bottom - imageBounds.Top) / cellHeight) - 1));
+            int startX = Math.Max(0, Math.Min(source.PixelWidth - 1, (int)Math.Floor((visibleBounds.Left - imageBounds.Left) / cellWidth)));
+            int startY = Math.Max(0, Math.Min(source.PixelHeight - 1, (int)Math.Floor((visibleBounds.Top - imageBounds.Top) / cellHeight)));
+            int endX = Math.Max(0, Math.Min(source.PixelWidth - 1, (int)Math.Ceiling((visibleBounds.Right - imageBounds.Left) / cellWidth) - 1));
+            int endY = Math.Max(0, Math.Min(source.PixelHeight - 1, (int)Math.Ceiling((visibleBounds.Bottom - imageBounds.Top) / cellHeight) - 1));
 
             if (endX < startX || endY < startY)
             {
