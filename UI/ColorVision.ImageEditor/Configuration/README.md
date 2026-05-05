@@ -1,188 +1,69 @@
-# ColorVision.ImageEditor.Configuration 模块
+# Configuration 目录说明
 
-## 概述
+这个目录原来承载一套独立的实验性配置/命令框架，包括：
 
-本模块提供 ImageEditor 的配置管理和命令模式实现，支持：
+- 强类型 `IEditorConfiguration` / `ImageEditorConfiguration`
+- 独立 `CommandManager` / `DeltaCommandBase`
+- `ServiceLocator` / `ImageEditorInitializer`
+- `DrawCanvasCommandManager` / `DrawCanvasCommandAdapter`
 
-1. **统一配置接口** (`IEditorConfiguration`) - 类型安全的配置管理
-2. **命令模式 + 差分存储** (`ICommandManager`) - 高效的 Undo/Redo 实现
-3. **服务定位器** (`IServiceLocator`) - 依赖注入和解耦
+这套实现现在已经移除，原因很直接：
 
-## 核心组件
+1. 当前仓库里没有任何运行时代码再依赖 `ColorVision.ImageEditor.Configuration`。
+2. 现行 ImageEditor 已经形成了更清晰的实际架构，不再需要并行维护第二套未接入的配置/命令层。
+3. 继续保留旧文件只会制造“看起来很完整、实际上没人用”的假复杂度。
 
-### 1. 配置管理
+## 当前实际架构
 
-```csharp
-// 初始化配置
-var config = new ImageEditorConfiguration("MyConfig");
-config.Settings.ShowGrid = true;
-config.Settings.GridSize = 20;
+当前 ImageEditor 的有效配置与状态链路如下：
 
-// 注册到服务定位器
-ServiceLocator.Instance.Register<IEditorConfiguration>(config);
-```
+- `ImageViewConfig`
+    - 当前 ImageView 的运行态显示/布局开关。
+- `EditorContext`
+    - 当前 ImageView 的上下文、服务和共享状态容器。
+- `ImageViewSettingsWindow`
+    - 统一设置入口，负责组织设置分组与保存时机。
+- `IImageViewSettingProvider`
+    - 各模块自己声明设置项，不再集中硬编码。
+- `ImageViewWorkspaceSettingsView`
+    - 当前工作台状态页，显示工具栏可见性、已加载 `IEditorTool`、支持的 `IImageOpen`。
+- `ConfigService`
+    - 默认值/全局配置的持久化入口。
+- `DrawCanvas`
+    - 目前仍通过 `ActionCommand` 维护实际可工作的 Undo/Redo。
 
-### 2. 命令管理
+## 当前关键文件
 
-```csharp
-// 初始化命令管理器
-ImageEditorInitializer.Initialize();
+- `ImageView.xaml.cs`
+    - 设置窗口入口与 ImageView 级 provider 注册。
+- `Settings/ImageViewSettingMetadata.cs`
+    - 设置元数据、provider 接口和当前默认 provider。
+- `Settings/ImageViewSettingsWindow.xaml.cs`
+    - 设置窗口装配逻辑。
+- `Settings/ImageViewWorkspaceSettingsView.xaml.cs`
+    - 工作台页；当前已加载工具和打开器的统一管理入口。
+- `EditorToolFactory.cs`
+    - 负责发现 `IEditorTool`、`IImageComponent`、`IImageOpen`。
+- `Tif/Opentif.cs`
+    - TIFF 打开器；Gray32Float 读取时会走专用加载配置。
+- `Tif/TifOpenConfig.cs`
+    - TIFF 打开器当前的专用配置样例。
 
-// 或使用自定义配置
-var config = new ImageEditorConfiguration();
-ImageEditorInitializer.Initialize(config);
+## 为什么不保留旧 Configuration 实现
 
-// 获取命令管理器
-var commandManager = ServiceLocator.Instance.GetCommandManager();
-```
+旧目录的问题不是“写得不好”，而是“没有进入真实控制路径”。
 
-### 3. DrawCanvas 集成
+- 它没有接入当前 `ImageViewSettingsWindow`。
+- 它没有接管当前 `EditorToolFactory` 的发现流程。
+- 它没有取代 `DrawCanvas` 的实际 Undo/Redo 路径。
+- 它引入了第二套抽象名称，容易让后续开发误判应该往哪一层继续扩展。
 
-```csharp
-// 使用新的命令系统
-var canvas = new DrawCanvas();
-var cmdManager = new DrawCanvasCommandManager(canvas)
-{
-    UseNewCommandSystem = true,
-    CommandManager = ServiceLocator.Instance.GetCommandManager()
-};
+所以这次处理原则是：
 
-// 添加 Visual（自动加入 Undo 栈）
-cmdManager.AddVisual(visual);
+- 删除无引用实现。
+- 保留文档，明确现行架构。
+- 后续迭代只在当前真实链路上演进，不再恢复并行实验层。
 
-// 撤销/重做
-cmdManager.Undo();
-cmdManager.Redo();
-```
+## 下一步
 
-### 4. 事务支持
-
-```csharp
-// 批量操作使用事务
-var transactional = ServiceLocator.Instance.GetService<ITransactionalCommandManager>();
-
-transactional.BeginTransaction("批量添加");
-try
-{
-    foreach (var visual in visuals)
-    {
-        var cmd = new AddVisualCommand(canvas, visual);
-        transactional.Execute(cmd);
-    }
-    transactional.CommitTransaction();
-}
-catch
-{
-    transactional.RollbackTransaction();
-    throw;
-}
-```
-
-### 5. 属性变更命令
-
-```csharp
-// 创建属性变更命令
-var command = new PropertyChangeCommand<MyClass, int>(
-    target: myObject,
-    propertyName: "Width",
-    getter: () => myObject.Width,
-    setter: (v) => myObject.Width = v,
-    newValue: 100
-);
-
-// 执行
-commandManager.Execute(command);
-```
-
-## 文件结构
-
-```
-Configuration/
-├── IEditorConfiguration.cs      # 配置接口定义
-├── ICommandManager.cs           # 命令管理器接口
-├── DeltaCommandBase.cs          # 差分命令基类和实现
-├── CommandManager.cs            # 命令管理器实现
-├── EditorConfiguration.cs       # 配置基类实现
-├── ServiceLocator.cs            # 服务定位器/依赖注入
-├── ImageEditorConfiguration.cs  # ImageEditor 专用配置
-├── ConfigurableViewModelBase.cs # 支持配置的 ViewModel 基类
-├── DrawCanvasCommandAdapter.cs  # DrawCanvas 命令适配器
-├── DrawCanvasCommandManager.cs  # DrawCanvas 命令管理器包装
-└── ImageEditorInitializer.cs    # 初始化器
-```
-
-## 迁移指南
-
-### 从旧版 ActionCommand 迁移
-
-**旧代码：**
-```csharp
-canvas.AddVisualCommand(visual);  // 内部创建 ActionCommand
-```
-
-**新代码：**
-```csharp
-// 方式1: 使用适配器
-var cmdManager = new DrawCanvasCommandManager(canvas)
-{
-    UseNewCommandSystem = true,
-    CommandManager = ServiceLocator.Instance.GetCommandManager()
-};
-cmdManager.AddVisual(visual);
-
-// 方式2: 直接使用命令
-var command = new AddVisualCommand(canvas, visual);
-commandManager.Execute(command);
-```
-
-### 配置迁移
-
-**旧代码：**
-```csharp
-var config = new ImageViewConfig();
-config.SetValue("key", value);
-```
-
-**新代码：**
-```csharp
-var config = new ImageEditorConfiguration();
-config.Settings.ShowGrid = true;  // 强类型属性
-// 或自定义配置项
-config.SetItem(new MyConfigItem { Key = "key", ... });
-```
-
-## 架构图
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ImageEditor 模块                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   DrawCanvas │  │  ViewModel   │  │   Config     │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
-│         │                 │                 │              │
-│         └─────────────────┼─────────────────┘              │
-│                           │                                │
-│         ┌─────────────────┼─────────────────┐              │
-│         │                 │                 │              │
-│  ┌──────▼───────┐  ┌──────▼───────┐  ┌──────▼───────┐      │
-│  │ ICommand     │  │ IEditor      │  │ IService     │      │
-│  │ Manager      │  │ Configuration│  │ Locator      │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│         │                 │                 │              │
-│         └─────────────────┼─────────────────┘              │
-│                           │                                │
-│                    ┌──────▼───────┐                        │
-│                    │   具体实现    │                        │
-│                    │ CommandManager│                        │
-│                    │ EditorConfig  │                        │
-│                    │ ServiceLocator│                        │
-│                    └──────────────┘                        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 注意事项
-
-1. **线程安全**：ServiceLocator 是线程安全的，但配置对象本身不是
-2. **内存管理**：命令历史会自动限制大小（默认100条），可通过 `MaxHistorySize` 调整
-3. **兼容性**：旧版 `ActionCommand` 系统仍然可用，通过 `DrawCanvasCommandManager` 可以逐步迁移
+下一步迭代图见 `ROADMAP.md`。
