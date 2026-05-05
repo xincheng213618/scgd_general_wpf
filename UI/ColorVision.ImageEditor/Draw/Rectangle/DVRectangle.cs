@@ -5,7 +5,7 @@ using System.Windows.Media;
 namespace ColorVision.ImageEditor.Draw
 {
 
-    public class DVRectangle : DrawingVisualBase<RectangleProperties>, IDrawingVisual, IRectangle
+    public class DVRectangle : DrawingVisualBase<RectangleProperties>, IDrawingVisual, IRectangle, ILayoutScaleDrawingVisual
     {
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -19,6 +19,11 @@ namespace ColorVision.ImageEditor.Draw
         {
             Attribute = rectangleProperties;
             Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
         }
 
 

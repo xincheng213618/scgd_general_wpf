@@ -7,11 +7,15 @@ using System.Windows.Media;
 namespace ColorVision.ImageEditor.Draw
 {
 
-    public class DVBezierCurve : DrawingVisualBase<BezierCurveProperties>, IDrawingVisual, IBezierCurve
+    public class DVBezierCurve : DrawingVisualBase<BezierCurveProperties>, IDrawingVisual, IBezierCurve, ILayoutScaleDrawingVisual
     {
         public bool AutoAttributeChanged { get; set; }
 
-        public List<Point> Points { get; set; }
+        public List<Point> Points
+        {
+            get => Attribute.Points;
+            set => Attribute.Points = value;
+        }
 
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
@@ -20,10 +24,22 @@ namespace ColorVision.ImageEditor.Draw
         {
             Attribute = new BezierCurveProperties();
             Attribute.Pen = new Pen(Brushes.Blue, 2);
-            Points = new List<Point>();
+            Attribute.Points = new List<Point>();
+            Attribute.PropertyChanged += (s, e) => { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
+        }
+
+        public DVBezierCurve(BezierCurveProperties attribute)
+        {
+            Attribute = attribute;
+            Attribute.Points ??= new List<Point>();
             Attribute.PropertyChanged += (s, e) => { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
         }
         public bool IsDrawing { get; set; }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
+        }
 
         public override void Render()
         {

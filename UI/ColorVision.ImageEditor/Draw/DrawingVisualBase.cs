@@ -15,7 +15,54 @@ namespace ColorVision.ImageEditor.Draw
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         public virtual BaseProperties BaseAttribute { get; }
         public virtual int ID { get; set; }
+        protected double? LayoutBasePenThickness { get; set; }
+        protected double? LayoutBaseFontSize { get; set; }
         public virtual void Render() { }
+
+        protected bool ApplyLayoutScaleCore(DrawingVisualScaleContext context, Pen? currentPen, Action<Pen>? assignPen = null, double? currentFontSize = null, Action<double>? assignFontSize = null)
+        {
+            bool isRender = false;
+
+            if (currentPen != null)
+            {
+                LayoutBasePenThickness ??= currentPen.Thickness > 0 ? currentPen.Thickness : 1;
+
+                Pen pen = currentPen;
+                if (pen.IsFrozen)
+                {
+                    pen = pen.Clone();
+                    assignPen?.Invoke(pen);
+                }
+
+                double targetThickness = context.IsLayoutUpdated
+                    ? context.Scale
+                    : context.TextFontSizeOverride > 0 ? context.TextFontSizeOverride / 10 : LayoutBasePenThickness.Value;
+                if (pen.Thickness != targetThickness)
+                {
+                    pen.Thickness = targetThickness;
+                    isRender = true;
+                }
+            }
+
+            if (currentFontSize is double fontSize && assignFontSize != null)
+            {
+                LayoutBaseFontSize ??= fontSize > 0 ? fontSize : (LayoutBasePenThickness ?? 1) * 10;
+
+                double targetFontSize = context.IsLayoutUpdated
+                    ? context.Scale * 10
+                    : context.TextFontSizeOverride > 0 ? context.TextFontSizeOverride : LayoutBaseFontSize.Value;
+                if (fontSize != targetFontSize)
+                {
+                    assignFontSize(targetFontSize);
+                    isRender = true;
+                }
+            }
+
+            if (isRender)
+                Render();
+
+            return isRender;
+        }
 
         public virtual Rect GetRect() => new Rect();
 
@@ -69,6 +116,13 @@ namespace ColorVision.ImageEditor.Draw
                     new PropertyEditorWindow(visual.BaseAttribute) { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog();
                 };
                 MenuItems.Add(menuItem4);
+
+                MenuItem menuItem5 = new MenuItem() { Header = "默认文本样式" };
+                menuItem5.Click += (s, e) =>
+                {
+                    DefaultTextStyleEditor.Open(Application.Current.GetActiveWindow());
+                };
+                MenuItems.Add(menuItem5);
             }
             return MenuItems;
         }

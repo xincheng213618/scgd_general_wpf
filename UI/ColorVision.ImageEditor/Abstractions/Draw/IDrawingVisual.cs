@@ -11,4 +11,11 @@ namespace ColorVision.ImageEditor
         Pen Pen { get; set; }
         void Render();
     }
+
+    public readonly record struct DrawingVisualScaleContext(bool IsLayoutUpdated, double Scale, double TextFontSizeOverride);
+
+    public interface ILayoutScaleDrawingVisual
+    {
+        void ApplyLayoutScale(DrawingVisualScaleContext context);
+    }
 }

@@ -7,7 +7,7 @@ using System.Windows.Media;
 namespace ColorVision.ImageEditor.Draw
 {
 
-    public class DrawingVisualRuler:DrawingVisualBase<RulerTextProperties>,IDrawingVisual
+    public class DrawingVisualRuler:DrawingVisualBase<RulerTextProperties>,IDrawingVisual, ILayoutScaleDrawingVisual
     {
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
@@ -25,6 +25,11 @@ namespace ColorVision.ImageEditor.Draw
         public List<Point> Points { get => Attribute.Points;}
 
         public Point? MovePoints { get; set; }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
+        }
 
         public override void Render()
         {

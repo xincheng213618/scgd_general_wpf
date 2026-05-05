@@ -62,7 +62,7 @@ namespace ColorVision.ImageEditor.Draw
         private bool _IsEditing = false;
     }
 
-    public class DVText : DrawingVisualBase<TextProperties>, IDrawingVisual, IEditableDrawingVisual
+    public class DVText : DrawingVisualBase<TextProperties>, IDrawingVisual, IEditableDrawingVisual, ILayoutScaleDrawingVisual
     {
         public TextAttribute TextAttribute => Attribute.TextAttribute;
 
@@ -93,6 +93,11 @@ namespace ColorVision.ImageEditor.Draw
                 if (e.PropertyName != nameof(TextProperties.Rect))
                     Render();
             };
+        }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
         }
 
         public override void Render()

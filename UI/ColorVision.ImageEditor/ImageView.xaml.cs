@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
@@ -235,6 +236,75 @@ namespace ColorVision.ImageEditor
             // 将PNG内容保存到文件
             using FileStream fileStream = new(fileName, FileMode.Create);
             pngEncoder.Save(fileStream);
+        }
+
+        public void ClearAnnotations()
+        {
+            foreach (Visual visual in DrawingVisualLists.OfType<Visual>().ToList())
+            {
+                ImageShow.RemoveVisual(visual);
+            }
+        }
+
+        public void ExportAnnotations()
+        {
+            List<DrawingVisualBase> visuals = DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
+            if (visuals.Count == 0)
+            {
+                MessageBox.Show("当前没有可导出的标注。", "导出标注", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            AnnotationDocument document = AnnotationMapper.CreateDocument(visuals);
+            if (document.Items.Count == 0)
+            {
+                MessageBox.Show("当前图元里没有已接入 annotation 的类型。", "导出标注", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "Annotation Files (*.cvanno.json)|*.cvanno.json|JSON Files (*.json)|*.json|All Files (*.*)|*.*";
+            dialog.DefaultExt = "cvanno.json";
+            dialog.AddExtension = true;
+            dialog.RestoreDirectory = true;
+            dialog.FileName = "annotations-" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            File.WriteAllText(dialog.FileName, AnnotationMapper.Serialize(document));
+
+            int skippedCount = visuals.Count - document.Items.Count;
+            string message = skippedCount > 0
+                ? $"已导出 {document.Items.Count} 个标注，跳过 {skippedCount} 个未接入 annotation 的图元。"
+                : $"已导出 {document.Items.Count} 个标注。";
+            MessageBox.Show(message, "导出标注", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        public void ImportAnnotations()
+        {
+            using var dialog = new System.Windows.Forms.OpenFileDialog();
+            dialog.Filter = "Annotation Files (*.cvanno.json)|*.cvanno.json|JSON Files (*.json)|*.json|All Files (*.*)|*.*";
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            try
+            {
+                string json = File.ReadAllText(dialog.FileName);
+                AnnotationDocument document = AnnotationMapper.Deserialize(json);
+                IReadOnlyList<DrawingVisualBase> visuals = AnnotationMapper.ToVisuals(document);
+
+                ClearAnnotations();
+                foreach (DrawingVisualBase visual in visuals)
+                {
+                    visual.Render();
+                    ImageShow.AddVisual(visual);
+                }
+
+                MessageBox.Show($"已导入 {visuals.Count} 个标注。", "导入标注", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导入标注失败: {ex.Message}", "导入标注", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)

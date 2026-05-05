@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -123,10 +122,9 @@ namespace ColorVision.ImageEditor
         public void Clear()
         {
             ClearActionCommand();
-            foreach (var item in visuals)
-                RemoveVisualTree(item);
+            foreach (Visual item in visuals.ToList())
+                TryRemoveVisual(item);
 
-            visuals.Clear();
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs(null, VisualChangeType.Clear));
         }
 
@@ -136,82 +134,84 @@ namespace ColorVision.ImageEditor
 
         public double TextFontSizeOverride { get; set; }
 
-        private static readonly ConditionalWeakTable<Visual, DrawingVisualLayoutState> DrawingVisualLayoutStates = new();
-
-        private sealed class DrawingVisualLayoutState
-        {
-            public double BasePenThickness { get; init; }
-            public double? BaseFontSize { get; init; }
-        }
-
         public void ApplyLayoutScaleToVisuals()
         {
+            DrawingVisualScaleContext context = CreateScaleContext();
             foreach (var visual in visuals)
-                ApplyLayoutScale(visual);
+                ApplyLayoutScale(visual, context);
         }
 
-        private void ApplyLayoutScale(Visual visual)
+        private DrawingVisualScaleContext CreateScaleContext()
         {
-            if (visual is not IDrawingVisual drawingVisual) return;
-            var state = DrawingVisualLayoutStates.GetValue(visual, _ => CaptureLayoutState(drawingVisual));
-            bool isRender = false;
-
-            if (drawingVisual.Pen != null)
-            {
-                var pen = drawingVisual.Pen;
-                if (pen.IsFrozen)
-                {
-                    pen = pen.Clone();
-                    drawingVisual.Pen = pen;
-                }
-                double targetThickness = IsLayoutUpdated ? Sacle : TextFontSizeOverride > 0 ? TextFontSizeOverride/10 : state.BasePenThickness;
-                if (pen.Thickness != targetThickness)
-                {
-                    pen.Thickness = targetThickness;
-                    isRender = true;
-                }
-            }
-
-            if (drawingVisual.BaseAttribute is ITextProperties textProperties && state.BaseFontSize is double baseFontSize)
-            {
-                double targetFontSize = IsLayoutUpdated
-                    ? Sacle * 10
-                    : TextFontSizeOverride > 0 ? TextFontSizeOverride : baseFontSize;
-                if (textProperties.TextAttribute.FontSize != targetFontSize)
-                {
-                    textProperties.TextAttribute.FontSize = targetFontSize;
-                    isRender = true;
-                }
-            }
-
-            if (isRender)
-                drawingVisual.Render();
+            return new DrawingVisualScaleContext(IsLayoutUpdated, Sacle, TextFontSizeOverride);
         }
 
-        private static DrawingVisualLayoutState CaptureLayoutState(IDrawingVisual drawingVisual)
+        private static void ApplyLayoutScale(Visual visual, DrawingVisualScaleContext context)
         {
-            return new DrawingVisualLayoutState
+            if (visual is ILayoutScaleDrawingVisual scalableVisual)
+                scalableVisual.ApplyLayoutScale(context);
+        }
+
+        private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true)
+        {
+            if (visual == null || visuals.Contains(visual)) return false;
+
+            ApplyLayoutScale(visual, CreateScaleContext());
+
+            if (index.HasValue)
             {
-                BasePenThickness = drawingVisual.Pen?.Thickness ?? 1,
-                BaseFontSize = drawingVisual.BaseAttribute is ITextProperties textProperties
-                    ? textProperties.TextAttribute.FontSize
-                    : null
-            };
+                int targetIndex = index.Value;
+                if (targetIndex < 0) targetIndex = 0;
+                if (targetIndex > visuals.Count) targetIndex = visuals.Count;
+                visuals.Insert(targetIndex, visual);
+            }
+            else
+            {
+                visuals.Add(visual);
+            }
+
+            AddVisualTree(visual);
+
+            if (raiseEvents)
+                RaiseVisualAdded(visual);
+
+            return true;
+        }
+
+        private bool TryRemoveVisual(Visual? visual, bool raiseEvents = true)
+        {
+            if (visual == null || !visuals.Contains(visual)) return false;
+
+            visuals.Remove(visual);
+            RemoveVisualTree(visual);
+
+            if (raiseEvents)
+                RaiseVisualRemoved(visual);
+
+            return true;
+        }
+
+        private void RaiseVisualAdded(Visual visual)
+        {
+            VisualChangedEventArgs args = new(visual, VisualChangeType.Add);
+            VisualsAdd?.Invoke(this, args);
+            VisualsChanged?.Invoke(this, args);
+        }
+
+        private void RaiseVisualRemoved(Visual visual)
+        {
+            VisualChangedEventArgs args = new(visual, VisualChangeType.Remove);
+            VisualsRemove?.Invoke(this, args);
+            VisualsChanged?.Invoke(this, args);
         }
 
         public void AddVisual(Visual visual)
         {
-            if (visual == null || visuals.Contains(visual)) return;
-
-            ApplyLayoutScale(visual);
-            visuals.Add(visual);
-            AddVisualTree(visual);
+            TryAddVisual(visual);
         }
         public void RemoveVisual(Visual visual)
         {
-            if (visual == null || !visuals.Contains(visual)) return;
-            visuals.Remove(visual);
-            RemoveVisualTree(visual);
+            TryRemoveVisual(visual);
         }
 
         /// <summary>
@@ -219,31 +219,13 @@ namespace ColorVision.ImageEditor
         /// </summary>
         public void InsertVisual(int index, Visual visual)
         {
-            if (visual == null || visuals.Contains(visual)) return;
-            if (index < 0) index = 0;
-            if (index > visuals.Count) index = visuals.Count;
-
-            ApplyLayoutScale(visual);
-
-            visuals.Insert(index, visual);
-            AddVisualTree(visual);
-
-            VisualsAdd?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
-            VisualsChanged?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
+            TryAddVisual(visual, index);
         }
 
 
         public void AddVisualCommand(Visual visual)
         {
-            if (visual == null || visuals.Contains(visual)) return;
-
-            ApplyLayoutScale(visual);
-
-            visuals.Add(visual);
-            AddVisualTree(visual);
-
-            VisualsAdd?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
-            VisualsChanged?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
+            if (!TryAddVisual(visual)) return;
 
             Action undoaction = () => RemoveVisual(visual);
             Action redoaction = () => AddVisual(visual);
@@ -252,13 +234,7 @@ namespace ColorVision.ImageEditor
 
         public void RemoveVisualCommand(Visual? visual)
         {
-            if (visual == null || !visuals.Contains(visual)) return;
-
-            visuals.Remove(visual);
-            RemoveVisualTree(visual);
-
-            VisualsRemove?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Remove));
-            VisualsChanged?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Remove));
+            if (!TryRemoveVisual(visual)) return;
 
             Action undoaction = () => AddVisual(visual);
             Action redoaction = () => RemoveVisual(visual);

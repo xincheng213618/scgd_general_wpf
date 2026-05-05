@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class DVCircle : DrawingVisualBase<CircleProperties>, IDrawingVisual,ICircle, ISelectVisual
+    public class DVCircle : DrawingVisualBase<CircleProperties>, IDrawingVisual,ICircle, ISelectVisual, ILayoutScaleDrawingVisual
     {
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
@@ -21,6 +21,11 @@ namespace ColorVision.ImageEditor.Draw
         {
             Attribute = attribute;
             Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
         }
 
 

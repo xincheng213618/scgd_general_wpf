@@ -9,7 +9,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-    public class DVPolygon : DrawingVisualBase<PolygonProperties>, IDrawingVisual
+    public class DVPolygon : DrawingVisualBase<PolygonProperties>, IDrawingVisual, ILayoutScaleDrawingVisual
     {
 
         public bool AutoAttributeChanged { get; set; } = true;
@@ -24,7 +24,20 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.PropertyChanged += (s, e) => Render();
 
         }
+
+        public DVPolygon(PolygonProperties attribute)
+        {
+            Attribute = attribute;
+            Attribute.Points ??= new List<Point>();
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+
         public List<Point> Points { get => Attribute.Points; }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
+        }
 
         public override void Render()
         {

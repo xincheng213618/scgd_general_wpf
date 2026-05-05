@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class DVLine : DrawingVisualBase<LineProperties>, IDrawingVisual
+    public class DVLine : DrawingVisualBase<LineProperties>, IDrawingVisual, ILayoutScaleDrawingVisual
     {
 
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -20,6 +20,11 @@ namespace ColorVision.ImageEditor.Draw
         {
             Attribute = attribute;
             Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
         }
 
 
