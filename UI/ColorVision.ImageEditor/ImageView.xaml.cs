@@ -636,8 +636,6 @@ namespace ColorVision.ImageEditor
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
-            SchedulePixelValueOverlayRefresh();
-
             ImageShow.RaiseImageInitialized();
             CommandManager.InvalidateRequerySuggested();
 
@@ -683,7 +681,6 @@ namespace ColorVision.ImageEditor
             if (channel == -1)
             {
                 ImageShow.Source = ViewBitmapSource;
-                SchedulePixelValueOverlayRefresh();
                 return;
             }
             if (HImageCache == null) return;
@@ -701,7 +698,6 @@ namespace ColorVision.ImageEditor
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
-                        SchedulePixelValueOverlayRefresh();
                     }
                 });
             });
@@ -753,7 +749,6 @@ namespace ColorVision.ImageEditor
                 ImageShow.Source = ViewBitmapSource; ;
                 HImageCache = writeableBitmap.ToHImage();
                 FunctionImage = null;
-                SchedulePixelValueOverlayRefresh();
             }
         }
 
