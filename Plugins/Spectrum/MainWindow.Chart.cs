@@ -1,7 +1,6 @@
+using ColorVision.ImageEditor.Cie;
 using Spectrum.Data;
 using Spectrum.Models;
-using OpenCvSharp;
-using OpenCvSharp.WpfExtensions;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
@@ -16,36 +15,41 @@ namespace Spectrum
         {
             try
             {
-                if (src1931 != null)
-                {
-                    Mat cir1931 = src1931.Clone();
-                    OpenCvSharp.Point p1;
-                    p1.X = Convert.ToInt32(Math.Round(fx * 10 * 97 + 104));
-                    p1.Y = Convert.ToInt32(Math.Round(881 - fy * 10 * 97));
-                    Cv2.Circle(cir1931, p1.X, p1.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
-                    pic1931 = cir1931.ToWriteableBitmap();
-                }
-                if (src1976 != null)
-                {
-                    Mat cir1976 = src1976.Clone();
-                    OpenCvSharp.Point p2;
-                    p2.X = Convert.ToInt32(Math.Round(fu * 10 * 154 + 49));
-                    p2.Y = Convert.ToInt32(Math.Round(973 - fv * 10 * 154));
-                    Cv2.Circle(cir1976, p2.X, p2.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
-                    pic1976 = cir1976.ToWriteableBitmap();
-                }
-                // Update both CIE diagram images simultaneously
                 this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                 {
-                    image1931.Source = pic1931;
-                    image1976.Source = pic1976;
+                    CieChromaticity xy = new(fx, fy);
+                    if (!IsUsableChromaticity(xy))
+                    {
+                        xy = CieColorConverter.Uv1976ToXy(new CieChromaticity(fu, fv));
+                    }
+
+                    if (IsUsableChromaticity(xy))
+                    {
+                        Cie1931View.SetSelectedXy(xy, System.Windows.Media.Colors.Red, "Sample");
+                        Cie1976View.SetSelectedXy(xy, System.Windows.Media.Colors.Red, "Sample");
+                    }
+                    else
+                    {
+                        Cie1931View.ClearSelection();
+                        Cie1976View.ClearSelection();
+                    }
                 });
             }
-            catch (Exception ex)
+            catch
             {
 
             }
 
+        }
+
+        private static bool IsUsableChromaticity(CieChromaticity xy)
+        {
+            return xy.IsFinite
+                && (Math.Abs(xy.X) > double.Epsilon || Math.Abs(xy.Y) > double.Epsilon)
+                && xy.X >= 0
+                && xy.X <= 1
+                && xy.Y >= 0
+                && xy.Y <= 1;
         }
 
 

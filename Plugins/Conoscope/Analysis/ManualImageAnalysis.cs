@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Cie;
 using ColorVision.FileIO;
 using Conoscope.Core;
 using System;
@@ -213,11 +214,36 @@ namespace Conoscope.Analysis
     {
         public static IReadOnlyList<ColorGamutStandard> All { get; } = new[]
         {
-            new ColorGamutStandard("NTSC", new ChromaticityPoint(0.670, 0.330), new ChromaticityPoint(0.210, 0.710), new ChromaticityPoint(0.140, 0.080)),
-            new ColorGamutStandard("sRGB", new ChromaticityPoint(0.640, 0.330), new ChromaticityPoint(0.300, 0.600), new ChromaticityPoint(0.150, 0.060)),
-            new ColorGamutStandard("DCI-P3", new ChromaticityPoint(0.680, 0.320), new ChromaticityPoint(0.265, 0.690), new ChromaticityPoint(0.150, 0.060)),
-            new ColorGamutStandard("PAL", new ChromaticityPoint(0.640, 0.330), new ChromaticityPoint(0.290, 0.600), new ChromaticityPoint(0.150, 0.060)),
-            new ColorGamutStandard("Adobe RGB", new ChromaticityPoint(0.640, 0.330), new ChromaticityPoint(0.210, 0.710), new ChromaticityPoint(0.150, 0.060))
+            FromGamut(CieGamuts.SRgb),
+            FromGamut(CieGamuts.Rec709),
+            FromGamut(CieGamuts.AdobeRgb),
+            FromGamut(CieGamuts.DisplayP3),
+            FromGamut(CieGamuts.DciP3),
+            FromGamut(CieGamuts.Rec2020),
+            FromGamut(CieGamuts.Ntsc1953),
+            FromGamut(CieGamuts.EbuPal),
+            FromGamut(CieGamuts.SmpteC),
+            FromGamut(CieGamuts.ProPhotoRgb),
+            FromGamut(CieGamuts.AcesCg)
         };
+
+        private static ColorGamutStandard FromGamut(CieGamut gamut)
+        {
+            if (gamut.Vertices.Count < 3)
+            {
+                throw new InvalidOperationException($"{gamut.Name} 色域至少需要三个顶点");
+            }
+
+            return new ColorGamutStandard(
+                gamut.Name,
+                ToPoint(gamut.Vertices[0]),
+                ToPoint(gamut.Vertices[1]),
+                ToPoint(gamut.Vertices[2]));
+        }
+
+        private static ChromaticityPoint ToPoint(CieChromaticity chromaticity)
+        {
+            return new ChromaticityPoint(chromaticity.X, chromaticity.Y);
+        }
     }
 }

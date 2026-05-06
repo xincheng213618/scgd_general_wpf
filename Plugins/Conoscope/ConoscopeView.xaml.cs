@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -48,6 +49,7 @@ namespace Conoscope
         private string? colorDifferenceReferenceFileName;
         private bool isUpdatingColorDifferenceControls;
         private bool isUpdatingFilterControls;
+        private WindowCIE? cieWindow;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
@@ -1335,6 +1337,7 @@ namespace Conoscope
                 return;
             }
 
+            UpdateCieWindowSelection(e.Position);
             HideCoordinateDragOverlay();
 
             if (!e.IsValueChanged && !e.IsFinal)
@@ -1359,6 +1362,7 @@ namespace Conoscope
                 return;
             }
 
+            UpdateCieWindowSelection(e.Position);
             ShowCoordinateDragOverlay(e);
         }
 
@@ -1382,32 +1386,117 @@ namespace Conoscope
                 return GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
             }
 
-            int imageWidth = currentBitmapSource.PixelWidth;
-            int imageHeight = currentBitmapSource.PixelHeight;
-            int ix = ClampToInt((int)Math.Round(e.Position.X), 0, imageWidth - 1);
-            int iy = ClampToInt((int)Math.Round(e.Position.Y), 0, imageHeight - 1);
+            if (!TryGetChromaticityAtPosition(e.Position, out PixelChromaticitySample sample))
+            {
+                return GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
+            }
 
-            int xyzWidth = YMat?.Width ?? XMat?.Width ?? ZMat?.Width ?? imageWidth;
-            int xyzHeight = YMat?.Height ?? XMat?.Height ?? ZMat?.Height ?? imageHeight;
-            int xyzX = ClampToInt(ix, 0, xyzWidth - 1);
-            int xyzY = ClampToInt(iy, 0, xyzHeight - 1);
-            ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
-
-            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
             ExportChannel displayChannel = GetSelectedDisplayChannel();
-            double displayValue = GetChannelValue(xyzX, xyzY, X, Y, Z, displayChannel);
+            double displayValue = GetChannelValue(sample.XyzX, sample.XyzY, sample.X, sample.Y, sample.Z, displayChannel);
             double azimuthAngle = GetFullAzimuthAngle(e.Position);
             double polarAngle = GetPolarRadiusAngle(e.Position);
 
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"参考: {GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)}");
-            builder.AppendLine($"像素: X={ix}, Y={iy}");
+            builder.AppendLine($"像素: X={sample.ImageX}, Y={sample.ImageY}");
             builder.AppendLine($"极坐标: 方位={azimuthAngle:F2}°, 极角={polarAngle:F2}°");
             builder.AppendLine($"{GetChannelLabel(displayChannel)}: {displayValue:F6}");
-            builder.AppendLine($"XYZ: X={X:F4}, Y={Y:F4}, Z={Z:F4}");
-            builder.AppendLine($"xy: x={chromaticity.x:F6}, y={chromaticity.y:F6}");
-            builder.Append($"uv: u={chromaticity.u:F6}, v={chromaticity.v:F6}, CCT={ConoscopeColorimetry.FormatCct(chromaticity.Cct)}");
+            builder.AppendLine($"XYZ: X={sample.X:F4}, Y={sample.Y:F4}, Z={sample.Z:F4}");
+            builder.AppendLine($"xy: x={sample.Chromaticity.x:F6}, y={sample.Chromaticity.y:F6}");
+            builder.Append($"uv: u={sample.Chromaticity.u:F6}, v={sample.Chromaticity.v:F6}, CCT={ConoscopeColorimetry.FormatCct(sample.Chromaticity.Cct)}");
             return builder.ToString();
+        }
+
+        private void btnOpenCieWindow_Click(object sender, RoutedEventArgs e)
+        {
+            if (!HasXyzData() || currentBitmapSource == null || coordinateAxisController == null)
+            {
+                MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            EnsureCieWindow();
+            SyncCieWindowFromCurrentPointer();
+        }
+
+        private void EnsureCieWindow()
+        {
+            if (cieWindow == null)
+            {
+                cieWindow = new WindowCIE();
+                Window? owner = Window.GetWindow(this);
+                if (owner != null)
+                {
+                    cieWindow.Owner = owner;
+                }
+
+                cieWindow.Closed += (_, _) => cieWindow = null;
+            }
+
+            cieWindow.Show();
+            cieWindow.Activate();
+        }
+
+        private void SyncCieWindowFromCurrentPointer()
+        {
+            if (cieWindow == null || coordinateAxisController == null)
+            {
+                return;
+            }
+
+            Point point = Mouse.GetPosition(ImageView.ImageShow);
+            if (!coordinateAxisController.Axis.ContainsInteractivePoint(point))
+            {
+                return;
+            }
+
+            UpdateCieWindowSelection(point);
+        }
+
+        private void UpdateCieWindowSelection(Point position)
+        {
+            if (cieWindow == null)
+            {
+                return;
+            }
+
+            if (TryGetChromaticityAtPosition(position, out PixelChromaticitySample sample))
+            {
+                cieWindow.ChangeSelect(sample.Chromaticity.x, sample.Chromaticity.y);
+            }
+        }
+
+        private bool TryGetChromaticityAtPosition(Point position, out PixelChromaticitySample sample)
+        {
+            sample = default;
+            if (currentBitmapSource == null || !HasXyzData())
+            {
+                return false;
+            }
+
+            int imageWidth = currentBitmapSource.PixelWidth;
+            int imageHeight = currentBitmapSource.PixelHeight;
+            if (imageWidth <= 0 || imageHeight <= 0)
+            {
+                return false;
+            }
+
+            int imageX = ClampToInt((int)Math.Round(position.X), 0, imageWidth - 1);
+            int imageY = ClampToInt((int)Math.Round(position.Y), 0, imageHeight - 1);
+
+            int xyzWidth = YMat?.Width ?? XMat?.Width ?? ZMat?.Width ?? imageWidth;
+            int xyzHeight = YMat?.Height ?? XMat?.Height ?? ZMat?.Height ?? imageHeight;
+            if (xyzWidth <= 0 || xyzHeight <= 0)
+            {
+                return false;
+            }
+
+            int xyzX = ClampToInt(imageX, 0, xyzWidth - 1);
+            int xyzY = ClampToInt(imageY, 0, xyzHeight - 1);
+            ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
+            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
+            sample = new PixelChromaticitySample(imageX, imageY, xyzX, xyzY, X, Y, Z, chromaticity);
+            return true;
         }
 
         private double GetFullAzimuthAngle(Point point)
@@ -2039,6 +2128,8 @@ namespace Conoscope
         {
             ConoscopeModuleService.Unregister(this);
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            cieWindow?.Close();
+            cieWindow = null;
             XMat?.Dispose();
             XMat = null;
             YMat?.Dispose();
@@ -2053,6 +2144,16 @@ namespace Conoscope
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
         }
+
+        private readonly record struct PixelChromaticitySample(
+            int ImageX,
+            int ImageY,
+            int XyzX,
+            int XyzY,
+            double X,
+            double Y,
+            double Z,
+            ConoscopeChromaticity Chromaticity);
 
         public void AdvancedExport()
         {

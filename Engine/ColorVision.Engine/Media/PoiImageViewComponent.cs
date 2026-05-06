@@ -129,6 +129,8 @@ namespace ColorVision.Engine.Media
 
         private static bool IsPoiTemplateSupported(string? filePath)
         {
+            if (string.IsNullOrWhiteSpace(filePath)) return false;
+
             string extension = Path.GetExtension(filePath);
             return extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase) ||
                    extension.Equals(".cvcie", StringComparison.OrdinalIgnoreCase);

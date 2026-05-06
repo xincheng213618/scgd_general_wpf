@@ -75,6 +75,7 @@
                                             <ComboBoxItem Content="方位角直线" Tag="AzimuthLine"/>
                                             <ComboBoxItem Content="极角圆" Tag="PolarCircle"/>
                                         </ComboBox>
+                                        <Button Content="打开 CIE" Click="btnOpenCieWindow_Click" Style="{StaticResource PanelCompactButtonStyle}" Margin="12,0,0,0"/>
                                     </WrapPanel>
 
                                     <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
