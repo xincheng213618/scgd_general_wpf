@@ -439,6 +439,7 @@ namespace Conoscope
             isRunningOperation = busy;
             btnRunFlow.IsEnabled = !busy && GetSelectedFlowTemplate() != null;
             btnCaptureCamera.IsEnabled = !busy && GetSelectedCamera() != null;
+            btnRefreshCameraDevices.IsEnabled = !busy;
             RefreshNdControls();
         }
 
@@ -945,6 +946,18 @@ namespace Conoscope
                     OpenConoscope(filename);
                 }
             }
+        }
+
+        private void btnNewView_Click(object sender, RoutedEventArgs e)
+        {
+            AddConoscopeView(null, activate: true);
+            SetOperationStatus("已新建视图", Brushes.LimeGreen);
+        }
+
+        private void btnRefreshCameraDevices_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshCameraDevices();
+            SetOperationStatus("相机列表已刷新", Brushes.LimeGreen);
         }
 
         private void btnExportAngleMode_Click(object sender, RoutedEventArgs e)
