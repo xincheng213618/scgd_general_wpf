@@ -1,0 +1,195 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Windows;
+using System.Windows.Media;
+
+namespace ColorVision.ImageEditor.Cie
+{
+    public sealed class CieOverlayVisual : DrawingVisual
+    {
+        private static readonly double[] GuideDashArray = { 4.0, 3.0 };
+
+        public void Render(
+            CieDiagramProfile profile,
+            Size canvasSize,
+            Size bitmapPixelSize,
+            double layoutScale,
+            IReadOnlyList<CieGamut> gamuts,
+            IReadOnlyList<CieMarker> markers,
+            CieMarker? selectedMarker)
+        {
+            using DrawingContext dc = RenderOpen();
+
+            if (canvasSize.Width <= 0 || canvasSize.Height <= 0 || bitmapPixelSize.Width <= 0 || bitmapPixelSize.Height <= 0)
+            {
+                return;
+            }
+
+            double scale = CoerceScale(layoutScale);
+            double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+
+            DrawGamuts(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, gamuts);
+            DrawMarkers(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, markers, false);
+
+            if (selectedMarker != null)
+            {
+                DrawSelection(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, selectedMarker);
+            }
+        }
+
+        private static void DrawGamuts(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, IReadOnlyList<CieGamut> gamuts)
+        {
+            foreach (CieGamut gamut in gamuts)
+            {
+                List<Point> points = gamut.Vertices
+                    .Select(vertex => ToCanvasPoint(profile, canvasSize, bitmapPixelSize, vertex))
+                    .Where(IsFinite)
+                    .ToList();
+
+                if (points.Count < 2)
+                {
+                    continue;
+                }
+
+                StreamGeometry geometry = new();
+                using (StreamGeometryContext context = geometry.Open())
+                {
+                    context.BeginFigure(points[0], gamut.Fill != null, true);
+                    context.PolyLineTo(points.Skip(1).ToList(), true, true);
+                }
+                geometry.Freeze();
+
+                Pen pen = new(gamut.Stroke, 1.8 * scale)
+                {
+                    LineJoin = PenLineJoin.Round
+                };
+                dc.DrawGeometry(gamut.Fill, pen, geometry);
+
+                Point labelPoint = GetCentroid(points);
+                DrawText(dc, gamut.Name, labelPoint + new Vector(6 * scale, -18 * scale), gamut.Stroke, 12 * scale, scale, pixelsPerDip);
+            }
+        }
+
+        private static void DrawMarkers(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, IReadOnlyList<CieMarker> markers, bool emphasize)
+        {
+            foreach (CieMarker marker in markers)
+            {
+                DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, emphasize);
+            }
+        }
+
+        private static void DrawSelection(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker)
+        {
+            Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, marker.Chromaticity);
+            if (!IsFinite(point))
+            {
+                return;
+            }
+
+            Rect plotRect = ToCanvasRect(profile.PlotAreaPixels, canvasSize, bitmapPixelSize);
+            Pen guideUnderlay = new(Brushes.White, 1.8 * scale)
+            {
+                DashStyle = new DashStyle(GuideDashArray, 0)
+            };
+            Pen guidePen = new(Brushes.Black, 1.0 * scale)
+            {
+                DashStyle = new DashStyle(GuideDashArray, 0)
+            };
+
+            dc.DrawLine(guideUnderlay, new Point(plotRect.Left, point.Y), new Point(plotRect.Right, point.Y));
+            dc.DrawLine(guideUnderlay, new Point(point.X, plotRect.Top), new Point(point.X, plotRect.Bottom));
+            dc.DrawLine(guidePen, new Point(plotRect.Left, point.Y), new Point(plotRect.Right, point.Y));
+            dc.DrawLine(guidePen, new Point(point.X, plotRect.Top), new Point(point.X, plotRect.Bottom));
+
+            DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, true);
+        }
+
+        private static void DrawMarker(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker, bool emphasize)
+        {
+            Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, marker.Chromaticity);
+            if (!IsFinite(point))
+            {
+                return;
+            }
+
+            double radius = emphasize ? 6 * scale : 4.5 * scale;
+            SolidColorBrush fill = new(marker.Color);
+            Pen whitePen = new(Brushes.White, 2.2 * scale);
+            Pen blackPen = new(Brushes.Black, 1.1 * scale);
+
+            dc.DrawEllipse(fill, whitePen, point, radius, radius);
+            dc.DrawEllipse(null, blackPen, point, radius, radius);
+
+            if (!string.IsNullOrWhiteSpace(marker.Name))
+            {
+                DrawText(dc, marker.Name, point + new Vector(radius + 4 * scale, -radius - 8 * scale), Brushes.Black, 12 * scale, scale, pixelsPerDip);
+            }
+        }
+
+        private static void DrawText(DrawingContext dc, string text, Point point, Brush brush, double fontSize, double scale, double pixelsPerDip)
+        {
+            FormattedText formattedText = new(
+                text,
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface("Segoe UI"),
+                Math.Max(8 * scale, fontSize),
+                brush,
+                pixelsPerDip);
+
+            Rect background = new(point, new Size(formattedText.Width + 6 * scale, formattedText.Height + 2 * scale));
+            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(185, 255, 255, 255)), null, background, 2 * scale, 2 * scale);
+            dc.DrawText(formattedText, point + new Vector(3 * scale, 1 * scale));
+        }
+
+        private static Point ToCanvasPoint(CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, CieChromaticity xy)
+        {
+            Point imagePixel = profile.ToImagePixel(xy);
+            if (!IsFinite(imagePixel))
+            {
+                return imagePixel;
+            }
+
+            return new Point(
+                imagePixel.X / bitmapPixelSize.Width * canvasSize.Width,
+                imagePixel.Y / bitmapPixelSize.Height * canvasSize.Height);
+        }
+
+        private static Rect ToCanvasRect(Rect imagePixelRect, Size canvasSize, Size bitmapPixelSize)
+        {
+            Point topLeft = new(
+                imagePixelRect.Left / bitmapPixelSize.Width * canvasSize.Width,
+                imagePixelRect.Top / bitmapPixelSize.Height * canvasSize.Height);
+            Point bottomRight = new(
+                imagePixelRect.Right / bitmapPixelSize.Width * canvasSize.Width,
+                imagePixelRect.Bottom / bitmapPixelSize.Height * canvasSize.Height);
+
+            return new Rect(topLeft, bottomRight);
+        }
+
+        private static Point GetCentroid(List<Point> points)
+        {
+            if (points.Count == 0)
+            {
+                return new Point();
+            }
+
+            return new Point(points.Average(point => point.X), points.Average(point => point.Y));
+        }
+
+        private static bool IsFinite(Point point)
+        {
+            return !double.IsNaN(point.X) &&
+                   !double.IsNaN(point.Y) &&
+                   !double.IsInfinity(point.X) &&
+                   !double.IsInfinity(point.Y);
+        }
+
+        private static double CoerceScale(double scale)
+        {
+            return double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0 ? 1 : scale;
+        }
+    }
+}

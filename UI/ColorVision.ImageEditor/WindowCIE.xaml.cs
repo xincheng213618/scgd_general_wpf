@@ -1,122 +1,113 @@
-﻿using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Cie;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
-using System;
+using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
-
-    public class CIEColorConverter
-    {
-        // 线性化RGB值
-        private static double Linearize(double value)
-        {
-            value = value / 255.0;
-
-            if (value <= 0.04045)
-            {
-                return value / 12.92;
-            }
-            else
-            {
-                return Math.Pow((value + 0.055) / 1.055, 2.4);
-            }
-        }
-
-        // 转换RGB到XYZ
-        private static double[] RgbToXyz(int r, int g, int b)
-        {
-            // 线性化RGB值
-            double R = Linearize(r);
-            double G = Linearize(g);
-            double B = Linearize(b);
-
-            // 使用sRGB的转换矩阵
-            double X = R * 0.4124 + G * 0.3576 + B * 0.1805;
-            double Y = R * 0.2126 + G * 0.7152 + B * 0.0722;
-            double Z = R * 0.0193 + G * 0.1192 + B * 0.9505;
-
-            return new double[] { X, Y, Z };
-        }
-
-        // 从XYZ到CIE 1931 xy色度坐标
-        private static double[] XyzToCie1931xy(double[] xyz)
-        {
-            double X = xyz[0];
-            double Y = xyz[1];
-            double Z = xyz[2];
-
-            double x = X / (X + Y + Z);
-            double y = Y / (X + Y + Z);
-
-            return new double[] { x, y };
-        }
-
-        public static double[] RgbToCie1931xy(int r, int g, int b)
-        {
-            double[] xyz = RgbToXyz(r, g, b);
-            return XyzToCie1931xy(xyz);
-        }
-    }
-
     /// <summary>
     /// WindowCIE.xaml 的交互逻辑
     /// </summary>
     public partial class WindowCIE : Window
     {
+        private bool _isInitialized;
+
         public WindowCIE()
         {
             InitializeComponent();
             this.ApplyCaption();
         }
-        public ImageViewModel ImageViewModel => ImageView.ImageViewModel;
+
+        public CieDiagramView DiagramView => CieView;
+
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            ImageView.ToolBarTop.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarRight.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarLeft.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarAl.Visibility = Visibility.Collapsed;
-
-            ImageViewModel.Crosshair.IsShow = true;
-            ImageView.SetImageSource(new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.png", UriKind.Relative)));
-
-            ImageView.ComboBoxLayers.Visibility = Visibility.Collapsed;
-            ImageView.Zoombox1.ZoomUniform();
+            _isInitialized = true;
+            UpdateDiagramKind();
+            UpdateDisplayedGamuts();
+            CieView.ZoomUniform();
         }
 
-        public void ChangeSelect(double x,double y)
+        public void ChangeSelect(double x, double y)
         {
-            if (!ImageViewModel.Crosshair.IsShow)
-                ImageViewModel.Crosshair.IsShow = true;
-
-            x = 60 + 755 * x;
-            y = 689 - 755 * y;
-            x = x / ImageViewModel.Crosshair.Ratio;
-            y = y / ImageViewModel.Crosshair.Ratio;
-            ImageViewModel.Crosshair.DrawImage(new Point(x, y));
+            CieView.SetSelectedXy(x, y);
         }
-
 
         public void ChangeSelect(ImageInfo imageInfo)
         {
-            if (!ImageViewModel.Crosshair.IsShow)
-                ImageViewModel.Crosshair.IsShow = true;
-
-            double[] doubles = CIEColorConverter.RgbToCie1931xy(imageInfo.R,imageInfo.G,imageInfo.B);
-            double x =60 + 755 * doubles[0];
-            double Y = 689 - 755 * doubles[1];
-            x = x / ImageViewModel.Crosshair.Ratio;
-            Y = Y / ImageViewModel.Crosshair.Ratio;
-
-            ImageViewModel.Crosshair.DrawImage(new Point(x, Y));
+            CieView.SetSelectedRgb(imageInfo.R, imageInfo.G, imageInfo.B);
         }
 
-
-        private void Button_Click(object sender, RoutedEventArgs e)
+        public void SetDiagram(CieDiagramKind kind)
         {
-            ImageView.ImageShow.Source = new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/cie_1976_ucs.png", UriKind.Relative));
-            ImageView.Zoombox1.ZoomUniformToFill();
+            CieView.SetDiagram(kind);
+            ComboBoxDiagram.SelectedIndex = kind == CieDiagramKind.Cie1976uv ? 1 : 0;
+        }
+
+        public void SetGamuts(IEnumerable<CieGamut> gamuts)
+        {
+            CieView.SetGamuts(gamuts);
+        }
+
+        public void AddGamut(CieGamut gamut)
+        {
+            CieView.AddGamut(gamut);
+        }
+
+        public void ClearGamuts()
+        {
+            CieView.ClearGamuts();
+        }
+
+        private void ComboBoxDiagram_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (!_isInitialized)
+            {
+                return;
+            }
+
+            UpdateDiagramKind();
+        }
+
+        private void GamutCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized)
+            {
+                return;
+            }
+
+            UpdateDisplayedGamuts();
+        }
+
+        private void UpdateDiagramKind()
+        {
+            CieDiagramKind kind = ComboBoxDiagram.SelectedIndex == 1
+                ? CieDiagramKind.Cie1976uv
+                : CieDiagramKind.Cie1931xy;
+            CieView.SetDiagram(kind);
+        }
+
+        private void UpdateDisplayedGamuts()
+        {
+            List<CieGamut> gamuts = new();
+
+            if (CheckBoxSRgb.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.SRgb);
+            }
+
+            if (CheckBoxP3.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.DisplayP3);
+            }
+
+            if (CheckBoxRec2020.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.Rec2020);
+            }
+
+            CieView.SetGamuts(gamuts);
         }
     }
 }
