@@ -91,11 +91,17 @@ namespace Conoscope
         internal void RefreshConoscopeConfiguration()
         {
             RefreshModelDependentUi();
+            RefreshPreprocessControlsFromConfig();
             UpdateReferencePlotHeader();
             if (HasXyzData())
             {
                 RefreshDisplayedImage();
             }
+        }
+
+        internal void RefreshPreprocessControlsFromConfig()
+        {
+            InitializeFilterControls();
         }
 
         public ConoscopeView()
@@ -205,6 +211,7 @@ namespace Conoscope
             }
 
             UpdateFilterParameterVisibility(GetSelectedFilterType());
+            UpdatePreprocessSummary();
         }
 
         private void FilterParameter_Changed(object sender, RoutedEventArgs e)
@@ -216,6 +223,7 @@ namespace Conoscope
 
             SaveFilterControlsToConfig();
             UpdateFilterParameterVisibility(GetSelectedFilterType());
+            UpdatePreprocessSummary();
         }
 
         private void SaveFilterControlsToConfig()
@@ -233,6 +241,23 @@ namespace Conoscope
             ConoscopeConfig.DustMinArea = Math.Max(1, (int)(sliderDustMinArea?.Value ?? ConoscopeConfig.DustMinArea));
             ConoscopeConfig.DustMaxArea = Math.Max(ConoscopeConfig.DustMinArea, (int)(sliderDustMaxArea?.Value ?? ConoscopeConfig.DustMaxArea));
             ConoscopeConfig.DustRepairRadius = Math.Max(1, (int)(sliderDustRepairRadius?.Value ?? ConoscopeConfig.DustRepairRadius));
+        }
+
+        private void UpdatePreprocessSummary()
+        {
+            if (tbPreprocessSummary == null)
+            {
+                return;
+            }
+
+            string openPolicy = ConoscopeConfig.ApplyFilterOnOpen ? "打开时应用" : "手动应用";
+            string clampPolicy = ConoscopeConfig.ClampNonPositiveXyzOnLoad ? "XYZ<=0 修正" : "不修正 XYZ";
+            string dustPolicy = ConoscopeConfig.DustRemovalEnabled ? $"灰尘滤除 {ConoscopeConfig.DustRemovalMode}" : "无灰尘滤除";
+            string filterPolicy = NormalizeFilterType(ConoscopeConfig.FilterType) == ImageFilterType.None
+                ? "无滤波"
+                : ConoscopeConfig.FilterType.ToString();
+
+            tbPreprocessSummary.Text = $"{openPolicy} / {clampPolicy} / {dustPolicy} / {filterPolicy}";
         }
 
         private void MigrateLegacyDustRemovalFilterType()
@@ -591,6 +616,7 @@ namespace Conoscope
             }
 
             UpdateFilterParameterVisibility(selectedFilter);
+            UpdatePreprocessSummary();
 
             if (sliderKernelSize != null && sliderSigma != null && sliderD != null && sliderSigmaColor != null && sliderSigmaSpace != null)
             {
@@ -727,10 +753,13 @@ namespace Conoscope
 
         private void btnApplyFilter_Click(object sender, RoutedEventArgs e)
         {
+            ApplyPreprocessFromCurrentSettings();
+        }
+
+        internal void ApplyPreprocessFromCurrentSettings()
+        {
             try
             {
-                SaveFilterControlsToConfig();
-
                 if (!HasXyzData())
                 {
                     MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -776,9 +805,8 @@ namespace Conoscope
                 ImageView.Clear();
                 LoadConoscopeData(filename);
 
-                if (chkApplyFilterOnOpen?.IsChecked == true)
+                if (ConoscopeConfig.ApplyFilterOnOpen)
                 {
-                    ConoscopeConfig.ApplyFilterOnOpen = true;
                     ApplyPreprocessToCurrentMats();
                 }
 
@@ -883,8 +911,6 @@ namespace Conoscope
 
         private void ApplyPreprocessToCurrentMats()
         {
-            SaveFilterControlsToConfig();
-
             if (ConoscopeConfig.DustRemovalEnabled)
             {
                 ApplyDustRemovalToCurrentMats();

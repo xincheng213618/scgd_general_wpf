@@ -7,7 +7,7 @@
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         Title="Conoscope"
-        Height="800"
+        Height="760"
         Width="1520"
         MinHeight="640"
         MinWidth="1080"
@@ -25,16 +25,16 @@
         </Style>
 
         <Style x:Key="QuickButtonStyle" TargetType="Button">
-            <Setter Property="MinHeight" Value="26" />
-            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Padding" Value="8,1" />
             <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="RibbonGroupStyle" TargetType="Border">
-            <Setter Property="MinHeight" Value="92" />
-            <Setter Property="Margin" Value="0,0,8,0" />
-            <Setter Property="Padding" Value="8,6,8,4" />
+            <Setter Property="MinHeight" Value="74" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Padding" Value="6,4,6,3" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
@@ -45,7 +45,7 @@
             <Setter Property="Foreground" Value="Gray" />
             <Setter Property="FontSize" Value="11" />
             <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="0,5,0,0" />
+            <Setter Property="Margin" Value="0,3,0,0" />
         </Style>
 
         <Style x:Key="RibbonFieldLabelStyle" TargetType="TextBlock">
@@ -55,23 +55,23 @@
         </Style>
 
         <Style x:Key="RibbonButtonStyle" TargetType="Button">
-            <Setter Property="MinHeight" Value="25" />
-            <Setter Property="Padding" Value="7,2" />
-            <Setter Property="Margin" Value="0,0,4,4" />
+            <Setter Property="MinHeight" Value="23" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Margin" Value="0,0,4,3" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="RibbonLargeButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="76" />
-            <Setter Property="Height" Value="66" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Width" Value="58" />
+            <Setter Property="Height" Value="52" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="Margin" Value="0,0,4,0" />
             <Setter Property="VerticalAlignment" Value="Top" />
             <Setter Property="ToolTipService.ShowDuration" Value="12000" />
         </Style>
 
         <Style x:Key="RibbonPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonLargeButtonStyle}">
-            <Setter Property="Width" Value="86" />
+            <Setter Property="Width" Value="66" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
@@ -82,27 +82,27 @@
 
         <Style x:Key="RibbonIconTextStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontSize" Value="17" />
             <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Margin" Value="0,0,0,1" />
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>
 
         <Style x:Key="RibbonComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Height" Value="25" />
-            <Setter Property="Margin" Value="0,0,4,4" />
+            <Setter Property="Height" Value="23" />
+            <Setter Property="Margin" Value="0,0,4,3" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="RibbonTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Height" Value="25" />
-            <Setter Property="Margin" Value="0,0,4,4" />
+            <Setter Property="Height" Value="23" />
+            <Setter Property="Margin" Value="0,0,4,3" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="StatusPillStyle" TargetType="Border">
-            <Setter Property="Padding" Value="9,3" />
-            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Padding" Value="7,2" />
+            <Setter Property="Margin" Value="6,0,0,0" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
@@ -128,7 +128,7 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="0" Margin="10,6,10,4" LastChildFill="True">
+                <DockPanel Grid.Row="0" Margin="8,4,8,2" LastChildFill="True">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <Border Style="{StaticResource StatusPillStyle}">
                             <StackPanel Orientation="Horizontal">
@@ -153,8 +153,9 @@
                 </DockPanel>
 
                 <TabControl Grid.Row="1"
-                            MinHeight="116"
-                            Margin="6,0,6,6"
+                            MinHeight="90"
+                            MaxHeight="108"
+                            Margin="6,0,6,4"
                             Background="Transparent"
                             BorderThickness="0"
                             Padding="0">
@@ -291,6 +292,79 @@
                                             </StackPanel>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="ND / 校正" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="预处理">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="4,4,4,3" Orientation="Horizontal">
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel Width="300" Margin="0,0,8,0">
+                                                <WrapPanel Margin="0,0,0,3">
+                                                    <CheckBox x:Name="chkWindowApplyFilterOnOpen"
+                                                              Content="打开时应用"
+                                                              IsChecked="{Binding Config.ApplyFilterOnOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Checked="WindowPreprocess_Changed"
+                                                              Unchecked="WindowPreprocess_Changed"
+                                                              Margin="0,0,12,0"
+                                                              VerticalAlignment="Center" />
+                                                    <CheckBox x:Name="chkWindowClampNonPositiveXyzOnLoad"
+                                                              Content="XYZ 修正"
+                                                              IsChecked="{Binding Config.ClampNonPositiveXyzOnLoad, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Checked="WindowPreprocess_Changed"
+                                                              Unchecked="WindowPreprocess_Changed"
+                                                              Margin="0,0,12,0"
+                                                              VerticalAlignment="Center" />
+                                                    <CheckBox x:Name="chkWindowDustRemovalEnabled"
+                                                              Content="灰尘滤除"
+                                                              IsChecked="{Binding Config.DustRemovalEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Checked="WindowPreprocess_Changed"
+                                                              Unchecked="WindowPreprocess_Changed"
+                                                              VerticalAlignment="Center" />
+                                                </WrapPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="滤波" Style="{StaticResource RibbonFieldLabelStyle}" Margin="0,3,6,0" />
+                                                    <ComboBox x:Name="cbWindowFilterType"
+                                                              Width="130"
+                                                              SelectionChanged="cbWindowFilterType_SelectionChanged"
+                                                              Style="{StaticResource RibbonComboBoxStyle}">
+                                                        <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="None" />
+                                                        <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="LowPass" />
+                                                        <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="MovingAverage" />
+                                                        <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="Gaussian" />
+                                                        <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="Median" />
+                                                        <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="Bilateral" />
+                                                    </ComboBox>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Button x:Name="btnApplyPreprocessToActiveView"
+                                                    Click="btnApplyPreprocessToActiveView_Click"
+                                                    Style="{StaticResource RibbonPrimaryButtonStyle}"
+                                                    ToolTip="按当前预处理设置应用到激活的 Conoscope 视图">
+                                                <StackPanel>
+                                                    <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="应用" TextAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Command="{Binding EditConoscopeConfigCommand}"
+                                                    Style="{StaticResource RibbonLargeButtonStyle}"
+                                                    ToolTip="打开完整预处理参数">
+                                                <StackPanel>
+                                                    <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="参数" TextAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="全局预设" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>

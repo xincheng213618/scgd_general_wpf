@@ -53,6 +53,7 @@ namespace Conoscope
 
         private ThemeChangedHandler? themeChangedHandler;
         private bool isUpdatingModelSelection;
+        private bool isUpdatingPreprocessControls;
         private bool isRunningOperation;
 
         private MVSViewWindow? observationCameraWindow;
@@ -82,6 +83,8 @@ namespace Conoscope
 
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
+            ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
+            ConoscopeManager.GetInstance().Config.PropertyChanged += ConoscopeConfig_PropertyChanged;
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
             ServiceManager.GetInstance().ServiceChanged += ServiceManager_ServiceChanged;
             RefreshWindowModelState();
@@ -151,6 +154,7 @@ namespace Conoscope
         {
             RefreshFlowTemplates();
             RefreshCameraDevices();
+            InitializePreprocessControls();
         }
 
         private void RefreshFlowTemplates()
@@ -165,6 +169,76 @@ namespace Conoscope
             }
 
             btnRunFlow.IsEnabled = !isRunningOperation && GetSelectedFlowTemplate() != null;
+        }
+
+        private void InitializePreprocessControls()
+        {
+            isUpdatingPreprocessControls = true;
+            try
+            {
+                ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
+                chkWindowApplyFilterOnOpen.IsChecked = config.ApplyFilterOnOpen;
+                chkWindowClampNonPositiveXyzOnLoad.IsChecked = config.ClampNonPositiveXyzOnLoad;
+                chkWindowDustRemovalEnabled.IsChecked = config.DustRemovalEnabled;
+                SelectComboBoxItemByTag(cbWindowFilterType, config.FilterType.ToString());
+            }
+            finally
+            {
+                isUpdatingPreprocessControls = false;
+            }
+
+            btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && ActiveView != null;
+        }
+
+        private static void SelectComboBoxItemByTag(ComboBox comboBox, string tag)
+        {
+            foreach (ComboBoxItem item in comboBox.Items)
+            {
+                if (string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    comboBox.SelectedItem = item;
+                    return;
+                }
+            }
+        }
+
+        private void WindowPreprocess_Changed(object sender, RoutedEventArgs e)
+        {
+            if (isUpdatingPreprocessControls || !IsInitialized)
+            {
+                return;
+            }
+
+            ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
+            config.ApplyFilterOnOpen = chkWindowApplyFilterOnOpen.IsChecked == true;
+            config.ClampNonPositiveXyzOnLoad = chkWindowClampNonPositiveXyzOnLoad.IsChecked == true;
+            config.DustRemovalEnabled = chkWindowDustRemovalEnabled.IsChecked == true;
+            SavePreprocessConfig();
+        }
+
+        private void cbWindowFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingPreprocessControls || !IsInitialized)
+            {
+                return;
+            }
+
+            if (cbWindowFilterType.SelectedItem is ComboBoxItem selectedItem
+                && selectedItem.Tag is string filterTag
+                && Enum.TryParse(filterTag, out ImageFilterType filterType))
+            {
+                ConoscopeManager.GetInstance().Config.FilterType = filterType;
+                SavePreprocessConfig();
+            }
+        }
+
+        private void SavePreprocessConfig()
+        {
+            ConfigService.Instance.Save<ConoscopeConfig>();
+            foreach (ConoscopeView view in GetOpenViews())
+            {
+                view.RefreshPreprocessControlsFromConfig();
+            }
         }
 
         private void RefreshCameraDevices()
@@ -232,6 +306,24 @@ namespace Conoscope
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
         {
             RefreshWindowModelState();
+        }
+
+        private void ConoscopeConfig_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(ConoscopeConfig.ApplyFilterOnOpen)
+                or nameof(ConoscopeConfig.ClampNonPositiveXyzOnLoad)
+                or nameof(ConoscopeConfig.DustRemovalEnabled)
+                or nameof(ConoscopeConfig.FilterType))
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    InitializePreprocessControls();
+                    foreach (ConoscopeView view in GetOpenViews())
+                    {
+                        view.RefreshPreprocessControlsFromConfig();
+                    }
+                }));
+            }
         }
 
         private void RefreshWindowModelState()
@@ -312,6 +404,8 @@ namespace Conoscope
             {
                 ConoscopeModuleService.Activate(view);
             }
+
+            btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && ActiveView != null;
         }
 
         private ConoscopeView? GetActiveView()
@@ -440,6 +534,7 @@ namespace Conoscope
             btnRunFlow.IsEnabled = !busy && GetSelectedFlowTemplate() != null;
             btnCaptureCamera.IsEnabled = !busy && GetSelectedCamera() != null;
             btnRefreshCameraDevices.IsEnabled = !busy;
+            btnApplyPreprocessToActiveView.IsEnabled = !busy && ActiveView != null;
             RefreshNdControls();
         }
 
@@ -960,6 +1055,19 @@ namespace Conoscope
             SetOperationStatus("相机列表已刷新", Brushes.LimeGreen);
         }
 
+        private void btnApplyPreprocessToActiveView_Click(object sender, RoutedEventArgs e)
+        {
+            ConoscopeView? activeView = ActiveView;
+            if (activeView == null)
+            {
+                MessageBox.Show("请先打开或新建一个 Conoscope 视图", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            activeView.ApplyPreprocessFromCurrentSettings();
+            SetOperationStatus("已应用当前预处理预设", Brushes.LimeGreen);
+        }
+
         private void btnExportAngleMode_Click(object sender, RoutedEventArgs e)
         {
             ActiveView?.ExportAngleMode();
@@ -1008,6 +1116,7 @@ namespace Conoscope
         public void Dispose()
         {
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
             if (themeChangedHandler != null)
             {
