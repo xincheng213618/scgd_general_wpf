@@ -9,6 +9,14 @@ using System.Windows;
 
 namespace ColorVision.ImageEditor.Settings
 {
+    public enum ImageViewSettingScope
+    {
+        CurrentView,
+        GlobalDefault,
+        LoaderDefault,
+        Workspace,
+    }
+
     public enum ImageViewSettingType
     {
         Property,
@@ -22,6 +30,7 @@ namespace ColorVision.ImageEditor.Settings
         public string Group { get; set; } = "通用";
         public string? Name { get; set; }
         public string? Description { get; set; }
+        public ImageViewSettingScope Scope { get; set; } = ImageViewSettingScope.CurrentView;
         public ImageViewSettingType Type { get; set; } = ImageViewSettingType.Property;
         public string? BindingName { get; set; }
         public object? Source { get; set; }
@@ -43,10 +52,10 @@ namespace ColorVision.ImageEditor.Settings
     {
         public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)
         {
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 10, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsLayoutUpdated) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 20, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowText) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 30, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowMsg) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 40, Source = imageView.Config, BindingName = nameof(ImageViewConfig.DrawingTextFontSize) };
+            yield return new ImageViewSettingMetadata { Group = "显示", Order = 10, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsLayoutUpdated) };
+            yield return new ImageViewSettingMetadata { Group = "显示", Order = 20, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowText) };
+            yield return new ImageViewSettingMetadata { Group = "显示", Order = 30, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowMsg) };
+            yield return new ImageViewSettingMetadata { Group = "显示", Order = 40, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.DrawingTextFontSize) };
         }
     }
 
@@ -58,6 +67,7 @@ namespace ColorVision.ImageEditor.Settings
             {
                 Group = "默认值",
                 Order = 5,
+                Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = "默认图像缩放",
                 Description = "控制 ImageView 初始化时播种的 BitmapScalingMode。初始化之后保留当前值，只有用户显式调整或特定加载器覆盖时才会变化。",
@@ -68,6 +78,7 @@ namespace ColorVision.ImageEditor.Settings
             {
                 Group = "默认值",
                 Order = 10,
+                Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = "默认显示参数",
                 Description = "控制 Zoombox 的全局最大/最小缩放，以及 NearestNeighbor 像素值叠层的性能阈值。",
@@ -78,6 +89,7 @@ namespace ColorVision.ImageEditor.Settings
             {
                 Group = "默认值",
                 Order = 20,
+                Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = "默认文本样式",
                 Description = "控制新建文本和带文字图元的默认字体、颜色和排版。",
@@ -88,6 +100,7 @@ namespace ColorVision.ImageEditor.Settings
             {
                 Group = "默认值",
                 Order = 30,
+                Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = "物理尺寸默认值",
                 Description = "控制标尺、网格等物理尺寸换算的默认长度和单位。",
@@ -112,6 +125,7 @@ namespace ColorVision.ImageEditor.Settings
             {
                 Group = "工作台",
                 Order = 10,
+                Scope = ImageViewSettingScope.Workspace,
                 Type = ImageViewSettingType.View,
                 Name = "工具栏、工具与打开器",
                 Description = "统一管理当前 ImageView 的工具栏显示、已加载 IEditorTool 的可见性，以及支持的 IImageOpen 打开器。",
@@ -122,6 +136,7 @@ namespace ColorVision.ImageEditor.Settings
             {
                 Group = "加载器",
                 Order = 10,
+                Scope = ImageViewSettingScope.LoaderDefault,
                 Type = ImageViewSettingType.Class,
                 Name = "TIF 打开器",
                 Description = "控制 Gray32Float TIFF 打开时是否转换为 Gray16 等加载策略。",

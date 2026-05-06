@@ -533,14 +533,13 @@ namespace ColorVision.Engine.Media
             await Task.Run((Action)(() =>
             {
                 CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
-                context.Config.AddProperties("Rows", (object)cVCIEFile.Rows);
-                context.Config.AddProperties("Cols", cVCIEFile.Cols);
-                context.Config.AddProperties("Rows", cVCIEFile.Rows);
-                context.Config.AddProperties("Channel", cVCIEFile.Channels);
-                context.Config.AddProperties("Gain", (object)cVCIEFile.Gain);
-                context.Config.AddProperties("exp", cVCIEFile.Exp);
-                context.Config.AddProperties("FileExtType", cVCIEFile.FileExtType);
-                context.Config.AddProperties("srcFileName", cVCIEFile.SrcFileName);
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, cVCIEFile.Rows, nameof(CVRawOpen), "当前 CVCIE 图像行数");
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, cVCIEFile.Cols, nameof(CVRawOpen), "当前 CVCIE 图像列数");
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, cVCIEFile.Channels, nameof(CVRawOpen), "当前 CVCIE 图像通道数");
+                context.Config.SetImageMetadata("Gain", cVCIEFile.Gain, nameof(CVRawOpen), "CVCIE 采集增益");
+                context.Config.SetImageMetadata("exp", cVCIEFile.Exp, nameof(CVRawOpen), "CVCIE 曝光数组");
+                context.Config.SetImageMetadata("FileExtType", cVCIEFile.FileExtType, nameof(CVRawOpen), "CVCIE 文件扩展类型");
+                context.Config.SetImageMetadata("srcFileName", cVCIEFile.SrcFileName, nameof(CVRawOpen), "CVCIE 关联源文件名");
                 OpenCvSharp.Mat mat = cVCIEFile.ToMat();
                 cVCIEFile.Dispose();
 
@@ -557,9 +556,9 @@ namespace ColorVision.Engine.Media
                         }
                         else
                         {
-                            context.Config.AddProperties("Depth", cVCIEFile.Bpp);
-                            context.Config.AddProperties("DpiX", writeableBitmap.DpiX);
-                            context.Config.AddProperties("DpiY", writeableBitmap.DpiY);
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, cVCIEFile.Bpp, nameof(CVRawOpen), "当前 CVCIE 图像位深");
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(CVRawOpen), "当前 CVCIE 图像水平 DPI");
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
                             //这里需要强制切换过来
                             context.ImageView.ImageShow.Source = writeableBitmap;
                             mat.Dispose();

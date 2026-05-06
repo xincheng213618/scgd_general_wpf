@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.ImageEditor
@@ -16,6 +17,13 @@ namespace ColorVision.ImageEditor
 
     public class ImageViewConfig:ViewModelBase
     {
+        private sealed class ImageViewPropertyState
+        {
+            public ImageViewPropertyScope Scope { get; init; }
+            public string? Owner { get; init; }
+            public string? Description { get; init; }
+        }
+
         public RelayCommand ClearCommand { get; set; }
 
         public ImageViewConfig()
@@ -47,20 +55,44 @@ namespace ColorVision.ImageEditor
         [JsonIgnore]
         public Dictionary<string, object?> Properties { get; set; } = new Dictionary<string, object?>();
 
+        [JsonIgnore]
+        private readonly Dictionary<string, ImageViewPropertyState> _propertyStates = new Dictionary<string, ImageViewPropertyState>();
+
         public void ClearProperties()
         {
             FilePath = string.Empty;
             Properties.Clear();
+            _propertyStates.Clear();
             Cleared?.Invoke(this, new EventArgs());
         }
 
 
 
         public void AddProperties(string Key,object? Value)
+            => SetProperty(Key, Value, ImageViewPropertyScope.Legacy);
+
+        public void SetImageMetadata(string key, object? value, string? owner = null, string? description = null)
+            => SetProperty(key, value, ImageViewPropertyScope.ImageMetadata, owner, description);
+
+        public void SetViewState(string key, object? value, string? owner = null, string? description = null)
+            => SetProperty(key, value, ImageViewPropertyScope.ViewState, owner, description);
+
+        public void SetOpenerRuntime(string key, object? value, string? owner = null, string? description = null)
+            => SetProperty(key, value, ImageViewPropertyScope.OpenerRuntime, owner, description);
+
+        public void SetProperty(string key, object? value, ImageViewPropertyScope scope, string? owner = null, string? description = null)
         {
-            if (!Properties.TryAdd(Key, Value))
-                Properties[Key] = Value;
+            if (!Properties.TryAdd(key, value))
+                Properties[key] = value;
+
+            _propertyStates[key] = new ImageViewPropertyState
+            {
+                Scope = scope,
+                Owner = owner,
+                Description = description,
+            };
         }
+
         public T? GetProperties<T>(string Key)
         {
             if (Properties.TryGetValue(Key, out var value))
@@ -72,6 +104,23 @@ namespace ColorVision.ImageEditor
             }
             return default;
         }
+
+        public IReadOnlyList<ImageViewPropertyEntry> GetPropertyEntries()
+        {
+            return Properties.Select(item =>
+            {
+                _propertyStates.TryGetValue(item.Key, out ImageViewPropertyState? state);
+                return new ImageViewPropertyEntry
+                {
+                    Key = item.Key,
+                    Value = item.Value,
+                    Scope = state?.Scope ?? ImageViewPropertyScope.Legacy,
+                    Owner = state?.Owner,
+                    Description = state?.Description,
+                };
+            }).ToList();
+        }
+
         private  static string FormatValue(object? value)
         {
             if (value is IEnumerable enumerable && value is not string)
@@ -88,17 +137,47 @@ namespace ColorVision.ImageEditor
         public string GetPropertyString()
         {
             var sb = new StringBuilder();
-            foreach (var item in Properties)
+            foreach (var group in GetPropertyEntries().GroupBy(entry => entry.Scope).OrderBy(group => group.Key))
             {
-                sb.AppendLine($"{item.Key}:{FormatValue(item.Value)}");
+                sb.AppendLine($"[{GetScopeDisplayName(group.Key)}]");
+                foreach (var item in group.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+                {
+                    sb.Append(item.Key);
+                    sb.Append(':');
+                    sb.Append(FormatValue(item.Value));
+                    if (!string.IsNullOrWhiteSpace(item.Owner))
+                    {
+                        sb.Append(" (Owner=");
+                        sb.Append(item.Owner);
+                        sb.Append(')');
+                    }
+                    if (!string.IsNullOrWhiteSpace(item.Description))
+                    {
+                        sb.Append(" // ");
+                        sb.Append(item.Description);
+                    }
+                    sb.AppendLine();
+                }
+                sb.AppendLine();
             }
             return sb.ToString();
 
         }
 
+        private static string GetScopeDisplayName(ImageViewPropertyScope scope)
+        {
+            return scope switch
+            {
+                ImageViewPropertyScope.ImageMetadata => "图像元数据",
+                ImageViewPropertyScope.ViewState => "当前视窗状态",
+                ImageViewPropertyScope.OpenerRuntime => "打开器运行态",
+                _ => "遗留未分类",
+            };
+        }
+
 
         [JsonIgnore]
-        public string FilePath { get => GetProperties<string>("FilePath"); set { AddProperties("FilePath", value) ; OnPropertyChanged(); } }
+        public string FilePath { get => GetProperties<string>(ImageViewPropertyKeys.FilePath); set { SetImageMetadata(ImageViewPropertyKeys.FilePath, value, nameof(ImageViewConfig), "当前打开图像的绝对路径"); OnPropertyChanged(); } }
 
 
         public event EventHandler<bool> LayoutUpdatedChanged;

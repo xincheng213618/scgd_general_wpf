@@ -46,6 +46,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             {
                 Group = "伪彩色",
                 Order = 10,
+                Scope = ImageViewSettingScope.CurrentView,
                 Type = ImageViewSettingType.Class,
                 Name = "当前伪彩色",
                 Description = "控制当前画布的伪彩色启用状态、当前色表和当前范围。这里的修改立即生效，不会写回默认值。",
@@ -56,6 +57,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             {
                 Group = "伪彩色",
                 Order = 20,
+                Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = "伪彩色默认值",
                 Description = "控制新图像或重置后采用的默认伪彩色类型和自动范围开关，不会直接覆盖当前画布状态。",

@@ -101,6 +101,7 @@ namespace ColorVision.ImageEditor.Settings
 
             DockPanel dockPanel = PropertyEditorHelper.GenProperties(setting.Source, setting.BindingName);
             dockPanel.Margin = new Thickness(0, 0, 0, 6);
+            dockPanel.ToolTip = BuildScopeText(setting.Scope);
             targetPanel.Children.Add(dockPanel);
         }
 
@@ -123,6 +124,13 @@ namespace ColorVision.ImageEditor.Settings
                     Text = setting.Name,
                 });
             }
+
+            stackPanel.Children.Add(new TextBlock
+            {
+                Margin = new Thickness(0, 0, 0, 6),
+                Opacity = 0.65,
+                Text = BuildScopeText(setting.Scope),
+            });
 
             if (!string.IsNullOrWhiteSpace(setting.Description))
             {
@@ -171,9 +179,28 @@ namespace ColorVision.ImageEditor.Settings
                 });
             }
 
+            stackPanel.Children.Add(new TextBlock
+            {
+                Margin = new Thickness(0, 0, 0, 6),
+                Opacity = 0.65,
+                Text = BuildScopeText(setting.Scope),
+            });
+
             stackPanel.Children.Add(view);
             sectionBorder.Child = stackPanel;
             targetPanel.Children.Add(sectionBorder);
+        }
+
+        private static string BuildScopeText(ImageViewSettingScope scope)
+        {
+            return scope switch
+            {
+                ImageViewSettingScope.CurrentView => "作用域：当前视窗",
+                ImageViewSettingScope.GlobalDefault => "作用域：全局默认值",
+                ImageViewSettingScope.LoaderDefault => "作用域：打开器默认值",
+                ImageViewSettingScope.Workspace => "作用域：当前工作台",
+                _ => "作用域：未分类",
+            };
         }
 
         private static Border CreateSectionContainer()

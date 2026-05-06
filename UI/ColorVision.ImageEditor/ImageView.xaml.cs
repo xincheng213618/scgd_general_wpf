@@ -493,20 +493,20 @@ namespace ColorVision.ImageEditor
         {
             //如果文件已经打开，不会重复打开
 
-            if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal))
+            if (filePath == null || filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal))
             {
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
             Config.ClearProperties();
-            Config.AddProperties("FilePath", filePath);
+            Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), "当前打开图像的绝对路径");
             ClearSelectionChangedHandlers();
             try
             {
                 if (filePath != null && File.Exists(filePath))
                 {
                     long fileSize = new FileInfo(filePath).Length;
-                    Config.AddProperties("FileSize", fileSize);
+                    Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), "当前打开文件大小（字节）");
 
                     string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                     if (ImageViewModel.IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
@@ -622,17 +622,15 @@ namespace ColorVision.ImageEditor
 
                 int stride = cols * channels * (depth / 8);
 
-                Config.AddProperties("PixelFormat", writeableBitmap.Format);
-                Config.AddProperties("Cols", cols);
-                Config.AddProperties("Rows", rows);
-                Config.AddProperties("Channel", channels);
-                Config.AddProperties("Depth", depth);
-                Config.AddProperties("Stride", stride);
-                Config.AddProperties("DpiX", writeableBitmap.DpiX);
-                Config.AddProperties("DpiY", writeableBitmap.DpiY);
+                Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, writeableBitmap.Format, nameof(ImageView), "当前图像像素格式");
+                Config.SetImageMetadata(ImageViewPropertyKeys.Cols, cols, nameof(ImageView), "当前图像列数");
+                Config.SetImageMetadata(ImageViewPropertyKeys.Rows, rows, nameof(ImageView), "当前图像行数");
+                Config.SetImageMetadata(ImageViewPropertyKeys.Channel, channels, nameof(ImageView), "当前图像通道数");
+                Config.SetImageMetadata(ImageViewPropertyKeys.Depth, depth, nameof(ImageView), "当前图像位深");
+                Config.SetImageMetadata(ImageViewPropertyKeys.Stride, stride, nameof(ImageView), "当前图像 stride");
+                Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(ImageView), "当前图像水平 DPI");
+                Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(ImageView), "当前图像垂直 DPI");
                 PseudoColorService?.ConfigureForImage();
-
-                Config.AddProperties("PixelFormat", writeableBitmap.Format);
             }
 
             ImageCalibrationService.ApplyToDefault(EditorContext);
