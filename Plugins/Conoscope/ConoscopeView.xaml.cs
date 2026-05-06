@@ -48,6 +48,7 @@ namespace Conoscope
         private OpenCvSharp.Mat? colorDifferenceReferenceUMat;
         private OpenCvSharp.Mat? colorDifferenceReferenceVMat;
         private string? colorDifferenceReferenceFileName;
+        private bool isUpdatingDisplayControls;
         private bool isUpdatingColorDifferenceControls;
         private bool isUpdatingFilterControls;
         private WindowCIE? cieWindow;
@@ -104,6 +105,32 @@ namespace Conoscope
             InitializeFilterControls();
         }
 
+        internal void RefreshRenderingFromConfig()
+        {
+            RefreshDisplayControlsFromConfig();
+            RefreshPreprocessControlsFromConfig();
+            UpdatePseudoColorMapPreview();
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
+        }
+
+        private void RefreshDisplayControlsFromConfig()
+        {
+            isUpdatingDisplayControls = true;
+            try
+            {
+                SelectComboBoxItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+            }
+            finally
+            {
+                isUpdatingDisplayControls = false;
+            }
+
+            UpdateColorDifferencePanelVisibility();
+        }
+
         public ConoscopeView()
         {
             InitializeComponent();
@@ -117,7 +144,7 @@ namespace Conoscope
             RefreshReferenceLineProfileBinding();
 
             this.DataContext = ConoscopeManager.GetInstance();
-            SelectComboBoxItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+            RefreshDisplayControlsFromConfig();
             RefreshQuickControlsFromAxisParam();
             InitializeColorDifferenceControls();
             InitializeFilterControls();
@@ -134,7 +161,7 @@ namespace Conoscope
             imageFullScreenMode = new ImageFullScreenMode(ImageViewHost);
             ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             ImageView.Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
-            imgPseudoColorLegend.Source = ColormapConstats.CreatePreviewImage(ColorVision.Core.ColormapTypes.COLORMAP_JET);
+            UpdatePseudoColorMapPreview();
             UpdateToolbarZoomRatio();
             UpdatePanModeState();
         }
@@ -256,8 +283,18 @@ namespace Conoscope
             string filterPolicy = NormalizeFilterType(ConoscopeConfig.FilterType) == ImageFilterType.None
                 ? "无滤波"
                 : ConoscopeConfig.FilterType.ToString();
+            string pseudoColorPolicy = $"{GetChannelLabel(ConoscopeConfig.DisplayChannel)} / {FormatColormapName(ConoscopeConfig.PseudoColorMap)}";
 
-            tbPreprocessSummary.Text = $"{openPolicy} / {clampPolicy} / {dustPolicy} / {filterPolicy}";
+            tbPreprocessSummary.Text = $"{openPolicy} / {clampPolicy} / {dustPolicy} / {filterPolicy} / 伪彩 {pseudoColorPolicy}";
+        }
+
+        private static string FormatColormapName(ColorVision.Core.ColormapTypes colormapType)
+        {
+            const string prefix = "COLORMAP_";
+            string name = colormapType.ToString();
+            return name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                ? name[prefix.Length..]
+                : name;
         }
 
         private void MigrateLegacyDustRemovalFilterType()
@@ -1186,7 +1223,7 @@ namespace Conoscope
             OpenCvSharp.Cv2.MinMaxLoc(channelMat, out double minValue, out double maxValue);
             OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
             normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
-            OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, OpenCvSharp.ColormapTypes.Jet);
+            OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, ResolveOpenCvColormap(ConoscopeConfig.PseudoColorMap));
             WriteableBitmap bitmap = pseudoColor.ToWriteableBitmap();
             bitmap.Freeze();
 
@@ -1222,10 +1259,29 @@ namespace Conoscope
                 return;
             }
 
+            UpdatePseudoColorMapPreview();
             tbPseudoColorLegendTitle.Text = GetChannelLabel(channel);
             tbPseudoColorLegendMin.Text = FormatChannelValue(minValue, channel);
             tbPseudoColorLegendMax.Text = FormatChannelValue(maxValue, channel);
             UpdatePseudoColorLegendVisibility(true);
+        }
+
+        private void UpdatePseudoColorMapPreview()
+        {
+            if (imgPseudoColorLegend == null)
+            {
+                return;
+            }
+
+            imgPseudoColorLegend.Source = ColormapConstats.CreatePreviewImage(ConoscopeConfig.PseudoColorMap);
+        }
+
+        private static OpenCvSharp.ColormapTypes ResolveOpenCvColormap(ColorVision.Core.ColormapTypes colormapType)
+        {
+            int value = (int)colormapType;
+            return Enum.IsDefined(typeof(OpenCvSharp.ColormapTypes), value)
+                ? (OpenCvSharp.ColormapTypes)value
+                : OpenCvSharp.ColormapTypes.Jet;
         }
 
         private void UpdatePseudoColorLegendVisibility(bool isVisible)
@@ -1331,6 +1387,11 @@ namespace Conoscope
 
         private void DisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (isUpdatingDisplayControls)
+            {
+                return;
+            }
+
             ExportChannel channel = GetSelectedDisplayChannel();
             ConoscopeConfig.DisplayChannel = channel;
             UpdateColorDifferencePanelVisibility();
@@ -1606,6 +1667,11 @@ namespace Conoscope
             OpenCieWindow();
         }
 
+        internal void OpenCieForCurrentView()
+        {
+            OpenCieWindow();
+        }
+
         private void OpenCieWindow()
         {
             if (!HasXyzData() || currentBitmapSource == null || coordinateAxisController == null)
@@ -1726,6 +1792,11 @@ namespace Conoscope
         }
 
         private void ToolbarOpen3D_Click(object sender, RoutedEventArgs e)
+        {
+            Open3DForCurrentView();
+        }
+
+        internal void Open3DForCurrentView()
         {
             if (ImageView.ImageShow.Source is not WriteableBitmap writeableBitmap)
             {

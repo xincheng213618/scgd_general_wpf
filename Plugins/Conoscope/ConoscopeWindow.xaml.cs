@@ -1,5 +1,6 @@
 using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Messages;
@@ -10,6 +11,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.ImageEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -57,6 +59,18 @@ namespace Conoscope
         private bool isRunningOperation;
 
         private MVSViewWindow? observationCameraWindow;
+
+        private sealed class PseudoColorMapOption
+        {
+            public PseudoColorMapOption(string name, ColormapTypes value)
+            {
+                Name = name;
+                Value = value;
+            }
+
+            public string Name { get; }
+            public ColormapTypes Value { get; }
+        }
 
         public ConoscopeWindow()
             : this(createInitialView: false)
@@ -154,7 +168,10 @@ namespace Conoscope
         {
             RefreshFlowTemplates();
             RefreshCameraDevices();
+            InitializePseudoColorMapOptions();
             InitializePreprocessControls();
+            btnOpenActiveView3D.IsEnabled = ActiveView != null;
+            btnOpenActiveViewCie.IsEnabled = ActiveView != null;
         }
 
         private void RefreshFlowTemplates()
@@ -180,7 +197,10 @@ namespace Conoscope
                 chkWindowApplyFilterOnOpen.IsChecked = config.ApplyFilterOnOpen;
                 chkWindowClampNonPositiveXyzOnLoad.IsChecked = config.ClampNonPositiveXyzOnLoad;
                 chkWindowDustRemovalEnabled.IsChecked = config.DustRemovalEnabled;
+                SelectComboBoxItemByTag(cbWindowPseudoColorChannel, config.DisplayChannel.ToString());
                 SelectComboBoxItemByTag(cbWindowFilterType, config.FilterType.ToString());
+                SelectPseudoColorMap(config.PseudoColorMap);
+                imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(config.PseudoColorMap);
             }
             finally
             {
@@ -188,6 +208,30 @@ namespace Conoscope
             }
 
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && ActiveView != null;
+        }
+
+        private void InitializePseudoColorMapOptions()
+        {
+            cbWindowPseudoColorMap.DisplayMemberPath = nameof(PseudoColorMapOption.Name);
+            cbWindowPseudoColorMap.ItemsSource = Enum.GetValues<ColormapTypes>()
+                .Select(item => new PseudoColorMapOption(FormatColormapName(item), item))
+                .ToArray();
+        }
+
+        private static string FormatColormapName(ColormapTypes colormapType)
+        {
+            const string prefix = "COLORMAP_";
+            string name = colormapType.ToString();
+            return name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                ? name[prefix.Length..]
+                : name;
+        }
+
+        private void SelectPseudoColorMap(ColormapTypes colormapType)
+        {
+            cbWindowPseudoColorMap.SelectedItem = cbWindowPseudoColorMap.Items
+                .OfType<PseudoColorMapOption>()
+                .FirstOrDefault(item => item.Value == colormapType);
         }
 
         private static void SelectComboBoxItemByTag(ComboBox comboBox, string tag)
@@ -232,12 +276,43 @@ namespace Conoscope
             }
         }
 
+        private void cbWindowPseudoColorChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingPreprocessControls || !IsInitialized)
+            {
+                return;
+            }
+
+            if (cbWindowPseudoColorChannel.SelectedItem is ComboBoxItem selectedItem
+                && selectedItem.Tag is string channelTag
+                && Enum.TryParse(channelTag, out ExportChannel channel))
+            {
+                ConoscopeManager.GetInstance().Config.DisplayChannel = channel;
+                SavePreprocessConfig();
+            }
+        }
+
+        private void cbWindowPseudoColorMap_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingPreprocessControls || !IsInitialized)
+            {
+                return;
+            }
+
+            if (cbWindowPseudoColorMap.SelectedItem is PseudoColorMapOption selectedItem)
+            {
+                ConoscopeManager.GetInstance().Config.PseudoColorMap = selectedItem.Value;
+                imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(selectedItem.Value);
+                SavePreprocessConfig();
+            }
+        }
+
         private void SavePreprocessConfig()
         {
             ConfigService.Instance.Save<ConoscopeConfig>();
             foreach (ConoscopeView view in GetOpenViews())
             {
-                view.RefreshPreprocessControlsFromConfig();
+                view.RefreshRenderingFromConfig();
             }
         }
 
@@ -310,17 +385,24 @@ namespace Conoscope
 
         private void ConoscopeConfig_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (isUpdatingPreprocessControls)
+            {
+                return;
+            }
+
             if (e.PropertyName is nameof(ConoscopeConfig.ApplyFilterOnOpen)
                 or nameof(ConoscopeConfig.ClampNonPositiveXyzOnLoad)
                 or nameof(ConoscopeConfig.DustRemovalEnabled)
-                or nameof(ConoscopeConfig.FilterType))
+                or nameof(ConoscopeConfig.FilterType)
+                or nameof(ConoscopeConfig.DisplayChannel)
+                or nameof(ConoscopeConfig.PseudoColorMap))
             {
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
                     InitializePreprocessControls();
                     foreach (ConoscopeView view in GetOpenViews())
                     {
-                        view.RefreshPreprocessControlsFromConfig();
+                        view.RefreshRenderingFromConfig();
                     }
                 }));
             }
@@ -406,6 +488,8 @@ namespace Conoscope
             }
 
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && ActiveView != null;
+            btnOpenActiveView3D.IsEnabled = ActiveView != null;
+            btnOpenActiveViewCie.IsEnabled = ActiveView != null;
         }
 
         private ConoscopeView? GetActiveView()
@@ -535,6 +619,8 @@ namespace Conoscope
             btnCaptureCamera.IsEnabled = !busy && GetSelectedCamera() != null;
             btnRefreshCameraDevices.IsEnabled = !busy;
             btnApplyPreprocessToActiveView.IsEnabled = !busy && ActiveView != null;
+            btnOpenActiveView3D.IsEnabled = ActiveView != null;
+            btnOpenActiveViewCie.IsEnabled = ActiveView != null;
             RefreshNdControls();
         }
 
@@ -1066,6 +1152,16 @@ namespace Conoscope
 
             activeView.ApplyPreprocessFromCurrentSettings();
             SetOperationStatus("已应用当前预处理预设", Brushes.LimeGreen);
+        }
+
+        private void btnOpenActiveView3D_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.Open3DForCurrentView();
+        }
+
+        private void btnOpenActiveViewCie_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.OpenCieForCurrentView();
         }
 
         private void btnExportAngleMode_Click(object sender, RoutedEventArgs e)
