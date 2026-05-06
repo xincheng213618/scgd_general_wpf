@@ -20,6 +20,7 @@ namespace ColorVision.ImageEditor.Cie
         private BitmapSource? _background;
         private CieMarker? _selectedMarker;
         private bool _showCctReference = true;
+        private bool _showDaylightReference = true;
 
         public CieDiagramView()
         {
@@ -57,6 +58,21 @@ namespace ColorVision.ImageEditor.Cie
                 }
 
                 _showCctReference = value;
+                RenderOverlay();
+            }
+        }
+
+        public bool ShowDaylightReference
+        {
+            get => _showDaylightReference;
+            set
+            {
+                if (_showDaylightReference == value)
+                {
+                    return;
+                }
+
+                _showDaylightReference = value;
                 RenderOverlay();
             }
         }
@@ -212,6 +228,7 @@ namespace ColorVision.ImageEditor.Cie
                 _gamuts,
                 _referenceMarkers.Concat(_markers).ToList(),
                 _showCctReference,
+                _showDaylightReference,
                 _selectedMarker);
         }
 
@@ -246,10 +263,16 @@ namespace ColorVision.ImageEditor.Cie
 
             CieChromaticity uv1960 = CieColorConverter.XyToCie1960uv(xy);
             CieChromaticity uv1976 = CieColorConverter.XyToCie1976uv(xy);
+            CieCctResult cct = CieColorConverter.EstimateCctAndDuv(xy);
+            string cctText = cct.IsFinite && Math.Abs(cct.Duv) <= 0.08
+                ? string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"    CCT~{cct.TemperatureKelvin:F0}K  Duv={cct.Duv:+0.0000;-0.0000;0.0000}")
+                : string.Empty;
 
             return string.Create(
                 CultureInfo.InvariantCulture,
-                $"x={xy.X:F4}  y={xy.Y:F4}    u={uv1960.X:F4}  v={uv1960.Y:F4}    u'={uv1976.X:F4}  v'={uv1976.Y:F4}");
+                $"x={xy.X:F4}  y={xy.Y:F4}    u={uv1960.X:F4}  v={uv1960.Y:F4}    u'={uv1976.X:F4}  v'={uv1976.Y:F4}{cctText}");
         }
 
         private static BitmapSource LoadBackground(CieDiagramProfile profile)

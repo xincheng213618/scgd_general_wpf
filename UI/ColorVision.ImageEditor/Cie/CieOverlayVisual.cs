@@ -19,6 +19,7 @@ namespace ColorVision.ImageEditor.Cie
             IReadOnlyList<CieGamut> gamuts,
             IReadOnlyList<CieMarker> markers,
             bool showCctReference,
+            bool showDaylightReference,
             CieMarker? selectedMarker)
         {
             using DrawingContext dc = RenderOpen();
@@ -35,6 +36,10 @@ namespace ColorVision.ImageEditor.Cie
             if (showCctReference)
             {
                 DrawCctReference(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip);
+            }
+            if (showDaylightReference)
+            {
+                DrawDaylightReference(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip);
             }
             DrawMarkers(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, markers, false);
 
@@ -116,6 +121,44 @@ namespace ColorVision.ImageEditor.Cie
             foreach (int temperature in temperatures)
             {
                 DrawCctTick(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, temperature);
+            }
+        }
+
+        private static void DrawDaylightReference(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip)
+        {
+            List<Point> locus = new();
+            for (int temperature = 4000; temperature <= 25000; temperature += 250)
+            {
+                Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, CieColorConverter.DaylightCctToXy(temperature));
+                if (IsFinite(point))
+                {
+                    locus.Add(point);
+                }
+            }
+
+            if (locus.Count <= 1)
+            {
+                return;
+            }
+
+            StreamGeometry geometry = new();
+            using (StreamGeometryContext context = geometry.Open())
+            {
+                context.BeginFigure(locus[0], false, false);
+                context.PolyLineTo(locus.Skip(1).ToList(), true, true);
+            }
+            geometry.Freeze();
+
+            Pen pen = new(new SolidColorBrush(Color.FromRgb(32, 86, 180)), 1.2 * scale)
+            {
+                DashStyle = new DashStyle(new[] { 6.0, 3.0 }, 0)
+            };
+            dc.DrawGeometry(null, pen, geometry);
+
+            Point labelPoint = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, CieColorConverter.DaylightCctToXy(6500));
+            if (IsFinite(labelPoint))
+            {
+                DrawText(dc, "D locus", labelPoint + new Vector(10 * scale, 10 * scale), pen.Brush, 11 * scale, scale, pixelsPerDip);
             }
         }
 

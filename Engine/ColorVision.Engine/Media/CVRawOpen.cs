@@ -388,7 +388,7 @@ namespace ColorVision.Engine.Media
                     Command = new RelayCommand(a =>
                     {
 
-                        if (EditorContext.ImageView.ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
+                        if (!PoiImageViewComponent.TryGetSelectedTemplate(EditorContext.ImageView, out PoiParam poiParams))
                         {
                             MessageBox1.Show(ColorVision.Engine.Properties.Resources.ConfigePOINeed);
                             return;

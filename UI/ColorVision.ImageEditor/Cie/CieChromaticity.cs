@@ -23,4 +23,15 @@ namespace ColorVision.ImageEditor.Cie
             !double.IsInfinity(Y) &&
             !double.IsInfinity(Z);
     }
+
+    public readonly record struct CieCctResult(double TemperatureKelvin, double Duv)
+    {
+        public bool IsFinite =>
+            !double.IsNaN(TemperatureKelvin) &&
+            !double.IsNaN(Duv) &&
+            !double.IsInfinity(TemperatureKelvin) &&
+            !double.IsInfinity(Duv);
+
+        public static CieCctResult Empty => new(double.NaN, double.NaN);
+    }
 }

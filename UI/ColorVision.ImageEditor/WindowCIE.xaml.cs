@@ -107,6 +107,16 @@ namespace ColorVision.ImageEditor
             CieView.ShowCctReference = CheckBoxCct.IsChecked == true;
         }
 
+        private void DaylightCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized)
+            {
+                return;
+            }
+
+            CieView.ShowDaylightReference = CheckBoxDaylight.IsChecked == true;
+        }
+
         private void CieView_CursorTextChanged(object? sender, string text)
         {
             TextBlockCursor.Text = text;
@@ -172,6 +182,16 @@ namespace ColorVision.ImageEditor
                 gamuts.Add(CieGamuts.SmpteC);
             }
 
+            if (CheckBoxProPhoto.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.ProPhotoRgb);
+            }
+
+            if (CheckBoxAcesCg.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.AcesCg);
+            }
+
             CieView.SetGamuts(gamuts);
         }
 
@@ -202,6 +222,11 @@ namespace ColorVision.ImageEditor
             if (CheckBoxD60.IsChecked == true)
             {
                 illuminants.Add(CieIlluminants.D60);
+            }
+
+            if (CheckBoxC.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.C);
             }
 
             if (CheckBoxA.IsChecked == true)

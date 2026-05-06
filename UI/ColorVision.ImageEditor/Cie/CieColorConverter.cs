@@ -5,6 +5,10 @@ namespace ColorVision.ImageEditor.Cie
 {
     public static class CieColorConverter
     {
+        private static readonly Lazy<CctUvSample[]> PlanckianCctSamples = new(CreatePlanckianCctSamples);
+
+        private readonly record struct CctUvSample(double TemperatureKelvin, CieChromaticity Uv);
+
         private static double LinearizeSrgbComponent(int value)
         {
             double normalized = Math.Clamp(value, 0, 255) / 255.0;
@@ -154,6 +158,87 @@ namespace ColorVision.ImageEditor.Cie
             }
 
             return new CieChromaticity(x, y);
+        }
+
+        public static CieChromaticity DaylightCctToXy(double kelvin)
+        {
+            double temperature = Math.Clamp(kelvin, 4000, 25000);
+            double x = temperature <= 7000
+                ? -4.6070e9 / Math.Pow(temperature, 3) + 2.9678e6 / Math.Pow(temperature, 2) + 0.09911e3 / temperature + 0.244063
+                : -2.0064e9 / Math.Pow(temperature, 3) + 1.9018e6 / Math.Pow(temperature, 2) + 0.24748e3 / temperature + 0.237040;
+            double y = -3.0 * Math.Pow(x, 2) + 2.870 * x - 0.275;
+
+            return new CieChromaticity(x, y);
+        }
+
+        public static CieCctResult EstimateCctAndDuv(CieChromaticity xy)
+        {
+            CieChromaticity targetUv = XyToCie1960uv(xy);
+            if (!targetUv.IsFinite)
+            {
+                return CieCctResult.Empty;
+            }
+
+            double bestTemperature = 0;
+            double bestDistanceSquared = double.MaxValue;
+            CieChromaticity bestUv = CieChromaticity.Empty;
+
+            foreach (CctUvSample sample in PlanckianCctSamples.Value)
+            {
+                UpdateBestCctCandidate(targetUv, sample, ref bestTemperature, ref bestDistanceSquared, ref bestUv);
+            }
+
+            if (!bestUv.IsFinite)
+            {
+                return CieCctResult.Empty;
+            }
+
+            double duv = Math.Sqrt(bestDistanceSquared);
+            if (targetUv.Y < bestUv.Y)
+            {
+                duv = -duv;
+            }
+
+            return new CieCctResult(bestTemperature, duv);
+        }
+
+        private static void UpdateBestCctCandidate(
+            CieChromaticity targetUv,
+            CctUvSample sample,
+            ref double bestTemperature,
+            ref double bestDistanceSquared,
+            ref CieChromaticity bestUv)
+        {
+            CieChromaticity candidateUv = sample.Uv;
+            if (!candidateUv.IsFinite)
+            {
+                return;
+            }
+
+            double distanceSquared = Math.Pow(targetUv.X - candidateUv.X, 2) + Math.Pow(targetUv.Y - candidateUv.Y, 2);
+            if (distanceSquared >= bestDistanceSquared)
+            {
+                return;
+            }
+
+            bestTemperature = sample.TemperatureKelvin;
+            bestDistanceSquared = distanceSquared;
+            bestUv = candidateUv;
+        }
+
+        private static CctUvSample[] CreatePlanckianCctSamples()
+        {
+            int count = (25000 - 1667) / 5 + 1;
+            CctUvSample[] samples = new CctUvSample[count];
+            int index = 0;
+            for (double temperature = 1667; index < samples.Length; temperature += 5, index++)
+            {
+                samples[index] = new CctUvSample(
+                    temperature,
+                    XyToCie1960uv(CctToApproximatePlanckianXy(temperature)));
+            }
+
+            return samples;
         }
 
         public static Color ToMarkerColor(int r, int g, int b)

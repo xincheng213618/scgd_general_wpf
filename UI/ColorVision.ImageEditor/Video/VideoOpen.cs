@@ -817,7 +817,7 @@ namespace ColorVision.ImageEditor.Video
             {
                 if (_videoToolBar != null)
                 {
-                    // Remove video-specific controls (keep original items like ComboxPOITemplate)
+                    // Remove only video-specific controls; other workflow components may share this toolbar.
                     if (_playPauseButton != null && _videoToolBar.Items.Contains(_playPauseButton))
                         _videoToolBar.Items.Remove(_playPauseButton);
                     if (_stopButton != null && _videoToolBar.Items.Contains(_stopButton))

@@ -63,9 +63,7 @@
                                          IsHitTestVisible="False" ClipToBounds="True" Opacity="0.9"/>
 
                 <ComboBox x:Name="ComboBoxLayers" Grid.Column="1" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" x:FieldModifier="public" BorderThickness="0" Opacity="0.6" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Visibility="Collapsed" />
-                <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                    <ComboBox x:Name="ComboxPOITemplate" Width="100" HorizontalAlignment="Left" x:FieldModifier="public" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
-                </ToolBar>
+                <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}" />
 
                 <ToolBarTray x:Name="ToolBarDraw" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.9" Visibility="{Binding Config.IsToolBarDrawVisible, Converter={StaticResource bool2VisibilityConverter}}">
                     <ToolBar ToolBarTray.IsLocked="True" />
@@ -83,11 +81,7 @@
                     <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" />
                 </ToolBarTray>
                 <ToolBarTray x:Name="ToolBarRight" Grid.Row="0" Grid.Column="1" Margin="0,50,2,0" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarRightVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True">
-                        <Button x:Name="Button1931" Margin="0,0,0,2" Padding="5" x:FieldModifier="public">
-                            <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Style="{StaticResource ToolBarImage}" />
-                        </Button>
-                    </ToolBar>
+                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" />
                 </ToolBarTray>
 
                 <Border x:Name="SelectionPropertyOverlay"

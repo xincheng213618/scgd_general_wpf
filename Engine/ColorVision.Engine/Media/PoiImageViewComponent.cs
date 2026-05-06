@@ -1,11 +1,11 @@
-﻿using ColorVision.Database;
+using ColorVision.Database;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Special;
-using cvColorVision;
+using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,147 +15,172 @@ namespace ColorVision.Engine.Media
 {
     public class PoiImageViewComponent : IImageComponent
     {
+        public const string SelectedTemplateRuntimeKey = "POI.SelectedTemplate";
+
+        public static bool TryGetSelectedTemplate(ImageView imageView, out PoiParam poiParam)
+        {
+            poiParam = imageView.Config.GetProperties<PoiParam>(SelectedTemplateRuntimeKey);
+            return poiParam != null && poiParam.Id != -1;
+        }
+
         public void Execute(ImageView imageView)
         {
-            if (MySqlControl.GetInstance().IsConnect)
-            {
-                imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
-                imageView.ComboxPOITemplate.SelectedIndex = 0;
-            }
-            else
-            {
-                Task.Run(() => LoadMysql(imageView));
-            }
-            imageView.ComboxPOITemplate.SelectionChanged += ComboxPOITemplate_SelectionChanged;
+            ComboBox? poiTemplateComboBox = null;
+            SelectionChangedEventHandler? selectionChangedHandler = null;
+            int loadVersion = 0;
 
+            imageView.ImageShow.ImageInitialized += (_, _) => RefreshPoiTemplateUi();
+            imageView.Config.Cleared += (_, _) => RemovePoiTemplateUi(clearSelection: false);
 
-            async Task LoadMysql(ImageView imageView)
+            void RefreshPoiTemplateUi()
             {
-                if (MySqlControl.GetInstance().IsConnect)
+                if (!IsPoiTemplateSupported(imageView.Config.FilePath))
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        new TemplatePoi().Load();
-                        imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
-                        imageView.ComboxPOITemplate.SelectedIndex = 0;
-                        imageView.ToolBarAl.Visibility = Visibility.Visible;
-                    });
-                }
-                else
-                {
-                    await Task.Delay(100);
-                    await MySqlControl.GetInstance().Connect();
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (MySqlControl.GetInstance().IsConnect)
-                        {
-                            new TemplatePoi().Load();
-                            imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
-                            imageView.ComboxPOITemplate.SelectedIndex = 0;
-                            imageView.ToolBarAl.Visibility = Visibility.Visible;
-                        }
-                    });
+                    RemovePoiTemplateUi(clearSelection: true);
+                    return;
                 }
 
-
+                EnsurePoiTemplateUi();
+                LoadTemplatesAsync(++loadVersion);
             }
 
-            void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+            void EnsurePoiTemplateUi()
             {
-                if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
-                {
-                    imageView.ImageShow.Clear();
-                    imageView.DrawingVisualLists.Clear();
-
-                    if (poiParams.Id == -1) return;
-
-                    PoiParam.LoadPoiDetailFromDB(poiParams);
-                    foreach (var item in poiParams.PoiPoints)
-                    {
-                        switch (item.PointType)
-                        {
-                            case GraphicTypes.Circle:
-                                DVCircleText Circle = new();
-                                Circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                                Circle.Attribute.Radius = item.PixHeight / 2;
-                                Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                                Circle.Attribute.Id = item.Id;
-                                Circle.Attribute.Text = item.Name;
-                                Circle.Render();
-                                imageView.ImageShow.AddVisualCommand(Circle);
-                                break;
-                            case GraphicTypes.Rect:
-                                DVRectangleText Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth / 2, item.PixY - item.PixHeight / 2, item.PixWidth, item.PixHeight);
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                                Rectangle.Attribute.Id = item.Id;
-                                Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Render();
-                                imageView.ImageShow.AddVisualCommand(Rectangle);
-                                break;
-                            case GraphicTypes.Quadrilateral:
-                                break;
-                        }
-                    }
-                }
-            }
-
-
-
-            WindowCIE windowCIE = null;
-
-            void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
-            {
-                var mouseMagnifier = imageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>();
-                if (mouseMagnifier == null)
+                if (poiTemplateComboBox != null)
                 {
                     return;
                 }
 
-                if (windowCIE == null)
+                poiTemplateComboBox = new ComboBox
                 {
-                    windowCIE = new WindowCIE() { Owner = Application.Current.GetActiveWindow() };
-                    var cvcieProbeSettings = CvcieProbeSettings.TryGet(imageView, out CvcieProbeSettings? settings)
-                        ? settings
-                        : CvcieProbeSettings.CreateFromDefaults();
+                    Width = 100,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    DisplayMemberPath = "Key",
+                    SelectedValuePath = "Value",
+                    Style = Application.Current.TryFindResource("ComboBox.Small") as Style
+                };
 
-                    void mouseMoveColorHandler(object s, ImageInfo e)
-                    {
-                        if (imageView.Config.Properties.TryGetValue("IsCVCIE", out object obj)&& obj is  bool iscvice &&iscvice)
-                        {
-                            int xx = e.X;
-                            int yy = e.Y;
-                            float dXVal = 0;
-                            float dYVal = 0;
-                            float dZVal = 0;
-                            float dx = 0, dy = 0, du = 0, dv = 0;
-                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.GetRequiredService<CVFilemageEditorConfig>().ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, cvcieProbeSettings.RectWidth, cvcieProbeSettings.RectHeight);
-                            
-                            windowCIE.ChangeSelect(dx, dy);
-                        }
-                        else
-                        {
-                            windowCIE.ChangeSelect(e);
-                        }
-                    }
-
-                    mouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
-
-                    windowCIE.Closed += (s, e) =>
-                    {
-                        mouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
-                        mouseMagnifier.IsChecked = false;
-                        windowCIE = null;
-                    };
-                }
-                windowCIE.Show();
-                windowCIE.Activate();
+                selectionChangedHandler = (_, _) => ApplySelectedTemplate(imageView, poiTemplateComboBox);
+                poiTemplateComboBox.SelectionChanged += selectionChangedHandler;
+                imageView.ToolBarAl.Items.Add(poiTemplateComboBox);
             }
 
-            imageView.Button1931.Click += ButtonCIE1931_Click;             
+            void RemovePoiTemplateUi(bool clearSelection)
+            {
+                loadVersion++;
+                if (clearSelection)
+                {
+                    imageView.Config.SetViewState(SelectedTemplateRuntimeKey, null, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
+                }
+
+                if (poiTemplateComboBox == null)
+                {
+                    return;
+                }
+
+                if (selectionChangedHandler != null)
+                {
+                    poiTemplateComboBox.SelectionChanged -= selectionChangedHandler;
+                }
+
+                if (imageView.ToolBarAl.Items.Contains(poiTemplateComboBox))
+                {
+                    imageView.ToolBarAl.Items.Remove(poiTemplateComboBox);
+                }
+
+                poiTemplateComboBox.ItemsSource = null;
+                poiTemplateComboBox = null;
+                selectionChangedHandler = null;
+            }
+
+            void LoadTemplatesAsync(int version)
+            {
+                if (MySqlControl.GetInstance().IsConnect)
+                {
+                    PopulateTemplates(version);
+                    return;
+                }
+
+                Task.Run(async () =>
+                {
+                    await Task.Delay(100);
+                    await MySqlControl.GetInstance().Connect();
+                    Application.Current.Dispatcher.Invoke(() => PopulateTemplates(version));
+                });
+            }
+
+            void PopulateTemplates(int version)
+            {
+                if (version != loadVersion || poiTemplateComboBox == null || !IsPoiTemplateSupported(imageView.Config.FilePath))
+                {
+                    return;
+                }
+
+                if (!MySqlControl.GetInstance().IsConnect)
+                {
+                    return;
+                }
+
+                new TemplatePoi().Load();
+                poiTemplateComboBox.ItemsSource = TemplatePoi.Params.CreateEmpty();
+                poiTemplateComboBox.SelectedIndex = 0;
+            }
         }
 
+        private static bool IsPoiTemplateSupported(string? filePath)
+        {
+            string extension = Path.GetExtension(filePath);
+            return extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".cvcie", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void ApplySelectedTemplate(ImageView imageView, ComboBox comboBox)
+        {
+            if (comboBox.SelectedValue is not PoiParam poiParams)
+            {
+                imageView.Config.SetViewState(SelectedTemplateRuntimeKey, null, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
+                return;
+            }
+
+            imageView.Config.SetViewState(SelectedTemplateRuntimeKey, poiParams, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
+            imageView.ImageShow.Clear();
+            imageView.DrawingVisualLists.Clear();
+
+            if (poiParams.Id == -1)
+            {
+                return;
+            }
+
+            PoiParam.LoadPoiDetailFromDB(poiParams);
+            foreach (var item in poiParams.PoiPoints)
+            {
+                switch (item.PointType)
+                {
+                    case GraphicTypes.Circle:
+                        DVCircleText circle = new();
+                        circle.Attribute.Center = new Point(item.PixX, item.PixY);
+                        circle.Attribute.Radius = item.PixHeight / 2;
+                        circle.Attribute.Brush = Brushes.Transparent;
+                        circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                        circle.Attribute.Id = item.Id;
+                        circle.Attribute.Text = item.Name;
+                        circle.Render();
+                        imageView.ImageShow.AddVisualCommand(circle);
+                        break;
+                    case GraphicTypes.Rect:
+                        DVRectangleText rectangle = new();
+                        rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth / 2, item.PixY - item.PixHeight / 2, item.PixWidth, item.PixHeight);
+                        rectangle.Attribute.Brush = Brushes.Transparent;
+                        rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                        rectangle.Attribute.Id = item.Id;
+                        rectangle.Attribute.Text = item.Name;
+                        rectangle.Render();
+                        imageView.ImageShow.AddVisualCommand(rectangle);
+                        break;
+                    case GraphicTypes.Quadrilateral:
+                        break;
+                }
+            }
+        }
     }
 }
