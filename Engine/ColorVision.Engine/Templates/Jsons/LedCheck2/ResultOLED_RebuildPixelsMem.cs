@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                                 {
                                     src.ConvertTo(dst8Bit, MatType.CV_8U);
                                 }
-                                ctx.ImageView.Config.AddProperties("FilePath", originalPath);
+                                ctx.ImageView.Config.FilePath = originalPath;
                                 ctx.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
                                 ctx.ImageView.UpdateZoomAndScale();
                             }

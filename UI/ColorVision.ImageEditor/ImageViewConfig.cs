@@ -121,7 +121,7 @@ namespace ColorVision.ImageEditor
             }).ToList();
         }
 
-        private  static string FormatValue(object? value)
+        internal static string FormatPropertyValue(object? value)
         {
             if (value is IEnumerable enumerable && value is not string)
             {
@@ -137,14 +137,14 @@ namespace ColorVision.ImageEditor
         public string GetPropertyString()
         {
             var sb = new StringBuilder();
-            foreach (var group in GetPropertyEntries().GroupBy(entry => entry.Scope).OrderBy(group => group.Key))
+            foreach (var group in GetPropertyEntries().GroupBy(entry => entry.Scope).OrderBy(group => GetScopeSortOrder(group.Key)))
             {
                 sb.AppendLine($"[{GetScopeDisplayName(group.Key)}]");
                 foreach (var item in group.OrderBy(entry => entry.Key, StringComparer.Ordinal))
                 {
                     sb.Append(item.Key);
                     sb.Append(':');
-                    sb.Append(FormatValue(item.Value));
+                    sb.Append(FormatPropertyValue(item.Value));
                     if (!string.IsNullOrWhiteSpace(item.Owner))
                     {
                         sb.Append(" (Owner=");
@@ -164,7 +164,7 @@ namespace ColorVision.ImageEditor
 
         }
 
-        private static string GetScopeDisplayName(ImageViewPropertyScope scope)
+        internal static string GetScopeDisplayName(ImageViewPropertyScope scope)
         {
             return scope switch
             {
@@ -172,6 +172,28 @@ namespace ColorVision.ImageEditor
                 ImageViewPropertyScope.ViewState => "当前视窗状态",
                 ImageViewPropertyScope.OpenerRuntime => "打开器运行态",
                 _ => "遗留未分类",
+            };
+        }
+
+        internal static string GetScopeDescription(ImageViewPropertyScope scope)
+        {
+            return scope switch
+            {
+                ImageViewPropertyScope.ImageMetadata => "由当前文件和像素内容决定，切换图像后会整体刷新。",
+                ImageViewPropertyScope.ViewState => "只作用于当前 ImageView 的临时状态，不会写回全局默认值。",
+                ImageViewPropertyScope.OpenerRuntime => "只在特定打开器工作流里有意义的运行态信息。",
+                _ => "尚未迁移到显式作用域的旧键，建议继续收口。",
+            };
+        }
+
+        internal static int GetScopeSortOrder(ImageViewPropertyScope scope)
+        {
+            return scope switch
+            {
+                ImageViewPropertyScope.ImageMetadata => 0,
+                ImageViewPropertyScope.ViewState => 1,
+                ImageViewPropertyScope.OpenerRuntime => 2,
+                _ => 99,
             };
         }
 

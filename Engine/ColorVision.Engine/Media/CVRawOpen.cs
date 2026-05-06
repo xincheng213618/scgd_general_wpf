@@ -100,11 +100,11 @@ namespace ColorVision.Engine.Media
                 log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                 // ConvertXYZ will hold its own buffer copy; release managed raw data to reduce peak memory.
                 meta.Data = null;
-                imageView.Config.AddProperties("IsBufferSet", true);
+                imageView.Config.SetOpenerRuntime("IsBufferSet", true, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
 
             });
 
-            imageView.Config.AddProperties("LoadBuffer", LoadBuffer);
+            imageView.Config.SetOpenerRuntime("LoadBuffer", LoadBuffer, nameof(CVRawOpen), "延迟加载 CVCIE 原始缓冲的回调");
 
             ShowDateFilePath = false;
             if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
@@ -201,18 +201,18 @@ namespace ColorVision.Engine.Media
                 {
                     CvcieProbeSettings probeSettings = CvcieProbeSettings.GetOrCreate(imageView);
                     log.Debug(JsonConvert.SerializeObject(meta));
-                    imageView.Config.AddProperties("IsCVCIE", true);
+                    imageView.Config.SetOpenerRuntime("IsCVCIE", true, nameof(CVRawOpen), "当前视图是否由 CVCIE 打开器接管");
 
                     if (!TryGetMouseMagnifier(imageView, out mouseMagnifier))
                     {
                         log.Warn("CVCIE open: MouseMagnifierManager not found, skip probe integration.");
                     }
 
-                    imageView.Config.AddProperties("meta", meta);
-                    imageView.Config.AddProperties("index", index);
-                    imageView.Config.AddProperties("Exp", meta.Exp);
+                    imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
+                    imageView.Config.SetOpenerRuntime("index", index, nameof(CVRawOpen), "CVCIE 数据块索引");
+                    imageView.Config.SetOpenerRuntime("Exp", meta.Exp, nameof(CVRawOpen), "当前 CVCIE 曝光数组");
 
-                    imageView.Config.AddProperties("IsBufferSet",false);
+                    imageView.Config.SetOpenerRuntime("IsBufferSet", false, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
                     exp = meta.Exp;
                     probeController = new CvcieMouseProbeController(
                         imageView,

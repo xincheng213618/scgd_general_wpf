@@ -186,6 +186,17 @@ namespace ColorVision.ImageEditor.Settings
                 Text = BuildScopeText(setting.Scope),
             });
 
+            if (!string.IsNullOrWhiteSpace(setting.Description))
+            {
+                stackPanel.Children.Add(new TextBlock
+                {
+                    Margin = new Thickness(0, 0, 0, 10),
+                    Opacity = 0.75,
+                    Text = setting.Description,
+                    TextWrapping = TextWrapping.Wrap,
+                });
+            }
+
             stackPanel.Children.Add(view);
             sectionBorder.Child = stackPanel;
             targetPanel.Children.Add(sectionBorder);

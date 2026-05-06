@@ -41,7 +41,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             var depth = _owner.Config.GetProperties<int>("Depth");
             if (depth == 16)
             {
-                _owner.Config.AddProperties("Max", 65535);
+                _owner.Config.SetViewState("Max", 65535, nameof(PseudoColorController), "当前图像伪彩/阈值处理使用的像素上限");
                 _state.SliderSmallChange = 255;
                 _state.SliderLargeChange = 2550;
                 _state.SliderMaximum = 65535;
@@ -49,7 +49,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             }
             else
             {
-                _owner.Config.AddProperties("Max", 255);
+                _owner.Config.SetViewState("Max", 255, nameof(PseudoColorController), "当前图像伪彩/阈值处理使用的像素上限");
                 _state.SliderSmallChange = 1;
                 _state.SliderLargeChange = 10;
                 _state.SliderMaximum = 255;

@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Media
             }
 
             CvcieProbeSettings created = CreateFromDefaults();
-            imageView.Config.AddProperties(PropertyKey, created);
+            imageView.Config.SetViewState(PropertyKey, created, nameof(CvcieProbeSettings), "当前 CVCIE 视窗的探针设置");
             return created;
         }
 

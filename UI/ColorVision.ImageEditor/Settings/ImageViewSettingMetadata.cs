@@ -56,6 +56,17 @@ namespace ColorVision.ImageEditor.Settings
             yield return new ImageViewSettingMetadata { Group = "显示", Order = 20, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowText) };
             yield return new ImageViewSettingMetadata { Group = "显示", Order = 30, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowMsg) };
             yield return new ImageViewSettingMetadata { Group = "显示", Order = 40, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.DrawingTextFontSize) };
+
+            yield return new ImageViewSettingMetadata
+            {
+                Group = "上下文",
+                Order = 10,
+                Scope = ImageViewSettingScope.CurrentView,
+                Type = ImageViewSettingType.View,
+                Name = "当前图像上下文",
+                Description = "按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态、打开器运行态和仍待迁移的旧键。",
+                ViewFactory = () => new ImageViewContextSettingsView(imageView),
+            };
         }
     }
 
