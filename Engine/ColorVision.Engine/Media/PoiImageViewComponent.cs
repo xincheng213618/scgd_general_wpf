@@ -117,9 +117,9 @@ namespace ColorVision.Engine.Media
                 if (windowCIE == null)
                 {
                     windowCIE = new WindowCIE() { Owner = Application.Current.GetActiveWindow() };
-                    var cvcieProbeSettings = imageView.Config.Properties.TryGetValue("CvcieProbeSettings", out object settingsObj) && settingsObj is CvcieProbeSettings settings
+                    var cvcieProbeSettings = CvcieProbeSettings.TryGet(imageView, out CvcieProbeSettings? settings)
                         ? settings
-                        : new CvcieProbeSettings();
+                        : CvcieProbeSettings.CreateFromDefaults();
 
                     void mouseMoveColorHandler(object s, ImageInfo e)
                     {

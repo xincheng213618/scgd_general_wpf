@@ -25,7 +25,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
@@ -43,8 +42,6 @@ namespace ColorVision.Engine.Media
     [FileExtension(".cvraw|.cvcie")]
     public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IIEditorToolContextMenu
     {
-        private const string CvcieSettingSectionKey = "CVCIE.ProbeSettings";
-
         public CVFilemageEditorConfig Config => EditorContext.Config.GetRequiredService<CVFilemageEditorConfig>();
 
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
@@ -85,68 +82,12 @@ namespace ColorVision.Engine.Media
             return magnifier != null;
         }
 
-        private static FrameworkElement BuildCvcieProbeSettingsSection(CvcieProbeSettings settings)
-        {
-            var border = new Border
-            {
-                Margin = new Thickness(0, 5, 0, 5),
-                CornerRadius = new CornerRadius(5),
-                BorderThickness = new Thickness(1),
-            };
-            border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
-            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-
-            var panel = new StackPanel { Margin = new Thickness(5) };
-
-            var radiusDock = new DockPanel { Margin = new Thickness(0, 5, 0, 5) };
-            radiusDock.Children.Add(new TextBlock { Width = 100, Text = "CVCIE范围" });
-            var radiusTextBox = new TextBox();
-            radiusTextBox.SetBinding(TextBox.TextProperty, new Binding(nameof(CvcieProbeSettings.Radius))
-            {
-                Source = settings,
-                Mode = BindingMode.TwoWay,
-                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
-            });
-            radiusDock.Children.Add(radiusTextBox);
-            panel.Children.Add(radiusDock);
-
-            var typeDock = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
-            typeDock.Children.Add(new TextBlock { Width = 100, Text = "CVCIE Type:" });
-            var combo = new ComboBox
-            {
-                DisplayMemberPath = "Value",
-                SelectedValuePath = "Key",
-            };
-            combo.SetResourceReference(FrameworkElement.StyleProperty, "ComboBox.Small");
-            combo.ItemsSource = Enum.GetValues(typeof(MagnigifierType))
-                .Cast<MagnigifierType>()
-                .Select(type => new KeyValuePair<MagnigifierType, string>(type, type.ToString()));
-            combo.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(CvcieProbeSettings.MagnigifierType))
-            {
-                Source = settings,
-                Mode = BindingMode.TwoWay,
-                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
-            });
-            typeDock.Children.Add(combo);
-            panel.Children.Add(typeDock);
-
-            panel.Children.Add(new TextBlock
-            {
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Text = "设置为圆的时候，输入的值是半径"
-            });
-
-            border.Child = panel;
-            return border;
-        }
-
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
             CVCIEFile meta;
             int index;
             CvcieMouseProbeController? probeController = null;
             MouseMagnifierManager? mouseMagnifier = null;
-            var probeSettings = new CvcieProbeSettings();
 
 
             Action LoadBuffer = new Action(() =>
@@ -199,7 +140,6 @@ namespace ColorVision.Engine.Media
                     probeController.Dispose();
                     probeController = null;
                 }
-                imageView.RemoveAdvancedSettingSection(CvcieSettingSectionKey);
                 int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
@@ -259,22 +199,18 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == CVType.CIE)
                 {
+                    CvcieProbeSettings probeSettings = CvcieProbeSettings.GetOrCreate(imageView);
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
 
                     if (!TryGetMouseMagnifier(imageView, out mouseMagnifier))
                     {
-                        log.Warn("CVCIE open: MouseMagnifierManager not found, skip probe overlay integration.");
-                    }
-                    else
-                    {
-                        imageView.AddOrReplaceAdvancedSettingSection(CvcieSettingSectionKey, BuildCvcieProbeSettingsSection(probeSettings));
+                        log.Warn("CVCIE open: MouseMagnifierManager not found, skip probe integration.");
                     }
 
                     imageView.Config.AddProperties("meta", meta);
                     imageView.Config.AddProperties("index", index);
                     imageView.Config.AddProperties("Exp", meta.Exp);
-                    imageView.Config.AddProperties("CvcieProbeSettings", probeSettings);
 
                     imageView.Config.AddProperties("IsBufferSet",false);
                     exp = meta.Exp;
