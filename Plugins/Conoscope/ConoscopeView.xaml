@@ -146,6 +146,7 @@
                                     <TextBlock Text="预处理 / 滤波" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
                                     <WrapPanel Margin="0,4,0,6">
                                         <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用预处理" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
+                                        <CheckBox x:Name="chkClampNonPositiveXyzOnLoad" Content="加载时将 XYZ&lt;=0 修正为 1e-6" IsChecked="{Binding Config.ClampNonPositiveXyzOnLoad}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
                                         <CheckBox x:Name="chkDustRemovalEnabled" Content="灰尘滤除" IsChecked="{Binding Config.DustRemovalEnabled}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
                                         <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" MinWidth="130">

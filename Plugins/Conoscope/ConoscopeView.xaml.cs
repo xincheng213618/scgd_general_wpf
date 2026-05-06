@@ -50,6 +50,7 @@ namespace Conoscope
         private bool isUpdatingColorDifferenceControls;
         private bool isUpdatingFilterControls;
         private WindowCIE? cieWindow;
+        private const float MinPositiveXyzValue = 0.000001f;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
@@ -127,6 +128,7 @@ namespace Conoscope
                 MigrateLegacyDustRemovalFilterType();
                 SelectComboBoxItemByTag(cbFilterType, NormalizeFilterType(ConoscopeConfig.FilterType).ToString());
                 SelectComboBoxItemByTag(cbDustMode, ConoscopeConfig.DustRemovalMode.ToString());
+                chkClampNonPositiveXyzOnLoad.IsChecked = ConoscopeConfig.ClampNonPositiveXyzOnLoad;
                 chkDustRemovalEnabled.IsChecked = ConoscopeConfig.DustRemovalEnabled;
 
                 sliderKernelSize.Value = ConoscopeConfig.FilterKernelSize;
@@ -160,6 +162,7 @@ namespace Conoscope
 
         private void SaveFilterControlsToConfig()
         {
+            ConoscopeConfig.ClampNonPositiveXyzOnLoad = chkClampNonPositiveXyzOnLoad?.IsChecked == true;
             ConoscopeConfig.FilterType = NormalizeFilterType(GetSelectedFilterType());
             ConoscopeConfig.FilterKernelSize = NormalizeKernelSize((int)(sliderKernelSize?.Value ?? ConoscopeConfig.FilterKernelSize));
             ConoscopeConfig.FilterSigma = sliderSigma?.Value ?? ConoscopeConfig.FilterSigma;
@@ -643,7 +646,7 @@ namespace Conoscope
                 }
 
                 RestoreOriginalMats();
-                log.Info($"开始应用预处理: dust={ConoscopeConfig.DustRemovalEnabled}, filter={ConoscopeConfig.FilterType}");
+                log.Info($"开始应用预处理: clamp={ConoscopeConfig.ClampNonPositiveXyzOnLoad}, dust={ConoscopeConfig.DustRemovalEnabled}, filter={ConoscopeConfig.FilterType}");
                 ApplyPreprocessToCurrentMats();
                 RefreshDisplayedImage();
 
@@ -713,6 +716,7 @@ namespace Conoscope
             XMat = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
             YMat = CreateFloatChannelMat(fileInfo.Data, channelSize, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
             ZMat = CreateFloatChannelMat(fileInfo.Data, channelSize * 2, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
+            ClampNonPositiveXyzValuesIfEnabled();
 
             log.Info($"已加载 CVCIE XYZ 数据: {fileInfo.Cols}x{fileInfo.Rows}, Bpp={fileInfo.Bpp}");
         }
@@ -747,6 +751,35 @@ namespace Conoscope
             return floatMat;
         }
 
+        private void ClampNonPositiveXyzValuesIfEnabled()
+        {
+            if (!ConoscopeConfig.ClampNonPositiveXyzOnLoad || XMat == null || YMat == null || ZMat == null)
+            {
+                return;
+            }
+
+            int clampedX = ClampMatToPositiveFloor(XMat, MinPositiveXyzValue);
+            int clampedY = ClampMatToPositiveFloor(YMat, MinPositiveXyzValue);
+            int clampedZ = ClampMatToPositiveFloor(ZMat, MinPositiveXyzValue);
+            if (clampedX + clampedY + clampedZ > 0)
+            {
+                log.Warn($"加载时已将 XYZ<=0 修正为 {MinPositiveXyzValue}: X={clampedX}, Y={clampedY}, Z={clampedZ}");
+            }
+        }
+
+        private static int ClampMatToPositiveFloor(OpenCvSharp.Mat mat, float lowerBound)
+        {
+            using OpenCvSharp.Mat mask = new OpenCvSharp.Mat();
+            OpenCvSharp.Cv2.Compare(mat, OpenCvSharp.Scalar.All(0), mask, OpenCvSharp.CmpTypes.LE);
+            int count = OpenCvSharp.Cv2.CountNonZero(mask);
+            if (count > 0)
+            {
+                mat.SetTo(OpenCvSharp.Scalar.All(lowerBound), mask);
+            }
+
+            return count;
+        }
+
         private void ApplyPreprocessToCurrentMats()
         {
             SaveFilterControlsToConfig();
@@ -765,7 +798,9 @@ namespace Conoscope
 
         private bool HasPreprocessEnabled()
         {
-            return ConoscopeConfig.DustRemovalEnabled || NormalizeFilterType(ConoscopeConfig.FilterType) != ImageFilterType.None;
+            return ConoscopeConfig.ClampNonPositiveXyzOnLoad
+                || ConoscopeConfig.DustRemovalEnabled
+                || NormalizeFilterType(ConoscopeConfig.FilterType) != ImageFilterType.None;
         }
 
         private void ApplyFilterToCurrentMats(ImageFilterType filterType)
