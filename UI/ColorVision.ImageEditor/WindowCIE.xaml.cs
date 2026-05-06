@@ -1,7 +1,10 @@
 using ColorVision.ImageEditor.Cie;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
+using System;
 using System.Collections.Generic;
+using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows;
 
 namespace ColorVision.ImageEditor
@@ -12,6 +15,8 @@ namespace ColorVision.ImageEditor
     public partial class WindowCIE : Window
     {
         private bool _isInitialized;
+        private bool _isUpdatingOptions;
+        private CieChromaticity? _selectedXy;
 
         public WindowCIE()
         {
@@ -22,34 +27,41 @@ namespace ColorVision.ImageEditor
 
         public CieDiagramView DiagramView => CieView;
 
-        private void Window_Initialized(object sender, System.EventArgs e)
+        private void Window_Initialized(object sender, EventArgs e)
         {
             _isInitialized = true;
             UpdateDiagramKind();
             UpdateDisplayedGamuts();
             UpdateDisplayedIlluminants();
+            UpdateDiagramSummary();
+            UpdateSelectedReadout();
             CieView.ZoomUniform();
         }
 
         public void ChangeSelect(double x, double y)
         {
-            CieView.SetSelectedXy(x, y);
+            SetSelectedXy(new CieChromaticity(x, y), Colors.Black, "Current");
         }
 
         public void ChangeSelect(ImageInfo imageInfo)
         {
-            CieView.SetSelectedRgb(imageInfo.R, imageInfo.G, imageInfo.B);
+            CieChromaticity xy = CieColorConverter.RgbToCie1931xy(imageInfo.R, imageInfo.G, imageInfo.B);
+            SetSelectedXy(xy, CieColorConverter.ToMarkerColor(imageInfo.R, imageInfo.G, imageInfo.B), "RGB");
         }
 
         public void SetDiagram(CieDiagramKind kind)
         {
-            CieView.SetDiagram(kind);
+            _isUpdatingOptions = true;
             ComboBoxDiagram.SelectedIndex = kind switch
             {
                 CieDiagramKind.Cie1960uv => 1,
                 CieDiagramKind.Cie1976uv => 2,
                 _ => 0
             };
+            _isUpdatingOptions = false;
+
+            CieView.SetDiagram(kind);
+            UpdateDiagramSummary();
         }
 
         public void SetGamuts(IEnumerable<CieGamut> gamuts)
@@ -67,9 +79,9 @@ namespace ColorVision.ImageEditor
             CieView.ClearGamuts();
         }
 
-        private void ComboBoxDiagram_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void ComboBoxDiagram_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || _isUpdatingOptions)
             {
                 return;
             }
@@ -79,7 +91,7 @@ namespace ColorVision.ImageEditor
 
         private void GamutCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || _isUpdatingOptions)
             {
                 return;
             }
@@ -89,7 +101,7 @@ namespace ColorVision.ImageEditor
 
         private void IlluminantCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || _isUpdatingOptions)
             {
                 return;
             }
@@ -99,7 +111,7 @@ namespace ColorVision.ImageEditor
 
         private void CctCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || _isUpdatingOptions)
             {
                 return;
             }
@@ -109,7 +121,7 @@ namespace ColorVision.ImageEditor
 
         private void DaylightCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || _isUpdatingOptions)
             {
                 return;
             }
@@ -119,7 +131,22 @@ namespace ColorVision.ImageEditor
 
         private void CieView_CursorTextChanged(object? sender, string text)
         {
-            TextBlockCursor.Text = text;
+            TextBlockCursor.Text = string.IsNullOrWhiteSpace(text) ? "Cursor: --" : text;
+        }
+
+        private void ButtonFit_Click(object sender, RoutedEventArgs e)
+        {
+            CieView.ZoomUniform();
+        }
+
+        private void PresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.Tag is not string preset)
+            {
+                return;
+            }
+
+            ApplyPreset(preset);
         }
 
         private void UpdateDiagramKind()
@@ -131,6 +158,12 @@ namespace ColorVision.ImageEditor
                 _ => CieDiagramKind.Cie1931xy
             };
             CieView.SetDiagram(kind);
+            UpdateDiagramSummary();
+        }
+
+        private void UpdateDiagramSummary()
+        {
+            TextBlockDiagramSummary.Text = CieView.Profile.Name;
         }
 
         private void UpdateDisplayedGamuts()
@@ -240,6 +273,138 @@ namespace ColorVision.ImageEditor
             }
 
             CieView.SetReferenceMarkers(illuminants);
+        }
+
+        private void ApplyPreset(string preset)
+        {
+            _isUpdatingOptions = true;
+            try
+            {
+                SetChecked(GetGamutCheckBoxes(), false);
+                SetChecked(GetIlluminantCheckBoxes(), false);
+                CheckBoxCct.IsChecked = false;
+                CheckBoxDaylight.IsChecked = false;
+
+                switch (preset)
+                {
+                    case "Display":
+                        CheckBoxSRgb.IsChecked = true;
+                        CheckBoxRec709.IsChecked = true;
+                        CheckBoxAdobeRgb.IsChecked = true;
+                        CheckBoxDisplayP3.IsChecked = true;
+                        CheckBoxRec2020.IsChecked = true;
+                        CheckBoxD65.IsChecked = true;
+                        CheckBoxD50.IsChecked = true;
+                        CheckBoxCct.IsChecked = true;
+                        CheckBoxDaylight.IsChecked = true;
+                        break;
+                    case "Cinema":
+                        CheckBoxRec709.IsChecked = true;
+                        CheckBoxDisplayP3.IsChecked = true;
+                        CheckBoxDciP3.IsChecked = true;
+                        CheckBoxRec2020.IsChecked = true;
+                        CheckBoxPal.IsChecked = true;
+                        CheckBoxSmpteC.IsChecked = true;
+                        CheckBoxD65.IsChecked = true;
+                        CheckBoxD60.IsChecked = true;
+                        CheckBoxCct.IsChecked = true;
+                        CheckBoxDaylight.IsChecked = true;
+                        break;
+                    case "All":
+                        SetChecked(GetGamutCheckBoxes(), true);
+                        SetChecked(GetIlluminantCheckBoxes(), true);
+                        CheckBoxCct.IsChecked = true;
+                        CheckBoxDaylight.IsChecked = true;
+                        break;
+                }
+            }
+            finally
+            {
+                _isUpdatingOptions = false;
+            }
+
+            UpdateDisplayedGamuts();
+            UpdateDisplayedIlluminants();
+            CieView.ShowCctReference = CheckBoxCct.IsChecked == true;
+            CieView.ShowDaylightReference = CheckBoxDaylight.IsChecked == true;
+        }
+
+        private IEnumerable<CheckBox> GetGamutCheckBoxes()
+        {
+            yield return CheckBoxSRgb;
+            yield return CheckBoxRec709;
+            yield return CheckBoxAdobeRgb;
+            yield return CheckBoxDisplayP3;
+            yield return CheckBoxNtsc;
+            yield return CheckBoxDciP3;
+            yield return CheckBoxRec2020;
+            yield return CheckBoxPal;
+            yield return CheckBoxSmpteC;
+            yield return CheckBoxProPhoto;
+            yield return CheckBoxAcesCg;
+        }
+
+        private IEnumerable<CheckBox> GetIlluminantCheckBoxes()
+        {
+            yield return CheckBoxD65;
+            yield return CheckBoxE;
+            yield return CheckBoxD50;
+            yield return CheckBoxD55;
+            yield return CheckBoxD60;
+            yield return CheckBoxC;
+            yield return CheckBoxA;
+            yield return CheckBoxD75;
+        }
+
+        private static void SetChecked(IEnumerable<CheckBox> checkBoxes, bool isChecked)
+        {
+            foreach (CheckBox checkBox in checkBoxes)
+            {
+                checkBox.IsChecked = isChecked;
+            }
+        }
+
+        private void SetSelectedXy(CieChromaticity xy, Color color, string name)
+        {
+            _selectedXy = xy.IsFinite ? xy : null;
+            if (_selectedXy.HasValue)
+            {
+                CieView.SetSelectedXy(xy, color, name);
+            }
+            else
+            {
+                CieView.ClearSelection();
+            }
+
+            UpdateSelectedReadout();
+        }
+
+        private void UpdateSelectedReadout()
+        {
+            if (!_selectedXy.HasValue || !_selectedXy.Value.IsFinite)
+            {
+                TextBlockSelectedXy.Text = "xy: --";
+                TextBlockSelectedUv1960.Text = "uv: --";
+                TextBlockSelectedUv1976.Text = "u'v': --";
+                TextBlockSelectedCct.Text = "CCT: --";
+                return;
+            }
+
+            CieChromaticity xy = _selectedXy.Value;
+            CieChromaticity uv1960 = CieColorConverter.XyToCie1960uv(xy);
+            CieChromaticity uv1976 = CieColorConverter.XyToCie1976uv(xy);
+            CieCctResult cct = CieColorConverter.EstimateCctAndDuv(xy);
+
+            TextBlockSelectedXy.Text = $"xy: x={xy.X:F5}  y={xy.Y:F5}";
+            TextBlockSelectedUv1960.Text = uv1960.IsFinite
+                ? $"uv: u={uv1960.X:F5}  v={uv1960.Y:F5}"
+                : "uv: --";
+            TextBlockSelectedUv1976.Text = uv1976.IsFinite
+                ? $"u'v': u'={uv1976.X:F5}  v'={uv1976.Y:F5}"
+                : "u'v': --";
+            TextBlockSelectedCct.Text = cct.IsFinite
+                ? $"CCT: {cct.TemperatureKelvin:F0}K  Duv={cct.Duv:+0.00000;-0.00000;0.00000}"
+                : "CCT: --";
         }
     }
 }
