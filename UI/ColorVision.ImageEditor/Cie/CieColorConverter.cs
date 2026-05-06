@@ -78,6 +78,24 @@ namespace ColorVision.ImageEditor.Cie
                 9 * xy.Y / denominator);
         }
 
+        public static CieChromaticity XyToCie1960uv(CieChromaticity xy)
+        {
+            if (!xy.IsFinite)
+            {
+                return CieChromaticity.Empty;
+            }
+
+            double denominator = -2 * xy.X + 12 * xy.Y + 3;
+            if (Math.Abs(denominator) < double.Epsilon)
+            {
+                return CieChromaticity.Empty;
+            }
+
+            return new CieChromaticity(
+                4 * xy.X / denominator,
+                6 * xy.Y / denominator);
+        }
+
         public static CieChromaticity Uv1976ToXy(CieChromaticity uv)
         {
             if (!uv.IsFinite)
@@ -94,6 +112,48 @@ namespace ColorVision.ImageEditor.Cie
             return new CieChromaticity(
                 9 * uv.X / denominator,
                 4 * uv.Y / denominator);
+        }
+
+        public static CieChromaticity Uv1960ToXy(CieChromaticity uv)
+        {
+            if (!uv.IsFinite)
+            {
+                return CieChromaticity.Empty;
+            }
+
+            double denominator = 3 * uv.X - 8 * uv.Y + 6;
+            if (Math.Abs(denominator) < double.Epsilon)
+            {
+                return CieChromaticity.Empty;
+            }
+
+            return new CieChromaticity(
+                3 * uv.X / denominator,
+                2 * uv.Y / denominator);
+        }
+
+        public static CieChromaticity CctToApproximatePlanckianXy(double kelvin)
+        {
+            double temperature = Math.Clamp(kelvin, 1667, 25000);
+            double x = temperature <= 4000
+                ? -0.2661239e9 / Math.Pow(temperature, 3) - 0.2343580e6 / Math.Pow(temperature, 2) + 0.8776956e3 / temperature + 0.179910
+                : -3.0258469e9 / Math.Pow(temperature, 3) + 2.1070379e6 / Math.Pow(temperature, 2) + 0.2226347e3 / temperature + 0.240390;
+
+            double y;
+            if (temperature <= 2222)
+            {
+                y = -1.1063814 * Math.Pow(x, 3) - 1.34811020 * Math.Pow(x, 2) + 2.18555832 * x - 0.20219683;
+            }
+            else if (temperature <= 4000)
+            {
+                y = -0.9549476 * Math.Pow(x, 3) - 1.37418593 * Math.Pow(x, 2) + 2.09137015 * x - 0.16748867;
+            }
+            else
+            {
+                y = 3.0817580 * Math.Pow(x, 3) - 5.87338670 * Math.Pow(x, 2) + 3.75112997 * x - 0.37001483;
+            }
+
+            return new CieChromaticity(x, y);
         }
 
         public static Color ToMarkerColor(int r, int g, int b)

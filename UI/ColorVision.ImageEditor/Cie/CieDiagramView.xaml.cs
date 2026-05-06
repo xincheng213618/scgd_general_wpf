@@ -13,9 +13,11 @@ namespace ColorVision.ImageEditor.Cie
         private readonly CieOverlayVisual _overlayVisual = new();
         private readonly List<CieGamut> _gamuts = new();
         private readonly List<CieMarker> _markers = new();
+        private readonly List<CieMarker> _referenceMarkers = new();
         private CieDiagramProfile _profile = CieDiagramProfiles.Cie1931xy;
         private BitmapSource? _background;
         private CieMarker? _selectedMarker;
+        private bool _showCctReference = true;
 
         public CieDiagramView()
         {
@@ -36,10 +38,27 @@ namespace ColorVision.ImageEditor.Cie
 
         public IReadOnlyList<CieMarker> Markers => _markers;
 
+        public IReadOnlyList<CieMarker> ReferenceMarkers => _referenceMarkers;
+
+        public bool ShowCctReference
+        {
+            get => _showCctReference;
+            set
+            {
+                if (_showCctReference == value)
+                {
+                    return;
+                }
+
+                _showCctReference = value;
+                RenderOverlay();
+            }
+        }
+
         public void SetDiagram(CieDiagramKind kind)
         {
             _profile = CieDiagramProfiles.Get(kind);
-            _background = LoadBitmap(_profile.BackgroundUri);
+            _background = LoadBackground(_profile);
             DiagramCanvas.Source = _background;
             EnsureOverlayVisual();
             RenderOverlay();
@@ -85,6 +104,13 @@ namespace ColorVision.ImageEditor.Cie
         {
             _markers.Clear();
             _markers.AddRange(markers);
+            RenderOverlay();
+        }
+
+        public void SetReferenceMarkers(IEnumerable<CieMarker> markers)
+        {
+            _referenceMarkers.Clear();
+            _referenceMarkers.AddRange(markers);
             RenderOverlay();
         }
 
@@ -168,7 +194,8 @@ namespace ColorVision.ImageEditor.Cie
                 bitmapPixelSize,
                 GetLayoutScale(),
                 _gamuts,
-                _markers,
+                _referenceMarkers.Concat(_markers).ToList(),
+                _showCctReference,
                 _selectedMarker);
         }
 
@@ -176,6 +203,16 @@ namespace ColorVision.ImageEditor.Cie
         {
             double zoom = ZoomBox.ContentMatrix.M11;
             return double.IsNaN(zoom) || double.IsInfinity(zoom) || zoom <= 0 ? 1 : 1 / zoom;
+        }
+
+        private static BitmapSource LoadBackground(CieDiagramProfile profile)
+        {
+            if (string.IsNullOrWhiteSpace(profile.BackgroundUri))
+            {
+                return CieBackgroundCache.Get(profile);
+            }
+
+            return LoadBitmap(profile.BackgroundUri);
         }
 
         private static BitmapImage LoadBitmap(string uri)

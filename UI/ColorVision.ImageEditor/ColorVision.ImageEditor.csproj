@@ -40,6 +40,7 @@
 		<None Remove="Assets\Colormap\colorscale_twilight_shifted.jpg" />
 		<None Remove="Assets\Colormap\colorscale_viridis.jpg" />
 		<None Remove="Assets\Colormap\colorscale_winter.jpg" />
+		<None Remove="Assets\Data\CIE_cc_1931_2deg.csv" />
 		<None Remove="Assets\Image\CIE1931xy.ico" />
 		<None Remove="Assets\Image\CIE1931xy.png" />
 		<None Remove="Assets\Image\CIE1931xy1.png" />
@@ -97,6 +98,7 @@
 		<Resource Include="Assets\Colormap\colorscale_twilight_shifted.jpg" />
 		<Resource Include="Assets\Colormap\colorscale_viridis.jpg" />
 		<Resource Include="Assets\Colormap\colorscale_winter.jpg" />
+		<Resource Include="Assets\Data\CIE_cc_1931_2deg.csv" />
 		<Resource Include="Assets\Image\CIE1931xy.ico" />
 		<Resource Include="Assets\Image\CIE1931xy.png" />
 		<Resource Include="Assets\Image\CIE1931xy1.png" />

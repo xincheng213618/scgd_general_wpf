@@ -12,35 +12,83 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ToolBarTray Grid.Row="0">
-            <ToolBar ToolBarTray.IsLocked="True">
+        <Border Grid.Row="0"
+                Padding="6"
+                Background="{DynamicResource GlobalBackgroundBrush}">
+            <StackPanel>
+                <WrapPanel Margin="0,0,0,4" VerticalAlignment="Center">
                 <ComboBox x:Name="ComboBoxDiagram"
                           Width="130"
                           Margin="2,0,6,0"
                           SelectedIndex="0"
                           SelectionChanged="ComboBoxDiagram_SelectionChanged">
                     <ComboBoxItem Content="CIE 1931 xy" />
+                    <ComboBoxItem Content="CIE 1960 uv" />
                     <ComboBoxItem Content="CIE 1976 u'v'" />
                 </ComboBox>
-                <Separator />
+                    <TextBlock Margin="8,3,4,0" Text="色域" />
                 <CheckBox x:Name="CheckBoxSRgb"
                           Margin="6,0,2,0"
                           Content="sRGB"
                           IsChecked="True"
                           Checked="GamutCheckBox_Changed"
                           Unchecked="GamutCheckBox_Changed" />
-                <CheckBox x:Name="CheckBoxP3"
+                    <CheckBox x:Name="CheckBoxAdobeRgb"
+                              Margin="6,0,2,0"
+                              Content="Adobe RGB"
+                              Checked="GamutCheckBox_Changed"
+                              Unchecked="GamutCheckBox_Changed" />
+                    <CheckBox x:Name="CheckBoxNtsc"
+                              Margin="6,0,2,0"
+                              Content="NTSC"
+                              Checked="GamutCheckBox_Changed"
+                              Unchecked="GamutCheckBox_Changed" />
+                    <CheckBox x:Name="CheckBoxDciP3"
                           Margin="6,0,2,0"
-                          Content="P3"
+                              Content="DCI-P3"
                           Checked="GamutCheckBox_Changed"
                           Unchecked="GamutCheckBox_Changed" />
-                <CheckBox x:Name="CheckBoxRec2020"
+                    <CheckBox x:Name="CheckBoxPal"
                           Margin="6,0,2,0"
-                          Content="BT.2020"
+                              Content="PAL"
                           Checked="GamutCheckBox_Changed"
                           Unchecked="GamutCheckBox_Changed" />
-            </ToolBar>
-        </ToolBarTray>
+                </WrapPanel>
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock Margin="2,3,4,0" Text="光源" />
+                    <CheckBox x:Name="CheckBoxCct"
+                              Margin="6,0,2,0"
+                              Content="Tc(K)"
+                              IsChecked="True"
+                              Checked="CctCheckBox_Changed"
+                              Unchecked="CctCheckBox_Changed" />
+                    <CheckBox x:Name="CheckBoxD65"
+                              Margin="6,0,2,0"
+                              Content="D65"
+                              IsChecked="True"
+                              Checked="IlluminantCheckBox_Changed"
+                              Unchecked="IlluminantCheckBox_Changed" />
+                    <CheckBox x:Name="CheckBoxD50"
+                              Margin="6,0,2,0"
+                              Content="D50"
+                              IsChecked="True"
+                              Checked="IlluminantCheckBox_Changed"
+                              Unchecked="IlluminantCheckBox_Changed" />
+                    <CheckBox x:Name="CheckBoxA"
+                              Margin="6,0,2,0"
+                              Content="A"
+                              IsChecked="True"
+                              Checked="IlluminantCheckBox_Changed"
+                              Unchecked="IlluminantCheckBox_Changed" />
+                    <CheckBox x:Name="CheckBoxD75"
+                              Margin="6,0,2,0"
+                              Content="D75"
+                              IsChecked="True"
+                              Checked="IlluminantCheckBox_Changed"
+                              Unchecked="IlluminantCheckBox_Changed" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
 
         <cie:CieDiagramView x:Name="CieView" Grid.Row="1" />
     </Grid>

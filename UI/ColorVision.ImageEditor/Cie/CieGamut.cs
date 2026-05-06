@@ -51,8 +51,30 @@ namespace ColorVision.ImageEditor.Cie
             CreateBrush(230, 235, 64, 52),
             CreateBrush(36, 235, 64, 52));
 
-        public static readonly CieGamut DisplayP3 = new(
-            "Display P3",
+        public static readonly CieGamut AdobeRgb = new(
+            "Adobe RGB",
+            new[]
+            {
+                new CieChromaticity(0.6400, 0.3300),
+                new CieChromaticity(0.2100, 0.7100),
+                new CieChromaticity(0.1500, 0.0600)
+            },
+            CreateBrush(230, 126, 87, 194),
+            CreateBrush(28, 126, 87, 194));
+
+        public static readonly CieGamut Ntsc1953 = new(
+            "NTSC 1953",
+            new[]
+            {
+                new CieChromaticity(0.6700, 0.3300),
+                new CieChromaticity(0.2100, 0.7100),
+                new CieChromaticity(0.1400, 0.0800)
+            },
+            CreateBrush(230, 255, 149, 0),
+            CreateBrush(26, 255, 149, 0));
+
+        public static readonly CieGamut DciP3 = new(
+            "DCI-P3",
             new[]
             {
                 new CieChromaticity(0.6800, 0.3200),
@@ -61,6 +83,17 @@ namespace ColorVision.ImageEditor.Cie
             },
             CreateBrush(230, 42, 130, 218),
             CreateBrush(32, 42, 130, 218));
+
+        public static readonly CieGamut Pal = new(
+            "PAL",
+            new[]
+            {
+                new CieChromaticity(0.6400, 0.3300),
+                new CieChromaticity(0.2900, 0.6000),
+                new CieChromaticity(0.1500, 0.0600)
+            },
+            CreateBrush(230, 46, 160, 67),
+            CreateBrush(26, 46, 160, 67));
 
         public static readonly CieGamut Rec2020 = new(
             "BT.2020",
@@ -76,7 +109,10 @@ namespace ColorVision.ImageEditor.Cie
         public static IReadOnlyList<CieGamut> Defaults { get; } = new[]
         {
             SRgb,
-            DisplayP3,
+            AdobeRgb,
+            Ntsc1953,
+            DciP3,
+            Pal,
             Rec2020
         };
 

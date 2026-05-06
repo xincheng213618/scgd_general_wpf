@@ -18,6 +18,7 @@ namespace ColorVision.ImageEditor.Cie
             double layoutScale,
             IReadOnlyList<CieGamut> gamuts,
             IReadOnlyList<CieMarker> markers,
+            bool showCctReference,
             CieMarker? selectedMarker)
         {
             using DrawingContext dc = RenderOpen();
@@ -31,6 +32,10 @@ namespace ColorVision.ImageEditor.Cie
             double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
 
             DrawGamuts(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, gamuts);
+            if (showCctReference)
+            {
+                DrawCctReference(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip);
+            }
             DrawMarkers(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, markers, false);
 
             if (selectedMarker != null)
@@ -78,6 +83,71 @@ namespace ColorVision.ImageEditor.Cie
             {
                 DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, emphasize);
             }
+        }
+
+        private static void DrawCctReference(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip)
+        {
+            int[] temperatures = { 1500, 2000, 2500, 3000, 4000, 6000, 10000 };
+            List<Point> locus = new();
+            for (int temperature = 1500; temperature <= 25000; temperature += 100)
+            {
+                CieChromaticity xy = CieColorConverter.CctToApproximatePlanckianXy(temperature);
+                Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, xy);
+                if (IsFinite(point))
+                {
+                    locus.Add(point);
+                }
+            }
+
+            if (locus.Count > 1)
+            {
+                StreamGeometry geometry = new();
+                using (StreamGeometryContext context = geometry.Open())
+                {
+                    context.BeginFigure(locus[0], false, false);
+                    context.PolyLineTo(locus.Skip(1).ToList(), true, true);
+                }
+                geometry.Freeze();
+                dc.DrawGeometry(null, new Pen(Brushes.Black, 1.3 * scale), geometry);
+            }
+
+            DrawText(dc, "Tc(K)", ToCanvasPoint(profile, canvasSize, bitmapPixelSize, new CieChromaticity(0.285, 0.430)), Brushes.Black, 13 * scale, scale, pixelsPerDip);
+
+            foreach (int temperature in temperatures)
+            {
+                DrawCctTick(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, temperature);
+            }
+        }
+
+        private static void DrawCctTick(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, int temperature)
+        {
+            CieChromaticity centerXy = CieColorConverter.CctToApproximatePlanckianXy(temperature);
+            CieChromaticity beforeXy = CieColorConverter.CctToApproximatePlanckianXy(Math.Max(1500, temperature - 100));
+            CieChromaticity afterXy = CieColorConverter.CctToApproximatePlanckianXy(Math.Min(25000, temperature + 100));
+
+            Point center = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, centerXy);
+            Point before = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, beforeXy);
+            Point after = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, afterXy);
+            if (!IsFinite(center) || !IsFinite(before) || !IsFinite(after))
+            {
+                return;
+            }
+
+            Vector tangent = after - before;
+            if (tangent.Length <= 0)
+            {
+                return;
+            }
+
+            tangent.Normalize();
+            Vector normal = new(-tangent.Y, tangent.X);
+            double halfLength = 25 * scale;
+            Point p1 = center - normal * halfLength;
+            Point p2 = center + normal * halfLength;
+            dc.DrawLine(new Pen(Brushes.Black, 1.2 * scale), p1, p2);
+
+            Vector labelOffset = temperature <= 2000 ? new Vector(12 * scale, -4 * scale) : normal * (halfLength + 6 * scale);
+            DrawText(dc, temperature.ToString(CultureInfo.InvariantCulture), center + labelOffset, Brushes.Black, 11 * scale, scale, pixelsPerDip);
         }
 
         private static void DrawSelection(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker)

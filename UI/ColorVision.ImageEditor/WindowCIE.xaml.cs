@@ -26,6 +26,7 @@ namespace ColorVision.ImageEditor
             _isInitialized = true;
             UpdateDiagramKind();
             UpdateDisplayedGamuts();
+            UpdateDisplayedIlluminants();
             CieView.ZoomUniform();
         }
 
@@ -42,7 +43,12 @@ namespace ColorVision.ImageEditor
         public void SetDiagram(CieDiagramKind kind)
         {
             CieView.SetDiagram(kind);
-            ComboBoxDiagram.SelectedIndex = kind == CieDiagramKind.Cie1976uv ? 1 : 0;
+            ComboBoxDiagram.SelectedIndex = kind switch
+            {
+                CieDiagramKind.Cie1960uv => 1,
+                CieDiagramKind.Cie1976uv => 2,
+                _ => 0
+            };
         }
 
         public void SetGamuts(IEnumerable<CieGamut> gamuts)
@@ -80,11 +86,34 @@ namespace ColorVision.ImageEditor
             UpdateDisplayedGamuts();
         }
 
+        private void IlluminantCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized)
+            {
+                return;
+            }
+
+            UpdateDisplayedIlluminants();
+        }
+
+        private void CctCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized)
+            {
+                return;
+            }
+
+            CieView.ShowCctReference = CheckBoxCct.IsChecked == true;
+        }
+
         private void UpdateDiagramKind()
         {
-            CieDiagramKind kind = ComboBoxDiagram.SelectedIndex == 1
-                ? CieDiagramKind.Cie1976uv
-                : CieDiagramKind.Cie1931xy;
+            CieDiagramKind kind = ComboBoxDiagram.SelectedIndex switch
+            {
+                1 => CieDiagramKind.Cie1960uv,
+                2 => CieDiagramKind.Cie1976uv,
+                _ => CieDiagramKind.Cie1931xy
+            };
             CieView.SetDiagram(kind);
         }
 
@@ -97,17 +126,54 @@ namespace ColorVision.ImageEditor
                 gamuts.Add(CieGamuts.SRgb);
             }
 
-            if (CheckBoxP3.IsChecked == true)
+            if (CheckBoxAdobeRgb.IsChecked == true)
             {
-                gamuts.Add(CieGamuts.DisplayP3);
+                gamuts.Add(CieGamuts.AdobeRgb);
             }
 
-            if (CheckBoxRec2020.IsChecked == true)
+            if (CheckBoxNtsc.IsChecked == true)
             {
-                gamuts.Add(CieGamuts.Rec2020);
+                gamuts.Add(CieGamuts.Ntsc1953);
+            }
+
+            if (CheckBoxDciP3.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.DciP3);
+            }
+
+            if (CheckBoxPal.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.Pal);
             }
 
             CieView.SetGamuts(gamuts);
+        }
+
+        private void UpdateDisplayedIlluminants()
+        {
+            List<CieMarker> illuminants = new();
+
+            if (CheckBoxD65.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D65);
+            }
+
+            if (CheckBoxD50.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D50);
+            }
+
+            if (CheckBoxA.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.A);
+            }
+
+            if (CheckBoxD75.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D75);
+            }
+
+            CieView.SetReferenceMarkers(illuminants);
         }
     }
 }
