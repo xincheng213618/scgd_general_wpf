@@ -52,6 +52,7 @@ namespace Conoscope
         private bool isUpdatingFilterControls;
         private WindowCIE? cieWindow;
         private ImageFullScreenMode? imageFullScreenMode;
+        private ConoscopeModelProfile? subscribedModelProfile;
         private const float MinPositiveXyzValue = 0.000001f;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
@@ -62,7 +63,21 @@ namespace Conoscope
         private void RefreshReferenceLineProfileBinding()
         {
             GridSetting.Children.Clear();
-            GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.CoordinateAxisParam));
+            GridSetting.RowDefinitions.Clear();
+            GridSetting.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GridSetting.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            Border fieldOfViewEditorHost = new Border
+            {
+                Margin = new Thickness(0, 0, 0, 10),
+                Child = PropertyEditorHelper.GenPropertyEditorControl(new ConoscopeFieldOfViewSettings(CurrentModelProfile))
+            };
+            GridSetting.Children.Add(fieldOfViewEditorHost);
+            Grid.SetRow(fieldOfViewEditorHost, 0);
+
+            UIElement coordinateAxisEditor = PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.CoordinateAxisParam);
+            GridSetting.Children.Add(coordinateAxisEditor);
+            Grid.SetRow(coordinateAxisEditor, 1);
         }
 
 
@@ -102,6 +117,7 @@ namespace Conoscope
             InitializeFilterControls();
             UpdateReferenceControlVisibility();
             UpdateColorDifferencePanelVisibility();
+            AttachCurrentModelProfile();
 
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -497,7 +513,50 @@ namespace Conoscope
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
         {
+            AttachCurrentModelProfile();
             RefreshModelDependentUi();
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
+        }
+
+        private void AttachCurrentModelProfile()
+        {
+            if (ReferenceEquals(subscribedModelProfile, CurrentModelProfile))
+            {
+                return;
+            }
+
+            if (subscribedModelProfile != null)
+            {
+                subscribedModelProfile.PropertyChanged -= CurrentModelProfile_PropertyChanged;
+            }
+
+            subscribedModelProfile = CurrentModelProfile;
+            subscribedModelProfile.PropertyChanged -= CurrentModelProfile_PropertyChanged;
+            subscribedModelProfile.PropertyChanged += CurrentModelProfile_PropertyChanged;
+        }
+
+        private void CurrentModelProfile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(ConoscopeModelProfile.MaxAngle)
+                && e.PropertyName != nameof(ConoscopeModelProfile.CalculationDiameterPixels)
+                && e.PropertyName != nameof(ConoscopeModelProfile.ManualConoscopeCoefficient))
+            {
+                return;
+            }
+
+            CurrentModelProfile.CoordinateAxisParam.MaxAngle = MaxAngle;
+            CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle, MaxAngle));
+            RefreshQuickControlsFromAxisParam();
+            SetReferencePlotLimits();
+            UpdateReferencePlotHeader();
+
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
         }
 
         private void InitializePlot(ScottPlot.WPF.WpfPlot plot, string title)
@@ -2330,6 +2389,11 @@ namespace Conoscope
         {
             ConoscopeModuleService.Unregister(this);
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            if (subscribedModelProfile != null)
+            {
+                subscribedModelProfile.PropertyChanged -= CurrentModelProfile_PropertyChanged;
+                subscribedModelProfile = null;
+            }
             ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             cieWindow?.Close();
             cieWindow = null;
@@ -2357,6 +2421,37 @@ namespace Conoscope
             double Y,
             double Z,
             ConoscopeChromaticity Chromaticity);
+
+        private sealed class ConoscopeFieldOfViewSettings
+        {
+            private readonly ConoscopeModelProfile modelProfile;
+
+            public ConoscopeFieldOfViewSettings(ConoscopeModelProfile modelProfile)
+            {
+                this.modelProfile = modelProfile;
+            }
+
+            [Category("视场"), DisplayName("视场角(度)"), Description("设计视场角。分析半径 = 视场角 * 生效视场系数。")]
+            public int MaxAngle
+            {
+                get => modelProfile.MaxAngle;
+                set => modelProfile.MaxAngle = value;
+            }
+
+            [Category("视场"), DisplayName("完整像素数(px)"), Description("对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 使用图像短边一半。输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 计算。")]
+            public double FullScalePixelCount
+            {
+                get => modelProfile.FullScalePixelCount;
+                set => modelProfile.FullScalePixelCount = value;
+            }
+
+            [Category("视场"), DisplayName("ConoscopeCoefficient(度/像素)"), Description("可直接输入 60/3100 这类小数。填 0 表示按完整像素数自动计算。分析半径 = 视场角 / 该系数。")]
+            public double DirectConoscopeCoefficient
+            {
+                get => modelProfile.DirectConoscopeCoefficient;
+                set => modelProfile.DirectConoscopeCoefficient = value;
+            }
+        }
 
         public void AdvancedExport()
         {
