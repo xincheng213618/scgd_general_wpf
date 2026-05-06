@@ -16,6 +16,7 @@ namespace ColorVision.ImageEditor
         public WindowCIE()
         {
             InitializeComponent();
+            CieView.CursorTextChanged += CieView_CursorTextChanged;
             this.ApplyCaption();
         }
 
@@ -106,6 +107,11 @@ namespace ColorVision.ImageEditor
             CieView.ShowCctReference = CheckBoxCct.IsChecked == true;
         }
 
+        private void CieView_CursorTextChanged(object? sender, string text)
+        {
+            TextBlockCursor.Text = text;
+        }
+
         private void UpdateDiagramKind()
         {
             CieDiagramKind kind = ComboBoxDiagram.SelectedIndex switch
@@ -126,9 +132,19 @@ namespace ColorVision.ImageEditor
                 gamuts.Add(CieGamuts.SRgb);
             }
 
+            if (CheckBoxRec709.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.Rec709);
+            }
+
             if (CheckBoxAdobeRgb.IsChecked == true)
             {
                 gamuts.Add(CieGamuts.AdobeRgb);
+            }
+
+            if (CheckBoxDisplayP3.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.DisplayP3);
             }
 
             if (CheckBoxNtsc.IsChecked == true)
@@ -141,9 +157,19 @@ namespace ColorVision.ImageEditor
                 gamuts.Add(CieGamuts.DciP3);
             }
 
+            if (CheckBoxRec2020.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.Rec2020);
+            }
+
             if (CheckBoxPal.IsChecked == true)
             {
-                gamuts.Add(CieGamuts.Pal);
+                gamuts.Add(CieGamuts.EbuPal);
+            }
+
+            if (CheckBoxSmpteC.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.SmpteC);
             }
 
             CieView.SetGamuts(gamuts);
@@ -158,9 +184,24 @@ namespace ColorVision.ImageEditor
                 illuminants.Add(CieIlluminants.D65);
             }
 
+            if (CheckBoxE.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.E);
+            }
+
             if (CheckBoxD50.IsChecked == true)
             {
                 illuminants.Add(CieIlluminants.D50);
+            }
+
+            if (CheckBoxD55.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D55);
+            }
+
+            if (CheckBoxD60.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D60);
             }
 
             if (CheckBoxA.IsChecked == true)

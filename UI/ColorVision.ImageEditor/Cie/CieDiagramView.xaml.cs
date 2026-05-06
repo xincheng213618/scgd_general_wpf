@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -25,10 +27,14 @@ namespace ColorVision.ImageEditor.Cie
 
             Loaded += CieDiagramView_Loaded;
             DiagramCanvas.SizeChanged += DiagramCanvas_SizeChanged;
+            DiagramCanvas.MouseLeave += DiagramCanvas_MouseLeave;
+            DiagramCanvas.MouseMove += DiagramCanvas_MouseMove;
             ZoomBox.ContentMatrixChanged += ZoomBox_ContentMatrixChanged;
 
             SetDiagram(CieDiagramKind.Cie1931xy);
         }
+
+        public event EventHandler<string>? CursorTextChanged;
 
         public CieDiagramKind DiagramKind => _profile.Kind;
 
@@ -166,6 +172,16 @@ namespace ColorVision.ImageEditor.Cie
             RenderOverlay();
         }
 
+        private void DiagramCanvas_MouseLeave(object sender, MouseEventArgs e)
+        {
+            CursorTextChanged?.Invoke(this, string.Empty);
+        }
+
+        private void DiagramCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            CursorTextChanged?.Invoke(this, GetCursorText(e.GetPosition(DiagramCanvas)));
+        }
+
         private void ZoomBox_ContentMatrixChanged(object? sender, EventArgs e)
         {
             RenderOverlay();
@@ -203,6 +219,37 @@ namespace ColorVision.ImageEditor.Cie
         {
             double zoom = ZoomBox.ContentMatrix.M11;
             return double.IsNaN(zoom) || double.IsInfinity(zoom) || zoom <= 0 ? 1 : 1 / zoom;
+        }
+
+        private string GetCursorText(Point canvasPoint)
+        {
+            if (_background == null || DiagramCanvas.ActualWidth <= 0 || DiagramCanvas.ActualHeight <= 0)
+            {
+                return string.Empty;
+            }
+
+            Point imagePixel = new(
+                canvasPoint.X / DiagramCanvas.ActualWidth * _background.PixelWidth,
+                canvasPoint.Y / DiagramCanvas.ActualHeight * _background.PixelHeight);
+
+            CieChromaticity diagramPoint = _profile.ImagePixelToDiagramPoint(imagePixel);
+            if (!_profile.ContainsDiagramPoint(diagramPoint))
+            {
+                return string.Empty;
+            }
+
+            CieChromaticity xy = _profile.FromDiagramPoint(diagramPoint);
+            if (!xy.IsFinite)
+            {
+                return string.Empty;
+            }
+
+            CieChromaticity uv1960 = CieColorConverter.XyToCie1960uv(xy);
+            CieChromaticity uv1976 = CieColorConverter.XyToCie1976uv(xy);
+
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"x={xy.X:F4}  y={xy.Y:F4}    u={uv1960.X:F4}  v={uv1960.Y:F4}    u'={uv1976.X:F4}  v'={uv1976.Y:F4}");
         }
 
         private static BitmapSource LoadBackground(CieDiagramProfile profile)

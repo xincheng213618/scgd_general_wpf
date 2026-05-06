@@ -38,6 +38,16 @@ namespace ColorVision.ImageEditor.Cie
             };
         }
 
+        public CieChromaticity FromDiagramPoint(CieChromaticity diagramPoint)
+        {
+            return Kind switch
+            {
+                CieDiagramKind.Cie1960uv => CieColorConverter.Uv1960ToXy(diagramPoint),
+                CieDiagramKind.Cie1976uv => CieColorConverter.Uv1976ToXy(diagramPoint),
+                _ => diagramPoint
+            };
+        }
+
         public Point ToImagePixel(CieChromaticity xy)
         {
             return DiagramPointToImagePixel(ToDiagramPoint(xy));
@@ -56,6 +66,21 @@ namespace ColorVision.ImageEditor.Cie
             return new Point(
                 PlotAreaPixels.Left + normalizedX * PlotAreaPixels.Width,
                 PlotAreaPixels.Bottom - normalizedY * PlotAreaPixels.Height);
+        }
+
+        public CieChromaticity ImagePixelToDiagramPoint(Point imagePixel)
+        {
+            if (PlotAreaPixels.Width <= 0 || PlotAreaPixels.Height <= 0 || AxisBounds.Width <= 0 || AxisBounds.Height <= 0)
+            {
+                return CieChromaticity.Empty;
+            }
+
+            double normalizedX = (imagePixel.X - PlotAreaPixels.Left) / PlotAreaPixels.Width;
+            double normalizedY = (PlotAreaPixels.Bottom - imagePixel.Y) / PlotAreaPixels.Height;
+
+            return new CieChromaticity(
+                AxisBounds.X + normalizedX * AxisBounds.Width,
+                AxisBounds.Y + normalizedY * AxisBounds.Height);
         }
 
         public bool ContainsDiagramPoint(CieChromaticity diagramPoint)
