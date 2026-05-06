@@ -1,5 +1,6 @@
 ﻿using ColorVision.FileIO;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
@@ -50,6 +51,7 @@ namespace Conoscope
         private bool isUpdatingColorDifferenceControls;
         private bool isUpdatingFilterControls;
         private WindowCIE? cieWindow;
+        private ImageFullScreenMode? imageFullScreenMode;
         private const float MinPositiveXyzValue = 0.000001f;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
@@ -106,6 +108,46 @@ namespace Conoscope
             ConoscopeConfig_ModelTypeChanged(sender, ConoscopeConfig.CurrentModel);
             InitializePlot(wpfPlotReference, "参考曲线 (Reference Distribution)");
             UpdateReferencePlotHeader();
+
+            imageFullScreenMode = new ImageFullScreenMode(ImageViewHost);
+            ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            ImageView.Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
+            imgPseudoColorLegend.Source = ColormapConstats.CreatePreviewImage(ColorVision.Core.ColormapTypes.COLORMAP_JET);
+            UpdateToolbarZoomRatio();
+            UpdatePanModeState();
+        }
+
+        private void Zoombox1_ContentMatrixChanged(object? sender, EventArgs e)
+        {
+            UpdateToolbarZoomRatio();
+        }
+
+        private void UpdateToolbarZoomRatio()
+        {
+            if (txtToolbarZoomRatio == null)
+            {
+                return;
+            }
+
+            double zoomRatio = ImageView.Zoombox1.ContentMatrix.M11;
+            txtToolbarZoomRatio.Text = double.IsFinite(zoomRatio) ? zoomRatio.ToString("F2", CultureInfo.InvariantCulture) : "1.00";
+        }
+
+        private void UpdatePanModeState()
+        {
+            bool isPanModeEnabled = tglPanMode?.IsChecked == true;
+            ImageView.Zoombox1.ActivateOn = isPanModeEnabled ? ModifierKeys.None : ModifierKeys.Control;
+            ImageView.Zoombox1.Cursor = isPanModeEnabled ? Cursors.Hand : Cursors.Arrow;
+        }
+
+        private void tglPanMode_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdatePanModeState();
+        }
+
+        private void tglPanMode_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UpdatePanModeState();
         }
 
         private static void SelectComboBoxItemByTag(ComboBox comboBox, string tag)
@@ -1046,6 +1088,7 @@ namespace Conoscope
         {
             if (!HasXyzData())
             {
+                UpdatePseudoColorLegendVisibility(false);
                 return;
             }
 
@@ -1055,11 +1098,14 @@ namespace Conoscope
             using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
             using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
 
+            OpenCvSharp.Cv2.MinMaxLoc(channelMat, out double minValue, out double maxValue);
             OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
             normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
             OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, OpenCvSharp.ColormapTypes.Jet);
             WriteableBitmap bitmap = pseudoColor.ToWriteableBitmap();
             bitmap.Freeze();
+
+            UpdatePseudoColorLegend(displayChannel, minValue, maxValue);
 
             DisposeCoordinateAxis();
             ImageView.Clear();
@@ -1082,6 +1128,29 @@ namespace Conoscope
             }
 
             return ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, channel);
+        }
+
+        private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)
+        {
+            if (tbPseudoColorLegendTitle == null || tbPseudoColorLegendMin == null || tbPseudoColorLegendMax == null)
+            {
+                return;
+            }
+
+            tbPseudoColorLegendTitle.Text = GetChannelLabel(channel);
+            tbPseudoColorLegendMin.Text = FormatChannelValue(minValue, channel);
+            tbPseudoColorLegendMax.Text = FormatChannelValue(maxValue, channel);
+            UpdatePseudoColorLegendVisibility(true);
+        }
+
+        private void UpdatePseudoColorLegendVisibility(bool isVisible)
+        {
+            if (PseudoColorLegendPanel == null)
+            {
+                return;
+            }
+
+            PseudoColorLegendPanel.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private OpenCvSharp.Mat CreateColorDifferenceMat()
@@ -1444,6 +1513,16 @@ namespace Conoscope
 
         private void btnOpenCieWindow_Click(object sender, RoutedEventArgs e)
         {
+            OpenCieWindow();
+        }
+
+        private void ToolbarOpenCie_Click(object sender, RoutedEventArgs e)
+        {
+            OpenCieWindow();
+        }
+
+        private void OpenCieWindow()
+        {
             if (!HasXyzData() || currentBitmapSource == null || coordinateAxisController == null)
             {
                 MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1486,6 +1565,94 @@ namespace Conoscope
             }
 
             UpdateCieWindowSelection(point);
+        }
+
+        private void ToolbarZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.Zoom(1.25);
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.Zoom(0.8);
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomNone_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.ZoomNone();
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomUniform_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.ZoomUniform();
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomUniformToFill_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.ZoomUniformToFill();
+            UpdateToolbarZoomRatio();
+        }
+
+        private void txtToolbarZoomRatio_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                ApplyToolbarZoomRatio();
+                e.Handled = true;
+            }
+        }
+
+        private void txtToolbarZoomRatio_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ApplyToolbarZoomRatio();
+        }
+
+        private void ApplyToolbarZoomRatio()
+        {
+            if (txtToolbarZoomRatio == null)
+            {
+                return;
+            }
+
+            if (!TryParseDouble(txtToolbarZoomRatio.Text, out double zoomRatio) || !double.IsFinite(zoomRatio) || zoomRatio <= 0)
+            {
+                UpdateToolbarZoomRatio();
+                return;
+            }
+
+            double currentZoom = ImageView.Zoombox1.ContentMatrix.M11;
+            if (!double.IsFinite(currentZoom) || currentZoom <= 0)
+            {
+                currentZoom = 1;
+            }
+
+            ImageView.Zoombox1.Zoom(zoomRatio / currentZoom);
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarFullScreen_Click(object sender, RoutedEventArgs e)
+        {
+            imageFullScreenMode ??= new ImageFullScreenMode(ImageViewHost);
+            imageFullScreenMode.ToggleFullScreen();
+        }
+
+        private void ToolbarOpen3D_Click(object sender, RoutedEventArgs e)
+        {
+            if (ImageView.ImageShow.Source is not WriteableBitmap writeableBitmap)
+            {
+                MessageBox.Show("当前图像尚未准备好 3D 视图", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            Window3D window3D = new(writeableBitmap)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            window3D.Show();
         }
 
         private void UpdateCieWindowSelection(Point position)
@@ -2163,6 +2330,7 @@ namespace Conoscope
         {
             ConoscopeModuleService.Unregister(this);
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             cieWindow?.Close();
             cieWindow = null;
             XMat?.Dispose();

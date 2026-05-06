@@ -46,9 +46,6 @@ namespace ColorVision.ImageEditor
 
         private readonly List<IImageViewSettingProvider> _imageViewSettingProviders = new();
         private readonly string _pixelValueOverlayRefreshDebounceKey = $"PixelValueOverlayRefresh_{Guid.NewGuid():N}";
-        private readonly DefaultImageViewDisplayConfig _defaultImageViewDisplayConfig = DefaultImageViewDisplayConfig.Current;
-        private DependencyPropertyDescriptor? _imageSourcePropertyDescriptor;
-        private DependencyPropertyDescriptor? _bitmapScalingModePropertyDescriptor;
 
 
         public ImageView()
