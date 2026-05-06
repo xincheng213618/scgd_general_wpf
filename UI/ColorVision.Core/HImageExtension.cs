@@ -400,28 +400,44 @@ namespace ColorVision.Core
                 pData = Marshal.AllocCoTaskMem(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels* (depth/8))
             };
 
-            // Copy the pixel data from the WriteableBitmap to the HImageCache
-            writeableBitmap.Lock();
-            //RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels*(depth / 8)));
             try
             {
-                unsafe
+                if (writeableBitmap.IsFrozen)
                 {
-                    byte* src = (byte*)writeableBitmap.BackBuffer;
-                    byte* dst = (byte*)hImage.pData;
+                    byte[] pixels = new byte[hImage.rows * stride];
+                    writeableBitmap.CopyPixels(pixels, stride, 0);
+                    Marshal.Copy(pixels, 0, hImage.pData, pixels.Length);
+                    return hImage;
+                }
 
-                    for (int y = 0; y < hImage.rows; y++)
+                // Copy the pixel data from the WriteableBitmap to the HImageCache.
+                writeableBitmap.Lock();
+                try
+                {
+                    unsafe
                     {
-                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)stride);
-                        src += writeableBitmap.BackBufferStride;
-                        dst += stride;
+                        byte* src = (byte*)writeableBitmap.BackBuffer;
+                        byte* dst = (byte*)hImage.pData;
+
+                        for (int y = 0; y < hImage.rows; y++)
+                        {
+                            RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)stride);
+                            src += writeableBitmap.BackBufferStride;
+                            dst += stride;
+                        }
                     }
                 }
+                finally
+                {
+                    writeableBitmap.Unlock();
+                }
             }
-            finally
+            catch
             {
-                writeableBitmap.Unlock();
+                Marshal.FreeCoTaskMem(hImage.pData);
+                throw;
             }
+
             return hImage;
         }
     }

@@ -35,6 +35,7 @@ namespace ColorVision.ImageEditor
         public ImageViewModel ImageViewModel { get; set; }
         public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
         public IPseudoColorService PseudoColorService => EditorContext.GetRequiredService<IPseudoColorService>();
+        public bool EnableEditorImageServices { get; set; } = true;
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
 
@@ -565,6 +566,11 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource)
         {
+            SetImageSource(imageSource, EnableEditorImageServices);
+        }
+
+        public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices)
+        {
             InvalidatePseudoColorRender();
             FunctionImage = null;
             ViewBitmapSource = null;
@@ -575,7 +581,7 @@ namespace ColorVision.ImageEditor
                 HImageCache = null;
             }
 
-            ComboBoxLayers.Visibility = Visibility.Visible;
+            ComboBoxLayers.Visibility = enableEditorImageServices ? Visibility.Visible : Visibility.Collapsed;
             if (imageSource is WriteableBitmap writeableBitmap)
             {
                 int cols = writeableBitmap.PixelWidth;
@@ -630,10 +636,16 @@ namespace ColorVision.ImageEditor
                 Config.SetImageMetadata(ImageViewPropertyKeys.Stride, stride, nameof(ImageView), "当前图像 stride");
                 Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(ImageView), "当前图像水平 DPI");
                 Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(ImageView), "当前图像垂直 DPI");
-                PseudoColorService?.ConfigureForImage();
+                if (enableEditorImageServices)
+                {
+                    PseudoColorService?.ConfigureForImage();
+                }
             }
 
-            ImageCalibrationService.ApplyToDefault(EditorContext);
+            if (enableEditorImageServices)
+            {
+                ImageCalibrationService.ApplyToDefault(EditorContext);
+            }
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;

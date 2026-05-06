@@ -1,0 +1,16 @@
+<UserControl x:Class="Conoscope.ConoscopeImageHost"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
+             FocusVisualStyle="{x:Null}">
+    <Grid Background="Transparent">
+        <im:Zoombox x:Name="ZoomBox"
+                    MaxZoom="80"
+                    MinZoom="0.02">
+            <im:DrawCanvas x:Name="ImageCanvas"
+                           FocusVisualStyle="{x:Null}"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           RenderOptions.ClearTypeHint="Auto" />
+        </im:Zoombox>
+    </Grid>
+</UserControl>

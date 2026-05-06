@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:Conoscope="clr-namespace:Conoscope.Core"
+    xmlns:local="clr-namespace:Conoscope"
         xmlns:properties="clr-namespace:Conoscope.Properties"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
@@ -37,7 +37,7 @@
         </Grid.ColumnDefinitions>
 
         <Grid x:Name="ImageViewHost" Grid.Column="0">
-            <im:ImageView x:Name="ImageView" />
+            <local:ConoscopeImageHost x:Name="ImageView" />
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
             </Border>
