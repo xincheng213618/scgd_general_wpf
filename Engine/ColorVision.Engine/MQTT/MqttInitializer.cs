@@ -72,11 +72,6 @@ namespace ColorVision.Engine.MQTT
                     log.Info(ex.Message);
                 }
             }
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
-                mQTTConnect.ShowDialog();
-            });
         }
     }
     }
