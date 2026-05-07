@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.EditorTools
                     return;
                 }
 
-                _context.ImageView.ImageViewModel.ImageEditMode = value;
+                _context.ImageView.ImageEditMode = value;
                 OnPropertyChanged();
             }
         }

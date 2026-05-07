@@ -32,7 +32,7 @@ namespace ColorVision.ImageEditor.Settings
         private static ObservableCollection<EditorToolViewModel> BuildEditorTools(ImageView imageView, EditorToolVisibilityConfig visibilityConfig)
         {
             ObservableCollection<EditorToolViewModel> editorTools = new();
-            foreach (IEditorTool tool in imageView.ImageViewModel.IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
+            foreach (IEditorTool tool in imageView.IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
             {
                 string guidId = tool.GuidId ?? tool.GetType().Name;
                 EditorToolViewModel toolViewModel = new(imageView, tool, visibilityConfig)
@@ -51,7 +51,7 @@ namespace ColorVision.ImageEditor.Settings
         private static ObservableCollection<ImageOpenSupportViewModel> BuildImageOpens(ImageView imageView)
         {
             ObservableCollection<ImageOpenSupportViewModel> imageOpens = new();
-            IEnumerable<ImageOpenSupportViewModel> groupedOpeners = imageView.ImageViewModel.IEditorToolFactory.IImageOpens
+            IEnumerable<ImageOpenSupportViewModel> groupedOpeners = imageView.IEditorToolFactory.IImageOpens
                 .GroupBy(item => item.Value.GetType())
                 .OrderBy(group => group.Key.Name)
                 .Select(group => new ImageOpenSupportViewModel
@@ -135,7 +135,7 @@ namespace ColorVision.ImageEditor.Settings
             string guidId = Tool.GuidId ?? Tool.GetType().Name;
             _visibilityConfig.SetToolVisibility(guidId, _isVisible);
 
-            if (_imageView.ImageViewModel.IEditorToolFactory.ToolUIElements.TryGetValue(guidId, out FrameworkElement? uiElement))
+            if (_imageView.IEditorToolFactory.ToolUIElements.TryGetValue(guidId, out FrameworkElement? uiElement))
             {
                 uiElement.Visibility = _isVisible ? Visibility.Visible : Visibility.Collapsed;
             }

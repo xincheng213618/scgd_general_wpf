@@ -10,7 +10,7 @@
              xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance local:ImageViewModel}"
+             d:DataContext="{d:DesignInstance Type=local:ImageView, IsDesignTimeCreatable=False}"
              d:DesignHeight="600" d:DesignWidth="800" AllowDrop="True"
              FocusVisualStyle="{x:Null}"
              Initialized="UserControl_Initialized">

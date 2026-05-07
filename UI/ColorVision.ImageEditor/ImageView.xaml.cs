@@ -2,12 +2,13 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
-using ColorVision.ImageEditor.Settings;
-using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,23 +31,62 @@ namespace ColorVision.ImageEditor
     /// <summary>
     /// ImageShow.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl, IDisposable, IActiveDocumentStatusProvider
+    public partial class ImageView : UserControl, IDisposable, IActiveDocumentStatusProvider, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
-        public ImageViewModel ImageViewModel { get; set; }
-        public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
+        private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public ImageViewConfig Config => EditorContext.Config;
+        public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
         public IPseudoColorService PseudoColorService => EditorContext.GetRequiredService<IPseudoColorService>();
         public bool EnableEditorImageServices { get; set; } = true;
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => EditorContext.DrawingVisualLists;
 
         public event EventHandler ClearImageEventHandler;
         public event EventHandler StatusBarItemsChanged;
 
-        public EditorContext EditorContext { get; set; }
+        public EditorContext EditorContext { get; private set; } = null!;
+
+        [DisplayName("最大缩放")]
+        public double MaxZoom
+        {
+            get => _defaultDisplayConfig.MaxZoom;
+            set
+            {
+                if (_defaultDisplayConfig.MaxZoom == value)
+                {
+                    return;
+                }
+
+                _defaultDisplayConfig.MaxZoom = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [DisplayName("最小缩放")]
+        public double MinZoom
+        {
+            get => _defaultDisplayConfig.MinZoom;
+            set
+            {
+                if (_defaultDisplayConfig.MinZoom == value)
+                {
+                    return;
+                }
+
+                _defaultDisplayConfig.MinZoom = value;
+                OnPropertyChanged();
+            }
+        }
 
         private readonly List<IImageViewSettingProvider> _imageViewSettingProviders = new();
         private readonly string _pixelValueOverlayRefreshDebounceKey = $"PixelValueOverlayRefresh_{Guid.NewGuid():N}";
+        private Crosshair? _crosshair;
+        private double _oldZoomRatio;
+        private bool _isUpdatedRender;
 
 
         public ImageView()
@@ -56,16 +97,29 @@ namespace ColorVision.ImageEditor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ImageViewModel = new ImageViewModel(this);
-            EditorContext = ImageViewModel.EditorContext;
-            DataContext = ImageViewModel;
+            _defaultDisplayConfig.PropertyChanged += DefaultDisplayConfig_PropertyChanged;
+
+            EditorContext = new EditorContext(this, ImageShow, Zoombox1);
+            EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
+            EditorContext.IEditorToolFactory = new IEditorToolFactory(this, EditorContext);
+            EditorContext.CompactInspectorPresenter = new CompactInspectorPresenter(EditorContext);
+            EditorContext.CompactInspectorPresenter.Refresh();
+
+            ImageShow.PreviewKeyDown += HandleKeyDown;
+            ImageShow.ContextMenuOpening += HandleContextMenuOpening;
+            ImageShow.ContextMenu = EditorContext.ContextMenu;
+            Zoombox1.ContextMenu = EditorContext.ContextMenu;
+            Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
+            _crosshair = new Crosshair(EditorContext);
+
+            DataContext = this;
             this.Focusable = true;
             this.Focus();
 
             Config.Cleared += Config_Cleared;
             InitializeImageViewSettingProviders();
 
-            foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
+            foreach (var item in IEditorToolFactory.IImageComponents)
                 item.Execute(this);
 
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
@@ -129,7 +183,7 @@ namespace ColorVision.ImageEditor
 
             // Initialize editor tools visibility list
             var EditorTools = new ObservableCollection<EditorToolViewModel>();
-            foreach (var tool in ImageViewModel.IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
+            foreach (var tool in IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
             {
                 var guidId = tool.GuidId ?? tool.GetType().Name;
                 var toolViewModel = new EditorToolViewModel(this, tool, _visibilityConfig)
@@ -142,6 +196,23 @@ namespace ColorVision.ImageEditor
             }
         }
 
+        private void DefaultDisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DefaultImageViewDisplayConfig.MaxZoom))
+            {
+                OnPropertyChanged(nameof(MaxZoom));
+            }
+            else if (e.PropertyName == nameof(DefaultImageViewDisplayConfig.MinZoom))
+            {
+                OnPropertyChanged(nameof(MinZoom));
+            }
+        }
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         private void Config_Cleared(object? sender, EventArgs e)
         {
             PseudoColorService?.Reset();
@@ -152,6 +223,267 @@ namespace ColorVision.ImageEditor
                 _hImageCache = null;
             }
             GC.Collect();
+        }
+
+        public bool ImageEditMode
+        {
+            get => EditorContext.IsImageEditMode;
+            set => SetImageEditModeCore(value, applyUiState: true, notifyPropertyChanged: true);
+        }
+
+        private void SetImageEditModeCore(bool value, bool applyUiState, bool notifyPropertyChanged)
+        {
+            if (EditorContext.IsImageEditMode == value)
+            {
+                return;
+            }
+
+            if (applyUiState)
+            {
+                Config.IsToolBarDrawVisible = value;
+            }
+
+            EditorContext.IsImageEditMode = value;
+
+            if (applyUiState)
+            {
+                if (value)
+                {
+                    EditorContext.Zoombox.ActivateOn = ModifierKeys.Control;
+                    EditorContext.Zoombox.Cursor = Cursors.Cross;
+                }
+                else
+                {
+                    EditorContext.Zoombox.ActivateOn = ModifierKeys.None;
+                    EditorContext.Zoombox.Cursor = Cursors.Arrow;
+                }
+
+                EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
+            }
+
+            if (notifyPropertyChanged)
+            {
+                OnPropertyChanged(nameof(ImageEditMode));
+            }
+        }
+
+        private void HandleKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!ImageEditMode)
+            {
+                if (e.Key == Key.Left)
+                {
+                    MoveView(-10, 0);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Right)
+                {
+                    MoveView(10, 0);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Up)
+                {
+                    MoveView(0, -10);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    MoveView(0, 10);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void MoveView(double x, double y)
+        {
+            TranslateTransform translateTransform = new();
+            Vector vector = new(x, y);
+            translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+            translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+            EditorContext.Zoombox.SetCurrentValue(Zoombox.ContentMatrixProperty,
+                Matrix.Multiply(EditorContext.Zoombox.ContentMatrix, translateTransform.Value));
+        }
+
+        private void HandleContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            EditorContext.ContextMenu.Items.Clear();
+
+            if (ImageEditMode)
+            {
+                Point mouseDownPoint = Mouse.GetPosition(ImageShow);
+                Visual mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
+                Type type = mouseVisual.GetType();
+
+                if (mouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(mouseDownPoint) is ISelectVisual selectVisual)
+                {
+                    foreach (var provider in IEditorToolFactory.ContextMenuProviders)
+                    {
+                        if (provider.ContextType.IsAssignableFrom(selectVisual.GetType()))
+                        {
+                            var items = provider.GetContextMenuItems(EditorContext, selectVisual);
+                            foreach (var item in items)
+                            {
+                                EditorContext.ContextMenu.Items.Add(item);
+                            }
+                        }
+                    }
+
+                    foreach (var provider in IEditorToolFactory.ContextMenuProviders)
+                    {
+                        if (provider.ContextType.IsAssignableFrom(selectEditorVisual.GetType()))
+                        {
+                            var items = provider.GetContextMenuItems(EditorContext, selectEditorVisual);
+                            foreach (var item in items)
+                            {
+                                EditorContext.ContextMenu.Items.Add(item);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var provider in IEditorToolFactory.ContextMenuProviders)
+                    {
+                        if (provider.ContextType.IsAssignableFrom(type))
+                        {
+                            var items = provider.GetContextMenuItems(EditorContext, mouseVisual);
+                            foreach (var item in items)
+                            {
+                                EditorContext.ContextMenu.Items.Add(item);
+                            }
+                        }
+                    }
+                }
+
+                if (EditorContext.ContextMenu.Items.Count == 0)
+                {
+                    CreateStandardContextMenu();
+                }
+            }
+            else
+            {
+                CreateStandardContextMenu();
+            }
+        }
+
+        private void CreateStandardContextMenu()
+        {
+            List<MenuItemMetadata> menuItemMetadatas = new();
+            if (EditorContext.IImageOpen is IIEditorToolContextMenu contentMenuProvider)
+            {
+                menuItemMetadatas.AddRange(contentMenuProvider.GetContextMenuItems());
+            }
+
+            foreach (var item in IEditorToolFactory.IIEditorToolContextMenus)
+            {
+                if (item is IImageOpen)
+                {
+                    continue;
+                }
+
+                menuItemMetadatas.AddRange(item.GetContextMenuItems());
+            }
+
+            List<MenuItemMetadata> sortedMenuItems = menuItemMetadatas.OrderBy(item => item.Order).ToList();
+
+            void CreateMenu(MenuItem parentMenuItem, string ownerGuid)
+            {
+                List<MenuItemMetadata> childItems = sortedMenuItems.FindAll(item => item.OwnerGuid == ownerGuid).OrderBy(item => item.Order).ToList();
+                for (int i = 0; i < childItems.Count; i++)
+                {
+                    MenuItemMetadata childItem = childItems[i];
+                    string guidId = childItem.GuidId ?? Guid.NewGuid().ToString();
+                    MenuItem menuItem = new()
+                    {
+                        Header = childItem.Header,
+                        Icon = childItem.Icon,
+                        InputGestureText = childItem.InputGestureText,
+                        Command = childItem.Command,
+                        Tag = childItem,
+                        IsChecked = childItem.IsChecked ?? false,
+                        Visibility = childItem.Visibility,
+                    };
+
+                    CreateMenu(menuItem, guidId);
+                    if (i > 0 && childItem.Order - childItems[i - 1].Order > 4 && childItem.Visibility == Visibility.Visible)
+                    {
+                        parentMenuItem.Items.Add(new Separator());
+                    }
+
+                    parentMenuItem.Items.Add(menuItem);
+                }
+
+                foreach (MenuItemMetadata item in childItems)
+                {
+                    sortedMenuItems.Remove(item);
+                }
+            }
+
+            List<MenuItemMetadata> rootItems = menuItemMetadatas
+                .Where(item => item.OwnerGuid == MenuItemConstants.Menu && item.Visibility == Visibility.Visible)
+                .OrderBy(item => item.Order)
+                .ToList();
+
+            for (int i = 0; i < rootItems.Count; i++)
+            {
+                MenuItemMetadata menuItemMeta = rootItems[i];
+                MenuItem menuItem = new()
+                {
+                    Header = menuItemMeta.Header,
+                    Command = menuItemMeta.Command,
+                    Icon = menuItemMeta.Icon,
+                    InputGestureText = menuItemMeta.InputGestureText,
+                    IsChecked = menuItemMeta.IsChecked ?? false,
+                };
+
+                if (menuItemMeta.GuidId != null)
+                {
+                    CreateMenu(menuItem, menuItemMeta.GuidId);
+                }
+
+                if (i > 0 && menuItemMeta.Order - rootItems[i - 1].Order > 4)
+                {
+                    EditorContext.ContextMenu.Items.Add(new Separator());
+                }
+
+                EditorContext.ContextMenu.Items.Add(menuItem);
+            }
+        }
+
+        private void Zoombox1_ContentMatrixChanged(object? sender, EventArgs e)
+        {
+            UpdateDrawingVisualScale();
+
+            double zoomRatio = EditorContext.ZoomRatio;
+            if (_oldZoomRatio != zoomRatio)
+            {
+                _oldZoomRatio = zoomRatio;
+                double scale = double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0 ? 1 : 1 / zoomRatio;
+                EditorContext.DrawCanvas.Sacle = scale;
+                if (EditorContext.Config.IsLayoutUpdated)
+                {
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id, 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawingVisualLists));
+                }
+            }
+        }
+
+        private void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> drawingVisualLists)
+        {
+            if (_isUpdatedRender)
+            {
+                return;
+            }
+
+            try
+            {
+                _isUpdatedRender = true;
+                EditorContext.DrawCanvas.Sacle = scale;
+                EditorContext.DrawCanvas.ApplyLayoutScaleToVisuals();
+            }
+            finally
+            {
+                _isUpdatedRender = false;
+            }
         }
         private void InitializeImageViewSettingProviders()
         {
@@ -385,7 +717,7 @@ namespace ColorVision.ImageEditor
             InvalidatePseudoColorRender();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
             EditorContext.IImageOpen = null;
-            ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(null);
+            IEditorToolFactory.ApplyImageOpenTools(null);
             Config.ClearProperties();
             FunctionImage = null;
             ViewBitmapSource = null;
@@ -491,7 +823,7 @@ namespace ColorVision.ImageEditor
             }
             Config.ClearProperties();
             EditorContext.IImageOpen = null;
-            ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(null);
+            IEditorToolFactory.ApplyImageOpenTools(null);
             Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), "当前打开图像的绝对路径");
             ClearSelectionChangedHandlers();
             try
@@ -502,11 +834,11 @@ namespace ColorVision.ImageEditor
                     Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), "当前打开文件大小（字节）");
 
                     string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                    if (ImageViewModel.IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
+                    if (IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
                     {
                         EditorContext.IImageOpen = imageOpen;
                         EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
-                        ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(imageOpen);
+                        IEditorToolFactory.ApplyImageOpenTools(imageOpen);
                         return;
                     }
                     else
@@ -518,7 +850,7 @@ namespace ColorVision.ImageEditor
             catch(Exception ex)
             {
                 EditorContext.IImageOpen = null;
-                ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(null);
+                IEditorToolFactory.ApplyImageOpenTools(null);
                 log.Error(ex);
                 MessageBox.Show(ex.Message);
             }
@@ -814,8 +1146,15 @@ namespace ColorVision.ImageEditor
         public void Dispose()
         {
             Clear();
-            ImageViewModel.Dispose();
+            _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
             Config.Cleared -= Config_Cleared;
+            IEditorToolFactory.Dispose();
+            EditorContext.MouseInfoProvider.Dispose();
+            EditorContext.CompactInspectorPresenter?.Dispose();
+            DrawingVisualLists?.Clear();
+            Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            ImageShow.PreviewKeyDown -= HandleKeyDown;
+            ImageShow.ContextMenuOpening -= HandleContextMenuOpening;
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
 
