@@ -30,6 +30,8 @@ namespace ColorVision.ImageEditor
 
         public Zoombox Zoombox { get; set; }
 
+        public Panel TextEditorOverlay => ImageView.TextEditorOverlay;
+
         public double ZoomRatio => Zoombox.ContentMatrix.M11;
 
         public DrawEditorManager DrawEditorManager { get; init; } = new DrawEditorManager();

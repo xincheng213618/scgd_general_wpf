@@ -782,6 +782,11 @@ namespace ColorVision.ImageEditor
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (sender is TextBox textBox && textBox.AcceptsReturn)
+            {
+                return;
+            }
+
             if (e.Key == Key.Enter)
             {
                 Common.NativeMethods.Keyboard.PressKey(0x09);

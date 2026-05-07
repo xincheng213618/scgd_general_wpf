@@ -593,7 +593,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (visual is IEditableDrawingVisual editableVisual && visual.GetRect().Contains(point))
                 {
-                    editableVisual.HandleDoubleClick(DrawCanvas, point);
+                    editableVisual.HandleDoubleClick(EditorContext, point);
                     return;
                 }
             }
@@ -603,7 +603,7 @@ namespace ColorVision.ImageEditor.Draw
             if (clickedVisual is IEditableDrawingVisual editable && clickedVisual is ISelectVisual selectVisual)
             {
                 SetRender(selectVisual);
-                editable.HandleDoubleClick(DrawCanvas, point);
+                editable.HandleDoubleClick(EditorContext, point);
             }
         }
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)

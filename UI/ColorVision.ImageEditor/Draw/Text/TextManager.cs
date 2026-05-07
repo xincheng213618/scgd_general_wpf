@@ -141,14 +141,13 @@ namespace ColorVision.ImageEditor.Draw
 
             int did = CheckNo();
             TextProperties textProperties = new TextProperties();
-            textProperties.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000"));
-            textProperties.Text = "������������";
+            textProperties.Background = Brushes.Transparent;
             textProperties.Id = did;
-            textProperties.Text = Config.DefaultText + "_" + did;
+            textProperties.Text = Config.DefaultText;
             textProperties.Position = MouseDownP;
-            textProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11);
+            textProperties.Pen = new Pen(Brushes.Transparent, 1 / Zoombox.ContentMatrix.M11);
             textProperties.TextAttribute.FontSize = Config.DefaultFontSize;
-            textProperties.Rect = new Rect(MouseDownP.X, MouseDownP.Y,100,100);
+            textProperties.Rect = new Rect(MouseDownP.X, MouseDownP.Y, 1, Config.DefaultFontSize);
             TextCache = new DVText(textProperties);
             TextCache.Render();
             DrawCanvas.AddVisualCommand(TextCache);
@@ -161,13 +160,10 @@ namespace ColorVision.ImageEditor.Draw
             IsMouseDown = false;
             if (TextCache != null)
             {
-                EditorContext.SelectionVisual.SetRender(TextCache);
-                if (!Config.IsLocked)
-                {
-                    Config.DefaultFontSize = TextCache.Attribute.TextAttribute.FontSize * Zoombox.ContentMatrix.M11; // �����߼��ߴ�
-                    DefaultTextStyle.FontSize = Config.DefaultFontSize;
-                }
+                DVText createdText = TextCache;
                 TextCache = null;
+                EditorContext.SelectionVisual.SetRender(createdText);
+                createdText.BeginEdit(EditorContext);
                 IsChecked = false;
             }
             e.Handled = true;
@@ -177,15 +173,8 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (IsMouseDown && TextCache != null)
             {
-                var point = e.GetPosition(DrawCanvas);
-                // ��ק�ı�߶� -> �ֺ�
-                double deltaY = System.Math.Abs(point.Y - MouseDownP.Y);
-                double fontSize = deltaY;
-                if (fontSize < 5) fontSize = Config.DefaultFontSize / Zoombox.ContentMatrix.M11; // ��С
-                TextCache.Attribute.TextAttribute.FontSize = fontSize / (Config.FollowZoom ? 1 : Zoombox.ContentMatrix.M11);
-                TextCache.Render();
+                e.Handled = true;
             }
-            e.Handled = true;
         }
 
         private void MouseEnter(object sender, MouseEventArgs e) { }

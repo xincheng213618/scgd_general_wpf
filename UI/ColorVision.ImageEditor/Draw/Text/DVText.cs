@@ -4,9 +4,9 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -68,8 +68,10 @@ namespace ColorVision.ImageEditor.Draw
 
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
-        // 编辑时使用的 TextBox
         private TextBox? _editTextBox;
+        private Panel? _editHost;
+        private EditorContext? _editorContext;
+        private string _originalText = string.Empty;
         private bool _isEditing = false;
 
         public DVText()
@@ -132,9 +134,146 @@ namespace ColorVision.ImageEditor.Draw
         public override void SetRect(Rect rect)
         {
             Attribute.Rect = rect;
-            // 移动
             Attribute.Position = new Point(rect.X, rect.Y);
             Render();
+        }
+
+        private FormattedText CreateFormattedText(string text)
+        {
+            string measuredText = string.IsNullOrEmpty(text) ? " " : text;
+            return new FormattedText(
+                measuredText,
+                CultureInfo.CurrentCulture,
+                TextAttribute.FlowDirection,
+                new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
+                TextAttribute.FontSize,
+                TextAttribute.Brush,
+                VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        }
+
+        private void ClearVisual()
+        {
+            using DrawingContext dc = RenderOpen();
+        }
+
+        private void UpdateEditorBounds()
+        {
+            if (_editTextBox == null)
+            {
+                return;
+            }
+
+            FormattedText formattedText = CreateFormattedText(_editTextBox.Text);
+            double textWidth = Math.Max(formattedText.WidthIncludingTrailingWhitespace, 1);
+            double textHeight = Math.Max(formattedText.Height, TextAttribute.FontSize);
+
+            _editTextBox.Width = Math.Max(textWidth + 16, 48);
+            _editTextBox.Height = Math.Max(textHeight + 12, TextAttribute.FontSize + 10);
+
+            Canvas.SetLeft(_editTextBox, Attribute.Position.X);
+            Canvas.SetTop(_editTextBox, Attribute.Position.Y);
+
+            Attribute.Rect = new Rect(Attribute.Position.X, Attribute.Position.Y, textWidth, textHeight);
+        }
+
+        private TextBox CreateEditorTextBox()
+        {
+            return new TextBox
+            {
+                Text = Attribute.Text,
+                FontSize = TextAttribute.FontSize,
+                FontFamily = TextAttribute.FontFamily,
+                FontStyle = TextAttribute.FontStyle,
+                FontWeight = TextAttribute.FontWeight,
+                FontStretch = TextAttribute.FontStretch,
+                FlowDirection = TextAttribute.FlowDirection,
+                Foreground = TextAttribute.Brush,
+                CaretBrush = TextAttribute.Brush,
+                Background = Brushes.White,
+                BorderThickness = new Thickness(1),
+                BorderBrush = Brushes.DeepSkyBlue,
+                Padding = new Thickness(4, 2, 4, 2),
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.NoWrap,
+                MinWidth = 48,
+                MinHeight = TextAttribute.FontSize + 10,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top
+            };
+        }
+
+        private void FocusEditor()
+        {
+            if (_editTextBox == null)
+            {
+                return;
+            }
+
+            _editTextBox.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_editTextBox == null)
+                {
+                    return;
+                }
+
+                _editTextBox.Focus();
+                Keyboard.Focus(_editTextBox);
+                _editTextBox.SelectAll();
+            }), DispatcherPriority.Input);
+        }
+
+        private void OnEditorTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_editTextBox == null)
+            {
+                return;
+            }
+
+            Attribute.Text = _editTextBox.Text;
+            UpdateEditorBounds();
+        }
+
+        private void OnEditorPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                EndEdit(false);
+                return;
+            }
+
+            if (e.Key == Key.Enter && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                e.Handled = true;
+                EndEdit(true);
+            }
+        }
+
+        private void OnEditorLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (_isEditing)
+            {
+                EndEdit(true);
+            }
+        }
+
+        private void DetachEditorTextBox()
+        {
+            if (_editTextBox == null)
+            {
+                return;
+            }
+
+            _editTextBox.TextChanged -= OnEditorTextChanged;
+            _editTextBox.PreviewKeyDown -= OnEditorPreviewKeyDown;
+            _editTextBox.LostKeyboardFocus -= OnEditorLostKeyboardFocus;
+
+            if (_editHost != null && _editHost.Children.Contains(_editTextBox))
+            {
+                _editHost.Children.Remove(_editTextBox);
+            }
+
+            _editTextBox = null;
         }
 
         #region IEditableDrawingVisual 实现
@@ -152,158 +291,74 @@ namespace ColorVision.ImageEditor.Draw
         /// <summary>
         /// 开始编辑
         /// </summary>
-        public void BeginEdit(DrawCanvas canvas)
+        public void BeginEdit(EditorContext context)
         {
-            if (_isEditing) return;
+            ArgumentNullException.ThrowIfNull(context);
 
-            // 获取包含 DrawCanvas 的父元素
-            var parent = System.Windows.Media.VisualTreeHelper.GetParent(canvas) as UIElement;
-            while (parent != null && !(parent is Canvas) && !(parent is Grid) && !(parent is Panel))
+            if (_isEditing)
             {
-                parent = System.Windows.Media.VisualTreeHelper.GetParent(parent) as UIElement;
-            }
-
-            if (parent == null || !(parent is Panel panel))
-            {
-                // 如果没有合适的父容器，无法编辑
+                FocusEditor();
                 return;
             }
 
+            _editorContext = context;
+            _editHost = context.TextEditorOverlay;
+            _originalText = Attribute.Text;
             _isEditing = true;
             Attribute.IsEditing = true;
+            context.SelectionVisual.ClearRender();
 
-            // 创建 TextBox 用于编辑
-            _editTextBox = new TextBox
-            {
-                Text = TextAttribute.Text,
-                FontSize = TextAttribute.FontSize,
-                FontFamily = TextAttribute.FontFamily,
-                FontStyle = TextAttribute.FontStyle,
-                FontWeight = TextAttribute.FontWeight,
-                FontStretch = TextAttribute.FontStretch,
-                Foreground = TextAttribute.Brush,
-                Background = Brushes.White,
-                BorderThickness = new Thickness(1),
-                BorderBrush = Brushes.Blue,
-                Padding = new Thickness(2),
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.Wrap,
-                MinWidth = 50,
-                MinHeight = TextAttribute.FontSize + 10
-            };
+            _editTextBox = CreateEditorTextBox();
+            _editTextBox.TextChanged += OnEditorTextChanged;
+            _editTextBox.PreviewKeyDown += OnEditorPreviewKeyDown;
+            _editTextBox.LostKeyboardFocus += OnEditorLostKeyboardFocus;
 
-            // 计算 TextBox 的位置和大小
-            var rect = GetRect();
-            _editTextBox.Width = Math.Max(rect.Width + 20, 100);
-            _editTextBox.Height = Math.Max(rect.Height + 10, TextAttribute.FontSize + 10);
+            _editHost.Children.Add(_editTextBox);
+            Panel.SetZIndex(_editTextBox, 1000);
 
-            // 获取 DrawCanvas 在父容器中的位置
-            var position = canvas.TranslatePoint(Attribute.Position, parent);
-
-            // 将 TextBox 添加到父容器
-            panel.Children.Add(_editTextBox);
-
-            // 设置位置
-            if (_editTextBox.Parent is Canvas canvasParent)
-            {
-                Canvas.SetLeft(_editTextBox, position.X);
-                Canvas.SetTop(_editTextBox, position.Y);
-            }
-            else
-            {
-                // 使用 Margin 定位
-                _editTextBox.Margin = new Thickness(position.X, position.Y, 0, 0);
-                _editTextBox.HorizontalAlignment = HorizontalAlignment.Left;
-                _editTextBox.VerticalAlignment = VerticalAlignment.Top;
-            }
-
-            // 设置焦点并选中文本
-            _editTextBox.Focus();
-            _editTextBox.SelectAll();
-
-            // 存储原始文本，用于取消编辑
-            string originalText = TextAttribute.Text;
-
-            // 处理文本变更
-            _editTextBox.TextChanged += (s, e) =>
-            {
-                // 自动调整大小
-                var formattedText = new FormattedText(
-                    _editTextBox.Text,
-                    CultureInfo.CurrentCulture,
-                    TextAttribute.FlowDirection,
-                    new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
-                    TextAttribute.FontSize,
-                    TextAttribute.Brush,
-                    VisualTreeHelper.GetDpi(this).PixelsPerDip);
-
-                _editTextBox.Width = Math.Max(formattedText.Width + 30, 100);
-                _editTextBox.Height = Math.Max(formattedText.Height + 15, TextAttribute.FontSize + 10);
-            };
-
-            // 处理按键事件
-            _editTextBox.PreviewKeyDown += (s, e) =>
-            {
-                if (e.Key == Key.Enter && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-                {
-                    // Enter 键结束编辑（Shift+Enter 换行）
-                    e.Handled = true;
-                    EndEdit(canvas, panel, true);
-                }
-                else if (e.Key == Key.Escape)
-                {
-                    // Escape 取消编辑
-                    e.Handled = true;
-                    _editTextBox.Text = originalText; // 恢复原始文本
-                    EndEdit(canvas, panel, true);
-                }
-            };
-
-            // 处理失去焦点
-            _editTextBox.LostFocus += (s, e) =>
-            {
-                // 延迟检查，避免点击其他位置时立即关闭
-                if (_isEditing)
-                {
-                    EndEdit(canvas, panel, true);
-                }
-            };
+            ClearVisual();
+            UpdateEditorBounds();
+            FocusEditor();
         }
 
         /// <summary>
         /// 结束编辑
         /// </summary>
-        public void EndEdit(DrawCanvas canvas, Panel parent, bool saveChanges)
+        public void EndEdit(bool saveChanges)
         {
-            if (!_isEditing) return;
+            if (!_isEditing)
+            {
+                return;
+            }
 
             if (saveChanges && _editTextBox != null)
             {
-                TextAttribute.Text = _editTextBox.Text;
+                Attribute.Text = _editTextBox.Text;
+            }
+            else
+            {
+                Attribute.Text = _originalText;
             }
 
-            // 移除 TextBox
-            if (_editTextBox != null && parent.Children.Contains(_editTextBox))
-            {
-                parent.Children.Remove(_editTextBox);
-                _editTextBox = null;
-            }
+            DetachEditorTextBox();
 
             _isEditing = false;
             Attribute.IsEditing = false;
-
-            // 重新渲染
             Render();
+
+            _editorContext?.SelectionVisual.SetRender(this);
+            _editHost = null;
+            _editorContext = null;
         }
 
         /// <summary>
         /// 处理双击事件
         /// </summary>
-        public bool HandleDoubleClick(DrawCanvas canvas, Point point)
+        public bool HandleDoubleClick(EditorContext context, Point point)
         {
             if (GetRect().Contains(point))
             {
-                BeginEdit(canvas);
+                BeginEdit(context);
                 return true;
             }
             return false;
@@ -330,22 +385,19 @@ namespace ColorVision.ImageEditor.Draw
         /// <summary>
         /// 开始编辑
         /// </summary>
-        void BeginEdit(DrawCanvas canvas);
+        void BeginEdit(EditorContext context);
 
         /// <summary>
         /// 结束编辑
         /// </summary>
-        /// <param name="canvas">画布</param>
-        /// <param name="parent">父容器</param>
         /// <param name="saveChanges">是否保存更改</param>
-        void EndEdit(DrawCanvas canvas, Panel parent, bool saveChanges);
+        void EndEdit(bool saveChanges);
 
         /// <summary>
         /// 处理双击事件
         /// </summary>
-        /// <param name="canvas">画布</param>
         /// <param name="point">点击位置</param>
         /// <returns>是否处理了事件</returns>
-        bool HandleDoubleClick(DrawCanvas canvas, Point point);
+        bool HandleDoubleClick(EditorContext context, Point point);
     }
 }
