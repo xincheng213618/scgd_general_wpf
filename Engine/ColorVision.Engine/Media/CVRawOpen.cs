@@ -40,11 +40,14 @@ namespace ColorVision.Engine.Media
 
 
     [FileExtension(".cvraw|.cvcie")]
-    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IIEditorToolContextMenu
+    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IIEditorToolContextMenu, IImageOpenEditorToolProvider, IImageOpenEditorToolLifecycle
     {
         public CVFilemageEditorConfig Config => EditorContext.Config.GetRequiredService<CVFilemageEditorConfig>();
 
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
+        private CvcieDiagramEditorTool? _cvcieDiagramEditorTool;
+        private CvcieProbeSettings? _probeSettings;
+        private Action? _loadBuffer;
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
         public List<List<Point>> Points { get; set; } = new List<List<Point>>();
@@ -104,6 +107,7 @@ namespace ColorVision.Engine.Media
 
             });
 
+            _loadBuffer = LoadBuffer;
             imageView.Config.SetOpenerRuntime("LoadBuffer", LoadBuffer, nameof(CVRawOpen), "延迟加载 CVCIE 原始缓冲的回调");
 
             ShowDateFilePath = false;
@@ -200,8 +204,15 @@ namespace ColorVision.Engine.Media
                 if (meta.FileExtType == CVType.CIE)
                 {
                     CvcieProbeSettings probeSettings = CvcieProbeSettings.GetOrCreate(imageView);
+                    _probeSettings = probeSettings;
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.SetOpenerRuntime("IsCVCIE", true, nameof(CVRawOpen), "当前视图是否由 CVCIE 打开器接管");
+
+                    if (ReferenceEquals(imageView.EditorContext.IImageOpen, this)
+                        && string.Equals(imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), filePath, StringComparison.Ordinal))
+                    {
+                        imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
+                    }
 
                     if (!TryGetMouseMagnifier(imageView, out mouseMagnifier))
                     {
@@ -215,7 +226,7 @@ namespace ColorVision.Engine.Media
                     imageView.Config.SetOpenerRuntime("IsBufferSet", false, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
                     exp = meta.Exp;
                     probeController = new CvcieMouseProbeController(
-                        imageView,
+                        mouseMagnifier!,
                         Config.ConvertXYZhandle,
                         LoadBuffer,
                         () => exp,
@@ -277,6 +288,33 @@ namespace ColorVision.Engine.Media
                 }
             }
 
+        }
+
+
+        public IEnumerable<IEditorTool> GetEditorTools()
+        {
+            if (!EditorContext.Config.GetProperties<bool>("IsCVCIE"))
+            {
+                yield break;
+            }
+
+            _cvcieDiagramEditorTool ??= new CvcieDiagramEditorTool(
+                EditorContext,
+                EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() ?? throw new InvalidOperationException("MouseMagnifierManager is required for CVCIE diagram tool."),
+                () => Config.ConvertXYZhandle,
+                () => _loadBuffer?.Invoke(),
+                () => _probeSettings ?? CvcieProbeSettings.GetOrCreate(EditorContext.ImageView));
+
+            yield return _cvcieDiagramEditorTool;
+        }
+
+        public void OnEditorToolsActivated(EditorContext context)
+        {
+        }
+
+        public void OnEditorToolsDeactivated(EditorContext context)
+        {
+            _cvcieDiagramEditorTool?.Deactivate();
         }
 
 

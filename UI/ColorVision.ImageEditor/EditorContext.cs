@@ -26,7 +26,23 @@ namespace ColorVision.ImageEditor
 
         public SelectEditorVisual SelectionVisual { get; set; }
 
-        public bool IsImageEditMode { get; set; }
+        public event EventHandler<bool>? ImageEditModeChanged;
+
+        public bool IsImageEditMode
+        {
+            get => _isImageEditMode;
+            set
+            {
+                if (_isImageEditMode == value)
+                {
+                    return;
+                }
+
+                _isImageEditMode = value;
+                ImageEditModeChanged?.Invoke(this, value);
+            }
+        }
+        private bool _isImageEditMode;
 
         public Zoombox Zoombox { get; set; }
 

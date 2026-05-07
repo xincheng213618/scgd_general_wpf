@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Media
 {
     internal sealed class CvcieMouseProbeController : IDisposable
     {
-        private readonly ImageView _imageView;
+        private readonly MouseMagnifierManager _magnifier;
         private readonly IntPtr _convertHandle;
         private readonly Action _ensureBufferLoaded;
         private readonly Func<float[]?> _getExp;
@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Media
         private readonly Func<CvcieProbeSettings> _getProbeSettings;
 
         public CvcieMouseProbeController(
-            ImageView imageView,
+            MouseMagnifierManager magnifier,
             IntPtr convertHandle,
             Action ensureBufferLoaded,
             Func<float[]?> getExp,
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Media
             Func<int, int, (int pointIndex, int listIndex)> findNearbyPoints,
             Func<CvcieProbeSettings> getProbeSettings)
         {
-            _imageView = imageView;
+            _magnifier = magnifier;
             _convertHandle = convertHandle;
             _ensureBufferLoaded = ensureBufferLoaded;
             _getExp = getExp;
@@ -37,12 +37,6 @@ namespace ColorVision.Engine.Media
         {
             var exp = _getExp();
             if (exp == null || exp.Length == 0)
-            {
-                return false;
-            }
-
-            var magnifier = _imageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>();
-            if (magnifier == null)
             {
                 return false;
             }
@@ -69,7 +63,7 @@ namespace ColorVision.Engine.Media
                     if (exp.Length == 1)
                     {
                         _ = ConvertXYZ.CM_GetYCircle(_convertHandle, imageInfo.X, imageInfo.Y, ref dYVal, probeSettings.Radius);
-                        magnifier.DrawImage(imageInfo, $"Y:{dYVal:F1}", string.Empty, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
+                        _magnifier.DrawImage(imageInfo, $"Y:{dYVal:F1}", string.Empty, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
                     }
                     else
                     {
@@ -78,14 +72,14 @@ namespace ColorVision.Engine.Media
                             ? $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})"
                             : $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
                         string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
-                        magnifier.DrawImage(imageInfo, text1, text2, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
+                        _magnifier.DrawImage(imageInfo, text1, text2, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
                     }
                     return true;
                 case MagnigifierType.Rect:
                     if (exp.Length == 1)
                     {
                         _ = ConvertXYZ.CM_GetYRect(_convertHandle, imageInfo.X, imageInfo.Y, ref dYVal, probeSettings.RectWidth, probeSettings.RectHeight);
-                        magnifier.DrawImage(imageInfo, $"Y:{dYVal:F1}", string.Empty, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
+                        _magnifier.DrawImage(imageInfo, $"Y:{dYVal:F1}", string.Empty, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
                     }
                     else
                     {
@@ -94,7 +88,7 @@ namespace ColorVision.Engine.Media
                             ? $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})"
                             : $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
                         string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
-                        magnifier.DrawImage(imageInfo, text1, text2, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
+                        _magnifier.DrawImage(imageInfo, text1, text2, probeSettings.MagnigifierType, probeSettings.Radius, probeSettings.RectWidth, probeSettings.RectHeight);
                     }
                     return true;
                 default:

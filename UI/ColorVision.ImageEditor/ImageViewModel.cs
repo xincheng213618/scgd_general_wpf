@@ -370,10 +370,7 @@ namespace ColorVision.ImageEditor
         {
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
 
-            foreach (var item in IEditorToolFactory.IEditorTools.OfType<IDisposable>())
-            {
-                item.Dispose();
-            }
+            IEditorToolFactory.Dispose();
 
             EditorContext.CompactInspectorPresenter?.Dispose();
 

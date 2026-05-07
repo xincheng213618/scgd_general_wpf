@@ -384,6 +384,8 @@ namespace ColorVision.ImageEditor
         {
             InvalidatePseudoColorRender();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
+            EditorContext.IImageOpen = null;
+            ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(null);
             Config.ClearProperties();
             FunctionImage = null;
             ViewBitmapSource = null;
@@ -488,6 +490,8 @@ namespace ColorVision.ImageEditor
                 return;
             }
             Config.ClearProperties();
+            EditorContext.IImageOpen = null;
+            ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(null);
             Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), "当前打开图像的绝对路径");
             ClearSelectionChangedHandlers();
             try
@@ -502,6 +506,7 @@ namespace ColorVision.ImageEditor
                     {
                         EditorContext.IImageOpen = imageOpen;
                         EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
+                        ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(imageOpen);
                         return;
                     }
                     else
@@ -512,6 +517,8 @@ namespace ColorVision.ImageEditor
             }
             catch(Exception ex)
             {
+                EditorContext.IImageOpen = null;
+                ImageViewModel.IEditorToolFactory.ApplyImageOpenTools(null);
                 log.Error(ex);
                 MessageBox.Show(ex.Message);
             }

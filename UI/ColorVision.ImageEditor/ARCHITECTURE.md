@@ -62,9 +62,11 @@ ImageView
 
 1. `ImageView.OpenImage` 清空 `Config.Properties` 和旧的图层切换事件。
 2. 根据后缀从 `IEditorToolFactory.IImageOpens` 里找到对应 `IImageOpen`。
-3. 打开器负责读取文件、提取元数据、必要时转换像素格式。
-4. 打开器调用 `ImageView.SetImageSource(...)`。
-5. `SetImageSource` 统一做：
+3. `ImageView` 先清掉上一个 opener 的 runtime tool overlay，再把当前 opener 写入 `EditorContext.IImageOpen`。
+4. 打开器负责读取文件、提取元数据、必要时转换像素格式。
+5. 打开器调用 `ImageView.SetImageSource(...)`。
+6. 如果当前 opener 同时实现了 `IImageOpenEditorToolProvider`，`EditorToolFactory` 会按 `GuidId` 把它提供的工具覆盖到全局工具集之上，并重建受管工具栏。
+7. `SetImageSource` 统一做：
    - 清理 `FunctionImage`、`ViewBitmapSource`、`HImageCache`
    - 重新写入像素格式、宽高、通道、位深、DPI 等元数据
    - 可选触发 `PseudoColorService.ConfigureForImage()`
@@ -73,6 +75,8 @@ ImageView
    - 通知状态栏刷新
 
 这说明 `SetImageSource` 不是纯显示方法，而是图像上下文切换的核心入口。任何想做“只显示，不附带编辑副作用”的场景，都必须注意 `EnableEditorImageServices` 这个开关。
+
+补充：`IImageOpenEditorToolProvider` 和 `IImageOpenEditorToolLifecycle` 让 opener 可以像右键菜单 overlay 一样，在当前文档上下文里临时贡献或替换工具栏工具；当前实现已经用于把 CVCIE 的 `CIE1931` 按钮从全局 if/else 分支改成 opener-scoped override。
 
 ### 2.3 编辑态链路
 
@@ -156,7 +160,7 @@ ImageView
 | `EditorContext.cs` | 当前 `ImageView` 的运行时容器、轻量服务注册表、`CompactInspectorPresenter`、编辑态运行时状态 |
 | `ImageViewConfig.cs` | 当前视图配置与属性字典，区分 `ImageMetadata` / `ViewState` / `OpenerRuntime` / `Legacy` |
 | `DrawCanvas.cs` | 图像画布、视觉树、Undo/Redo、命中测试 |
-| `EditorToolFactory.cs` | 反射发现工具/菜单/打开器/初始化组件，并把工具挂到工具栏 |
+| `EditorToolFactory.cs` | 反射发现工具/菜单/打开器/初始化组件，维护“全局工具 + 当前 opener runtime tools”的生效视图，并重建受管工具栏 |
 | `EditorToolVisibilityConfig.cs` | 工具显示隐藏的持久化配置 |
 
 ### 3.2 抽象接口层
@@ -164,7 +168,7 @@ ImageView
 `Abstractions/` 是扩展点边界：
 
 - `IEditorTool.cs`: 工具栏工具接口，定义按钮位置、顺序、图标、命令。
-- `IImageEditor.cs`: `IImageComponent` 和 `IImageOpen` 两个关键扩展点。
+- `IImageEditor.cs`: `IImageComponent`、`IImageOpen`，以及 opener-scoped runtime tool overlay 的 `IImageOpenEditorToolProvider` / `IImageOpenEditorToolLifecycle`。
 - `IEditorContextService.cs`: 当前主要承载 `IPseudoColorService` 这类挂在 `EditorContext` 上的运行时服务。
 - `Abstractions/Draw/IDrawing.cs`: 图元、文本属性、选择图元等基础能力接口。
 
@@ -262,6 +266,13 @@ ImageView
 
 打开器除了读文件，还负责给 `ImageViewConfig` 写文件元数据和业务元数据，所以它们本身也是图像上下文的一部分。
 
+现在打开器还可以可选提供“当前文档专属工具栏工具”：
+
+1. `IImageOpenEditorToolProvider` 返回当前 opener 想贡献的 `IEditorTool`。
+2. `EditorToolFactory` 会按 `GuidId` 合并工具集，当前 opener 的工具优先，全局工具回退。
+3. `IImageOpenEditorToolLifecycle` 可以在切换图像或关闭图像时收到 deactivated 回调，处理窗口关闭、事件解绑等清理动作。
+4. 这层机制比把 opener-specific 分支继续堆在全局 `IEditorTool` 里更清晰，适合文档类型差异明显的工具，例如 CVCIE 专属的 `CIE1931` 行为。
+
 ### 3.6 设置系统
 
 `Settings/` 不是简单配置页，而是一套 provider 模式：
@@ -292,6 +303,13 @@ ImageView
    - `CieGamut.cs`
    - `CieIlluminants.cs`
    - 以及其它 profile / overlay / 光谱轨迹类型
+
+当前 `CIE1931` 工具也已经分成两条路径：
+
+1. 全局 `CieDiagramEditorTool` 只处理普通图像的 `MouseMoveColorHandler -> ChangeSelect(imageInfo)`。
+2. `CVRawOpen` 在 CVCIE 场景下通过 opener runtime tool override 提供 `CvcieDiagramEditorTool`，复用同一个 `GuidId`，但内部改成 `ConvertXYZ` + `WindowCIE.ChangeSelect(dx, dy)` 的专用链路。
+
+这样 CVCIE 和普通图像不再继续共享同一个工具里的 `IsCvcieImage()` 分支。
 
 ### 3.8 像素值叠层
 

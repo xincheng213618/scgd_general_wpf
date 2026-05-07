@@ -1,0 +1,112 @@
+using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.UI;
+using cvColorVision;
+using System;
+using System.Windows;
+using System.Windows.Input;
+
+namespace ColorVision.Engine.Media
+{
+    internal sealed class CvcieDiagramEditorTool : IEditorTool, IDisposable
+    {
+        private readonly EditorContext _context;
+        private readonly MouseMagnifierManager _mouseMagnifier;
+        private readonly Func<IntPtr> _getConvertHandle;
+        private readonly Action _ensureBufferLoaded;
+        private readonly Func<CvcieProbeSettings> _getProbeSettings;
+        private WindowCIE? _windowCie;
+        private MouseMoveColorHandler? _mouseMoveColorHandler;
+
+        public CvcieDiagramEditorTool(
+            EditorContext context,
+            MouseMagnifierManager mouseMagnifier,
+            Func<IntPtr> getConvertHandle,
+            Action ensureBufferLoaded,
+            Func<CvcieProbeSettings> getProbeSettings)
+        {
+            _context = context;
+            _mouseMagnifier = mouseMagnifier;
+            _getConvertHandle = getConvertHandle;
+            _ensureBufferLoaded = ensureBufferLoaded;
+            _getProbeSettings = getProbeSettings;
+            Command = new RelayCommand(_ => OpenCieDiagram());
+        }
+
+        public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
+
+        public string? GuidId => "CIE1931";
+
+        public int Order => 0;
+
+        public object? Icon => CieDiagramEditorTool.CreateIcon();
+
+        public ICommand? Command { get; }
+
+        private void OpenCieDiagram()
+        {
+            if (_windowCie == null)
+            {
+                _windowCie = new WindowCIE { Owner = Application.Current.GetActiveWindow() };
+
+                _mouseMoveColorHandler = (_, imageInfo) =>
+                {
+                    _ensureBufferLoaded();
+
+                    CvcieProbeSettings probeSettings = _getProbeSettings();
+                    float dXVal = 0;
+                    float dYVal = 0;
+                    float dZVal = 0;
+                    float dx = 0;
+                    float dy = 0;
+                    float du = 0;
+                    float dv = 0;
+
+                    _ = ConvertXYZ.CM_GetXYZxyuvRect(
+                        _getConvertHandle(),
+                        imageInfo.X,
+                        imageInfo.Y,
+                        ref dXVal,
+                        ref dYVal,
+                        ref dZVal,
+                        ref dx,
+                        ref dy,
+                        ref du,
+                        ref dv,
+                        probeSettings.RectWidth,
+                        probeSettings.RectHeight);
+
+                    _windowCie?.ChangeSelect(dx, dy);
+                };
+
+                _mouseMagnifier.MouseMoveColorHandler += _mouseMoveColorHandler;
+
+                _windowCie.Closed += (_, _) =>
+                {
+                    if (_mouseMoveColorHandler != null)
+                    {
+                        _mouseMagnifier.MouseMoveColorHandler -= _mouseMoveColorHandler;
+                    }
+                    _mouseMagnifier.IsChecked = false;
+                    _mouseMoveColorHandler = null;
+                    _windowCie = null;
+                };
+            }
+
+            _windowCie.Show();
+            _windowCie.Activate();
+        }
+
+        public void Deactivate()
+        {
+            _windowCie?.Close();
+        }
+
+        public void Dispose()
+        {
+            Deactivate();
+            GC.SuppressFinalize(this);
+        }
+    }
+}

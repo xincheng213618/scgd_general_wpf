@@ -170,11 +170,7 @@
                 </StackPanel>
 
                 <ToolBarTray x:Name="ToolBarTop" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.9" Visibility="{Binding Config.IsToolBarTopVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                    <ToolBar Margin="0,2,4,0" ToolBarTray.IsLocked="True">
-                        <ToggleButton Margin="1,0" IsChecked="{Binding ImageEditMode}">
-                            <Image Margin="-5" Source="{DynamicResource DrawingImagedrag}" Style="{StaticResource ToolBarImage}" />
-                        </ToggleButton>
-                    </ToolBar>
+                    <ToolBar Margin="0,2,4,0" ToolBarTray.IsLocked="True" />
                 </ToolBarTray>
 
                 <ToolBarTray x:Name="ToolBarLeft" Margin="2,50,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarLeftVisible, Converter={StaticResource bool2VisibilityConverter}}">
