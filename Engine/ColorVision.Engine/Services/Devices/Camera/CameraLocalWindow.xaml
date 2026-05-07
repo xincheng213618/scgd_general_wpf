@@ -123,6 +123,11 @@
                         <CheckBox x:Name="check_SaveFile" Content="允许存盘" IsChecked="{Binding Config.UsingFileCaching, Mode=TwoWay}" />
                     </DockPanel>
 
+                    <DockPanel Margin="0,3">
+                        <TextBlock Width="78" Text="通道顺序" />
+                        <CheckBox x:Name="check_SwapRedBlueChannels" Content="交换 R/B" IsChecked="{Binding Config.SwapRedBlueChannels, Mode=TwoWay}" />
+                    </DockPanel>
+
                     <DockPanel Margin="0,3" Visibility="{Binding Config.UsingFileCaching, Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock Width="78" Text="保存目录" />
                         <TextBox IsReadOnly="True" Text="{Binding Config.FileServerCfg.DataBasePath}" />

@@ -59,6 +59,46 @@ namespace ColorVision.Engine.Media
             throw new Exception("Unsupported file format.");
         }
 
+        private static int GetMatDepth(int bpp)
+        {
+            return bpp switch
+            {
+                8 => 0,
+                16 => 2,
+                32 => 5,
+                64 => 6,
+                _ => throw new NotSupportedException($"Unsupported bit depth: {bpp}"),
+            };
+        }
+
+        public static byte[] SwapRedBlueChannels(byte[] sourceData, int rows, int cols, int bpp, int channels)
+        {
+            ArgumentNullException.ThrowIfNull(sourceData);
+
+            if (sourceData.Length == 0 || (channels != 3 && channels != 4))
+            {
+                return sourceData;
+            }
+
+            try
+            {
+                using var src = Mat.FromPixelData(rows, cols, MatType.MakeType(GetMatDepth(bpp), channels), sourceData);
+                using var dst = new Mat();
+                var conversion = channels == 3 ? ColorConversionCodes.BGR2RGB : ColorConversionCodes.BGRA2RGBA;
+                Cv2.CvtColor(src, dst, conversion);
+
+                int length = checked((int)(dst.Total() * dst.ElemSize()));
+                byte[] converted = new byte[length];
+                Marshal.Copy(dst.Data, converted, 0, length);
+                return converted;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("SwapRedBlueChannels failed, fallback to original data.", ex);
+                return sourceData;
+            }
+        }
+
 
         public static Mat ToMat(this CVCIEFile fileInfo)
         {

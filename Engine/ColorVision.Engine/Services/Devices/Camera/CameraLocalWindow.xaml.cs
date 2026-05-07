@@ -687,14 +687,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cvCameraCSLib.CM_SetBufferXYZ(m_hCamHandle, w, h, dstbpp, channels, rawArray);
             }
 
-            ShowImageInView(srcrawArray, (int)bpp, (int)channels, (int)w, (int)h);
+            byte[] sourceFrameForPreview = GetSourceFrameForPreviewAndSave(srcrawArray, (int)bpp, (int)channels, (int)w, (int)h);
+            ShowImageInView(sourceFrameForPreview, (int)bpp, (int)channels, (int)w, (int)h);
 
             if (hasColorCalibration)
             {
                 AttachLiveCvcieResult(w, h, dstbpp, channels);
             }
 
-            SaveCaptureFilesIfNeeded(hasColorCalibration, w, h, bpp, dstbpp, channels);
+            SaveCaptureFilesIfNeeded(hasColorCalibration, w, h, bpp, dstbpp, channels, sourceFrameForPreview);
         }
 
         private void ShowImageInView(byte[] data, int bpp, int channels, int width, int height)
@@ -714,6 +715,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             writeableBitmap.Unlock();
 
             ImageView.OpenImage(writeableBitmap);
+        }
+
+        private byte[] GetSourceFrameForPreviewAndSave(byte[] sourceData, int bpp, int channels, int width, int height)
+        {
+            if (!Device.Config.SwapRedBlueChannels)
+            {
+                return sourceData;
+            }
+
+            return MediaHelper.SwapRedBlueChannels(sourceData, height, width, bpp, channels);
         }
 
         private float[] GetCurrentExposureValues(int channelCount)
@@ -771,9 +782,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}";
         }
 
-        private void SaveCaptureFilesIfNeeded(bool hasColorCalibration, uint width, uint height, uint srcBpp, uint dstBpp, uint channels)
+        private void SaveCaptureFilesIfNeeded(bool hasColorCalibration, uint width, uint height, uint srcBpp, uint dstBpp, uint channels, byte[] sourceFrameData)
         {
-            if (!Device.Config.UsingFileCaching || srcrawArray == null || srcrawArray.Length == 0)
+            if (!Device.Config.UsingFileCaching || sourceFrameData == null || sourceFrameData.Length == 0)
             {
                 return;
             }
@@ -794,7 +805,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Channels = (int)channels,
                 Gain = gain,
                 Exp = exposureValues,
-                Data = srcrawArray
+                Data = sourceFrameData
             };
 
             if (!CVFileUtil.WriteCVRaw(rawFilePath, rawFile))
@@ -945,7 +956,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             bool hasColorCalibration = TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
                 && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
 
-            ShowImageInView(srcrawArray, (int)srcbpp, (int)channels, (int)w, (int)h);
+            byte[] sourceFrameForPreview = GetSourceFrameForPreviewAndSave(srcrawArray, (int)srcbpp, (int)channels, (int)w, (int)h);
+            ShowImageInView(sourceFrameForPreview, (int)srcbpp, (int)channels, (int)w, (int)h);
 
             if (hasColorCalibration)
             {
