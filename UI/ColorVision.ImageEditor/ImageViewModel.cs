@@ -328,11 +328,6 @@ namespace ColorVision.ImageEditor
             set => SetImageEditModeCore(value, applyUiState: true, notifyPropertyChanged: true);
         }
 
-        internal void SetImageEditModeSilently(bool value)
-        {
-            SetImageEditModeCore(value, applyUiState: false, notifyPropertyChanged: false);
-        }
-
         private void SetImageEditModeCore(bool value, bool applyUiState, bool notifyPropertyChanged)
         {
             if (EditorContext.IsImageEditMode == value)

@@ -802,7 +802,7 @@ namespace ColorVision.ImageEditor
         /// <returns>SelectResult with shape properties, or null if cancelled</returns>
         public Task<SelectResult> BeginSelectAsync(SelectShapeType shapeType)
         {
-            var mode = new TransientSelectMode(ImageShow, Zoombox1, ImageViewModel, shapeType);
+            var mode = new TransientRoiSelectionSession(EditorContext, shapeType);
             return mode.Start();
         }
 

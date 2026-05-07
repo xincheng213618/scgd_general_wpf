@@ -72,11 +72,11 @@ namespace ColorVision.ImageEditor
     ///       // use result.Rect, result.Center, result.Radius, result.Points
     ///   }
     /// </summary>
-    internal class TransientSelectMode
+    internal class TransientRoiSelectionSession
     {
+        private readonly EditorContext _editorContext;
         private readonly DrawCanvas _drawCanvas;
         private readonly Zoombox _zoombox;
-        private readonly ImageViewModel _imageViewModel;
         private readonly TaskCompletionSource<SelectResult> _tcs;
         private readonly SelectShapeType _shapeType;
 
@@ -95,11 +95,11 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private bool IsMultiClickMode => _shapeType == SelectShapeType.Polygon || _shapeType == SelectShapeType.Quadrilateral;
 
-        public TransientSelectMode(DrawCanvas drawCanvas, Zoombox zoombox, ImageViewModel imageViewModel, SelectShapeType shapeType)
+        public TransientRoiSelectionSession(EditorContext editorContext, SelectShapeType shapeType)
         {
-            _drawCanvas = drawCanvas;
-            _zoombox = zoombox;
-            _imageViewModel = imageViewModel;
+            _editorContext = editorContext;
+            _drawCanvas = editorContext.DrawCanvas;
+            _zoombox = editorContext.Zoombox;
             _shapeType = shapeType;
             _tcs = new TaskCompletionSource<SelectResult>();
         }
@@ -108,14 +108,13 @@ namespace ColorVision.ImageEditor
         {
             _previousCursor = _zoombox.Cursor;
             _previousActivateOn = _zoombox.ActivateOn;
-            _previousEditMode = _imageViewModel.ImageEditMode;
+            _previousEditMode = _editorContext.IsImageEditMode;
 
-            // Suppress edit mode so SelectEditorVisual doesn't interfere.
-            // Use backing field directly to avoid the property setter's side effects
-            // (cursor change, ActivateOn toggle, DrawEditorManager reset).
+            // Suppress edit mode so SelectEditorVisual doesn't interfere without
+            // running the full ImageViewModel mode toggle side effects.
             if (_previousEditMode)
             {
-                _imageViewModel.SetImageEditModeSilently(false);
+                _editorContext.IsImageEditMode = false;
             }
             // Ensure zoombox is in draw-friendly mode
             _zoombox.ActivateOn = ModifierKeys.Control;
@@ -398,12 +397,12 @@ namespace ColorVision.ImageEditor
 
             _drawCanvas.ReleaseMouseCapture();
 
-            // Restore previous state (use backing field to avoid property setter side effects)
+            // Restore previous state without running the full ImageViewModel mode toggle side effects.
             _zoombox.Cursor = _previousCursor;
             _zoombox.ActivateOn = _previousActivateOn;
             if (_previousEditMode)
             {
-                _imageViewModel.SetImageEditModeSilently(true);
+                _editorContext.IsImageEditMode = true;
             }
         }
     }
