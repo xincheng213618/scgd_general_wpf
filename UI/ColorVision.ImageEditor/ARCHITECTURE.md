@@ -123,12 +123,12 @@ ImageView
 
 1. 选中图元时绘制控制框和八个调整点。
 2. 处理拖拽缩放、移动、置顶、栅格化。
-3. 发出选择变化，驱动底部 `CompactInspectorBar` 在“当前工具”和“当前单选图元”之间切换紧凑属性项。
+3. 发出选择变化，驱动底部 `CompactInspectorBar` 在“当前工具”和“当前单选图元”之间切换紧凑属性项；当前单选 `Line` / `Polygon` / `BezierCurve` 已经可以通过各自 `BaseProperties` 直接暴露颜色、线宽。
 
 当前绘图工具骨架已经分成三类：
 
 1. `Draw/DragDrawingToolBase.cs`：拖拽一次成形，当前接 `RectangleManager`、`CircleManager`。
-2. `Draw/MultiPointDrawingToolBase.cs`：多点折线式成形，当前接 `LineManager`、`PolygonManager`、`BezierCurveManager`。
+2. `Draw/MultiPointDrawingToolBase.cs`：多点折线式成形，当前接 `LineManager`、`PolygonManager`、`BezierCurveManager`，并内建一套共享的 `CompactInspector` 默认样式配置（颜色、线宽）。
 3. `Draw/RegionOperationToolBase.cs`：区域操作工具，当前接 `EraseManager`，不和成形类共用骨架。
 
 ### 2.5 临时选区链路

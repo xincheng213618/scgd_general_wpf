@@ -346,7 +346,7 @@ namespace ColorVision.ImageEditor.Draw
             return new CompactInspectorItem[]
             {
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "颜色" },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.StrokeThickness), Label = "宽", ShowLabel = true, Width = 56, Order = 20, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.StrokeThickness), Icon = CompactInspectorIcons.CreateText("━"), Width = 56, Order = 20, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "笔宽" },
             };
         }
     }
@@ -379,9 +379,9 @@ namespace ColorVision.ImageEditor.Draw
             return new CompactInspectorItem[]
             {
                 new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.StrokeBrush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "颜色" },
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsHighlighter), Label = "荧光", Order = 20, EditorKind = CompactInspectorEditorKind.Toggle },
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.StrokeThickness), Label = "宽", ShowLabel = true, Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number },
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.SampleSpacing), Label = "采样", ShowLabel = true, Width = 56, Order = 40, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsHighlighter), Icon = CompactInspectorIcons.CreateText("▨"), Order = 20, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "荧光笔模式" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.StrokeThickness), Icon = CompactInspectorIcons.CreateText("━"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "笔宽" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.SampleSpacing), Icon = CompactInspectorIcons.CreateText("⋯"), Width = 56, Order = 40, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "采样间距" },
             };
         }
 

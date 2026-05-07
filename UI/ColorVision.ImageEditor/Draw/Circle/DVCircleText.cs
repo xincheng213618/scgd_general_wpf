@@ -106,8 +106,8 @@ namespace ColorVision.ImageEditor.Draw
             return new CompactInspectorItem[]
             {
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "填充" },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = "文本" },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Label = "字", ShowLabel = true, Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = "文本" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "字号" },
             };
         }
     }

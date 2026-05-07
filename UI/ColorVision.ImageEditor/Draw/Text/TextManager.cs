@@ -129,9 +129,9 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
-                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.FontSize), Label = "字", ShowLabel = true, Width = 56, Order = 10, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 10, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "默认字号" },
                 new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.Brush), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "默认颜色" },
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.FollowZoom), Label = "缩放", Order = 30, EditorKind = CompactInspectorEditorKind.Toggle },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.FollowZoom), Icon = CompactInspectorIcons.CreateText("⤢"), Order = 30, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "跟随缩放" },
             };
         }
 

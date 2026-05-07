@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -9,7 +10,7 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVBezierCurve : DrawingVisualBase<BezierCurveProperties>, IDrawingVisual, IBezierCurve, ILayoutScaleDrawingVisual
     {
-        public bool AutoAttributeChanged { get; set; }
+        public bool AutoAttributeChanged { get; set; } = true;
 
         public List<Point> Points
         {
@@ -25,16 +26,29 @@ namespace ColorVision.ImageEditor.Draw
             Attribute = new BezierCurveProperties();
             Attribute.Pen = new Pen(Brushes.Blue, 2);
             Attribute.Points = new List<Point>();
-            Attribute.PropertyChanged += (s, e) => { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
         }
 
         public DVBezierCurve(BezierCurveProperties attribute)
         {
             Attribute = attribute;
             Attribute.Points ??= new List<Point>();
-            Attribute.PropertyChanged += (s, e) => { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
         }
         public bool IsDrawing { get; set; }
+
+        private void Attribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(BezierCurveProperties.Pen) || e.PropertyName == nameof(BezierCurveProperties.StrokeThickness))
+            {
+                LayoutBasePenThickness = null;
+            }
+
+            if (AutoAttributeChanged && e.PropertyName != "ID")
+            {
+                Render();
+            }
+        }
 
         public void ApplyLayoutScale(DrawingVisualScaleContext context)
         {

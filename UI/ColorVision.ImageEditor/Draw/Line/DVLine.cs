@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -13,13 +14,23 @@ namespace ColorVision.ImageEditor.Draw
         public DVLine()
         {
             Attribute = new LineProperties();
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
         }
 
         public DVLine(LineProperties attribute)
         {
             Attribute = attribute;
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
+        }
+
+        private void Attribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(LineProperties.Pen) || e.PropertyName == nameof(LineProperties.StrokeThickness))
+            {
+                LayoutBasePenThickness = null;
+            }
+
+            Render();
         }
 
         public void ApplyLayoutScale(DrawingVisualScaleContext context)

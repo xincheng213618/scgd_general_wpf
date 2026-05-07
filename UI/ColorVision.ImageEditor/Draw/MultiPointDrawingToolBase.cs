@@ -1,3 +1,4 @@
+using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -6,7 +7,44 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public abstract class MultiPointDrawingToolBase<TVisual> : IEditorToggleToolBase, IDisposable
+    public class MultiPointDrawingToolStyleConfig : ViewModelBase
+    {
+        public Brush StrokeBrush
+        {
+            get => _strokeBrush;
+            set
+            {
+                Brush next = value ?? Brushes.Red;
+                if (Equals(_strokeBrush, next))
+                {
+                    return;
+                }
+
+                _strokeBrush = next;
+                OnPropertyChanged();
+            }
+        }
+        private Brush _strokeBrush = Brushes.Red;
+
+        public double StrokeThickness
+        {
+            get => _strokeThickness;
+            set
+            {
+                double next = Math.Max(1, value);
+                if (_strokeThickness == next)
+                {
+                    return;
+                }
+
+                _strokeThickness = next;
+                OnPropertyChanged();
+            }
+        }
+        private double _strokeThickness = 1;
+    }
+
+    public abstract class MultiPointDrawingToolBase<TVisual> : IEditorToggleToolBase, ICompactInspectorProvider, IDisposable
         where TVisual : DrawingVisual, ISelectVisual
     {
         private bool _isChecked;
@@ -21,12 +59,40 @@ namespace ColorVision.ImageEditor.Draw
         protected DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
         protected Zoombox Zoombox => EditorContext.Zoombox;
         protected SelectEditorVisual SelectionVisual => EditorContext.SelectionVisual;
+        protected MultiPointDrawingToolStyleConfig StyleConfig { get; } = new();
 
         protected TVisual? ActiveVisual { get; private set; }
 
         protected virtual bool SupportsKeyboardCompletion => false;
         protected virtual bool CompleteOnMouseUp => false;
         protected virtual bool SelectOnMouseUp => false;
+
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context) => BuildCompactInspectorItems();
+
+        protected virtual IEnumerable<CompactInspectorItem> BuildCompactInspectorItems()
+        {
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem
+                {
+                    Source = StyleConfig,
+                    PropertyName = nameof(StyleConfig.StrokeBrush),
+                    Order = 10,
+                    EditorKind = CompactInspectorEditorKind.Brush,
+                    ToolTip = "线条颜色",
+                },
+                new CompactInspectorPropertyItem
+                {
+                    Source = StyleConfig,
+                    PropertyName = nameof(StyleConfig.StrokeThickness),
+                    Icon = CompactInspectorIcons.CreateText("━"),
+                    Width = 56,
+                    Order = 20,
+                    EditorKind = CompactInspectorEditorKind.Number,
+                    ToolTip = "线宽",
+                },
+            };
+        }
 
         public override bool IsChecked
         {

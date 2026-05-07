@@ -32,7 +32,15 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override void OnVisualCreated(DVBezierCurve visual)
         {
-            visual.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11);
+            double zoomRatio = Math.Max(Zoombox.ContentMatrix.M11, 0.0001);
+            visual.Attribute.Brush = StyleConfig.StrokeBrush;
+            visual.Attribute.Pen = new Pen(StyleConfig.StrokeBrush, StyleConfig.StrokeThickness / zoomRatio);
+        }
+
+        protected override void OnVisualCompleted(DVBezierCurve visual)
+        {
+            visual.AutoAttributeChanged = true;
+            base.OnVisualCompleted(visual);
         }
     }
 }

@@ -33,7 +33,9 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override void OnVisualCreated(DVLine visual)
         {
-            visual.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11);
+            double zoomRatio = Math.Max(Zoombox.ContentMatrix.M11, 0.0001);
+            visual.Attribute.Brush = StyleConfig.StrokeBrush;
+            visual.Attribute.Pen = new Pen(StyleConfig.StrokeBrush, StyleConfig.StrokeThickness / zoomRatio);
         }
     }
 }

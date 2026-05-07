@@ -56,7 +56,8 @@ namespace ColorVision.ImageEditor
             return new TextBlock
             {
                 Text = text,
-                FontSize = 12,
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
             };
@@ -69,6 +70,7 @@ namespace ColorVision.ImageEditor
                 Text = glyph,
                 FontFamily = new FontFamily("Segoe MDL2 Assets"),
                 FontSize = 12,
+                FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
             };
@@ -117,7 +119,8 @@ namespace ColorVision.ImageEditor
                 items.Add(new CompactInspectorButtonItem
                 {
                     Order = 10_000,
-                    Label = "...",
+                    Icon = CompactInspectorIcons.CreateText("⋯"),
+                    Width = 22,
                     ToolTip = "完整编辑",
                     Command = new RelayCommand(_ =>
                     {
@@ -229,7 +232,7 @@ namespace ColorVision.ImageEditor
             Button button = new Button
             {
                 Width = item.Width,
-                Height = 24,
+                Height = 20,
                 Padding = new Thickness(4, 0, 4, 0),
                 Margin = new Thickness(0),
                 MinWidth = item.Width,
@@ -237,6 +240,8 @@ namespace ColorVision.ImageEditor
                 ToolTip = item.ToolTip,
                 Content = item.Icon ?? item.Label ?? "...",
             };
+
+            button.SetResourceReference(FrameworkElement.StyleProperty, "CompactInspectorButtonStyle");
 
             return WrapControlInChip(button, item.ToolTip);
         }
@@ -288,14 +293,17 @@ namespace ColorVision.ImageEditor
         {
             ToggleButton toggleButton = new ToggleButton
             {
-                MinWidth = 26,
-                Height = 22,
+                MinWidth = 24,
+                Height = 20,
                 Padding = new Thickness(4, 0, 4, 0),
                 Margin = new Thickness(0),
                 ToolTip = toolTip,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Content = item.Icon ?? item.Label ?? toolTip,
             };
 
+            toggleButton.SetResourceReference(FrameworkElement.StyleProperty, "CompactInspectorToggleButtonStyle");
             toggleButton.SetBinding(ToggleButton.IsCheckedProperty, CreateBinding(item.Source, item.PropertyName));
             return WrapControlInChip(toggleButton, toolTip);
         }
@@ -304,11 +312,13 @@ namespace ColorVision.ImageEditor
         {
             Button button = new Button
             {
-                Width = 22,
-                Height = 22,
+                Width = 20,
+                Height = 20,
                 Padding = new Thickness(0),
                 ToolTip = toolTip,
             };
+
+            button.SetResourceReference(FrameworkElement.StyleProperty, "CompactInspectorButtonStyle");
 
             object? currentValue = property.GetValue(item.Source);
             if (currentValue is Color color)
@@ -333,14 +343,14 @@ namespace ColorVision.ImageEditor
             TextBox textBox = new TextBox
             {
                 Width = item.Width,
-                Height = 22,
+                Height = 20,
                 MinWidth = item.Width,
                 Margin = new Thickness(0),
                 ToolTip = toolTip,
                 HorizontalContentAlignment = alignment,
-                Style = PropertyEditorHelper.TextBoxSmallStyle,
             };
 
+            textBox.SetResourceReference(FrameworkElement.StyleProperty, "CompactInspectorValueTextBoxStyle");
             textBox.SetBinding(TextBox.TextProperty, CreateBinding(item.Source, item.PropertyName));
             return WrapControlInChip(textBox, toolTip);
         }
@@ -350,21 +360,22 @@ namespace ColorVision.ImageEditor
             ComboBox comboBox = new ComboBox
             {
                 Width = Math.Max(item.Width, 72),
-                Height = 22,
+                Height = 20,
                 MinWidth = Math.Max(item.Width, 72),
                 Margin = new Thickness(0),
                 ToolTip = toolTip,
-                Style = PropertyEditorHelper.ComboBoxSmallStyle,
                 ItemsSource = Enum.GetValues(property.PropertyType),
             };
 
+            comboBox.SetResourceReference(FrameworkElement.StyleProperty, "CompactInspectorValueComboBoxStyle");
             comboBox.SetBinding(Selector.SelectedItemProperty, CreateBinding(item.Source, item.PropertyName));
             return WrapControlInChip(comboBox, toolTip);
         }
 
         private static FrameworkElement WrapWithLabel(CompactInspectorPropertyItem item, FrameworkElement element, string toolTip)
         {
-            if (!item.ShowLabel || string.IsNullOrWhiteSpace(item.Label))
+            FrameworkElement? prefix = CreatePrefixElement(item);
+            if (prefix == null && (!item.ShowLabel || string.IsNullOrWhiteSpace(item.Label)))
             {
                 return element;
             }
@@ -377,15 +388,43 @@ namespace ColorVision.ImageEditor
                 ToolTip = toolTip,
             };
 
-            stackPanel.Children.Add(new TextBlock
+            if (prefix != null)
             {
-                Text = item.Label,
-                Margin = new Thickness(0, 0, 4, 0),
-                VerticalAlignment = VerticalAlignment.Center,
-                FontSize = 11,
-            });
+                stackPanel.Children.Add(prefix);
+            }
+            else
+            {
+                stackPanel.Children.Add(new TextBlock
+                {
+                    Text = item.Label,
+                    Margin = new Thickness(0, 0, 4, 0),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    FontSize = 10.5,
+                    Opacity = 0.72,
+                });
+            }
+
             stackPanel.Children.Add(element);
             return stackPanel;
+        }
+
+        private static FrameworkElement? CreatePrefixElement(CompactInspectorPropertyItem item)
+        {
+            if (item.EditorKind == CompactInspectorEditorKind.Toggle || item.Icon == null)
+            {
+                return null;
+            }
+
+            FrameworkElement prefix = item.Icon as FrameworkElement
+                ?? new TextBlock
+                {
+                    Text = Convert.ToString(item.Icon, CultureInfo.CurrentCulture) ?? string.Empty,
+                };
+
+            prefix.Margin = new Thickness(0, 0, 4, 0);
+            prefix.VerticalAlignment = VerticalAlignment.Center;
+            prefix.Opacity = 0.78;
+            return prefix;
         }
 
         private static Border WrapControlInChip(FrameworkElement control, string? toolTip)
@@ -399,10 +438,11 @@ namespace ColorVision.ImageEditor
         {
             Border border = new Border
             {
-                Margin = new Thickness(2, 0, 0, 0),
+                Margin = new Thickness(1, 0, 0, 0),
                 Padding = new Thickness(0),
                 CornerRadius = new CornerRadius(8),
                 BorderThickness = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = toolTip,
             };
             border.Background = Brushes.Transparent;

@@ -21,6 +21,87 @@
         <Style BasedOn="{StaticResource TextBox.Small}" TargetType="TextBox">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown" />
         </Style>
+        <Style x:Key="CompactInspectorButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="6" />
+                            <Border x:Name="HoverLayer"
+                                    Background="{TemplateBinding BorderBrush}"
+                                    CornerRadius="6"
+                                    Opacity="0" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverLayer" Property="Opacity" Value="0.14" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HoverLayer" Property="Opacity" Value="0.22" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CompactInspectorToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid>
+                            <Border x:Name="CheckedLayer"
+                                    Background="{TemplateBinding BorderBrush}"
+                                    CornerRadius="6"
+                                    Opacity="0" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CheckedLayer" Property="Opacity" Value="0.14" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="CheckedLayer" Property="Opacity" Value="0.22" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckedLayer" Property="Opacity" Value="0.28" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CompactInspectorValueTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="MinHeight" Value="20" />
+        </Style>
+        <Style x:Key="CompactInspectorValueComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource ComboBox.Small}">
+            <Setter Property="MinHeight" Value="20" />
+        </Style>
         <GeometryDrawing x:Key="GridSquare" Brush="{DynamicResource GlobalTextBrush}" Geometry="M0,0 L0,1 1,1 1,0 Z" />
         <DrawingBrush x:Key="TransparentGridBrush" Opacity="0.1" TileMode="Tile" Viewport="0 0 20 20" ViewportUnits="Absolute">
             <DrawingBrush.Drawing>
@@ -66,19 +147,19 @@
                 <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}" />
 
                 <StackPanel x:Name="DrawToolbarHost"
-                            Margin="0,0,0,8"
+                        Margin="0,0,0,6"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Bottom"
                             Panel.ZIndex="10"
                             Visibility="{Binding Config.IsToolBarDrawVisible, Converter={StaticResource bool2VisibilityConverter}}">
                     <Border x:Name="CompactInspectorOverlay"
-                            Margin="0,0,0,6"
-                            Padding="6,4"
+                        Margin="0,0,0,2"
+                            Padding="5,3"
                             HorizontalAlignment="Center"
                             Background="{DynamicResource GlobalBackground}"
                             BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="14"
+                            BorderThickness="0"
+                            CornerRadius="12"
                             Visibility="Collapsed"
                             Opacity="0.9">
                         <StackPanel x:Name="CompactInspectorPanel" Orientation="Horizontal" />
