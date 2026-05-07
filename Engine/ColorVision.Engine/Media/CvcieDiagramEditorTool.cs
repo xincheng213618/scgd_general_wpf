@@ -16,8 +16,7 @@ namespace ColorVision.Engine.Media
         private readonly Action _ensureBufferLoaded;
         private readonly Func<CvcieMouseProbeOptions> _getProbeSettings;
         private WindowCIE? _windowCie;
-        private IImageMouseInfoProvider? _mouseInfoProvider;
-        private MouseMoveColorHandler? _mouseMoveColorHandler;
+        private EventHandler<ImagePixelSample>? _pixelSampleChangedHandler;
 
         public CvcieDiagramEditorTool(
             EditorContext context,
@@ -44,17 +43,11 @@ namespace ColorVision.Engine.Media
 
         private void OpenCieDiagram()
         {
-            if (!_context.TryGetService<IImageMouseInfoProvider>(out IImageMouseInfoProvider? mouseInfoProvider) || mouseInfoProvider == null)
-            {
-                return;
-            }
-
             if (_windowCie == null)
             {
                 _windowCie = new WindowCIE { Owner = Application.Current.GetActiveWindow() };
-                _mouseInfoProvider = mouseInfoProvider;
 
-                _mouseMoveColorHandler = (_, imageInfo) =>
+                _pixelSampleChangedHandler = (_, pixelSample) =>
                 {
                     _ensureBufferLoaded();
 
@@ -69,8 +62,8 @@ namespace ColorVision.Engine.Media
 
                     _ = ConvertXYZ.CM_GetXYZxyuvRect(
                         _getConvertHandle(),
-                        imageInfo.X,
-                        imageInfo.Y,
+                        pixelSample.PixelX,
+                        pixelSample.PixelY,
                         ref dXVal,
                         ref dYVal,
                         ref dZVal,
@@ -84,16 +77,15 @@ namespace ColorVision.Engine.Media
                     _windowCie?.ChangeSelect(dx, dy);
                 };
 
-                _mouseInfoProvider.MouseMoveColorHandler += _mouseMoveColorHandler;
+                _context.MouseInfoProvider.PixelSampleChanged += _pixelSampleChangedHandler;
 
                 _windowCie.Closed += (_, _) =>
                 {
-                    if (_mouseInfoProvider != null && _mouseMoveColorHandler != null)
+                    if (_pixelSampleChangedHandler != null)
                     {
-                        _mouseInfoProvider.MouseMoveColorHandler -= _mouseMoveColorHandler;
+                        _context.MouseInfoProvider.PixelSampleChanged -= _pixelSampleChangedHandler;
                     }
-                    _mouseMoveColorHandler = null;
-                    _mouseInfoProvider = null;
+                    _pixelSampleChangedHandler = null;
                     _windowCie = null;
                 };
             }

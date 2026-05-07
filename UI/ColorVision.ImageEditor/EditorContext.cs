@@ -1,5 +1,6 @@
 ﻿using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Special;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,6 +13,14 @@ namespace ColorVision.ImageEditor
     {
         private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
 
+        public EditorContext(ImageView imageView, DrawCanvas drawCanvas, Zoombox zoombox)
+        {
+            ImageView = imageView;
+            DrawCanvas = drawCanvas;
+            Zoombox = zoombox;
+            MouseInfoProvider = new ImageMouseInfoProvider(this);
+        }
+
         public Guid Id { get; init; } = Guid.NewGuid();
         public ContextMenu ContextMenu { get; set; } = new ContextMenu();
         public IImageOpen? IImageOpen { get; set; }
@@ -23,6 +32,8 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig Config { get; set; }  = new ImageViewConfig();
 
         public DrawCanvas DrawCanvas { get; set; }
+
+        public ImageMouseInfoProvider MouseInfoProvider { get; }
 
         public SelectEditorVisual SelectionVisual { get; set; }
 

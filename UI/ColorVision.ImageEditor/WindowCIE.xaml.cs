@@ -43,10 +43,18 @@ namespace ColorVision.ImageEditor
             SetSelectedXy(new CieChromaticity(x, y), Colors.Black, "Current");
         }
 
-        public void ChangeSelect(ImageInfo imageInfo)
+        public void ChangeSelect(ImagePixelSample pixelSample)
         {
-            CieChromaticity xy = CieColorConverter.RgbToCie1931xy(imageInfo.R, imageInfo.G, imageInfo.B);
-            SetSelectedXy(xy, CieColorConverter.ToMarkerColor(imageInfo.R, imageInfo.G, imageInfo.B), "RGB");
+            if (!pixelSample.HasRgbSourceChannels)
+            {
+                _selectedXy = null;
+                CieView.ClearSelection();
+                UpdateSelectedReadout();
+                return;
+            }
+
+            CieChromaticity xy = CieColorConverter.RgbToCie1931xy(pixelSample.PreviewColor.R, pixelSample.PreviewColor.G, pixelSample.PreviewColor.B);
+            SetSelectedXy(xy, pixelSample.PreviewColor, "RGB");
         }
 
         public void SetDiagram(CieDiagramKind kind)

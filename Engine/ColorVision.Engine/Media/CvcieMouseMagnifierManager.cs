@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Media
     internal sealed class CvcieMouseMagnifierManager : IEditorToggleToolBase, IDisposable
     {
         private readonly EditorContext _context;
-        private readonly IImageMouseInfoProvider _mouseInfoProvider;
+        private readonly ImageMouseInfoProvider _mouseInfoProvider;
         private readonly Func<IntPtr> _getConvertHandle;
         private readonly Action _ensureBufferLoaded;
         private readonly Func<float[]?> _getExp;
@@ -41,12 +41,7 @@ namespace ColorVision.Engine.Media
             Func<CvcieMouseProbeOptions> getOptions)
         {
             _context = editorContext;
-            if (!editorContext.TryGetService<IImageMouseInfoProvider>(out IImageMouseInfoProvider? mouseInfoProvider) || mouseInfoProvider == null)
-            {
-                throw new InvalidOperationException($"{nameof(CvcieMouseMagnifierManager)} requires {nameof(IImageMouseInfoProvider)}.");
-            }
-
-            _mouseInfoProvider = mouseInfoProvider;
+            _mouseInfoProvider = editorContext.MouseInfoProvider;
             _getConvertHandle = getConvertHandle;
             _ensureBufferLoaded = ensureBufferLoaded;
             _getExp = getExp;
@@ -74,13 +69,13 @@ namespace ColorVision.Engine.Media
                 DrawVisualImageControl(_isChecked);
                 if (value)
                 {
-                    _mouseInfoProvider.MouseMoveColorHandler += HandleMouseMoveColor;
+                    _mouseInfoProvider.PixelSampleChanged += HandlePixelSampleChanged;
                     Image.MouseEnter += MouseEnter;
                     Image.MouseLeave += MouseLeave;
                 }
                 else
                 {
-                    _mouseInfoProvider.MouseMoveColorHandler -= HandleMouseMoveColor;
+                    _mouseInfoProvider.PixelSampleChanged -= HandlePixelSampleChanged;
                     Image.MouseEnter -= MouseEnter;
                     Image.MouseLeave -= MouseLeave;
                 }
@@ -88,21 +83,24 @@ namespace ColorVision.Engine.Media
         }
         private bool _isChecked;
 
-        private void HandleMouseMoveColor(object sender, ImageInfo imageInfo)
+        private void HandlePixelSampleChanged(object? sender, ImagePixelSample pixelSample)
         {
             if (!IsChecked)
             {
                 return;
             }
 
-            TryRenderOverlay(imageInfo);
+            if (!TryRenderOverlay(pixelSample))
+            {
+                DrawDefaultOverlay(pixelSample);
+            }
         }
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
 
         public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(false);
 
-        private bool TryRenderOverlay(ImageInfo imageInfo)
+        private bool TryRenderOverlay(ImagePixelSample pixelSample)
         {
             float[]? exp = _getExp();
             if (exp == null || exp.Length == 0)
@@ -130,25 +128,25 @@ namespace ColorVision.Engine.Media
                 case MagnigifierType.Circle:
                     if (exp.Length == 1)
                     {
-                        _ = ConvertXYZ.CM_GetYCircle(_getConvertHandle(), imageInfo.X, imageInfo.Y, ref dYVal, radius);
-                        DrawProbeOverlay(imageInfo, $"Y:{dYVal:F1}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
+                        _ = ConvertXYZ.CM_GetYCircle(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dYVal, radius);
+                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F1}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     else
                     {
-                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(_getConvertHandle(), imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, radius);
-                        DrawProbeOverlay(imageInfo, BuildPrimaryText(imageInfo, dXVal, dYVal, dZVal), $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, radius);
+                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     return true;
                 case MagnigifierType.Rect:
                     if (exp.Length == 1)
                     {
-                        _ = ConvertXYZ.CM_GetYRect(_getConvertHandle(), imageInfo.X, imageInfo.Y, ref dYVal, rectWidth, rectHeight);
-                        DrawProbeOverlay(imageInfo, $"Y:{dYVal:F1}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
+                        _ = ConvertXYZ.CM_GetYRect(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dYVal, rectWidth, rectHeight);
+                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F1}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     else
                     {
-                        _ = ConvertXYZ.CM_GetXYZxyuvRect(_getConvertHandle(), imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rectWidth, rectHeight);
-                        DrawProbeOverlay(imageInfo, BuildPrimaryText(imageInfo, dXVal, dYVal, dZVal), $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
+                        _ = ConvertXYZ.CM_GetXYZxyuvRect(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rectWidth, rectHeight);
+                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     return true;
                 default:
@@ -156,9 +154,9 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private void DrawProbeOverlay(ImageInfo imageInfo, string text1, string text2, MagnigifierType magnigifierType, double radius, double rectWidth, double rectHeight)
+        private void DrawProbeOverlay(ImagePixelSample pixelSample, string text1, string text2, MagnigifierType magnigifierType, double radius, double rectWidth, double rectHeight)
         {
-            Point actPoint = imageInfo.ActPoint;
+            Point viewPosition = pixelSample.ViewPosition;
 
             if (Image.Source is not BitmapSource)
             {
@@ -169,37 +167,38 @@ namespace ColorVision.Engine.Media
 
             if (magnigifierType == MagnigifierType.Circle)
             {
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, radius);
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, radius);
             }
             else if (magnigifierType == MagnigifierType.Rect)
             {
                 double rectWidthValue = Math.Max(1, rectWidth);
                 double rectHeightValue = Math.Max(1, rectHeight);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
+                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(viewPosition.X - rectWidthValue / 2, viewPosition.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
+                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Rect(viewPosition.X - rectWidthValue / 2, viewPosition.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
             }
 
-            var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
+            var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * viewPosition.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * viewPosition.Y);
             dc.PushTransform(transform);
 
-            double x1 = actPoint.X + 1;
-            double y1 = actPoint.Y + 26;
-            double width = 128;
+            double x1 = viewPosition.X + 1;
+            double y1 = viewPosition.Y + 26;
             double height = 0;
-
-            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 60));
 
             Brush brush = Brushes.White;
             FontFamily fontFamily = new("Arial");
             double fontSize = 10;
-            FormattedText formattedText = new($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
-            FormattedText formattedTex1 = new($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
+            FormattedText formattedText = new(pixelSample.ValueText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            FormattedText formattedTex1 = new(pixelSample.CoordinateText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
             FormattedText formattedTex4 = new(text1, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 31));
             FormattedText formattedTex5 = new(text2, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            double width = Math.Max(Math.Max(formattedText.Width, formattedTex1.Width), Math.Max(formattedTex4.Width, formattedTex5.Width)) + 10;
+
+            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 60));
+
+            dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
+            dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
+            dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 31));
             dc.DrawText(formattedTex5, new Point(x1 + 5, y1 + height + 44));
 
             dc.Pop();
@@ -208,6 +207,46 @@ namespace ColorVision.Engine.Media
                 DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
             }
         }
+
+        private void DrawDefaultOverlay(ImagePixelSample pixelSample)
+        {
+            Point viewPosition = pixelSample.ViewPosition;
+            Point pixelPosition = pixelSample.PixelPosition;
+
+            if (Image.Source is not BitmapSource bitmapImage || pixelPosition.X <= 60 || pixelPosition.X >= bitmapImage.PixelWidth - 60 || pixelPosition.Y <= 45 || pixelPosition.Y >= bitmapImage.PixelHeight - 45)
+            {
+                return;
+            }
+
+            using DrawingContext dc = DrawVisualImage.RenderOpen();
+            var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * viewPosition.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * viewPosition.Y);
+            dc.PushTransform(transform);
+
+            double x1 = viewPosition.X;
+            double y1 = viewPosition.Y + 20;
+            double height = 0;
+
+            x1++;
+            y1++;
+            height -= 2;
+
+            Brush brush = Brushes.White;
+            FontFamily fontFamily = new("Arial");
+            double fontSize = 10;
+            FormattedText formattedText = new(pixelSample.ValueText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            FormattedText formattedTex1 = new(pixelSample.CoordinateText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            double width = Math.Max(formattedText.Width, formattedTex1.Width) + 10;
+
+            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 30));
+            dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
+            dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
+            dc.Pop();
+            if (DrawVisualImage.Effect is not DropShadowEffect)
+            {
+                DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
+            }
+        }
+
         private void DrawVisualImageControl(bool control)
         {
             if (control)
@@ -226,7 +265,7 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private string BuildPrimaryText(ImageInfo imageInfo, float dXVal, float dYVal, float dZVal)
+        private string BuildPrimaryText(ImagePixelSample pixelSample, float dXVal, float dYVal, float dZVal)
         {
             string text = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
             if (!_showDateFilePath())
@@ -234,7 +273,7 @@ namespace ColorVision.Engine.Media
                 return text;
             }
 
-            (int pointIndex, int listIndex) = _findNearbyPoints(imageInfo.X, imageInfo.Y);
+            (int pointIndex, int listIndex) = _findNearbyPoints(pixelSample.PixelX, pixelSample.PixelY);
             if (pointIndex < 0 || listIndex < 0)
             {
                 return text;

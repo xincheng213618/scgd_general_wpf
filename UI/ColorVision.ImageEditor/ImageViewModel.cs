@@ -69,13 +69,7 @@ namespace ColorVision.ImageEditor
         {
             _defaultDisplayConfig.PropertyChanged += DefaultDisplayConfig_PropertyChanged;
 
-            EditorContext = new EditorContext()
-            {
-                ImageView = imageView,
-                DrawCanvas = imageView.ImageShow,
-                Zoombox = imageView.Zoombox1,
-            };
-            EditorContext.RegisterService<IImageMouseInfoProvider>(new ImageMouseInfoProvider(EditorContext));
+            EditorContext = new EditorContext(imageView, imageView.ImageShow, imageView.Zoombox1);
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
             EditorContext.IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
             EditorContext.CompactInspectorPresenter = new CompactInspectorPresenter(EditorContext);
@@ -373,11 +367,7 @@ namespace ColorVision.ImageEditor
 
             IEditorToolFactory.Dispose();
 
-            if (EditorContext.TryGetService<IImageMouseInfoProvider>(out IImageMouseInfoProvider? mouseInfoProvider) && mouseInfoProvider is IDisposable disposableMouseInfoProvider)
-            {
-                disposableMouseInfoProvider.Dispose();
-                EditorContext.UnregisterService<IImageMouseInfoProvider>();
-            }
+            EditorContext.MouseInfoProvider.Dispose();
 
             EditorContext.CompactInspectorPresenter?.Dispose();
 
