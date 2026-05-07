@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; OnPropertyChanged();  } }
         private CameraModel _CameraModel;
 
-        public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; OnPropertyChanged(); } }
+        public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsExpThree)); } }
         private TakeImageMode _TakeImageMode;
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; OnPropertyChanged(); } }
