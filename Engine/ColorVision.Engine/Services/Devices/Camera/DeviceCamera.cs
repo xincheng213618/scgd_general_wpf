@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -17,8 +18,10 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
+using System.Collections.Generic;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
+using System.Linq;
 using cvColorVision;
 using log4net;
 using SqlSugar;
@@ -33,6 +36,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
+    internal sealed record DeviceCameraCalibrationFile(
+        string SlotKey,
+        CalibrationType CalibrationType,
+        string DisplayName,
+        string RelativePath,
+        string FullPath);
+
     public class DeviceCamera : DeviceService<ConfigCamera>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
@@ -328,6 +338,83 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 
         public DisplayCamera GetDisplayCamera()=> new DisplayCamera(this);
+
+        internal bool TryGetCalibrationTemplateFiles(CalibrationParam? param, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage)
+        {
+            calibrationFiles = Array.Empty<DeviceCameraCalibrationFile>();
+            errorMessage = null;
+
+            if (param == null || param.Id == -1)
+            {
+                return true;
+            }
+
+            if (PhyCamera == null)
+            {
+                errorMessage = "物理相机未配置";
+                return false;
+            }
+
+            GroupResource? groupResource = PhyCamera.VisualChildren
+                .OfType<GroupResource>()
+                .FirstOrDefault(resource => resource.Name == param.CalibrationMode);
+            groupResource?.SetCalibrationResource();
+
+            bool hasSelectedCalibration = CalibrationSlotDefinitions.AllSlots.Any(slot => slot.ParamGetter(param).IsSelected);
+            if (groupResource == null || !hasSelectedCalibration)
+            {
+                errorMessage = $"使用{param.Name}模板,需要确认校正文件已经配置";
+                return false;
+            }
+
+            List<DeviceCameraCalibrationFile> resolvedFiles = new();
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                CalibrationBase selectedCalibration = slot.ParamGetter(param);
+                if (!selectedCalibration.IsSelected)
+                {
+                    continue;
+                }
+
+                CalibrationResource? resource = slot.GroupGetter(groupResource);
+                if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath))
+                {
+                    string displayName = resource?.Name ?? slot.Key;
+                    errorMessage = $"使用{param.Name}模板, {displayName} 文件不存在";
+                    return false;
+                }
+
+                resolvedFiles.Add(new DeviceCameraCalibrationFile(
+                    slot.Key,
+                    slot.ServiceType.ToCalibrationType(),
+                    resource.Name,
+                    relativePath,
+                    fullPath));
+            }
+
+            calibrationFiles = resolvedFiles;
+            return true;
+        }
+
+        internal bool TryResolveCalibrationFilePath(CalibrationResource resource, out string fullPath, out string relativePath)
+        {
+            fullPath = string.Empty;
+            relativePath = string.Empty;
+
+            if (PhyCamera == null || !Directory.Exists(PhyCamera.Config.FileServerCfg.FileBasePath))
+            {
+                return false;
+            }
+
+            relativePath = resource.SysResourceModel.Value ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                return false;
+            }
+
+            fullPath = Path.Combine(PhyCamera.Config.FileServerCfg.FileBasePath, PhyCamera.Code, "cfg", relativePath);
+            return File.Exists(fullPath);
+        }
 
         public override MQTTServiceBase? GetMQTTService()
         {

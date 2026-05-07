@@ -185,17 +185,13 @@
                     <Separator Margin="0,5" />
 
                     <!--  Calibration Checkboxes  -->
-                    <TextBlock Margin="0,3" FontWeight="Bold" Text="校正选项" />
-                    <CheckBox x:Name="cb_DSNU" Margin="0,3" Content="DSNU" />
-                    <CheckBox x:Name="cb_DarkNoiseCorrect" Margin="0,3" Content="暗噪声校正" />
+                    <TextBlock Margin="0,3" FontWeight="Bold" Text="校正模板" />
                     <CheckBox x:Name="cb_AutoExp" Margin="0,3" Content="自动曝光" />
-                    <CheckBox x:Name="cb_LumCorrect" Margin="0,3" Content="Luminance校正" />
-                    <CheckBox x:Name="cb_MonoCorrect" Margin="0,3" Checked="cb_MonoCorrect_Checked" Content="单色校正" />
-                    <CheckBox x:Name="cb_FourColorCorrect" Margin="0,3" Checked="cb_FourColorCorrect_Checked" Content="四色校正" />
-                    <CheckBox x:Name="cb_MulColorCorrect" Margin="0,3" Checked="cb_MulColorCorrect_Checked" Content="多色校正" />
-                    <CheckBox x:Name="cb_BadPixelCorrect" Margin="0,3" Content="坏点校正" />
-                    <CheckBox x:Name="cb_UniformFieldCorrect" Margin="0,3" Content="均匀场校正" />
-                    <CheckBox x:Name="cb_DistortCorrect" Margin="0,3" Content="畸变校正" />
+                    <DockPanel Margin="0,3">
+                        <Button x:Name="btn_EditCalibrationTemplate" Width="70" Margin="5,0,0,0" Padding="5,2" Click="EditCalibrationTemplate_Click" Content="编辑模板" DockPanel.Dock="Right" />
+                        <ComboBox x:Name="ComboxCalibrationTemplate" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" />
+                    </DockPanel>
+                    <TextBox x:Name="tb_CalibrationFiles" Margin="0,3" MinHeight="90" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
 
                     <Separator Margin="0,5" />
 

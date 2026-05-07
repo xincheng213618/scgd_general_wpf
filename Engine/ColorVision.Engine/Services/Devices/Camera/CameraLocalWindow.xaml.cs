@@ -1,3 +1,6 @@
+using ColorVision.Database;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using log4net;
@@ -72,6 +75,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             btn_MeasTif.IsEnabled = false;
             button1.IsEnabled = false;
             btn_CalAutoExp.IsEnabled = true;
+
+            UpdateCalibrationTemplateOptions();
         }
 
         private void GetID_Click(object sender, RoutedEventArgs e)
@@ -229,8 +234,139 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return 1;
         }
 
-        private string buildParam(string savePath, string exts)
+        private void UpdateCalibrationTemplateOptions()
         {
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
+            btn_EditCalibrationTemplate.IsEnabled = Device.PhyCamera != null;
+
+            int itemCount = ComboxCalibrationTemplate.Items.Count;
+            int selectedIndex = itemCount <= 0
+                ? -1
+                : Math.Max(0, Math.Min(Device.DisplayConfig.CalibrationTemplateIndex, itemCount - 1));
+
+            ComboxCalibrationTemplate.SelectedIndex = selectedIndex;
+            UpdateCalibrationFileSummary();
+        }
+
+        private CalibrationParam? GetSelectedCalibrationTemplate()
+        {
+            return ComboxCalibrationTemplate.SelectedValue as CalibrationParam;
+        }
+
+        private static bool IsColorCalibration(CalibrationType calibrationType)
+        {
+            return calibrationType == CalibrationType.Luminance
+                || calibrationType == CalibrationType.LumOneColor
+                || calibrationType == CalibrationType.LumFourColor
+                || calibrationType == CalibrationType.LumMultiColor;
+        }
+
+        private bool TryGetSelectedCalibrationFiles(bool showErrorMessage, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+        {
+            calibrationFiles = Array.Empty<DeviceCameraCalibrationFile>();
+
+            CalibrationParam? calibrationParam = GetSelectedCalibrationTemplate();
+            if (calibrationParam == null || calibrationParam.Id == -1)
+            {
+                return true;
+            }
+
+            if (Device.TryGetCalibrationTemplateFiles(calibrationParam, out calibrationFiles, out string? errorMessage))
+            {
+                return true;
+            }
+
+            if (showErrorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
+            }
+
+            return false;
+        }
+
+        private static CalibrationItem CreateCalibrationItem(DeviceCameraCalibrationFile calibrationFile)
+        {
+            return new CalibrationItem(calibrationFile.CalibrationType, true, calibrationFile.FullPath, calibrationFile.FullPath);
+        }
+
+        private static void PopulateLegacyChannelChecks(ChannelCalibration channelCheck, IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+        {
+            foreach (DeviceCameraCalibrationFile calibrationFile in calibrationFiles)
+            {
+                CalibrationItem calibrationItem = CreateCalibrationItem(calibrationFile);
+                switch (calibrationFile.CalibrationType)
+                {
+                    case CalibrationType.DarkNoise:
+                        channelCheck.DarkNoiseCheck = calibrationItem;
+                        break;
+                    case CalibrationType.DSNU:
+                        channelCheck.dsnuCheck = calibrationItem;
+                        break;
+                    case CalibrationType.Uniformity:
+                        channelCheck.uniformityCheck = calibrationItem;
+                        break;
+                    case CalibrationType.DefectPoint:
+                    case CalibrationType.DefectBPoint:
+                    case CalibrationType.DefectWPoint:
+                        channelCheck.defectCheck = calibrationItem;
+                        break;
+                    case CalibrationType.Distortion:
+                        channelCheck.distortionCheck = calibrationItem;
+                        break;
+                }
+            }
+        }
+
+        private void ApplyCalibrationTemplate(GetFrameParam param, IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+        {
+            if (calibrationFiles.Count == 0)
+            {
+                return;
+            }
+
+            List<CalibrationItem> calibrationList = new();
+            foreach (DeviceCameraCalibrationFile calibrationFile in calibrationFiles)
+            {
+                CalibrationItem calibrationItem = CreateCalibrationItem(calibrationFile);
+                if (IsColorCalibration(calibrationFile.CalibrationType))
+                {
+                    param.lumChromaCheck = calibrationItem;
+                }
+                else
+                {
+                    calibrationList.Add(calibrationItem);
+                }
+            }
+
+            if (calibrationList.Count > 0)
+            {
+                param.calibrationlist = calibrationList;
+            }
+        }
+
+        private void UpdateCalibrationFileSummary()
+        {
+            CalibrationParam? calibrationParam = GetSelectedCalibrationTemplate();
+            if (calibrationParam == null || calibrationParam.Id == -1)
+            {
+                tb_CalibrationFiles.Text = "未选择校正模板";
+                return;
+            }
+
+            if (Device.TryGetCalibrationTemplateFiles(calibrationParam, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage))
+            {
+                tb_CalibrationFiles.Text = calibrationFiles.Count == 0
+                    ? "模板未启用校正文件"
+                    : string.Join(Environment.NewLine, calibrationFiles.Select(file => $"{file.CalibrationType}: {file.FullPath}"));
+                return;
+            }
+
+            tb_CalibrationFiles.Text = string.IsNullOrWhiteSpace(errorMessage) ? "模板解析失败" : errorMessage;
+        }
+
+        private bool TryBuildParam(string? savePath, string? exts, out string json)
+        {
+            json = string.Empty;
             GetFrameParam param = new GetFrameParam();
 
             param.channelCount = GetSelectedChannelCount();
@@ -247,57 +383,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             param.autoExpFlag = cb_AutoExp.IsChecked == true;
 
-            if (formcfg.m_bV1)
+            if (!TryGetSelectedCalibrationFiles(true, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles))
             {
-                foreach (var item in formcfg.calibV.listItem)
-                {
-                    if (item.type == CalibrationType.LumFourColor)
-                    {
-                        param.lumChromaCheck = new CalibrationItem(item.type, item.enable, item.title, "");
-                    }
-
-                    if (item.type == CalibrationType.LumMultiColor)
-                    {
-                        param.lumChromaCheck = new CalibrationItem(item.type, item.enable, item.title, "");
-                    }
-
-                    if (item.type == CalibrationType.LumOneColor)
-                    {
-                        param.lumChromaCheck = new CalibrationItem(item.type, item.enable, item.title, "");
-                    }
-
-                    if (item.type == CalibrationType.Luminance)
-                    {
-                        param.lumChromaCheck = new CalibrationItem(item.type, item.enable, item.title, "");
-                    }
-                }
+                return false;
             }
-            else
-            {
-                if (formcfg.projectSysCfg != null && formcfg.projectSysCfg.calibrationLibCfg != null)
-                    foreach (var item in formcfg.projectSysCfg.calibrationLibCfg)
-                    {
-                        if (cb_FourColorCorrect.IsChecked == true && item.type == CalibrationType.LumFourColor)
-                        {
-                            param.lumChromaCheck = new CalibrationItem(item.type, cb_FourColorCorrect.IsChecked == true, item.title, "");
-                        }
 
-                        if (cb_MulColorCorrect.IsChecked == true && item.type == CalibrationType.LumMultiColor)
-                        {
-                            param.lumChromaCheck = new CalibrationItem(item.type, cb_MulColorCorrect.IsChecked == true, item.title, "");
-                        }
-
-                        if (cb_MonoCorrect.IsChecked == true && item.type == CalibrationType.LumOneColor)
-                        {
-                            param.lumChromaCheck = new CalibrationItem(item.type, cb_MonoCorrect.IsChecked == true, item.title, "");
-                        }
-
-                        if (cb_LumCorrect.IsChecked == true && item.type == CalibrationType.Luminance)
-                        {
-                            param.lumChromaCheck = new CalibrationItem(item.type, cb_LumCorrect.IsChecked == true, item.title, "");
-                        }
-                    }
-            }
+            ApplyCalibrationTemplate(param, calibrationFiles);
 
             param.channels = new List<ChannelParam>();
 
@@ -315,31 +406,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cfwport[i] = formcfg.projectSysCfg.channelCfg[i].cfwport;
             }
 
-            if (formcfg.m_bV1)
-            {
-                param.calibrationlist = new List<CalibrationItem>();
-
-                for (int i = 0; i < formcfg.calibV.listItem.Count; i++)
-                {
-                    switch (formcfg.calibV.listItem[i].type)
-                    {
-                        case CalibrationType.ColorShift:
-                        case CalibrationType.Distortion:
-                        case CalibrationType.Uniformity:
-                        case CalibrationType.DSNU:
-                        case CalibrationType.DefectPoint:
-                        case CalibrationType.DefectBPoint:
-                        case CalibrationType.DefectWPoint:
-                        case CalibrationType.DarkNoise:
-                            param.calibrationlist.Add(new CalibrationItem(formcfg.calibV.listItem[i].type
-                                , formcfg.calibV.listItem[i].enable, formcfg.calibV.listItem[i].title, ""));
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-
             float[] exp = new float[3];
             exp[0] = 100;
             exp[1] = 100;
@@ -355,30 +421,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 ChannelCalibration channelCheck = new ChannelCalibration();
                 channel.check = channelCheck;
 
-                if (cb_DarkNoiseCorrect.IsChecked == true && formcfg.calibCfg.strDarkNoiseCali != "")
-                {
-                    channelCheck.DarkNoiseCheck = new CalibrationItem(CalibrationType.DarkNoise, true, formcfg.calibCfg.strDarkNoiseCali, "");
-                }
-
-                if (cb_DSNU.IsChecked == true && formcfg.calibCfg.szDSNUCali[i] != "")
-                {
-                    channelCheck.dsnuCheck = new CalibrationItem(CalibrationType.DSNU, true, formcfg.calibCfg.szDSNUCali[i], "");
-                }
-
-                if (cb_UniformFieldCorrect.IsChecked == true && formcfg.calibCfg.szUniformCali[i] != "")
-                {
-                    channelCheck.uniformityCheck = new CalibrationItem(CalibrationType.Uniformity, true, formcfg.calibCfg.szUniformCali[i], "");
-                }
-
-                if (cb_BadPixelCorrect.IsChecked == true && formcfg.calibCfg.strDefectCali != "")
-                {
-                    channelCheck.defectCheck = new CalibrationItem(CalibrationType.DefectPoint, true, formcfg.calibCfg.strDefectCali, "");
-                }
-
-                if (cb_DistortCorrect.IsChecked == true && formcfg.calibCfg.szDistortCali[i] != "")
-                {
-                    channelCheck.distortionCheck = new CalibrationItem(CalibrationType.Distortion, true, formcfg.calibCfg.szDistortCali[i], "");
-                }
+                PopulateLegacyChannelChecks(channelCheck, calibrationFiles);
 
                 param.channels.Add(channel);
             }
@@ -386,9 +429,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (savePath != null && exts != null)
                 param.BuildChannelsFileName(savePath, exts);
 
-            string json = JsonConvert.SerializeObject(param);
-
-            return json;
+            json = JsonConvert.SerializeObject(param);
+            return true;
         }
 
         private void cb_CM_TYPE_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -524,7 +566,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 rawArray = new byte[dstbpp / 8 * w * h * channels];
             }
             srcrawArray[47] = 90;
-            string json1 = buildParam(null, null);
+            if (!TryBuildParam(null, null, out string json1))
+            {
+                btn_Meas.IsEnabled = true;
+                btn_MeasTif.IsEnabled = true;
+                return;
+            }
 
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(json1);
             string msg = Encoding.UTF8.GetString(utf8Bytes);
@@ -550,10 +597,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             src_bpp = bpp;
             src_channels = channels;
 
-            if (cb_FourColorCorrect.IsChecked == true ||
-                cb_MulColorCorrect.IsChecked == true ||
-                cb_MonoCorrect.IsChecked == true ||
-                cb_LumCorrect.IsChecked == true)
+            if (TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+                && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType)))
             {
                 cvCameraCSLib.CM_SetBufferXYZ(m_hCamHandle, w, h, dstbpp, channels, rawArray);
             }
@@ -580,7 +625,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             btn_MeasTif.IsEnabled = false;
             btn_Meas.IsEnabled = false;
 
-            string json1 = buildParam(tb_TiffPath.Text, ".tif");
+            if (!TryBuildParam(tb_TiffPath.Text, ".tif", out string json1))
+            {
+                btn_MeasTif.IsEnabled = true;
+                btn_Meas.IsEnabled = true;
+                return;
+            }
             cvCameraCSLib.CM_GetFrame_TIFF(m_hCamHandle, json1);
 
             btn_MeasTif.IsEnabled = true;
@@ -679,7 +729,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
             }
 
-            string json1 = buildParam(null, null);
+            if (!TryBuildParam(null, null, out string json1))
+            {
+                btn_Meas.IsEnabled = true;
+                btn_MeasTif.IsEnabled = true;
+                button1.IsEnabled = true;
+                return;
+            }
 
             UInt32 w = 0, h = 0;
             UInt32 bpp = 0, channels = 0;
@@ -694,31 +750,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
             button1.IsEnabled = true;
         }
 
-        private void cb_MonoCorrect_Checked(object sender, RoutedEventArgs e)
+        private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (cb_MonoCorrect.IsChecked == true)
-            {
-                cb_FourColorCorrect.IsChecked = false;
-                cb_MulColorCorrect.IsChecked = false;
-            }
+            Device.DisplayConfig.CalibrationTemplateIndex = ComboxCalibrationTemplate.SelectedIndex;
+            UpdateCalibrationFileSummary();
         }
 
-        private void cb_FourColorCorrect_Checked(object sender, RoutedEventArgs e)
+        private void EditCalibrationTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (cb_FourColorCorrect.IsChecked == true)
+            if (Device.PhyCamera == null)
             {
-                cb_MonoCorrect.IsChecked = false;
-                cb_MulColorCorrect.IsChecked = false;
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
             }
-        }
 
-        private void cb_MulColorCorrect_Checked(object sender, RoutedEventArgs e)
-        {
-            if (cb_MulColorCorrect.IsChecked == true)
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                cb_FourColorCorrect.IsChecked = false;
-                cb_MonoCorrect.IsChecked = false;
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                return;
             }
+
+            var template = new TemplateCalibrationParam(Device.PhyCamera);
+            var windowTemplate = new TemplateEditorWindow(template, ComboxCalibrationTemplate.SelectedIndex - 1)
+            {
+                Owner = Application.Current.GetActiveWindow()
+            };
+            windowTemplate.ShowDialog();
+
+            UpdateCalibrationTemplateOptions();
         }
 
         private void cb_CM_MODE_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -771,6 +830,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Calibration_MenuItem_Click(object sender, RoutedEventArgs e)
         {
+            EditCalibrationTemplate_Click(sender, e);
         }
 
         private void ExpTime_MenuItem_Click(object sender, RoutedEventArgs e)
