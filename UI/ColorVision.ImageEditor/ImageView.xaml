@@ -55,11 +55,9 @@
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
                 <local:Zoombox x:Name="Zoombox1" Grid.ColumnSpan="2" x:FieldModifier="public" MaxZoom="{Binding MaxZoom}" MinZoom="{Binding MinZoom}">
-                    <Grid>
-                        <local:DrawCanvas x:Name="ImageShow" x:FieldModifier="public" FocusVisualStyle="{x:Null}" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" />
-                        <Canvas x:Name="TextEditorOverlay" Background="{x:Null}" Panel.ZIndex="5" />
-                    </Grid>
+                    <local:DrawCanvas x:Name="ImageShow" x:FieldModifier="public" FocusVisualStyle="{x:Null}" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" />
                 </local:Zoombox>
+                <Canvas x:Name="TextEditorOverlay" Grid.ColumnSpan="2" Background="{x:Null}" Panel.ZIndex="6" />
                 <local:PixelValueOverlay x:Name="PixelValueOverlay"
                                          Grid.ColumnSpan="2"
                                          IsHitTestVisible="False" ClipToBounds="True" Opacity="0.9"/>

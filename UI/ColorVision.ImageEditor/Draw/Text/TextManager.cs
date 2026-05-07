@@ -21,7 +21,7 @@ namespace ColorVision.ImageEditor.Draw
         private double _DefaultFontSize = 18;
 
         public string DefaultText { get => _DefaultText; set { _DefaultText = value; OnPropertyChanged(); } }
-        private string _DefaultText = "Text";
+        private string _DefaultText = string.Empty;
 
         public bool FollowZoom { get => _FollowZoom; set { _FollowZoom = value; OnPropertyChanged(); } }
         private bool _FollowZoom = true;

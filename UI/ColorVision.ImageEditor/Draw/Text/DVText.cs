@@ -77,7 +77,7 @@ namespace ColorVision.ImageEditor.Draw
         public DVText()
         {
             Attribute = new TextProperties();
-            Attribute.Text = "请在这里输入";
+            Attribute.Text = string.Empty;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10; // 与其它图元保持一致缩放策略
             Attribute.PropertyChanged += (s, e) =>
             {
@@ -158,7 +158,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private void UpdateEditorBounds()
         {
-            if (_editTextBox == null)
+            if (_editTextBox == null || _editorContext == null)
             {
                 return;
             }
@@ -166,12 +166,13 @@ namespace ColorVision.ImageEditor.Draw
             FormattedText formattedText = CreateFormattedText(_editTextBox.Text);
             double textWidth = Math.Max(formattedText.WidthIncludingTrailingWhitespace, 1);
             double textHeight = Math.Max(formattedText.Height, TextAttribute.FontSize);
+            Point overlayPoint = _editorContext.TranslatePointToTextEditorOverlay(Attribute.Position);
 
             _editTextBox.Width = Math.Max(textWidth + 16, 48);
             _editTextBox.Height = Math.Max(textHeight + 12, TextAttribute.FontSize + 10);
 
-            Canvas.SetLeft(_editTextBox, Attribute.Position.X);
-            Canvas.SetTop(_editTextBox, Attribute.Position.Y);
+            Canvas.SetLeft(_editTextBox, overlayPoint.X);
+            Canvas.SetTop(_editTextBox, overlayPoint.Y);
 
             Attribute.Rect = new Rect(Attribute.Position.X, Attribute.Position.Y, textWidth, textHeight);
         }
@@ -257,6 +258,27 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
+        private void OnZoomChanged(object? sender, EventArgs e)
+        {
+            UpdateEditorBounds();
+        }
+
+        private bool ShouldRemoveEmptyText()
+        {
+            return string.IsNullOrWhiteSpace(Attribute.Text);
+        }
+
+        private void RemoveFromCanvas()
+        {
+            if (_editorContext == null)
+            {
+                return;
+            }
+
+            _editorContext.SelectionVisual.ClearRender();
+            _editorContext.DrawCanvas.RemoveVisualCommand(this);
+        }
+
         private void DetachEditorTextBox()
         {
             if (_editTextBox == null)
@@ -307,6 +329,7 @@ namespace ColorVision.ImageEditor.Draw
             _isEditing = true;
             Attribute.IsEditing = true;
             context.SelectionVisual.ClearRender();
+            context.Zoombox.ContentMatrixChanged += OnZoomChanged;
 
             _editTextBox = CreateEditorTextBox();
             _editTextBox.TextChanged += OnEditorTextChanged;
@@ -342,11 +365,29 @@ namespace ColorVision.ImageEditor.Draw
 
             DetachEditorTextBox();
 
+            if (_editorContext != null)
+            {
+                _editorContext.Zoombox.ContentMatrixChanged -= OnZoomChanged;
+            }
+
             _isEditing = false;
             Attribute.IsEditing = false;
-            Render();
 
-            _editorContext?.SelectionVisual.SetRender(this);
+            bool removeEmptyText = ShouldRemoveEmptyText();
+            if (!removeEmptyText)
+            {
+                Render();
+            }
+
+            if (removeEmptyText)
+            {
+                RemoveFromCanvas();
+            }
+            else
+            {
+                _editorContext?.SelectionVisual.SetRender(this);
+            }
+
             _editHost = null;
             _editorContext = null;
         }

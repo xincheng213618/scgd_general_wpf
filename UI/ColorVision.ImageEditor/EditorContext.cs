@@ -32,6 +32,11 @@ namespace ColorVision.ImageEditor
 
         public Panel TextEditorOverlay => ImageView.TextEditorOverlay;
 
+        public Point TranslatePointToTextEditorOverlay(Point point)
+        {
+            return DrawCanvas.TranslatePoint(point, TextEditorOverlay);
+        }
+
         public double ZoomRatio => Zoombox.ContentMatrix.M11;
 
         public DrawEditorManager DrawEditorManager { get; init; } = new DrawEditorManager();
