@@ -99,7 +99,7 @@ namespace ColorVision.ImageEditor.Draw
                 menuIte2.Click += (s, e) =>
                 {
                     context.ImageView.ImageShow.RemoveVisualCommand(visual);
-                    context.ImageViewModel.SelectEditorVisual.ClearRender();
+                    context.SelectionVisual.ClearRender();
                 };
                 MenuItems.Add(menuIte2);
 

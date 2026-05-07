@@ -1,181 +1,40 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class PolygonManager : IEditorToggleToolBase, IDisposable
+    public class PolygonManager : MultiPointDrawingToolBase<DVPolygon>
     {
-        private Zoombox ZoomboxSub => EditorContext.Zoombox;
-        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-
-
-        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
-        public EditorContext EditorContext { get; set; }
-
-        public PolygonManager(EditorContext context)
+        public PolygonManager(EditorContext context) : base(context)
         {
-            EditorContext = context;
-            ToolBarLocal = ToolBarLocal.Draw;
             Order = 5;
 
             Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");
         }
 
+        protected override bool SupportsKeyboardCompletion => true;
+        protected override bool SelectOnMouseUp => true;
 
-
-
-        public DVPolygon? DrawingVisualPolygonCache { get; set; }
-
-        private bool _IsChecked;
-        public override bool IsChecked
+        protected override DVPolygon CreateVisual()
         {
-            get => _IsChecked; set
-            {
-                if (_IsChecked == value) return;
-                _IsChecked = value;
-                if (value)
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    Load();
-                }
-                else
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    UnLoad();
-                }
-                OnPropertyChanged();
-                
-            }
+            return new DVPolygon();
         }
 
-        public void Load()
+        protected override IList<Point> GetPoints(DVPolygon visual)
         {
-            DrawCanvas.PreviewKeyDown += DrawCanvas_PreviewKeyDown;
-            DrawCanvas.MouseMove += MouseMove;
-            DrawCanvas.MouseEnter += MouseEnter;
-            DrawCanvas.MouseLeave += MouseLeave;
-            DrawCanvas.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
-            DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
-        }
-        public void UnLoad()
-        {
-            DrawCanvas.PreviewKeyDown -= DrawCanvas_PreviewKeyDown;
-            DrawCanvas.MouseMove -= MouseMove;
-            DrawCanvas.MouseEnter -= MouseEnter;
-            DrawCanvas.MouseLeave -= MouseLeave;
-            DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
-            DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
-            DrawingVisualPolygonCache = null;
-
+            return visual.Points;
         }
 
-        private void DrawCanvas_PreviewKeyDown(object sender, KeyEventArgs e)
+        protected override void RenderVisual(DVPolygon visual)
         {
-            Key realKey = e.Key;
-            if (realKey == Key.ImeProcessed)
-            {
-                realKey = e.ImeProcessedKey;
-            }
-            if (realKey == Key.Escape)
-            {
-                if (DrawingVisualPolygonCache != null)
-                {
-                    DrawCanvas.RemoveVisualCommand(DrawingVisualPolygonCache);
-                    DrawingVisualPolygonCache = null;
-                    IsChecked = false;
-                }
-            }
-            else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
-            {
-                if (DrawingVisualPolygonCache != null)
-                {
-                    DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
-                    DrawingVisualPolygonCache.Render();
-                    ImageViewModel.SelectEditorVisual.SetRender(DrawingVisualPolygonCache);
-                    DrawingVisualPolygonCache = null;
-                    IsChecked = false;
-                }
-                e.Handled = true;
-            }
+            visual.Render();
         }
 
-
-        Point MouseDownP { get; set; }
-        Point MouseUpP { get; set; }
-
-        bool IsMouseDown;
-
-
-        private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        protected override void OnVisualCreated(DVPolygon visual)
         {
-            DrawCanvas.CaptureMouse();
-            MouseDownP = e.GetPosition(DrawCanvas);
-            IsMouseDown = true;
-            DrawCanvas.Focus();
-
-            if (DrawingVisualPolygonCache == null)
-            {
-                DrawingVisualPolygonCache = new DVPolygon();
-                DrawingVisualPolygonCache.Points.Add(MouseDownP);
-                DrawingVisualPolygonCache.Points.Add(MouseDownP);
-
-                DrawingVisualPolygonCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
-                DrawingVisualPolygonCache.Render();
-                DrawCanvas.AddVisualCommand(DrawingVisualPolygonCache);
-            }
-            else
-            {
-                DrawingVisualPolygonCache.Points.Add(MouseDownP);
-                DrawingVisualPolygonCache.Render();
-            }
-            e.Handled = true;
-        }
-
-
-        private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
-            IsMouseDown = false;
-            if (DrawingVisualPolygonCache != null)
-            {
-                MouseUpP = e.GetPosition(DrawCanvas);
-                DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
-                DrawingVisualPolygonCache.Points.Add(MouseUpP);
-                DrawingVisualPolygonCache.Render();
-                ImageViewModel.SelectEditorVisual.SetRender(DrawingVisualPolygonCache);
-            }
-            e.Handled = true;
-        }
-
-
-
-        private void MouseMove(object sender, MouseEventArgs e)
-        {
-            if (DrawingVisualPolygonCache !=null)
-            {
-                var point = e.GetPosition(DrawCanvas);
-                DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
-                DrawingVisualPolygonCache.Points.Add(point);
-                DrawingVisualPolygonCache.Render();
-            }
-            e.Handled = true;
-        }
-
-        private void MouseEnter(object sender, MouseEventArgs e)
-        {
-        }
-
-        private void MouseLeave(object sender, MouseEventArgs e)
-        {
-
-        }
-
-
-        public void Dispose()
-        {
-            UnLoad();
-            GC.SuppressFinalize(this);
+            visual.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11);
         }
     }
 }

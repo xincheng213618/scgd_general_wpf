@@ -115,7 +115,7 @@ namespace ColorVision.ImageEditor
             // (cursor change, ActivateOn toggle, DrawEditorManager reset).
             if (_previousEditMode)
             {
-                _imageViewModel._ImageEditMode = false;
+                _imageViewModel.SetImageEditModeSilently(false);
             }
             // Ensure zoombox is in draw-friendly mode
             _zoombox.ActivateOn = ModifierKeys.Control;
@@ -403,7 +403,7 @@ namespace ColorVision.ImageEditor
             _zoombox.ActivateOn = _previousActivateOn;
             if (_previousEditMode)
             {
-                _imageViewModel._ImageEditMode = true;
+                _imageViewModel.SetImageEditModeSilently(true);
             }
         }
     }

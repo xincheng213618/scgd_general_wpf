@@ -35,7 +35,6 @@ namespace ColorVision.ImageEditor.Draw
         private DefaultTextStyleConfig DefaultTextStyle => DefaultTextStyleConfig.Current;
         private Zoombox Zoombox => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
         public EditorContext EditorContext { get; set; }
 
         public TextManager(EditorContext context)
@@ -56,7 +55,7 @@ namespace ColorVision.ImageEditor.Draw
                 if (value)
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    ImageViewModel.ShowSelectionProperties(
+                    EditorContext.ShowSelectionProperties(
                         new TextBlock { Text = "文本工具", Margin = new Thickness(0, 0, 0, 6), FontWeight = FontWeights.SemiBold },
                         PropertyEditorHelper.GenPropertyEditorControl(Config),
                         new TextBlock { Text = "默认文本样式", Margin = new Thickness(0, 12, 0, 6), FontWeight = FontWeights.SemiBold },
@@ -66,7 +65,7 @@ namespace ColorVision.ImageEditor.Draw
                 else
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    ImageViewModel.ClearSelectionProperties();
+                    EditorContext.ClearSelectionProperties();
                     UnLoad();
                 }
                 OnPropertyChanged();
@@ -110,7 +109,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             TextCache = null;
-            ImageViewModel.SelectEditorVisual.ClearRender();
+            EditorContext.SelectionVisual.ClearRender();
         }
 
         private void DefaultTextStyle_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -129,13 +128,13 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            if (ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
+            if (EditorContext.SelectionVisual.GetContainingRect(MouseDownP))
             {
                 return;
             }
             else
             {
-                ImageViewModel.SelectEditorVisual.ClearRender();
+                EditorContext.SelectionVisual.ClearRender();
             }
 
             if (TextCache != null) return;
@@ -162,7 +161,7 @@ namespace ColorVision.ImageEditor.Draw
             IsMouseDown = false;
             if (TextCache != null)
             {
-                ImageViewModel.SelectEditorVisual.SetRender(TextCache);
+                EditorContext.SelectionVisual.SetRender(TextCache);
                 if (!Config.IsLocked)
                 {
                     Config.DefaultFontSize = TextCache.Attribute.TextAttribute.FontSize * Zoombox.ContentMatrix.M11; // �����߼��ߴ�

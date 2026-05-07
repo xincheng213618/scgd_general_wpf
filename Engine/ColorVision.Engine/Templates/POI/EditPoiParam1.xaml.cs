@@ -195,7 +195,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             DataContext = KBJson;
             ImageView.ImageViewModel.ImageEditMode = true;
-            ImageView.ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
+            ImageView.EditorContext.SelectionVisual.SelectVisualChanged += (s, e) =>
             {
                 ListView1.SelectedItem = e;
                 ListView1.ScrollIntoView(e);
@@ -843,7 +843,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is ISelectVisual drawingVisua)
             {
-                ImageView.ImageViewModel.SelectEditorVisual.SetRender(drawingVisua);
+                ImageView.EditorContext.SelectionVisual.SetRender(drawingVisua);
             }
         }
 

@@ -1,7 +1,9 @@
 ﻿using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor
@@ -18,11 +20,13 @@ namespace ColorVision.ImageEditor
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
-        public ImageViewModel ImageViewModel { get; set; }
-
         public ImageViewConfig Config { get; set; }  = new ImageViewConfig();
 
         public DrawCanvas DrawCanvas { get; set; }
+
+        public SelectEditorVisual SelectionVisual { get; set; }
+
+        public bool IsImageEditMode { get; set; }
 
         public Zoombox Zoombox { get; set; }
 
@@ -31,6 +35,28 @@ namespace ColorVision.ImageEditor
         public DrawEditorManager DrawEditorManager { get; init; } = new DrawEditorManager();
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
+
+        public void ShowSelectionProperties(params UIElement[] elements)
+        {
+            StackPanel selectionPropertyPanel = ImageView.SelectionPropertyPanel;
+            selectionPropertyPanel.Children.Clear();
+
+            foreach (UIElement element in elements)
+            {
+                if (element != null)
+                {
+                    selectionPropertyPanel.Children.Add(element);
+                }
+            }
+
+            ImageView.SetSelectionPropertyPanelVisibility(selectionPropertyPanel.Children.Count > 0);
+        }
+
+        public void ClearSelectionProperties()
+        {
+            ImageView.SelectionPropertyPanel.Children.Clear();
+            ImageView.SetSelectionPropertyPanelVisibility(false);
+        }
 
         public void RegisterService<TService>(TService service) where TService : class
         {

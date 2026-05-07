@@ -669,8 +669,6 @@ namespace ColorVision.ImageEditor.Draw.Special
         private Zoombox ZoomboxSub => EditorContext.Zoombox;
         private DrawCanvas Image => EditorContext.DrawCanvas;
 
-        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
-
         public EditorContext EditorContext { get; set; }
 
         public ToolReferenceLine(EditorContext editorContext)

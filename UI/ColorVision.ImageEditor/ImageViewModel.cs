@@ -26,10 +26,6 @@ namespace ColorVision.ImageEditor
         public DrawCanvas Image { get; set; }
         public Crosshair Crosshair { get; set; }
 
-        public SelectEditorVisual SelectEditorVisual { get; set; }
-
-        public StackPanel SlectStackPanel { get; set; } = new StackPanel();
-
         public ImageViewConfig Config => EditorContext.Config;
 
         public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
@@ -76,17 +72,14 @@ namespace ColorVision.ImageEditor
             EditorContext = new EditorContext()
             {
                 ImageView = imageView,
-                ImageViewModel = this,
                 DrawCanvas = imageView.ImageShow,
                 Zoombox = imageView.Zoombox1,
             };
-            SelectEditorVisual = new SelectEditorVisual(EditorContext);
+            EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
             EditorContext.IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
 
             Image = EditorContext.DrawCanvas;
-
-            SlectStackPanel = imageView.SelectionPropertyPanel;
-            imageView.SetSelectionPropertyPanelVisibility(false);
+            EditorContext.ClearSelectionProperties();
 
             EditorContext.DrawCanvas.PreviewKeyDown += HandleKeyDown;
 
@@ -109,23 +102,6 @@ namespace ColorVision.ImageEditor
             {
                 OnPropertyChanged(nameof(MinZoom));
             }
-        }
-
-        public void ShowSelectionProperties(params UIElement[] elements)
-        {
-            SlectStackPanel.Children.Clear();
-            foreach (UIElement element in elements.Where(element => element != null))
-            {
-                SlectStackPanel.Children.Add(element);
-            }
-
-            EditorContext.ImageView.SetSelectionPropertyPanelVisibility(SlectStackPanel.Children.Count > 0);
-        }
-
-        public void ClearSelectionProperties()
-        {
-            SlectStackPanel.Children.Clear();
-            EditorContext.ImageView.SetSelectionPropertyPanelVisibility(false);
         }
 
         /// <summary>
@@ -346,19 +322,34 @@ namespace ColorVision.ImageEditor
             }
         }
 
-
-
-        internal bool _ImageEditMode;
         public bool ImageEditMode
         {
-            get => _ImageEditMode;
-            set
-            {
-                if (_ImageEditMode == value) return;
-                Config.IsToolBarDrawVisible = value;
-                _ImageEditMode = value;
+            get => EditorContext.IsImageEditMode;
+            set => SetImageEditModeCore(value, applyUiState: true, notifyPropertyChanged: true);
+        }
 
-                if (_ImageEditMode)
+        internal void SetImageEditModeSilently(bool value)
+        {
+            SetImageEditModeCore(value, applyUiState: false, notifyPropertyChanged: false);
+        }
+
+        private void SetImageEditModeCore(bool value, bool applyUiState, bool notifyPropertyChanged)
+        {
+            if (EditorContext.IsImageEditMode == value)
+            {
+                return;
+            }
+
+            if (applyUiState)
+            {
+                Config.IsToolBarDrawVisible = value;
+            }
+
+            EditorContext.IsImageEditMode = value;
+
+            if (applyUiState)
+            {
+                if (value)
                 {
                     EditorContext.Zoombox.ActivateOn = ModifierKeys.Control;
                     EditorContext.Zoombox.Cursor = Cursors.Cross;
@@ -368,8 +359,13 @@ namespace ColorVision.ImageEditor
                     EditorContext.Zoombox.ActivateOn = ModifierKeys.None;
                     EditorContext.Zoombox.Cursor = Cursors.Arrow;
                 }
-                EditorContext.DrawEditorManager.SetCurrentDrawEditor(null); 
-                OnPropertyChanged();
+
+                EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
+            }
+
+            if (notifyPropertyChanged)
+            {
+                OnPropertyChanged(nameof(ImageEditMode));
             }
         }
         
