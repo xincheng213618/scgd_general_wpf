@@ -1,12 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public abstract class DragDrawingToolBase : IEditorToggleToolBase, IDisposable
+    public abstract class DragDrawingToolBase : IEditorToggleToolBase, ICompactInspectorProvider, IDisposable
     {
         private bool _isChecked;
 
@@ -38,19 +38,12 @@ namespace ColorVision.ImageEditor.Draw
                 if (value)
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    UIElement[] toolProperties = GetToolProperties();
-                    if (toolProperties.Length > 0)
-                    {
-                        EditorContext.ShowSelectionProperties(toolProperties);
-                    }
-
                     AttachDragHandlers();
                     OnActivated();
                 }
                 else
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    EditorContext.ClearSelectionProperties();
                     DetachDragHandlers();
                     OnDeactivated();
                 }
@@ -61,7 +54,9 @@ namespace ColorVision.ImageEditor.Draw
 
         protected virtual bool IgnoreWhenCtrlPressed => false;
 
-        protected virtual UIElement[] GetToolProperties() => Array.Empty<UIElement>();
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context) => BuildCompactInspectorItems();
+
+        protected virtual IEnumerable<CompactInspectorItem> BuildCompactInspectorItems() => Array.Empty<CompactInspectorItem>();
 
         protected virtual bool TryHandleExistingSelection(Point point)
         {

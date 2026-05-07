@@ -20,6 +20,8 @@ namespace ColorVision.Engine.Media
         public static bool TryGetSelectedTemplate(ImageView imageView, out PoiParam poiParam)
         {
             poiParam = imageView.Config.GetProperties<PoiParam>(SelectedTemplateRuntimeKey);
+
+
             return poiParam != null && poiParam.Id != -1;
         }
 

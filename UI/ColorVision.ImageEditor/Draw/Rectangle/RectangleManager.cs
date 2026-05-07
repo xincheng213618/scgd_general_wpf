@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -41,9 +42,16 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override bool IgnoreWhenCtrlPressed => true;
 
-        protected override UIElement[] GetToolProperties()
+        protected override IEnumerable<CompactInspectorItem> BuildCompactInspectorItems()
         {
-            return new[] { PropertyEditorHelper.GenPropertyEditorControl(Config) };
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsContinuous), Icon = CompactInspectorIcons.CreateText("∞"), Order = 10, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "连续绘制" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsLocked), Icon = CompactInspectorIcons.CreateGlyph("\uE72E"), Order = 20, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "锁定默认尺寸" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.UseCenter), Icon = CompactInspectorIcons.CreateText("◎"), Order = 30, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "以中心创建" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.DefalutWidth), Label = "W", ShowLabel = true, Width = 56, Order = 40, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.DefalutHeight), Label = "H", ShowLabel = true, Width = 56, Order = 50, EditorKind = CompactInspectorEditorKind.Number },
+            };
         }
 
         protected override void OnDeactivated()

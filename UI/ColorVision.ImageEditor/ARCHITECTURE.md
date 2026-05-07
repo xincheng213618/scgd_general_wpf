@@ -95,6 +95,7 @@ ImageView
 
 - `Draw/Rectangle/RectangleManager.cs`
 - `Draw/Text/TextManager.cs`
+- `Draw/BrushManager.cs`
 - `Draw/Ruler/MeasureManager.cs`
 - `Draw/Circle/CircleManager.cs`
 - `Draw/Polygon/PolygonManager.cs`
@@ -122,7 +123,7 @@ ImageView
 
 1. 选中图元时绘制控制框和八个调整点。
 2. 处理拖拽缩放、移动、置顶、栅格化。
-3. 把当前选中对象的属性界面送到 `SelectionPropertyPanel`。
+3. 发出选择变化，驱动底部 `CompactInspectorBar` 在“当前工具”和“当前单选图元”之间切换紧凑属性项。
 
 当前绘图工具骨架已经分成三类：
 
@@ -149,10 +150,10 @@ ImageView
 
 | 位置 | 主要职责 |
 | --- | --- |
-| `ImageView.xaml` | 定义 UI 宿主骨架：`Zoombox`、`DrawCanvas`、像素值 overlay、各方向工具栏、选择属性浮层 |
+| `ImageView.xaml` | 定义 UI 宿主骨架：`Zoombox`、`DrawCanvas`、像素值 overlay、各方向工具栏、底部 `CompactInspectorBar` |
 | `ImageView.xaml.cs` | 初始化编排、载图、清理、保存、状态栏、注释导入导出、通道切换、缩放刷新 |
 | `ImageViewModel.cs` | 编辑态入口、右键菜单、上下文菜单聚合、缩放比绑定 |
-| `EditorContext.cs` | 当前 `ImageView` 的运行时容器、轻量服务注册表、选择属性面板宿主、编辑态运行时状态 |
+| `EditorContext.cs` | 当前 `ImageView` 的运行时容器、轻量服务注册表、`CompactInspectorPresenter`、编辑态运行时状态 |
 | `ImageViewConfig.cs` | 当前视图配置与属性字典，区分 `ImageMetadata` / `ViewState` / `OpenerRuntime` / `Legacy` |
 | `DrawCanvas.cs` | 图像画布、视觉树、Undo/Redo、命中测试 |
 | `EditorToolFactory.cs` | 反射发现工具/菜单/打开器/初始化组件，并把工具挂到工具栏 |
@@ -179,6 +180,7 @@ ImageView
 | `Polygon/` | 多边形图元、属性、工具、annotation 模块 |
 | `BezierCurve/` | 贝塞尔曲线图元、属性、工具、annotation 模块 |
 | `Text/` | 文字图元、默认文本样式、annotation 模块 |
+| `BrushManager.cs` | 自由画笔/荧光笔标注工具与笔迹图元 |
 | `Ruler/` | 标尺、物理尺寸、标定、比例尺工具 |
 | `Special/` | 十字线、网格、参考线、放大镜等辅助视觉元素 |
 | `Annotations/` | 标注导入导出 DTO 和 mapper |
@@ -190,6 +192,8 @@ ImageView
 2. `DV*` 是具体 `DrawingVisual`。
 3. `*Manager.cs` 是挂在工具栏上的绘图工具。
 4. `*AnnotationModule.cs` 负责导入导出。
+
+当前例外是 `BrushManager.cs`：它已经提供自由画笔和荧光笔式标注，但暂时还没有独立的 annotation module 接到导入导出链路。
 
 ### 3.4 非绘图工具子系统
 

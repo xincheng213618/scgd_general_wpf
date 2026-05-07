@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
 using Newtonsoft.Json;
@@ -39,7 +40,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-    public class DVCircleText : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle, ILayoutScaleDrawingVisual
+    public class DVCircleText : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
@@ -98,6 +99,16 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.Radius = rect.Width / 2;
             Attribute.RadiusY = rect.Height / 2;
             Render();
+        }
+
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        {
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "填充" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = "文本" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Label = "字", ShowLabel = true, Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number },
+            };
         }
     }
 

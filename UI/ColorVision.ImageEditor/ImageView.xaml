@@ -65,9 +65,28 @@
                 <ComboBox x:Name="ComboBoxLayers" Grid.Column="1" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" x:FieldModifier="public" BorderThickness="0" Opacity="0.6" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Visibility="Collapsed" />
                 <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}" />
 
-                <ToolBarTray x:Name="ToolBarDraw" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.9" Visibility="{Binding Config.IsToolBarDrawVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                    <ToolBar ToolBarTray.IsLocked="True" />
-                </ToolBarTray>
+                <StackPanel x:Name="DrawToolbarHost"
+                            Margin="0,0,0,8"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Panel.ZIndex="10"
+                            Visibility="{Binding Config.IsToolBarDrawVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                    <Border x:Name="CompactInspectorOverlay"
+                            Margin="0,0,0,6"
+                            Padding="6,4"
+                            HorizontalAlignment="Center"
+                            Background="{DynamicResource GlobalBackground}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="14"
+                            Visibility="Collapsed"
+                            Opacity="0.9">
+                        <StackPanel x:Name="CompactInspectorPanel" Orientation="Horizontal" />
+                    </Border>
+                    <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.9">
+                        <ToolBar ToolBarTray.IsLocked="True" />
+                    </ToolBarTray>
+                </StackPanel>
 
                 <ToolBarTray x:Name="ToolBarTop" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.9" Visibility="{Binding Config.IsToolBarTopVisible, Converter={StaticResource bool2VisibilityConverter}}">
                     <ToolBar Margin="0,2,4,0" ToolBarTray.IsLocked="True">
@@ -84,24 +103,6 @@
                     <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" />
                 </ToolBarTray>
 
-                <Border x:Name="SelectionPropertyOverlay"
-                        Margin="0,0,12,12"
-                        Padding="10"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Bottom"
-                        Panel.ZIndex="10"
-                        Background="{DynamicResource GlobalBorderBrush}"
-                        BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Visibility="Collapsed" Opacity="0.5">
-                    <StackPanel>
-                        <TextBlock Margin="0,0,0,8" FontWeight="SemiBold" Text="当前工具属性" />
-                        <ScrollViewer MaxWidth="320" MaxHeight="280" VerticalScrollBarVisibility="Auto">
-                            <StackPanel x:Name="SelectionPropertyPanel" />
-                        </ScrollViewer>
-                    </StackPanel>
-                </Border>
             </Grid>
         </Grid>
     </Grid>

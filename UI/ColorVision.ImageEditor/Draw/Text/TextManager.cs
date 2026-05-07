@@ -1,7 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.Draw
         private bool _FollowZoom = true;
     }
 
-    public class TextManager : IEditorToggleToolBase, IDisposable
+    public class TextManager : IEditorToggleToolBase, ICompactInspectorProvider, IDisposable
     {
         private const string DefaultStyleSaveKeyPrefix = "TextManagerDefaultStyleSave_";
 
@@ -44,6 +44,7 @@ namespace ColorVision.ImageEditor.Draw
             Order = 8;
             Icon = new TextBlock() { Text = "A" };
             Config.DefaultFontSize = DefaultTextStyle.FontSize;
+            Config.PropertyChanged += Config_PropertyChanged;
         }
 
         public override bool IsChecked
@@ -55,17 +56,11 @@ namespace ColorVision.ImageEditor.Draw
                 if (value)
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    EditorContext.ShowSelectionProperties(
-                        new TextBlock { Text = "文本工具", Margin = new Thickness(0, 0, 0, 6), FontWeight = FontWeights.SemiBold },
-                        PropertyEditorHelper.GenPropertyEditorControl(Config),
-                        new TextBlock { Text = "默认文本样式", Margin = new Thickness(0, 12, 0, 6), FontWeight = FontWeights.SemiBold },
-                        PropertyEditorHelper.GenPropertyEditorControl(DefaultTextStyle));
                     Load();
                 }
                 else
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    EditorContext.ClearSelectionProperties();
                     UnLoad();
                 }
                 OnPropertyChanged();
@@ -120,6 +115,24 @@ namespace ColorVision.ImageEditor.Draw
             }
 
             DebounceTimer.AddOrResetTimer(DefaultStyleSaveKeyPrefix + EditorContext.Id, 120, DefaultTextStyleConfig.SaveCurrent);
+        }
+
+        private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(TextManagerConfig.DefaultFontSize) && DefaultTextStyle.FontSize != Config.DefaultFontSize)
+            {
+                DefaultTextStyle.FontSize = Config.DefaultFontSize;
+            }
+        }
+
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        {
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.FontSize), Label = "字", ShowLabel = true, Width = 56, Order = 10, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.Brush), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "默认颜色" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.FollowZoom), Label = "缩放", Order = 30, EditorKind = CompactInspectorEditorKind.Toggle },
+            };
         }
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -182,6 +195,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
+            Config.PropertyChanged -= Config_PropertyChanged;
             UnLoad();
             GC.SuppressFinalize(this);
         }

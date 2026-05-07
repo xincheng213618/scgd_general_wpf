@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,6 +13,53 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class BrushManagerConfig : ViewModelBase
     {
+        [DisplayName("颜色"), JsonIgnore]
+        public Brush StrokeBrush
+        {
+            get => _strokeBrush;
+            set
+            {
+                Brush next = value ?? Brushes.Red;
+                if (Equals(_strokeBrush, next))
+                {
+                    return;
+                }
+
+                _strokeBrush = next;
+                OnPropertyChanged();
+            }
+        }
+        private Brush _strokeBrush = Brushes.Red;
+
+        [Browsable(false)]
+        [JsonProperty(nameof(StrokeBrush))]
+        public string SerializedStrokeBrush
+        {
+            get => TextStyleSerialization.SerializeBrush(StrokeBrush);
+            set
+            {
+                StrokeBrush = TextStyleSerialization.DeserializeBrush(value, Brushes.Red);
+                OnPropertyChanged();
+            }
+        }
+
+        [DisplayName("荧光笔")]
+        public bool IsHighlighter
+        {
+            get => _isHighlighter;
+            set
+            {
+                if (_isHighlighter == value)
+                {
+                    return;
+                }
+
+                _isHighlighter = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _isHighlighter;
+
         public double StrokeThickness
         {
             get => _strokeThickness;
@@ -62,6 +110,36 @@ namespace ColorVision.ImageEditor.Draw
         }
         private Pen _pen = new Pen(Brushes.Red, 1);
 
+        [Category("Brush"), DisplayName("颜色"), JsonIgnore]
+        public Brush Brush
+        {
+            get => Pen.Brush;
+            set
+            {
+                Pen writablePen = EnsureWritablePen();
+                Brush next = value ?? Brushes.Red;
+                if (Equals(writablePen.Brush, next))
+                {
+                    return;
+                }
+
+                writablePen.Brush = next;
+                OnPropertyChanged();
+            }
+        }
+
+        [Browsable(false)]
+        [JsonProperty(nameof(Brush))]
+        public string SerializedBrush
+        {
+            get => TextStyleSerialization.SerializeBrush(Brush);
+            set
+            {
+                Brush = TextStyleSerialization.DeserializeBrush(value, Brushes.Red);
+                OnPropertyChanged();
+            }
+        }
+
         [Browsable(false)]
         public double ScreenThickness
         {
@@ -80,11 +158,40 @@ namespace ColorVision.ImageEditor.Draw
         }
         private double _screenThickness = 4;
 
+        [Category("Brush"), DisplayName("笔宽")]
+        public double StrokeThickness
+        {
+            get => ScreenThickness;
+            set
+            {
+                double next = Math.Max(1, value);
+                if (ScreenThickness == next)
+                {
+                    return;
+                }
+
+                ScreenThickness = next;
+                Pen writablePen = EnsureWritablePen();
+                writablePen.Thickness = next;
+                OnPropertyChanged();
+            }
+        }
+
         [Browsable(false)]
         public List<Point> Points { get; set; } = new List<Point>();
+
+        private Pen EnsureWritablePen()
+        {
+            if (_pen.IsFrozen)
+            {
+                _pen = _pen.Clone();
+            }
+
+            return _pen;
+        }
     }
 
-    public class DVBrushStroke : DrawingVisualBase<BrushStrokeProperties>, IDrawingVisual, ILayoutScaleDrawingVisual
+    public class DVBrushStroke : DrawingVisualBase<BrushStrokeProperties>, IDrawingVisual, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
         public Pen Pen
         {
@@ -233,6 +340,15 @@ namespace ColorVision.ImageEditor.Draw
 
             Render();
         }
+
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        {
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "颜色" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.StrokeThickness), Label = "宽", ShowLabel = true, Width = 56, Order = 20, EditorKind = CompactInspectorEditorKind.Number },
+            };
+        }
     }
 
     public class BrushManager : DragDrawingToolBase
@@ -247,12 +363,25 @@ namespace ColorVision.ImageEditor.Draw
             Icon = new TextBlock { Text = "B" };
         }
 
-        protected override UIElement[] GetToolProperties()
+        private Brush CreateDisplayBrush()
         {
-            return new UIElement[]
+            Brush brush = Config.StrokeBrush?.CloneCurrentValue() ?? Brushes.Red.CloneCurrentValue();
+            if (Config.IsHighlighter)
             {
-                new TextBlock { Text = "画笔标注", Margin = new Thickness(0, 0, 0, 6), FontWeight = FontWeights.SemiBold },
-                PropertyEditorHelper.GenPropertyEditorControl(Config)
+                brush.Opacity = Math.Min(brush.Opacity, 0.35);
+            }
+
+            return brush;
+        }
+
+        protected override IEnumerable<CompactInspectorItem> BuildCompactInspectorItems()
+        {
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.StrokeBrush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "颜色" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsHighlighter), Label = "荧光", Order = 20, EditorKind = CompactInspectorEditorKind.Toggle },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.StrokeThickness), Label = "宽", ShowLabel = true, Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.SampleSpacing), Label = "采样", ShowLabel = true, Width = 56, Order = 40, EditorKind = CompactInspectorEditorKind.Number },
             };
         }
 
@@ -280,7 +409,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 Id = GetNextDrawingVisualId(),
                 ScreenThickness = Config.StrokeThickness,
-                Pen = new Pen(Brushes.Red, Config.StrokeThickness / Math.Max(Zoombox.ContentMatrix.M11, 0.0001))
+                Pen = new Pen(CreateDisplayBrush(), Config.StrokeThickness / Math.Max(Zoombox.ContentMatrix.M11, 0.0001))
                 {
                     StartLineCap = PenLineCap.Round,
                     EndLineCap = PenLineCap.Round,

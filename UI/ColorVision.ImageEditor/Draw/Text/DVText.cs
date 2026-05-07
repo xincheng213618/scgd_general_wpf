@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
@@ -62,7 +63,7 @@ namespace ColorVision.ImageEditor.Draw
         private bool _IsEditing = false;
     }
 
-    public class DVText : DrawingVisualBase<TextProperties>, IDrawingVisual, IEditableDrawingVisual, ILayoutScaleDrawingVisual
+    public class DVText : DrawingVisualBase<TextProperties>, IDrawingVisual, IEditableDrawingVisual, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
         public TextAttribute TextAttribute => Attribute.TextAttribute;
 
@@ -165,6 +166,16 @@ namespace ColorVision.ImageEditor.Draw
         private void ClearVisual()
         {
             using DrawingContext dc = RenderOpen();
+        }
+
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        {
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Order = 10, Width = 140, EditorKind = CompactInspectorEditorKind.Text, ToolTip = "文本" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Foreground), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "颜色" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Label = "字", ShowLabel = true, Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number },
+            };
         }
 
         private void UpdateEditorBounds()

@@ -105,7 +105,7 @@ namespace ColorVision.ImageEditor
             ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
             ImageShow.TextFontSizeOverride = Config.DrawingTextFontSize;
             UpdateDrawingVisualScale();
-            SetSelectionPropertyPanelVisibility(false);
+            SetCompactInspectorVisibility(false);
             PixelValueOverlay.Attach(this);
 
             Config.ShowMsgChanged += (s, e) =>
@@ -187,9 +187,21 @@ namespace ColorVision.ImageEditor
             window.ShowDialog();
         }
 
-        internal void SetSelectionPropertyPanelVisibility(bool isVisible)
+        internal void SetCompactInspectorVisibility(bool isVisible)
         {
-            SelectionPropertyOverlay.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+            CompactInspectorOverlay.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        internal void SetCompactInspectorItems(IEnumerable<FrameworkElement> elements)
+        {
+            CompactInspectorPanel.Children.Clear();
+
+            foreach (FrameworkElement element in elements)
+            {
+                CompactInspectorPanel.Children.Add(element);
+            }
+
+            SetCompactInspectorVisibility(CompactInspectorPanel.Children.Count > 0);
         }
 
 
@@ -449,28 +461,7 @@ namespace ColorVision.ImageEditor
                 log.Error("传入的 WriteableBitmap 为 null，无法打开图像。");
             }
         }
-
-
         private List<SelectionChangedEventHandler> _handlers = new List<SelectionChangedEventHandler>();
-        private readonly Dictionary<string, FrameworkElement> _advancedSettingSections = new();
-
-        public void AddOrReplaceAdvancedSettingSection(string key, FrameworkElement section)
-        {
-            RemoveAdvancedSettingSection(key);
-            SelectionPropertyPanel.Children.Add(section);
-            _advancedSettingSections[key] = section;
-            SetSelectionPropertyPanelVisibility(SelectionPropertyPanel.Children.Count > 0);
-        }
-
-        public void RemoveAdvancedSettingSection(string key)
-        {
-            if (_advancedSettingSections.TryGetValue(key, out var section))
-            {
-                SelectionPropertyPanel.Children.Remove(section);
-                _advancedSettingSections.Remove(key);
-                SetSelectionPropertyPanelVisibility(SelectionPropertyPanel.Children.Count > 0);
-            }
-        }
 
         public void AddSelectionChangedHandler(SelectionChangedEventHandler handler)
         {

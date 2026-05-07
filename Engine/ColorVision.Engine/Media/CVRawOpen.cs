@@ -390,8 +390,7 @@ namespace ColorVision.Engine.Media
 
                         if (!PoiImageViewComponent.TryGetSelectedTemplate(EditorContext.ImageView, out PoiParam poiParams))
                         {
-                            MessageBox1.Show(ColorVision.Engine.Properties.Resources.ConfigePOINeed);
-                            return;
+                            poiParams = new PoiParam();
                         }
 
                         if (!EditorContext.Config.GetProperties<bool>("IsBufferSet"))

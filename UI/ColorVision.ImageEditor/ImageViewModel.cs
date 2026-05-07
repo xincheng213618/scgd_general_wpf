@@ -77,9 +77,10 @@ namespace ColorVision.ImageEditor
             };
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
             EditorContext.IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
+            EditorContext.CompactInspectorPresenter = new CompactInspectorPresenter(EditorContext);
 
             Image = EditorContext.DrawCanvas;
-            EditorContext.ClearSelectionProperties();
+            EditorContext.CompactInspectorPresenter.Refresh();
 
             EditorContext.DrawCanvas.PreviewKeyDown += HandleKeyDown;
 
@@ -373,6 +374,8 @@ namespace ColorVision.ImageEditor
             {
                 item.Dispose();
             }
+
+            EditorContext.CompactInspectorPresenter?.Dispose();
 
             EditorContext.DrawingVisualLists?.Clear();
             EditorContext.DrawingVisualLists = null;

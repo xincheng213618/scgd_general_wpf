@@ -179,6 +179,7 @@ namespace ColorVision.ImageEditor.Draw
         public void ClearRender()
         {
             Clear();
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
             Render();
         }
         private void Clear()
@@ -187,6 +188,8 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
             ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
         }
+
+        public ISelectVisual? PrimarySelectedVisual => SelectVisuals.Count == 1 ? SelectVisuals[0] : null;
 
 
         public void SetRender<T>(T selectVisual)  where T :ISelectVisual
@@ -204,6 +207,7 @@ namespace ColorVision.ImageEditor.Draw
                 DrawCanvas.PreviewKeyDown += PreviewKeyDown;
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
             }
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
             if (!DrawCanvas.ContainsVisual(this))
             {
                 DrawCanvas.AddVisual(this);
@@ -215,6 +219,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
         public event EventHandler<ISelectVisual> SelectVisualChanged;
+        public event EventHandler? SelectionChanged;
 
 
         public void SetRenders<T>(IEnumerable<T> selectVisuals) where T : ISelectVisual
@@ -237,6 +242,7 @@ namespace ColorVision.ImageEditor.Draw
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
 
             }
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
             if (!DrawCanvas.ContainsVisual(this))
             {
                 DrawCanvas.AddVisual(this);

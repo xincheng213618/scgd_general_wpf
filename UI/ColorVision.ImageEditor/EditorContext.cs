@@ -43,27 +43,7 @@ namespace ColorVision.ImageEditor
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
 
-        public void ShowSelectionProperties(params UIElement[] elements)
-        {
-            StackPanel selectionPropertyPanel = ImageView.SelectionPropertyPanel;
-            selectionPropertyPanel.Children.Clear();
-
-            foreach (UIElement element in elements)
-            {
-                if (element != null)
-                {
-                    selectionPropertyPanel.Children.Add(element);
-                }
-            }
-
-            ImageView.SetSelectionPropertyPanelVisibility(selectionPropertyPanel.Children.Count > 0);
-        }
-
-        public void ClearSelectionProperties()
-        {
-            ImageView.SelectionPropertyPanel.Children.Clear();
-            ImageView.SetSelectionPropertyPanelVisibility(false);
-        }
+        public CompactInspectorPresenter CompactInspectorPresenter { get; set; }
 
         public void RegisterService<TService>(TService service) where TService : class
         {

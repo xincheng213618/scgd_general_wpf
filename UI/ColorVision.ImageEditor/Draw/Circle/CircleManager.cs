@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -37,9 +38,14 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override bool IgnoreWhenCtrlPressed => true;
 
-        protected override UIElement[] GetToolProperties()
+        protected override IEnumerable<CompactInspectorItem> BuildCompactInspectorItems()
         {
-            return new[] { PropertyEditorHelper.GenPropertyEditorControl(Config) };
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsContinuous), Icon = CompactInspectorIcons.CreateText("∞"), Order = 10, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "连续绘制" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsLocked), Icon = CompactInspectorIcons.CreateGlyph("\uE72E"), Order = 20, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "锁定默认半径" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.DefalutRadius), Label = "R", ShowLabel = true, Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number },
+            };
         }
 
         protected override void OnDeactivated()
