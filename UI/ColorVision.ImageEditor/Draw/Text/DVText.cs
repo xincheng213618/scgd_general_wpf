@@ -138,7 +138,18 @@ namespace ColorVision.ImageEditor.Draw
             Render();
         }
 
-        private FormattedText CreateFormattedText(string text)
+        private double GetEditorScreenFontSize()
+        {
+            double zoomRatio = _editorContext?.ZoomRatio ?? 1;
+            if (double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0)
+            {
+                zoomRatio = 1;
+            }
+
+            return Math.Max(TextAttribute.FontSize * zoomRatio, 1);
+        }
+
+        private FormattedText CreateFormattedText(string text, double fontSize)
         {
             string measuredText = string.IsNullOrEmpty(text) ? " " : text;
             return new FormattedText(
@@ -146,7 +157,7 @@ namespace ColorVision.ImageEditor.Draw
                 CultureInfo.CurrentCulture,
                 TextAttribute.FlowDirection,
                 new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
-                TextAttribute.FontSize,
+                fontSize,
                 TextAttribute.Brush,
                 VisualTreeHelper.GetDpi(this).PixelsPerDip);
         }
@@ -163,13 +174,17 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            FormattedText formattedText = CreateFormattedText(_editTextBox.Text);
+            double editorFontSize = GetEditorScreenFontSize();
+            FormattedText formattedText = CreateFormattedText(_editTextBox.Text, editorFontSize);
             double textWidth = Math.Max(formattedText.WidthIncludingTrailingWhitespace, 1);
-            double textHeight = Math.Max(formattedText.Height, TextAttribute.FontSize);
+            double textHeight = Math.Max(formattedText.Height, editorFontSize);
             Point overlayPoint = _editorContext.TranslatePointToTextEditorOverlay(Attribute.Position);
 
-            _editTextBox.Width = Math.Max(textWidth + 16, 48);
-            _editTextBox.Height = Math.Max(textHeight + 12, TextAttribute.FontSize + 10);
+            _editTextBox.FontSize = editorFontSize;
+            _editTextBox.MinWidth = Math.Max(editorFontSize, 12);
+            _editTextBox.MinHeight = Math.Max(editorFontSize + 2, 12);
+            _editTextBox.Width = Math.Max(textWidth + 4, _editTextBox.MinWidth);
+            _editTextBox.Height = Math.Max(textHeight + 4, _editTextBox.MinHeight);
 
             Canvas.SetLeft(_editTextBox, overlayPoint.X);
             Canvas.SetTop(_editTextBox, overlayPoint.Y);
@@ -182,7 +197,7 @@ namespace ColorVision.ImageEditor.Draw
             return new TextBox
             {
                 Text = Attribute.Text,
-                FontSize = TextAttribute.FontSize,
+                FontSize = GetEditorScreenFontSize(),
                 FontFamily = TextAttribute.FontFamily,
                 FontStyle = TextAttribute.FontStyle,
                 FontWeight = TextAttribute.FontWeight,
@@ -193,11 +208,11 @@ namespace ColorVision.ImageEditor.Draw
                 Background = Brushes.White,
                 BorderThickness = new Thickness(1),
                 BorderBrush = Brushes.DeepSkyBlue,
-                Padding = new Thickness(4, 2, 4, 2),
+                Padding = new Thickness(0),
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.NoWrap,
-                MinWidth = 48,
-                MinHeight = TextAttribute.FontSize + 10,
+                MinWidth = 12,
+                MinHeight = 12,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top
             };
