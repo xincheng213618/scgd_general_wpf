@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
@@ -597,13 +598,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
             src_bpp = bpp;
             src_channels = channels;
 
-            if (TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-                && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType)))
+            bool hasColorCalibration = TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+                && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
+
+            if (hasColorCalibration)
             {
                 cvCameraCSLib.CM_SetBufferXYZ(m_hCamHandle, w, h, dstbpp, channels, rawArray);
             }
 
             ShowImageInView(srcrawArray, (int)bpp, (int)channels, (int)w, (int)h);
+
+            if (hasColorCalibration)
+            {
+                AttachLiveCvcieResult(w, h, dstbpp, channels);
+            }
         }
 
         private void ShowImageInView(byte[] data, int bpp, int channels, int width, int height)
@@ -611,13 +619,53 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var pixelFormat = GetPixelFormat(channels, bpp);
             int stride = width * channels * (bpp / 8);
 
+            ImageView.EditorContext.IImageOpen = null;
+            ImageView.IEditorToolFactory.ApplyImageOpenTools(null);
+            ImageView.SetLayerController(null);
+            ImageView.Config.ClearProperties();
+
             WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, pixelFormat, null);
             writeableBitmap.Lock();
             Marshal.Copy(data, 0, writeableBitmap.BackBuffer, Math.Min(data.Length, stride * height));
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
             writeableBitmap.Unlock();
 
-            ImageView.ImageShow.Source = writeableBitmap;
+            ImageView.OpenImage(writeableBitmap);
+        }
+
+        private static float ParseExposureText(string? text, float defaultValue)
+        {
+            return float.TryParse(text, out float value) ? value : defaultValue;
+        }
+
+        private float[] GetCurrentExposureValues(int channelCount)
+        {
+            float exposure1 = ParseExposureText(tb_Exp.Text, 100f);
+            float exposure2 = ParseExposureText(tb_Exp2.Text, exposure1);
+            float exposure3 = ParseExposureText(tb_Exp3.Text, exposure2);
+
+            return channelCount switch
+            {
+                <= 1 => new[] { exposure1 },
+                2 => new[] { exposure1, exposure2 },
+                _ => new[] { exposure1, exposure2, exposure3 },
+            };
+        }
+
+        private void AttachLiveCvcieResult(uint width, uint height, uint bpp, uint channels)
+        {
+            if (rawArray == null || rawArray.Length == 0)
+            {
+                return;
+            }
+
+            if (!ImageView.IEditorToolFactory.IImageOpens.TryGetValue(".cvcie", out var imageOpen)
+                || imageOpen is not CVRawOpen cvRawOpen)
+            {
+                return;
+            }
+
+            cvRawOpen.AttachLiveCvcie(ImageView, width, height, bpp, channels, rawArray, GetCurrentExposureValues(GetSelectedChannelCount()));
         }
 
         private void btn_MeasTif_Click(object sender, RoutedEventArgs e)
@@ -743,7 +791,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             cvCameraCSLib.CM_GetFrame(m_hCamHandle, json1, ref w, ref h, ref srcbpp, ref bpp, ref channels, srcrawArray, rawArray);
 
+            bool hasColorCalibration = TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+                && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
+
             ShowImageInView(srcrawArray, (int)srcbpp, (int)channels, (int)w, (int)h);
+
+            if (hasColorCalibration)
+            {
+                AttachLiveCvcieResult(w, h, bpp, channels);
+            }
 
             btn_Meas.IsEnabled = true;
             btn_MeasTif.IsEnabled = true;

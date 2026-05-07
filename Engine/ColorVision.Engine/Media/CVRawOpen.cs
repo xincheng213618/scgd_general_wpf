@@ -76,24 +76,60 @@ namespace ColorVision.Engine.Media
         }
         bool ShowDateFilePath;
 
-        public void CVCIESetBuffer(ImageView imageView,string filePath)
+        private static string? ResolveAssociatedRawFilePath(string filePath, CVCIEFile meta)
         {
-            CVCIEFile meta;
-            int index;
+            if (!string.IsNullOrWhiteSpace(meta.SrcFileName))
+            {
+                if (File.Exists(meta.SrcFileName))
+                {
+                    return meta.SrcFileName;
+                }
 
+                string relativePath = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.SrcFileName);
+                if (File.Exists(relativePath))
+                {
+                    return relativePath;
+                }
+            }
+
+            string siblingRawPath = Path.Combine(
+                Path.GetDirectoryName(filePath) ?? string.Empty,
+                Path.GetFileNameWithoutExtension(filePath) + ".cvraw");
+
+            return File.Exists(siblingRawPath) ? siblingRawPath : null;
+        }
+
+        private void InitializeCvFileView(ImageView imageView, string filePath)
+        {
+            if (!File.Exists(filePath) || !CVFileUtil.IsCIEFile(filePath))
+            {
+                return;
+            }
+
+            imageView.Config.FilePath = filePath;
+
+            int index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile meta);
+            if (index <= 0)
+            {
+                return;
+            }
+
+            if (meta.FileExtType != CVType.CIE)
+            {
+                imageView.SetLayerController(CvRawLayerController.Create(imageView, filePath, isCie: false, meta.Channels, hasRgbLayers: meta.Channels >= 3));
+                return;
+            }
 
             Action LoadBuffer = new Action(() =>
             {
                 if (imageView.Config.GetProperties<bool>("IsBufferSet")) return;
-                var meta = imageView.Config.GetProperties<CVCIEFile>("meta");
-                int index = imageView.Config.GetProperties<int>("index");
                 CVFileUtil.ReadCIEFileData(filePath, ref meta, index);
                 int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.Cols, (uint)meta.Rows, (uint)meta.Bpp, (uint)meta.Channels, meta.Data);
                 log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                 // ConvertXYZ will hold its own buffer copy; release managed raw data to reduce peak memory.
                 meta.Data = null;
+                imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
                 imageView.Config.SetOpenerRuntime("IsBufferSet", true, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
-
             });
 
             _loadBuffer = LoadBuffer;
@@ -134,54 +170,83 @@ namespace ColorVision.Engine.Media
             }
             imageView.Config.Cleared += Config_Cleared;
 
-           
-
-
             if (!Config.ConvertXYZhandleOnce)
             {
                 int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
                 log.Info($"ConvertXYZ.CM_InitXYZ :{result}");
                 Config.ConvertXYZhandleOnce = true;
             }
-            imageView.Config.FilePath = filePath;
 
-            if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
+            CvcieMouseProbeOptions probeOptions = CvcieMouseProbeOptions.GetOrCreate(imageView);
+            _probeOptions = probeOptions;
+            log.Debug(JsonConvert.SerializeObject(meta));
+            imageView.Config.SetOpenerRuntime("IsCVCIE", true, nameof(CVRawOpen), "当前视图是否由 CVCIE 打开器接管");
+
+            if (ReferenceEquals(imageView.EditorContext.IImageOpen, this)
+                && string.Equals(imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), filePath, StringComparison.Ordinal))
             {
-                 index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out meta);
-                if (index <= 0) return;
-                if (meta.FileExtType == CVType.CIE)
-                {
-                    CvcieMouseProbeOptions probeOptions = CvcieMouseProbeOptions.GetOrCreate(imageView);
-                    _probeOptions = probeOptions;
-                    log.Debug(JsonConvert.SerializeObject(meta));
-                    imageView.Config.SetOpenerRuntime("IsCVCIE", true, nameof(CVRawOpen), "当前视图是否由 CVCIE 打开器接管");
-
-                    if (ReferenceEquals(imageView.EditorContext.IImageOpen, this)
-                        && string.Equals(imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), filePath, StringComparison.Ordinal))
-                    {
-                        imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
-                    }
-
-                    imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
-                    imageView.Config.SetOpenerRuntime("index", index, nameof(CVRawOpen), "CVCIE 数据块索引");
-                    imageView.Config.SetOpenerRuntime("Exp", meta.Exp, nameof(CVRawOpen), "当前 CVCIE 曝光数组");
-
-                    imageView.Config.SetOpenerRuntime("IsBufferSet", false, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
-                    exp = meta.Exp;
-
-                    if (meta.SrcFileName !=null && !File.Exists(meta.SrcFileName))
-                        meta.SrcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.SrcFileName);
-
-                    bool hasRgbLayers = File.Exists(meta.SrcFileName);
-
-                    imageView.SetLayerController(CvRawLayerController.Create(imageView, filePath, isCie: true, meta.Channels, hasRgbLayers));
-                }
-                else
-                {
-                    imageView.SetLayerController(CvRawLayerController.Create(imageView, filePath, isCie: false, meta.Channels, hasRgbLayers: meta.Channels >= 3));
-                }
+                imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
             }
 
+            imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
+            imageView.Config.SetOpenerRuntime("index", index, nameof(CVRawOpen), "CVCIE 数据块索引");
+            imageView.Config.SetOpenerRuntime("Exp", meta.Exp, nameof(CVRawOpen), "当前 CVCIE 曝光数组");
+            imageView.Config.SetOpenerRuntime("IsBufferSet", false, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
+
+            exp = meta.Exp;
+
+            string? associatedRawFilePath = ResolveAssociatedRawFilePath(filePath, meta);
+            if (!string.IsNullOrWhiteSpace(associatedRawFilePath))
+            {
+                meta.SrcFileName = associatedRawFilePath;
+            }
+
+            imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
+            imageView.SetLayerController(CvRawLayerController.Create(imageView, filePath, isCie: true, meta.Channels, hasRgbLayers: !string.IsNullOrWhiteSpace(associatedRawFilePath)));
+
+        }
+
+        public void AttachLiveCvcie(ImageView imageView, uint width, uint height, uint bpp, uint channels, byte[] xyzData, float[] exposure)
+        {
+            _loadBuffer = () => { };
+            imageView.Config.SetOpenerRuntime("LoadBuffer", _loadBuffer, nameof(CVRawOpen), "本地取图结果已直接灌入 ConvertXYZ，无需延迟加载");
+
+            ShowDateFilePath = false;
+            Points.Clear();
+
+            void Config_Cleared(object? sender, EventArgs e)
+            {
+                imageView.Config.Cleared -= Config_Cleared;
+                _probeOptions = null;
+                int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
+                result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
+                result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
+            }
+            imageView.Config.Cleared += Config_Cleared;
+
+            if (!Config.ConvertXYZhandleOnce)
+            {
+                int initResult = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
+                log.Info($"ConvertXYZ.CM_InitXYZ :{initResult}");
+                Config.ConvertXYZhandleOnce = true;
+            }
+
+            int releaseResult = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
+            log.Debug($"CM_ReleaseBuffer :{releaseResult}");
+
+            int setBufferResult = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, width, height, bpp, channels, xyzData);
+            log.Debug($"CM_SetBufferXYZ :{setBufferResult}");
+
+            _probeOptions = CvcieMouseProbeOptions.GetOrCreate(imageView);
+            exp = exposure;
+
+            imageView.Config.SetImageMetadata("FileExtType", CVType.CIE, nameof(CVRawOpen), "当前视图以本地内存 CVCIE 结果接入");
+            imageView.Config.SetOpenerRuntime("IsCVCIE", true, nameof(CVRawOpen), "当前视图是否由 CVCIE 打开器接管");
+            imageView.Config.SetOpenerRuntime("Exp", exposure, nameof(CVRawOpen), "当前内存 CVCIE 曝光数组");
+            imageView.Config.SetOpenerRuntime("IsBufferSet", true, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
+
+            imageView.EditorContext.IImageOpen = this;
+            imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
         }
 
 
@@ -514,7 +579,7 @@ namespace ColorVision.Engine.Media
                         context.ImageView.OpenImage(writeableBitmap1);
                         context.ImageView.UpdateZoomAndScale();
                     }
-                    CVCIESetBuffer(context.ImageView, filePath);
+                    InitializeCvFileView(context.ImageView, filePath);
                 });
             }));
 
