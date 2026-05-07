@@ -12,22 +12,20 @@ namespace ColorVision.Engine.Media
     internal sealed class CvcieDiagramEditorTool : IEditorTool, IDisposable
     {
         private readonly EditorContext _context;
-        private readonly MouseMagnifierManager _mouseMagnifier;
         private readonly Func<IntPtr> _getConvertHandle;
         private readonly Action _ensureBufferLoaded;
         private readonly Func<CvcieMouseProbeOptions> _getProbeSettings;
         private WindowCIE? _windowCie;
+        private IImageMouseInfoProvider? _mouseInfoProvider;
         private MouseMoveColorHandler? _mouseMoveColorHandler;
 
         public CvcieDiagramEditorTool(
             EditorContext context,
-            MouseMagnifierManager mouseMagnifier,
             Func<IntPtr> getConvertHandle,
             Action ensureBufferLoaded,
             Func<CvcieMouseProbeOptions> getProbeSettings)
         {
             _context = context;
-            _mouseMagnifier = mouseMagnifier;
             _getConvertHandle = getConvertHandle;
             _ensureBufferLoaded = ensureBufferLoaded;
             _getProbeSettings = getProbeSettings;
@@ -46,9 +44,15 @@ namespace ColorVision.Engine.Media
 
         private void OpenCieDiagram()
         {
+            if (!_context.TryGetService<IImageMouseInfoProvider>(out IImageMouseInfoProvider? mouseInfoProvider) || mouseInfoProvider == null)
+            {
+                return;
+            }
+
             if (_windowCie == null)
             {
                 _windowCie = new WindowCIE { Owner = Application.Current.GetActiveWindow() };
+                _mouseInfoProvider = mouseInfoProvider;
 
                 _mouseMoveColorHandler = (_, imageInfo) =>
                 {
@@ -80,16 +84,16 @@ namespace ColorVision.Engine.Media
                     _windowCie?.ChangeSelect(dx, dy);
                 };
 
-                _mouseMagnifier.MouseMoveColorHandler += _mouseMoveColorHandler;
+                _mouseInfoProvider.MouseMoveColorHandler += _mouseMoveColorHandler;
 
                 _windowCie.Closed += (_, _) =>
                 {
-                    if (_mouseMoveColorHandler != null)
+                    if (_mouseInfoProvider != null && _mouseMoveColorHandler != null)
                     {
-                        _mouseMagnifier.MouseMoveColorHandler -= _mouseMoveColorHandler;
+                        _mouseInfoProvider.MouseMoveColorHandler -= _mouseMoveColorHandler;
                     }
-                    _mouseMagnifier.IsChecked = false;
                     _mouseMoveColorHandler = null;
+                    _mouseInfoProvider = null;
                     _windowCie = null;
                 };
             }

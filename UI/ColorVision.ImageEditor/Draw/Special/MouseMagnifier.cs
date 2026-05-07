@@ -1,7 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor.Utils;
-using System;
-using System.Linq;
+﻿using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -23,23 +20,26 @@ namespace ColorVision.ImageEditor.Draw.Special
         public int G { get; set; }
         public int B { get; set; }
     }
-    public enum MagnigifierType
-    {
-        Circle,
-        Rect
-    }
+
 
     public delegate void MouseMoveColorHandler(object sender, ImageInfo imageInfo);
 
     /// <summary>
     /// 后续优化调整，成为不同的图像格式显示不同的参数
     /// </summary>
-    public class MouseMagnifierManager:IEditorToggleToolBase
+    public class MouseMagnifierManager : IEditorToggleToolBase
     {
-        protected EditorContext EditorContext { get; }
+        private EditorContext EditorContext { get; }
+        private readonly IImageMouseInfoProvider _mouseInfoProvider;
         public MouseMagnifierManager(EditorContext editorContext)
         {
             EditorContext = editorContext;
+            if (!editorContext.TryGetService<IImageMouseInfoProvider>(out IImageMouseInfoProvider? mouseInfoProvider) || mouseInfoProvider == null)
+            {
+                throw new InvalidOperationException($"{nameof(MouseMagnifierManager)} requires {nameof(IImageMouseInfoProvider)}.");
+            }
+
+            _mouseInfoProvider = mouseInfoProvider;
             ToolBarLocal = ToolBarLocal.Top;
             Order = 0;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageMouse");
@@ -47,17 +47,10 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public override string? GuidId => nameof(MouseMagnifierManager);
 
-        protected Zoombox ZoomboxSub => EditorContext.Zoombox;
-        protected DrawCanvas Image => EditorContext.DrawCanvas;
+        private Zoombox ZoomboxSub => EditorContext.Zoombox;
+        private DrawCanvas Image => EditorContext.DrawCanvas;
 
-        protected DrawingVisual DrawVisualImage { get; } = new DrawingVisual();
-
-        public event MouseMoveColorHandler? MouseMoveColorHandler;
-
-        public void ClearMouseMoveColorHandler()
-        {
-            MouseMoveColorHandler = null;
-        }
+        private DrawingVisual DrawVisualImage { get; } = new DrawingVisual();
 
         public override bool IsChecked
         {
@@ -68,13 +61,13 @@ namespace ColorVision.ImageEditor.Draw.Special
                 DrawVisualImageControl(_IsChecked);
                 if (value)
                 {
-                    Image.MouseMove += MouseMove;
+                    _mouseInfoProvider.MouseMoveColorHandler += HandleMouseMoveColor;
                     Image.MouseEnter += MouseEnter;
                     Image.MouseLeave += MouseLeave;
                 }
                 else
                 {
-                    Image.MouseMove -= MouseMove;
+                    _mouseInfoProvider.MouseMoveColorHandler -= HandleMouseMoveColor;
                     Image.MouseEnter -= MouseEnter;
                     Image.MouseLeave -= MouseLeave;
                 }
@@ -82,12 +75,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         }
         private bool _IsChecked;
 
-        protected virtual bool TryRenderOverlay(ImageInfo imageInfo)
-        {
-            return false;
-        }
-
-        protected virtual void DrawDefaultOverlay(ImageInfo imageInfo)
+        private void DrawImage(ImageInfo imageInfo)
         {
             Point actPoint = imageInfo.ActPoint;
             Point disPoint =imageInfo.BitmapPoint;
@@ -125,41 +113,14 @@ namespace ColorVision.ImageEditor.Draw.Special
 
             }
         }
-
-
-        public void MouseMove(object sender, MouseEventArgs e)
+        private void HandleMouseMoveColor(object sender, ImageInfo imageInfo)
         {
-            if (IsChecked && Image.Source is BitmapSource bitmap)
+            if (!IsChecked)
             {
-                var point = e.GetPosition(Image);
+                return;
+            }
 
-                var actPoint = new Point(point.X, point.Y);
-                point.X = point.X / Image.ActualWidth * bitmap.PixelWidth;
-                point.Y = point.Y / Image.ActualHeight * bitmap.PixelHeight;
-                var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
-
-                if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmap.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmap.PixelHeight)
-                {
-                    (int R,int G,int B) = ImageEditorUtils.GetPixelColor(bitmap, point.X.ToInt32(), point.Y.ToInt32());
-                    ImageInfo imageInfo = new ImageInfo()
-                    {
-                        ActPoint  = actPoint,
-                        BitmapPoint =bitPoint,
-                        X = point.X.ToInt32(),
-                        Y = point.Y.ToInt32(),
-                        R = R,
-                        G = G,
-                        B = B,
-                    };
-
-                    if (!TryRenderOverlay(imageInfo))
-                    {
-                        DrawDefaultOverlay(imageInfo);
-                    }
-
-                    MouseMoveColorHandler?.Invoke(this, imageInfo);
-                }
-            }  
+            DrawImage(imageInfo);
         }
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);

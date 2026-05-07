@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor
     {
         private readonly EditorContext _context;
         private WindowCIE? _windowCie;
-        private MouseMagnifierManager? _mouseMagnifier;
+        private IImageMouseInfoProvider? _mouseInfoProvider;
         private MouseMoveColorHandler? _mouseMoveColorHandler;
 
         public CieDiagramEditorTool(EditorContext context)
@@ -35,8 +35,7 @@ namespace ColorVision.ImageEditor
 
         private void OpenCieDiagram()
         {
-            MouseMagnifierManager? mouseMagnifier = _context.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>();
-            if (mouseMagnifier == null)
+            if (!_context.TryGetService<IImageMouseInfoProvider>(out IImageMouseInfoProvider? mouseInfoProvider) || mouseInfoProvider == null)
             {
                 return;
             }
@@ -44,14 +43,14 @@ namespace ColorVision.ImageEditor
             if (_windowCie == null)
             {
                 _windowCie = new WindowCIE { Owner = Application.Current.GetActiveWindow() };
-                _mouseMagnifier = mouseMagnifier;
+                _mouseInfoProvider = mouseInfoProvider;
 
                 _mouseMoveColorHandler = (_, imageInfo) =>
                 {
                     _windowCie?.ChangeSelect(imageInfo);
                 };
 
-                _mouseMagnifier.MouseMoveColorHandler += _mouseMoveColorHandler;
+                _mouseInfoProvider.MouseMoveColorHandler += _mouseMoveColorHandler;
 
                 _windowCie.Closed += WindowCie_Closed;
             }
@@ -67,10 +66,9 @@ namespace ColorVision.ImageEditor
 
         private void WindowCie_Closed(object? sender, EventArgs e)
         {
-            if (_mouseMagnifier != null && _mouseMoveColorHandler != null)
+            if (_mouseInfoProvider != null && _mouseMoveColorHandler != null)
             {
-                _mouseMagnifier.MouseMoveColorHandler -= _mouseMoveColorHandler;
-                _mouseMagnifier.IsChecked = false;
+                _mouseInfoProvider.MouseMoveColorHandler -= _mouseMoveColorHandler;
             }
 
             if (_windowCie != null)
@@ -79,7 +77,7 @@ namespace ColorVision.ImageEditor
             }
 
             _mouseMoveColorHandler = null;
-            _mouseMagnifier = null;
+            _mouseInfoProvider = null;
             _windowCie = null;
         }
 

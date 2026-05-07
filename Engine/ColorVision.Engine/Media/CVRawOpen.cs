@@ -280,7 +280,6 @@ namespace ColorVision.Engine.Media
 
             _cvcieDiagramEditorTool ??= new CvcieDiagramEditorTool(
                 EditorContext,
-                _cvcieMouseMagnifierManager,
                 () => Config.ConvertXYZhandle,
                 () => _loadBuffer?.Invoke(),
                 () => _probeOptions ?? CvcieMouseProbeOptions.GetOrCreate(EditorContext.ImageView));

@@ -2,17 +2,34 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
 using cvColorVision;
 using System;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
-    internal sealed class CvcieMouseMagnifierManager : MouseMagnifierManager, IDisposable
+    public enum MagnigifierType
     {
+        Circle,
+        Rect
+    }
+
+
+    internal sealed class CvcieMouseMagnifierManager : IEditorToggleToolBase, IDisposable
+    {
+        private readonly EditorContext _context;
+        private readonly IImageMouseInfoProvider _mouseInfoProvider;
         private readonly Func<IntPtr> _getConvertHandle;
         private readonly Action _ensureBufferLoaded;
         private readonly Func<float[]?> _getExp;
         private readonly Func<bool> _showDateFilePath;
         private readonly Func<int, int, (int pointIndex, int listIndex)> _findNearbyPoints;
         private readonly Func<CvcieMouseProbeOptions> _getOptions;
+        private DrawingVisual DrawVisualImage { get; } = new DrawingVisual();
+        private Zoombox ZoomboxSub => _context.Zoombox;
+        private DrawCanvas Image => _context.DrawCanvas;
 
         public CvcieMouseMagnifierManager(
             EditorContext editorContext,
@@ -22,19 +39,70 @@ namespace ColorVision.Engine.Media
             Func<bool> showDateFilePath,
             Func<int, int, (int pointIndex, int listIndex)> findNearbyPoints,
             Func<CvcieMouseProbeOptions> getOptions)
-            : base(editorContext)
         {
+            _context = editorContext;
+            if (!editorContext.TryGetService<IImageMouseInfoProvider>(out IImageMouseInfoProvider? mouseInfoProvider) || mouseInfoProvider == null)
+            {
+                throw new InvalidOperationException($"{nameof(CvcieMouseMagnifierManager)} requires {nameof(IImageMouseInfoProvider)}.");
+            }
+
+            _mouseInfoProvider = mouseInfoProvider;
             _getConvertHandle = getConvertHandle;
             _ensureBufferLoaded = ensureBufferLoaded;
             _getExp = getExp;
             _showDateFilePath = showDateFilePath;
             _findNearbyPoints = findNearbyPoints;
             _getOptions = getOptions;
+            ToolBarLocal = ToolBarLocal.Top;
+            Order = 0;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImageMouse");
         }
 
         public override string? GuidId => nameof(MouseMagnifierManager);
 
-        protected override bool TryRenderOverlay(ImageInfo imageInfo)
+        public override bool IsChecked
+        {
+            get => _isChecked;
+            set
+            {
+                if (_isChecked == value)
+                {
+                    return;
+                }
+
+                _isChecked = value;
+                DrawVisualImageControl(_isChecked);
+                if (value)
+                {
+                    _mouseInfoProvider.MouseMoveColorHandler += HandleMouseMoveColor;
+                    Image.MouseEnter += MouseEnter;
+                    Image.MouseLeave += MouseLeave;
+                }
+                else
+                {
+                    _mouseInfoProvider.MouseMoveColorHandler -= HandleMouseMoveColor;
+                    Image.MouseEnter -= MouseEnter;
+                    Image.MouseLeave -= MouseLeave;
+                }
+            }
+        }
+        private bool _isChecked;
+
+        private void HandleMouseMoveColor(object sender, ImageInfo imageInfo)
+        {
+            if (!IsChecked)
+            {
+                return;
+            }
+
+            TryRenderOverlay(imageInfo);
+        }
+
+        public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
+
+        public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(false);
+
+        private bool TryRenderOverlay(ImageInfo imageInfo)
         {
             float[]? exp = _getExp();
             if (exp == null || exp.Length == 0)
@@ -85,6 +153,76 @@ namespace ColorVision.Engine.Media
                     return true;
                 default:
                     return false;
+            }
+        }
+
+        private void DrawProbeOverlay(ImageInfo imageInfo, string text1, string text2, MagnigifierType magnigifierType, double radius, double rectWidth, double rectHeight)
+        {
+            Point actPoint = imageInfo.ActPoint;
+
+            if (Image.Source is not BitmapSource)
+            {
+                return;
+            }
+
+            using DrawingContext dc = DrawVisualImage.RenderOpen();
+
+            if (magnigifierType == MagnigifierType.Circle)
+            {
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
+            }
+            else if (magnigifierType == MagnigifierType.Rect)
+            {
+                double rectWidthValue = Math.Max(1, rectWidth);
+                double rectHeightValue = Math.Max(1, rectHeight);
+                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
+                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
+            }
+
+            var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
+            dc.PushTransform(transform);
+
+            double x1 = actPoint.X + 1;
+            double y1 = actPoint.Y + 26;
+            double width = 128;
+            double height = 0;
+
+            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 60));
+
+            Brush brush = Brushes.White;
+            FontFamily fontFamily = new("Arial");
+            double fontSize = 10;
+            FormattedText formattedText = new($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
+            FormattedText formattedTex1 = new($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
+            FormattedText formattedTex4 = new(text1, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 31));
+            FormattedText formattedTex5 = new(text2, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+            dc.DrawText(formattedTex5, new Point(x1 + 5, y1 + height + 44));
+
+            dc.Pop();
+            if (DrawVisualImage.Effect is not DropShadowEffect)
+            {
+                DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
+            }
+        }
+        private void DrawVisualImageControl(bool control)
+        {
+            if (control)
+            {
+                if (!Image.ContainsVisual(DrawVisualImage))
+                {
+                    Image.AddVisualCommand(DrawVisualImage);
+                }
+            }
+            else
+            {
+                if (Image.ContainsVisual(DrawVisualImage))
+                {
+                    Image.RemoveVisualCommand(DrawVisualImage);
+                }
             }
         }
 
