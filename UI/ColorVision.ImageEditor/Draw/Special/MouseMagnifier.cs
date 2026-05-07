@@ -30,14 +30,13 @@ namespace ColorVision.ImageEditor.Draw.Special
     }
 
     public delegate void MouseMoveColorHandler(object sender, ImageInfo imageInfo);
-    public delegate bool MouseMoveProbeHandler(object sender, ImageInfo imageInfo);
 
     /// <summary>
     /// 后续优化调整，成为不同的图像格式显示不同的参数
     /// </summary>
     public class MouseMagnifierManager:IEditorToggleToolBase
     {
-        public EditorContext EditorContext { get; set; }
+        protected EditorContext EditorContext { get; }
         public MouseMagnifierManager(EditorContext editorContext)
         {
             EditorContext = editorContext;
@@ -46,22 +45,18 @@ namespace ColorVision.ImageEditor.Draw.Special
             Icon = IEditorToolFactory.TryFindResource("DrawingImageMouse");
         }
 
-        private Zoombox ZoomboxSub => EditorContext.Zoombox;
-        private DrawCanvas Image => EditorContext.DrawCanvas;
+        public override string? GuidId => nameof(MouseMagnifierManager);
 
-        public DrawingVisual DrawVisualImage { get; set; } = new DrawingVisual();
+        protected Zoombox ZoomboxSub => EditorContext.Zoombox;
+        protected DrawCanvas Image => EditorContext.DrawCanvas;
+
+        protected DrawingVisual DrawVisualImage { get; } = new DrawingVisual();
 
         public event MouseMoveColorHandler? MouseMoveColorHandler;
-        public event MouseMoveProbeHandler? MouseMoveProbeHandler;
 
         public void ClearMouseMoveColorHandler()
         {
             MouseMoveColorHandler = null;
-        }
-
-        public void ClearMouseMoveProbeHandler()
-        {
-            MouseMoveProbeHandler = null;
         }
 
         public override bool IsChecked
@@ -87,69 +82,12 @@ namespace ColorVision.ImageEditor.Draw.Special
         }
         private bool _IsChecked;
 
-        public void DrawImage(ImageInfo imageInfo, string text1, string text2, MagnigifierType magnigifierType, double radius, double rectWidth, double rectHeight)
+        protected virtual bool TryRenderOverlay(ImageInfo imageInfo)
         {
-            Point actPoint = imageInfo.ActPoint;
-
-            if (Image.Source is BitmapSource bitmapImage)
-            {
-                using DrawingContext dc = DrawVisualImage.RenderOpen();
-
-                if (magnigifierType == MagnigifierType.Circle)
-                {
-                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
-                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
-
-                }
-                else if (magnigifierType == MagnigifierType.Rect)
-                {
-                    double rectWidthValue = Math.Max(1, rectWidth);
-                    double rectHeightValue = Math.Max(1, rectHeight);
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
-                }
-
-                var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
-                dc.PushTransform(transform);
-
-                double x1 = actPoint.X;
-                double y1 = actPoint.Y + 25;
-
-                double width = 130;
-                double height = 0;
-
-                x1++;
-                y1++;
-                width -= 2;
-                height -= 2;
-
-                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 60));
-
-                Brush brush = Brushes.White;
-                FontFamily fontFamily = new("Arial");
-                double fontSize = 10;
-                FormattedText formattedText = new($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
-                FormattedText formattedTex1 = new($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
-
-                FormattedText formattedTex4 = new(text1, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 31));
-
-                FormattedText formattedTex5 = new(text2, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex5, new Point(x1 + 5, y1 + height + 44));
-
-                dc.Pop();
-                if (DrawVisualImage.Effect is not DropShadowEffect)
-                    DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
-
-            }
-
-
+            return false;
         }
 
-
-        public void DrawImage(ImageInfo imageInfo)
+        protected virtual void DrawDefaultOverlay(ImageInfo imageInfo)
         {
             Point actPoint = imageInfo.ActPoint;
             Point disPoint =imageInfo.BitmapPoint;
@@ -214,21 +152,9 @@ namespace ColorVision.ImageEditor.Draw.Special
                         B = B,
                     };
 
-                    bool handled = false;
-                    if (MouseMoveProbeHandler != null)
+                    if (!TryRenderOverlay(imageInfo))
                     {
-                        foreach (var handler in MouseMoveProbeHandler.GetInvocationList().Cast<MouseMoveProbeHandler>())
-                        {
-                            if (handler.Invoke(this, imageInfo))
-                            {
-                                handled = true;
-                            }
-                        }
-                    }
-
-                    if (!handled)
-                    {
-                        DrawImage(imageInfo);
+                        DrawDefaultOverlay(imageInfo);
                     }
 
                     MouseMoveColorHandler?.Invoke(this, imageInfo);

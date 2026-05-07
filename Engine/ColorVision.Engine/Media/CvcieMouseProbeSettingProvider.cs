@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Media
 {
-    public sealed class CvcieProbeImageViewSettingProvider : IImageComponent, IImageViewSettingProvider, IImageViewSettingPersistence
+    public sealed class CvcieMouseProbeSettingProvider : IImageComponent, IImageViewSettingProvider, IImageViewSettingPersistence
     {
         public void Execute(ImageView imageView)
         {
@@ -21,30 +21,30 @@ namespace ColorVision.Engine.Media
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "CVCIE",
+                Group = "CVCIE 探针",
                 Order = 10,
                 Scope = ImageViewSettingScope.CurrentView,
                 Type = ImageViewSettingType.Class,
-                Name = "当前视窗探针",
-                Description = "控制当前 CVCIE 画布的取样范围和取样形状。这里的修改立即生效，但不会写回默认值。",
-                Source = CvcieProbeSettings.GetOrCreate(imageView),
+                Name = "当前视图",
+                Description = "控制当前 CVCIE 放大镜探针的取样形状和取样范围，修改后立即生效。",
+                Source = CvcieMouseProbeOptions.GetOrCreate(imageView),
             };
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "CVCIE",
+                Group = "CVCIE 探针",
                 Order = 20,
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
-                Name = "探针默认值",
-                Description = "控制后续新打开的 CVCIE 画布初始探针配置。关闭设置窗口时保存。",
-                Source = CvcieProbeDefaultConfig.Current,
+                Name = "新视图默认值",
+                Description = "控制后续新打开 CVCIE 视图时的初始放大镜探针参数。关闭设置窗口时保存。",
+                Source = CvcieMouseProbeOptions.CurrentDefaults,
             };
         }
 
         public void SaveImageViewSettings(ImageView imageView)
         {
-            CvcieProbeDefaultConfig.SaveCurrent();
+            CvcieMouseProbeOptions.SaveDefaults();
         }
     }
 }

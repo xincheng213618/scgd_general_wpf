@@ -45,8 +45,9 @@ namespace ColorVision.Engine.Media
         public CVFilemageEditorConfig Config => EditorContext.Config.GetRequiredService<CVFilemageEditorConfig>();
 
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
+        private CvcieMouseMagnifierManager? _cvcieMouseMagnifierManager;
         private CvcieDiagramEditorTool? _cvcieDiagramEditorTool;
-        private CvcieProbeSettings? _probeSettings;
+        private CvcieMouseProbeOptions? _probeOptions;
         private Action? _loadBuffer;
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
@@ -74,23 +75,12 @@ namespace ColorVision.Engine.Media
             }
             return (pointIndex: -1, listIndex: -1);
         }
-
-
-
         bool ShowDateFilePath;
-
-        private static bool TryGetMouseMagnifier(ImageView imageView, out MouseMagnifierManager magnifier)
-        {
-            magnifier = imageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>();
-            return magnifier != null;
-        }
 
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
             CVCIEFile meta;
             int index;
-            CvcieMouseProbeController? probeController = null;
-            MouseMagnifierManager? mouseMagnifier = null;
 
 
             Action LoadBuffer = new Action(() =>
@@ -138,12 +128,7 @@ namespace ColorVision.Engine.Media
             void Config_Cleared(object? sender, EventArgs e)
             {
                 imageView.Config.Cleared -= Config_Cleared;
-                if (probeController != null)
-                {
-                    mouseMagnifier?.MouseMoveProbeHandler -= probeController.TryHandleProbe;
-                    probeController.Dispose();
-                    probeController = null;
-                }
+                _probeOptions = null;
                 int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
@@ -203,8 +188,8 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == CVType.CIE)
                 {
-                    CvcieProbeSettings probeSettings = CvcieProbeSettings.GetOrCreate(imageView);
-                    _probeSettings = probeSettings;
+                    CvcieMouseProbeOptions probeOptions = CvcieMouseProbeOptions.GetOrCreate(imageView);
+                    _probeOptions = probeOptions;
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.SetOpenerRuntime("IsCVCIE", true, nameof(CVRawOpen), "当前视图是否由 CVCIE 打开器接管");
 
@@ -214,26 +199,12 @@ namespace ColorVision.Engine.Media
                         imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
                     }
 
-                    if (!TryGetMouseMagnifier(imageView, out mouseMagnifier))
-                    {
-                        log.Warn("CVCIE open: MouseMagnifierManager not found, skip probe integration.");
-                    }
-
                     imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
                     imageView.Config.SetOpenerRuntime("index", index, nameof(CVRawOpen), "CVCIE 数据块索引");
                     imageView.Config.SetOpenerRuntime("Exp", meta.Exp, nameof(CVRawOpen), "当前 CVCIE 曝光数组");
 
                     imageView.Config.SetOpenerRuntime("IsBufferSet", false, nameof(CVRawOpen), "CVCIE 原始缓冲是否已经灌入 ConvertXYZ");
                     exp = meta.Exp;
-                    probeController = new CvcieMouseProbeController(
-                        mouseMagnifier!,
-                        Config.ConvertXYZhandle,
-                        LoadBuffer,
-                        () => exp,
-                        () => ShowDateFilePath,
-                        FindNearbyPoints,
-                        () => probeSettings);
-                    mouseMagnifier?.MouseMoveProbeHandler += probeController.TryHandleProbe;
 
                     if (meta.SrcFileName !=null && !File.Exists(meta.SrcFileName))
                         meta.SrcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.SrcFileName);
@@ -298,13 +269,23 @@ namespace ColorVision.Engine.Media
                 yield break;
             }
 
-            _cvcieDiagramEditorTool ??= new CvcieDiagramEditorTool(
+            _cvcieMouseMagnifierManager ??= new CvcieMouseMagnifierManager(
                 EditorContext,
-                EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() ?? throw new InvalidOperationException("MouseMagnifierManager is required for CVCIE diagram tool."),
                 () => Config.ConvertXYZhandle,
                 () => _loadBuffer?.Invoke(),
-                () => _probeSettings ?? CvcieProbeSettings.GetOrCreate(EditorContext.ImageView));
+                () => exp,
+                () => ShowDateFilePath,
+                FindNearbyPoints,
+                () => _probeOptions ?? CvcieMouseProbeOptions.GetOrCreate(EditorContext.ImageView));
 
+            _cvcieDiagramEditorTool ??= new CvcieDiagramEditorTool(
+                EditorContext,
+                _cvcieMouseMagnifierManager,
+                () => Config.ConvertXYZhandle,
+                () => _loadBuffer?.Invoke(),
+                () => _probeOptions ?? CvcieMouseProbeOptions.GetOrCreate(EditorContext.ImageView));
+
+            yield return _cvcieMouseMagnifierManager;
             yield return _cvcieDiagramEditorTool;
         }
 
@@ -315,6 +296,10 @@ namespace ColorVision.Engine.Media
         public void OnEditorToolsDeactivated(EditorContext context)
         {
             _cvcieDiagramEditorTool?.Deactivate();
+            if (_cvcieMouseMagnifierManager != null)
+            {
+                _cvcieMouseMagnifierManager.IsChecked = false;
+            }
         }
 
 

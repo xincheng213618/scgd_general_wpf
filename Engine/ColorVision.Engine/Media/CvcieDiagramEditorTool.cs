@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Media
         private readonly MouseMagnifierManager _mouseMagnifier;
         private readonly Func<IntPtr> _getConvertHandle;
         private readonly Action _ensureBufferLoaded;
-        private readonly Func<CvcieProbeSettings> _getProbeSettings;
+        private readonly Func<CvcieMouseProbeOptions> _getProbeSettings;
         private WindowCIE? _windowCie;
         private MouseMoveColorHandler? _mouseMoveColorHandler;
 
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Media
             MouseMagnifierManager mouseMagnifier,
             Func<IntPtr> getConvertHandle,
             Action ensureBufferLoaded,
-            Func<CvcieProbeSettings> getProbeSettings)
+            Func<CvcieMouseProbeOptions> getProbeSettings)
         {
             _context = context;
             _mouseMagnifier = mouseMagnifier;
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Media
                 {
                     _ensureBufferLoaded();
 
-                    CvcieProbeSettings probeSettings = _getProbeSettings();
+                    CvcieMouseProbeOptions probeSettings = _getProbeSettings();
                     float dXVal = 0;
                     float dYVal = 0;
                     float dZVal = 0;
