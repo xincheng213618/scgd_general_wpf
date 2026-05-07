@@ -36,13 +36,6 @@ namespace ColorVision.Core
 
         public bool isDispose;
 
-        public readonly int Type => (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3)));
-
-        public readonly int ElemSize => ((((((((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))) & ((512 - 1) << 3)) >> 3) + 1) *
-                        ((0x28442211 >> (((((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))) & ((1 << 3) - 1)) * 4)) & 15)));
-
-        public readonly uint Size { get => (uint)(rows * cols * channels * (depth / 8)); }
-
         public IntPtr pData;
 
         public void Dispose()

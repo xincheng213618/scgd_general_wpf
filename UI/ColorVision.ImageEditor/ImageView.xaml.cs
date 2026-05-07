@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Layers;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -42,6 +43,7 @@ namespace ColorVision.ImageEditor
         public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
         public IPseudoColorService PseudoColorService => EditorContext.GetRequiredService<IPseudoColorService>();
         public bool EnableEditorImageServices { get; set; } = true;
+        public ImageLayerDescriptor? SelectedLayer { get; private set; }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => EditorContext.DrawingVisualLists;
 
@@ -87,6 +89,9 @@ namespace ColorVision.ImageEditor
         private Crosshair? _crosshair;
         private double _oldZoomRatio;
         private bool _isUpdatedRender;
+        private bool _isUpdatingLayerSelection;
+        private IImageLayerController? _layerController;
+        private bool _isLayerSelectorEnabled = true;
 
 
         public ImageView()
@@ -108,6 +113,7 @@ namespace ColorVision.ImageEditor
             ImageShow.PreviewKeyDown += HandleKeyDown;
             ImageShow.ContextMenuOpening += HandleContextMenuOpening;
             ImageShow.ContextMenu = EditorContext.ContextMenu;
+            ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
             Zoombox1.ContextMenu = EditorContext.ContextMenu;
             Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
             _crosshair = new Crosshair(EditorContext);
@@ -718,13 +724,13 @@ namespace ColorVision.ImageEditor
             ClearImageEventHandler?.Invoke(this, new EventArgs());
             EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
+            SetLayerController(null);
             Config.ClearProperties();
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Clear();
             ImageShow.Source = null;
             ImageShow.UpdateLayout();
-            ComboBoxLayers.Visibility = Visibility.Collapsed;
         }
 
         public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
@@ -795,22 +801,6 @@ namespace ColorVision.ImageEditor
                 log.Error("传入的 WriteableBitmap 为 null，无法打开图像。");
             }
         }
-        private List<SelectionChangedEventHandler> _handlers = new List<SelectionChangedEventHandler>();
-
-        public void AddSelectionChangedHandler(SelectionChangedEventHandler handler)
-        {
-            ComboBoxLayers.SelectionChanged += handler;
-            _handlers.Add(handler);
-        }
-
-        public void ClearSelectionChangedHandlers()
-        {
-            foreach (var handler in _handlers)
-            {
-                ComboBoxLayers.SelectionChanged -= handler;
-            }
-            _handlers.Clear();
-        }
 
         public void OpenImage(string? filePath)
         {
@@ -824,8 +814,8 @@ namespace ColorVision.ImageEditor
             Config.ClearProperties();
             EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
+            SetLayerController(null);
             Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), "当前打开图像的绝对路径");
-            ClearSelectionChangedHandlers();
             try
             {
                 if (filePath != null && File.Exists(filePath))
@@ -893,10 +883,11 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource)
         {
-            SetImageSource(imageSource, EnableEditorImageServices);
+            SetImageSource(imageSource, EnableEditorImageServices, true);
         }
 
-        public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices)
+
+        public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
             InvalidatePseudoColorRender();
             FunctionImage = null;
@@ -904,11 +895,10 @@ namespace ColorVision.ImageEditor
             ImageShow.Source = null;
             if (HImageCache != null)
             {
-                HImageCache?.Dispose();
                 HImageCache = null;
             }
 
-            ComboBoxLayers.Visibility = enableEditorImageServices ? Visibility.Visible : Visibility.Collapsed;
+            _isLayerSelectorEnabled = enableEditorImageServices;
             if (imageSource is WriteableBitmap writeableBitmap)
             {
                 int cols = writeableBitmap.PixelWidth;
@@ -976,6 +966,14 @@ namespace ColorVision.ImageEditor
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
+            if (configureDefaultLayerController)
+            {
+                SetLayerController(BitmapImageLayerController.CreateForCurrentImage(this));
+            }
+            else
+            {
+                UpdateLayerSelectorVisibility();
+            }
             ImageShow.RaiseImageInitialized();
             CommandManager.InvalidateRequerySuggested();
 
@@ -987,6 +985,57 @@ namespace ColorVision.ImageEditor
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
+        public void SetLayerController(IImageLayerController? controller)
+        {
+            _layerController = controller;
+            _isUpdatingLayerSelection = true;
+            try
+            {
+                ComboBoxLayers.ItemsSource = controller?.Layers;
+                SelectedLayer = controller?.DefaultLayer;
+                ComboBoxLayers.SelectedItem = SelectedLayer;
+
+                if (SelectedLayer == null && controller != null && controller.Layers.Count > 0)
+                {
+                    SelectedLayer = controller.Layers[0];
+                    ComboBoxLayers.SelectedItem = SelectedLayer;
+                }
+            }
+            finally
+            {
+                _isUpdatingLayerSelection = false;
+            }
+
+            UpdateLayerSelectorVisibility();
+        }
+
+        public int GetSelectedLayerSourceChannelIndex()
+        {
+            return SelectedLayer?.SourceChannelIndex ?? -1;
+        }
+
+        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isUpdatingLayerSelection || _layerController == null)
+            {
+                return;
+            }
+
+            if (ComboBoxLayers.SelectedItem is not ImageLayerDescriptor layer)
+            {
+                return;
+            }
+
+            SelectedLayer = layer;
+            _layerController.SelectLayer(layer);
+        }
+
+        private void UpdateLayerSelectorVisibility()
+        {
+            bool hasMultipleLayers = _layerController != null && _layerController.Layers.Count > 1;
+            ComboBoxLayers.Visibility = _isLayerSelectorEnabled && hasMultipleLayers ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         public void AddVisual(Visual visual)
         {
             ImageShow.AddVisualCommand(visual);
@@ -995,23 +1044,6 @@ namespace ColorVision.ImageEditor
         private void InvalidatePseudoColorRender()
         {
             PseudoColorService?.Invalidate();
-        }
-
-
-        public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
-
-        public void ComboBoxLayersSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ComboBoxLayers.SelectedIndex < 0) return;
-
-            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "Src")
-                ExtractChannel(-1);
-            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "R")
-                ExtractChannel(2);
-            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "G")
-                ExtractChannel(1);
-            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "B")
-                ExtractChannel(0);
         }
 
         public void ExtractChannel(int channel)
@@ -1089,6 +1121,7 @@ namespace ColorVision.ImageEditor
                 ImageShow.Source = ViewBitmapSource; ;
                 HImageCache = writeableBitmap.ToHImage();
                 FunctionImage = null;
+                SetLayerController(BitmapImageLayerController.CreateForCurrentImage(this));
             }
         }
 
@@ -1157,6 +1190,7 @@ namespace ColorVision.ImageEditor
             ImageShow.ContextMenuOpening -= HandleContextMenuOpening;
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+            ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
 
             ImageShow.Dispose();
             Drop -= ImageView_Drop;

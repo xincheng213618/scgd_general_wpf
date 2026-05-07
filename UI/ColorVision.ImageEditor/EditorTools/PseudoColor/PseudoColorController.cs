@@ -293,7 +293,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         private int GetSelectedChannel()
         {
-            return _owner.ComboBoxLayers.SelectedIndex - 1;
+            return _owner.GetSelectedLayerSourceChannelIndex();
         }
 
         private bool IsCurrentRequest(PseudoColorPreviewRequest request)

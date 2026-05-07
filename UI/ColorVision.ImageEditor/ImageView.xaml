@@ -143,7 +143,7 @@
                                          Grid.ColumnSpan="2"
                                          IsHitTestVisible="False" ClipToBounds="True" Opacity="0.9"/>
 
-                <ComboBox x:Name="ComboBoxLayers" Grid.Column="1" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" x:FieldModifier="public" BorderThickness="0" Opacity="0.6" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Visibility="Collapsed" />
+                <ComboBox x:Name="ComboBoxLayers" Grid.Column="1" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" x:FieldModifier="public" BorderThickness="0" DisplayMemberPath="DisplayName" Opacity="0.6" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Visibility="Collapsed" />
                 <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}" />
 
                 <StackPanel x:Name="DrawToolbarHost"

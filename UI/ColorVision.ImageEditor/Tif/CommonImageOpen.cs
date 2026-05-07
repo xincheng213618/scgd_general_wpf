@@ -98,9 +98,6 @@ namespace ColorVision.ImageEditor.Tif
             }
             
             context.ImageView.SetImageSource(bitmapImage.ToWriteableBitmap());
-            context.ImageView.ComboBoxLayers.SelectedIndex = 0;
-            context.ImageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
-            context.ImageView.AddSelectionChangedHandler(context.ImageView.ComboBoxLayersSelectionChanged);
             context.ImageView.UpdateZoomAndScale();
         }
     }

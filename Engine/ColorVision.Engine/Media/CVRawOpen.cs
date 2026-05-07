@@ -8,6 +8,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Layers;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using cvColorVision;
@@ -49,8 +50,6 @@ namespace ColorVision.Engine.Media
         private CvcieDiagramEditorTool? _cvcieDiagramEditorTool;
         private CvcieMouseProbeOptions? _probeOptions;
         private Action? _loadBuffer;
-
-        public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
         public List<List<Point>> Points { get; set; } = new List<List<Point>>();
 
         public (int pointIndex, int listIndex) FindNearbyPoints(int mousex, int mousey)
@@ -145,42 +144,6 @@ namespace ColorVision.Engine.Media
                 Config.ConvertXYZhandleOnce = true;
             }
             imageView.Config.FilePath = filePath;
-            void ComboBoxLayers1_SelectionChanged(object sender, SelectionChangedEventArgs e)
-            {
-                if (sender is ComboBox comboBox)
-                {
-                    string layer = ComboBoxLayerItems[comboBox.SelectedIndex];
-                    if (layer == "Src")
-                    {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.SRC).ToWriteableBitmap());
-                    }
-                    if (layer == "R")
-                    {
-                        imageView.ExtractChannel(0);
-                    }
-                    if (layer == "G")
-                    {
-                        imageView.ExtractChannel(1);
-                    }
-                    if (layer == "B")
-                    {
-                        imageView.ExtractChannel(2);
-                    }
-                    if (layer == "X")
-                    {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CieXyzX).ToWriteableBitmap());
-                    }
-                    if (layer == "Y")
-                    {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CieXyzY).ToWriteableBitmap());
-                    }
-                    if (layer == "Z")
-                    {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CieXyzZ).ToWriteableBitmap());
-
-                    }
-                }
-            }
 
             if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
             {
@@ -209,53 +172,13 @@ namespace ColorVision.Engine.Media
                     if (meta.SrcFileName !=null && !File.Exists(meta.SrcFileName))
                         meta.SrcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.SrcFileName);
 
-                    if (meta.Channels ==3)
-                    {
-                        if (File.Exists(meta.SrcFileName))
-                        {
-                            ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
-                        }
-                        else
-                        {
-                            ComboBoxLayerItems = new List<string>() { "Src", "X", "Y", "Z" };
-                        }
-                    }
-                    else if (meta.Channels == 1)
-                    {
-                        if (File.Exists(meta.SrcFileName))
-                        {
-                            ComboBoxLayerItems = new List<string>() { "Src", "Y" };
-                        }
-                        else
-                        {
-                            ComboBoxLayerItems = new List<string>() { "Src" };
-                        }
-                    }
-                    else
-                    {
-                        ComboBoxLayerItems = new List<string>() { "Src" };
-                    }
-                    imageView.ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
-                    imageView.ComboBoxLayers.SelectedIndex = 0;
-                    imageView.AddSelectionChangedHandler(ComboBoxLayers1_SelectionChanged);;
+                    bool hasRgbLayers = File.Exists(meta.SrcFileName);
+
+                    imageView.SetLayerController(CvRawLayerController.Create(imageView, filePath, isCie: true, meta.Channels, hasRgbLayers));
                 }
                 else
                 {
-                    if (meta.Channels == 3)
-                    {
-                        ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B" };
-                    }
-                    else if (meta.Channels == 1)
-                    {
-                        ComboBoxLayerItems = new List<string>() { "Src"};
-                    }
-                    else
-                    {
-                        ComboBoxLayerItems = new List<string>() { "Src" };
-                    }
-                    imageView.ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
-                    imageView.ComboBoxLayers.SelectedIndex = 0;
-                    imageView.AddSelectionChangedHandler(ComboBoxLayers1_SelectionChanged); ;
+                    imageView.SetLayerController(CvRawLayerController.Create(imageView, filePath, isCie: false, meta.Channels, hasRgbLayers: meta.Channels >= 3));
                 }
             }
 
