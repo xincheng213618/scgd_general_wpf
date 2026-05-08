@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using WindowsFormsTest;
 
@@ -687,18 +688,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cvCameraCSLib.CM_SetBufferXYZ(m_hCamHandle, w, h, dstbpp, channels, rawArray);
             }
 
-            byte[] sourceFrameForPreview = GetSourceFrameForPreviewAndSave(srcrawArray, (int)bpp, (int)channels, (int)w, (int)h);
-            ShowImageInView(sourceFrameForPreview, (int)bpp, (int)channels, (int)w, (int)h);
+            ShowImageInView(srcrawArray, (int)bpp, (int)channels, (int)w, (int)h);
 
             if (hasColorCalibration)
             {
                 AttachLiveCvcieResult(w, h, dstbpp, channels);
             }
 
-            SaveCaptureFilesIfNeeded(hasColorCalibration, w, h, bpp, dstbpp, channels, sourceFrameForPreview);
+            SaveCaptureFilesIfNeeded(hasColorCalibration, w, h, bpp, dstbpp, channels, srcrawArray);
         }
 
-        private void ShowImageInView(byte[] data, int bpp, int channels, int width, int height)
+        private unsafe void ShowImageInView(byte[] data, int bpp, int channels, int width, int height)
         {
             var pixelFormat = GetPixelFormat(channels, bpp);
             int stride = width * channels * (bpp / 8);
@@ -710,22 +710,50 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, pixelFormat, null);
             writeableBitmap.Lock();
-            Marshal.Copy(data, 0, writeableBitmap.BackBuffer, Math.Min(data.Length, stride * height));
+            if (bpp == 16 && channels == 3 && pixelFormat == PixelFormats.Rgb48)
+            {
+                fixed (byte* srcByte = data)
+                {
+                    byte* dstByte = (byte*)writeableBitmap.BackBuffer;
+
+                    int dstStride = writeableBitmap.BackBufferStride;
+
+                    for (int y = 0; y < height; y++)
+                    {
+                        ushort* src = (ushort*)(srcByte + y * dstStride);
+                        ushort* dst = (ushort*)(dstByte + y * dstStride);
+
+                        for (int x = 0; x < width; x++)
+                        {
+                            // src: G R B
+                            ushort b = src[x * 3 + 0];
+                            ushort r = src[x * 3 + 1];
+                            ushort g = src[x * 3 + 2];
+
+                            // dst: R G B
+                            dst[x * 3 + 0] =b;
+                            dst[x * 3 + 1] = g;
+                            dst[x * 3 + 2] = r;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Marshal.Copy(
+                    data,
+                    0,
+                    writeableBitmap.BackBuffer,
+                    Math.Min(data.Length, writeableBitmap.BackBufferStride * height)
+                );
+            }
+
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
             writeableBitmap.Unlock();
 
             ImageView.OpenImage(writeableBitmap);
         }
 
-        private byte[] GetSourceFrameForPreviewAndSave(byte[] sourceData, int bpp, int channels, int width, int height)
-        {
-            if (!Device.Config.SwapRedBlueChannels)
-            {
-                return sourceData;
-            }
-
-            return MediaHelper.SwapRedBlueChannels(sourceData, height, width, bpp, channels);
-        }
 
         private float[] GetCurrentExposureValues(int channelCount)
         {
@@ -956,8 +984,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             bool hasColorCalibration = TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
                 && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
 
-            byte[] sourceFrameForPreview = GetSourceFrameForPreviewAndSave(srcrawArray, (int)srcbpp, (int)channels, (int)w, (int)h);
-            ShowImageInView(sourceFrameForPreview, (int)srcbpp, (int)channels, (int)w, (int)h);
+            ShowImageInView(srcrawArray, (int)srcbpp, (int)channels, (int)w, (int)h);
 
             if (hasColorCalibration)
             {
