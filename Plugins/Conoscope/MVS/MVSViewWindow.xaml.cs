@@ -1,8 +1,10 @@
 ﻿using ColorVision.ImageEditor;
 using ColorVision.UI.Menus;
+using ColorVision.ImageEditor.Realtime;
 using log4net;
 using MvCamCtrl.NET;
 using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -61,10 +63,33 @@ namespace Conoscope.MVS
             imgDisplay = new ImageView();
             ImageDisplayHost.Children.Add(imgDisplay);
             imgDisplay.Zoombox1.ContentMatrixChanged += ImageDisplay_ContentMatrixChanged;
+            imgDisplay.Realtime.Configure(new RealtimeFrameOptions
+            {
+                MaxDisplayFps = MVSViewManager.Config.MaxDisplayFps,
+                AutoZoomOnFirstFrame = true,
+                UpdateImageMetadata = true
+            });
+            imgDisplay.Realtime.Presenter.FrameRendered += RealtimePresenter_FrameRendered;
+            MVSViewManager.Config.PropertyChanged += Config_PropertyChanged;
             cbPixelType.ItemsSource = Enum.GetValues(typeof(PixelType));
             SelectGratingDiameter(MVSViewManager.Config.SelectedGratingDiameterMillimeters);
             UpdateGratingOverlay();
 
+        }
+
+        private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MVSViewWindowConfig.MaxDisplayFps) && imgDisplay != null)
+            {
+                imgDisplay.Realtime.Options.MaxDisplayFps = MVSViewManager.Config.MaxDisplayFps;
+            }
+        }
+
+        private void RealtimePresenter_FrameRendered(object? sender, RealtimeFrameRenderedEventArgs e)
+        {
+            if (!m_bGrabbing) return;
+            MVSViewManager.Count++;
+            UpdateGratingOverlay();
         }
 
         private void SelectGratingDiameter(double diameterMillimeters)
@@ -292,7 +317,7 @@ namespace Conoscope.MVS
         }
         private void bnOpen_Click(object sender, RoutedEventArgs e)
         {
-            writeableBitmap = null;
+            imgDisplay?.Realtime.Reset();
             if (m_stDeviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
             {
                 ShowErrorMsg("No device, please select", 0);
@@ -433,11 +458,6 @@ namespace Conoscope.MVS
                 cbSoftTrigger.IsEnabled = true;
             }
         }
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
-
-        WriteableBitmap writeableBitmap { get; set; }
-
         public void ReceiveThreadProcess()
         {
             MyCamera.MV_FRAME_OUT stFrameInfo = new MyCamera.MV_FRAME_OUT();
@@ -505,16 +525,15 @@ namespace Conoscope.MVS
                             shouldRender = true;
                         }
 
-                        // 2. 统一交由UI线程进行渲染更新
+                        // 2. 提交给 ImageEditor 实时帧管线。SubmitFrame 内部会立即复制最新帧，
+                        //    因此下面释放相机缓存不会影响 UI 异步显示。
                         if (shouldRender && pRenderData != IntPtr.Zero)
                         {
                             int width = stFrameInfo.stFrameInfo.nWidth;
                             int height = stFrameInfo.stFrameInfo.nHeight;
-
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                UpdateImageDisplay(width, height, pixelFormat, pRenderData, renderDataSize);
-                            });
+                            int stride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
+                            int length = renderDataSize > int.MaxValue ? int.MaxValue : (int)renderDataSize;
+                            imgDisplay.Realtime.SubmitFrame(pRenderData, width, height, pixelFormat, stride, length);
                         }
 
                         // 3. 释放相机内部缓存
@@ -530,45 +549,6 @@ namespace Conoscope.MVS
                     Marshal.FreeHGlobal(pImageBuffer);
                     pImageBuffer = IntPtr.Zero;
                 }
-            }
-        }
-
-        // 提取出的UI更新公共方法
-        private void UpdateImageDisplay(int width, int height, PixelFormat format, IntPtr pData, uint dataSize)
-        {
-            if (!m_bGrabbing) return;
-
-            MVSViewManager.Count++;
-
-            // 检查是否需要重新创建 WriteableBitmap (宽高或像素格式改变)
-            if (writeableBitmap == null ||
-                writeableBitmap.PixelWidth != width ||
-                writeableBitmap.PixelHeight != height ||
-                writeableBitmap.Format != format)
-            {
-                writeableBitmap = new WriteableBitmap(width, height, 96, 96, format, null);
-                imgDisplay.ImageShow.Source = writeableBitmap;
-                imgDisplay.UpdateZoomAndScale();
-            }
-            else if (imgDisplay.ImageShow.Source != writeableBitmap)
-            {
-                imgDisplay.ImageShow.Source = writeableBitmap;
-            }
-            UpdateGratingOverlay();
-
-            try
-            {
-                writeableBitmap.Lock();
-
-                uint bufferSize = (uint)(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * writeableBitmap.Format.BitsPerPixel / 8);
-                uint bytesToCopy = Math.Min(bufferSize, dataSize);
-
-                RtlMoveMemory(writeableBitmap.BackBuffer, pData, bytesToCopy);
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
-            }
-            finally
-            {
-                writeableBitmap.Unlock();
             }
         }
 
@@ -745,7 +725,9 @@ namespace Conoscope.MVS
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             m_bGrabbing = false;
-            writeableBitmap = null;
+            MVSViewManager.Config.PropertyChanged -= Config_PropertyChanged;
+            imgDisplay.Realtime.Presenter.FrameRendered -= RealtimePresenter_FrameRendered;
+            imgDisplay.Realtime.Reset(true);
             imgDisplay.Zoombox1.ContentMatrixChanged -= ImageDisplay_ContentMatrixChanged;
             imgDisplay.Dispose();
             bnClose_Click(null, null);

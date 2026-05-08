@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -221,6 +222,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            ImageView.Realtime.Reset(true);
             if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
             {
                 if (m_etakeImageMode == TakeImageMode.Live)
@@ -262,32 +264,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
-            Application.Current?.Dispatcher.Invoke(new Action(() =>
-            {
-                WriteableBitmap writeableBitmap = ImageView.ImageShow.Source as WriteableBitmap;
-                bool needNewBitmap = writeableBitmap == null
-                    || writeableBitmap.PixelWidth != width
-                    || writeableBitmap.PixelHeight != height
-                    || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
-
-                if (needNewBitmap)
-                {
-                    writeableBitmap = new WriteableBitmap(
-                        width,
-                        height,
-                        96, 96,
-                        GetPixelFormat(channels, bpp),
-                        null);
-                    ImageView.ImageShow.Source = writeableBitmap;
-                }
-                writeableBitmap!.Lock();
-                writeableBitmap.WritePixels(
-                    new Int32Rect(0, 0, width, height),
-                    pData,
-                    height * width * channels * (bpp / 8),
-                    width * channels * (bpp / 8));
-                writeableBitmap.Unlock();
-            }));
+            var pixelFormat = GetPixelFormat(channels, bpp);
+            int bytesPerChannel = Math.Max(1, bpp / 8);
+            int stride = lss > 0 ? lss : width * channels * bytesPerChannel;
+            int frameBytes = stride * height;
+            ImageView.Realtime.SubmitFrame(pData, width, height, pixelFormat, stride, frameBytes);
             return 0;
         }
 

@@ -1178,6 +1178,7 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
+            _realtime?.Dispose();
             Clear();
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
             Config.Cleared -= Config_Cleared;

@@ -3,6 +3,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.UI;
 using iText.Kernel.Crypto.Securityhandler;
 using log4net;
@@ -34,6 +35,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
         private FocusAlgorithm  _EvaFunc = FocusAlgorithm .VarianceOfLaplacian;
+
+        [DisplayName("显示帧率上限")]
+        public int MaxDisplayFps { get => _MaxDisplayFps; set { _MaxDisplayFps = value < 0 ? 0 : value; OnPropertyChanged(); } }
+        private int _MaxDisplayFps = 60;
 
         [JsonIgnore]
         public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
@@ -106,8 +111,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return -1;
             }
             openVideo = true;
-            Image.ImageShow.AddVisualCommand(DVRectangleText);
-            Image.ImageShow.AddVisualCommand(DVText);
+            Image.Realtime.Configure(new RealtimeFrameOptions
+            {
+                MaxDisplayFps = Config.MaxDisplayFps,
+                AutoZoomOnFirstFrame = true,
+                UpdateImageMetadata = true
+            });
+            Image.Realtime.AddOverlayVisual(DVRectangleText);
+            Image.Realtime.AddOverlayVisual(DVText);
 
             if (IsPseudoEnabled())
             {
@@ -184,76 +195,45 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         await Task.Delay(1);
                         continue;
                     }
+                    int bytesPerChannel = Math.Max(1, bpp / 8);
+                    int stride = height > 0 && len % height == 0 ? len / height : width * channels * bytesPerChannel;
+
                     if (TryBuildFrameProcessingRequest(width, height, out VideoFrameProcessingRequest? request))
                     {
-                        int bytesPerChannel = Math.Max(1, bpp / 8);
-                        int stride = height > 0 && len % height == 0 ? len / height : width * channels * bytesPerChannel;
                         _frameProcessor?.SubmitFrame(buffer, len, width, height, channels, bpp, stride, request);
                     }
 
-                    // 渲染逻辑调度到UI线程
-                    Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                    if (Image == null)
                     {
-                        if (Image == null)
-                        { 
-                            // 用完上一帧归还
-                            if (lastFrameData != null)
-                                ArrayPool<byte>.Shared.Return(lastFrameData);
-                            return;
-                        }
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        await Task.Delay(10);
+                        continue;
+                    }
 
-                        if (!IsPseudoEnabled())
-                        {
-                            WriteableBitmap writeableBitmap = Image.ImageShow.Source as WriteableBitmap;
-                            bool needNewBitmap = writeableBitmap == null
-                                || writeableBitmap.PixelWidth != width
-                                || writeableBitmap.PixelHeight != height
-                                || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
+                    if (!IsPseudoEnabled())
+                    {
+                        Image.Realtime.SubmitFrame(buffer, width, height, GetPixelFormat(channels, bpp), stride, len);
+                    }
 
-                            if (needNewBitmap)
-                            {
-                                writeableBitmap = new WriteableBitmap(
-                                    width,
-                                    height,
-                                    96, 96,
-                                    GetPixelFormat(channels, bpp),
-                                    null);
-                                Image.ImageShow.Source = writeableBitmap;
-                            }
+                    Interlocked.Increment(ref frameCount);
+                    if (fpsTimer.ElapsedMilliseconds >= 1000)
+                    {
+                        lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
+                        log.Info($"Current FPS: {lastFps:F2}");
+                        Interlocked.Exchange(ref frameCount, 0);
+                        fpsTimer.Restart();
+                    }
 
-                            writeableBitmap!.Lock();
+                    if (first)
+                    {
+                        first = false;
+                    }
 
-                            writeableBitmap.WritePixels(
-                                new Int32Rect(0, 0, width, height),
-                                buffer,
-                                width * channels * (bpp / 8),
-                                0);
-
-
-                            writeableBitmap.Unlock();
-                        }
-
-                            Interlocked.Increment(ref frameCount);
-
-                        // 帧率统计
-                        if (fpsTimer.ElapsedMilliseconds >= 1000)
-                        {
-                            lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
-                            log.Info($"Current FPS: {lastFps:F2}");
-                            Interlocked.Exchange(ref frameCount, 0);
-                            fpsTimer.Restart();
-                        }
-
-                        if (first)
-                        {
-                            first = false;
-                            Image.Zoombox1.ZoomUniform();
-                        }
-                        // 用完上一帧归还
-                        if (lastFrameData != null)
-                            ArrayPool<byte>.Shared.Return(lastFrameData);
-                        lastFrameData = buffer;
-                    }));
+                    if (lastFrameData != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(lastFrameData);
+                    }
+                    lastFrameData = buffer;
                     lastFrameLen = len;
 
 
@@ -272,11 +252,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 lastFrameData = null;
                 lastFrameLen = 0;
             }
-            Application.Current.Dispatcher.Invoke(() =>
+            ImageView? image = Image;
+            if (image != null)
             {
-                Image.ImageShow.RemoveVisualCommand(DVRectangleText);
-                Image.ImageShow.RemoveVisualCommand(DVText);
-            });
+                Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    image.Realtime.RemoveOverlayVisual(DVRectangleText);
+                    image.Realtime.RemoveOverlayVisual(DVText);
+                }));
+            }
 
             Image = null;
             binaryReader?.Dispose();

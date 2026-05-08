@@ -11,9 +11,11 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.HDR;
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -121,6 +123,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private DVRectangleText DVRectangleText { get; set; }
         private DVText DVText { get; set; }
         private VideoFrameProcessor? _localFrameProcessor;
+        private readonly object _localDisplayBufferGate = new();
+        private IntPtr _localDisplayBuffer = IntPtr.Zero;
+        private int _localDisplayBufferSize;
         private bool _visualsAdded = false;
         private bool _isOpeningLocalVideo;
 
@@ -837,6 +842,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             // Clean up video display resources
             _localFrameProcessor?.Dispose();
             _localFrameProcessor = null;
+            ReleaseLocalDisplayBuffer();
             this.DisposeTimedButtonOperations();
             GC.SuppressFinalize(this);
         }
@@ -958,111 +964,128 @@ namespace ColorVision.Engine.Services.Devices.Camera
         double articulation;
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
-            Application.Current?.Dispatcher.Invoke(new Action(() =>
+            if (!Device.DisplayConfig.IsLocalVideoOpen)
             {
-                if (!Device.DisplayConfig.IsLocalVideoOpen)
+                return 0;
+            }
+
+            var imageView = Device.View.ImageView;
+            var pseudoColorService = imageView.PseudoColorService;
+            bool enablePseudo = pseudoColorService.IsEnabled;
+            if (enablePseudo)
+            {
+                VideoConfig.IsUseCacheFile = true;
+            }
+
+            int sourceStride = lss > 0 ? lss : width * channels * Math.Max(1, bpp / 8);
+            int frameBytes = sourceStride * height;
+
+            bool enableArticulation = VideoConfig.IsCalArtculation;
+            bool shouldProcess = VideoConfig.IsUseCacheFile && (enablePseudo || enableArticulation);
+
+            if (shouldProcess)
+            {
+                Rect rect = DVRectangleText.Rect;
+
+                if (rect.Width <= 0 || rect.Height <= 0)
                 {
-                    return;
+                    rect = new Rect(0, 0, width, height);
                 }
 
-                var pseudoColorService = Device.View.ImageView.PseudoColorService;
-                bool enablePseudo = pseudoColorService.IsEnabled;
-                if (enablePseudo)
+                PseudoColorFrameRequest? pseudoColorRequest = null;
+                if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
                 {
-                    VideoConfig.IsUseCacheFile = true;
+                    pseudoColorRequest = capturedRequest;
                 }
 
-                bool enableArticulation = VideoConfig.IsCalArtculation;
-                bool shouldProcess = VideoConfig.IsUseCacheFile && (enablePseudo || enableArticulation);
-
-                if (shouldProcess)
+                var request = new VideoFrameProcessingRequest
                 {
-                    Rect rect = DVRectangleText.Rect;
+                    EnableArticulation = enableArticulation,
+                    FocusAlgorithm = VideoConfig.EvaFunc,
+                    Roi = new RoiRect(rect),
+                    PseudoColor = pseudoColorRequest
+                };
+                _localFrameProcessor?.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride, request);
+            }
 
-                    if (rect.Width <= 0 || rect.Height <= 0)
-                    {
-                        rect = new Rect(0, 0, width, height);
-                    }
+            if (!enablePseudo)
+            {
+                SubmitLocalDisplayFrame(imageView, pData, width, height, channels, bpp, sourceStride, frameBytes);
+            }
 
-                    int frameBytes = width * height * channels * Math.Max(1, bpp / 8);
-                    PseudoColorFrameRequest? pseudoColorRequest = null;
-                    if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
-                    {
-                        pseudoColorRequest = capturedRequest;
-                    }
+            Interlocked.Increment(ref frameCount);
+            if (fpsTimer.ElapsedMilliseconds >= 1000)
+            {
+                lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
+                logger.Info($"Current FPS: {lastFps:F2}");
+                Interlocked.Exchange(ref frameCount, 0);
+                fpsTimer.Restart();
+            }
 
-                    var request = new VideoFrameProcessingRequest
-                    {
-                        EnableArticulation = enableArticulation,
-                        FocusAlgorithm = VideoConfig.EvaFunc,
-                        Roi = new RoiRect(rect),
-                        PseudoColor = pseudoColorRequest
-                    };
-                    _localFrameProcessor?.SubmitFrame(pData, frameBytes, width, height, channels, bpp, width * channels * Math.Max(1, bpp / 8), request);
-                }
-
-                // Normal display (non-pseudo color)
-                if (!enablePseudo)
-                {
-                    WriteableBitmap writeableBitmap = Device.View.ImageView.ImageShow.Source as WriteableBitmap;
-                    bool needNewBitmap = writeableBitmap == null
-                        || writeableBitmap.PixelWidth != width
-                        || writeableBitmap.PixelHeight != height
-                        || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
-
-                    if (needNewBitmap)
-                    {
-                        writeableBitmap = new WriteableBitmap(
-                            width,
-                            height,
-                            96, 96,
-                            GetPixelFormat(channels, bpp),
-                            null);
-                        Device.View.ImageView.ImageShow.Source = writeableBitmap;
-                    }
-                    writeableBitmap!.Lock();
-
-                    OpenCvSharp.MatType matType = writeableBitmap.Format.GetPixelFormat();
-
-                    // 2. 包装源数据 (pData) -> Zero Copy
-                    using var srcMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, pData);
-
-                    using var dstMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
-
-                    if (Device.DisplayConfig.FlipMode == CVImageFlipMode.None)
-                    {
-                        srcMat.CopyTo(dstMat);
-                    }
-                    else
-                    {
-                        OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
-                    }
-
-                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-
-                    writeableBitmap.Unlock();
-                }
-
-                Interlocked.Increment(ref frameCount);
-                if (fpsTimer.ElapsedMilliseconds >= 1000)
-                {
-                    lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
-                    logger.Info($"Current FPS: {lastFps:F2}");
-                    Interlocked.Exchange(ref frameCount, 0);
-                    fpsTimer.Restart();
-                }
-
-                if (!enablePseudo)
+            if (!enablePseudo)
+            {
+                Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     DVText.Attribute.Text = $"fps:{lastFps:F1} Articulation: {articulation:F5}";
                     if (first)
                     {
                         first = false;
-                        Device.View.ImageView.Zoombox1.ZoomUniform();
                     }
-                }
-            }));
+                }));
+            }
             return 0;
+        }
+
+        private void SubmitLocalDisplayFrame(ImageView imageView, IntPtr pData, int width, int height, int channels, int bpp, int sourceStride, int frameBytes)
+        {
+            var pixelFormat = GetPixelFormat(channels, bpp);
+            if (Device.DisplayConfig.FlipMode == CVImageFlipMode.None)
+            {
+                imageView.Realtime.SubmitFrame(pData, width, height, pixelFormat, sourceStride, frameBytes);
+                return;
+            }
+
+            int targetStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
+            int targetBytes = targetStride * height;
+            lock (_localDisplayBufferGate)
+            {
+                EnsureLocalDisplayBuffer(targetBytes);
+                OpenCvSharp.MatType matType = pixelFormat.GetPixelFormat();
+                using var srcMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, pData, sourceStride);
+                using var dstMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, _localDisplayBuffer, targetStride);
+                OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
+                imageView.Realtime.SubmitFrame(_localDisplayBuffer, width, height, pixelFormat, targetStride, targetBytes);
+            }
+        }
+
+        private void EnsureLocalDisplayBuffer(int requiredBytes)
+        {
+            if (_localDisplayBuffer != IntPtr.Zero && _localDisplayBufferSize >= requiredBytes)
+            {
+                return;
+            }
+
+            if (_localDisplayBuffer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(_localDisplayBuffer);
+            }
+
+            _localDisplayBuffer = Marshal.AllocHGlobal(requiredBytes);
+            _localDisplayBufferSize = requiredBytes;
+        }
+
+        private void ReleaseLocalDisplayBuffer()
+        {
+            lock (_localDisplayBufferGate)
+            {
+                if (_localDisplayBuffer != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_localDisplayBuffer);
+                    _localDisplayBuffer = IntPtr.Zero;
+                }
+
+                _localDisplayBufferSize = 0;
+            }
         }
 
 
@@ -1091,10 +1114,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                     if (_visualsAdded)
                     {
-                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
-                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
+                        Device.View.ImageView.Realtime.RemoveOverlayVisual(DVRectangleText);
+                        Device.View.ImageView.Realtime.RemoveOverlayVisual(DVText);
                         _visualsAdded = false;
                     }
+                    Device.View.ImageView.Realtime.Reset();
+                    ReleaseLocalDisplayBuffer();
 
                     (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync(frameProcessor);
                 }
@@ -1140,8 +1165,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 if (!_visualsAdded)
                 {
-                    Device.View.ImageView.ImageShow.AddVisualCommand(DVRectangleText);
-                    Device.View.ImageView.ImageShow.AddVisualCommand(DVText);
+                    Device.View.ImageView.Realtime.Configure(new RealtimeFrameOptions
+                    {
+                        MaxDisplayFps = VideoConfig.MaxDisplayFps,
+                        AutoZoomOnFirstFrame = true,
+                        UpdateImageMetadata = true
+                    });
+                    Device.View.ImageView.Realtime.AddOverlayVisual(DVRectangleText);
+                    Device.View.ImageView.Realtime.AddOverlayVisual(DVText);
                     _visualsAdded = true;
                 }
 

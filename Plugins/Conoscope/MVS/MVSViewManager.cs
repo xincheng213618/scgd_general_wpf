@@ -32,6 +32,9 @@ namespace Conoscope.MVS
         public double SelectedGratingDiameterMillimeters { get => _SelectedGratingDiameterMillimeters; set { _SelectedGratingDiameterMillimeters = value; OnPropertyChanged(); } }
         private double _SelectedGratingDiameterMillimeters;
 
+        public int MaxDisplayFps { get => _MaxDisplayFps; set { _MaxDisplayFps = value < 0 ? 0 : value; OnPropertyChanged(); } }
+        private int _MaxDisplayFps = 60;
+
 
     }
 

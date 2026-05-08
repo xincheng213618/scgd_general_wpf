@@ -42,15 +42,11 @@
 		<None Remove="Assets\Colormap\colorscale_winter.jpg" />
 		<None Remove="Assets\Data\CIE_cc_1931_2deg.csv" />
 		<None Remove="Assets\Image\CIE1931xy.ico" />
-		<None Remove="Assets\Image\CIE1931xy.png" />
-		<None Remove="Assets\Image\CIE1931xy1.png" />
 		<None Remove="Assets\Image\CIE_1976_UCS.png" />
 		<None Remove="Assets\Image\ColorVision.ico" />
 		<None Remove="Assets\Image\ColorVision.png" />
 		<None Remove="Assets\Image\ColorVision1.ico" />
 		<None Remove="Assets\Image\connect.png" />
-		<None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-		<None Remove="Assets\Image\pictureBox1.Image.png" />
 		<None Remove="Assets\png\PowerToy.png" />
 	</ItemGroup>
 
@@ -100,15 +96,11 @@
 		<Resource Include="Assets\Colormap\colorscale_winter.jpg" />
 		<Resource Include="Assets\Data\CIE_cc_1931_2deg.csv" />
 		<Resource Include="Assets\Image\CIE1931xy.ico" />
-		<Resource Include="Assets\Image\CIE1931xy.png" />
-		<Resource Include="Assets\Image\CIE1931xy1.png" />
 		<Resource Include="Assets\Image\CIE_1976_UCS.png" />
 		<Resource Include="Assets\Image\ColorVision.ico" />
 		<Resource Include="Assets\Image\ColorVision.png" />
 		<Resource Include="Assets\Image\ColorVision1.ico" />
 		<Resource Include="Assets\Image\connect.png" />
-		<Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-		<Resource Include="Assets\Image\pictureBox1.Image.png" />
 		<Resource Include="Assets\png\PowerToy.png" />
 	</ItemGroup>
 
