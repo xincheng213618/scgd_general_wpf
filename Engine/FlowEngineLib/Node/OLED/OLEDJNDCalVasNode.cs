@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
 
-public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
+public class OLEDJNDCalVasNode : CVBaseServerNodeHub
 {
 	private int _OrderIndex;
 
@@ -89,7 +89,8 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
 		_Algorithm = Algorithm2Type.JND;
 		_TempName = "";
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_ROI";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_ROI";
 		base.Height = 115;
 		_IsAdd = false;
 		_OrderIndex = -1;

@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("/03_2 Algorithm")]
-public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
+public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 {
 	private int _BufferLen;
 
@@ -53,7 +53,8 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 	{
 		operatorCode = "Ghost";
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_CIE";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_CIE";
 		_BufferLen = 1024;
 		base.MaxTime = 15000;
 	}

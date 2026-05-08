@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/02 相机")]
-public class AOIRegisterPixelsCameraNode : CVBaseServerNodeIn2Hub
+public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 {
 	private ImgSaveBppMode _ImgSaveMode;
 
@@ -224,7 +224,8 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeIn2Hub
 	{
 		operatorCode = "GetDataAndAlgorithm";
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_POI";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_POI";
 		_FlipMode = CVImageFlipMode.None;
 		_ImgSaveMode = ImgSaveBppMode.Bit16;
 		_Channel = CVOLED_Channel.GREEN;

@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.POI;
 
 [STNode("/03_1 关注点")]
-public class BuildPOI2Node : CVBaseServerNodeIn2Hub
+public class BuildPOI2Node : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BuildPOI2Node));
 
@@ -178,7 +178,8 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 	{
 		operatorCode = "BuildPOI";
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_CAD";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_CAD";
 		_OutputFileName = "pos.csv";
 		_BuildType = POIBuildType.CADMapping;
 		_POIType = POIPointTypes.None;

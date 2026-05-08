@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.OLED;
 
 [STNode("/03_2 Algorithm")]
-public class Algorithm2InNode : CVBaseServerNodeIn2Hub
+public class Algorithm2InNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(Algorithm2InNode));
 
@@ -81,7 +81,8 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 		_TempName = "";
 		_TempId = -1;
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_ROI";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_ROI";
 		base.Height += 25;
 		_IsAdd = false;
 		_OrderIndex = -1;

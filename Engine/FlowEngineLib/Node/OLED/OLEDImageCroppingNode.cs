@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
 
-public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
+public class OLEDImageCroppingNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDImageCroppingNode));
 
@@ -41,7 +41,8 @@ public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
 		base.Height = 90;
 		operatorCode = "OLED.GetRIAand";
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_ROI";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_ROI";
 	}
 
 	protected override void OnCreate()

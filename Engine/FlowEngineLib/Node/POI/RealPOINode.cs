@@ -8,7 +8,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.POI;
 
 [STNode("/03_1 关注点")]
-public class RealPOINode : CVBaseServerNodeIn2Hub
+public class RealPOINode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(RealPOINode));
 
@@ -189,7 +189,8 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		base.Height += 50;
 		operatorCode = "Real_POI";
 		m_in_text = "IN_CIE";
-		m_in2_text = "IN_POI";
+		m_in_textHub[0] = "IN_CIE";
+		m_in_textHub[1] = "IN_POI";
 		_FilterTemplateName = "";
 		_ReviseTemplateName = "";
 		_OutputTemplateName = "";
@@ -305,7 +306,7 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		{
 			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
-		return new RealPOIData(_ImgFileName, _FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
+		return new RealPOIData(_ImgFileName, _FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[0].MasterResultType, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
 		{
 			SMUData = GetSMUResult(start)
 		};

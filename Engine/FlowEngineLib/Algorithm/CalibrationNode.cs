@@ -8,17 +8,21 @@ public class CalibrationNode : CVBaseServerNode
 {
 	private string _ExpTempName;
 
+	protected bool _IsSaveCIE;
+
 	private string _POITempName;
 
 	protected string _POIFilterTempName;
 
 	protected string _POIReviseTempName;
 
-	protected bool _IsSaveCIE;
+	private string _OutputTemplateName;
 
 	private STNodeEditText<string> m_ctrl_temp_exp;
 
 	private STNodeEditText<string> m_ctrl_temp_poi;
+
+	private STNodeEditText<string> m_ctrl_outtemp;
 
 	private STNodeEditText<bool> m_ctrl_saveCIE;
 
@@ -59,6 +63,20 @@ public class CalibrationNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+		}
+	}
+
+	[STNodeProperty("保存CIE文件", "保存CIE文件", true)]
+	public bool IsSaveCIE
+	{
+		get
+		{
+			return _IsSaveCIE;
+		}
+		set
+		{
+			_IsSaveCIE = value;
+			m_ctrl_saveCIE.Value = value;
 		}
 	}
 
@@ -104,17 +122,17 @@ public class CalibrationNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("保存CIE文件", "保存CIE文件", true)]
-	public bool IsSaveCIE
+	[STNodeProperty("文件输出模板", "文件输出模板", true)]
+	public string OutputTemplateName
 	{
 		get
 		{
-			return _IsSaveCIE;
+			return _OutputTemplateName;
 		}
 		set
 		{
-			_IsSaveCIE = value;
-			m_ctrl_saveCIE.Value = value;
+			_OutputTemplateName = value;
+			m_ctrl_outtemp.Value = value;
 		}
 	}
 
@@ -126,7 +144,8 @@ public class CalibrationNode : CVBaseServerNode
 		_POITempName = "";
 		_POIFilterTempName = "";
 		_POIReviseTempName = "";
-		base.Height += 75;
+		_OutputTemplateName = "";
+		base.Height += 100;
 		_MaxTime = 10000;
 		_IsSaveCIE = true;
 	}
@@ -138,9 +157,11 @@ public class CalibrationNode : CVBaseServerNode
 		m_custom_item.Y += 25;
 		m_ctrl_temp_exp = CreateStringControl(m_custom_item, "曝光模板:", _ExpTempName);
 		m_custom_item.Y += 25;
+		m_ctrl_saveCIE = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "保存CIE文件:", _IsSaveCIE);
+		m_custom_item.Y += 25;
 		m_ctrl_temp_poi = CreateStringControl(m_custom_item, "POI模板:", _POITempName);
 		m_custom_item.Y += 25;
-		m_ctrl_saveCIE = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "保存CIE文件:", _IsSaveCIE);
+		m_ctrl_outtemp = CreateStringControl(m_custom_item, "文件输出模板:", _OutputTemplateName);
 	}
 
 	private void setPOITemp()

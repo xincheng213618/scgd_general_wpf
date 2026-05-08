@@ -6,13 +6,23 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.OLED;
 
 [STNode("/03_3 校正")]
-public class Calibration2InNode : CVBaseServerNodeIn2Hub
+public class Calibration2InNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(Calibration2InNode));
 
 	private string _ExpTempName;
 
 	protected bool _IsSaveCIE;
+
+	protected string _POIFilterTempName;
+
+	protected string _POIReviseTempName;
+
+	private string _OutputTemplateName;
+
+	private STNodeEditText<string> m_ctrl_poi;
+
+	private STNodeEditText<string> m_ctrl_outtemp;
 
 	private STNodeEditText<string> m_ctrl_temp_exp;
 
@@ -72,17 +82,61 @@ public class Calibration2InNode : CVBaseServerNodeIn2Hub
 		}
 	}
 
+	[STNodeProperty("POI过滤", "POI过滤模板", true)]
+	public string POIFilterTempName
+	{
+		get
+		{
+			return _POIFilterTempName;
+		}
+		set
+		{
+			_POIFilterTempName = value;
+			setFilterReviseTemp();
+		}
+	}
+
+	[STNodeProperty("POI修正", "POI修正模板", true)]
+	public string POIReviseTempName
+	{
+		get
+		{
+			return _POIReviseTempName;
+		}
+		set
+		{
+			_POIReviseTempName = value;
+			setFilterReviseTemp();
+		}
+	}
+
+	[STNodeProperty("文件输出模板", "文件输出模板", true)]
+	public string OutputTemplateName
+	{
+		get
+		{
+			return _OutputTemplateName;
+		}
+		set
+		{
+			_OutputTemplateName = value;
+			m_ctrl_outtemp.Value = value;
+		}
+	}
+
 	public Calibration2InNode()
 		: base("校正2", "Calibration", "SVR.Calibration.Default", "DEV.Calibration.Default")
 	{
 		operatorCode = "Calibration";
 		_TempName = "";
 		_ExpTempName = "";
+		_OutputTemplateName = "";
 		_TempId = -1;
 		_IsSaveCIE = true;
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_POI";
-		base.Height += 50;
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_POI";
+		base.Height += 100;
 	}
 
 	protected override void OnCreate()
@@ -93,6 +147,20 @@ public class Calibration2InNode : CVBaseServerNodeIn2Hub
 		m_ctrl_temp_exp = CreateStringControl(m_custom_item, "曝光模板:", _ExpTempName);
 		m_custom_item.Y += 25;
 		m_ctrl_saveCIE = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "保存CIE文件:", _IsSaveCIE);
+		m_custom_item.Y += 25;
+		m_ctrl_poi = CreateStringControl(m_custom_item, "F/R:", getFilterReviseTemp());
+		m_custom_item.Y += 25;
+		m_ctrl_outtemp = CreateStringControl(m_custom_item, "文件输出模板:", _OutputTemplateName);
+	}
+
+	private void setFilterReviseTemp()
+	{
+		m_ctrl_poi.Value = getFilterReviseTemp();
+	}
+
+	private string getFilterReviseTemp()
+	{
+		return $"{_POIFilterTempName}/{_POIReviseTempName}";
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

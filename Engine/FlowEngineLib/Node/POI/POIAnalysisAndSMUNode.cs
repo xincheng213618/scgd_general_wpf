@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.POI;
 
 [STNode("/03_1 关注点")]
-public class POIAnalysisAndSMUNode : CVBaseServerNodeIn2Hub
+public class POIAnalysisAndSMUNode : CVBaseServerNodeHub
 {
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
@@ -25,7 +25,8 @@ public class POIAnalysisAndSMUNode : CVBaseServerNodeIn2Hub
 	{
 		operatorCode = "PoiAnalysis";
 		m_in_text = "IN_POI";
-		m_in2_text = "IN_SMU";
+		m_in_textHub[0] = "IN_POI";
+		m_in_textHub[1] = "IN_SMU";
 	}
 
 	protected override void OnCreate()

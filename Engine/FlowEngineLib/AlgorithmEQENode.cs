@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/03_2 Algorithm")]
-public class AlgorithmEQENode : CVBaseServerNodeIn2Hub
+public class AlgorithmEQENode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmEQENode));
 
@@ -29,7 +29,8 @@ public class AlgorithmEQENode : CVBaseServerNodeIn2Hub
 		m_is_out_release = false;
 		m_has_svr_item = false;
 		m_in_text = "IN_SP";
-		m_in2_text = "IN_SMU";
+		m_in_textHub[0] = "IN_SP";
+		m_in_textHub[1] = "IN_SMU";
 		operatorCode = "CalcEQE";
 	}
 

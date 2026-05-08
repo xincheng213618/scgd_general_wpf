@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Camera;
 
 [STNode("/02 相机")]
-public class CVAOI2CameraNode : CVBaseServerNodeIn2Hub
+public class CVAOI2CameraNode : CVBaseServerNodeHub
 {
 	private string _CamTempName;
 
@@ -170,7 +170,8 @@ public class CVAOI2CameraNode : CVBaseServerNodeIn2Hub
 	{
 		operatorCode = "GetDataAndAlgorithm";
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_POI";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_POI";
 		_MaxTime = 60000;
 		_AlgTempName = "";
 		_CamTempName = "";

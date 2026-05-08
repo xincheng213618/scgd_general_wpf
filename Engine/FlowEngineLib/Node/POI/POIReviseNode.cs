@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.POI;
 
 [STNode("/03_1 关注点")]
-public class POIReviseNode : CVBaseServerNodeIn2Hub
+public class POIReviseNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(POIReviseNode));
 
@@ -81,7 +81,8 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 		base.Height += 50;
 		operatorCode = "POIReviseGen";
 		m_in_text = "IN_POI";
-		m_in2_text = "IN_SPE";
+		m_in_textHub[0] = "IN_POI";
+		m_in_textHub[1] = "IN_SPE";
 		_Output = "";
 		_POIPointName = "";
 	}
