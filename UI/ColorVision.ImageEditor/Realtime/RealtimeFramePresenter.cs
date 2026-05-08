@@ -35,6 +35,7 @@ namespace ColorVision.ImageEditor.Realtime
             public int Height;
             public int Stride;
             public PixelFormat PixelFormat;
+            public DateTime TimestampUtc;
 
             public void EnsureCapacity(int requiredLength)
             {
@@ -77,11 +78,14 @@ namespace ColorVision.ImageEditor.Realtime
         }
 
         public RealtimeFrameOptions Options { get; private set; }
+        public RealtimeFrameStats Stats { get; } = new();
         public event EventHandler<RealtimeFrameRenderedEventArgs>? FrameRendered;
 
         public void Configure(RealtimeFrameOptions options)
         {
-            Options = options ?? throw new ArgumentNullException(nameof(options));
+            ArgumentNullException.ThrowIfNull(options);
+            Options.ApplyFrom(options);
+            Stats.Refresh(Options.IsFrozen);
         }
 
         public unsafe bool SubmitFrame(HImage frame)
@@ -118,8 +122,17 @@ namespace ColorVision.ImageEditor.Realtime
                 return false;
             }
 
+            Stats.RecordSubmitted();
+
+            if (Options.IsFrozen)
+            {
+                Stats.RecordDropped(becauseFrozen: true);
+                return false;
+            }
+
             if (!ShouldAcceptFrame())
             {
+                Stats.RecordDropped();
                 return false;
             }
 
@@ -133,9 +146,11 @@ namespace ColorVision.ImageEditor.Realtime
                 _pendingFrame.Stride = sourceStride;
                 _pendingFrame.Length = bufferLength;
                 _pendingFrame.PixelFormat = pixelFormat;
+                _pendingFrame.TimestampUtc = DateTime.UtcNow;
                 _hasPendingFrame = true;
             }
 
+            Stats.RecordAccepted();
             ScheduleRender();
             return true;
         }
@@ -155,6 +170,7 @@ namespace ColorVision.ImageEditor.Realtime
 
             WriteableBitmap? previousBitmap = _writeableBitmap;
             _writeableBitmap = null;
+            Stats.Reset(Options.IsFrozen);
 
             if (clearImageSource)
             {
@@ -287,6 +303,29 @@ namespace ColorVision.ImageEditor.Realtime
             _hasRenderedFrame = true;
 
             FrameRendered?.Invoke(this, new RealtimeFrameRenderedEventArgs(frame.Width, frame.Height, frame.PixelFormat));
+            _imageView.SchedulePixelValueOverlayRefresh();
+            Stats.RecordDisplayed(frame.TimestampUtc, Options.IsFrozen);
+        }
+
+        public RealtimeFrameSnapshot? CaptureCurrentFrame()
+        {
+            lock (_gate)
+            {
+                if (_displayFrame == null || _displayFrame.Buffer == IntPtr.Zero || _displayFrame.Length <= 0)
+                {
+                    return null;
+                }
+
+                byte[] data = new byte[_displayFrame.Length];
+                Marshal.Copy(_displayFrame.Buffer, data, 0, data.Length);
+                return new RealtimeFrameSnapshot(
+                    data,
+                    _displayFrame.Width,
+                    _displayFrame.Height,
+                    _displayFrame.Stride,
+                    _displayFrame.PixelFormat,
+                    _displayFrame.TimestampUtc);
+            }
         }
 
         private void UpdateImageMetadata(FrameBuffer frame)

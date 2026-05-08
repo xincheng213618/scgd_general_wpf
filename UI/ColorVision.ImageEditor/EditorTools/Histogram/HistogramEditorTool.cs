@@ -34,6 +34,7 @@ namespace ColorVision.ImageEditor.EditorTools.Histogram
             }
 
             window.Owner = Application.Current.GetActiveWindow();
+            window.AttachLiveSource(() => EditorContext.DrawCanvas.Source as BitmapSource);
             window.Show();
         });
     }

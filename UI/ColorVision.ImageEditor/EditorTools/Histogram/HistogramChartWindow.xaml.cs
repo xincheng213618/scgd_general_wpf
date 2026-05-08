@@ -1,5 +1,6 @@
 ﻿using ColorVision.ImageEditor.EditorTools.Histogram;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ScottPlot;
@@ -7,6 +8,8 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Collections.Generic;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor
 {
@@ -23,12 +26,15 @@ namespace ColorVision.ImageEditor
         private HistogramData _histogramData;
         private bool _isLogScale = false;
         private bool _isOptimized = false;
+        private Func<BitmapSource?>? _liveSourceProvider;
+        private DispatcherTimer? _liveRefreshTimer;
 
         public HistogramChartWindow(int[] redHistogram, int[] greenHistogram, int[] blueHistogram)
         {
             _histogramData = HistogramData.CreateMultiChannel(redHistogram, greenHistogram, blueHistogram);
             InitializeComponent();
             this.ApplyCaption();
+            Closed += HistogramChartWindow_Closed;
         }
 
         public HistogramChartWindow(int[] grayHistogram)
@@ -36,11 +42,36 @@ namespace ColorVision.ImageEditor
             _histogramData = HistogramData.CreateSingleChannel(grayHistogram);
             InitializeComponent();
             this.ApplyCaption();
+            Closed += HistogramChartWindow_Closed;
+        }
+
+        public void AttachLiveSource(Func<BitmapSource?> liveSourceProvider, int intervalMilliseconds = 500)
+        {
+            _liveSourceProvider = liveSourceProvider ?? throw new ArgumentNullException(nameof(liveSourceProvider));
+            _liveRefreshTimer ??= new DispatcherTimer(DispatcherPriority.Background, Dispatcher);
+            _liveRefreshTimer.Stop();
+            _liveRefreshTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(100, intervalMilliseconds));
+            _liveRefreshTimer.Tick -= LiveRefreshTimer_Tick;
+            _liveRefreshTimer.Tick += LiveRefreshTimer_Tick;
+            _liveRefreshTimer.Start();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            // Configure channel visibility checkboxes
+            ApplyChannelVisibility();
+
+            // Initialize the plot
+            InitializePlot();
+            UpdatePlot();
+        }
+
+        private void ApplyChannelVisibility()
+        {
+            ShowRedCheckBox.Visibility = Visibility.Collapsed;
+            ShowGreenCheckBox.Visibility = Visibility.Collapsed;
+            ShowBlueCheckBox.Visibility = Visibility.Collapsed;
+            ShowGrayCheckBox.Visibility = Visibility.Collapsed;
+
             if (_histogramData.IsMultiChannel)
             {
                 ShowRedCheckBox.Visibility = Visibility.Visible;
@@ -53,10 +84,6 @@ namespace ColorVision.ImageEditor
             {
                 ShowGrayCheckBox.Visibility = Visibility.Visible;
             }
-
-            // Initialize the plot
-            InitializePlot();
-            UpdatePlot();
         }
 
         private void InitializePlot()
@@ -210,25 +237,25 @@ namespace ColorVision.ImageEditor
                 {
                     var doubles = PrepareHistogramValues(_histogramData.RedChannel);
                     var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.2);
+                    allValues.Add(GetSecondHighestOrMax(sortedValues1) * 1.2);
                 }
                 if (ShowGreenCheckBox.IsChecked == true)
                 {
                     var doubles = PrepareHistogramValues(_histogramData.GreenChannel);
                     var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.1);
+                    allValues.Add(GetSecondHighestOrMax(sortedValues1) * 1.1);
                 }
                 if (ShowBlueCheckBox.IsChecked == true)
                 {
                     var doubles = PrepareHistogramValues(_histogramData.BlueChannel);
                     var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.1);
+                    allValues.Add(GetSecondHighestOrMax(sortedValues1) * 1.1);
                 }
                 if (ShowGrayCheckBox.IsChecked == true)
                 {
                     var doubles = PrepareHistogramValues(_histogramData.GrayChannel);
                     var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
-                    allValues.Add(sortedValues1[1] * 1.1);
+                    allValues.Add(GetSecondHighestOrMax(sortedValues1) * 1.1);
                 }
                 if (allValues.Count == 0)
                     return 100;
@@ -248,9 +275,19 @@ namespace ColorVision.ImageEditor
                     return sortedValues.First() * 1.1;
 
                 // Use second highest value with 120% multiplier for better visibility
-                double secondHighest = sortedValues[1];
+                double secondHighest = GetSecondHighestOrMax(sortedValues);
                 return secondHighest * 1.1;
             }
+        }
+
+        private static double GetSecondHighestOrMax(IReadOnlyList<double> sortedValues)
+        {
+            if (sortedValues.Count == 0)
+            {
+                return 100;
+            }
+
+            return sortedValues.Count > 1 ? sortedValues[1] : sortedValues[0];
         }
 
         private double[] PrepareHistogramValues(int[] histogram)
@@ -310,6 +347,53 @@ namespace ColorVision.ImageEditor
         private void ChannelCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
             UpdatePlot();
+        }
+
+        private void LiveRefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            RefreshLiveHistogram();
+        }
+
+        private void RefreshLiveHistogram()
+        {
+            if (!IsLoaded || _liveSourceProvider == null)
+            {
+                return;
+            }
+
+            BitmapSource? bitmapSource = _liveSourceProvider();
+            if (bitmapSource == null)
+            {
+                return;
+            }
+
+            HistogramData newData = CreateHistogramData(bitmapSource);
+            bool channelModeChanged = newData.IsMultiChannel != _histogramData.IsMultiChannel;
+            _histogramData = newData;
+
+            if (channelModeChanged)
+            {
+                ApplyChannelVisibility();
+            }
+
+            UpdatePlot();
+        }
+
+        private static HistogramData CreateHistogramData(BitmapSource bitmapSource)
+        {
+            var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
+            return bitmapSource.Format.Masks.Count == 1
+                ? HistogramData.CreateSingleChannel(redHistogram)
+                : HistogramData.CreateMultiChannel(redHistogram, greenHistogram, blueHistogram);
+        }
+
+        private void HistogramChartWindow_Closed(object? sender, EventArgs e)
+        {
+            if (_liveRefreshTimer != null)
+            {
+                _liveRefreshTimer.Stop();
+                _liveRefreshTimer.Tick -= LiveRefreshTimer_Tick;
+            }
         }
     }
 }

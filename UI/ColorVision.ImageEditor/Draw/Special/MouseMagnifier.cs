@@ -78,12 +78,20 @@ namespace ColorVision.ImageEditor.Draw.Special
                 double fontSize = 10;
                 FormattedText formattedText = new(pixelSample.ValueText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 FormattedText formattedTex1 = new(pixelSample.CoordinateText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                double width = Math.Max(formattedText.Width, formattedTex1.Width) + 10;
+                FormattedText? formattedText2 = string.IsNullOrWhiteSpace(pixelSample.ColorimetryText)
+                    ? null
+                    : new FormattedText(pixelSample.ColorimetryText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), 9, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                double width = Math.Max(Math.Max(formattedText.Width, formattedTex1.Width), formattedText2?.Width ?? 0) + 10;
+                double panelHeight = formattedText2 == null ? 30 : 43;
 
-                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 30));
+                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, panelHeight));
 
                 dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
                 dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
+                if (formattedText2 != null)
+                {
+                    dc.DrawText(formattedText2, new Point(x1 + 5, y1 + height + 31));
+                }
                 dc.Pop();
                 if (DrawVisualImage.Effect is not DropShadowEffect)
                     DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };

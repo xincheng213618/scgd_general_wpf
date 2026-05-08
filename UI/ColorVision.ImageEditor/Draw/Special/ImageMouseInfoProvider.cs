@@ -1,4 +1,5 @@
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor.Cie;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Globalization;
@@ -74,6 +75,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             byte[] rawPixel = ReadRawPixel(bitmap, pixelX, pixelY);
             PixelFormat format = bitmap.Format;
             (bool hasRgbChannels, int red, int green, int blue) = ReadRgbChannels(format, rawPixel);
+            Color previewColor = BuildDisplayColor(format, rawPixel, hasRgbChannels, red, green, blue);
 
             return new ImagePixelSample
             {
@@ -82,7 +84,8 @@ namespace ColorVision.ImageEditor.Draw.Special
                 PixelY = pixelY,
                 PixelFormat = format,
                 ValueText = BuildSampleText(format, rawPixel, hasRgbChannels, red, green, blue),
-                PreviewColor = BuildDisplayColor(format, rawPixel, hasRgbChannels, red, green, blue),
+                ColorimetryText = BuildColorimetryText(format, previewColor),
+                PreviewColor = previewColor,
                 HasRgbSourceChannels = hasRgbChannels,
             };
         }
@@ -148,6 +151,53 @@ namespace ColorVision.ImageEditor.Draw.Special
             }
 
             return format.ToString();
+        }
+
+        private static string BuildColorimetryText(PixelFormat format, Color previewColor)
+        {
+            if (!SupportsColorimetry(format))
+            {
+                return string.Empty;
+            }
+
+            CieXyz xyz = CieColorConverter.RgbToXyz(previewColor.R, previewColor.G, previewColor.B);
+            CieChromaticity xy = CieColorConverter.XyzToCie1931xy(xyz);
+            CieChromaticity uv = CieColorConverter.XyzToCie1976uv(xyz);
+
+            if (!xy.IsFinite || !uv.IsFinite)
+            {
+                return string.Format(
+                    CultureInfo.InvariantCulture,
+                    "XYZ:{0:F3},{1:F3},{2:F3}",
+                    xyz.X,
+                    xyz.Y,
+                    xyz.Z);
+            }
+
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "XYZ:{0:F3},{1:F3},{2:F3}  xy:{3:F4},{4:F4}  u'v':{5:F4},{6:F4}",
+                xyz.X,
+                xyz.Y,
+                xyz.Z,
+                xy.X,
+                xy.Y,
+                uv.X,
+                uv.Y);
+        }
+
+        private static bool SupportsColorimetry(PixelFormat format)
+        {
+            return format == PixelFormats.Rgb24
+                || format == PixelFormats.Bgr24
+                || format == PixelFormats.Bgra32
+                || format == PixelFormats.Pbgra32
+                || format == PixelFormats.Bgr32
+                || format == PixelFormats.Rgb48
+                || format == PixelFormats.Rgba64
+                || format == PixelFormats.Gray8
+                || format == PixelFormats.Gray16
+                || format == PixelFormats.Gray32Float;
         }
 
         private static string FormatGray32Float(float value)

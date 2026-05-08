@@ -16,6 +16,8 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public string ValueText { get; init; } = string.Empty;
 
+        public string ColorimetryText { get; init; } = string.Empty;
+
         public Color PreviewColor { get; init; }
 
         public bool HasRgbSourceChannels { get; init; }

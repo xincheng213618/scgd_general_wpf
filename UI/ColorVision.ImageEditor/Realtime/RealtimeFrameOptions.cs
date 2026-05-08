@@ -1,9 +1,25 @@
+using System;
 using ColorVision.Common.MVVM;
 
 namespace ColorVision.ImageEditor.Realtime
 {
     public sealed class RealtimeFrameOptions : ViewModelBase
     {
+        public void ApplyFrom(RealtimeFrameOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
+            if (ReferenceEquals(this, options))
+            {
+                return;
+            }
+
+            MaxDisplayFps = options.MaxDisplayFps;
+            AutoZoomOnFirstFrame = options.AutoZoomOnFirstFrame;
+            UpdateImageMetadata = options.UpdateImageMetadata;
+            IsFrozen = options.IsFrozen;
+        }
+
         public int MaxDisplayFps
         {
             get => _maxDisplayFps;
@@ -40,5 +56,17 @@ namespace ColorVision.ImageEditor.Realtime
             }
         }
         private bool _updateImageMetadata = true;
+
+        public bool IsFrozen
+        {
+            get => _isFrozen;
+            set
+            {
+                if (_isFrozen == value) return;
+                _isFrozen = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _isFrozen;
     }
 }
