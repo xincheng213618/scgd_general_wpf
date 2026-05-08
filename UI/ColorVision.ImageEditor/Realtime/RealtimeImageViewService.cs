@@ -16,7 +16,19 @@ namespace ColorVision.ImageEditor.Realtime
 
         public RealtimeFrameOptions Options { get; private set; }
 
-        public RealtimeFramePresenter Presenter => _presenter ??= new RealtimeFramePresenter(_imageView, Options);
+        private RealtimeFramePresenter Presenter => _presenter ??= new RealtimeFramePresenter(_imageView, Options);
+
+        public event EventHandler<RealtimeFrameRenderedEventArgs> FrameRendered
+        {
+            add => Presenter.FrameRendered += value;
+            remove
+            {
+                if (_presenter != null)
+                {
+                    _presenter.FrameRendered -= value;
+                }
+            }
+        }
 
         public void Configure(RealtimeFrameOptions options)
         {

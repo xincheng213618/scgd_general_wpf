@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw.Special;
 
 namespace ColorVision.ImageEditor.Realtime
 {
@@ -41,29 +40,5 @@ namespace ColorVision.ImageEditor.Realtime
             }
         }
         private bool _updateImageMetadata = true;
-
-        public bool EnableDiagnostics
-        {
-            get => _enableDiagnostics;
-            set
-            {
-                if (_enableDiagnostics == value) return;
-                _enableDiagnostics = value;
-                OnPropertyChanged();
-            }
-        }
-        private bool _enableDiagnostics = true;
-
-        public ReferenceLineParam ReferenceLineParam
-        {
-            get => _referenceLineParam;
-            set
-            {
-                if (ReferenceEquals(_referenceLineParam, value)) return;
-                _referenceLineParam = value;
-                OnPropertyChanged();
-            }
-        }
-        private ReferenceLineParam _referenceLineParam = new();
     }
 }

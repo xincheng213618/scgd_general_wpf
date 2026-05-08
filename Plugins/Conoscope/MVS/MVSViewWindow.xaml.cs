@@ -69,7 +69,7 @@ namespace Conoscope.MVS
                 AutoZoomOnFirstFrame = true,
                 UpdateImageMetadata = true
             });
-            imgDisplay.Realtime.Presenter.FrameRendered += RealtimePresenter_FrameRendered;
+            imgDisplay.Realtime.FrameRendered += RealtimePresenter_FrameRendered;
             MVSViewManager.Config.PropertyChanged += Config_PropertyChanged;
             cbPixelType.ItemsSource = Enum.GetValues(typeof(PixelType));
             SelectGratingDiameter(MVSViewManager.Config.SelectedGratingDiameterMillimeters);
@@ -726,7 +726,7 @@ namespace Conoscope.MVS
         {
             m_bGrabbing = false;
             MVSViewManager.Config.PropertyChanged -= Config_PropertyChanged;
-            imgDisplay.Realtime.Presenter.FrameRendered -= RealtimePresenter_FrameRendered;
+            imgDisplay.Realtime.FrameRendered -= RealtimePresenter_FrameRendered;
             imgDisplay.Realtime.Reset(true);
             imgDisplay.Zoombox1.ContentMatrixChanged -= ImageDisplay_ContentMatrixChanged;
             imgDisplay.Dispose();

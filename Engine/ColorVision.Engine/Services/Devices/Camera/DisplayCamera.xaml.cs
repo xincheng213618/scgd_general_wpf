@@ -977,7 +977,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 VideoConfig.IsUseCacheFile = true;
             }
 
-            int sourceStride = lss > 0 ? lss : width * channels * Math.Max(1, bpp / 8);
+            var pixelFormat = GetPixelFormat(channels, bpp);
+            int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = sourceStride * height;
 
             bool enableArticulation = VideoConfig.IsCalArtculation;

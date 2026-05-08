@@ -265,8 +265,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
             var pixelFormat = GetPixelFormat(channels, bpp);
-            int bytesPerChannel = Math.Max(1, bpp / 8);
-            int stride = lss > 0 ? lss : width * channels * bytesPerChannel;
+            int stride = ColorVision.ImageEditor.Realtime.RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = stride * height;
             ImageView.Realtime.SubmitFrame(pData, width, height, pixelFormat, stride, frameBytes);
             return 0;
