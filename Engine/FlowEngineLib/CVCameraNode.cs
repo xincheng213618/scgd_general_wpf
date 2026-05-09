@@ -9,8 +9,6 @@ namespace FlowEngineLib;
 [STNode("/02 相机")]
 public class CVCameraNode : CVBaseServerNode
 {
-	protected string _GlobalVariableName;
-
 	protected int _AvgCount;
 
 	protected float _Gain;
@@ -20,6 +18,8 @@ public class CVCameraNode : CVBaseServerNode
 	protected float _TempG;
 
 	protected float _TempB;
+
+	protected CV2LVChannelMode _CV2LVChannel;
 
 	protected float _Aperture;
 
@@ -42,6 +42,8 @@ public class CVCameraNode : CVBaseServerNode
 	private STNodeEditText<string> m_ctrl_caliTemp;
 
 	private STNodeEditText<string> m_ctrl_poitemplate;
+
+	private STNodeEditText<CV2LVChannelMode> m_ctrl_CV2LVChannel;
 
 	private STNodeText[] m_ctrl_Text;
 
@@ -114,6 +116,20 @@ public class CVCameraNode : CVBaseServerNode
 		{
 			_TempB = value;
 			m_ctrl_expTime[2].Value = value;
+		}
+	}
+
+	[STNodeProperty("CV2LVChannel", "CV2LVChannel", true)]
+	public CV2LVChannelMode CV2LVChannel
+	{
+		get
+		{
+			return _CV2LVChannel;
+		}
+		set
+		{
+			_CV2LVChannel = value;
+			m_ctrl_CV2LVChannel.Value = value;
 		}
 	}
 
@@ -191,6 +207,7 @@ public class CVCameraNode : CVBaseServerNode
 	{
 		operatorCode = "GetData";
 		_FlipMode = CVImageFlipMode.None;
+		_CV2LVChannel = CV2LVChannelMode.None;
 		_MaxTime = 20000;
 		_CalibTempName = "";
 		_POITempName = "";
@@ -204,7 +221,7 @@ public class CVCameraNode : CVBaseServerNode
 		_Aperture = 0f;
 		_EnableFocus = false;
 		_Focus = 0;
-		base.Height += 100;
+		base.Height += 125;
 	}
 
 	protected override void OnCreate()
@@ -238,28 +255,6 @@ public class CVCameraNode : CVBaseServerNode
 		return base.GetMaxDelay() + (int)(_TempR + _TempG + _TempB);
 	}
 
-	private void initCtrl2()
-	{
-		int channelCount = _Channel.GetChannelCount();
-		m_ctrl_Text = new STNodeText[channelCount];
-		int num = 0;
-		for (int i = 0; i < channelCount; i++)
-		{
-			ChannelData channel = _Channel.GetChannel(i);
-			m_ctrl_Text[i] = new STNodeText();
-			m_ctrl_Text[i].Text = getChannelText(channel);
-			num = 45 + i * 25;
-			m_ctrl_Text[i].DisplayRectangle = new Rectangle(5, num, 135, 18);
-			base.Controls.Add(m_ctrl_Text[i]);
-		}
-		num = 120;
-		m_ctrl_caliTemp = new STNodeEditText<string>();
-		m_ctrl_caliTemp.Text = "校正:";
-		m_ctrl_caliTemp.DisplayRectangle = new Rectangle(5, num, 135, 18);
-		m_ctrl_caliTemp.Value = _CalibTempName;
-		base.Controls.Add(m_ctrl_caliTemp);
-	}
-
 	private void initCtrl()
 	{
 		int channelCount = _Channel.GetChannelCount();
@@ -271,9 +266,11 @@ public class CVCameraNode : CVBaseServerNode
 			m_ctrl_expTime[i] = CreateControl(typeof(STNodeEditText<float>), custom_item, szTypeCode[i] + "曝光:", channel.Temp);
 			custom_item.Y += 25;
 		}
-		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正模板:", _CalibTempName);
+		m_ctrl_CV2LVChannel = CreateControl(typeof(STNodeEditText<CV2LVChannelMode>), custom_item, "CV2LVChannel:", _CV2LVChannel);
 		custom_item.Y += 25;
-		m_ctrl_poitemplate = CreateControl(typeof(STNodeEditText<string>), custom_item, "POI:", GetPOITempDisplay());
+		m_ctrl_caliTemp = CreateStringControl(custom_item, "校正模板:", _CalibTempName);
+		custom_item.Y += 25;
+		m_ctrl_poitemplate = CreateStringControl(custom_item, "POI:", GetPOITempDisplay());
 	}
 
 	private string getChannelText(ChannelData chData)
@@ -309,6 +306,6 @@ public class CVCameraNode : CVBaseServerNode
 			m_ctrl_expTime[1].Value,
 			m_ctrl_expTime[2].Value
 		};
-		return new CVCameraData(_FlipMode, _EnableFocus, _Focus, _Aperture, _AvgCount, _Gain, expTime, _CalibTempName, _POITempName, _POIFilterTempName, _POIReviseTempName, _GlobalVariableName);
+		return new CVCameraData(_FlipMode, _CV2LVChannel, _EnableFocus, _Focus, _Aperture, _AvgCount, _Gain, expTime, _CalibTempName, _POITempName, _POIFilterTempName, _POIReviseTempName);
 	}
 }

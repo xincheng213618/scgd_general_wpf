@@ -26,8 +26,6 @@ public class CameraData
 
 	public POITemplateParam POIParam { get; set; }
 
-	public string GlobalVariableName { get; set; }
-
 	public CameraData(CVImageFlipMode flipMode, bool enableFocus, int focus, float aperture, int avgCount, float gain, float[] expTime, string caliTempName, string poiTempName, string poiFilterTempName, string poiReviseTempName, string globalVariableName)
 	{
 		EnableFocus = enableFocus;
@@ -46,6 +44,5 @@ public class CameraData
 			ID = -1,
 			Name = caliTempName
 		};
-		GlobalVariableName = globalVariableName;
 	}
 }
