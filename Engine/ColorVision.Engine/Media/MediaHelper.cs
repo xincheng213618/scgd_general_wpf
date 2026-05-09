@@ -1,12 +1,10 @@
 ﻿using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Desktop;
 using log4net;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;

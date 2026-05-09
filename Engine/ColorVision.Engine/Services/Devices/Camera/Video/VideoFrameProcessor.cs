@@ -1,6 +1,4 @@
 using ColorVision.Core;
-using ColorVision.Engine.Media;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.Runtime.InteropServices;

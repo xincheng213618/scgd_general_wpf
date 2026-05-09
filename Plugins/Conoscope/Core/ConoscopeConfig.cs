@@ -1,10 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using ColorVision.Core;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;

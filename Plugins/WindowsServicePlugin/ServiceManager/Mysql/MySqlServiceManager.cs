@@ -1,7 +1,6 @@
 using ColorVision.Database;
 using ColorVision.UI;
 using System.IO;
-using System.Linq;
 
 namespace WindowsServicePlugin.ServiceManager
 {

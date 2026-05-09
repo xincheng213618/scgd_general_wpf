@@ -1,5 +1,4 @@
-﻿using ColorVision.ImageEditor.Draw;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Conoscope.Core
 {

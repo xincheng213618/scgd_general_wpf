@@ -2,7 +2,6 @@ using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.EditorTools.ThreeD;
 using ColorVision.Solution.Workspace;
-using System;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;

@@ -1,6 +1,5 @@
 using ColorVision.SocketProtocol;
 using log4net;
-using Newtonsoft.Json;
 using System.Net.Sockets;
 
 namespace ProjectARVRPro.Services

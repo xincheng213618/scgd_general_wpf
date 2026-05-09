@@ -1,9 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Authorizations;
 using log4net;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.ThirdPartyApps;
-using System.Collections.Generic;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {

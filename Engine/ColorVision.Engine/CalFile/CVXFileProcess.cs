@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
-using CVCommCore.CVCamera;
 using log4net;
 using Newtonsoft.Json; // 引入 Json
 using System;

@@ -1,11 +1,8 @@
 using ColorVision.ImageEditor.Cie;
 using Spectrum.Data;
-using Spectrum.Models;
 using ScottPlot;
 using ScottPlot.Plottables;
-using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Spectrum
 {

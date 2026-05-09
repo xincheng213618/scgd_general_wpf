@@ -1,21 +1,17 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Properties;
+﻿using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.CUDA;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {

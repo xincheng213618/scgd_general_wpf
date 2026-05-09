@@ -2,8 +2,6 @@ using ColorVision.UI.Menus;
 using Spectrum.Menus;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace Spectrum.DirectSpectrometer;

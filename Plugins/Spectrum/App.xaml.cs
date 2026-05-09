@@ -1,5 +1,4 @@
-﻿using ColorVision.Scheduler;
-using ColorVision.SocketProtocol;
+﻿using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;

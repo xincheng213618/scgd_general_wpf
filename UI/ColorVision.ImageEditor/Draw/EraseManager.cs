@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS0414,CS8625
-using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;

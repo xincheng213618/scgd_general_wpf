@@ -1,4 +1,3 @@
-using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Conoscope.Core;

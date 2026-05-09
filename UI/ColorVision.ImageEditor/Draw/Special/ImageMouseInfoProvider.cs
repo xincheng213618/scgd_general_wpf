@@ -1,5 +1,4 @@
 using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor.Draw;
 using System;
 using System.Globalization;
 using System.Windows;

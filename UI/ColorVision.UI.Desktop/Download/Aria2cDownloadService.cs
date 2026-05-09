@@ -1,5 +1,3 @@
-using ColorVision.UI;
-
 namespace ColorVision.UI.Desktop.Download
 {
     public class Aria2cDownloadService : IDownloadService

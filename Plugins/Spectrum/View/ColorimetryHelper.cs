@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Spectrum.View
+﻿namespace Spectrum.View
 {
     public static class ColorimetryHelper
     {

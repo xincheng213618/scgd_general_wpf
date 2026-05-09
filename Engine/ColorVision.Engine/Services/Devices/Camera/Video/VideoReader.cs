@@ -2,7 +2,6 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
-using iText.Kernel.Crypto.Securityhandler;
 using log4net;
 using System;
 using System.Buffers;

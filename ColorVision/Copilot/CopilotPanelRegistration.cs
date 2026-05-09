@@ -1,6 +1,5 @@
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
-using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {

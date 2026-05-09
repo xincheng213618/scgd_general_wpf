@@ -4,7 +4,6 @@ using ColorVision.ImageEditor.Tif;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.Settings

@@ -4,7 +4,6 @@ using log4net;
 using MySqlConnector;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 
 namespace WindowsServicePlugin.ServiceManager
 {

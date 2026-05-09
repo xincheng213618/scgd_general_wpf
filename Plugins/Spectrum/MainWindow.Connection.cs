@@ -1,7 +1,6 @@
 using cvColorVision;
 using Newtonsoft.Json;
 using Spectrum.License;
-using System.IO.Ports;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;

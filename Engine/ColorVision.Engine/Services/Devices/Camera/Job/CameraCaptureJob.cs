@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Scheduler;
 using Quartz;
 using System;

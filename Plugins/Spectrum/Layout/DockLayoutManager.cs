@@ -4,7 +4,6 @@ using AvalonDock.Layout.Serialization;
 using ColorVision.UI;
 using log4net;
 using System.IO;
-using System.Linq;
 using System.Windows;
 
 namespace Spectrum.Layout

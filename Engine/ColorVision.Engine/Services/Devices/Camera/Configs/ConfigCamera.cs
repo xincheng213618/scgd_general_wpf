@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using cvColorVision;
-using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;

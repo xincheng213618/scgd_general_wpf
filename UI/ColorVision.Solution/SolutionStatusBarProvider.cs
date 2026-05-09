@@ -1,10 +1,5 @@
-using ColorVision.Common.MVVM;
-using ColorVision.Solution.Explorer;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 

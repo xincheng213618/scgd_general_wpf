@@ -1,17 +1,11 @@
-using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2; // MTFDetailViewReslut
-using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
-using ProjectLUX.Process.ChessboardAR;
-using ProjectLUX.Process.VR.MTFH;
 using System.IO;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectLUX.Process.VR.MTFV
 {

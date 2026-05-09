@@ -1,11 +1,8 @@
-﻿using ColorVision.Themes;
-using ColorVision.UI.Properties;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 
 namespace ColorVision.UI.Languages
 {

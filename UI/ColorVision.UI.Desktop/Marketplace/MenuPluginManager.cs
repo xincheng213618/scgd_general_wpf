@@ -1,6 +1,4 @@
 ﻿using ColorVision.UI.Authorizations;
-using ColorVision.UI.Desktop.Marketplace;
-using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 

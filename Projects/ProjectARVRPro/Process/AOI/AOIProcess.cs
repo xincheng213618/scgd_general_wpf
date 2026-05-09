@@ -1,16 +1,9 @@
-using ColorVision.Common.NativeMethods;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using SqlSugar;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.AOI
 {

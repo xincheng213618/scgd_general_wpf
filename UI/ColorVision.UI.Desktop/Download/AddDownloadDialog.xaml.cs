@@ -1,5 +1,4 @@
 using ColorVision.Themes;
-using System.Linq;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.Download

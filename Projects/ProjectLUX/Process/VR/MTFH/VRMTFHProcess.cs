@@ -4,7 +4,6 @@ using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2; // MTFDetailViewReslut
 using ColorVision.ImageEditor.Draw;
-using Dm.util;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
 using System.IO;

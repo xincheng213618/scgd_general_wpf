@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using System;
 using System.ComponentModel;
 
 namespace ColorVision.ImageEditor.Draw

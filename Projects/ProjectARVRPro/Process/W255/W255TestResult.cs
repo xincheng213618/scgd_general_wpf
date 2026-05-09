@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ProjectARVRPro.Recipe;
 
 namespace ProjectARVRPro.Process.W255
 {

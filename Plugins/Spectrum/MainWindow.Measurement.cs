@@ -1,9 +1,7 @@
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using Newtonsoft.Json;
-using Spectrum.Configs;
 using Spectrum.Data;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 

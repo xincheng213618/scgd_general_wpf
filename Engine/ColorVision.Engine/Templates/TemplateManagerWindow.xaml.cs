@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Controls;
 using ColorVision.UI.Menus;

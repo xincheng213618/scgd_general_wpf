@@ -8,8 +8,6 @@ using Spectrum.Calibration;
 using Spectrum.Configs;
 using Spectrum.Data;
 using Spectrum.License;
-using Spectrum.Models;
-using Spectrum.PropertyEditor;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;

@@ -8,7 +8,6 @@ using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Sorts;
-using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using SqlSugar;

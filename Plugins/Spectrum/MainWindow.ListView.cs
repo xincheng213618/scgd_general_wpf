@@ -5,12 +5,10 @@ using ScottPlot.Plottables;
 using Spectrum.Data;
 using Spectrum.Models;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 
 namespace Spectrum

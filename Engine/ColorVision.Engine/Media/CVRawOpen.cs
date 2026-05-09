@@ -7,9 +7,6 @@ using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.ImageEditor.Layers;
-using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using cvColorVision;
 using CVCommCore.CVAlgorithm;
@@ -21,11 +18,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media

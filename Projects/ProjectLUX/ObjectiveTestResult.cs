@@ -15,7 +15,6 @@ using ProjectLUX.Process.VR.MTFH;
 using ProjectLUX.Process.VR.MTFV;
 using ProjectLUX.Process.W255;
 using ProjectLUX.Process.W255AR;
-using SQLitePCL;
 using System.Collections;
 using System.ComponentModel;
 using System.IO;

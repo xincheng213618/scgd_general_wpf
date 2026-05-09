@@ -1,5 +1,4 @@
 using log4net;
-using System.IO.Ports;
 
 namespace ProjectARVRPro
 {

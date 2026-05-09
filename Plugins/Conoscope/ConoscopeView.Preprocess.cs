@@ -1,4 +1,3 @@
-using ColorVision.Core;
 using Conoscope.Core;
 using System;
 using System.Windows;

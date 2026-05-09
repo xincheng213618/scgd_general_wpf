@@ -1,6 +1,5 @@
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.UI.Menus;
-using System.Collections.Generic;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager

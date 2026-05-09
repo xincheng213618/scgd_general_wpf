@@ -1,12 +1,9 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Messages;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {

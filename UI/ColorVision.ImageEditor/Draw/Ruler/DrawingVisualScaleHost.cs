@@ -3,7 +3,6 @@ using System.Windows;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
-using ColorVision.ImageEditor.Draw;
 
 namespace ColorVision.ImageEditor.Draw.Ruler
 {

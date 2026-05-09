@@ -9,7 +9,6 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
-using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

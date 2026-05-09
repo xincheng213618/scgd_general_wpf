@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using System;
 
 namespace ColorVision.Scheduler
 {

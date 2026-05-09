@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Plugins;
 using log4net;
@@ -8,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.Marketplace

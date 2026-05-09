@@ -2,7 +2,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

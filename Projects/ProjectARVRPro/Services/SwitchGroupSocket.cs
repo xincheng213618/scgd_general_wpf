@@ -1,6 +1,5 @@
 ﻿using ColorVision.SocketProtocol;
 using log4net;
-using ProjectARVRPro.PluginConfig;
 using System.Net.Sockets;
 using System.Windows;
 

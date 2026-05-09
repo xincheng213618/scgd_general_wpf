@@ -12,8 +12,6 @@ using System.Windows.Media.Media3D;
 using System.Windows.Input;
 using System.Windows.Threading;
 using System.Windows.Data;
-using System.Windows.Media.Animation;
-using System.Globalization;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
 {

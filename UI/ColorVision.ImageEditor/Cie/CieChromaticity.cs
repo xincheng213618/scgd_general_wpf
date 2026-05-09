@@ -1,5 +1,3 @@
-using System;
-
 namespace ColorVision.ImageEditor.Cie
 {
     public readonly record struct CieChromaticity(double X, double Y)

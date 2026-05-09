@@ -1,7 +1,6 @@
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
-using OpenCvSharp.WpfExtensions;
 using System.Collections.Generic;
 using System.Windows.Media.Imaging;
 

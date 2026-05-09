@@ -1,7 +1,5 @@
 using ColorVision.SocketProtocol;
-using ColorVision.UI;
 using log4net;
-using Newtonsoft.Json;
 using ProjectARVRPro.Services;
 using System.Windows;
 using System.Windows.Media;

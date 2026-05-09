@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.ToolPlugins;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;

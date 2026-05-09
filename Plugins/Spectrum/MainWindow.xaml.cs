@@ -12,15 +12,12 @@ using log4net;
 using ScottPlot;
 using Spectrum.Data;
 using Spectrum.Layout;
-using Spectrum.Menus;
 using Spectrum.Models;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
 
 namespace Spectrum

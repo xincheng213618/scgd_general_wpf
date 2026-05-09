@@ -1,6 +1,4 @@
-using Spectrum.Data;
 using Spectrum.Models;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Windows;

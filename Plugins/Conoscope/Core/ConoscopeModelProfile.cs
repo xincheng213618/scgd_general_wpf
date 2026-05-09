@@ -1,8 +1,6 @@
 using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw.Special;
 using Newtonsoft.Json;
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace Conoscope.Core

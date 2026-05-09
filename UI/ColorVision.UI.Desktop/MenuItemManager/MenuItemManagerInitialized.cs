@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI.Menus;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.MenuItemManager

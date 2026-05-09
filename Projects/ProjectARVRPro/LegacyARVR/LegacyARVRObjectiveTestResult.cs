@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 

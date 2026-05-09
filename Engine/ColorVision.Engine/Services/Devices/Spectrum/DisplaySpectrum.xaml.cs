@@ -1,11 +1,8 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using Xunit;
-using ColorVision.UI;
-
 namespace ColorVision.UI.Tests
 {
     /// <summary>

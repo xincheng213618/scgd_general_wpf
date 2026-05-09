@@ -1,10 +1,8 @@
-﻿using ColorVision.FileIO;
-using ColorVision.ImageEditor;
+﻿using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
-using OpenCvSharp.WpfExtensions;
 using Conoscope.Core;
 using System;
 using System.Collections.ObjectModel;

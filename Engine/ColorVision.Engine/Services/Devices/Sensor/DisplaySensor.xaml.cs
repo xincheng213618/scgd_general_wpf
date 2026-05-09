@@ -1,9 +1,7 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.ToolPlugins;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System;
