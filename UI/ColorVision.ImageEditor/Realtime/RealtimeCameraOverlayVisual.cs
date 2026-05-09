@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Realtime
 {
@@ -29,7 +30,7 @@ namespace ColorVision.ImageEditor.Realtime
             _config.TextProperties.PropertyChanged += OverlayConfigChanged;
             _config.RectangleTextProperties.PropertyChanged += OverlayConfigChanged;
             _isAttached = true;
-            Render();
+            RequestRender();
         }
 
         public void Detach()
@@ -42,7 +43,7 @@ namespace ColorVision.ImageEditor.Realtime
             _config.TextProperties.PropertyChanged -= OverlayConfigChanged;
             _config.RectangleTextProperties.PropertyChanged -= OverlayConfigChanged;
             _isAttached = false;
-            Clear();
+            RequestClear();
         }
 
         public Rect GetProcessingRoi(int width, int height)
@@ -65,7 +66,7 @@ namespace ColorVision.ImageEditor.Realtime
             }
 
             _statusText = statusText;
-            Render();
+            RequestRender();
         }
 
         public void ResetMetrics()
@@ -76,20 +77,52 @@ namespace ColorVision.ImageEditor.Realtime
             }
 
             _statusText = string.Empty;
-            Render();
+            RequestRender();
         }
 
         private void OverlayConfigChanged(object? sender, PropertyChangedEventArgs e)
         {
-            Render();
+            RequestRender();
         }
 
-        private void Clear()
+        private void RequestClear()
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                ClearCore();
+                return;
+            }
+
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            {
+                return;
+            }
+
+            _ = Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(ClearCore));
+        }
+
+        private void RequestRender()
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                RenderCore();
+                return;
+            }
+
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            {
+                return;
+            }
+
+            _ = Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderCore));
+        }
+
+        private void ClearCore()
         {
             using DrawingContext dc = RenderOpen();
         }
 
-        private void Render()
+        private void RenderCore()
         {
             using DrawingContext dc = RenderOpen();
             DrawRoi(dc);
