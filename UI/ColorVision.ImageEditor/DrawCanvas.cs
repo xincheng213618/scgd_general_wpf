@@ -29,6 +29,7 @@ namespace ColorVision.ImageEditor
     {
         // 使用只读集合，防止外部直接修改
         private readonly List<Visual> visuals = new();
+        private readonly List<Visual> overlayVisuals = new();
 
         public IReadOnlyList<Visual> Visuals => visuals;
 
@@ -125,6 +126,7 @@ namespace ColorVision.ImageEditor
             foreach (Visual item in visuals.ToList())
                 TryRemoveVisual(item);
 
+            overlayVisuals.Clear();
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs(null, VisualChangeType.Clear));
         }
 
@@ -239,6 +241,32 @@ namespace ColorVision.ImageEditor
             Action undoaction = () => AddVisual(visual);
             Action redoaction = () => RemoveVisual(visual);
             AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
+        }
+
+        public void AddOverlayVisual(Visual visual)
+        {
+            if (visual == null) return;
+            if (!TryAddVisual(visual, raiseEvents: false)) return;
+            if (!overlayVisuals.Contains(visual))
+            {
+                overlayVisuals.Add(visual);
+            }
+        }
+
+        public void RemoveOverlayVisual(Visual? visual)
+        {
+            if (visual == null) return;
+            overlayVisuals.Remove(visual);
+            TryRemoveVisual(visual, raiseEvents: false);
+        }
+
+        public void ClearOverlayVisuals()
+        {
+            foreach (Visual visual in overlayVisuals.ToList())
+            {
+                TryRemoveVisual(visual, raiseEvents: false);
+            }
+            overlayVisuals.Clear();
         }
 
         public void TopVisual(Visual visual)

@@ -117,6 +117,17 @@ namespace ColorVision.ImageEditor.Settings
                 Description = "控制标尺、网格等物理尺寸换算的默认长度和单位。",
                 Source = DefalutTextAttribute.Defalut,
             };
+
+            yield return new ImageViewSettingMetadata
+            {
+                Group = "默认值",
+                Order = 40,
+                Scope = ImageViewSettingScope.GlobalDefault,
+                Type = ImageViewSettingType.Class,
+                Name = "默认实时相机参数",
+                Description = "控制 realtime 相机入口共享的显示 FPS、清晰度计算和 ROI/状态文字样式。",
+                Source = DefaultRealtimeCameraConfig.Current,
+            };
         }
 
         public void SaveImageViewSettings(ImageView imageView)
@@ -124,6 +135,7 @@ namespace ColorVision.ImageEditor.Settings
             DefaultBitmapScalingConfig.SaveCurrent();
             DefaultImageViewDisplayConfig.SaveCurrent();
             DefaultTextStyleConfig.SaveCurrent();
+            DefaultRealtimeCameraConfig.SaveCurrent();
             ImageCalibrationService.SaveCurrent(imageView.EditorContext);
         }
     }

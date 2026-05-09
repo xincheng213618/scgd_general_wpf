@@ -207,19 +207,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 lastPhyCamera.DeviceCamera = this;
                 lastPhyCamera.DeviceCamera = null;
             }
-            Config.Channel = e.Channel;
-            Config.CFW.CopyFrom(e.CFW);
-            Config.MotorConfig.CopyFrom(e.MotorConfig);
-            Config.CameraID = e.CameraID;
-            Config.CameraMode = e.CameraMode;
-            Config.CameraType = e.CameraType;
-            Config.CameraModel = e.CameraModel;
-            Config.TakeImageMode = e.TakeImageMode;
-            Config.ImageBpp = e.ImageBpp;
-            Config.GainMin = e.CameraParameterLimit.GainMin;
-            Config.GainMax = e.CameraParameterLimit.GainMax;
-            Config.ExpTimeMax = e.CameraParameterLimit.ExpMax;
-            Config.ExpTimeMin = e.CameraParameterLimit.ExpMin;
+            e.ApplyTo(Config);
 
             DisplayConfig.Gain = e.CameraParameterLimit.GainDefault;
             DisplayConfig.ExpTime = e.CameraParameterLimit.ExpDefalut;
@@ -287,15 +275,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 PhyCamera.SetDeviceCamera(this);
 
-                Config.Channel = PhyCamera.Config.Channel;
-                Config.CFW.CopyFrom(PhyCamera.Config.CFW);
-                Config.MotorConfig.CopyFrom(PhyCamera.Config.MotorConfig);
-                Config.CameraID = PhyCamera.Config.CameraID;
-                Config.CameraMode = PhyCamera.Config.CameraMode;
-                Config.CameraType = PhyCamera.Config.CameraType;
-                Config.CameraModel = PhyCamera.Config.CameraModel;
-                Config.TakeImageMode = PhyCamera.Config.TakeImageMode;
-                Config.ImageBpp = PhyCamera.Config.ImageBpp;
+                PhyCamera.Config.ApplyTo(Config);
 
                 OnPropertyChanged(nameof(PhyCamera));
             }

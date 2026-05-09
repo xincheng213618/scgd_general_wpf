@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;
@@ -84,14 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (CameraPhyID.SelectedIndex > -1)
             {
                 var phyCamera = PhyCameras[CameraPhyID.SelectedIndex];
-                EditConfig.Channel = phyCamera.Config.Channel;
-                EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
-                EditConfig.MotorConfig.CopyFrom(phyCamera.Config.MotorConfig);
-
-                EditConfig.CameraMode = phyCamera.Config.CameraMode;
-                EditConfig.CameraModel = phyCamera.Config.CameraModel;
-                EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
-                EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
+                phyCamera.Config.ApplyTo(EditConfig, includeCameraId: false, includeCameraType: false);
             }
         }
 

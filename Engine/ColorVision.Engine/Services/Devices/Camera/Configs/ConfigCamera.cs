@@ -46,11 +46,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; OnPropertyChanged(); } }
         private bool _IsCVCIEFileSave = true;
-
-        public bool SwapRedBlueChannels { get => _SwapRedBlueChannels; set { _SwapRedBlueChannels = value; OnPropertyChanged(); } }
-        private bool _SwapRedBlueChannels;
-
-
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
         private float _GainMin = 0;
 

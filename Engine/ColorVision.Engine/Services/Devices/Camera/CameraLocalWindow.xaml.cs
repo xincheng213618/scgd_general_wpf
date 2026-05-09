@@ -1,9 +1,11 @@
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -22,29 +24,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using WindowsFormsTest;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
-    public struct HImageLocal
-    {
-        public uint nWidth;
-        public uint nHeight;
-        public uint nChannels;
-        public uint nBpp;
-        public IntPtr pData;
-    };
-
-    public partial class CameraLocalWindow : Window
+    public partial class CameraLocalWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraLocalWindow));
+        private readonly CameraRealtimeFramePipeline _localRealtimePipeline = new();
+        private bool _disposed;
 
         public byte[] rawArray;
         public byte[] srcrawArray;
         public UInt32 ImgWid = 5544, ImgHei = 3684;
         public UInt32 Imgbpp = 8, Imgchannels = 1;
         public IntPtr m_hCamHandle = IntPtr.Zero;
-        public FormCfg formcfg = null;
 
         TakeImageMode m_etakeImageMode = TakeImageMode.Measure_Normal;
         int m_nBppIndex = 1;
@@ -67,8 +60,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
             m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(m_eCameraMdl, m_eCameraMode, strPathSysCfg);
             cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
-
-            formcfg = new FormCfg(m_hCamHandle, strPathSysCfg);
 
             m_eCameraMdl = Device.Config.CameraModel;
             m_eCameraMode = Device.Config.CameraMode;
@@ -221,13 +212,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            _localRealtimePipeline.Stop(resetRealtime: true);
             if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
             {
                 if (m_etakeImageMode == TakeImageMode.Live)
                 {
                     cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                     cvCameraCSLib.CM_Close(m_hCamHandle);
-                    m_hStopEvent.Set();
                 }
                 else
                 {
@@ -238,11 +229,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cvCameraCSLib.ReleaseCameraManager(m_hCamHandle);
             cvCameraCSLib.ReleaseResource();
             SaveLocalPreferences();
+            Dispose();
         }
 
         cvCameraCSLib.QHYCCDProcCallBack callback;
-        AutoResetEvent m_hShowPictureEvent = new AutoResetEvent(false);
-        EventWaitHandle m_hStopEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
 
         private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
         {
@@ -262,32 +252,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
-            Application.Current?.Dispatcher.Invoke(new Action(() =>
-            {
-                WriteableBitmap writeableBitmap = ImageView.ImageShow.Source as WriteableBitmap;
-                bool needNewBitmap = writeableBitmap == null
-                    || writeableBitmap.PixelWidth != width
-                    || writeableBitmap.PixelHeight != height
-                    || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
-
-                if (needNewBitmap)
-                {
-                    writeableBitmap = new WriteableBitmap(
-                        width,
-                        height,
-                        96, 96,
-                        GetPixelFormat(channels, bpp),
-                        null);
-                    ImageView.ImageShow.Source = writeableBitmap;
-                }
-                writeableBitmap!.Lock();
-                writeableBitmap.WritePixels(
-                    new Int32Rect(0, 0, width, height),
-                    pData,
-                    height * width * channels * (bpp / 8),
-                    width * channels * (bpp / 8));
-                writeableBitmap.Unlock();
-            }));
+            var pixelFormat = GetPixelFormat(channels, bpp);
+            int stride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
+            int frameBytes = stride * height;
+            _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, stride);
             return 0;
         }
 
@@ -424,6 +392,68 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
+        private static readonly (ImageChannelType ChannelType, int CfwPort)[] DefaultChannelOrder =
+        {
+            (ImageChannelType.Gray_Y, 0),
+            (ImageChannelType.Gray_X, 1),
+            (ImageChannelType.Gray_Z, 2),
+        };
+
+        private IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> GetSelectedChannelConfigs(int channelCount)
+        {
+            List<(ImageChannelType ChannelType, int CfwPort)> channelConfigs = new(channelCount);
+
+            AppendChannelConfigs(channelConfigs, Device.Config.CFW.ChannelCfgs, channelCount);
+            if (channelConfigs.Count < channelCount)
+            {
+                AppendChannelConfigs(channelConfigs, Device.PhyCamera?.Config.CFW.ChannelCfgs, channelCount);
+            }
+
+            for (int i = channelConfigs.Count; i < channelCount; i++)
+            {
+                channelConfigs.Add(DefaultChannelOrder[Math.Min(i, DefaultChannelOrder.Length - 1)]);
+            }
+
+            return channelConfigs;
+        }
+
+        private static void AppendChannelConfigs(
+            List<(ImageChannelType ChannelType, int CfwPort)> channelConfigs,
+            IEnumerable<ColorVision.Engine.Services.PhyCameras.Configs.ChannelCfg>? configuredChannels,
+            int maxCount)
+        {
+            if (configuredChannels == null)
+            {
+                return;
+            }
+
+            foreach (ColorVision.Engine.Services.PhyCameras.Configs.ChannelCfg configuredChannel in configuredChannels)
+            {
+                if (channelConfigs.Count >= maxCount)
+                {
+                    break;
+                }
+
+                channelConfigs.Add((configuredChannel.Chtype, configuredChannel.Cfwport));
+            }
+        }
+
+        private float GetExposureForChannel(ImageChannelType channelType, int channelIndex, IReadOnlyList<float> exposureValues)
+        {
+            if (!Device.Config.IsExpThree)
+            {
+                return exposureValues[Math.Min(channelIndex, exposureValues.Count - 1)];
+            }
+
+            return channelType switch
+            {
+                ImageChannelType.Gray_X => (float)Device.DisplayConfig.ExpTimeR,
+                ImageChannelType.Gray_Y => (float)Device.DisplayConfig.ExpTimeG,
+                ImageChannelType.Gray_Z => (float)Device.DisplayConfig.ExpTimeB,
+                _ => exposureValues[Math.Min(channelIndex, exposureValues.Count - 1)],
+            };
+        }
+
         private bool TryBuildParam(out string json)
         {
             json = string.Empty;
@@ -452,28 +482,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             param.channels = new List<ChannelParam>();
 
-            ImageChannelType[] types = new ImageChannelType[3];
-            int[] cfwport = new int[3];
-
-            for (int i = 0; i < formcfg.projectSysCfg.channelCfg.Count; i++)
-            {
-                if (i == 3)
-                {
-                    break;
-                }
-
-                types[i] = formcfg.projectSysCfg.channelCfg[i].chtype;
-                cfwport[i] = formcfg.projectSysCfg.channelCfg[i].cfwport;
-            }
-
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channelConfigs = GetSelectedChannelConfigs(param.channelCount);
             float[] exp = GetCurrentExposureValues(param.channelCount);
 
             for (int i = 0; i < param.channelCount; i++)
             {
+                (ImageChannelType channelType, int cfwPort) = channelConfigs[i];
                 ChannelParam channel = new ChannelParam();
-                channel.exp = exp[Math.Min(i, exp.Length - 1)];
-                channel.channelType = (ImageChannelType)types[i];
-                channel.cfwport = cfwport[i];
+                channel.exp = GetExposureForChannel(channelType, i, exp);
+                channel.channelType = channelType;
+                channel.cfwport = cfwPort;
 
                 ChannelCalibration channelCheck = new ChannelCalibration();
                 channel.check = channelCheck;
@@ -606,6 +624,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
                 cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
+                _localRealtimePipeline.Start(ImageView);
                 UpdateConnectionState(true);
             }
         }
@@ -614,6 +633,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (m_etakeImageMode == TakeImageMode.Live)
             {
+                _localRealtimePipeline.Stop(resetRealtime: true);
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                 cvCameraCSLib.CM_Close(m_hCamHandle);
             }
@@ -943,13 +963,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
         }
 
-        private void btn_ConfigFile_Click(object sender, RoutedEventArgs e)
-        {
-            formcfg.m_nChannelCount = GetSelectedChannelCount();
-            formcfg.m_hHandle = m_hCamHandle;
-            formcfg.ShowDialog();
-        }
-
         private void button1_Click(object sender, RoutedEventArgs e)
         {
             button1.IsEnabled = false;
@@ -1098,6 +1111,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _localRealtimePipeline.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

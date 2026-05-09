@@ -1,50 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Core;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Abstractions;
-using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using iText.Kernel.Crypto.Securityhandler;
 using log4net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Buffers;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    public class VideoReaderConfig:ViewModelBase,IConfig
-    {
-        [DisplayName("启用视频计算")]
-        public bool IsUseCacheFile { get => _IsUseCacheFile; set { _IsUseCacheFile = value; OnPropertyChanged(); } }
-        private bool _IsUseCacheFile;
-
-        [DisplayName("计算清晰度")]
-        public bool IsCalArtculation { get => _IsCalArtculation; set { _IsCalArtculation = value; OnPropertyChanged(); } }
-        private bool _IsCalArtculation = true;
-
-        public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
-        private FocusAlgorithm  _EvaFunc = FocusAlgorithm .VarianceOfLaplacian;
-
-        [JsonIgnore]
-        public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
-        private TextProperties _TextProperties = new TextProperties() { FontSize = 200 };
-
-        [Browsable(false),JsonIgnore]
-        public RectangleTextProperties RectangleTextProperties { get; set; } = new RectangleTextProperties();
-
-
-    }
-
     /// <summary>
     /// 写标志位的方案有问题，会少刷新
     /// </summary>
@@ -61,22 +29,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private byte[]? lastFrameData; // 上一帧池化数据
         private int lastFrameLen;      // 上一帧有效长度
 
-        public VideoReaderConfig Config { get; set; }
+        public DefaultRealtimeCameraConfig Config { get; set; }
+        private readonly CameraRealtimeFramePipeline _realtimePipeline;
 
         public RelayCommand EditConfigCommand { get; set; }
         public void EditConfig()
         {
             new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        DVRectangleText DVRectangleText { get; set; }
-        DVText DVText { get; set; }
 
         public VideoReader()
         {
-            Config = ConfigService.Instance.GetRequiredService<VideoReaderConfig>();
+            Config = DefaultRealtimeCameraConfig.Current;
             EditConfigCommand = new RelayCommand(a => EditConfig());
-            DVRectangleText = new DVRectangleText(Config.RectangleTextProperties);
-            DVText = new DVText(Config.TextProperties);
+            _realtimePipeline = new CameraRealtimeFramePipeline();
         }
 
         public MemoryMappedFile VideoMemoryMappedFile { get; set; }
@@ -89,7 +55,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public int Startup(string mapNamePrefix, ImageView image)
         {
-            first = true;
             Image = image;
             try
             {
@@ -106,24 +71,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return -1;
             }
             openVideo = true;
-            Image.ImageShow.AddVisualCommand(DVRectangleText);
-            Image.ImageShow.AddVisualCommand(DVText);
-
-            if (IsPseudoEnabled())
-            {
-                Config.IsUseCacheFile = true;
-                Config.IsCalArtculation = true;
-            }
+            _realtimePipeline.Start(Image);
             Task.Run(StartupAsync);
 
             return 0;
-        }
-
-    private VideoFrameProcessor? _frameProcessor;
-
-        private bool IsPseudoEnabled()
-        {
-            return Image?.PseudoColorService?.IsEnabled == true;
         }
 
         public void Close()
@@ -133,19 +84,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         }
 
-        private int frameCount;
-        private readonly Stopwatch fpsTimer = new Stopwatch();
-        private double lastFps;
-        private bool first = true;
-
-        
-
         private async Task StartupAsync()
         {
-            fpsTimer.Restart();
-            Interlocked.Exchange(ref frameCount, 0);
-            lastFps = 0;
-            _frameProcessor ??= new VideoFrameProcessor(HandleProcessedFrame);
             while (openVideo)
             {
                 byte[] buffer = null;
@@ -184,76 +124,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         await Task.Delay(1);
                         continue;
                     }
-                    if (TryBuildFrameProcessingRequest(width, height, out VideoFrameProcessingRequest? request))
+                    int bytesPerChannel = Math.Max(1, bpp / 8);
+                    int stride = height > 0 && len % height == 0 ? len / height : width * channels * bytesPerChannel;
+
+                    if (Image == null)
                     {
-                        int bytesPerChannel = Math.Max(1, bpp / 8);
-                        int stride = height > 0 && len % height == 0 ? len / height : width * channels * bytesPerChannel;
-                        _frameProcessor?.SubmitFrame(buffer, len, width, height, channels, bpp, stride, request);
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        await Task.Delay(10);
+                        continue;
                     }
 
-                    // 渲染逻辑调度到UI线程
-                    Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                    _realtimePipeline.SubmitFrame(buffer, len, width, height, channels, bpp, stride);
+
+                    if (lastFrameData != null)
                     {
-                        if (Image == null)
-                        { 
-                            // 用完上一帧归还
-                            if (lastFrameData != null)
-                                ArrayPool<byte>.Shared.Return(lastFrameData);
-                            return;
-                        }
-
-                        if (!IsPseudoEnabled())
-                        {
-                            WriteableBitmap writeableBitmap = Image.ImageShow.Source as WriteableBitmap;
-                            bool needNewBitmap = writeableBitmap == null
-                                || writeableBitmap.PixelWidth != width
-                                || writeableBitmap.PixelHeight != height
-                                || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
-
-                            if (needNewBitmap)
-                            {
-                                writeableBitmap = new WriteableBitmap(
-                                    width,
-                                    height,
-                                    96, 96,
-                                    GetPixelFormat(channels, bpp),
-                                    null);
-                                Image.ImageShow.Source = writeableBitmap;
-                            }
-
-                            writeableBitmap!.Lock();
-
-                            writeableBitmap.WritePixels(
-                                new Int32Rect(0, 0, width, height),
-                                buffer,
-                                width * channels * (bpp / 8),
-                                0);
-
-
-                            writeableBitmap.Unlock();
-                        }
-
-                            Interlocked.Increment(ref frameCount);
-
-                        // 帧率统计
-                        if (fpsTimer.ElapsedMilliseconds >= 1000)
-                        {
-                            lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
-                            log.Info($"Current FPS: {lastFps:F2}");
-                            Interlocked.Exchange(ref frameCount, 0);
-                            fpsTimer.Restart();
-                        }
-
-                        if (first)
-                        {
-                            first = false;
-                            Image.Zoombox1.ZoomUniform();
-                        }
-                        // 用完上一帧归还
-                        if (lastFrameData != null)
-                            ArrayPool<byte>.Shared.Return(lastFrameData);
-                        lastFrameData = buffer;
-                    }));
+                        ArrayPool<byte>.Shared.Return(lastFrameData);
+                    }
+                    lastFrameData = buffer;
                     lastFrameLen = len;
 
 
@@ -264,7 +151,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     log.Error("StartupAsync error: " + ex);
                 }
             }
-            fpsTimer.Stop();
+            _realtimePipeline.Stop(resetRealtime: false);
 
             if (lastFrameData != null)
             {
@@ -272,111 +159,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 lastFrameData = null;
                 lastFrameLen = 0;
             }
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Image.ImageShow.RemoveVisualCommand(DVRectangleText);
-                Image.ImageShow.RemoveVisualCommand(DVText);
-            });
 
             Image = null;
             binaryReader?.Dispose();
             memoryMappedViewStream?.Dispose();
             memoryMappedFile?.Dispose();
-
-            _frameProcessor?.Dispose();
-            _frameProcessor = null;
-        }
-
-        private bool TryBuildFrameProcessingRequest(int width, int height, out VideoFrameProcessingRequest? request)
-        {
-            request = null;
-            if (Image == null)
-            {
-                return false;
-            }
-
-            var pseudoColorService = Image.PseudoColorService;
-            bool enablePseudo = pseudoColorService.IsEnabled;
-            if (enablePseudo)
-            {
-                Config.IsUseCacheFile = true;
-            }
-
-            bool enableArticulation = Config.IsCalArtculation;
-            if (!Config.IsUseCacheFile || (!enablePseudo && !enableArticulation))
-            {
-                return false;
-            }
-
-            Rect rect = DVRectangleText.Rect;
-            if (rect.Width <= 0 || rect.Height <= 0)
-            {
-                rect = new Rect(0, 0, width, height);
-            }
-
-            PseudoColorFrameRequest? pseudoColorRequest = null;
-            if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
-            {
-                pseudoColorRequest = capturedRequest;
-            }
-
-            request = new VideoFrameProcessingRequest
-            {
-                EnableArticulation = enableArticulation,
-                FocusAlgorithm = Config.EvaFunc,
-                Roi = new RoiRect(rect),
-                PseudoColor = pseudoColorRequest
-            };
-            return true;
-        }
-
-        private void HandleProcessedFrame(VideoFrameProcessingResult result)
-        {
-            Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (!openVideo || Image == null)
-                {
-                    if (result.PseudoImage is HImage staleImage)
-                    {
-                        staleImage.Dispose();
-                    }
-                    return;
-                }
-
-                if (result.Articulation is double articulation)
-                {
-                    DVText.Attribute.Text = $"Articulation: {articulation:F5}";
-                    log.Info($"Image Articulation: {articulation}");
-                }
-
-                if (result.PseudoImage is HImage pseudoImage)
-                {
-                    if (Image.PseudoColorService.IsEnabled)
-                    {
-                        VideoFrameUiHelper.ApplyPseudoImage(Image.PseudoColorService, pseudoImage);
-                    }
-                    else
-                    {
-                        pseudoImage.Dispose();
-                    }
-                }
-            }));
-        }
-
-        private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
-        {
-            if (channels == 3)
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Rgb48
-                    : System.Windows.Media.PixelFormats.Bgr24;
-            }
-            else
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Gray16
-                    : System.Windows.Media.PixelFormats.Gray8;
-            }
         }
 
         public void Dispose()

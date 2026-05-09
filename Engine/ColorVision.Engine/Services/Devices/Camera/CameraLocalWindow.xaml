@@ -191,7 +191,6 @@
                     </UniformGrid>
 
                     <Button x:Name="btn_Test" Margin="0,3" Padding="5" Click="btn_Test_Click" Content="自动对焦测试" />
-                    <Button x:Name="btn_ConfigFile" Margin="0,3" Padding="5" Click="btn_ConfigFile_Click" Content="配置文件" />
                 </StackPanel>
             </ScrollViewer>
 
