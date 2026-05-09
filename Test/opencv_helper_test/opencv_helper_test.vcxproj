@@ -167,7 +167,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="opencv_helper_test.vcxproj.new" />
-    <None Include="README_test_find_luminous_area.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Core\opencv_helper\opencv_helper.vcxproj">
