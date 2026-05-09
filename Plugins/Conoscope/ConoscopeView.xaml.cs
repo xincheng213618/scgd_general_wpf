@@ -53,6 +53,7 @@ namespace Conoscope
         private ImageFullScreenMode? imageFullScreenMode;
         private ConoscopeModelProfile? subscribedModelProfile;
         private const float MinPositiveXyzValue = 0.000001f;
+        private const double Conoscope3DInitialHeightScale = 160.0;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
@@ -803,17 +804,36 @@ namespace Conoscope
 
         internal void Open3DForCurrentView()
         {
-            if (ImageView.ImageShow.Source is not WriteableBitmap writeableBitmap)
+            if (!HasXyzData() || currentBitmapSource == null)
             {
                 MessageBox.Show("当前图像尚未准备好 3D 视图", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            Window3D window3D = new(writeableBitmap)
+            try
             {
-                Owner = Window.GetWindow(this)
-            };
-            window3D.Show();
+                WriteableBitmap heightBitmap = Create3DHeightBitmapForCurrentView();
+                Window3D window3D = new(heightBitmap, Conoscope3DInitialHeightScale)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                window3D.Show();
+            }
+            catch (Exception ex)
+            {
+                log.Error("打开 Conoscope 3D 视图失败", ex);
+                MessageBox.Show($"打开 3D 视图失败: {ex.Message}", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private WriteableBitmap Create3DHeightBitmapForCurrentView()
+        {
+            return ConoscopePseudoColorRenderer.CreateHeightMapBitmap(
+                XMat!,
+                YMat!,
+                ZMat!,
+                GetSelectedDisplayChannel(),
+                CreateColorDifferenceMat);
         }
 
         private void UpdateCieWindowSelection(Point position)

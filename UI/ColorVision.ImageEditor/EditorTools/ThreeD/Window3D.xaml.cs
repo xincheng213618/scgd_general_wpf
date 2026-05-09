@@ -15,6 +15,7 @@ namespace ColorVision.ImageEditor
     public partial class Window3D : Window
     {
         private readonly WriteableBitmap colorBitmap;
+        private readonly double? initialHeightScaleOverride;
         private HelixViewport3D? viewport;
         private ModelVisual3D? modelVisual;
         private MeshGeometry3D? currentMesh;
@@ -95,14 +96,19 @@ namespace ColorVision.ImageEditor
 
         public static Window3DConfig Config => Window3DConfig.Instance;
 
-        public Window3D(WriteableBitmap writeableBitmap)
+        public Window3D(WriteableBitmap writeableBitmap, double? initialHeightScaleOverride = null)
         {
             colorBitmap = writeableBitmap;
+            this.initialHeightScaleOverride = initialHeightScaleOverride;
             InitializeComponent();
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            heightScale = initialHeightScaleOverride.HasValue && initialHeightScaleOverride.Value > 0
+                ? initialHeightScaleOverride.Value
+                : Config.DefaultHeightScale;
+
             (grayPixels, newWidth, newHeight) = ConvertBitmapToGray(
                 colorBitmap, Config.TargetPixelsX, Config.TargetPixelsY);
 

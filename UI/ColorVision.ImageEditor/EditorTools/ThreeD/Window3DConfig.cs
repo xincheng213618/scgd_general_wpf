@@ -8,6 +8,9 @@ namespace ColorVision.ImageEditor
     {
         public static Window3DConfig Instance => ConfigService.Instance.GetRequiredService<Window3DConfig>();
 
+        public double DefaultHeightScale { get => _DefaultHeightScale; set { _DefaultHeightScale = value < 1 ? 1 : value; OnPropertyChanged(); } }
+        private double _DefaultHeightScale = 100;
+
         public int TargetPixelsX { get => _TargetPixelsX; set { _TargetPixelsX = value; OnPropertyChanged(); } }
         private int _TargetPixelsX = 512;
 

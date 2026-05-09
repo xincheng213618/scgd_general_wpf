@@ -47,6 +47,25 @@ namespace Conoscope.Core
             return new ConoscopePseudoColorRenderResult(bitmap, channel, minValue, maxValue);
         }
 
+        public static WriteableBitmap CreateHeightMapBitmap(
+            OpenCvSharp.Mat xMat,
+            OpenCvSharp.Mat yMat,
+            OpenCvSharp.Mat zMat,
+            ExportChannel channel,
+            Func<OpenCvSharp.Mat> createColorDifferenceMat)
+        {
+            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat);
+            using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
+
+            OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
+            normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
+
+            WriteableBitmap bitmap = gray8.ToWriteableBitmap();
+            bitmap.Freeze();
+            return bitmap;
+        }
+
         private static OpenCvSharp.Mat CreateDisplayChannelMat(
             OpenCvSharp.Mat xMat,
             OpenCvSharp.Mat yMat,

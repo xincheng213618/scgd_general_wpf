@@ -24,7 +24,7 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <Style x:Key="QuickButtonStyle" TargetType="Button">
+        <Style x:Key="QuickButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="MinHeight" Value="24" />
             <Setter Property="Padding" Value="8,1" />
             <Setter Property="Margin" Value="0,0,6,0" />
@@ -32,9 +32,9 @@
         </Style>
 
         <Style x:Key="RibbonGroupStyle" TargetType="Border">
-            <Setter Property="MinHeight" Value="74" />
+            <Setter Property="MinHeight" Value="86" />
             <Setter Property="Margin" Value="0,0,6,0" />
-            <Setter Property="Padding" Value="6,4,6,3" />
+            <Setter Property="Padding" Value="6,6,6,4" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Background" Value="Transparent" />
@@ -54,24 +54,24 @@
             <Setter Property="Margin" Value="0,0,0,2" />
         </Style>
 
-        <Style x:Key="RibbonButtonStyle" TargetType="Button">
-            <Setter Property="MinHeight" Value="23" />
-            <Setter Property="Padding" Value="6,1" />
+        <Style x:Key="RibbonButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,2" />
             <Setter Property="Margin" Value="0,0,4,3" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <Style x:Key="RibbonLargeButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="58" />
-            <Setter Property="Height" Value="52" />
-            <Setter Property="Padding" Value="2" />
+        <Style x:Key="RibbonLargeButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="MinWidth" Value="68" />
+            <Setter Property="MinHeight" Value="60" />
+            <Setter Property="Padding" Value="6,4" />
             <Setter Property="Margin" Value="0,0,4,0" />
             <Setter Property="VerticalAlignment" Value="Top" />
             <Setter Property="ToolTipService.ShowDuration" Value="12000" />
         </Style>
 
         <Style x:Key="RibbonPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonLargeButtonStyle}">
-            <Setter Property="Width" Value="66" />
+            <Setter Property="MinWidth" Value="78" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
@@ -88,14 +88,14 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>
 
-        <Style x:Key="RibbonComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Height" Value="23" />
+        <Style x:Key="RibbonComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="MinHeight" Value="28" />
             <Setter Property="Margin" Value="0,0,4,3" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
-        <Style x:Key="RibbonTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Height" Value="23" />
+        <Style x:Key="RibbonTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="MinHeight" Value="28" />
             <Setter Property="Margin" Value="0,0,4,3" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
@@ -122,8 +122,7 @@
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 WindowChrome.IsHitTestVisibleInChrome="True">
-                <TabControl MinHeight="90"
-                            MaxHeight="108"
+                <TabControl MinHeight="112"
                             Margin="6,3,6,4"
                             Background="Transparent"
                             BorderThickness="0"
