@@ -2,7 +2,6 @@
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -26,10 +25,7 @@ namespace ColorVision.UI.LogImp
             Unloaded += LogOutput_Unloaded;
             this.SizeChanged += (s, e) =>
             {
-                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
-                ButtonAutoRefresh.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoRefreshButton ? Visibility.Visible : Visibility.Collapsed;
-                cmlog.Visibility = this.ActualWidth > LogConstants.MinWidthForLevelComboBox ? Visibility.Visible : Visibility.Collapsed;
-                SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
+                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1, cmlog);
             };
         }
         TextBoxAppender? TextBoxAppender { get; set; }
@@ -120,31 +116,13 @@ namespace ColorVision.UI.LogImp
         private Brush SearchBar1Brush;
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
+            var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             if (TextBoxAppender != null)
             {
                 TextBoxAppender.SearchText = searchText;
             }
 
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                logTextBox.Visibility = Visibility.Collapsed;
-                logTextBoxSerch.Visibility = Visibility.Visible;
-                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                if (!LogSearchHelper.FilterLines(searchText, logLines, out var filteredLines))
-                {
-                    SearchBar1.BorderBrush = Brushes.Red;
-                    return;
-                }
-                logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                SearchBar1.BorderBrush = SearchBar1Brush;
-            }
-            else
-            {
-                logTextBoxSerch.Visibility = Visibility.Collapsed;
-                logTextBox.Visibility = Visibility.Visible;
-            }
+            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
         }
     }
 }

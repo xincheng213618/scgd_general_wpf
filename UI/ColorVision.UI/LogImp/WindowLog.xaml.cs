@@ -20,19 +20,68 @@ namespace ColorVision.UI
     public class TextAppender : AppenderSkeleton
     {
         private LogStatusBarProvider LogStatusBarProvider;
+        private readonly object _syncLock = new object();
+        private string _latestMessage = string.Empty;
+        private bool _updateQueued;
+
         public TextAppender(LogStatusBarProvider logStatusBarProvider)
         {
             LogStatusBarProvider = logStatusBarProvider;
         }
+
         protected override void Append(LoggingEvent loggingEvent)
         {
             var renderedMessage = RenderLoggingEvent(loggingEvent);
             string messageToShow = renderedMessage.Length > 10 ? string.Concat(renderedMessage.AsSpan(0, 10), "...") : renderedMessage;
 
-            Application.Current?.Dispatcher.BeginInvoke(() =>
+            bool shouldQueueUpdate = false;
+            lock (_syncLock)
             {
-                LogStatusBarProvider.Log = messageToShow;
-            });
+                _latestMessage = messageToShow;
+                if (!_updateQueued)
+                {
+                    _updateQueued = true;
+                    shouldQueueUpdate = true;
+                }
+            }
+
+            if (shouldQueueUpdate)
+            {
+                QueueStatusUpdate();
+            }
+        }
+
+        private void QueueStatusUpdate()
+        {
+            Application.Current?.Dispatcher.BeginInvoke(new Action(ProcessPendingStatusUpdate));
+        }
+
+        private void ProcessPendingStatusUpdate()
+        {
+            string messageToShow;
+            bool shouldQueueUpdate = false;
+
+            lock (_syncLock)
+            {
+                messageToShow = _latestMessage;
+                _updateQueued = false;
+            }
+
+            LogStatusBarProvider.Log = messageToShow;
+
+            lock (_syncLock)
+            {
+                if (!_updateQueued && !string.Equals(messageToShow, _latestMessage, StringComparison.Ordinal))
+                {
+                    _updateQueued = true;
+                    shouldQueueUpdate = true;
+                }
+            }
+
+            if (shouldQueueUpdate)
+            {
+                QueueStatusUpdate();
+            }
         }
     }
 
@@ -111,10 +160,7 @@ namespace ColorVision.UI
             this.ApplyCaption();
             this.SizeChanged += (s, e) =>
             {
-                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
-                ButtonAutoRefresh.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoRefreshButton ? Visibility.Visible : Visibility.Collapsed;
-                cmlog.Visibility = this.ActualWidth > LogConstants.MinWidthForLevelComboBox ? Visibility.Visible : Visibility.Collapsed;
-                SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
+                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1, cmlog);
             };
         }
         TextBoxAppender TextBoxAppender { get; set; }
@@ -278,27 +324,9 @@ namespace ColorVision.UI
         private Brush SearchBar1Brush;
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
+            var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             TextBoxAppender.SearchText = searchText;
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                logTextBox.Visibility = Visibility.Collapsed;
-                logTextBoxSerch.Visibility = Visibility.Visible;
-                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                if (!LogSearchHelper.FilterLines(searchText, logLines, out var filteredLines))
-                {
-                    SearchBar1.BorderBrush = Brushes.Red;
-                    return;
-                }
-                logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                SearchBar1.BorderBrush = SearchBar1Brush;
-            }
-            else
-            {
-                logTextBoxSerch.Visibility = Visibility.Collapsed;
-                logTextBox.Visibility = Visibility.Visible;
-            }
+            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
         }
 
 
