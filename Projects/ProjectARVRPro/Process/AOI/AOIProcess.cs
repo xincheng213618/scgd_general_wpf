@@ -29,33 +29,74 @@ namespace ProjectARVRPro.Process.AOI
 
                 foreach (var master in masters)
                 {
+
                     if (master.ImgFileType == ViewResultAlgType.ImageConvert)
                     {
-                        log.Info("正在复制 " + master.ResultImagFile);
-
-                        string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
-                        if (!Directory.Exists(Dir))
+                        try
                         {
-                            Directory.CreateDirectory(Dir);
+                            string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                            if (!Directory.Exists(Dir))
+                            {
+                                Directory.CreateDirectory(Dir);
+                            }
+
+
+                            if (!string.IsNullOrWhiteSpace(master.ResultImagFile))
+                            {
+                                log.Info("正在复制 " + master.ResultImagFile);
+                                string ResultImagFile = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
+                                if (File.Exists(ResultImagFile))
+                                {
+                                    log.Info("正在复制 " + ResultImagFile);
+                                    File.Copy(master.ResultImagFile, ResultImagFile, true);
+                                }
+                            }
+
+
+                            if (!string.IsNullOrWhiteSpace(master.ImgFile))
+                            {
+                                string ImgFile = Path.Combine(Dir, Path.GetFileName(master.ImgFile));
+                                if (File.Exists(ImgFile))
+                                {
+                                    log.Info("正在复制 " + master.ImgFile);
+                                    File.Copy(master.ImgFile, ImgFile, true);
+                                }
+
+
+                                string csvfilepath = master.ImgFile.Replace(".tif",".csv");
+                                log.Info("CSV 文件名: " + csvfilepath);
+                                string resultcsvFile = Path.Combine(Dir, Path.GetFileName(csvfilepath));
+
+                                if (File.Exists(csvfilepath))
+                                {
+                                    log.Info("正在复制 " + resultcsvFile);
+                                    File.Copy(csvfilepath, resultcsvFile, true);
+                                }
+                            }
                         }
-                        string ResultImagFile = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
-                        File.Copy(master.ResultImagFile, ResultImagFile, true);
-
-                        string ImgFile = Path.Combine(Dir, Path.GetFileName(master.ImgFile));
-                        File.Copy(master.ImgFile, ImgFile, true);
-
+                        catch(Exception ex)
+                        {
+                            log.Error(ex);
+                        }
                     }
                     if (master.ImgFileType == ViewResultAlgType.OLED_CombineQuaterImages)
                     {
-                        log.Info("正在复制 " + master.ResultImagFile);
-
-                        string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
-                        if (!Directory.Exists(Dir))
+                        try
                         {
-                            Directory.CreateDirectory(Dir);
+                            log.Info("正在复制 " + master.ResultImagFile);
+                            string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                            if (!Directory.Exists(Dir))
+                            {
+                                Directory.CreateDirectory(Dir);
+                            }
+                            string imgPath = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
+                            File.Copy(master.ResultImagFile, imgPath, true);
                         }
-                        string imgPath = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
-                        File.Copy(master.ResultImagFile, imgPath, true);
+                        catch(Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+
                     }
                 }
 
