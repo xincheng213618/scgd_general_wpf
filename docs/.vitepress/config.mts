@@ -44,22 +44,35 @@ export default withMermaid(
       // Sidebar navigation
       sidebar: [
         {
-          text: '📚 快速入门',
+          text: '开始',
           collapsed: false,
           items: [
-            { text: '什么是 ColorVision', link: '/00-getting-started/what-is-colorvision' },
-            { text: '主要特性', link: '/00-getting-started/introduction/key-features' },
-            { text: '系统架构概览', link: '/00-getting-started/introduction/system-architecture' },
-            { text: '快速开始', link: '/00-getting-started/quick-start' },
-            { text: '系统要求', link: '/00-getting-started/prerequisites' },
-            { text: '安装指南', link: '/00-getting-started/installation' },
-            { text: '首次运行指南', link: '/00-getting-started/first-steps' }
+            { text: '文档首页', link: '/' },
+            { text: '入门指南', link: '/00-getting-started/README' },
+            { text: '用户指南', link: '/01-user-guide/README' },
+            { text: '开发指南', link: '/02-developer-guide/README' },
+            { text: '架构设计', link: '/03-architecture/README' },
+            { text: 'API 参考', link: '/04-api-reference/README' },
+            { text: '附录与资源', link: '/05-resources/README' }
           ]
         },
         {
-          text: '📖 用户指南',
+          text: '快速入门',
           collapsed: false,
           items: [
+            { text: '章节概览', link: '/00-getting-started/README' },
+            { text: '什么是 ColorVision', link: '/00-getting-started/what-is-colorvision' },
+            { text: '系统要求', link: '/00-getting-started/prerequisites' },
+            { text: '安装指南', link: '/00-getting-started/installation' },
+            { text: '首次运行', link: '/00-getting-started/first-steps' },
+            { text: '快速开始', link: '/00-getting-started/quick-start' }
+          ]
+        },
+        {
+          text: '用户使用',
+          collapsed: true,
+          items: [
+            { text: '章节概览', link: '/01-user-guide/README' },
             {
               text: '界面使用',
               collapsed: true,
@@ -72,10 +85,7 @@ export default withMermaid(
             },
             {
               text: '图像编辑器',
-              collapsed: true,
-              items: [
-                { text: '图像编辑器概览', link: '/01-user-guide/image-editor/overview' }
-              ]
+              link: '/01-user-guide/image-editor/overview'
             },
             {
               text: '设备管理',
@@ -121,9 +131,10 @@ export default withMermaid(
           ]
         },
         {
-          text: '👨‍💻 开发指南',
-          collapsed: false,
+          text: '开发与扩展',
+          collapsed: true,
           items: [
+            { text: '章节概览', link: '/02-developer-guide/README' },
             {
               text: '核心概念',
               collapsed: true,
@@ -132,49 +143,12 @@ export default withMermaid(
               ]
             },
             {
-              text: 'UI 开发',
-              collapsed: true,
-              items: [
-                { text: 'UI 开发概览', link: '/02-developer-guide/ui-development/README' },
-                { text: 'XAML 与 MVVM', link: '/02-developer-guide/ui-development/xaml-mvvm' },
-                { text: 'PropertyGrid 系统', link: '/02-developer-guide/ui-development/property-grid' },
-                { text: '自定义控件', link: '/02-developer-guide/ui-development/custom-controls' },
-                { text: 'ImageEditor 集成', link: '/02-developer-guide/ui-development/image-editor-integration' },
-                { text: '主题与样式', link: '/02-developer-guide/ui-development/themes' }
-              ]
-            },
-            {
-              text: 'Core 性能优化',
-              collapsed: true,
-              items: [
-                { text: '优化总览', link: '/02-developer-guide/core-optimization/README' },
-                { text: '内存管理', link: '/02-developer-guide/core-optimization/memory-management' },
-                { text: '异步流水线', link: '/02-developer-guide/core-optimization/async-pipeline' },
-                { text: 'CPU 并行化', link: '/02-developer-guide/core-optimization/cpu-parallelization' },
-                { text: 'CUDA 优化', link: '/02-developer-guide/core-optimization/cuda-optimization' },
-                { text: 'SFR 重构', link: '/02-developer-guide/core-optimization/sfr-refactor' },
-                { text: 'API 设计', link: '/02-developer-guide/core-optimization/api-design' }
-              ]
-            },
-            {
-              text: 'Engine 开发',
-              collapsed: true,
-              items: [
-                { text: 'Engine 开发概览', link: '/02-developer-guide/engine-development/README' },
-                { text: '服务开发', link: '/02-developer-guide/engine-development/services' },
-                { text: '模板系统开发', link: '/02-developer-guide/engine-development/templates' },
-                { text: 'MQTT 消息处理', link: '/02-developer-guide/engine-development/mqtt' },
-                { text: 'OpenCV 集成', link: '/02-developer-guide/engine-development/opencv-integration' }
-              ]
+              text: 'Engine 开发总览',
+              link: '/02-developer-guide/engine-development/README'
             },
             {
               text: '插件开发',
-              collapsed: true,
-              items: [
-                { text: '插件开发概览', link: '/02-developer-guide/plugin-development/overview' },
-                { text: '插件开发入门', link: '/02-developer-guide/plugin-development/getting-started' },
-                { text: '插件生命周期', link: '/02-developer-guide/plugin-development/lifecycle' }
-              ]
+              link: '/02-developer-guide/plugin-development/README'
             },
             {
               text: '性能优化',
@@ -208,10 +182,10 @@ export default withMermaid(
           ]
         },
         {
-          text: '🏗️ 架构设计',
-          collapsed: false,
+          text: '架构与设计',
+          collapsed: true,
           items: [
-            { text: '架构总览', link: '/03-architecture/README' },
+            { text: '章节概览', link: '/03-architecture/README' },
             {
               text: '系统概览',
               collapsed: true,
@@ -241,43 +215,23 @@ export default withMermaid(
           ]
         },
         {
-          text: '📚 API 参考',
+          text: 'API 参考',
           collapsed: true,
           items: [
+            { text: '章节概览', link: '/04-api-reference/README' },
             {
-              text: 'UI 组件 API',
-              collapsed: true,
-              items: [
-                { text: 'UI 组件概览', link: '/04-api-reference/ui-components/README' },
-                { text: 'ColorVision.UI', link: '/04-api-reference/ui-components/ColorVision.UI' },
-                { text: 'ColorVision.UI.Desktop', link: '/04-api-reference/ui-components/ColorVision.UI.Desktop' },
-                { text: 'ColorVision.Common', link: '/04-api-reference/ui-components/ColorVision.Common' },
-                { text: 'ColorVision.Core', link: '/04-api-reference/ui-components/ColorVision.Core' },
-                { text: 'ColorVision.Themes', link: '/04-api-reference/ui-components/ColorVision.Themes' },
-                { text: 'ColorVision.ImageEditor', link: '/04-api-reference/ui-components/ColorVision.ImageEditor' },
-                { text: 'ColorVision.Solution', link: '/04-api-reference/ui-components/ColorVision.Solution' },
-                { text: 'ColorVision.Scheduler', link: '/04-api-reference/ui-components/ColorVision.Scheduler' },
-                { text: 'ColorVision.Database', link: '/04-api-reference/ui-components/ColorVision.Database' },
-                { text: 'ColorVision.SocketProtocol', link: '/04-api-reference/ui-components/ColorVision.SocketProtocol' }
-              ]
+              text: 'UI 组件总览',
+              link: '/04-api-reference/ui-components/README'
             },
             {
-              text: 'Engine 组件 API',
-              collapsed: true,
-              items: [
-                { text: 'Engine 组件概览', link: '/04-api-reference/engine-components/README' },
-                { text: 'ColorVision.Engine', link: '/04-api-reference/engine-components/ColorVision.Engine' },
-                { text: 'ColorVision.FileIO', link: '/04-api-reference/engine-components/ColorVision.FileIO' },
-                { text: 'cvColorVision', link: '/04-api-reference/engine-components/cvColorVision' },
-                { text: 'FlowEngineLib', link: '/04-api-reference/engine-components/FlowEngineLib' },
-                { text: 'ST.Library.UI', link: '/04-api-reference/engine-components/ST.Library.UI' }
-              ]
+              text: 'Engine 组件总览',
+              link: '/04-api-reference/engine-components/README'
             },
             {
-              text: '算法 API',
+              text: '算法与模板',
               collapsed: true,
               items: [
-                { text: '算法概览', link: '/04-api-reference/algorithms/README' },
+                { text: '算法总览', link: '/04-api-reference/algorithms/README' },
                 { text: '算法总览', link: '/04-api-reference/algorithms/overview' },
                 {
                   text: '检测器',
@@ -310,7 +264,7 @@ export default withMermaid(
               ]
             },
             {
-              text: '插件 API',
+              text: '标准插件',
               collapsed: true,
               items: [
                 { text: 'Pattern 插件', link: '/04-api-reference/plugins/standard-plugins/pattern' },
@@ -323,50 +277,19 @@ export default withMermaid(
               ]
             },
             {
-              text: '扩展点 API',
-              collapsed: true,
-              items: [
-                { text: 'FlowNode 开发', link: '/04-api-reference/extensions/flow-node' }
-              ]
+              text: '扩展点',
+              link: '/04-api-reference/extensions/flow-node'
             }
           ]
         },
         {
-          text: '📦 资源文档',
+          text: '附录与资源',
           collapsed: true,
           items: [
-            {
-              text: '项目结构',
-              collapsed: true,
-              items: [
-                { text: '项目结构总览', link: '/05-resources/project-structure/README' },
-                { text: '模块与文档对照', link: '/05-resources/project-structure/module-documentation-map' },
-                { text: 'ProjectARVRPro 结构', link: '/05-resources/project-structure/project-arvrpro' }
-              ]
-            },
-            {
-              text: '更新日志',
-              collapsed: true,
-              items: [
-                { text: '更新日志窗口', link: '/05-resources/changelog/window' }
-              ]
-            },
-            {
-              text: '法律文档',
-              collapsed: true,
-              items: [
-                { text: 'ColorVision API V1.1', link: '/05-resources/legal/api-v1.1' },
-                { text: '软件许可协议', link: '/05-resources/legal/software-agreement' }
-              ]
-            },
-            {
-              text: '文档模板',
-              collapsed: true,
-              items: [
-                { text: '文档模板', link: '/05-resources/templates/doc-template' }
-              ]
-            },
-            { text: '数据存储说明', link: '/05-resources/data-storage' }
+            { text: '章节概览', link: '/05-resources/README' },
+            { text: '项目结构总览', link: '/05-resources/project-structure/README' },
+            { text: '模块与文档对照', link: '/05-resources/project-structure/module-documentation-map' },
+            { text: '软件许可协议', link: '/05-resources/legal/software-agreement' }
           ]
         }
       ],

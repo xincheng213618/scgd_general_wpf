@@ -1,175 +1,151 @@
 # ColorVision.Database
 
-## 概述
+本页只描述 UI/ColorVision.Database 当前已经落地的数据访问与数据库浏览能力，不再继续维护旧模板里那种“数据库教程 + 示例片段 + 构建验证记录”的混合写法。
 
-`ColorVision.Database` 是 ColorVision 的数据库功能模块，提供 MySQL / SQLite 连接管理、基础 DAO、SQLite 日志系统，以及数据库优先的表浏览器。当前通用维护入口不再依赖 C# 实体，而是通过数据库连接查询库、表、列和行数据。
+## 模块定位
 
-## 核心能力
+`ColorVision.Database` 当前同时承担两类职责：
 
-- **数据库浏览器**: `DatabaseBrowserWindow`，按数据源 -> 库 -> 表浏览数据。
-- **Provider 抽象**: `IDatabaseBrowserProvider`，把 MySQL、SQLite 或其他数据库统一暴露给浏览器。
-- **通用表 CRUD**: 对具备主键的表执行新增、修改、删除；查询和新增不要求实体类。
-- **分页搜索排序**: Provider 在数据库侧完成分页、文本列搜索和排序。
-- **连接管理**: `MySqlControl` 管理 MySQL 配置和连接，`SqliteLogManager` 管理日志 SQLite 文件。
-- **数据访问层**: `IEntity`、`EntityBase`、`ViewEntity`、`BaseTableDao<T>` 保留给业务实体和已有 DAO 使用。
+- 业务实体和 DAO 的基础数据访问层
+- 面向运行时维护的数据库浏览器与 Provider 体系
 
-## 架构
+其中现在更值得优先关注的主线，是“数据库优先”的浏览器链，而不是传统的实体类扫描模式。
 
-```mermaid
-graph TD
-    A[DatabaseBrowserWindow] --> B[DatabaseBrowserProviderRegistry]
-    B --> C[IDatabaseBrowserProvider]
-    C --> D[MySqlDatabaseBrowserProvider]
-    C --> E[SqliteDatabaseBrowserProvider]
-    D --> F[MySqlControl]
-    E --> G[SqliteLogManager]
-    A --> H[DataGrid / DataTable]
-```
+## 当前最关键的目录和文件
 
-## 数据库浏览器
+从项目目录看，最值得先认识的是：
+
+- `DatabaseBrowserWindow.xaml(.cs)`：数据库浏览器主窗口
+- `DatabaseBrowserProviderRegistry.cs`：Provider 注册与懒加载入口
+- `IDatabaseBrowserProvider.cs`：浏览器 Provider 契约
+- `DatabaseBrowserModels.cs`：库、表、列、分页模型
+- `MySqlControl.cs`：MySQL 配置和 Provider 创建
+- `SqliteLog/SqliteLogManager.cs`：SQLite 日志数据库和 Provider 创建
+- `BaseTableDao.cs`、`EntityBase.cs`、`ViewEntity.cs`：业务实体访问层基础类型
+
+## 关键入口类型
 
 ### DatabaseBrowserWindow
 
-主窗口提供左侧树和右侧数据表格：
+`DatabaseBrowserWindow` 是当前数据库维护体验的主入口。它负责：
 
-- 左侧树：数据源、数据库、表。
-- 右侧工具栏：搜索、新增、保存、撤销、删除、刷新。
-- 表格：直接绑定 `DataTable.DefaultView`，支持列头排序和分页。
-- 写入策略：新增可直接构造值字典；修改/删除需要表中存在主键列。
+- 展示数据源、库、表的树形结构
+- 在右侧按 `DataTable` 方式浏览结果集
+- 支持搜索、分页、排序
+- 执行新增、更新、删除等通用表级操作
 
-菜单入口位于工具菜单：
+它的关键特点是：当前浏览器不再依赖 C# 实体定义来驱动 UI，而是先从真实数据库连接拿库、表、列信息，再决定如何展示和写回。
 
-```csharp
-public class MenuEntityBrowser : GlobalMenuBase
-{
-    public override string Header => "数据库浏览器";
-    public override void Execute()
-    {
-        new DatabaseBrowserWindow().Show();
-    }
-}
-```
+### DatabaseBrowserProviderRegistry
 
-### DatabaseRowEditWindow
+`DatabaseBrowserProviderRegistry` 负责统一管理可浏览的数据源。它当前会懒加载默认 Provider，并向浏览器暴露：
 
-新增行弹窗根据 `DatabaseColumnInfo` 动态生成输入项，跳过自增列和只读列，并按数据库类型做基础值转换。
+- MySQL 默认 Provider
+- SQLite 日志 Provider
+- 其他调用方自行注册的 Provider
 
-## Provider API
+因此它是当前数据库浏览器体系的调度入口。
 
 ### IDatabaseBrowserProvider
 
-```csharp
-public interface IDatabaseBrowserProvider
-{
-    string ProviderId { get; }
-    string ProviderName { get; }
-    DatabaseType DatabaseType { get; }
-    bool CanWrite { get; }
+`IDatabaseBrowserProvider` 是数据库浏览器最重要的抽象边界。当前它要求实现方提供：
 
-    IReadOnlyList<DatabaseCatalogInfo> GetDatabases();
-    IReadOnlyList<DatabaseTableInfo> GetTables(string databaseName);
-    IReadOnlyList<DatabaseColumnInfo> GetColumns(DatabaseTableInfo table);
-    DatabaseTablePage QueryPage(DatabaseTableInfo table, int pageIndex, int pageSize, string? keyword, string? sortColumn, ListSortDirection sortDirection);
-    int InsertRow(DatabaseTableInfo table, IReadOnlyDictionary<string, object?> values);
-    int UpdateRow(DatabaseTableInfo table, IReadOnlyDictionary<string, object?> keys, IReadOnlyDictionary<string, object?> values);
-    int DeleteRow(DatabaseTableInfo table, IReadOnlyDictionary<string, object?> keys);
-}
-```
+- 库列表
+- 表列表
+- 列信息
+- 分页查询
+- 插入、更新、删除
 
-### 默认 Provider
+所以这个模块的核心扩展点不是“加一个实体类”，而是“注册一个新的 Provider”。
 
-| ProviderId | 实现 | 数据源 |
-|---|---|---|
-| `mysql.default` | `MySqlDatabaseBrowserProvider` | `MySqlControl.Config` |
-| `sqlite.log` | `SqliteDatabaseBrowserProvider` | `SqliteLogManager.SqliteDbPath` |
+### MySqlControl
 
-默认 Provider 通过 `DatabaseBrowserProviderRegistry.GetProviders()` 懒加载注册。
+`MySqlControl` 当前不只是连接配置对象，它还承担：
 
-### 注册其他 SQLite 数据库
+- MySQL 配置持久化
+- 连接字符串构造
+- MySQL 浏览器 Provider 创建
 
-```csharp
-DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
-    "sqlite.scheduler",
-    "SQLite 调度任务",
-    () => SchedulerDbManager.DbPath,
-    SchedulerDbManager.CreateDbClient));
-```
+因此 MySQL 相关入口应直接顺着它去看，而不是只看 `BaseTableDao<T>`。
 
-其他数据库类型可以直接实现 `IDatabaseBrowserProvider`。
+### SqliteLogManager
 
-## 数据模型
+`SqliteLogManager` 既是 SQLite 日志管理器，也是浏览器体系里的一个实际 Provider 来源。它会提供日志数据库路径和对应的 SQLite 浏览入口。
 
-| 类型 | 说明 |
-|---|---|
-| `DatabaseCatalogInfo` | 数据库/文件 catalog 元数据 |
-| `DatabaseTableInfo` | 表名、库名、注释、估算行数、写权限 |
-| `DatabaseColumnInfo` | 列名、类型、主键、自增、只读、可搜索信息 |
-| `DatabaseTablePage` | 分页查询结果，包含 `DataTable Rows` 和 `TotalCount` |
-| `DatabaseType` | `MySql` / `Sqlite` |
+这也说明 `ColorVision.Database` 当前并不是只服务“业务数据”，还承接了一部分运行日志落地与浏览职责。
 
-## 数据访问层
+### BaseTableDao / EntityBase / ViewEntity
 
-业务实体 API 仍保留：
+这些类型仍然是当前业务层实体访问的基础：
 
-```csharp
-public interface IEntity
-{
-    int Id { get; set; }
-}
+- `IEntity` 统一 `Id`
+- `EntityBase` 提供主键映射基类
+- `ViewEntity` 用于可绑定实体
+- `BaseTableDao<T>` 继续服务已有业务代码
 
-public class EntityBase : IEntity
-{
-    [SugarColumn(ColumnName = "id", IsPrimaryKey = true, IsIdentity = true)]
-    public int Id { get; set; }
-}
-```
+但它们已经不是当前数据库 UI 浏览链的唯一中心。
 
-`BaseTableDao<T>` 及其扩展方法继续用于已有业务代码。数据库浏览器不再扫描或依赖这些实体类型。
+## 当前运行时主链
 
-## SQLite 日志系统
+这套模块当前更接近下面这条链：
 
-| 文件 | 说明 |
-|---|---|
-| `SqliteLog/LogEntry.cs` | 日志实体 |
-| `SqliteLog/SqliteLogManager.cs` | SQLite 日志数据库路径、连接工厂和浏览器 Provider 创建 |
-| `SqliteLog/SqliteLogInitializer.cs` | 日志表初始化 |
-| `SqliteLog/SqliteLogWindow.xaml.cs` | 日志查看窗口 |
+1. `DatabaseBrowserWindow` 向 `DatabaseBrowserProviderRegistry` 取可用 Provider。
+2. Provider 返回库、表、列信息。
+3. 浏览器按表结构动态展示 `DataTable` 结果。
+4. 新增、编辑、删除通过 Provider 的通用写接口落回数据库。
+5. 对于业务代码，实体和 DAO 体系仍可以并行使用，但不再控制浏览器 UI。
 
-## 使用示例
+## 当前实现有哪些边界
 
-### 打开数据库浏览器
+### 浏览器主线已经是“数据库优先”
 
-```csharp
-new DatabaseBrowserWindow().Show();
-```
+这是当前最重要的边界变化。旧思路更偏向“先有实体，再有表格界面”；现在更重要的是直接从真实数据库结构生成浏览和维护界面。
 
-### 获取所有浏览器 Provider
+### Provider 比实体更关键
 
-```csharp
-var providers = DatabaseBrowserProviderRegistry.GetProviders();
-```
+如果要扩一个新的数据库来源，当前更优先的切入点是实现 `IDatabaseBrowserProvider` 并注册，而不是给系统补一批实体类。
 
-### 查询表第一页
+### DAO 体系仍在，但不是唯一入口
 
-```csharp
-var provider = DatabaseBrowserProviderRegistry.GetProvider("mysql.default");
-var database = provider.GetDatabases().First();
-var table = provider.GetTables(database.Name).First();
-var page = provider.QueryPage(table, 1, 50, keyword: null, sortColumn: null, ListSortDirection.Descending);
-```
+`BaseTableDao<T>` 等类型依然服务现有业务代码，但阅读这个模块时不能再把它们写成数据库能力的唯一中心。
 
-## 最佳实践
+## 当前更适合怎样读这个模块
 
-- 为需要修改或删除的表配置主键；无主键表只适合查询和新增。
-- Provider 内部必须校验表名和列名，避免直接拼接 UI 输入。
-- UI 层调用同步 Provider 方法时使用 `Task.Run`，避免阻塞 WPF 线程。
-- SQLite 多文件场景注册多个 `SqliteDatabaseBrowserProvider`，不要把不同文件混在同一个 Provider 中。
-- MySQL 连接使用 `MySqlControl.GetConnectionString(config, timeout, databaseName)`，避免跨库查询时仍绑定默认库。
+### 想看数据库浏览器主链
 
-## 验证
+先看：
 
-```powershell
-dotnet build UI/ColorVision.Database/ColorVision.Database.csproj -f net8.0-windows -p:Platform=x64
-```
+- `DatabaseBrowserWindow.xaml.cs`
+- `DatabaseBrowserProviderRegistry.cs`
+- `IDatabaseBrowserProvider.cs`
 
-当前状态：构建通过，0 errors。
+### 想看 MySQL 和 SQLite 的实际接入
+
+先看：
+
+- `MySqlControl.cs`
+- `SqliteLog/SqliteLogManager.cs`
+
+### 想看业务实体访问层
+
+先看：
+
+- `IEntity.cs`
+- `EntityBase.cs`
+- `ViewEntity.cs`
+- `BaseTableDao.cs`
+
+## 这页不再做什么
+
+本页不再继续维护这些高风险内容：
+
+- 教程式示例代码堆叠
+- “最佳实践”式泛化段落
+- 手工构建验证记录
+- 把数据库模块写成只围绕实体类工作的旧模型
+
+## 继续阅读
+
+- [UI组件概览](./README.md)
+- [ColorVision.SocketProtocol](./ColorVision.SocketProtocol.md)
+- [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md)

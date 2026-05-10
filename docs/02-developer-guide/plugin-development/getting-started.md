@@ -1,903 +1,128 @@
-# Developing a Plugin
+# 插件开发入门
 
----
-**Metadata:**
-- Title: Developing a Plugin - Step-by-Step Guide
-- Status: draft
-- Updated: 2024-09-28
-- Author: ColorVision Development Team
----
+本页提供当前仓库可执行的最短插件开发路径，不再沿用旧版通用宿主、异步生命周期和 `plugin.json` 示例。
 
-## 简介
+## 先准备什么
 
-本文档提供创建 ColorVision 插件的完整指南，从最小插件示例到复杂功能实现，包括最佳实践、调试技巧和发布流程。
+- Windows 开发环境
+- .NET 8.0 SDK
+- WPF 开发工具链
+- 当前仓库源码和主程序可运行输出
 
-## 目录
+## 最小开发路径
 
-1. [最小插件示例](#最小插件示例)
-2. [开发环境设置](#开发环境设置)
-3. [插件项目结构](#插件项目结构)
-4. [核心功能实现](#核心功能实现)
-5. [用户界面集成](#用户界面集成)
-6. [调试与测试](#调试与测试)
-7. [打包与发布](#打包与发布)
-8. [最佳实践](#最佳实践)
+### 1. 新建插件项目
 
-## 最小插件示例
-
-### Hello World 插件
-
-以下是一个最简单的 ColorVision 插件示例：
-
-```csharp
-using ColorVision.UI.Plugins;
-using System;
-using System.Threading.Tasks;
-
-[Plugin("hello.world", "Hello World Plugin")]
-public class HelloWorldPlugin : IPlugin
-{
-    public string Id => "com.example.hello.world";
-    public string Name => "Hello World Plugin";
-    public Version Version => new Version(1, 0, 0);
-    public string Description => "A simple hello world plugin";
-    public string Author => "Your Name";
-    
-    public Task InitializeAsync(IPluginContext context)
-    {
-        // 插件初始化逻辑
-        context.Logger.Information("Hello World Plugin initializing...");
-        return Task.CompletedTask;
-    }
-    
-    public Task StartAsync()
-    {
-        // 插件启动逻辑
-        System.Windows.MessageBox.Show("Hello from ColorVision Plugin!");
-        return Task.CompletedTask;
-    }
-    
-    public Task StopAsync()
-    {
-        // 插件停止逻辑
-        return Task.CompletedTask;
-    }
-    
-    public Task ShutdownAsync()
-    {
-        // 插件清理逻辑
-        return Task.CompletedTask;
-    }
-}
-```
-
-### 插件清单文件 (plugin.json)
-
-```json
-{
-  "plugin": {
-    "id": "com.example.hello.world",
-    "name": "Hello World Plugin",
-    "version": "1.0.0",
-    "description": "A simple hello world plugin for demonstration",
-    "author": "Your Name",
-    "website": "https://example.com",
-    "license": "MIT",
-    
-    "compatibility": {
-      "minHostVersion": "3.0.0",
-      "targetFramework": "net8.0-windows"
-    },
-    
-    "assembly": {
-      "fileName": "HelloWorldPlugin.dll",
-      "entryPoint": "HelloWorldPlugin"
-    },
-    
-    "ui": {
-      "menuItems": [
-        {
-          "text": "Hello World",
-          "command": "hello.world.show",
-          "icon": "hello.png"
-        }
-      ]
-    }
-  }
-}
-```
-
-## 开发环境设置
-
-### 必需工具
-
-1. **Visual Studio 2022** 或 **Visual Studio Code**
-2. **.NET 8.0 SDK**
-3. **ColorVision SDK** (NuGet 包)
-
-### 创建插件项目
-
-#### 使用项目模板
-
-```bash
-# 安装 ColorVision 插件模板
-dotnet new install ColorVision.Plugin.Templates
-
-# 创建新插件项目
-dotnet new colorvision-plugin -n MyAwesomePlugin -o ./MyAwesomePlugin
-```
-
-#### 手动创建项目
+建议把插件项目直接建在 `Plugins/<PluginId>/` 下，目标框架保持为 `net8.0-windows`。如果插件带界面，启用 WPF。
 
 ```xml
-<!-- MyAwesomePlugin.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
-  \<PropertyGroup\>
-    \<TargetFramework\>net8.0-windows</TargetFramework>
-    \<UseWPF\>true</UseWPF>
-    \<OutputType\>Library</OutputType>
-    \<CopyLocalLockFileAssemblies\>true</CopyLocalLockFileAssemblies>
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
-  \<ItemGroup\>
-    <PackageReference Include="ColorVision.UI" Version="3.0.0" />
-    <PackageReference Include="ColorVision.Engine" Version="3.0.0" />
-    <PackageReference Include="ColorVision.Common" Version="3.0.0" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\UI\ColorVision.Common\ColorVision.Common.csproj" Private="false" />
+    <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" Private="false" />
   </ItemGroup>
-
-  \<ItemGroup\>
-    <Content Include="plugin.json">
-      \<CopyToOutputDirectory\>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Assets\**\*">
-      \<CopyToOutputDirectory\>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Copy SourceFiles="$(TargetPath)" 
-          DestinationFolder="$(SolutionDir)\ColorVision\bin\Debug\Plugins\$(ProjectName)\" />
-    <Copy SourceFiles="plugin.json" 
-          DestinationFolder="$(SolutionDir)\ColorVision\bin\Debug\Plugins\$(ProjectName)\" />
-  </Target>
 </Project>
 ```
 
-## 插件项目结构
+## 2. 实现最小插件入口
 
-### 推荐目录结构
-
-```
-MyAwesomePlugin/
-├── src/
-│   ├── MyAwesomePlugin.cs          # 主插件类
-│   ├── Services/                   # 服务类
-│   │   ├── IMyService.cs
-│   │   └── MyService.cs
-│   ├── ViewModels/                 # 视图模型
-│   │   └── MainViewModel.cs
-│   ├── Views/                      # WPF 视图
-│   │   ├── MainView.xaml
-│   │   └── MainView.xaml.cs
-│   └── Commands/                   # 命令实现
-│       └── MyCommand.cs
-├── Assets/                         # 资源文件
-│   ├── Icons/
-│   │   └── plugin-icon.png
-│   └── Styles/
-│       └── PluginStyles.xaml
-├── Config/                         # 配置文件
-│   └── default.config
-├── plugin.json                     # 插件清单
-├── README.md                       # 插件说明
-└── MyAwesomePlugin.csproj          # 项目文件
-```
-
-### 命名空间约定
+当前仓库里最直接的入口是实现 `IPluginBase`：
 
 ```csharp
-namespace ColorVision.Plugins.MyAwesome
+using ColorVision.UI;
+
+namespace ColorVision.Plugins.MyPlugin;
+
+public class MyPluginEntry : IPluginBase
 {
-    // 主插件类
-    public class MyAwesomePlugin : IPlugin { }
-    
-    namespace Services
+    public override string Header => "我的插件";
+    public override string Description => "一个最小可加载插件";
+
+    public override void Execute()
     {
-        // 服务接口和实现
-        public interface IMyAwesomeService { }
-        public class MyAwesomeService : IMyAwesomeService { }
-    }
-    
-    namespace ViewModels
-    {
-        // 视图模型类
-        public class MyAwesomeViewModel : ViewModelBase { }
-    }
-    
-    namespace Commands
-    {
-        // 命令实现
-        public class MyAwesomeCommand : ICommand { }
+        // 最简单的入口逻辑
     }
 }
 ```
 
-## 核心功能实现
+如果插件需要挂到菜单或设置页，通常还会实现平台扫描的 provider 接口，例如 `IMenuItemProvider`。这类接口的具体用法建议直接参考现有插件实现。
 
-### 插件基类实现
+## 3. 添加 manifest.json
 
-```csharp
-using ColorVision.UI.Plugins;
-using ColorVision.Common.MVVM;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog;
-using System;
-using System.Threading.Tasks;
-using System.Windows.Input;
-
-namespace ColorVision.Plugins.MyAwesome
-{
-    [Plugin("my.awesome.plugin", "My Awesome Plugin")]
-    public class MyAwesomePlugin : ViewModelBase, IPlugin
-    {
-        private IPluginContext _context;
-        private IMyAwesomeService _service;
-        private ILogger _logger;
-        
-        public string Id => "com.example.myawesome";
-        public string Name => "My Awesome Plugin";
-        public Version Version => new Version(1, 0, 0);
-        public string Description => "An awesome plugin that does amazing things";
-        public string Author => "Your Name";
-        
-        // Commands
-        public ICommand ShowMainWindowCommand { get; private set; }
-        public ICommand ProcessImageCommand { get; private set; }
-        
-        public async Task InitializeAsync(IPluginContext context)
-        {
-            _context = context;
-            _logger = context.Logger;
-            
-            _logger.Information("Initializing {PluginName} v{Version}", Name, Version);
-            
-            // 注册服务
-            RegisterServices(context.ServiceProvider);
-            
-            // 初始化命令
-            InitializeCommands();
-            
-            // 加载配置
-            await LoadConfigurationAsync();
-            
-            // 初始化服务
-            _service = context.ServiceProvider.GetService\<IMyAwesomeService\>();
-            await _service.InitializeAsync();
-            
-            _logger.Information("{PluginName} initialized successfully", Name);
-        }
-        
-        public async Task StartAsync()
-        {
-            _logger.Information("Starting {PluginName}", Name);
-            
-            // 启动后台服务
-            await _service.StartAsync();
-            
-            // 注册事件处理器
-            RegisterEventHandlers();
-            
-            _logger.Information("{PluginName} started successfully", Name);
-        }
-        
-        public async Task StopAsync()
-        {
-            _logger.Information("Stopping {PluginName}", Name);
-            
-            // 取消事件注册
-            UnregisterEventHandlers();
-            
-            // 停止服务
-            await _service?.StopAsync();
-            
-            _logger.Information("{PluginName} stopped successfully", Name);
-        }
-        
-        public async Task ShutdownAsync()
-        {
-            _logger.Information("Shutting down {PluginName}", Name);
-            
-            // 清理资源
-            await _service?.DisposeAsync();
-            
-            // 保存配置
-            await SaveConfigurationAsync();
-            
-            _logger.Information("{PluginName} shutdown completed", Name);
-        }
-        
-        private void RegisterServices(IServiceProvider serviceProvider)
-        {
-            // 如果使用 DI 容器，在这里注册服务
-            var services = new ServiceCollection();
-            services.AddSingleton\<IMyAwesomeService, MyAwesomeService\>();
-            // 其他服务注册...
-        }
-        
-        private void InitializeCommands()
-        {
-            ShowMainWindowCommand = new RelayCommand(ShowMainWindow, CanShowMainWindow);
-            ProcessImageCommand = new RelayCommand\<string\>(ProcessImage, CanProcessImage);
-        }
-        
-        private void ShowMainWindow(object parameter)
-        {
-            var viewModel = new MainViewModel(_service, _logger);
-            var view = new MainView { DataContext = viewModel };
-            view.Show();
-        }
-        
-        private bool CanShowMainWindow(object parameter)
-        {
-            return _service?.IsReady == true;
-        }
-        
-        private async void ProcessImage(string imagePath)
-        {
-            try
-            {
-                await _service.ProcessImageAsync(imagePath);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to process image: {ImagePath}", imagePath);
-            }
-        }
-        
-        private bool CanProcessImage(string imagePath)
-        {
-            return !string.IsNullOrEmpty(imagePath) && _service?.IsReady == true;
-        }
-    }
-}
-```
-
-### 服务层实现
-
-```csharp
-public interface IMyAwesomeService : IAsyncDisposable
-{
-    bool IsReady { get; }
-    Task InitializeAsync();
-    Task StartAsync();
-    Task StopAsync();
-    Task ProcessImageAsync(string imagePath);
-    event EventHandler\<ProcessingCompletedEventArgs\> ProcessingCompleted;
-}
-
-public class MyAwesomeService : IMyAwesomeService
-{
-    private readonly ILogger _logger;
-    private readonly IEngineService _engineService;
-    private bool _isReady;
-    
-    public bool IsReady => _isReady;
-    public event EventHandler\<ProcessingCompletedEventArgs\> ProcessingCompleted;
-    
-    public MyAwesomeService(ILogger logger, IEngineService engineService)
-    {
-        _logger = logger;
-        _engineService = engineService;
-    }
-    
-    public async Task InitializeAsync()
-    {
-        _logger.Information("Initializing MyAwesome service");
-        
-        // 初始化算法引擎
-        await InitializeAlgorithmEngine();
-        
-        _isReady = true;
-        _logger.Information("MyAwesome service initialized");
-    }
-    
-    public async Task StartAsync()
-    {
-        if (!_isReady)
-            throw new InvalidOperationException("Service not initialized");
-            
-        _logger.Information("Starting MyAwesome service");
-        
-        // 订阅引擎事件
-        _engineService.TemplateExecuted += OnTemplateExecuted;
-        
-        _logger.Information("MyAwesome service started");
-    }
-    
-    public async Task StopAsync()
-    {
-        _logger.Information("Stopping MyAwesome service");
-        
-        // 取消事件订阅
-        _engineService.TemplateExecuted -= OnTemplateExecuted;
-        
-        _logger.Information("MyAwesome service stopped");
-    }
-    
-    public async Task ProcessImageAsync(string imagePath)
-    {
-        if (!_isReady)
-            throw new InvalidOperationException("Service not ready");
-            
-        _logger.Information("Processing image: {ImagePath}", imagePath);
-        
-        try
-        {
-            // 使用 ColorVision 引擎处理图像
-            var template = await _engineService.GetTemplateAsync("awesome-algorithm");
-            var result = await _engineService.ExecuteTemplateAsync(template, new
-            {
-                ImagePath = imagePath,
-                Parameters = GetProcessingParameters()
-            });
-            
-            // 处理结果
-            var eventArgs = new ProcessingCompletedEventArgs
-            {
-                ImagePath = imagePath,
-                Result = result,
-                Success = result.Success
-            };
-            
-            ProcessingCompleted?.Invoke(this, eventArgs);
-            
-            _logger.Information("Image processing completed: {ImagePath}", imagePath);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Image processing failed: {ImagePath}", imagePath);
-            throw;
-        }
-    }
-    
-    private void OnTemplateExecuted(object sender, TemplateExecutedEventArgs e)
-    {
-        _logger.Information("Template executed: {TemplateId}", e.TemplateId);
-    }
-    
-    public async ValueTask DisposeAsync()
-    {
-        await StopAsync();
-        _isReady = false;
-    }
-}
-```
-
-## 用户界面集成
-
-### WPF 视图实现
-
-```xml
-<!-- MainView.xaml -->
-<Window x:Class="ColorVision.Plugins.MyAwesome.Views.MainView"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        Title="My Awesome Plugin" Height="450" Width="800"
-        WindowStartupLocation="CenterOwner">
-    
-    \<Window.Resources\>
-        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="MinWidth" Value="100"/>
-        </Style>
-    </Window.Resources>
-    
-    <Grid Margin="10">
-        \<Grid.RowDefinitions\>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="My Awesome Plugin" FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="{Binding Version}" Margin="10,0,0,0" VerticalAlignment="Bottom"/>
-        </StackPanel>
-        
-        <!-- Main Content -->
-        <TabControl Grid.Row="1">
-            <TabItem Header="Image Processing">
-                <Grid Margin="10">
-                    \<Grid.RowDefinitions\>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- File Selection -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBox x:Name="ImagePathTextBox" Width="400" 
-                                 Text="{Binding SelectedImagePath, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Content="Browse..." Click="BrowseButton_Click"/>
-                    </StackPanel>
-                    
-                    <!-- Image Preview -->
-                    <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,10">
-                        <Image x:Name="ImagePreview" 
-                               Source="{Binding PreviewImage}" 
-                               Stretch="Uniform"/>
-                    </Border>
-                    
-                    <!-- Processing Controls -->
-                    <StackPanel Grid.Row="2" Orientation="Horizontal">
-                        <Button Content="Process Image" 
-                                Command="{Binding ProcessImageCommand}"
-                                CommandParameter="{Binding SelectedImagePath}"/>
-                        <Button Content="Save Result" 
-                                Command="{Binding SaveResultCommand}"
-                                IsEnabled="{Binding HasResult}"/>
-                        <ProgressBar x:Name="ProcessingProgress" 
-                                     Width="200" Height="20" Margin="10,0"
-                                     Value="{Binding ProcessingProgress}"
-                                     IsIndeterminate="{Binding IsProcessing}"/>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-            
-            <TabItem Header="Settings">
-                <StackPanel Margin="10">
-                    <TextBlock Text="Algorithm Settings" FontWeight="Bold" Margin="0,0,0,10"/>
-                    
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <TextBlock Text="Threshold:" Width="100" VerticalAlignment="Center"/>
-                        <Slider x:Name="ThresholdSlider" 
-                                Width="200" Minimum="0" Maximum="1" 
-                                Value="{Binding ThresholdValue}" 
-                                TickFrequency="0.1" IsSnapToTickEnabled="True"/>
-                        <TextBlock Text="{Binding ThresholdValue, StringFormat=F2}" 
-                                   Margin="10,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    
-                    <CheckBox Content="Enable GPU Acceleration" 
-                              IsChecked="{Binding EnableGpuAcceleration}" 
-                              Margin="0,10"/>
-                              
-                    <CheckBox Content="Save Processing Log" 
-                              IsChecked="{Binding SaveProcessingLog}" 
-                              Margin="0,5"/>
-                </StackPanel>
-            </TabItem>
-        </TabControl>
-        
-        <!-- Status Bar -->
-        <StatusBar Grid.Row="2">
-            \<StatusBarItem\>
-                <TextBlock Text="{Binding StatusMessage}"/>
-            </StatusBarItem>
-            <StatusBarItem HorizontalAlignment="Right">
-                <TextBlock Text="{Binding LastProcessingTime, StringFormat='Last: {0:HH:mm:ss}'}"/>
-            </StatusBarItem>
-        </StatusBar>
-    </Grid>
-</Window>
-```
-
-### 视图模型实现
-
-```csharp
-public class MainViewModel : ViewModelBase
-{
-    private readonly IMyAwesomeService _service;
-    private readonly ILogger _logger;
-    
-    public string Version => "v1.0.0";
-    
-    public string SelectedImagePath
-    {
-        get => _selectedImagePath;
-        set { _selectedImagePath = value; OnPropertyChanged(); UpdatePreview(); }
-    }
-    private string _selectedImagePath;
-    
-    public BitmapImage PreviewImage
-    {
-        get => _previewImage;
-        set { _previewImage = value; OnPropertyChanged(); }
-    }
-    private BitmapImage _previewImage;
-    
-    public double ThresholdValue
-    {
-        get => _thresholdValue;
-        set { _thresholdValue = value; OnPropertyChanged(); }
-    }
-    private double _thresholdValue = 0.5;
-    
-    public bool EnableGpuAcceleration
-    {
-        get => _enableGpuAcceleration;
-        set { _enableGpuAcceleration = value; OnPropertyChanged(); }
-    }
-    private bool _enableGpuAcceleration = true;
-    
-    public bool IsProcessing
-    {
-        get => _isProcessing;
-        set { _isProcessing = value; OnPropertyChanged(); }
-    }
-    private bool _isProcessing;
-    
-    public string StatusMessage
-    {
-        get => _statusMessage;
-        set { _statusMessage = value; OnPropertyChanged(); }
-    }
-    private string _statusMessage = "Ready";
-    
-    // Commands
-    public ICommand ProcessImageCommand { get; }
-    public ICommand SaveResultCommand { get; }
-    public ICommand BrowseImageCommand { get; }
-    
-    public MainViewModel(IMyAwesomeService service, ILogger logger)
-    {
-        _service = service;
-        _logger = logger;
-        
-        ProcessImageCommand = new AsyncRelayCommand(ProcessImageAsync, CanProcessImage);
-        SaveResultCommand = new RelayCommand(SaveResult, CanSaveResult);
-        BrowseImageCommand = new RelayCommand(BrowseImage);
-        
-        // 订阅服务事件
-        _service.ProcessingCompleted += OnProcessingCompleted;
-    }
-    
-    private async Task ProcessImageAsync()
-    {
-        try
-        {
-            IsProcessing = true;
-            StatusMessage = "Processing image...";
-            
-            await _service.ProcessImageAsync(SelectedImagePath);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Processing failed");
-            StatusMessage = $"Processing failed: {ex.Message}";
-        }
-        finally
-        {
-            IsProcessing = false;
-        }
-    }
-    
-    private void OnProcessingCompleted(object sender, ProcessingCompletedEventArgs e)
-    {
-        StatusMessage = e.Success ? "Processing completed successfully" : "Processing failed";
-        LastProcessingTime = DateTime.Now;
-    }
-}
-```
-
-### 菜单和工具栏集成
-
-```csharp
-public class MenuIntegration
-{
-    public static void RegisterMenuItems(IPluginContext context)
-    {
-        // 添加主菜单项
-        var mainMenu = context.GetService\<IMainMenu\>();
-        var pluginMenu = new MenuItem
-        {
-            Header = "My Awesome Plugin",
-            Icon = LoadIcon("plugin-icon.png")
-        };
-        
-        // 子菜单项
-        pluginMenu.Items.Add(new MenuItem
-        {
-            Header = "Open Main Window",
-            Command = new RelayCommand(() => ShowMainWindow(context)),
-            InputGestureText = "Ctrl+Shift+A"
-        });
-        
-        pluginMenu.Items.Add(new Separator());
-        
-        pluginMenu.Items.Add(new MenuItem
-        {
-            Header = "Quick Process",
-            Command = new RelayCommand(() => QuickProcess(context))
-        });
-        
-        mainMenu.Items.Add(pluginMenu);
-        
-        // 注册快捷键
-        RegisterShortcuts(context);
-    }
-    
-    private static void RegisterShortcuts(IPluginContext context)
-    {
-        var shortcutService = context.GetService\<IShortcutService\>();
-        
-        shortcutService.RegisterShortcut(
-            new KeyGesture(Key.A, ModifierKeys.Control | ModifierKeys.Shift),
-            "MyAwesome.ShowMainWindow",
-            () => ShowMainWindow(context));
-    }
-}
-```
-
-## 调试与测试
-
-### 调试配置
+插件目录至少需要一个 `manifest.json`：
 
 ```json
-// .vscode/launch.json (Visual Studio Code)
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Plugin",
-      "type": "coreclr",
-      "request": "launch",
-      "program": "${workspaceFolder}/../ColorVision/bin/Debug/ColorVision.exe",
-      "args": ["--plugin-debug", "--plugin-path", "${workspaceFolder}/bin/Debug"],
-      "cwd": "${workspaceFolder}/../ColorVision/bin/Debug",
-      "env": {
-        "PLUGIN_DEBUG": "true"
-      },
-      "sourceFileMap": {
-        "/Views": "${workspaceFolder}/Views"
-      }
-    }
-  ]
+  "id": "MyPlugin",
+  "manifest_version": 1,
+  "name": "我的插件",
+  "version": "1.0.0",
+  "description": "插件功能描述",
+  "dllpath": "MyPlugin.dll",
+  "requires": "1.3.12.0",
+  "author": "Your Name"
 }
 ```
 
-### 单元测试
+如果需要显式指定入口类型，可以继续补 `entry_point`。
 
-```csharp
-using Xunit;
-using Moq;
-using Microsoft.Extensions.Logging;
-using ColorVision.Plugins.MyAwesome;
+## 4. 把产物复制到主程序插件目录
 
-public class MyAwesomeServiceTests
-{
-    private readonly Mock\<ILogger\> _mockLogger;
-    private readonly Mock\<IEngineService\> _mockEngineService;
-    private readonly MyAwesomeService _service;
-    
-    public MyAwesomeServiceTests()
-    {
-        _mockLogger = new Mock\<ILogger\>();
-        _mockEngineService = new Mock\<IEngineService\>();
-        _service = new MyAwesomeService(_mockLogger.Object, _mockEngineService.Object);
-    }
-    
-    [Fact]
-    public async Task InitializeAsync_ShouldSetIsReadyToTrue()
-    {
-        // Act
-        await _service.InitializeAsync();
-        
-        // Assert
-        Assert.True(_service.IsReady);
-    }
-    
-    [Fact]
-    public async Task ProcessImageAsync_WithValidPath_ShouldCompleteSuccessfully()
-    {
-        // Arrange
-        await _service.InitializeAsync();
-        var imagePath = "test-image.jpg";
-        var mockResult = new ProcessingResult { Success = true };
-        
-        _mockEngineService.Setup(x => x.ExecuteTemplateAsync(It.IsAny\<object\>(), It.IsAny\<object\>()))
-                          .ReturnsAsync(mockResult);
-        
-        // Act & Assert
-        await _service.ProcessImageAsync(imagePath);
-        
-        _mockEngineService.Verify(x => x.ExecuteTemplateAsync(It.IsAny\<object\>(), It.IsAny\<object\>()), Times.Once);
-    }
-}
-```
-
-### 集成测试
-
-```csharp
-[Collection("Plugin Integration Tests")]
-public class PluginIntegrationTests : IClassFixture\<PluginTestFixture\>
-{
-    private readonly PluginTestFixture _fixture;
-    
-    public PluginIntegrationTests(PluginTestFixture fixture)
-    {
-        _fixture = fixture;
-    }
-    
-    [Fact]
-    public async Task Plugin_ShouldLoadAndInitialize()
-    {
-        // Arrange
-        var pluginManager = _fixture.PluginManager;
-        var descriptor = _fixture.CreatePluginDescriptor();
-        
-        // Act
-        var success = await pluginManager.LoadPluginAsync(descriptor);
-        
-        // Assert
-        Assert.True(success);
-        Assert.True(pluginManager.IsPluginLoaded("com.example.myawesome"));
-    }
-}
-```
-
-## 打包与发布
-
-### MSBuild 打包脚本
+主程序运行时会从自己的输出目录扫描 `Plugins/`，所以调试时需要把插件产物复制进去。
 
 ```xml
-<!-- Build.targets -->
-\<Project\>
-  <Target Name="PackagePlugin" AfterTargets="Build">
-    \<PropertyGroup\>
-      \<PackageDir\>$(OutputPath)Package\</PackageDir>
-    </PropertyGroup>
-    
-    <!-- 创建包目录 -->
-    <MakeDir Directories="$(PackageDir)" />
-    
-    <!-- 复制插件文件 -->
-    \<ItemGroup\>
-      <PluginFiles Include="$(OutputPath)**\*.*" Exclude="$(OutputPath)**\*.pdb;$(OutputPath)**\*.xml" />
-    </ItemGroup>
-    
-    <Copy SourceFiles="@(PluginFiles)" 
-          DestinationFiles="@(PluginFiles->'$(PackageDir)%(RecursiveDir)%(Filename)%(Extension)')" />
-    
-    <!-- 创建 ZIP 包 -->
-    <ZipDirectory SourceDirectory="$(PackageDir)" 
-                  DestinationFile="$(OutputPath)$(ProjectName)-$(Version).zip" />
-  </Target>
-</Project>
+<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Exec Command="xcopy /Y /E /I $(TargetDir)* $(SolutionDir)ColorVision\bin\$(ConfigurationName)\net8.0-windows\Plugins\MyPlugin\" />
+</Target>
 ```
 
-### 自动化发布脚本
+如果你本地输出目录不同，应按实际主程序输出路径调整。
 
-```powershell
-# Deploy-Plugin.ps1
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$Version,
-    
-    [Parameter(Mandatory=$false)]
-    [string]$Configuration = "Release"
-)
+## 5. 运行和调试
 
-# 构建插件
-dotnet build -c $Configuration
+1. 构建主程序。
+2. 构建插件项目，确认 DLL 和 `manifest.json` 已复制到插件目录。
+3. 启动 `ColorVision/ColorVision.csproj`。
+4. 在对应菜单、工具页或插件管理界面验证插件是否被加载。
 
-# 运行测试
-dotnet test -c $Configuration --no-build
+## 推荐参考实现
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Tests failed. Deployment aborted."
-    exit 1
-}
+- `Plugins/EventVWR/EventVWRPlugins.cs`
+- `Plugins/EventVWR/Dump/MenuDump.cs`
+- `Plugins/SystemMonitor/SystemMonitorControl.xaml.cs`
+- `Plugins/README.md`
 
-# 打包插件
-dotnet msbuild -t:PackagePlugin -p:Configuration=$Configuration
+这些示例已经覆盖了基础插件入口和菜单扩展两类常见模式。
 
-# 上传到插件仓库
+## 常见问题
+
+### 插件没有被发现
+
+- 检查 `manifest.json` 是否存在
+- 检查 `dllpath` 指向的 DLL 是否真实存在
+- 检查插件目录是否已经复制到主程序输出目录下的 `Plugins/<PluginId>/`
+
+### 插件被发现但功能没出现
+
+- 检查是否只实现了基础插件类，但没有实现需要的 provider 接口
+- 检查入口类型是否有公开无参构造
+- 检查类型是否为非抽象、非泛型开放类型
+
+### 依赖冲突
+
+- 不要重复打包平台自带的 `ColorVision.*.dll`
+- 若插件带 `.deps.json`，确认依赖版本不高于目标平台
+
+## 下一步
+
+- 想理解平台如何扫描和装载插件：看 [插件生命周期](./lifecycle.md)
+- 想先了解整体结构：看 [插件开发概览](./overview.md)
 $packagePath = "bin\$Configuration\MyAwesomePlugin-$Version.zip"
 Upload-PluginPackage -Path $packagePath -Version $Version
 

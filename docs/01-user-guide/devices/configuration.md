@@ -1,63 +1,70 @@
 # 添加与配置设备
 
+本页只讲用户操作路径：怎么新增一个设备服务、怎么保存、改参数时先看哪里。
 
-1. Project Structure Analysis:
-- The repository is a large-scale software project with multiple main directories, each serving different purposes such as Engine, UI, Plugins, Projects, Core, etc.
-- The Engine directory contains core engine code including services, devices, MQTT communication, templates, and algorithms.
-- The ColorVision.Engine/Services subdirectory specifically handles device services, configurations, and UI windows related to device management.
-- The code is organized by features and layers, e.g., Devices have their own folder with subfolders for specific device types (Camera, Motor, Sensor, etc.).
-- The DeviceService.cs file defines an abstract base class DeviceService and a generic derived class DeviceService\\<T\> which encapsulate device configuration, commands, UI interactions, and lifecycle management.
-- The WindowDevicesSetting.xaml.cs file provides a UI window for managing device instances, allowing users to add, remove, and reorder devices.
-- The architecture uses MVVM (Model-View-ViewModel) pattern with RelayCommand for UI commands and ObservableCollection for dynamic UI lists.
-- Key entry points for device management include the DeviceService classes and the WindowDevicesSetting window for device configuration.
-- Design patterns include Command pattern (RelayCommand), Observer pattern (INotifyPropertyChanged), and Template Method pattern (DeviceService\\<T\> with virtual methods).
+## 常见场景
 
-2. README Analysis:
-- (Not yet analyzed, will read README.md)
+- 新接入一台设备，需要先在系统里创建对应服务。
+- 设备已经存在，但需要修改名称、通信参数或绑定对象。
+- 项目切换后，需要调整设备顺序、禁用旧设备或补充新设备。
 
-3. Core Data Structures and Algorithms Analysis:
-- DeviceService base class represents a generic device with properties like Code, Topics, IsAlive, and commands for operations.
-- DeviceService\\<T\> holds a strongly typed Config object for device-specific parameters.
-- ObservableCollection\<DeviceService\> used for dynamic lists of devices in UI.
-- RelayCommand used for binding UI actions to methods.
-- SysDeviceModel and SysResourceModel represent device metadata and configuration storage.
-- The Save, Delete, and RestartRCService methods manage device lifecycle and persistence.
-- No complex algorithms but important for managing device state and configuration.
+## 基本流程
 
-4. Relevant File Identification:
-- Engine/ColorVision.Engine/Services/WindowDevicesSetting.xaml.cs: UI for adding/configuring devices.
-- Engine/ColorVision.Engine/Services/DeviceService.cs: Core device service abstraction and implementation.
-- Engine/ColorVision.Engine/Services/DeviceServiceConfig.cs (if exists): Device configuration base.
-- Engine/ColorVision.Engine/Services/ServiceManager.cs: Manages device service instances.
-- Engine/ColorVision.Engine/Services/DeviceServiceConfig.cs or related config files for device parameters.
-- Possibly UI related files for device display and editing.
+1. 打开设备管理窗口。
+2. 进入设备设置或编辑界面。
+3. 新增对应类型的设备服务，或选中已有设备进行修改。
+4. 填写必要参数后保存。
+5. 返回设备列表，确认设备已经出现在可用列表中。
 
-5. Detailed File Analysis:
-- Begin with WindowDevicesSetting.xaml.cs to understand device instance management UI.
-- Analyze DeviceService.cs to understand device abstraction, configuration, commands, and lifecycle.
-- Further analyze device-specific config and service files as needed.
+如果后续流程、相机窗口或结果界面仍然看不到该设备，先回到设备列表确认这一步是否真正生效。
 
-6. Code Architecture Mapping:
-- System architecture showing device service management, UI interaction, and MQTT communication.
-- Class diagrams for DeviceService hierarchy and related config classes.
-- Sequence diagram for adding/removing devices via WindowDevicesSetting.
-- Data flow diagram for device config persistence and MQTT topic handling.
+## 配置时通常要确认的内容
 
-7. Deep Dependency Analysis:
-- DeviceService depends on SysResourceModel and SysDeviceModel for data.
-- Depends on ServiceManager for device collection.
-- Uses RelayCommand and MVVM utilities from ColorVision.Common and UI namespaces.
-- MQTT communication handled via MQTTServiceBase and MqttRCService.
-- Decouple UI and backend via commands and observable collections.
+### 基本信息
 
-8. Documentation Strategy Development:
-- Document introduction with project purpose and device management context.
-- Project structure section explaining major directories and responsibilities.
-- Core components section focusing on DeviceService abstraction and device config.
-- Architecture overview with diagrams showing device management flow.
-- Detailed component analysis with code excerpts and explanations.
-- Dependency analysis highlighting key relationships and extensibility.
-- Troubleshooting with common issues in device configuration and management.
-- Use Mermaid diagrams and code snippets to clarify concepts.
-- Explain technical terms simply for non-expert readers.
+- 设备名称是否易于区分
+- 设备类型是否选对
+- 当前项目是否引用了正确的设备实例
+
+### 通信或绑定信息
+
+- 网络地址、端口、主题或通信标识是否正确
+- 是否绑定了对应的物理设备或资源对象
+- 本机驱动、服务端或第三方程序是否已准备好
+
+### 保存后的可见性
+
+- 设备是否已经出现在设备列表
+- 设备状态是否正常
+- 相关窗口或流程节点里是否能选到该设备
+
+## 建议按设备类型继续阅读
+
+- 相机相关：看 [相机服务](./camera.md)、[相机管理](./camera-management.md)、[相机参数配置](./camera-configuration.md)
+- 校准相关：看 [校准服务](./calibration.md)
+- 电机相关：看 [电机服务](./motor.md)
+- 文件或流程型设备：看 [文件服务器](./file-server.md) 和 [流程设备服务](./flow-device.md)
+
+## 常见问题
+
+### 新增后列表里没有设备
+
+- 检查是否真的保存成功
+- 检查是否在错误的项目或错误的配置上下文里操作
+- 重新打开设备窗口确认是否只是列表没有刷新
+
+### 参数改了但设备行为没变化
+
+- 检查是否需要重新连接、重新生成控制项或重新打开相关窗口
+- 检查是否改的是当前实际使用的那一台设备实例
+
+### 配置页看不懂该填什么
+
+- 先去对应设备专题页找参数说明
+- 如果该设备依赖物理设备对象，先完成物理设备管理或标定步骤
+
+## 说明
+
+- 本页不再保留代码分析稿和类图。
+- 具体实现细节以 `Engine/ColorVision.Engine/Services/` 下的实际代码为准。
 

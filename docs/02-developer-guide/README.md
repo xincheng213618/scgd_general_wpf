@@ -1,59 +1,51 @@
 # 开发指南
 
-欢迎使用 ColorVision 开发指南！本指南帮助开发者理解 ColorVision 的架构、扩展机制和开发流程。
+本章节聚焦二次开发、扩展点和交付流程；类库细节和模块设计请分别进入 API 参考与架构设计。
 
-## 📚 指南内容
+## 从这里开始的常见场景
 
-### 核心概念
-理解 ColorVision 的核心概念和设计：
-- [扩展性](./core-concepts/extensibility.md) - 扩展系统和插件机制
-- [Copilot Agent 与 ReAct 演进路线](./core-concepts/copilot-agent-react-roadmap.md) - 当前 Agent 实现、与 ReAct 的差异，以及本地文件读取的演进方案
+### 理解扩展机制
 
-### 性能优化
-优化应用程序性能：
-- [性能概览](./performance/overview.md) - 性能优化指南
+- [扩展性概览](./core-concepts/extensibility.md)
 
-### 部署
-打包和部署应用程序：
-- [部署概览](./deployment/overview.md) - 部署流程和注意事项
-- [自动更新](./deployment/auto-update.md) - 自动更新机制
+### 修改 Engine 或模板相关功能
 
-### 插件开发
-开发 ColorVision 插件：
-- [插件概览](./plugin-development/overview.md) - 插件系统介绍
-- [开发入门](./plugin-development/getting-started.md) - 创建第一个插件
-- [生命周期](./plugin-development/lifecycle.md) - 插件生命周期管理
+- [Engine 开发指南](./engine-development/README.md)
+- [架构设计](../03-architecture/README.md)
+- [Engine 组件 API](../04-api-reference/engine-components/README.md)
 
-## 🚀 快速开始
+### 开发插件
 
-如果您是新的开发者，建议按以下顺序学习：
+- [插件开发总览](./plugin-development/README.md)
+- [插件开发入门](./plugin-development/getting-started.md)
+- [插件生命周期](./plugin-development/lifecycle.md)
 
-1. **了解架构** - 查看[架构设计](../03-architecture/README.md)
-2. **配置开发环境** - 安装必要的工具和依赖
-3. **阅读核心概念** - 理解扩展性和插件机制
-4. **开发第一个插件** - 跟随[插件开发入门](./plugin-development/getting-started.md)
+### 构建、部署与更新
 
-## 📖 待完善内容
+- [部署概览](./deployment/overview.md)
+- [自动更新系统](./deployment/auto-update.md)
+- [构建与发布脚本](./scripts/README.md)
 
-以下内容正在完善中：
+### 后端与辅助系统
 
-- **开发入门** - 开发环境搭建、从源码构建、项目结构、编码规范
-- **UI 开发** - 主题开发、自定义控件、数据绑定、热键系统
-- **Engine 开发** - 服务开发、设备驱动、算法集成、模板开发、流程引擎
-- **测试** - 单元测试、集成测试、UI 测试
+- [插件市场后端](./backend/README.md)
+- [性能优化概览](./performance/overview.md)
 
-## 🔗 相关链接
+## 推荐阅读路径
 
-- [架构设计](../03-architecture/README.md) - 系统架构和设计模式
-- [API 参考](../04-api-reference/README.md) - 详细的 API 文档
-- [项目结构](../05-resources/project-structure/README.md) - 代码结构说明
+1. 先看 [架构设计](../03-architecture/README.md)，确认模块边界。
+2. 再看 [扩展性概览](./core-concepts/extensibility.md)，确认扩展点和插件入口。
+3. 进入自己的目标专题：插件、Engine、部署或后端。
+4. 需要类和接口细节时，转到 [API 参考](../04-api-reference/README.md)。
 
-## 💡 开发资源
+## 章节边界
 
-- [GitHub 仓库](https://github.com/xincheng213618/scgd_general_wpf)
+- 本章节优先提供“怎么进入代码”的路径，而不是替代 API 手册。
+- Engine 子目录中的部分细分专题仍在收敛中，因此默认入口改为总览页，避免把未维护的小页继续放在主导航。
+- 与 AI/Agent 相关的试验性材料保留在子目录中，但不再作为默认阅读路径。
+
+## 补充入口
+
+- [项目结构总览](../05-resources/project-structure/README.md)
+- [在线仓库](https://github.com/xincheng213618/scgd_general_wpf)
 - [问题跟踪](https://github.com/xincheng213618/scgd_general_wpf/issues)
-- [文档模板](../05-resources/templates/doc-template.md)
-
----
-
-需要帮助？提交 [GitHub Issue](https://github.com/xincheng213618/scgd_general_wpf/issues) 或查看现有文档

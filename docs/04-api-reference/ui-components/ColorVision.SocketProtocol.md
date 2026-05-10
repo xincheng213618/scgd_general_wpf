@@ -1,197 +1,184 @@
 # ColorVision.SocketProtocol
 
-## 目录
-1. [概述](#概述)
-2. [核心功能](#核心功能)
-3. [主要组件](#主要组件)
-4. [使用示例](#使用示例)
-5. [最佳实践](#最佳实践)
+本页只描述 UI/ColorVision.SocketProtocol 当前已经落地的通信实现，不再延续旧文档里那种“通用 JSON 协议层示例”和不匹配的消息模型说明。
 
-## 概述
+## 模块定位
 
-**ColorVision.SocketProtocol** 是 ColorVision 系统的 JSON 消息协议层，基于 Socket 的设备通信模块。定义了统一的消息格式和处理器接口，用于与外部设备（如光源控制器、相机等）通信。
+ColorVision.SocketProtocol 当前是一个桌面侧本地 TCP 通信模块，主要负责：
 
-### 基本信息
+- 启动和停止 Socket 服务器
+- 分发 JSON 或纯文本请求
+- 持久化消息记录到 SQLite
+- 提供管理窗口和状态栏入口
+- 接入设置系统
 
-- **版本**: 1.5.5.1
-- **目标框架**: .NET 8.0 / .NET 10.0 Windows
-- **主要功能**: JSON 消息协议、设备通信
-- **特色功能**: 消息持久化（SQLite）、插件化处理器
+它不是一个抽象的“设备协议规范文档”，而是一套已经和 UI、配置、数据库浏览入口耦合在一起的实际模块。
 
-## 核心功能
+## 当前最关键的文件
 
-### 消息系统
-- **SocketMessage** — JSON 消息实体（ViewEntity），存储在数据库中
-- **SocketMessageManager** — 消息管理器（SQLite 存储），提供消息的收发和持久化
-- **ISocketJsonHandler** — 消息处理器接口，支持插件化扩展
+从项目目录看，最值得优先阅读的是：
 
-### 配置管理
-- **SocketConfig** — Socket 通信配置（IP、端口、超时等）
-- **SocketConfigProvider** — 配置提供者，集成到设置系统
+- `SocketManager.cs`：服务器、客户端、分发器和消息管理主入口
+- `SocketInitializer.cs`：启动时初始化和启停监听
+- `SocketConfig.cs`：通信配置
+- `ISocketJsonHandler.cs`：JSON 请求处理扩展点
+- `SocketMessage.cs`：消息持久化实体
+- `SocketMessageManager.cs`：SQLite 持久化和查询
+- `SocketManagerWindow.xaml(.cs)`：管理和查看窗口
+- `SocketStatusBarProvider.cs`：状态栏入口
+- `SocketConfigProvider.cs`：设置系统接入点
 
-### 初始化
-- **SocketInitializer** — 通信模块初始化器
+## 关键入口类型
 
-## 主要组件
+### SocketManager
 
-### SocketMessage
+`SocketManager` 是当前通信模块的中心对象。它负责：
 
-JSON 消息实体，继承自 `ViewEntity`，支持数据库持久化。
+- 持有 `SocketConfig`
+- 创建 `SocketJsonDispatcher` 和 `SocketTextDispatcher`
+- 管理 `SocketMessageManager`
+- 启动和停止服务器
+- 跟踪连接状态
+- 暴露配置编辑命令
 
-```csharp
-[SugarTable("socket_messages")]
-public class SocketMessage : ViewEntity
-{
-    public string MessageType { get; set; }
-    public string JsonContent { get; set; }
-    public string Source { get; set; }
-    public string Target { get; set; }
-    public DateTime Timestamp { get; set; }
-}
-```
+如果只读一个文件来理解整个模块，首选就是 `SocketManager.cs`。
 
-### SocketMessageManager
+### SocketInitializer
 
-消息管理器，提供消息的发送、接收和持久化功能。
+当前模块确实存在 `SocketInitializer`，而且它是实际启动入口之一。它会：
 
-```csharp
-public class SocketMessageManager
-{
-    public static SocketMessageManager Instance { get; }
+- 启动时读取 `SocketConfig.Instance.IsServerEnabled`
+- 在启用时调用 `SocketManager.GetInstance().StartServer()`
+- 订阅 `ServerEnabledChanged`，在运行中动态启停服务
 
-    // 发送消息
-    public void SendMessage(SocketMessage message);
-
-    // 接收消息
-    public event EventHandler<SocketMessage> MessageReceived;
-
-    // 查询历史消息
-    public List<SocketMessage> GetMessages(string source, int count = 100);
-}
-```
-
-### ISocketJsonHandler
-
-消息处理器接口，支持插件化扩展。
-
-```csharp
-public interface ISocketJsonHandler
-{
-    string HandlerName { get; }
-    bool CanHandle(string messageType);
-    void Handle(SocketMessage message);
-}
-```
+这意味着通信服务是否上线，当前主要受配置驱动，而不是仅靠用户手动打开窗口。
 
 ### SocketConfig
 
-Socket 通信配置。
+`SocketConfig` 当前配置内容主要包括：
 
-```csharp
-public class SocketConfig
-{
-    public string Host { get; set; }
-    public int Port { get; set; }
-    public int ReceiveTimeout { get; set; }
-    public int SendTimeout { get; set; }
-    public bool AutoReconnect { get; set; }
-}
-```
+- 是否启用服务器
+- 监听 IP
+- 端口
+- Buffer 大小
+- 协议模式：`Json` 或 `Text`
 
-### SocketConfigProvider
+旧文档里写的超时、自动重连等字段，并不是当前类里真实存在的配置项。
 
-配置提供者，集成到 ColorVision 设置系统。
+### SocketJsonDispatcher / SocketTextDispatcher
 
-```csharp
-public class SocketConfigProvider : IConfigSettingProvider
-{
-    public IEnumerable<ConfigSettingMetadata> GetConfigSettings() { ... }
-}
-```
+当前协议分发分成两套：
 
-## 文件清单
+- `SocketJsonDispatcher`：扫描 `ISocketJsonHandler`
+- `SocketTextDispatcher`：扫描 `ISocketTextDispatcher`
 
-| 文件 | 说明 |
-|------|------|
-| `SocketMessage.cs` | 消息实体（ViewEntity） |
-| `SocketMessageManager.cs` | 消息管理器（SQLite 存储） |
-| `ISocketJsonHandler.cs` | 消息处理器接口 |
-| `SocketConfig.cs` | 通信配置 |
-| `SocketConfigProvider.cs` | 配置提供者 |
-| `SocketInitializer.cs` | 初始化器 |
+其中 JSON 处理器当前按 `EventName` 匹配，请求和响应的真实模型是：
 
-## 使用示例
+- `SocketRequest`：`Version`、`MsgID`、`EventName`、`SerialNumber`、`Params`
+- `SocketResponse`：`Version`、`MsgID`、`EventName`、`SerialNumber`、`Code`、`Msg`、`Data`
 
-### 1. 发送消息
+因此它不是旧文档里那种泛化的 `type/data/timestamp` 消息格式。
 
-```csharp
-var message = new SocketMessage
-{
-    MessageType = "command",
-    JsonContent = JsonConvert.SerializeObject(new { action = "set_brightness", value = 80 }),
-    Source = "ColorVision",
-    Target = "LightController",
-    Timestamp = DateTime.Now
-};
+### SocketMessage / SocketMessageManager
 
-SocketMessageManager.Instance.SendMessage(message);
-```
+当前消息持久化不是一个概念层功能，而是直接落地在 SQLite。`SocketMessage` 保存的主要是：
 
-### 2. 接收消息
+- 客户端地址
+- 方向（接收/发送）
+- 内容
+- 时间
+- EventName / MsgID / ResponseCode
 
-```csharp
-SocketMessageManager.Instance.MessageReceived += (sender, message) =>
-{
-    Console.WriteLine($"收到消息: {message.MessageType} - {message.JsonContent}");
-};
-```
+`SocketMessageManager` 则负责：
 
-### 3. 自定义消息处理器
+- 初始化 `SocketMessages.db`
+- 加载最近消息
+- 插入、删除和查询消息
+- 打开数据库文件位置
+- 提供数据库浏览入口
 
-```csharp
-public class LightControlHandler : ISocketJsonHandler
-{
-    public string HandlerName => "LightControl";
+数据库默认路径在：
 
-    public bool CanHandle(string messageType) => messageType == "light_response";
+- `%AppData%/ColorVision/Config/SocketMessages.db`
 
-    public void Handle(SocketMessage message)
-    {
-        var data = JsonConvert.DeserializeObject<dynamic>(message.JsonContent);
-        // 处理光源控制响应
-    }
-}
-```
+### SocketManagerWindow 与 SocketStatusBarProvider
 
-### 4. 查询历史消息
+当前用户侧主要入口不是一堆协议示例代码，而是两个 UI 接入点：
 
-```csharp
-var messages = SocketMessageManager.Instance.GetMessages("LightController", 50);
-foreach (var msg in messages)
-{
-    Console.WriteLine($"[{msg.Timestamp}] {msg.MessageType}: {msg.JsonContent}");
-}
-```
+- `SocketManagerWindow`：查看历史消息、消息详情、复制、重发、删除
+- `SocketStatusBarProvider`：在状态栏反映连接状态，并点击打开管理窗口
 
-## 依赖关系
+另外，`SocketManagerWindow.xaml.cs` 里还定义了一个菜单入口类 `MenuProjectManager`，当前挂在 Help 菜单下打开管理窗口。
 
-- **引用**: ColorVision.UI, ColorVision.Database, log4net, Newtonsoft.Json
-- **被引用**: ColorVision.Engine（设备通信）
+## 当前运行时主链
 
-## 最佳实践
+现有链路大致是：
 
-1. **消息格式**: 使用统一的 JSON 消息格式，包含 type、data、timestamp 字段
-2. **处理器注册**: 通过 `ISocketJsonHandler` 接口实现插件化消息处理
-3. **持久化**: 重要消息自动存储到 SQLite，支持审计和回溯
-4. **超时配置**: 合理设置连接超时和重连机制
+1. `SocketInitializer` 启动并监听 `SocketConfig.Instance.IsServerEnabled`。
+2. 服务启用时，`SocketManager` 启动 TCP 服务器。
+3. 收到请求后，按当前配置的协议模式走 JSON 或 Text 分发。
+4. JSON 请求按 `EventName` 匹配到 `ISocketJsonHandler` 实现。
+5. 收发消息被写入 `SocketMessageManager` 管理的 SQLite 数据库。
+6. `SocketStatusBarProvider` 和 `SocketManagerWindow` 从管理器读取状态与消息列表。
 
-## 构建
+## 当前实现有哪些边界
 
-```bash
-dotnet build UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj
-```
+### 不是纯 JSON 协议库
 
-## 相关资源
+虽然 JSON 是主要模式之一，但当前实现同时支持 `SocketPhraseType.Text`。把整个模块写成“统一 JSON 协议层”会漏掉文本模式和状态栏、窗口、持久化这些真实职责。
 
-- [ColorVision.Database](ColorVision.Database.md) - 数据库支持
-- [ColorVision.UI](ColorVision.UI.md) - 插件系统
+### 不是只有处理器接口
+
+旧文档把重点压在 `ISocketJsonHandler` 上，但当前模块的价值同样来自：
+
+- 初始化器
+- 管理窗口
+- 状态栏入口
+- SQLite 消息历史
+
+如果只写 handler 扩展点，很容易把模块写扁。
+
+### 配置字段要按真实类描述
+
+当前 `SocketConfig` 没有旧文档里声称的 `ReceiveTimeout`、`SendTimeout`、`AutoReconnect` 这些字段。描述通信配置时必须以真实属性为准。
+
+## 当前更适合怎样读这个模块
+
+### 想看服务器和分发主链
+
+先看：
+
+- `SocketManager.cs`
+- `SocketInitializer.cs`
+- `ISocketJsonHandler.cs`
+
+### 想看设置和状态栏接入
+
+先看：
+
+- `SocketConfig.cs`
+- `SocketConfigProvider.cs`
+- `SocketStatusBarProvider.cs`
+
+### 想看消息历史和管理窗口
+
+先看：
+
+- `SocketMessage.cs`
+- `SocketMessageManager.cs`
+- `SocketManagerWindow.xaml.cs`
+
+## 这页不再做什么
+
+本页不再继续维护这些高风险内容：
+
+- 编造的统一消息字段模型
+- 与真实类不匹配的配置项列表
+- 只有 handler 示例、没有管理窗口和持久化边界的介绍
+- 把当前模块写成纯协议规范而不是实际 UI 通信模块
+
+## 继续阅读
+
+- [UI组件概览](./README.md)
+- [ColorVision.Database](./ColorVision.Database.md)
+- [ColorVision.UI](./ColorVision.UI.md)

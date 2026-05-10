@@ -1,834 +1,181 @@
 # ColorVision.Solution
 
-## 目录
-1. [概述](#概述)
-2. [核心功能](#核心功能)
-3. [新增功能 (v1.5+)](#新增功能-v15)
-4. [架构设计](#架构设计)
-5. [主要组件](#主要组件)
-6. [文件管理](#文件管理)
-7. [编辑器系统](#编辑器系统)
-8. [权限控制](#权限控制)
-9. [多图像查看器](#多图像查看器)
-10. [终端集成](#终端集成)
-11. [使用示例](#使用示例)
-12. [最佳实践](#最佳实践)
-
-## 概述
-
-**ColorVision.Solution** 是 ColorVision 系统的解决方案管理组件，提供了工程文件的创建、打开、管理和编辑功能。它类似于 Visual Studio 的解决方案资源管理器，为用户提供了层次化的项目文件管理界面和丰富的文件操作功能。
-
-### 基本信息
-
-- **主要功能**: 解决方案管理、文件树视图、多编辑器支持、权限控制、多图像查看
-- **UI 框架**: WPF TreeView + MVVM
-- **特色功能**: 文件系统监控、最近文件、插件系统、RBAC权限管理、缩略图缓存
-- **版本**: 1.5.5.1
-- **目标框架**: .NET 10.0
-
-## 核心功能
-
-### 1. 解决方案管理
-- **创建解决方案**: 通过 `SolutionManager.CreateSolution()` 创建新的工程解决方案
-- **打开解决方案**: 支持打开 .cvsln 格式的解决方案文件
-- **自动保存**: 程序退出时自动保存解决方案配置
-- **最近文件**: 维护最近打开的解决方案历史记录
-- **命令行支持**: 支持通过 `-s` 参数指定解决方案路径
-
-### 2. 文件树视图
-- **层次化显示**: TreeView 控件展示文件夹和文件的树形结构
-- **可视化对象模型**: 基于 VObject、VFile、VFolder 的 MVVM 架构
-- **文件图标**: 根据文件类型自动显示对应图标
-- **右键菜单**: 丰富的上下文菜单操作（剪切、复制、粘贴、删除、重命名等）
-- **拖拽支持**: 支持从外部拖拽文件到解决方案
-
-### 3. 文件系统监控
-- **实时更新**: 使用 FileSystemWatcher 监控文件系统变化
-- **自动刷新**: 文件创建、删除、修改时自动更新树视图
-- **性能优化**: 延迟加载和批量更新减少界面卡顿
-
-### 4. 编辑器系统
-- **多编辑器支持**: 
-  - TextEditor - 文本文件编辑
-  - ImageEditor - 图像查看和编辑
-  - HexEditor - 二进制文件编辑
-  - WebEditor - Web内容查看
-  - AvalonEdit - 代码编辑器（支持语法高亮）
-  - Model3DEditor - 3D 模型查看（.obj/.stl，嵌入 ModelViewer3DControl）
-  - ProjectEditor - 项目文件编辑
-  - SystemEditor - 系统编辑器
-- **编辑器注册**: 通过 `EditorForExtensionAttribute` 特性自动注册
-- **默认编辑器**: 可配置每种文件类型的默认编辑器
-- **编辑器选择**: 支持"打开方式"功能选择编辑器
-
-### 5. 权限控制（RBAC）
-- **用户管理**: 用户注册、登录、权限验证
-- **角色管理**: 基于角色的访问控制
-- **权限管理**: 细粒度的文件和操作权限控制
-- **审计日志**: 记录用户操作日志
-- **多租户**: 支持多租户架构
-
-### 6. 搜索功能
-- **文件搜索**: 在解决方案中搜索文件名
-- **搜索视图**: SolutionView 提供搜索界面
-- **快速定位**: 支持快速定位到搜索结果
-
-## 新增功能 (v1.5+)
-
-### 多图像查看器 (MultiImageViewer)
-
-支持文件夹内多张图片的预览和缩略图缓存。
-
-```csharp
-// 创建多图像查看器
-var viewer = new MultiImageViewer();
-viewer.LoadFolder(@"C:\Images");
-viewer.Show();
-```
-
-**功能特性**:
-- 文件夹内图像批量加载
-- 缩略图网格显示
-- 图像预览导航
-- 文件信息显示
-
-### 缩略图缓存管理 (ThumbnailCacheManager)
-
-高效的图像缩略图生成和缓存系统。
-
-```csharp
-// 获取缩略图
-var thumbnail = await ThumbnailCacheManager.Instance.GetThumbnailAsync(
-    imagePath, 
-    width: 128, 
-    height: 128);
-```
+本页只保留当前 `UI/ColorVision.Solution/` 里最重要、最稳定的入口类型和子模块，不再继续维护旧文档里那种“完整 API 白皮书 + 版本清单 + 全面 RBAC 接管”式写法。
 
-**功能特性**:
-- 异步缩略图生成
-- 内存和磁盘缓存
-- 缓存过期管理
-- 多线程处理
+## 模块定位
 
-### Markdown 查看器 (MarkdownViewWindow)
+`ColorVision.Solution` 当前更适合被理解成桌面工作区壳层，而不是单纯的“解决方案管理器”。
 
-支持 Markdown 文件的预览。
+它现在实际承接的内容包括：
 
-```csharp
-// 显示 Markdown 文件
-var mdWindow = new MarkdownViewWindow();
-mdWindow.LoadFile(@"C:\Docs\readme.md");
-mdWindow.Show();
-```
+- `.cvsln` 解决方案的创建、打开和最近文件管理
+- 左侧树形工程浏览与新建项入口
+- 文件/文件夹编辑器选择与打开
+- AvalonDock 文档区和面板布局管理
+- 内置终端控件
+- 多图像查看器和缩略图缓存
+- Markdown 预览
+- Solution 侧本地 RBAC 子模块
 
-**功能特性**:
-- Markdown 渲染
-- 代码语法高亮
-- 图片显示
-- 打印支持
+这意味着它不是单一窗口，也不是只围绕 `SolutionManager` 组织的一层很薄的 UI。
 
-### 工作区管理 (WorkspaceManager)
+## 当前最关键的目录
 
-多工作区切换管理，提供 AvalonDock 停靠面板布局管理。
+从项目目录看，最值得先认识的是：
 
-```csharp
-// 切换工作区
-WorkspaceManager.Instance.SwitchWorkspace(workspacePath);
+- `Editor/`：文件和文件夹编辑器注册、选择和打开
+- `Explorer/`：解决方案树、节点模型、新建项和上下文菜单
+- `Workspace/`：AvalonDock 文档区与面板布局管理
+- `Terminal/`：内置终端控件和 ConPTY 封装
+- `MultiImageViewer/`：文件夹多图预览和缩略图缓存
+- `RecentFile/`：最近文件历史
+- `Rbac/`：Solution 侧本地用户、角色、权限、会话与审计模块
+- 根目录的 `SolutionManager.cs`：解决方案打开、创建与当前工作区切换入口
 
-// 获取当前工作区
-var current = WorkspaceManager.Instance.CurrentWorkspace;
+## 关键入口类型
 
-// 访问布局管理器
-var layoutManager = WorkspaceManager.LayoutManager;
-```
+### `SolutionManager`
 
-### 停靠布局管理 (DockLayoutManager)
+`SolutionManager` 是当前工作区入口的中心对象。它负责：
 
-基于 AvalonDock 的面板布局管理器，支持面板位置持久化、重置和动态管理。
+- 打开或创建 `.cvsln`
+- 维护最近打开的解决方案列表
+- 生成当前 `SolutionExplorer`
+- 根据命令行或最近文件决定启动时打开哪个解决方案
 
-```csharp
-// 注册面板
-DockLayoutManager.RegisterPanel("ProjectPanel", projectControl, "解决方案", DockSide.Left);
-DockLayoutManager.RegisterPanel("LogPanel", logControl, "日志", DockSide.Bottom);
+如果要追“解决方案是怎么进来的”，通常先看它，而不是先看树控件。
 
-// 注册文档
-DockLayoutManager.RegisterDocument("ViewGridDoc", viewGrid, "数据视图", false);
-
-// 保存和加载布局
-DockLayoutManager.SaveLayout();   // 保存到 XML
-DockLayoutManager.LoadLayout();   // 从 XML 加载
-DockLayoutManager.ResetLayout();  // 重置为默认布局
-```
-
-**默认布局参数**：
-- 侧边面板宽度：303px
-- 底部面板高度：200px
-- 布局文件：`MainWindowDockLayout.xml`
+### `SolutionExplorer`
 
-**布局序列化**：
-- 基于 AvalonDock `XmlLayoutSerializer` 实现
-- 加载时取消未注册 ContentId 的反序列化（防止空标签页）
-- 加载后自动刷新面板标题为当前语言环境
-
-### 文档视图宿主 (DockViewManagerHost)
-
-AvalonDock 文档宿主，管理 LayoutDocument 标签页的创建、切换和标题维护。
-
-```csharp
-// 初始化文档视图宿主
-DockViewManagerHost.Initialize(dockingManager);
-
-// 显示所有注册的视图
-DockViewManagerHost.ShowAllViews();
-
-// 激活指定视图
-DockViewManagerHost.ActiveView(viewControl);
-```
-
-### 布局菜单项 (LayoutMenuItems)
-
-提供"保存窗口布局"和"应用窗口布局"菜单命令。
-
-## 架构设计
-
-### 整体架构
-
-```mermaid
-graph TD
-    A[ColorVision.Solution] --> B[核心管理层]
-    A --> C[可视化层]
-    A --> D[编辑器层]
-    A --> E[权限控制层]
-    A --> F[多图像查看器]
-    A --> G[工作区停靠管理]
-    A --> H[终端集成]
-
-    B --> B1[SolutionManager]
-    B --> B2[WorkspaceManager]
-    B --> B3[RecentFileList]
-
-    C --> C1[VObject]
-    C --> C2[VFolder]
-    C --> C3[VFile]
-    C --> C4[TreeViewControl]
-
-    D --> D1[EditorManager]
-    D --> D2[TextEditor]
-    D --> D3[ImageEditor]
-    D --> D4[AvalonEdit]
-    D --> D5[Model3DEditor]
-
-    E --> E1[RbacManager]
-    E --> E2[AuthService]
-    E --> E3[PermissionService]
-
-    F --> F1[MultiImageViewer]
-    F --> F2[ThumbnailCacheManager]
-
-    G --> G1[DockLayoutManager]
-    G --> G2[DockViewManagerHost]
-    G --> G3[LayoutMenuItems]
-
-    H --> H1[TerminalControl]
-    H --> H2[ConPtyTerminal]
-    H --> H3[TerminalScreenBuffer]
-    H --> H4[CommandHistory]
-    H --> H5[TerminalService]
-```
-
-## 主要组件
-
-### SolutionManager
-
-解决方案的中央管理器，负责创建、打开、保存解决方案。
-
-```csharp
-public class SolutionManager : ViewModelBase
-{
-    public static SolutionManager GetInstance();
-    
-    public ObservableCollection<SolutionExplorer> SolutionExplorers { get; }
-    public SolutionExplorer CurrentSolutionExplorer { get; set; }
-    public RecentFileList SolutionHistory { get; set; }
-    
-    public bool OpenSolution(string fullPath);
-    public bool CreateSolution(string solutionDirectoryPath);
-    
-    public event EventHandler SolutionCreated;
-    public event EventHandler SolutionLoaded;
-}
-```
-
-### SolutionExplorer
-
-表示一个打开的解决方案，继承自 VObject。
-
-```csharp
-public class SolutionExplorer : VObject
-{
-    public DirectoryInfo DirectoryInfo { get; }
-    public SolutionConfig Config { get; }
-    public FileInfo ConfigFileInfo { get; }
-    public SolutionEnvironments SolutionEnvironments { get; }
-    
-    public void SaveConfig();
-}
-```
-
-### VObject / VFolder / VFile
-
-可视化对象层次结构：
-
-```csharp
-public class VObject : INotifyPropertyChanged, IObject
-{
-    public VObject Parent { get; set; }
-    public string Name { get; set; }
-    public string FullPath { get; set; }
-    public ImageSource Icon { get; set; }
-    public bool IsExpanded { get; set; }
-    public bool IsSelected { get; set; }
-    public ObservableCollection<VObject> VisualChildren { get; set; }
-    
-    public virtual void Open();
-    public virtual void Delete();
-    public virtual bool ReName(string name);
-}
-
-public class VFolder : VObject, IDisposable
-{
-    public DirectoryInfo DirectoryInfo { get; set; }
-    public FileSystemWatcher FileSystemWatcher { get; set; }
-}
-
-public class VFile : VObject
-{
-    public FileInfo FileInfo { get; set; }
-    public IFileMeta FileMeta { get; set; }
-}
-```
-
-### EditorManager
-
-管理所有编辑器的注册和分配。
-
-```csharp
-public class EditorManager
-{
-    public static EditorManager Instance { get; }
-    
-    public List<IEditor> GetEditorsForFile(string filePath);
-    public IEditor GetDefaultEditor(string extension);
-    public void SetDefaultEditor(string extension, Type editorType);
-}
-```
-
-### RbacManager
-
-权限管理的中央管理器。
-
-```csharp
-public class RbacManager
-{
-    public static RbacManager Instance { get; }
-    
-    public UserEntity CurrentUser { get; set; }
-    public IAuthService AuthService { get; }
-    
-    public bool HasPermission(string permissionCode);
-    public bool HasRole(string roleCode);
-}
-```
-
-## 文件管理
-
-### 文件元数据系统
-
-```csharp
-public interface IFileMeta
-{
-    string Name { get; }
-    string FullName { get; }
-    ImageSource Icon { get; }
-    FileInfo FileInfo { get; }
-}
-
-// 注册自定义文件元数据
-FileMetaRegistry.Register(".myext", typeof(CustomFileMeta));
-```
-
-### 工厂模式
-
-```csharp
-public class VObjectFactory
-{
-    public static VFile CreateVFile(FileInfo fileInfo)
-    {
-        var fileMeta = FileMetaRegistry.GetFileMeta(fileInfo);
-        return new VFile(fileMeta);
-    }
-    
-    public static VFolder CreateVFolder(DirectoryInfo directoryInfo)
-    {
-        var folderMeta = FolderMetaRegistry.GetFolderMeta(directoryInfo);
-        return new VFolder(folderMeta);
-    }
-}
-```
-
-## 编辑器系统
-
-### 编辑器特性
-
-```csharp
-// 标记编辑器支持的文件扩展名
-[EditorForExtension(".txt", ".log", ".md")]
-public class TextEditor : EditorBase
-{
-    public override void Open(string filePath)
-    {
-        // 编辑器实现
-    }
-}
-
-// 标记通用编辑器（支持所有文件类型）
-[GenericEditor]
-public class HexEditor : EditorBase
-{
-}
-```
-
-### 内置编辑器
-
-| 编辑器 | 支持的扩展名 | 说明 |
-|--------|--------------|------|
-| TextEditor | .txt, .log, .md, .json, .xml | 文本文件 |
-| ImageEditor | .png, .jpg, .jpeg, .bmp, .gif | 图像文件 |
-| HexEditor | * (通用) | 二进制文件 |
-| AvalonEdit | .cs, .xaml, .cpp, .h, .py | 代码文件 |
-| WebEditor | .html, .htm | Web 文件 |
-| Model3DEditor | .obj, .stl | 3D 模型查看（嵌入 ModelViewer3DControl） |
-| MarkdownView | .md | Markdown 文件 (v1.5+) |
-
-### Model3DEditor 内存管理
-
-Model3DEditor 使用命名委托模式管理 AvalonDock 标签页生命周期：
-
-```csharp
-// 使用命名委托，Closing 时主动取消订阅打破闭包引用链
-EventHandler isActiveChangedHandler = (s, e) => { ... };
-EventHandler<CancelEventArgs> closingHandler = (s, e) =>
-{
-    layoutDocument.IsActiveChanged -= isActiveChangedHandler;
-    layoutDocument.Closing -= closingHandler;
-    control.DisposeViewer();
-    layoutDocument.Content = null;
-};
-```
-
-- `DisposeViewer()` 递归释放 3D 资源（网格缓冲区、材质纹理）
-- 事件取消订阅后闭包不再被 AvalonDock 引用，GC 可正常回收
-- 强制 GC 释放 WPF 3D 非托管渲染资源
-
-## 权限控制
-
-### RBAC 核心组件
-
-```csharp
-// 认证服务
-public interface IAuthService
-{
-    Task<LoginResultDto> LoginAsync(string username, string password);
-    Task<bool> RegisterAsync(UserEntity user, string password);
-    Task LogoutAsync();
-}
-
-// 权限服务
-public class PermissionService
-{
-    public List<PermissionEntity> GetUserPermissions(int userId);
-    public bool HasPermission(int userId, string permissionCode);
-}
-
-// 审计日志服务
-public class AuditLogService
-{
-    public void LogAction(string action, string details);
-    public List<AuditLogEntity> GetUserLogs(int userId);
-}
-```
-
-### 使用示例
-
-```csharp
-// 登录
-var authService = RbacManager.Instance.AuthService;
-var result = await authService.LoginAsync("username", "password");
-
-// 检查权限
-if (RbacManager.Instance.HasPermission("FILE_DELETE"))
-{
-    DeleteFile(filePath);
-}
-
-// 记录审计日志
-var auditService = new AuditLogService();
-auditService.LogAction("FILE_DELETE", $"删除文件: {filePath}");
-```
-
-## 多图像查看器
-
-### 基本使用
-
-```csharp
-// 创建并显示多图像查看器
-var viewer = new MultiImageViewer();
-viewer.LoadFolder(@"C:\Images");
-viewer.Show();
-
-// 使用配置
-var config = new MultiImageViewerConfig
-{
-    ThumbnailSize = 128,
-    CacheEnabled = true,
-    ShowFileName = true,
-    SortBy = SortBy.Name,
-    SortOrder = SortOrder.Ascending
-};
-viewer.ApplyConfig(config);
-```
-
-### 缩略图缓存
-
-```csharp
-// 异步获取缩略图
-var thumbnail = await ThumbnailCacheManager.Instance.GetThumbnailAsync(
-    imagePath, 
-    width: 128, 
-    height: 128);
-
-// 预加载文件夹缩略图
-await ThumbnailCacheManager.Instance.PreloadFolderAsync(folderPath);
-
-// 清除缓存
-ThumbnailCacheManager.Instance.ClearCache();
-```
-
-## 终端集成
-
-> 用户使用指南：[终端面板](../../01-user-guide/interface/terminal.md)
-
-`ColorVision.Solution` 内置了基于 Windows **ConPTY（Pseudo Console）API** 的交互式终端，位于 `Terminal/` 子目录下。
-
-### 目录结构
-
-```
-Terminal/
-├── ConPtyTerminal.cs        # Win32 ConPTY 封装
-├── TerminalScreenBuffer.cs  # VT100 屏幕缓冲区
-├── TerminalControl.xaml     # WPF 终端控件
-├── TerminalControl.xaml.cs
-└── TerminalService.cs       # 单例服务 + 停靠面板注册
-```
-
-### 核心类
-
-#### `ConPtyTerminal`
-
-封装 Windows ConPTY API（`kernel32.dll`），提供真实 PTY 环境。
-
-```csharp
-internal sealed class ConPtyTerminal : IDisposable
-{
-    public bool IsRunning { get; }
-    public event Action<string>? OutputReceived;  // 后台线程触发
-    public event Action<int>?   ProcessExited;    // 后台线程触发
-
-    public void Start(string commandLine, string workingDirectory,
-                      short cols = 120, short rows = 30);
-    public void Write(string text);   // 向 Shell stdin 写入
-    public void Resize(short cols, short rows);
-    public void Kill();
-}
-```
-
-#### `TerminalScreenBuffer`
-
-VT100/xterm 兼容屏幕缓冲区，解析转义序列后维护字符矩阵（默认 120×30，3000 行历史）。
-
-```csharp
-internal class TerminalScreenBuffer
-{
-    public void   Write(string text);      // 写入原始 ConPTY 输出
-    public string Render();                // 渲染为字符串（历史 + 视口）
-    public int    GetCursorOffset();       // 光标在渲染字符串中的偏移
-    public void   Clear();
-}
-```
-
-**支持的转义序列**：CSI 光标移动（A/B/C/D/E/F/G/H/f/d）、CSI 擦除（J/K）、CSI 编辑（P/@/X/L/M）、OSC（跳过）、SGR 颜色（解析但忽略）。
-
-#### `TerminalService`
-
-对外单例服务：
-
-```csharp
-public class TerminalService
-{
-    public static TerminalService GetInstance();
-    public void RunScript(string filePath);    // 运行脚本并激活面板
-    public void SendCommand(string command);   // 发送命令到 Shell
-}
-```
-
-#### `CommandHistory`
-
-持久化命令历史管理，保存到 `%AppData%\ColorVision\terminal_history.txt`。
-
-```csharp
-internal class CommandHistory
-{
-    public CommandHistory();
-    public void Add(string command);           // 添加命令（去重、持久化）
-    public string? NavigateUp(string currentInput);   // 上一条历史
-    public string? NavigateDown();             // 下一条历史
-    public void ResetNavigation();
-}
-```
-
-**注意**：当前 `CommandHistory` 类已实例化但未与 UI 集成（历史导航由 Shell 的 PSReadLine 处理）。
-
-#### `TerminalPanelProvider`
-
-实现 `IDockPanelProvider`，程序集扫描时自动注册为底部停靠面板（`PanelId = "TerminalPanel"`，`Order = 50`）。
-
-### 输出刷新策略
-
-后台线程收到输出后入队，UI 线程通过 30ms `DispatcherTimer` 批量合并后写入 `TerminalScreenBuffer` 并刷新 `TextBox`，避免高频输出阻塞 UI。
-
-### 系统要求
-
-Windows 10 1809（Build 17763）以上，依赖 `kernel32.dll` 中的 `CreatePseudoConsole` 等 API。
-
-## 使用示例
-
-### 1. 基础解决方案管理
-
-```csharp
-var solutionManager = SolutionManager.GetInstance();
-
-// 创建新解决方案
-solutionManager.CreateSolution(@"D:\Projects\MyColorVisionProject");
-
-// 打开现有解决方案
-solutionManager.OpenSolution(@"D:\Projects\ExistingProject\ExistingProject.cvsln");
-
-// 访问当前解决方案
-var currentSolution = solutionManager.CurrentSolutionExplorer;
-```
-
-### 2. 注册自定义编辑器
-
-```csharp
-[EditorForExtension(".myext", ".data")]
-public class MyCustomEditor : EditorBase
-{
-    public override void Open(string filePath)
-    {
-        var window = new MyCustomEditorWindow();
-        window.LoadFile(filePath);
-        window.Show();
-    }
-    
-    public override string DisplayName => "我的自定义编辑器";
-}
-```
-
-### 3. 搜索文件
-
-```csharp
-public void SearchFiles(string searchPattern)
-{
-    var solutionExplorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
-    var results = new List<VFile>();
-    
-    void SearchRecursive(VObject node)
-    {
-        if (node is VFile file && 
-            file.Name.Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
-        {
-            results.Add(file);
-        }
-        
-        foreach (var child in node.VisualChildren)
-        {
-            SearchRecursive(child);
-        }
-    }
-    
-    SearchRecursive(solutionExplorer);
-    Console.WriteLine($"找到 {results.Count} 个匹配的文件");
-}
-```
-
-### 4. 处理文件系统事件
-
-```csharp
-var solutionExplorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
-
-solutionExplorer.VisualChildrenEventHandler += (sender, e) =>
-{
-    Console.WriteLine("解决方案树结构已变化");
-};
-```
-
-## 最佳实践
-
-### 1. 性能优化
-
-```csharp
-// ✅ 推荐：使用延迟加载
-public async Task LoadLargeSolution()
-{
-    await VMUtil.Instance.GeneralChild(solutionExplorer, directoryInfo);
-}
-
-// ✅ 使用批处理和延迟
-int i = 0;
-foreach (var item in directoryInfo.GetFiles())
-{
-    i++;
-    if (i == 100) // 每100个文件延迟一次
-    {
-        await Task.Delay(100);
-        i = 0;
-    }
-    CreateFile(item);
-}
-```
-
-### 2. 资源管理
-
-```csharp
-// ✅ 正确释放 FileSystemWatcher
-public class VFolder : VObject, IDisposable
-{
-    public void Dispose()
-    {
-        if (FileSystemWatcher != null)
-        {
-            FileSystemWatcher.EnableRaisingEvents = false;
-            FileSystemWatcher.Dispose();
-            FileSystemWatcher = null;
-        }
-    }
-}
-```
-
-### 3. 错误处理
-
-```csharp
-// ✅ 完善的异常处理
-public override bool ReName(string newName)
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(newName))
-        {
-            ShowUserError("文件名不能为空");
-            return false;
-        }
-        
-        DirectoryInfo.MoveTo(newPath);
-        LogOperation($"重命名: {Name} -> {newName}");
-        return true;
-    }
-    catch (UnauthorizedAccessException)
-    {
-        ShowUserError("没有权限重命名此文件");
-        return false;
-    }
-    catch (IOException ex)
-    {
-        ShowUserError($"重命名失败：{ex.Message}");
-        return false;
-    }
-}
-```
-
-### 4. UI响应性
-
-```csharp
-// ✅ 在 UI 线程上更新界面
-FileSystemWatcher.Created += (s, e) =>
-{
-    Application.Current?.Dispatcher.Invoke(() =>
-    {
-        VMUtil.Instance.CreateFile(this, new FileInfo(e.FullPath));
-    });
-};
-```
-
-### 5. 安全性
-
-```csharp
-// ✅ 验证文件路径
-public bool IsValidPath(string path)
-{
-    try
-    {
-        var fullPath = Path.GetFullPath(path);
-        var solutionDir = solutionExplorer.DirectoryInfo.FullName;
-        return fullPath.StartsWith(solutionDir, StringComparison.OrdinalIgnoreCase);
-    }
-    catch
-    {
-        return false;
-    }
-}
-
-// ✅ 使用权限检查
-if (!RbacManager.Instance.HasPermission("FILE_DELETE"))
-{
-    ShowUserError("您没有删除文件的权限");
-    return;
-}
-```
-
-## 更新日志
-
-### v2.0.x (2026-04)
-- ✅ 新增 Model3DEditor 编辑器（.obj/.stl 文件，嵌入 ModelViewer3DControl）
-- ✅ 修复 Model3DEditor 内存泄漏：命名委托 + Closing 事件取消订阅打破 lambda 闭包引用链
-- ✅ Model3DEditor 关闭时递归释放 3D 资源（网格缓冲区、材质纹理、强制 GC）
-
-### v1.5.1.1 (2026-02)
-- ✅ 新增多图像查看器 (`MultiImageViewer`)
-- ✅ 新增缩略图缓存管理 (`ThumbnailCacheManager`)
-- ✅ 新增 Markdown 查看器 (`MarkdownViewWindow`)
-- ✅ 新增工作区管理 (`WorkspaceManager`)
-- ✅ 新增停靠布局管理 (`DockLayoutManager`) - AvalonDock 面板布局持久化
-- ✅ 新增文档视图宿主 (`DockViewManagerHost`) - LayoutDocument 标签页管理
-- ✅ 新增布局菜单项 (`LayoutMenuItems`) - 保存/应用窗口布局
-- ✅ 新增可编辑文本块 (`EditableTextBlock`)
-- ✅ 支持 .NET 10.0
-- ✅ 优化文件系统监控性能
-- ✅ 改进 RBAC 权限系统
-
-### v1.4.4.1 (2026-03)
-- ✅ 界面布局调整，日志可以显示在界面上
-
-### v1.4.1.1 (2026-02)
-- ✅ 新增图像文件夹预览
-- ✅ 优化解决方案加载速度
-
-### v1.3.18.1 (2025-02)
-- 增加 RBAC 权限系统
-- 增加多语言支持
-- 增加 AvalonEdit 代码编辑器
-
-## 相关资源
-
-- [用户指南](../user-guide/)
-- [入门指南](../getting-started/)
-- [故障排除](../troubleshooting/)
+`SolutionExplorer` 和 `Explorer/` 目录下的节点类型一起，负责把目录、文件、新建项和右键动作组织成树形工作区。
+
+这部分是“用户怎么看到工程结构”的主入口。
+
+### `EditorManager`
+
+`EditorManager` 负责编辑器注册和分发。当前实现特点很明确：
+
+- 从已加载程序集扫描实现 `IEditor` 的类型
+- 通过 `EditorForExtensionAttribute`、`GenericEditorAttribute`、`FolderEditorAttribute` 注册
+- 允许为扩展名配置默认编辑器
+- 也支持文件夹编辑器
+
+所以当前编辑器系统不是手写 switch 表，而是属性驱动的注册机制。
+
+### `WorkspaceManager` 和 `DockLayoutManager`
+
+这两者负责当前文档工作区的停靠与恢复：
+
+- 查找并激活当前文档
+- 维护 `ContentId` 和文档选择状态
+- 保存和加载 AvalonDock 布局
+- 在布局恢复时按注册表恢复面板和文档内容
+
+如果问题表现为“标签页去哪了”“布局没恢复”“文档区丢了”，通常先看这条链。
+
+### `TerminalControl`
+
+终端能力当前就在这个项目里，而不是单独外置服务。`TerminalControl` 当前负责：
+
+- 启动 `cmd` 或 `powershell`
+- 承接 ConPTY 输出
+- 维护屏幕缓冲和命令历史
+- 运行脚本并处理 URL 点击
+
+所以它更接近一个内建终端 UI 组件，而不是仅仅“调用系统终端”。
+
+### `MultiImageViewer`
+
+`MultiImageViewer` 既可以作为独立 `UserControl` 使用，也通过 `MultiImageViewerEditor` 接到编辑器系统里。
+
+它当前主要负责：
+
+- 文件夹内多图加载
+- 支持扩展名过滤
+- 缩略图显示
+- 与工作区文档标签页协同打开和释放
+
+## 关于 RBAC，这个模块当前到底承担什么
+
+旧文档最大的问题，是把 `ColorVision.Solution` 写成了“全项目统一 RBAC 权限控制层”。当前代码并不是这个状态。
+
+### 当前真实情况
+
+`Rbac/` 的确是 `ColorVision.Solution` 的一个重要子模块，里面已经有：
+
+- `RbacManager`
+- `LoginWindow`、`UserManagerWindow`、`PermissionManagerWindow`
+- 用户、角色、权限、会话、审计相关实体和服务
+- 本地 SQLite 持久化
+- `PermissionChecker` 的细粒度权限码缓存
+
+### 但当前边界也要写清
+
+这套 RBAC 目前主要作用在它自己的管理窗口和 Solution 侧本地权限子系统。
+
+从当前搜索结果看，`HasPermissionAsync` 和 `PermissionChecker` 的细粒度调用几乎都还留在 `Rbac/` 子目录中；与此同时，很多窗口入口仍先依赖全局的 `Authorization.Instance.PermissionMode` 做粗粒度判断。
+
+所以更准确的描述是：
+
+- `ColorVision.Solution` 内含一个本地 RBAC 子模块
+- 它和全局 `PermissionMode` 并存
+- 不能把整个解决方案树、所有编辑器和全部文件操作都描述成已经全面接入细粒度权限码控制
+
+## 当前更适合怎样读这个项目
+
+### 想看解决方案入口
+
+先看：
+
+- `SolutionManager.cs`
+- `SolutionManagerInitializer.cs`
+- `OpenSolutionWindow.xaml(.cs)`
+
+### 想看树和文件节点
+
+先看：
+
+- `Explorer/SolutionExplorer.cs`
+- `Explorer/SolutionNodeFactory.cs`
+- `TreeViewControl.xaml(.cs)`
+
+### 想看文件怎么被不同编辑器打开
+
+先看：
+
+- `Editor/EditorManager.cs`
+- `Editor/EditorForExtensionAttribute.cs`
+- `Editor/*.cs`
+
+### 想看工作区布局和文档宿主
+
+先看：
+
+- `Workspace/WorkspaceManager.cs`
+- `Workspace/DockLayoutManager.cs`
+- `Workspace/LayoutMenuItems.cs`
+
+### 想看本地权限子系统
+
+先看：
+
+- `Rbac/RbacManager.cs`
+- `Rbac/Services/`
+- `Rbac/Entity/`
+
+## 这页不再做什么
+
+本页不再继续维护这些高风险内容：
+
+- 过时版本号和目标框架清单
+- 假定存在完整公共 API 的大段伪代码
+- 把 `RbacManager` 写成全项目统一权限入口
+- 把所有文件操作都写成已经被细粒度权限完全拦截
+
+如果要补具体类或方法，应在对应子模块页里单独展开，而不是在这里继续堆一整页伪 API。
+
+## 继续阅读
+
+- [UI组件概览](./README.md)
+- [安全与权限控制](../../03-architecture/security/overview.md)
+- [RBAC 模块](../../03-architecture/security/rbac.md)

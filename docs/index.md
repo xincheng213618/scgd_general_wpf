@@ -33,7 +33,7 @@ features:
   - icon: 🔌
     title: 插件系统
     details: 强大的插件架构，支持第三方功能扩展，满足个性化需求
-    link: /02-developer-guide/plugin-development/overview
+    link: /02-developer-guide/plugin-development/README
   
   - icon: ⚙️
     title: 流程引擎

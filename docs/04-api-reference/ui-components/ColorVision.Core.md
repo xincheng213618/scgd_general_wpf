@@ -1,268 +1,153 @@
 # ColorVision.Core
 
-## 目录
-1. [概述](#概述)
-2. [核心功能](#核心功能)
-3. [主要组件](#主要组件)
-4. [使用示例](#使用示例)
-5. [性能考虑](#性能考虑)
+本页只描述 UI/ColorVision.Core 当前已经落地的原生互操作层，不再延续旧文档里那种“高层图像 API 手册”和并不存在的托管方法示例。
 
-## 概述
+## 模块定位
 
-**ColorVision.Core** 是 OpenCV 4.13 的 .NET 互操作层，提供高性能图像处理算法调用接口。通过 P/Invoke 调用原生 C++ DLL，封装为易用的 C# API。
+ColorVision.Core 当前更接近一个原生图像和视频能力桥接层，主要负责：
 
-### 基本信息
+- 定义 `HImage` 这类跨托管/非托管边界的数据结构
+- 通过 P/Invoke 调用 `opencv_helper.dll`、`opencv_cuda.dll`
+- 提供 WPF 侧的位图转换与更新辅助
+- 暴露伪彩色、图像增强、聚焦评价、视频相关等原生入口
 
-- **版本**: 1.5.5.1
-- **目标框架**: .NET 10.0 Windows（仅 x64）
-- **主要功能**: OpenCV 封装、图像处理、视频解码、CUDA 加速
-- **技术栈**: P/Invoke, OpenCV 4.13, CUDA
-- **允许不安全代码**: 是（AllowUnsafeBlocks）
+它不是一个已经封装好的高层图像处理框架。很多能力当前仍然是 `extern` 方法级别的原生导出包装。
 
-### 原生依赖
+## 当前最关键的文件
 
-ColorVision.Core 集成了以下 OpenCV 原生库（win-x64）：
-- `opencv_core` — 核心功能
-- `opencv_imgproc` — 图像处理
-- `opencv_videoio` — 视频输入输出
-- `opencv_imgcodecs` — 图像编解码
+从项目目录看，最值得优先阅读的是：
 
-## 核心功能
+- `HImage.cs`：图像数据结构
+- `HImageExtension.cs`：`HImage` 与 WPF 图像对象之间的桥接
+- `OpenCVMediaHelper.cs`：主要的原生导出包装集合
+- `OpenCVCuda.cs`：CUDA 相关原生入口
+- `ColormapTypes.cs`：伪彩色枚举
+- `NativeLogBridge.cs`：原生日志桥接
+- `nvcuda.cs`：CUDA 相关 P/Invoke 定义
 
-### 图像处理核心
-- **HImage** — 基于 OpenCV Mat 的图像封装类，支持高位深（RGB48）图像
-- **HImageExtension** — HImage 扩展方法（格式转换、缩放、裁剪等）
-- **ImageCompute** — 图像计算（直方图、统计、滤波等）
-
-### 视频媒体
-- **OpenCVMediaHelper** — C++/C# 视频解码桥接（FFmpeg + OpenCV）
-- **NativeLogBridge** — C++ 原生日志桥接到 .NET log4net
-
-### CUDA 加速
-- **OpenCVCuda** — CUDA 设备检测和 GPU 加速接口
-- **nvcuda** — NVIDIA CUDA P/Invoke 定义
-
-### 色彩映射
-- **ColormapTypes** — OpenCV 伪彩色映射类型定义
-
-## 主要组件
+## 关键入口类型
 
 ### HImage
 
-基于 OpenCV Mat 的图像封装类，支持高位深图像。
+`HImage` 当前不是旧文档里那种带大量实例方法的托管类，而是一个承载原生图像缓冲区的结构体。它的核心字段包括：
 
-```csharp
-public class HImage : IDisposable
-{
-    public int Width { get; }
-    public int Height { get; }
-    public int Channels { get; }
-    public IntPtr Data { get; }
+- `rows`
+- `cols`
+- `channels`
+- `depth`
+- `stride`
+- `pData`
 
-    // 从文件加载
-    public static HImage Load(string path);
+同时它实现了 `Dispose()`，负责释放 `Marshal.AllocHGlobal` 分配的图像内存。
 
-    // 从 byte[] 创建
-    public static HImage FromBytes(byte[] data, int width, int height, int channels);
-
-    // 转换为 BitmapSource
-    public BitmapSource ToBitmapSource();
-
-    public void Dispose();
-}
-```
+这意味着当前模块最重要的职责之一，就是安全地在原生和托管边界上传递图像缓冲区。
 
 ### HImageExtension
 
-HImage 的扩展方法集。
+`HImageExtension` 提供的是桥接辅助，而不是完整处理算法库。它当前主要负责：
 
-```csharp
-public static class HImageExtension
-{
-    // 格式转换
-    public static HImage ConvertTo(this HImage src, PixelFormat format);
+- 根据通道数和位深推导 `PixelFormat`
+- 把 `HImage` 内容拷贝到 `WriteableBitmap`
+- 提供异步位图更新路径
+- 协助把原生图像数据转换成 WPF 可显示对象
 
-    // 缩放
-    public static HImage Resize(this HImage src, int width, int height);
-
-    // 裁剪
-    public static HImage Crop(this HImage src, Rect roi);
-
-    // 保存
-    public static bool Save(this HImage src, string path);
-}
-```
-
-### ImageCompute
-
-图像计算功能。
-
-```csharp
-public static class ImageCompute
-{
-    // 直方图计算
-    public static int[] CalcHistogram(HImage image, int channel = 0);
-
-    // 统计信息
-    public static ImageStats GetStats(HImage image);
-
-    // 滤波
-    public static HImage GaussianBlur(HImage image, int kernelSize);
-}
-```
+因此它的价值主要在显示链，而不是算法链。
 
 ### OpenCVMediaHelper
 
-视频解码桥接，通过 P/Invoke 调用 C++ FFmpeg/OpenCV 解码器。
+虽然名字叫 `OpenCVMediaHelper`，当前它其实承载了大量 `opencv_helper.dll` 的导出包装，不只是视频相关接口，还包括：
 
-```csharp
-public static class OpenCVMediaHelper
-{
-    // 打开视频
-    public static int OpenVideo(string path);
+- 伪彩色与自动范围伪彩色
+- 最小值/最大值提取
+- 自动亮度、自动颜色、自动色调
+- 通道提取
+- 亮度对比度、Gamma、反相、阈值、锐化、滤波、边缘检测
+- SFR 与聚焦评价
+- 若干识别或检测类入口
+- 视频相关结构和函数
 
-    // 读取帧
-    public static bool ReadFrame(int handle, ref HImage frame);
-
-    // 获取视频信息
-    public static VideoInfo GetVideoInfo(int handle);
-
-    // 释放
-    public static void Release(int handle);
-}
-```
+所以当前更准确的理解是：它是主要的原生图像能力导出面，而不只是“视频帮助类”。
 
 ### OpenCVCuda
 
-CUDA 设备检测和 GPU 加速接口。
+`OpenCVCuda` 当前并不是旧文档里声称的通用 CUDA 设备管理层。它现在公开的是少量 `opencv_cuda.dll` 导出，重点在融合相关入口，例如：
 
-```csharp
-public static class OpenCVCuda
-{
-    // 检测 CUDA 设备
-    public static int GetCudaDeviceCount();
+- `CM_Fusion`
+- `CM_Fusion_Async`
+- `CM_Fusion_Batch`
 
-    // 检查是否支持 CUDA
-    public static bool IsCudaAvailable();
+因此描述 CUDA 能力时，应按当前实际导出写，不要再扩写成完整 GPU 能力总入口。
 
-    // GPU 加速图像处理
-    public static HImage GpuProcess(HImage image);
-}
-```
+### ColormapTypes 与 NativeLogBridge
 
-## 文件清单
+- `ColormapTypes` 负责统一伪彩色映射枚举。
+- `NativeLogBridge` 负责把原生侧日志桥接到托管日志系统。
 
-| 文件 | 说明 |
-|------|------|
-| `HImage.cs` | 图像封装类 |
-| `HImageExtension.cs` | 图像扩展方法 |
-| `ImageCompute.cs` | 图像计算 |
-| `OpenCVMediaHelper.cs` | 视频解码桥接 |
-| `OpenCVCuda.cs` | CUDA 接口 |
-| `nvcuda.cs` | CUDA P/Invoke |
-| `ColormapTypes.cs` | 色彩映射类型 |
-| `NativeLogBridge.cs` | 原生日志桥接 |
+这两个文件都很小，但它们分别是伪彩色链和调试链的重要边界点。
 
-## 使用示例
+## 当前运行时主链
 
-### 1. 加载和显示图像
+这套模块当前更像下面这条链：
 
-```csharp
-// 加载图像
-using var image = HImage.Load("test.png");
+1. 上层模块通过 P/Invoke 调用 `OpenCVMediaHelper` 或 `OpenCVCuda`。
+2. 原生 DLL 返回 `HImage` 或写入 `HImage` 输出参数。
+3. WPF 显示链通过 `HImageExtension` 把图像数据更新到 `WriteableBitmap`。
+4. 像 `ColorVision.ImageEditor` 这类上层模块继续围绕这些位图做交互、绘制和显示。
 
-// 转换为 WPF BitmapSource
-var bitmap = image.ToBitmapSource();
-imageView.Source = bitmap;
-```
+## 当前实现有哪些边界
 
-### 2. 图像处理
+### 不要把它写成高层 OO API
 
-```csharp
-using var image = HImage.Load("input.png");
+当前代码里并没有旧文档写的这些典型高层接口：
 
-// 缩放
-using var resized = image.Resize(800, 600);
+- `HImage.Load(...)`
+- `HImage.ToBitmapSource()`
+- `OpenCVCuda.GetCudaDeviceCount()`
+- `OpenCVCuda.IsCudaAvailable()`
 
-// 高斯模糊
-using var blurred = ImageCompute.GaussianBlur(resized, 5);
+这些写法会误导读者去寻找并不存在的托管封装。
 
-// 保存
-blurred.Save("output.png");
-```
+### HImage 的资源语义很重要
 
-### 3. 视频解码
+`HImage` 不是普通托管对象，包含非托管指针和显式释放逻辑。讨论这个模块时，内存和所有权边界比“类设计”更重要。
 
-```csharp
-int handle = OpenCVMediaHelper.OpenVideo("video.mp4");
-var info = OpenCVMediaHelper.GetVideoInfo(handle);
-Console.WriteLine($"分辨率: {info.Width}x{info.Height}, 帧率: {info.Fps}");
+### 上层业务语义不在这里
 
-HImage frame = null;
-while (OpenCVMediaHelper.ReadFrame(handle, ref frame))
-{
-    // 处理帧
-    var bitmap = frame.ToBitmapSource();
-}
+Core 只负责桥接原生能力，不负责像 ImageEditor 那样的工具栏、交互或文档状态编排。阅读时应明确它只是下层能力底座。
 
-OpenCVMediaHelper.Release(handle);
-```
+## 当前更适合怎样读这个模块
 
-### 4. CUDA 加速
+### 想看图像数据结构和显示桥接
 
-```csharp
-if (OpenCVCuda.IsCudaAvailable())
-{
-    Console.WriteLine($"CUDA 设备数: {OpenCVCuda.GetCudaDeviceCount()}");
+先看：
 
-    using var image = HImage.Load("large_image.png");
-    using var result = OpenCVCuda.GpuProcess(image);
-    result.Save("processed.png");
-}
-```
+- `HImage.cs`
+- `HImageExtension.cs`
 
-## 性能考虑
+### 想看原生导出面
 
-### 1. 内存管理
-- HImage 实现 IDisposable，使用后及时释放
-- 大图像使用 `using` 语句确保释放
-- 避免频繁的 HImage ↔ BitmapSource 转换
+先看：
 
-### 2. CUDA 加速
-- 检测 CUDA 可用性后再使用
-- 大图像（>4K）适合 GPU 加速
-- 小图像 CPU 处理可能更快（避免数据传输开销）
+- `OpenCVMediaHelper.cs`
+- `OpenCVCuda.cs`
 
-### 3. 视频解码
-- 使用完成后及时调用 `Release` 释放资源
-- 高分辨率视频考虑降采样预览
+### 想看伪彩色和日志边界
 
-## 依赖关系
+先看：
 
-- **无项目依赖**，直接引用原生 OpenCV DLL
-- **被引用**: ColorVision.ImageEditor
+- `ColormapTypes.cs`
+- `NativeLogBridge.cs`
 
-## 更新日志
+## 这页不再做什么
 
-### v1.5.5.1 (2026-04)
-- ✅ 版本号统一升级
+本页不再继续维护这些高风险内容：
 
-### v1.5.2.1 (2026-02)
-- ✅ 升级目标框架至 .NET 10.0
-- ✅ 更新 OpenCV 原生库至 4.13
-- ✅ 新增视频解码支持（OpenCVMediaHelper）
-- ✅ 新增 HImage 内存共享机制
-- ✅ 优化 C++/C# 跨语言数据传输
+- 不存在的托管高层方法示例
+- 把 `OpenCVCuda` 写成完整设备管理层
+- 大段更新日志和版本清单
+- 把 Core 说成完整上层图像处理框架
 
-## 构建
+## 继续阅读
 
-```bash
-dotnet build UI/ColorVision.Core/ColorVision.Core.csproj
-```
-
-> 注意: 仅支持 x64 平台，需要 OpenCV 4.13 原生 DLL
-
-## 相关资源
-
-- [ColorVision.ImageEditor](ColorVision.ImageEditor.md) - 图像编辑器
-- [性能优化指南](../../02-developer-guide/core-optimization/overview.md)
+- [UI组件概览](./README.md)
+- [ColorVision.ImageEditor](./ColorVision.ImageEditor.md)

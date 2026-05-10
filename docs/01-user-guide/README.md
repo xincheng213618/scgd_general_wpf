@@ -1,53 +1,59 @@
 # 用户指南
 
-欢迎使用 ColorVision 用户指南！本指南帮助您了解和使用 ColorVision 的各项功能。
+本章节按“先会用，再深入”的顺序整理，优先保留日常使用相关页面。
 
-## 📚 指南内容
+## 章节入口
 
-### 界面使用
-了解 ColorVision 的用户界面和基本操作：
-- [主窗口导览](./interface/main-window.md) - 认识 ColorVision 的主界面
-- [属性编辑器](./interface/property-editor.md) - 查看和编辑对象属性
-- [日志查看器](./interface/log-viewer.md) - 查看系统日志和调试信息
+### 界面与基础交互
+
+- [主窗口导览](./interface/main-window.md)
+- [属性编辑器](./interface/property-editor.md)
+- [日志查看器](./interface/log-viewer.md)
+- [终端](./interface/terminal.md)
 
 ### 图像编辑器
-使用图像编辑器处理图像：
-- [编辑器概览](./image-editor/overview.md) - 图像编辑器功能介绍
 
-### 设备使用
-连接和使用各类设备（待完善）
+- [图像编辑器概览](./image-editor/overview.md)
+
+### 设备管理
+
+- [设备服务概览](./devices/overview.md)
+- [添加与配置设备](./devices/configuration.md)
+- [相机服务](./devices/camera.md)
+- [相机管理](./devices/camera-management.md)
+- [相机参数配置](./devices/camera-configuration.md)
+- [校准服务](./devices/calibration.md)
+- [电机服务](./devices/motor.md)
+- [SMU 服务](./devices/smu.md)
+- [流程设备服务](./devices/flow-device.md)
+- [文件服务器](./devices/file-server.md)
 
 ### 工作流程
-创建和管理自动化工作流程（待完善）
+
+- [工作流程概览](./workflow/README.md)
+- [流程设计](./workflow/design.md)
+- [流程执行与调试](./workflow/execution.md)
 
 ### 数据管理
-管理项目数据和结果（待完善）
+
+- [数据管理概览](./data-management/README.md)
+- [数据库操作](./data-management/database.md)
+- [数据导出与导入](./data-management/export-import.md)
 
 ### 故障排查
-解决常见问题：
-- [常见问题](./troubleshooting/common-issues.md) - 常见问题及解决方法
 
-## 🚀 快速开始
+- [常见问题](./troubleshooting/common-issues.md)
 
-如果您是新用户，建议按以下顺序学习：
+## 推荐阅读路线
 
-1. **了解界面** - 从[主窗口导览](./interface/main-window.md)开始
-2. **尝试基本操作** - 打开图像、查看属性
-3. **学习设备使用** - 连接和配置设备
-4. **创建工作流程** - 自动化您的工作
+1. 先看 [主窗口导览](./interface/main-window.md)，了解主界面布局。
+2. 再看 [属性编辑器](./interface/property-editor.md) 和 [图像编辑器概览](./image-editor/overview.md)，建立基本操作路径。
+3. 涉及硬件时进入 [设备服务概览](./devices/overview.md) 和对应设备专题页。
+4. 需要自动化时进入 [工作流程概览](./workflow/README.md)。
+5. 遇到异常先查 [常见问题](./troubleshooting/common-issues.md)。
 
-## 💡 提示
+## 章节边界
 
-- 使用快捷键可以提高工作效率
-- 遇到问题先查看[故障排查](./troubleshooting/common-issues.md)
-- 更多详细信息请参考完整文档
-
-## 🔗 相关链接
-
-- [快速入门](../00-getting-started/README.md) - 安装和首次运行
-- [开发指南](../02-developer-guide/README.md) - 开发和定制功能
-- [API 参考](../04-api-reference/README.md) - API 文档
-
----
-
-需要帮助？查看[常见问题](./troubleshooting/common-issues.md)或访问 [GitHub Issues](https://github.com/xincheng213618/scgd_general_wpf/issues)
+- 偏实现和扩展机制的内容已经移到 [开发指南](../02-developer-guide/README.md)。
+- 偏类库、接口和模块级说明的内容已经移到 [API 参考](../04-api-reference/README.md)。
+- 需要整体理解系统设计时，直接进入 [架构设计](../03-architecture/README.md)。

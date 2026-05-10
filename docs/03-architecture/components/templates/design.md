@@ -1,470 +1,161 @@
 # Templates 架构设计
 
-## 目录
-1. [概述](#概述)
-2. [核心架构](#核心架构)
-3. [模板类型体系](#模板类型体系)
-4. [关键组件](#关键组件)
-5. [数据流与交互](#数据流与交互)
-6. [设计模式](#设计模式)
-7. [扩展机制](#扩展机制)
-
-## 概述
-
-Templates模块是ColorVision.Engine的核心子系统，负责管理所有算法模板的定义、存储、加载和执行。该模块包含约317个C#文件，分布在45个子目录中，覆盖了从基础图像处理到复杂AR/VR算法的各种模板实现。
-
-### 模块定位
-
-- **职责**: 算法参数化模板管理、模板生命周期管理、模板版本控制
-- **规模**: ~317个文件，约45个子模块
-- **代码量**: 核心文件约2000行，整体模块数万行
-- **主要依赖**: ColorVision.Database、ColorVision.Common.MVVM、SqlSugar ORM
-
-## 核心架构
-
-### 整体架构图
-
-```mermaid
-graph TB
-    subgraph "Templates 核心层"
-        A[ITemplate基类] --> B[ITemplate&lt;T&gt;泛型基类]
-        B --> C[具体模板实现]
-        D[TemplateControl] --> E[模板注册与发现]
-        F[ParamModBase] --> G[参数模型基类]
-        H[ModelBase] --> I[数据模型基类]
-    end
-    
-    subgraph "UI层"
-        J[TemplateManagerWindow] --> K[模板管理界面]
-        L[TemplateEditorWindow] --> M[模板编辑界面]
-        N[TemplateCreate] --> O[模板创建界面]
-    end
-    
-    subgraph "数据层"
-        P[ModMaster] --> Q[模板主表]
-        R[ModDetail] --> S[模板详情表]
-        T[SysDictionary] --> U[系统字典]
-    end
-    
-    subgraph "模板分类"
-        V[ARVR模板组] --> W[MTF/SFR/FOV/Distortion/Ghost]
-        X[POI模板组] --> Y[POI算法系列]
-        Z[图像处理组] --> AA[LEDStripDetection/LedCheck/ImageCropping]
-        AB[分析模板组] --> AC[JND/Compliance/Matching]
-        AD[流程模板组] --> AE[Flow/DataLoad]
-    end
-    
-    D --> J
-    D --> C
-    C --> P
-    G --> R
-    C --> V
-    C --> X
-    C --> Z
-    C --> AB
-    C --> AD
-```
-
-### 三层架构设计
-
-#### 1. 核心抽象层 (Core Abstraction Layer)
-
-**ITemplate 基类**
-- 提供模板的基本接口定义
-- 管理模板名称、代码、标题等元数据
-- 定义CRUD操作接口（创建、读取、更新、删除）
-- 支持导入导出功能
-
-**关键接口方法**:
-```csharp
-public class ITemplate
-{
-    // 元数据
-    string Name { get; set; }
-    string Code { get; set; }
-    string Title { get; set; }
-    int Count { get; }
-    
-    // 数据操作
-    IEnumerable GetValue();
-    object GetValue(int index);
-    object GetParamValue(int index);
-    
-    // 模板操作
-    void Load();
-    void Save();
-    bool Import();
-    bool ImportFile(string filePath);
-    void Export(int index);
-    bool CopyTo(int index);
-}
-```
-
-**ITemplate\<T> 泛型基类**
-- 基于泛型参数化的模板实现
-- 类型安全的参数管理
-- 数据库操作封装（基于SqlSugar ORM）
-
-#### 2. 数据模型层 (Data Model Layer)
-
-**ParamModBase 参数模型基类**
-- 继承自ModelBase
-- 提供参数化配置的基础框架
-- 支持ObservableCollection动态绑定
-- 集成创建命令（CreateCommand）
-
-**ModelBase 模型基类**
-- 继承自ParamBase
-- 实现属性变更通知（INotifyPropertyChanged）
-- 提供字典参数存储机制
-- 支持参数类型转换（int, double, bool, enum, string, double[]等）
-- 实现属性与数据库字段的双向绑定
-
-**关键功能**:
-- 动态参数获取：`GetValue\<T>`
-- 参数设置与变更跟踪：`SetProperty\<T>`
-- 参数详情获取：`GetDetail(List\<ModDetailModel>)`
-
-#### 3. UI交互层 (UI Interaction Layer)
-
-**TemplateManagerWindow - 模板管理窗口**
-- 功能：展示所有已注册的模板类型
-- 特性：支持多关键词搜索、快速定位模板
-- 交互：双击或选择后打开模板编辑窗口
-
-**TemplateEditorWindow - 模板编辑窗口**
-- 功能：模板实例的增删改查
-- 特性：
-  - 支持模板项的排序、筛选
-  - 支持快捷键操作（Ctrl+N新建、Ctrl+C复制、Ctrl+S保存、Delete删除）
-  - 动态加载自定义用户控件
-  - 支持编辑模式切换
-  - 支持模板导入导出
-
-**TemplateCreate - 模板创建窗口**
-- 功能：创建新模板或从文件导入
-- 特性：
-  - 支持基于默认模板创建
-  - 支持从本地模板文件导入
-  - 文件系统集成（%MyDocuments%/{Company}/Templates/{Code}/）
-  - 名称唯一性校验
-
-## 模板类型体系
-
-### 模板分类结构
-
-```
-Templates/
-├── ARVR/                     # AR/VR算法模板组
-│   ├── MTF/                  # 调制传递函数
-│   ├── SFR/                  # 空间频率响应
-│   ├── FOV/                  # 视场角
-│   ├── Distortion/           # 畸变分析
-│   └── Ghost/                # 鬼影检测
-├── POI/                      # 兴趣点模板组
-│   ├── AlgorithmImp/         # POI算法实现
-│   ├── BuildPoi/             # POI构建
-│   ├── POIFilters/           # POI过滤器
-│   ├── POIGenCali/           # POI生成校准
-│   ├── POIOutput/            # POI输出
-│   └── POIRevise/            # POI修正
-├── ImageProcessing/          # 图像处理模板组
-│   ├── LEDStripDetection/    # LED灯带检测
-│   ├── LedCheck/             # LED检查
-│   └── ImageCropping/        # 图像裁剪
-├── Analysis/                 # 数据分析模板组
-│   ├── JND/                  # 最小可察觉差异
-│   ├── Compliance/           # 合规性分析
-│   └── Matching/             # 匹配算法
-├── Flow/                     # 流程模板
-├── Jsons/                    # JSON配置模板组
-│   ├── MTF2/                 # MTF第二版
-│   ├── FOV2/                 # FOV第二版
-│   ├── Ghost2/               # Ghost第二版
-│   ├── BinocularFusion/      # 双目融合
-│   ├── BlackMura/            # 黑屏马拉
-│   ├── LargeFlow/            # 大流程
-│   ├── PoiAnalysis/          # POI分析
-│   └── ... (更多JSON模板)
-└── Core/                     # 核心组件
-    ├── ITemplate.cs          # 模板接口
-    ├── ParamModBase.cs       # 参数模型基类
-    ├── ModelBase.cs          # 数据模型基类
-    ├── TemplateControl.cs    # 模板控制器
-    └── SearchProvider.cs     # 搜索提供者
-```
-
-### 各类模板特点
-
-#### ARVR 模板组
-- **目标**: AR/VR显示设备的光学性能测试
-- **特点**: 高精度数值计算、ROI区域处理、复杂算法参数
-- **典型参数**: ROI坐标、Gamma值、频域数据、采样参数
-
-#### POI 模板组  
-- **目标**: 兴趣点检测、分析与校准
-- **特点**: 多阶段处理流程、滤波器链、输出格式多样
-- **典型参数**: 检测阈值、滤波参数、校准矩阵
-
-#### 图像处理模板组
-- **目标**: 基础图像处理与检测
-- **特点**: 实时性要求高、算法轻量化
-- **典型参数**: 裁剪区域、检测灵敏度、阈值参数
-
-#### 分析模板组
-- **目标**: 数据分析与合规性检测
-- **特点**: 统计计算、多维数据比对
-- **典型参数**: 统计参数、合规阈值、匹配算法类型
-
-## 关键组件
-
-### TemplateControl - 模板控制中心
-
-**职责**:
-- 模板的注册与发现
-- 模板实例的全局管理
-- 模板名称唯一性校验
-- 模板初始化协调
-
-**核心机制**:
-```csharp
-public class TemplateControl
-{
-    // 单例模式
-    public static TemplateControl GetInstance();
-    
-    // 模板注册表
-    public static Dictionary\<string, ITemplate> ITemplateNames { get; set; }
-    
-    // 添加模板实例
-    public static void AddITemplateInstance(string code, ITemplate template);
-    
-    // 检查模板名称是否存在
-    public static bool ExitsTemplateName(string templateName);
-    
-    // 查找重复模板
-    public static ITemplate? FindDuplicateTemplate(string templateName);
-}
-```
-
-**初始化流程**:
-1. 通过反射扫描所有程序集
-2. 查找实现IITemplateLoad接口的类型
-3. 实例化并调用Load方法
-4. 注册到全局模板字典
-
-### TemplateInitializer - 模板初始化器
-
-**职责**:
-- 在系统启动时初始化所有模板
-- 依赖MySQL数据库初始化完成
-- 协调模板加载顺序
-
-**特点**:
-- 实现InitializerBase接口
-- Order = 4（在MySQL初始化之后）
-- 依赖注入机制
-
-### SearchProvider - 搜索提供者
-
-**职责**:
-- 提供模板搜索接口
-- 支持多关键词模糊匹配
-- 集成到UI搜索框
-
-**搜索机制**:
-- 基于模板标题（Header）
-- 基于模板GUID
-- 支持空格分隔多关键词
-- 大小写不敏感
-
-## 数据流与交互
-
-### 模板生命周期
-
-```mermaid
-sequenceDiagram
-    participant U as 用户
-    participant TM as TemplateManagerWindow
-    participant TE as TemplateEditorWindow
-    participant T as ITemplate
-    participant DB as Database
-    
-    U->>TM: 打开模板管理
-    TM->>T: 加载所有模板类型
-    U->>TM: 选择模板类型
-    TM->>TE: 打开编辑窗口(template)
-    TE->>T: template.Load()
-    T->>DB: 查询模板数据
-    DB-->>T: 返回模板列表
-    T-->>TE: 显示模板列表
-    U->>TE: 编辑/新建/删除
-    TE->>T: 调用CRUD方法
-    T->>DB: 更新数据
-    U->>TE: 保存
-    TE->>T: template.Save()
-    T->>DB: 持久化更改
-```
-
-### 参数绑定流程
-
-```mermaid
-graph LR
-    A[UI控件] --> B[属性绑定]
-    B --> C[ParamModBase属性]
-    C --> D[SetProperty方法]
-    D --> E[更新ModDetailModel]
-    E --> F[触发PropertyChanged]
-    F --> G[UI更新]
-    D --> H[标记为待保存]
-```
-
-### 数据库交互
-
-**表结构**:
-- **ModMaster**: 模板主表（ID、名称、类型、创建日期等）
-- **ModDetail**: 模板详情表（参数键值对、SysPid关联）
-- **SysDictionary**: 系统字典表（参数符号定义）
-
-**ORM映射**:
-- 使用SqlSugar ORM框架
-- 支持Lambda表达式查询
-- 事务管理与批量操作
-
-## 设计模式
-
-### 1. 模板方法模式 (Template Method Pattern)
-
-ITemplate基类定义了模板操作的骨架，具体实现由子类完成：
-
-```csharp
-public class ITemplate
-{
-    // 模板方法
-    public virtual void Load() { }
-    public virtual void Save() { }
-    public virtual bool Import() { throw new NotImplementedException(); }
-    
-    // 子类实现具体逻辑
-}
-```
-
-### 2. 单例模式 (Singleton Pattern)
-
-TemplateControl采用线程安全的单例模式：
-
-```csharp
-private static TemplateControl _instance;
-private static readonly object _locker = new();
-public static TemplateControl GetInstance() 
-{ 
-    lock (_locker) 
-    { 
-        return _instance ??= new TemplateControl(); 
-    } 
-}
-```
-
-### 3. 观察者模式 (Observer Pattern)
-
-ModelBase实现INotifyPropertyChanged接口，支持数据绑定：
-
-```csharp
-protected override bool SetProperty\<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
-{
-    storage = value;
-    OnPropertyChanged(propertyName);  // 通知观察者
-    return true;
-}
-```
-
-### 4. 策略模式 (Strategy Pattern)
-
-不同模板类型可以替换不同的参数处理策略，通过泛型实现：
-
-```csharp
-public class ITemplate\<T> : ITemplate where T : ParamModBase, new()
-{
-    // T 作为策略参数
-}
-```
-
-### 5. 工厂模式 (Factory Pattern)
-
-模板创建通过反射和工厂方法动态实例化：
-
-```csharp
-if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
-{
-    iITemplateLoad.Load();
-}
-```
-
-## 扩展机制
-
-### 添加新模板类型
-
-1. **创建参数类**（继承ParamModBase）
-   ```csharp
-   public class MyParam : ParamModBase
-   {
-       public MyParam(ModMasterModel modMaster, List\<ModDetailModel> modDetails) 
-           : base(modMaster, modDetails) { }
-       
-       public double MyParameter { get => GetValue(_MyParameter); set => SetProperty(ref _MyParameter, value); }
-       private double _MyParameter;
-   }
-   ```
-
-2. **创建模板类**（继承ITemplate\<T>）
-   ```csharp
-   public class TemplateMyAlgorithm : ITemplate\<MyParam>, IITemplateLoad
-   {
-       public override string Title => "我的算法";
-       public string Code => "MyAlg";
-       
-       public void Load()
-       {
-           // 从数据库加载
-       }
-   }
-   ```
-
-3. **创建菜单项**（用于UI集成）
-   ```csharp
-   public class MenuMyAlgorithm : MenuITemplateAlgorithmBase
-   {
-       public override string Header => "我的算法";
-       public override int Order => 9999;
-       public override ITemplate Template => new TemplateMyAlgorithm();
-   }
-   ```
-
-### 自定义UI控件
-
-模板编辑器支持加载自定义UserControl：
-
-```csharp
-// 在模板类中指定
-public override UserControl GetCustomControl()
-{
-    return new MyCustomEditor();
-}
-```
-
-### 扩展点总结
-
-| 扩展点 | 接口/基类 | 用途 |
-|--------|----------|------|
-| 新算法模板 | ITemplate\<T> | 添加新的算法参数化模板 |
-| 自定义UI | UserControl | 为模板提供专用编辑界面 |
-| 搜索扩展 | ISearch | 扩展模板搜索功能 |
-| 结果处理 | IResultHandleBase | 处理算法执行结果的显示 |
-| 初始化扩展 | IITemplateLoad | 自定义模板加载逻辑 |
-
-## 相关资源
-
-- [模板管理详细文档](../template-management/模板管理.md)
-- [基于JSON的通用模板](../json-based-templates/基于JSON的通用模板.md)
-- [ColorVision.Engine重构计划](../../architecture/ColorVision.Engine-Refactoring-Plan.md)
-- [算法引擎与模板概述](../算法引擎与模板.md)
+本页只描述当前仓库里 Templates 系统的实际设计，不再维护基于文件数量、目录数量和理想分层模型展开的旧稿。
+
+## 先把它看成什么
+
+`Engine/ColorVision.Engine/Templates/` 不是单一“算法模板目录”，而是一套混合系统，里面同时包含：
+
+- 模板抽象基类
+- 模板注册与初始化
+- 模板管理和编辑窗口
+- 各业务域模板实现
+- 流程模板与流程编辑器接入
+- 节点配置面板里对模板的嵌入式调用
+
+这决定了它的设计重点不是纯计算，而是“模板如何被注册、编辑、持久化并被其他功能消费”。
+
+## 核心对象怎么分
+
+### `ITemplate`
+
+`ITemplate` 是所有模板的共同入口，但它不是一个很薄的接口层，而是带有明显运行时职责的基类。
+
+它当前承担的内容包括：
+
+- 模板名称、标题、代码等元数据
+- 列表型访问入口
+- 新建、删除、保存、导入、导出等操作入口
+- 预览双击行为
+- 创建窗口和自定义 `UserControl` 支持
+
+还有一个容易被忽略的实现细节：模板对象在构造时会通过 UI 线程把自己注册到 `TemplateControl`。这说明模板注册并不是一个纯静态配置过程，而是和模板实例化直接绑定。
+
+### `ITemplate<T>`
+
+`ITemplate<T>` 是面向 `ParamModBase` 派生参数模型的泛型基类。它把当前系统里最常见的模板形态统一成：
+
+- `ObservableCollection<TemplateModel<T>>`
+- 基于索引和名称的访问
+- 默认模板创建
+- 导入内容暂存
+
+换句话说，当前模板设计更像“带 UI 和持久化语义的列表模板基类”，而不是只描述参数结构的纯 DTO 层。
+
+### `TemplateControl`
+
+`TemplateControl` 是当前模板系统的注册中心。它的关键职责是：
+
+- 在数据库连接可用后触发初始化
+- 扫描已加载程序集中的 `IITemplateLoad`
+- 调用各实现的 `Load()`
+- 维护全局模板字典 `ITemplateNames`
+- 处理模板名冲突检查
+
+这套设计说明当前模板发现机制依赖两个前提：
+
+- 程序集已经装载
+- 数据库连接已经就绪
+
+如果模板没有出现，优先看这条链，而不是先怀疑编辑窗口。
+
+## 初始化链怎么走
+
+当前模板系统的主链路大致是：
+
+1. 主程序和插件把相关程序集加载到进程里。
+2. `TemplateInitializer` 在依赖 MySQL 初始化后触发 `TemplateControl.GetInstance()`。
+3. `TemplateControl` 扫描已加载程序集中的 `IITemplateLoad` 实现。
+4. 各模板类型在 `Load()` 中把自己当前可用的模板项装进内存集合。
+5. 模板管理窗口、流程节点配置器、模板编辑窗口再消费这些已注册实例。
+
+这里没有独立的 DI 容器或模板清单文件来统一声明模板，而是“程序集扫描 + 模板对象自注册 + 具体模板自行加载数据”的组合。
+
+## UI 是怎么接上来的
+
+### 模板管理窗口
+
+`TemplateManagerWindow` 当前并不是一个简单列表弹窗。它会：
+
+- 从 `TemplateControl.ITemplateNames` 读取已注册模板
+- 按命名空间分组
+- 提供搜索和筛选
+- 打开对应的 `TemplateEditorWindow`
+
+这说明模板在 UI 层的组织方式，当前主要依赖“运行时注册结果 + 命名空间分组”，而不是一张独立维护的模板分类表。
+
+### 模板编辑窗口
+
+`TemplateEditorWindow` 是多数模板的通用操作面。不同模板类型通过各自的 `ITemplate` 实现，把编辑、导入导出、双击预览、自定义编辑面板等行为接入这里。
+
+### 节点配置面板里的模板入口
+
+模板系统不只存在于“模板管理”菜单中。流程节点属性面板里的 `NodePanelBuilder` 也会直接打开 `TemplateEditorWindow`，让节点配置在原地跳到模板编辑。
+
+这意味着 Templates 实际上是跨窗口复用的共享子系统，而不是孤立模块。
+
+## 数据和持久化现在是什么风格
+
+当前模板系统并没有把持久化彻底隔离成一个统一仓储层。更常见的现状是：
+
+- 具体模板直接使用 SqlSugar
+- 直接读写 `ModMasterModel`、`ModDetailModel`
+- 有时再联动 `SysResourceModel` 或其他资源表
+
+因此它更接近“模板对象自己知道如何落库和取数”的设计，而不是严格分层的数据访问架构。
+
+这也是为什么很多模板页如果写成标准三层架构说明，最终都会失真。
+
+## Flow 模板为什么要单独看
+
+流程模板是 Templates 里最特殊的一支，因为它不仅是模板数据，还直接连到流程编辑和执行能力。
+
+当前 `TemplateFlow` 的几个关键点是：
+
+- 它实现了 `IITemplateLoad`
+- 模板代码固定为 `flow`
+- 双击预览会直接打开 `FlowEngineToolWindow`
+- 支持 `.stn` 和 `.cvflow` 的导入
+- 导入流程包时会联动更新流程中的模板引用
+
+这说明 Flow 既是模板，也是流程图载体，不能和普通参数模板完全等同看待。
+
+## 这个设计当前最明显的特征
+
+### 强运行时导向
+
+模板能否出现、能否编辑、能否在节点里被选中，都和运行时加载链强相关。
+
+### UI 与模板逻辑贴得很近
+
+模板抽象、编辑窗口、创建窗口、节点配置器并没有被刻意隔离到很远的层次。
+
+### 业务族群是并存的，不是统一模型下的变体
+
+`ARVR/`、`POI/`、`Jsons/`、`Flow/` 等目录明显带有各自演进历史。当前更适合把它们理解为共用一套模板基础设施的业务模板族，而不是单一整齐的产品线。
+
+## 读代码时推荐顺序
+
+如果要快速建立真实认知，推荐顺序是：
+
+1. 先看 `ITemplate.cs`。
+2. 再看 `TemplateContorl.cs` 和 `TemplateInitializer`。
+3. 然后看 `TemplateManagerWindow.xaml.cs`。
+4. 再进入 `TemplateFlow.cs` 或某个具体业务模板。
+5. 需要理解流程节点怎么调模板时，再看 `NodeConfigurator/NodePanelBuilder.cs`。
+
+## 这页不再做什么
+
+本页不再继续维护这些高风险内容：
+
+- 基于文件数量和代码量的静态统计
+- 看起来完整、但无法和现有实现逐项对应的三层架构图
+- 泛化到所有模板族的统一行为承诺
+
+如果后续要写重构建议，应单独开设计提案页，而不是混在这里。
+
+## 继续阅读
+
+- [Templates 模块分析](./analysis.md)
+- [FlowEngineLib 架构](../engine/flow-engine.md)
+- [组件交互](../../overview/component-interactions.md)

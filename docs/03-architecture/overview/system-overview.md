@@ -1,217 +1,122 @@
 # 系统架构概览
 
-## 整体架构
+本页不再尝试用一套抽象分层把整个仓库讲成标准教材，而是直接按当前代码仓库的主目录说明系统怎么被组织起来，以及读代码时通常从哪里切入。
 
-ColorVision 系统采用分层模块化架构设计，确保系统的可扩展性、可维护性和高性能。
+## 先怎么理解这个仓库
 
-## 架构层次
+从当前目录结构看，ColorVision 更接近一套以桌面主程序为核心、围绕引擎、UI、插件、项目包和安装更新体系展开的 Windows WPF 平台。
 
-### 1. 表示层 (Presentation Layer)
+最重要的几个顶层区域是：
 
-**主要组件**:
-- `ColorVision.UI` - 主界面框架和基础控件
-- `ColorVision.Themes` - 主题管理系统
-- `ColorVision.Common` - 通用 UI 组件
-- `ColorVision.ImageEditor` - 图像编辑器
-- `ColorVision.Solution` - 解决方案管理界面
+- `ColorVision/`：主应用入口和主窗口
+- `UI/`：WPF UI 框架、主题、属性编辑器、图像编辑器、数据库与桌面菜单等
+- `Engine/`：设备服务、模板系统、流程执行、OpenCV 集成、文件处理
+- `Plugins/`：运行时插件扩展
+- `Projects/`：客户项目和定制业务组合
+- `ColorVisionSetup/`：安装器与更新相关程序
+- `Backend/marketplace/`：插件市场后端
+- `Scripts/`：构建、打包、发布脚本
 
-**职责**:
-- 用户界面呈现
-- 用户交互处理
-- 主题和样式管理
-- 数据绑定和视图模型
+## 按系统角色看结构
 
-### 2. 引擎层 (Engine Layer)
+### 主程序层
 
-**主要组件**:
-- `ColorVision.Engine.Core` - 核心接口和抽象
-- `ColorVision.Engine.Flow` - 流程引擎
-- `ColorVision.Engine.Templates` - 模板系统
-- `ColorVision.Engine.Devices` - 设备服务
-- `ColorVision.Engine.Algorithms` - 算法引擎
+`ColorVision/` 是桌面应用入口，负责主窗口、应用启动、全局配置、更新入口和整体工作台组织。
 
-**职责**:
-- 业务逻辑处理
-- 流程编排和执行
-- 算法调用和管理
-- 设备控制和通信
+如果你在追“程序启动后先发生什么”，通常从这里开始，再联动看 `UI/` 和 `Engine/`。
 
-### 3. 设备层 (Device Layer)
+### UI 层
 
-**主要组件**:
-- 相机服务
-- 光谱仪服务
-- 电机服务
-- 文件服务
-- SMU 服务
+`UI/` 不是单一项目，而是一组界面相关模块的集合。当前比较关键的包括：
 
-**职责**:
-- 设备驱动管理
-- 设备通信协议
-- 设备状态监控
-- 设备参数配置
+- `ColorVision.UI/`：通用 UI 框架和菜单、面板、属性编辑器等能力
+- `ColorVision.Themes/`：主题和视觉资源
+- `ColorVision.ImageEditor/`：图像查看、标注和结果展示
+- `ColorVision.Database/`：数据库浏览器等数据库相关 UI 能力
+- `ColorVision.UI.Desktop/`：桌面级菜单和设置入口
 
-### 4. 数据层 (Data Layer)
+### 引擎层
 
-**主要组件**:
-- `ColorVision.Engine.Data` - 数据访问层
-- `ColorVision.Database` - 数据库管理
-- `ColorVision.FileIO` - 文件 I/O 处理
+`Engine/` 是系统的业务核心，但也不是一个单项目名字空间。当前主要由几块组成：
 
-**职责**:
-- 数据持久化
-- 数据库操作
-- 文件读写
-- 数据缓存
+- `ColorVision.Engine/`：设备服务、模板系统、流程窗口、MQTT 与业务协调
+- `FlowEngineLib/`：流程节点编辑与执行底座
+- `cvColorVision/`：底层视觉处理与 OpenCV 相关集成
+- `ColorVision.FileIO/`：文件读写处理
+- `ColorVision.ShellExtension/`：外部集成相关扩展
 
-### 5. 通信层 (Communication Layer)
+### 插件与项目层
 
-**主要组件**:
-- `ColorVision.Engine.Communication` - 通信层
-- `ColorVision.SocketProtocol` - Socket 协议
-- MQTT 客户端
+- `Plugins/` 提供运行时插件扩展，例如 Conoscope、Spectrum、SystemMonitor 等
+- `Projects/` 放客户项目或业务打包实现，通常是把现有引擎与 UI 能力重新组合成特定方案
 
-**职责**:
-- 网络通信
-- 消息队列
-- 服务发现
-- 协议处理
+### 交付与外围层
 
-### 6. 基础设施层 (Infrastructure Layer)
+- `ColorVisionSetup/` 负责安装与更新侧程序
+- `Backend/marketplace/` 负责插件市场后端
+- `Scripts/` 和根目录批处理脚本负责构建、打包和发布
 
-**主要组件**:
-- `ColorVision.Engine.Infrastructure` - 基础设施
-- `ColorVision.Core` - 核心工具库
-- 日志系统
-- 配置管理
+## 运行时最常见的主链路
 
-**职责**:
-- 日志记录
-- 异常处理
-- 配置管理
-- 工具类
+如果从用户操作一路往下看，最常见的链路通常是：
 
-## 核心设计模式
+1. 用户从 `ColorVision/` 的主窗口进入某个功能。
+2. `UI/` 中对应窗口或面板负责展示与交互。
+3. `Engine/ColorVision.Engine/` 中的设备服务、模板或流程逻辑接手业务处理。
+4. 需要流程执行时进一步调用 `Engine/FlowEngineLib/`。
+5. 需要图像或算法处理时继续联动 `Engine/cvColorVision/`、`UI/ColorVision.ImageEditor/` 或具体模板实现。
+6. 如果功能来自外部扩展，再进入 `Plugins/` 或 `Projects/` 中的实现。
 
-### 插件架构
+## 读代码时的常见切入点
 
-ColorVision 采用插件化架构，支持功能的动态加载和卸载：
+### 想理解主界面和入口
 
-\`\`\`
-主程序 (ColorVision.exe)
-├── 核心引擎 (ColorVision.Engine)
-├── 基础 UI (ColorVision.UI)
-└── 插件目录 (Plugins/)
-    ├── 插件1 (Plugin1.dll)
-    ├── 插件2 (Plugin2.dll)
-    └── ...
-\`\`\`
+先看：
 
-### MVVM 模式
+- `ColorVision/`
+- `UI/ColorVision.UI/`
+- `UI/ColorVision.UI.Desktop/`
 
-UI 层采用 MVVM (Model-View-ViewModel) 模式：
+### 想理解设备、模板和流程
 
-- **Model**: 数据模型和业务逻辑
-- **View**: XAML 界面定义
-- **ViewModel**: 视图逻辑和数据绑定
+先看：
 
-### 依赖注入
+- `Engine/ColorVision.Engine/Services/`
+- `Engine/ColorVision.Engine/Templates/`
+- `Engine/FlowEngineLib/`
 
-使用依赖注入容器管理组件依赖：
+### 想理解图像结果和显示
 
-- 接口定义抽象
-- 实现类注册
-- 自动依赖解析
-- 生命周期管理
+先看：
 
-## 模块交互
+- `UI/ColorVision.ImageEditor/`
+- `Engine/cvColorVision/`
 
-### 启动流程
+### 想理解扩展能力
 
-\`\`\`mermaid
-graph TB
-    A[应用启动] --> B[初始化配置]
-    B --> C[加载核心模块]
-    C --> D[初始化数据库]
-    D --> E[加载插件]
-    E --> F[初始化设备服务]
-    F --> G[显示主界面]
-\`\`\`
+先看：
 
-### 流程执行
+- `Plugins/`
+- `Projects/`
+- [插件开发概览](../../02-developer-guide/plugin-development/overview.md)
 
-\`\`\`mermaid
-graph LR
-    A[用户触发] --> B[流程引擎]
-    B --> C[节点调度]
-    C --> D[设备控制]
-    C --> E[算法执行]
-    D --> F[数据采集]
-    E --> F
-    F --> G[结果存储]
-    G --> H[界面更新]
-\`\`\`
+## 这页不再做什么
 
-## 数据流
+本页不再继续维护这些容易失真的内容：
 
-### 测试数据流
+- 虚构的标准化六层架构命名
+- 与当前目录不一致的模块名清单
+- 泛化的“依赖注入容器”“对象池”“报告模板”等教材式概括
 
-1. **数据采集**: 设备 → 设备服务 → 数据缓冲
-2. **数据处理**: 数据缓冲 → 算法引擎 → 处理结果
-3. **数据存储**: 处理结果 → 数据层 → 数据库/文件
-4. **数据展示**: 数据库/文件 → 界面层 → 用户
+如果某个专题需要更细的运行时关系、流程执行链或模板结构，应进入对应专题页说明，而不是在这里一次讲完。
 
-### 配置数据流
+## 继续阅读
 
-1. **配置读取**: 文件系统 → 配置管理 → 内存缓存
-2. **配置更新**: 用户界面 → 配置管理 → 文件系统
-3. **配置同步**: 配置管理 → 各业务模块
+- [架构运行时](./runtime.md)
+- [组件交互](./component-interactions.md)
+- [FlowEngineLib 架构](../components/engine/flow-engine.md)
+- [Templates 架构设计](../components/templates/design.md)
 
-## 扩展性设计
+## 说明
 
-### 插件扩展点
-
-- **菜单扩展**: 自定义菜单项
-- **工具栏扩展**: 自定义工具栏按钮
-- **窗口扩展**: 自定义窗口和对话框
-- **设备扩展**: 自定义设备服务
-- **算法扩展**: 自定义算法节点
-
-### 模板系统
-
-- **算法模板**: 预定义的算法参数配置
-- **流程模板**: 预定义的测试流程
-- **设备模板**: 预定义的设备配置
-- **报告模板**: 预定义的报告格式
-
-## 性能优化
-
-### 启动优化
-
-- 延迟加载非必要模块
-- 并行初始化独立模块
-- 缓存常用数据
-
-### 运行时优化
-
-- 对象池管理
-- 内存缓存策略
-- 异步操作
-- 批处理优化
-
-### 数据库优化
-
-- 连接池管理
-- 预编译语句
-- 索引优化
-- 分页查询
-
-## 相关文档
-
-- [架构运行时](/architecture/architecture-runtime) - 详细的启动序列和运行时行为
-- [组件交互矩阵](/architecture/component-interactions) - 模块间的依赖关系
-- [Engine 重构计划](/architecture/ColorVision.Engine-Refactoring-README) - 引擎模块化重构
-
----
-
-*有关更详细的架构信息，请参考 [架构文档](/architecture/README) 目录。*
+- 本页只作为当前仓库结构下的系统入口图，不再继续维护脱离代码目录的抽象分层稿。
