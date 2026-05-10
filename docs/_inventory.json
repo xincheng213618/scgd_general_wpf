@@ -916,7 +916,7 @@
           "files": [
             {
               "name": "系统架构概览.md",
-              "path": "introduction/system-architecture/系统架构概览.md",
+              "path": "00-getting-started/introduction/system-architecture.md",
               "size": 2314,
               "lines": 55,
               "has_h1": true,
@@ -1095,7 +1095,7 @@
           "files": [
             {
               "name": "系统要求.md",
-              "path": "getting-started/prerequisites/系统要求.md",
+              "path": "00-getting-started/prerequisites.md",
               "size": 3302,
               "lines": 39,
               "has_h1": true,

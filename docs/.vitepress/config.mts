@@ -202,7 +202,7 @@ export default withMermaid(
               items: [
                 { text: 'FlowEngineLib 架构', link: '/03-architecture/components/engine/flow-engine' },
                 { text: 'Templates 架构设计', link: '/03-architecture/components/templates/design' },
-                { text: 'Templates 分析总结', link: '/03-architecture/components/templates/analysis' }
+                { text: 'Templates 模块分析（补充）', link: '/03-architecture/components/templates/analysis' }
               ]
             },
             {
@@ -268,6 +268,7 @@ export default withMermaid(
               text: '插件与现状页',
               collapsed: true,
               items: [
+                { text: '章节概览', link: '/04-api-reference/plugins/README' },
                 { text: 'Pattern / 图卡生成功能', link: '/04-api-reference/plugins/standard-plugins/pattern' },
                 { text: 'ImageProjector（历史状态）', link: '/04-api-reference/plugins/standard-plugins/image-projector' },
                 { text: 'ScreenRecorder（历史状态）', link: '/04-api-reference/plugins/standard-plugins/screen-recorder' },
@@ -278,8 +279,12 @@ export default withMermaid(
               ]
             },
             {
-              text: 'FlowEngineLib 节点扩展',
-              link: '/04-api-reference/extensions/flow-node'
+              text: '扩展点概览',
+              collapsed: true,
+              items: [
+                { text: '章节概览', link: '/04-api-reference/extensions/README' },
+                { text: 'FlowEngineLib 节点扩展', link: '/04-api-reference/extensions/flow-node' }
+              ]
             }
           ]
         },

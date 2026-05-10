@@ -9,15 +9,14 @@
 3. [组件交互](./overview/component-interactions.md)
 4. [FlowEngineLib 架构](./components/engine/flow-engine.md)
 5. [Templates 架构设计](./components/templates/design.md)
-6. [Templates 分析总结](./components/templates/analysis.md)
-7. [安全概览](./security/overview.md)
-8. [RBAC 模型](./security/rbac.md)
+6. [安全概览](./security/overview.md)
+7. [RBAC 模型](./security/rbac.md)
 
 ## 目录说明
 
 - `overview/` 关注系统级视角，例如启动、运行时和组件关系。
 - `components/engine/` 关注流程引擎与执行模型。
-- `components/templates/` 关注模板系统的设计和历史分析。
+- `components/templates/` 关注模板系统的设计与现状分析。
 - `security/` 关注权限模型和安全边界。
 
 ## 建议怎么读
@@ -25,6 +24,10 @@
 - 第一次接触系统时，按“系统概览 → 运行时 → 组件交互”的顺序阅读。
 - 需要修改流程或模板时，再进入 `components/` 下的专题页。
 - 需要接口和类型细节时，转到 [API 参考](../04-api-reference/README.md)。
+
+## 补充阅读
+
+- [Templates 模块分析](./components/templates/analysis.md)：适合在已经理解模板设计主线后，再回来看目录演进、注册边界和现状约束。
 
 ## 历史资料说明
 

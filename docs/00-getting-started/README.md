@@ -8,7 +8,7 @@
 2. [系统要求](./prerequisites.md)
 3. [安装指南](./installation.md)
 4. [首次运行](./first-steps.md)
-5. [快速开始](./quick-start.md)
+5. [快速上手](./quick-start.md)
 
 ## 适用范围
 
