@@ -181,12 +181,6 @@
 		<None Update="Assets\InstallTool\winrar-x64-720sc.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Assets\Tool\CommMonitor.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\SpectrAdj.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<None Update="Assets\Tool\sscom5.13.1.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
