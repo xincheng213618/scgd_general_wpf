@@ -1,5 +1,4 @@
 ﻿using ColorVision.Solution.Editor;
-using ColorVision.Solution.MultiImageViewer;
 using ColorVision.UI;
 using System.IO;
 

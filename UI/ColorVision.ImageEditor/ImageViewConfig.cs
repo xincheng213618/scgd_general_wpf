@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Core;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.ImageEditor
@@ -16,6 +17,13 @@ namespace ColorVision.ImageEditor
 
     public class ImageViewConfig:ViewModelBase
     {
+        private sealed class ImageViewPropertyState
+        {
+            public ImageViewPropertyScope Scope { get; init; }
+            public string? Owner { get; init; }
+            public string? Description { get; init; }
+        }
+
         public RelayCommand ClearCommand { get; set; }
 
         public ImageViewConfig()
@@ -47,21 +55,44 @@ namespace ColorVision.ImageEditor
         [JsonIgnore]
         public Dictionary<string, object?> Properties { get; set; } = new Dictionary<string, object?>();
 
+        [JsonIgnore]
+        private readonly Dictionary<string, ImageViewPropertyState> _propertyStates = new Dictionary<string, ImageViewPropertyState>();
+
         public void ClearProperties()
         {
-            IsPseudo = false;
             FilePath = string.Empty;
             Properties.Clear();
+            _propertyStates.Clear();
             Cleared?.Invoke(this, new EventArgs());
         }
 
 
 
         public void AddProperties(string Key,object? Value)
+            => SetProperty(Key, Value, ImageViewPropertyScope.Legacy);
+
+        public void SetImageMetadata(string key, object? value, string? owner = null, string? description = null)
+            => SetProperty(key, value, ImageViewPropertyScope.ImageMetadata, owner, description);
+
+        public void SetViewState(string key, object? value, string? owner = null, string? description = null)
+            => SetProperty(key, value, ImageViewPropertyScope.ViewState, owner, description);
+
+        public void SetOpenerRuntime(string key, object? value, string? owner = null, string? description = null)
+            => SetProperty(key, value, ImageViewPropertyScope.OpenerRuntime, owner, description);
+
+        public void SetProperty(string key, object? value, ImageViewPropertyScope scope, string? owner = null, string? description = null)
         {
-            if (!Properties.TryAdd(Key, Value))
-                Properties[Key] = Value;
+            if (!Properties.TryAdd(key, value))
+                Properties[key] = value;
+
+            _propertyStates[key] = new ImageViewPropertyState
+            {
+                Scope = scope,
+                Owner = owner,
+                Description = description,
+            };
         }
+
         public T? GetProperties<T>(string Key)
         {
             if (Properties.TryGetValue(Key, out var value))
@@ -73,7 +104,24 @@ namespace ColorVision.ImageEditor
             }
             return default;
         }
-        private  static string FormatValue(object? value)
+
+        public IReadOnlyList<ImageViewPropertyEntry> GetPropertyEntries()
+        {
+            return Properties.Select(item =>
+            {
+                _propertyStates.TryGetValue(item.Key, out ImageViewPropertyState? state);
+                return new ImageViewPropertyEntry
+                {
+                    Key = item.Key,
+                    Value = item.Value,
+                    Scope = state?.Scope ?? ImageViewPropertyScope.Legacy,
+                    Owner = state?.Owner,
+                    Description = state?.Description,
+                };
+            }).ToList();
+        }
+
+        internal static string FormatPropertyValue(object? value)
         {
             if (value is IEnumerable enumerable && value is not string)
             {
@@ -89,43 +137,73 @@ namespace ColorVision.ImageEditor
         public string GetPropertyString()
         {
             var sb = new StringBuilder();
-            foreach (var item in Properties)
+            foreach (var group in GetPropertyEntries().GroupBy(entry => entry.Scope).OrderBy(group => GetScopeSortOrder(group.Key)))
             {
-                sb.AppendLine($"{item.Key}:{FormatValue(item.Value)}");
+                sb.AppendLine($"[{GetScopeDisplayName(group.Key)}]");
+                foreach (var item in group.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+                {
+                    sb.Append(item.Key);
+                    sb.Append(':');
+                    sb.Append(FormatPropertyValue(item.Value));
+                    if (!string.IsNullOrWhiteSpace(item.Owner))
+                    {
+                        sb.Append(" (Owner=");
+                        sb.Append(item.Owner);
+                        sb.Append(')');
+                    }
+                    if (!string.IsNullOrWhiteSpace(item.Description))
+                    {
+                        sb.Append(" // ");
+                        sb.Append(item.Description);
+                    }
+                    sb.AppendLine();
+                }
+                sb.AppendLine();
             }
             return sb.ToString();
 
         }
 
+        internal static string GetScopeDisplayName(ImageViewPropertyScope scope)
+        {
+            return scope switch
+            {
+                ImageViewPropertyScope.ImageMetadata => "图像元数据",
+                ImageViewPropertyScope.ViewState => "当前视窗状态",
+                ImageViewPropertyScope.OpenerRuntime => "打开器运行态",
+                _ => "遗留未分类",
+            };
+        }
+
+        internal static string GetScopeDescription(ImageViewPropertyScope scope)
+        {
+            return scope switch
+            {
+                ImageViewPropertyScope.ImageMetadata => "由当前文件和像素内容决定，切换图像后会整体刷新。",
+                ImageViewPropertyScope.ViewState => "只作用于当前 ImageView 的临时状态，不会写回全局默认值。",
+                ImageViewPropertyScope.OpenerRuntime => "只在特定打开器工作流里有意义的运行态信息。",
+                _ => "尚未迁移到显式作用域的旧键，建议继续收口。",
+            };
+        }
+
+        internal static int GetScopeSortOrder(ImageViewPropertyScope scope)
+        {
+            return scope switch
+            {
+                ImageViewPropertyScope.ImageMetadata => 0,
+                ImageViewPropertyScope.ViewState => 1,
+                ImageViewPropertyScope.OpenerRuntime => 2,
+                _ => 99,
+            };
+        }
+
 
         [JsonIgnore]
-        public string FilePath { get => GetProperties<string>("FilePath"); set { AddProperties("FilePath", value) ; OnPropertyChanged(); } }
-
-
-        public event EventHandler ColormapTypesChanged;
-
-        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
-        private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
-
-
-        public event EventHandler PseudoChanged;
-
-        public bool IsPseudo { get => _IsPseudo; set { _IsPseudo = value; OnPropertyChanged(); PseudoChanged?.Invoke(this, new EventArgs()); } }
-        private bool _IsPseudo ;
-
-        public event EventHandler AutoSetRangeChanged;
-
-        public bool IsAutoSetRange { get => _IsAutoSetRange; set { _IsAutoSetRange = value; OnPropertyChanged(); AutoSetRangeChanged?.Invoke(this, new EventArgs()); } }
-        private bool _IsAutoSetRange;
-
-        [JsonIgnore]
-        public uint DataMin { get; set; }
-
-        [JsonIgnore]
-        public uint DataMax { get; set; }
+        public string FilePath { get => GetProperties<string>(ImageViewPropertyKeys.FilePath); set { SetImageMetadata(ImageViewPropertyKeys.FilePath, value, nameof(ImageViewConfig), "当前打开图像的绝对路径"); OnPropertyChanged(); } }
 
 
         public event EventHandler<bool> LayoutUpdatedChanged;
+        [DisplayName("自动刷新")]
         public bool IsLayoutUpdated
         {
             get => _IsLayoutUpdated;
@@ -140,15 +218,18 @@ namespace ColorVision.ImageEditor
         private bool _IsLayoutUpdated = true;
 
         public event EventHandler<double> DrawingTextFontSizeChanged;
+        [DisplayName("绘制文字大小")]
         public double DrawingTextFontSize { get => _DrawingTextFontSize; set { _DrawingTextFontSize = Math.Max(0, value); OnPropertyChanged(); DrawingTextFontSizeChanged?.Invoke(this, _DrawingTextFontSize); } }
         private double _DrawingTextFontSize;
 
 
         public event EventHandler<bool> ShowTextChanged;
+        [DisplayName("显示文字")]
         public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); ShowTextChanged?.Invoke(this, _IsShowText); } }
         private bool _IsShowText = true;
 
         public event EventHandler<bool> ShowMsgChanged;
+        [DisplayName("显示消息")]
         public bool IsShowMsg { get => _IsShowMsg; set { _IsShowMsg = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsShowMsg); } }
         private bool _IsShowMsg = true;
 

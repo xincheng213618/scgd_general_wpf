@@ -1,12 +1,33 @@
 # 属性编辑器
 
-ColorVision 内置基于元数据驱动的 PropertyGrid，用于在 UI 中统一展示和编辑对象属性。
+ColorVision 使用基于元数据的属性编辑器统一展示和编辑对象属性。大多数模板、设备和配置对象都会通过同一套 PropertyGrid 机制暴露参数。
 
-本文档待完善。请参考：
+## 你会看到什么
+
+- 左侧或弹窗中的属性列表
+- 按分类分组的参数区域
+- 针对不同类型自动切换的编辑控件，例如文本、枚举、布尔值、颜色和文件路径
+
+## 常见使用方式
+
+1. 在对象树、模板编辑器或设备配置界面选中一个对象。
+2. 在属性面板中查看分组后的参数。
+3. 修改值后，观察界面或对象状态是否即时更新。
+4. 如有重置或校验按钮，优先使用按钮而不是直接手工改底层配置文件。
+
+## 这套编辑器依赖什么
+
+- 属性上的 `Category`、`DisplayName`、`Description` 等元数据
+- 必要时使用自定义编辑器类型来决定控件样式
+- 部分复杂对象会在编辑器中展开为嵌套结构，而不是简单字符串
+
+## 适合继续阅读的页面
+
 - [主窗口导览](./main-window.md)
-- [PropertyGrid 系统开发指南](/02-developer-guide/ui-development/property-grid.md)
+- [图像编辑器概览](../image-editor/overview.md)
+- [开发指南](../../02-developer-guide/README.md)
 
-## 相关资源
+## 说明
 
-- 源代码: `UI/ColorVision.UI/`
-- 属性标注示例: `Engine/ColorVision.Engine/Templates/`
+- 本页只说明使用视角，不再承载 PropertyGrid 的实现细节。
+- 如果你要修改属性编辑器行为，建议从 `UI/ColorVision.UI/` 和 `Engine/ColorVision.Engine/Templates/` 里的现有元数据标注开始看代码。

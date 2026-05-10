@@ -1,8 +1,6 @@
 using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw.Special;
 using Newtonsoft.Json;
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace Conoscope.Core
@@ -36,7 +34,7 @@ namespace Conoscope.Core
         /// <summary>
         /// 视场角范围（度）
         /// </summary>
-        [Category("型号"), DisplayName("视场角(度)"), Description("VA60 默认 60，VA80 默认 80。系数按 计算直径 / (视场角 * 2) 自动计算。")]
+        [Category("型号"), DisplayName("视场角(度)"), Description("VA60 默认 60，VA80 默认 80。输入完整像素数时，ConoscopeCoefficient 按 视场角 / 完整像素数 解释。")]
         public int MaxAngle
         {
             get => _MaxAngle;
@@ -47,19 +45,56 @@ namespace Conoscope.Core
         /// <summary>
         /// 用于计算的图像直径（像素）。0 表示使用图像短边。
         /// </summary>
-        [Category("型号"), DisplayName("计算直径(像素)"), Description("填 0 时使用当前图像短边；系数 = 计算直径 / (视场角 * 2)。")]
+        [Browsable(false)]
         public double CalculationDiameterPixels
         {
             get => _CalculationDiameterPixels;
-            set { _CalculationDiameterPixels = Math.Max(0, value); OnPropertyChanged(); OnPropertyChanged(nameof(ConoscopeCoefficient)); }
+            set
+            {
+                _CalculationDiameterPixels = Math.Max(0, value);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(FullScalePixelCount));
+                OnPropertyChanged(nameof(ConoscopeCoefficient));
+            }
         }
         private double _CalculationDiameterPixels;
+
+        /// <summary>
+        /// 手动指定视场系数（像素/度）。0 表示按直径和视场角自动计算。
+        /// </summary>
+        [Browsable(false)]
+        public double ManualConoscopeCoefficient
+        {
+            get => _ManualConoscopeCoefficient;
+            set
+            {
+                _ManualConoscopeCoefficient = Math.Max(0, value);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(DirectConoscopeCoefficient));
+                OnPropertyChanged(nameof(ConoscopeCoefficient));
+            }
+        }
+        private double _ManualConoscopeCoefficient;
+
+        [Category("型号"), DisplayName("完整像素数(px)"), Description("对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 时使用图像短边一半；输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 解释。"), JsonIgnore]
+        public double FullScalePixelCount
+        {
+            get => CalculationDiameterPixels > 0 ? CalculationDiameterPixels / 2.0 : 0;
+            set => CalculationDiameterPixels = value > 0 ? value * 2.0 : 0;
+        }
+
+        [Category("型号"), DisplayName("ConoscopeCoefficient(度/像素)"), Description("可直接输入 60/3100 这类小数。填 0 时按完整像素数自动计算。分析半径 = 视场角 / 该系数。"), JsonIgnore]
+        public double DirectConoscopeCoefficient
+        {
+            get => ManualConoscopeCoefficient > 0 ? 1.0 / ManualConoscopeCoefficient : 0;
+            set => ManualConoscopeCoefficient = value > 0 ? 1.0 / value : 0;
+        }
 
         /// <summary>
         /// 视场系数（像素/度），由计算直径和视场角自动推导。
         /// </summary>
         [Browsable(false), JsonIgnore]
-        public double ConoscopeCoefficient => CalculateConoscopeCoefficient(CalculationDiameterPixels, MaxAngle);
+        public double ConoscopeCoefficient => ResolveConoscopeCoefficient(CalculationDiameterPixels, MaxAngle, ManualConoscopeCoefficient);
 
         /// <summary>
         /// 是否包含观察相机
@@ -131,6 +166,7 @@ namespace Conoscope.Core
                     DisplayName = "VA60",
                     MaxAngle = 60,
                     CalculationDiameterPixels = 0,
+                    ManualConoscopeCoefficient = 0,
                     HasObservationCamera = true,
                     CoordinateAxisParam = new ConoscopeCoordinateAxisParam
                     {
@@ -148,6 +184,7 @@ namespace Conoscope.Core
                     DisplayName = "VA80",
                     MaxAngle = 80,
                     CalculationDiameterPixels = 0,
+                    ManualConoscopeCoefficient = 0,
                     HasObservationCamera = false,
                     CoordinateAxisParam = new ConoscopeCoordinateAxisParam
                     {
@@ -173,9 +210,24 @@ namespace Conoscope.Core
             return Math.Max(1, Math.Min(imageWidth, imageHeight));
         }
 
+        public double GetFullScalePixelCount(int imageWidth, int imageHeight)
+        {
+            return GetCalculationDiameterPixels(imageWidth, imageHeight) / 2.0;
+        }
+
         public double GetConoscopeCoefficient(int imageWidth, int imageHeight)
         {
-            return CalculateConoscopeCoefficient(GetCalculationDiameterPixels(imageWidth, imageHeight), MaxAngle);
+            return ResolveConoscopeCoefficient(GetCalculationDiameterPixels(imageWidth, imageHeight), MaxAngle, ManualConoscopeCoefficient);
+        }
+
+        public static double ResolveConoscopeCoefficient(double calculationDiameterPixels, double maxAngle, double manualConoscopeCoefficient)
+        {
+            if (manualConoscopeCoefficient > 0)
+            {
+                return manualConoscopeCoefficient;
+            }
+
+            return CalculateConoscopeCoefficient(calculationDiameterPixels, maxAngle);
         }
 
         public static double CalculateConoscopeCoefficient(double calculationDiameterPixels, double maxAngle)

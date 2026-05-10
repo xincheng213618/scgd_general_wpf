@@ -25,21 +25,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                     Group = group,
                     IsPortable = true,
                     PortableExePath = Path.Combine("Assets", "Tool", "sscom5.13.1.exe"),
-                },
-                new ThirdPartyAppInfo
-                {
-                    Name = "CommMonitor",
-                    Group = group,
-                    IsPortable = true,
-                    PortableExePath = Path.Combine("Assets", "Tool", "CommMonitor.exe"),
-                },
-                new ThirdPartyAppInfo
-                {
-                    Name = "SpectrAdj",
-                    Group = group,
-                    IsPortable = true,
-                    PortableExePath = Path.Combine("Assets", "Tool", "SpectrAdj.exe"),
-                },
+                }
             };
         }
     }

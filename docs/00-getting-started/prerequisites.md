@@ -1,38 +1,67 @@
 # 系统要求
 
+本页只说明安装和运行 ColorVision 前需要准备的环境，不再展开安装器实现、仓库结构或架构设计。
 
-1. Project Structure Analysis:
-The repository has a complex and layered structure with multiple projects, plugins, engines, UI components, services, and utilities. It is organized primarily by feature and functionality, with clear separation of concerns.
+## 适用对象
 
-Main directories and their roles:
-1. /ColorVisionSetup: Contains setup related files, likely for installation and configuration of the ColorVision client.
-2. /Plugins: Contains multiple sub-plugins like EventVWR, ScreenRecorder, WindowsServicePlugin, SystemMonitor, ColorVisonChat. Each plugin has its own project files and source code, indicating an extensible plugin architecture.
-3. /docs: Documentation files including license, API docs, user manuals, and other guides.
-4. /UI: Contains UI themes, controls, languages, and utilities related to the user interface. This includes themes for dark/light modes and UI components like progress rings, message boxes, upload windows.
-5. /UI/ColorVision.Scheduler: Contains scheduling related UI and logic for task execution and management.
-6. /UI/ColorVision.Common: Common interfaces, utilities, and helper classes used across UI projects.
-7. /UI/ColorVision.ImageEditor: Image editing features with drawing tools, 3D windows, histogram charts, and TIFF handling.
-8. /UI/ColorVision.Core: Core image processing and OpenCV helper classes.
-9. /UI/ColorVision.UI: Main UI project with commands, plugin loaders, socket protocol, hotkey management, menus, and extensions.
-10. /UI/ColorVision.Solution: Project and solution management features including editors, menus, and file handling.
-11. /Engine: Core engine components including ColorVision engine, net communication, cvColorVision processing, CVImageChannelLib for video/image streaming, and MySQL ORM.
-12. /Projects: Different project implementations like ProjectKB, ProjectHeyuan, CV_Spectrometer, ProjectARVR, ProjectBlackMura, ProjectShiyuan, ProjectBase. Each has its own config, UI, services, and plugin config.
-13. /Scripts: Build, configure, uninstall scripts and automation.
-14. /Packages: External dependencies like OpenCV, spdlog, nlohmann json, zlib, gl libraries.
-15. /Core: OpenGL and CUDA related core implementations.
-16. /ColorVision: Main application project containing entry point, main window, plugins management, update system, settings, wizards, floating ball UI, and projects management.
+- 想安装现成程序包并开始使用的终端用户
+- 想从源码构建并运行主程序的开发者
+- 想先确认系统条件是否满足，再继续阅读安装步骤的同事
 
-Design Patterns:
-- Plugin architecture with IPlugin interface.
-- MVVM pattern in UI projects (ViewModels, Views separated).
-- Modular approach with separate projects for engine, UI, core, and plugins.
-- Use of interfaces for extensibility and abstraction.
-- Scheduler and task execution for automation.
+## 运行环境要求
 
-Key Entry Points:
-- ColorVision project contains App.xaml (WPF application entry) and MainWindow.xaml (main UI).
-- Engine/ColorVision.Engine contains main engine logic and MQTT communication.
-- Plugins loaded dynamically from Plugins folder.
-- Setup handled in ColorVisionSetup.
+### 操作系统
 
-Summary: The repository is a large-scale WPF-based Windows application for color management and photoelectric technology, structured into multiple projects for UI, engine, plugins, and projects. It uses modular and plugin-based architecture with MVVM pattern for UI and supports internationalization, theming, and hardware device integration.
+- Windows 10 1903 及以上版本，或 Windows 11
+- 建议使用 x64 系统环境
+- 首次安装、升级或涉及系统服务配置时，建议使用具有管理员权限的账户
+
+### 硬件与显示
+
+- 建议使用 1920x1080 及以上分辨率
+- 建议为图像处理和流程执行预留充足内存与磁盘空间
+- 若需要连接相机、光谱仪、电机等设备，应提前确认对应驱动和通信环境已经准备好
+
+### 网络与权限
+
+- 首次安装后若需要检查更新、访问插件市场或连接远程服务，请保证网络可用
+- 如果部署环境限制较严，请提前确认程序目录、日志目录和用户文档目录具有可写权限
+
+## 从安装包运行时需要注意什么
+
+- 安装程序会按自身流程检查并部署所需组件；如果提示缺少先决条件，请按安装器提示完成补齐
+- 某些服务管理、设备驱动配置或系统级写入操作，可能需要管理员权限
+- 若环境中存在旧版本，建议先完成升级或卸载，再做新安装
+
+## 从源码构建时需要准备什么
+
+当前仓库以 Windows WPF 和 x64 为主，建议准备以下环境：
+
+- .NET 8.0 SDK 或 .NET 10.0 SDK
+- Visual Studio 2022 或更新版本（推荐）
+- Git 与 PowerShell（用于获取仓库和执行脚本）
+
+建议使用 x64 平台构建主程序：
+
+```powershell
+dotnet restore
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
+```
+
+## 运行时依赖说明（源码场景）
+
+如果你是从源码直接运行，而不是通过安装包部署，还需要注意运行输出中应包含以下依赖：
+
+- OpenCvSharp Windows 运行时
+- `DLL/CVCommCore.dll`
+- `DLL/MQTTMessageLib.dll`
+- 主程序需要的 `log4net.config` 与相关资源文件
+
+这些内容通常由项目引用和复制规则处理；如果程序可以构建但启动失败，优先检查输出目录是否缺少上述依赖。
+
+## 这页不讲什么
+
+- 安装步骤本身请看 [安装指南](./installation.md)
+- 首次启动后的基础操作请看 [首次运行指南](./first-steps.md)
+- 想快速完成一次最小闭环体验，请看 [快速上手](./quick-start.md)
+- 想理解系统模块和设计边界，请转到 [架构设计](../03-architecture/README.md)

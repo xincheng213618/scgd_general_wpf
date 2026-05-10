@@ -84,7 +84,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 					BitmapSource bitmapSource = decoder.Frames[0];
 					WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapSource);
 
-                    ctx.ImageView.Config.AddProperties("FilePath", result.ResultImagFile);
+                    ctx.ImageView.Config.FilePath = result.ResultImagFile;
                     ctx.ImageView.OpenImage(writeableBitmap); // 你的方法如果支持这样调用
                     ctx.ImageView.UpdateZoomAndScale();
                 }

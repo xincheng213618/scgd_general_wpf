@@ -1,13 +1,12 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
-using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("/03_5 OLED")]
-public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
+public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDCombineQuaterImages_4In1Node));
 
@@ -22,14 +21,6 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 	private string _ImgFileName4;
 
 	private string _OutputFileName;
-
-	protected CVStartCFC[] masterInput;
-
-	protected STNodeOption m_in_pic2;
-
-	protected STNodeOption m_in_pic3;
-
-	protected STNodeOption m_in_pic4;
 
 	[STNodeProperty("图像文件1", "图像文件1", true)]
 	public string ImgFileName1
@@ -97,151 +88,18 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 	}
 
 	public OLEDCombineQuaterImages_4In1Node()
-		: base("OLED图像4In1合并", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
+		: base("OLED图像4In1合并", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 4)
 	{
 		operatorCode = "OLED.CombineQuaterImages";
 		_TempName = "";
 		m_in_text = "IMG1";
+		m_in_textHub[0] = "IMG1";
+		m_in_textHub[1] = "IMG2";
+		m_in_textHub[2] = "IMG3";
+		m_in_textHub[3] = "IMG4";
 		_OutputFileName = "result.cvcie";
-		masterInput = new CVStartCFC[4];
 		base.Height += 30;
-	}
-
-	protected override void OnCreate()
-	{
-		base.OnCreate();
-		m_in_pic2 = base.InputOptions.Add("IMG2", typeof(CVStartCFC), bSingle: true);
-		m_in_pic2.Connected += m_in_op_Connected;
-		m_in_pic2.DataTransfer += m_in_start_DataTransfer;
-		m_in_pic3 = base.InputOptions.Add("IMG3", typeof(CVStartCFC), bSingle: true);
-		m_in_pic3.Connected += m_in_op_Connected;
-		m_in_pic3.DataTransfer += m_in_start_DataTransfer;
-		m_in_pic4 = base.InputOptions.Add("IMG4", typeof(CVStartCFC), bSingle: true);
-		m_in_pic4.Connected += m_in_op_Connected;
-		m_in_pic4.DataTransfer += m_in_start_DataTransfer;
-	}
-
-	protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
-	{
-		DoInputDataTransfer(sender as STNodeOption, e);
-	}
-
-	private void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)
-	{
-		if (e.Status != ConnectionStatus.Connected)
-		{
-			return;
-		}
-		if (HasData(e))
-		{
-			bool flag = true;
-			if (e.TargetOption.DataType == typeof(CVStartCFC))
-			{
-				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
-				if (cVStartCFC.IsPaused)
-				{
-					DoTransferToServer(cVStartCFC, e);
-					return;
-				}
-				if (ShouldEndFlowImmediately(cVStartCFC))
-				{
-					clearData();
-					clearInCFC();
-					DoNodeEndedTransferData(cVStartCFC);
-					return;
-				}
-				CVStartCFC data = new CVStartCFC(cVStartCFC);
-				sender.Data = data;
-				int num = 0;
-				StatusTypeEnum statusType = StatusTypeEnum.Runing;
-				for (int i = 0; i < base.InputOptionsCount; i++)
-				{
-					STNodeOption sTNodeOption = base.InputOptions[i];
-					if (sTNodeOption.DataType == typeof(CVStartCFC))
-					{
-						CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
-						if (cVStartCFC2 != null)
-						{
-							if (cVStartCFC2.IsRunning)
-							{
-								flag = flag;
-							}
-							else
-							{
-								statusType = cVStartCFC2.FlowStatus;
-								flag = !flag && false;
-							}
-							masterInput[i] = cVStartCFC2;
-							num++;
-						}
-					}
-					else
-					{
-						logger.WarnFormat("TargetData Type is not flow common type => {0}", sTNodeOption.DataType.AssemblyQualifiedName);
-					}
-				}
-				if (logger.IsDebugEnabled)
-				{
-					logger.DebugFormat("[{0}][{1}/{2}] DoServerTransfer => {3} [{4}/{5}]", ToShortString(), num, base.InputOptionsCount, cVStartCFC.ToShortString(), sender.Text, JsonConvert.SerializeObject(cVStartCFC.Data));
-				}
-				if (num == base.InputOptionsCount)
-				{
-					clearData();
-					if (flag)
-					{
-						DoTransferToServer(cVStartCFC, e);
-					}
-					else
-					{
-						cVStartCFC.SetStatusType(statusType);
-						DoNodeEndedTransferData(cVStartCFC);
-					}
-					clearInCFC();
-				}
-			}
-			else
-			{
-				logger.WarnFormat("TargetData Type is not flow common type => {0}", e.TargetOption.DataType.AssemblyQualifiedName);
-			}
-		}
-		else
-		{
-			clearData();
-			clearInCFC();
-			DoNodeEndedTransferData(null);
-		}
-	}
-
-	private static bool ShouldEndFlowImmediately(CVStartCFC start)
-	{
-		return start.FlowStatus == StatusTypeEnum.Failed
-			|| start.FlowStatus == StatusTypeEnum.Canceled
-			|| start.FlowStatus == StatusTypeEnum.OverTime;
-	}
-
-	private void clearInCFC()
-	{
-		for (int i = 0; i < base.InputOptionsCount; i++)
-		{
-			masterInput[i] = null;
-		}
-	}
-
-	private void clearData()
-	{
-		for (int i = 0; i < base.InputOptionsCount; i++)
-		{
-			STNodeOption sTNodeOption = base.InputOptions[i];
-			if (sTNodeOption.DataType == typeof(CVStartCFC))
-			{
-				sTNodeOption.Data = null;
-			}
-		}
-	}
-
-	private void DoNodeEndedTransferData(CVStartCFC obj)
-	{
-		m_op_end.TransferData(obj);
+		base.AutoSize = true;
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

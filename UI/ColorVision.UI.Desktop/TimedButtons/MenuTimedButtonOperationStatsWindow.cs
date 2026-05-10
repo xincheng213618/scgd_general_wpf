@@ -1,7 +1,4 @@
-using ColorVision.Common.Utilities;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
-using System.Linq;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.TimedButtons

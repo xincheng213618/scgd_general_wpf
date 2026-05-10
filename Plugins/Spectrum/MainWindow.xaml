@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie;assembly=ColorVision.ImageEditor"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:local="clr-namespace:Spectrum"
@@ -806,12 +807,12 @@
                                         <!--  CIE 1931 Diagram  -->
                                         <StackPanel Grid.Column="0" Margin="2">
                                             <TextBlock Margin="0,2" HorizontalAlignment="Center" FontWeight="Bold" Text="CIE 1931" />
-                                            <Image x:Name="image1931" Width="210" Height="220" Source="Assets\Image\CIE-1931.jpg" Stretch="Uniform" />
+                                            <cie:CieDiagramView x:Name="Cie1931View" Width="210" Height="220" />
                                         </StackPanel>
                                         <!--  CIE 1976 Diagram  -->
                                         <StackPanel Grid.Column="1" Margin="2">
                                             <TextBlock Margin="0,2" HorizontalAlignment="Center" FontWeight="Bold" Text="CIE 1976" />
-                                            <Image x:Name="image1976" Width="210" Height="220" Source="Assets\Image\CIE-1976.jpg" Stretch="Uniform" />
+                                            <cie:CieDiagramView x:Name="Cie1976View" Width="210" Height="220" />
                                         </StackPanel>
                                     </Grid>
                                 </xcad:LayoutAnchorable>

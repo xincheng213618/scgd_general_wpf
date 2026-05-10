@@ -1,6 +1,5 @@
 ﻿using ColorVision.Rbac.ViewModels;
 using ColorVision.UI.Authorizations;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 

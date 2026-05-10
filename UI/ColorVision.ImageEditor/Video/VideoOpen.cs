@@ -74,9 +74,9 @@ namespace ColorVision.ImageEditor.Video
             CloseVideo();
 
             FileInfo fileInfo = new FileInfo(filePath);
-            context.Config.AddProperties("FileSource", filePath);
-            context.Config.AddProperties("FileName", fileInfo.Name);
-            context.Config.AddProperties("FileSize", fileInfo.Length);
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, filePath, nameof(VideoOpen), "打开器接收到的视频源路径");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, fileInfo.Name, nameof(VideoOpen), "当前视频文件名");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileInfo.Length, nameof(VideoOpen), "当前视频文件大小（字节）");
 
             // Open video via native opencv_helper
             int handle = OpenCVMediaHelper.M_VideoOpen(filePath, out var info);
@@ -91,12 +91,12 @@ namespace ColorVision.ImageEditor.Video
             _imageView = context.ImageView;
             _currentFilePath = filePath;
 
-            context.Config.AddProperties("VideoWidth", info.width);
-            context.Config.AddProperties("VideoHeight", info.height);
-            context.Config.AddProperties("VideoFPS", info.fps);
-            context.Config.AddProperties("VideoTotalFrames", info.totalFrames);
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoWidth, info.width, nameof(VideoOpen), "视频帧宽度");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoHeight, info.height, nameof(VideoOpen), "视频帧高度");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoFPS, info.fps, nameof(VideoOpen), "视频帧率");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoTotalFrames, info.totalFrames, nameof(VideoOpen), "视频总帧数");
             double fps = info.fps > 0 ? info.fps : 30.0;
-            context.Config.AddProperties("VideoDuration", TimeSpan.FromSeconds(info.totalFrames / fps).ToString(@"hh\:mm\:ss"));
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoDuration, TimeSpan.FromSeconds(info.totalFrames / fps).ToString(@"hh\:mm\:ss"), nameof(VideoOpen), "视频总时长");
 
             // Read first frame and display
             int ret = OpenCVMediaHelper.M_VideoReadFrame(handle, out HImage firstFrame);
@@ -817,7 +817,7 @@ namespace ColorVision.ImageEditor.Video
             {
                 if (_videoToolBar != null)
                 {
-                    // Remove video-specific controls (keep original items like ComboxPOITemplate)
+                    // Remove only video-specific controls; other workflow components may share this toolbar.
                     if (_playPauseButton != null && _videoToolBar.Items.Contains(_playPauseButton))
                         _videoToolBar.Items.Remove(_playPauseButton);
                     if (_stopButton != null && _videoToolBar.Items.Contains(_stopButton))

@@ -1,303 +1,129 @@
-# Component Interactions Matrix
+# 组件交互
 
----
-**Metadata:**
-- Title: Component Interactions Matrix and Dependencies
-- Status: draft
-- Updated: 2024-09-28
-- Author: ColorVision Development Team
----
+本页不再维护一张覆盖全系统、但容易失真的“模块交互矩阵”。当前更有价值的做法，是只说明几条在代码里真实存在、而且最常影响改动方向的交互主链。
 
-## 简介
+## 先看这几条主链
 
-本文档提供 ColorVision 系统中各模块间的交互矩阵，详细描述模块间的调用关系、事件传递、依赖关系和扩展点。
+### 1. 主程序入口链
 
-## 目录
+主程序入口在 `ColorVision/`。
 
-1. [模块交互矩阵](#模块交互矩阵)
-2. [依赖关系图](#依赖关系图)
-3. [事件传递链](#事件传递链)
-4. [接口扩展点](#接口扩展点)
+它先负责：
 
-## 模块交互矩阵
+- 基础 DLL 预加载
+- 配置、日志、主题、语言初始化
+- 文件处理命令行分支
+- 插件是否加载的决策
+- 启动向导或启动窗口
 
-### 主要模块交互表
+这一层更像“宿主”和“入口调度器”，不是具体业务本身。
 
-| Module | Calls | Events | DependsOn | ExtPoints | Description |
-|--------|-------|--------|-----------|-----------|-------------|
-| **ColorVision.UI** | Engine.Templates, Engine.Services | UI.WindowLoaded, UI.MenuClicked | Engine, Common, Themes | IMainWindowInitialized, IStatusBarProvider | 用户界面层 |
-| **ColorVision.Engine** | Database, MQTT, Templates | Engine.ServiceStarted, Engine.TemplateExecuted | Core, Database | IEngineService, ITemplateEngine | 核心引擎层 |
-| **Template.Manager** | Flow.Engine, Algorithm.Engine | Template.Created, Template.Executed | Engine, Flow | ITemplate, ITemplateValidator | 模板管理系统 |
-| **Flow.Engine** | MQTT.Service, Device.Services | Flow.Started, Flow.Completed, Flow.Error | Engine, MQTT | IInitializerFlow, IFlowNode | 流程引擎 |
-| **Plugin.Manager** | Engine.Services, UI.Components | Plugin.Loaded, Plugin.Initialized | UI, Engine | IPlugin, IPluginHost | 插件管理器 |
-| **Device.Services** | MQTT.Client, Hardware.Drivers | Device.Connected, Device.StatusChanged | Engine, MQTT | IDevice, IDeviceDriver | 设备服务层 |
-| **MQTT.Service** | Network.Client | MQTT.Connected, MQTT.MessageReceived | Engine, Network | IMQTTClient, IMQTTHandler | MQTT 通信服务 |
-| **Database.Service** | SqlSugar, Entity.Models | DB.Connected, DB.QueryExecuted | Core, Entity | IRepository, IDataContext | 数据库服务 |
-| **Algorithm.Engine** | OpenCV, CUDA.Runtime | Algorithm.Started, Algorithm.Completed | Core, Templates | IAlgorithm, IImageProcessor | 算法引擎 |
-| **RBAC.Manager** | Database.Service, UI.Auth | User.LoggedIn, Permission.Changed | Database, UI | IAuthService, IRoleProvider | 权限管理 |
+### 2. UI 工作台链
 
-### 详细交互说明
+进入主工作区后，`UI/` 下的窗口、菜单、面板和编辑器负责承接用户操作，再把动作转给引擎层。
 
-#### UI 层交互
-```mermaid
-graph LR
-    UI[ColorVision.UI] --> Engine[Engine.Services]
-    UI --> Plugins[Plugin.Manager]
-    UI --> Themes[ColorVision.Themes]
-    
-    Engine --> Templates[Template.Manager]
-    Engine --> Database[Database.Service]
-    
-    Plugins --> PluginHost[IPluginHost]
-    Templates --> FlowEngine[Flow.Engine]
-```
+这里最常见的交互关系是：
 
-#### 引擎层交互
-```mermaid
-graph TB
-    subgraph "Engine Core"
-        EngineService[Engine Service]
-        TemplateManager[Template Manager]
-        AlgorithmEngine[Algorithm Engine]
-    end
-    
-    subgraph "External Dependencies"
-        Database[(Database)]
-        MQTT[MQTT Service]
-        DeviceService[Device Services]
-    end
-    
-    EngineService --> TemplateManager
-    TemplateManager --> AlgorithmEngine
-    EngineService --> Database
-    EngineService --> MQTT
-    AlgorithmEngine --> DeviceService
-```
+- 主窗口和桌面菜单提供入口
+- 属性编辑器、图像编辑器、数据库浏览器等模块负责各自的交互视图
+- 真正的业务动作继续往 `Engine/` 下发
 
-## 依赖关系图
+### 3. 服务树与设备链
 
-### 层次依赖结构
+`ServiceManager` 是运行时里最关键的协调对象之一。它会：
 
-```mermaid
-graph TD
-    subgraph "应用层"
-        MainApp[ColorVision.exe]
-        Plugins[Plugins/*]
-    end
-    
-    subgraph "表示层"
-        UI[ColorVision.UI]
-        Themes[ColorVision.Themes]
-        Solution[ColorVision.Solution]
-    end
-    
-    subgraph "业务层"
-        Engine[ColorVision.Engine]
-        Scheduler[ColorVision.Scheduler]
-        ImageEditor[ColorVision.ImageEditor]
-    end
-    
-    subgraph "数据层"
-        Database[ColorVision.Database]
-        FileIO[ColorVision.FileIO]
-    end
-    
-    subgraph "基础层"
-        Common[ColorVision.Common]
-        Core[ColorVision.Core]
-        OpenCV[cvColorVision]
-    end
+- 从数据库读取资源和服务定义
+- 生成终端服务和设备服务对象
+- 组织分组资源
+- 把流程显示区和设备显示控件统一接入显示管理器
 
-    MainApp --> UI
-    Plugins --> Engine
-    
-    UI --> Engine
-    UI --> Themes
-    Solution --> UI
-    
-    Engine --> Database
-    Engine --> Common
-    Scheduler --> Engine
-    ImageEditor --> Engine
-    
-    Database --> Core
-    FileIO --> Core
-    
-    Engine --> OpenCV
-    Core --> OpenCV
-```
+因此“设备为什么出现在树里”“为什么显示区能打开”“为什么某台设备没进入运行时”这几件事，通常先看 `ServiceManager`，而不是直接看某个单独设备类。
 
-### 循环依赖检测
+### 4. 模板注册与编辑链
 
-当前系统中需要注意的潜在循环依赖：
+模板系统的关键交互不是一张独立表，而是：
 
-- ✅ **无循环**: UI → Engine → Database → Core
-- ✅ **无循环**: Templates → FlowEngine → MQTT → Engine
-- ⚠️ **注意**: Plugin.Manager ↔ Engine.Services (通过接口解耦)
-- ⚠️ **注意**: UI.Components ↔ Engine.Templates (事件驱动)
+- 相关程序集被主程序或插件装载
+- `TemplateControl` 扫描其中实现 `IITemplateLoad` 的类型
+- 这些类型在 `Load()` 中把模板注册进全局模板字典
+- 模板编辑器、流程窗口和具体业务功能再去使用这些模板
 
-## 事件传递链
+所以“模板为什么没出现”这类问题，通常是加载链、数据库状态或程序集装载链的问题，而不只是编辑窗口本身的问题。
 
-### 核心事件流
+### 5. 流程执行链
 
-```mermaid
-sequenceDiagram
-    participant User as 用户操作
-    participant UI as UI层
-    participant Engine as 引擎层
-    participant Template as 模板系统
-    participant Flow as 流程引擎
-    participant Device as 设备层
-    participant MQTT as MQTT服务
+流程执行时的主链大致是：
 
-    User->>UI: 启动模板
-    UI->>Engine: TemplateExecuteCommand
-    Engine->>Template: ExecuteTemplate()
-    Template->>Flow: StartFlow()
-    Flow->>Device: SendDeviceCommand
-    Device->>MQTT: PublishMessage
-    MQTT-->>Flow: AckMessage
-    Flow-->>Template: FlowCompleted
-    Template-->>Engine: TemplateResult
-    Engine-->>UI: ExecutionCompleted
-    UI-->>User: 显示结果
-```
+1. `DisplayFlow` 选择并刷新当前流程模板。
+2. `FlowControl` 启动或停止当前流程。
+3. `FlowEngineLib` 执行节点图。
+4. `MQTTRCService` 提供服务令牌和状态更新。
+5. 设备节点或算法节点返回结果。
+6. 执行状态、批次记录、日志文本和节点消息被更新回界面。
 
-### 事件类型分类
+这个链路说明一个常见事实：流程不是孤立模块，它天然依赖模板、设备服务和注册中心状态。
 
-#### 系统级事件
-- `Application.Started`
-- `Application.Shutdown`
-- `Service.Connected`
-- `Service.Disconnected`
+### 6. 插件扩展链
 
-#### 业务级事件
-- `Template.Created`
-- `Template.Executed`
-- `Algorithm.Started`
-- `Algorithm.Completed`
+插件装载后，并不是只多出一个 DLL，而是会把新的程序集带进整套运行时：
 
-#### 设备级事件
-- `Device.Connected`
-- `Device.Disconnected`
-- `Device.StatusChanged`
-- `Device.ErrorOccurred`
+- 新菜单或窗口入口
+- 新服务或提供者实现
+- 新模板、结果视图或扩展点实现
 
-#### 用户界面事件
-- `Window.Loaded`
-- `Menu.Clicked`
-- `Button.Pressed`
-- `Data.Changed`
+因此插件与主程序的交互更像“把能力并入现有运行时”，而不是在外部平行运行。
 
-## 接口扩展点
+## 改代码时通常怎么用这页
 
-### 主要扩展接口
+### 改主窗口或用户入口
 
-| 接口名称 | 触发时机 | 线程上下文 | 返回/约束 | 常见错误 |
-|---------|----------|------------|----------|----------|
-| `IMainWindowInitialized` | 主窗口初始化完成后 | UI线程 | void | UI冻结、空引用 |
-| `IStatusBarProvider` | 状态栏刷新时 | UI线程 | StatusInfo | 界面更新失败 |
-| `IFileMeta` | 文件操作时 | 工作线程 | FileMetadata | 文件访问权限 |
-| `IPlugin` | 插件生命周期 | 插件线程 | bool (成功/失败) | 资源泄露 |
-| `IEngineService` | 引擎服务调用 | 服务线程 | Task | 异步操作超时 |
-| `ITemplate` | 模板执行 | 计算线程 | TemplateResult | 参数验证失败 |
-| `IAlgorithm` | 算法执行 | GPU/CPU线程 | AlgorithmResult | 内存不足 |
-| `IDevice` | 设备控制 | 设备线程 | DeviceResponse | 通信超时 |
-| `IMQTTHandler` | MQTT消息处理 | 网络线程 | void | 消息格式错误 |
-| `IInitializerFlow` | 流程初始化 | 初始化线程 | Task | 初始化超时 |
+优先顺着：
 
-### 扩展点实现示例
+- 主程序入口
+- UI 菜单/面板
+- 对应引擎服务
 
-#### 主窗口扩展点
-```csharp
-public interface IMainWindowInitialized
-{
-    string Name { get; }
-    int Order { get; }
-    Task InitializeAsync(MainWindow mainWindow);
-}
+### 改设备行为
 
-// 实现示例
-public class CustomMenuInitializer : IMainWindowInitialized
-{
-    public string Name => "Custom Menu";
-    public int Order => 100;
-    
-    public Task InitializeAsync(MainWindow mainWindow)
-    {
-        // 添加自定义菜单项
-        var menuItem = new MenuItem { Header = "自定义功能" };
-        mainWindow.MainMenu.Items.Add(menuItem);
-        return Task.CompletedTask;
-    }
-}
-```
+优先顺着：
 
-#### 算法扩展点
-```csharp
-public interface IAlgorithm
-{
-    string AlgorithmId { get; }
-    string Name { get; }
-    AlgorithmResult Execute(AlgorithmParam param);
-    Task\<AlgorithmResult\> ExecuteAsync(AlgorithmParam param);
-}
+- `ServiceManager`
+- 具体 `DeviceService`
+- 对应 MQTT 或运行时状态对象
 
-// 实现示例
-public class CustomAlgorithm : IAlgorithm
-{
-    public string AlgorithmId => "custom-detection";
-    public string Name => "自定义检测算法";
-    
-    public AlgorithmResult Execute(AlgorithmParam param)
-    {
-        // 算法实现
-        return new AlgorithmResult();
-    }
-    
-    public async Task\<AlgorithmResult\> ExecuteAsync(AlgorithmParam param)
-    {
-        return await Task.Run(() => Execute(param));
-    }
-}
-```
+### 改模板或流程
 
-## 组件映射 JSON 结构
+优先顺着：
 
-详细的组件映射数据已生成到 [component-map.json](component-map.json) 文件中，包含：
+- `TemplateControl`
+- 模板编辑器
+- `DisplayFlow` / `FlowControl` / `FlowEngineLib`
 
-- 所有模块的详细信息
-- 依赖关系映射
-- 接口定义和实现
-- 事件发布和订阅关系
+### 改插件扩展
 
-### JSON 结构示例
+优先顺着：
 
-```json
-{
-  "modules": {
-    "ColorVision.UI": {
-      "type": "PresentationLayer",
-      "dependencies": ["ColorVision.Engine", "ColorVision.Common"],
-      "provides": ["IMainWindow", "IUserInterface"],
-      "consumes": ["IEngineService", "ITemplateManager"],
-      "events": {
-        "publishes": ["UI.WindowLoaded", "UI.MenuClicked"],
-        "subscribes": ["Engine.ServiceStarted", "Template.ExecutionCompleted"]
-      }
-    }
-  },
-  "relationships": [
-    {
-      "from": "ColorVision.UI",
-      "to": "ColorVision.Engine", 
-      "type": "dependency",
-      "nature": "calls"
-    }
-  ]
-}
-```
+- `PluginLoader`
+- 插件程序集
+- 被插件实现的菜单、服务、模板或视图接口
 
----
+## 这页不再做什么
 
-*最后更新: 2024-09-28 | 状态: draft*
+本页不再继续维护这些高风险内容：
+
+- 看似完整、但和当前实现脱节的模块矩阵表
+- 大量未核实的事件名称和接口清单
+- 脱离实际代码目录的理论依赖图
+
+如果某个专题需要更深的设计分析，应放回对应专题页，而不是在这里铺开一张过度承诺的总表。
+
+## 继续阅读
+
+- [系统架构概览](./system-overview.md)
+- [架构运行时](./runtime.md)
+- [FlowEngineLib 架构](../components/engine/flow-engine.md)
+- [Templates 架构设计](../components/templates/design.md)
+
+## 说明
+
+- 本页只保留当前最重要的真实交互主链，不再继续维护 draft 矩阵。

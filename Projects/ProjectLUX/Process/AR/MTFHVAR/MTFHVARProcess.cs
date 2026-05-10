@@ -5,9 +5,6 @@ using ColorVision.Engine.Templates.Jsons.MTF2; // MTFDetailViewReslut
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
-using ProjectLUX.Process.Distortion;
-using ProjectLUX.Process.MTFHV;
-using ProjectLUX.Process.W255;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;

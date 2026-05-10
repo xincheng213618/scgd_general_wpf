@@ -1,5 +1,4 @@
 using ColorVision.Common.Utilities;
-using System.IO;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager

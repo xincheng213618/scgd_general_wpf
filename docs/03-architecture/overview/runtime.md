@@ -1,344 +1,120 @@
-# Architecture Runtime
+# 架构运行时
 
----
-**Metadata:**
-- Title: Architecture Runtime - System Startup and Component Interactions
-- Status: draft
-- Updated: 2024-09-28
-- Author: ColorVision Development Team
----
+本页只描述当前代码里能看见的主程序运行时链路，不再继续维护英文 draft 元数据和通用启动时序图。
 
-## 简介
+## 先怎么理解运行时
 
-本文档描述 ColorVision 系统的运行时架构，包括启动序列、组件交互模式、消息通道、配置流向、线程模型以及异常恢复策略。
+当前桌面程序的运行时不是“一次性把所有模块都初始化完再显示主界面”的单一模型，而是分成几条实际分支：
 
-## 目录
+- 命令行只做文件处理后直接返回
+- 正常桌面启动并进入向导或启动窗口
+- 上次异常退出后，先询问是否禁用插件再继续启动
 
-1. [启动序列](#启动序列)
-2. [组件交互图](#组件交互图)
-3. [消息与事件通道](#消息与事件通道)
-4. [配置流向](#配置流向)
-5. [线程与调度模型](#线程与调度模型)
-6. [异常与恢复策略](#异常与恢复策略)
+## 主程序启动链路
 
-## 启动序列
+从 `ColorVision/App.xaml.cs` 当前实现看，常见启动顺序大致是：
 
-### 系统启动时序图
+1. 设置工作目录并按需预加载关键 DLL。
+2. 初始化配置、日志、主题和语言。
+3. 解析命令行参数。
+4. 如果是 `input` 或 `export` 这类文件处理分支，直接处理后返回。
+5. 进行单实例检查，并在需要时把命令行参数转发给已运行实例。
+6. 非调试状态下清理僵尸进程。
+7. 根据上次启动状态决定是否禁用插件。
+8. 初始化 WinForms 视觉样式。
+9. 根据向导完成状态显示 `WizardWindow` 或 `StartWindow`。
 
-```mermaid
-sequenceDiagram
-    participant App as ColorVision.App
-    participant MW as MainWindow
-    participant SM as ServiceManager
-    participant PM as PluginManager
-    participant DB as Database
-    participant MQTT as MQTT Client
-    participant UI as UI Components
+这里最重要的不是记住所有步骤，而是知道启动并不总会直接进主窗口。
 
-    App->>App: Initialize Application
-    App->>DB: Initialize Database Connection
-    DB-->>App: Connection Ready
-    
-    App->>SM: Initialize Services
-    SM->>MQTT: Connect to MQTT Broker
-    MQTT-->>SM: Connection Established
-    
-    SM->>SM: Initialize Core Services
-    Note over SM: Engine Services, Device Services
-    
-    App->>MW: Create Main Window
-    MW->>UI: Initialize UI Components
-    UI-->>MW: UI Ready
-    
-    App->>PM: Load Plugins
-    PM->>PM: Discover Plugin Assemblies
-    PM->>PM: Initialize Plugins
-    PM-->>App: Plugins Loaded
-    
-    MW->>MW: Show Main Window
-    Note over MW: Application Ready for User Interaction
-```
+## 插件在什么时候进入
 
-### 启动阶段详解
+当前主程序会在进入向导或启动窗口之前决定是否加载插件。
 
-1. **应用程序初始化** (App.xaml.cs)
-   - 配置日志系统
-   - 加载应用程序配置
-   - 初始化依赖注入容器
+插件加载的几个关键点是：
 
-2. **数据库连接建立**
-   - SQLite 本地数据库连接
-   - 数据库架构初始化和迁移
+- 扫描 `Plugins/` 目录
+- 读取每个插件目录中的 `manifest.json`
+- 可选读取 `.deps.json`
+- 检查 `ColorVision.*` 依赖版本
+- 最后用 `Assembly.LoadFrom(...)` 装载插件程序集
 
-3. **服务管理器启动**
-   - 核心服务注册和初始化
-   - MQTT 连接建立
-   - 设备服务启动
+如果上次异常退出，启动时会先询问是否禁用插件，这说明插件是否参与本次运行时是一个明确分支，而不是总是无条件加载。
 
-4. **用户界面创建**
-   - 主窗口初始化
-   - UI 组件加载
-   - 主题和样式应用
+## 进入主工作区后，哪些运行时对象最关键
 
-5. **插件系统激活**
-   - 插件发现和加载
-   - 插件初始化和注册
+### 服务树
 
-## 组件交互图
+`ServiceManager` 会在数据库连接可用后加载服务树，把资源表中的数据组织成：
 
-### 高层系统架构
+- `TypeServices`
+- `TerminalServices`
+- `DeviceServices`
+- `GroupResources`
 
-```mermaid
-graph TB
-    subgraph "Presentation Layer"
-        UI[ColorVision.UI]
-        MW[MainWindow]
-        Plugins[Plugin System]
-    end
-    
-    subgraph "Business Layer"
-        Engine[ColorVision.Engine]
-        Templates[Template System]
-        Algorithms[Algorithm Engine]
-    end
-    
-    subgraph "Service Layer"
-        ServiceMgr[Service Manager]
-        DeviceService[Device Services]
-        FlowEngine[Flow Engine]
-    end
-    
-    subgraph "Data Layer"
-        Database[(Database)]
-        FileStorage[(File Storage)]
-    end
-    
-    subgraph "Communication Layer"
-        MQTT[MQTT Client]
-        Network[Network Services]
-    end
+之后再把流程显示区和各设备显示控件装进统一显示管理器里。
 
-    UI --> Engine
-    MW --> ServiceMgr
-    Plugins --> Engine
-    
-    Engine --> Templates
-    Engine --> Algorithms
-    Templates --> FlowEngine
-    
-    ServiceMgr --> DeviceService
-    ServiceMgr --> MQTT
-    
-    Engine --> Database
-    Templates --> FileStorage
-    
-    DeviceService --> Network
-    FlowEngine --> MQTT
-```
+### 注册中心与服务令牌
 
-### 核心组件依赖关系
+`MQTTRCService` 在运行时负责：
 
-```mermaid
-classDiagram
-    class ServiceManager {
-        +Initialize()
-        +RegisterService()
-        +GetService()
-        +Shutdown()
-    }
-    
-    class EngineService {
-        +Start()
-        +Stop()
-        +ProcessTemplate()
-    }
-    
-    class PluginManager {
-        +LoadPlugins()
-        +InitializePlugin()
-        +UnloadPlugin()
-    }
-    
-    class TemplateManager {
-        +CreateTemplate()
-        +ExecuteTemplate()
-        +SaveTemplate()
-    }
-    
-    class MQTTService {
-        +Connect()
-        +Subscribe()
-        +Publish()
-        +Disconnect()
-    }
+- 保持和注册中心的连接状态
+- 查询当前可用服务令牌
+- 更新服务状态
+- 把服务状态同步回设备服务对象
 
-    ServiceManager --> EngineService
-    ServiceManager --> MQTTService
-    ServiceManager --> PluginManager
-    EngineService --> TemplateManager
-    PluginManager --> EngineService
-```
+所以很多“流程跑不起来”“设备在线但状态不更新”的问题，本质上都不是 UI 问题，而是这里的运行时状态没有准备好。
 
-## 消息与事件通道
+### 模板注册
 
-### MQTT 消息架构
+模板系统不是手工逐个硬编码注册。当前 `TemplateControl` 会在数据库连接可用后扫描已加载程序集中的 `IITemplateLoad` 实现，并调用它们的 `Load()` 完成模板注册。
 
-ColorVision 使用 MQTT 作为主要的消息通信机制：
+这意味着模板是否可见、是否能被编辑，依赖两个前提：
 
-```mermaid
-graph LR
-    subgraph "MQTT Topics"
-        DeviceTopic[/ColorVision/Device/{DeviceID}]
-        TemplateTopic[/ColorVision/Template/{TemplateID}]
-        SystemTopic[/ColorVision/System/Status]
-        ResultTopic[/ColorVision/Result/{JobID}]
-    end
-    
-    subgraph "Publishers"
-        Engine[Engine Service]
-        Devices[Device Services]
-        UI[UI Components]
-    end
-    
-    subgraph "Subscribers"
-        Dashboard[Dashboard]
-        Logger[Log Service]
-        Storage[Storage Service]
-    end
+- 相关程序集已经加载
+- 数据库连接已建立
 
-    Engine --> DeviceTopic
-    Engine --> TemplateTopic
-    Devices --> SystemTopic
-    UI --> ResultTopic
-    
-    DeviceTopic --> Dashboard
-    TemplateTopic --> Logger
-    SystemTopic --> Storage
-    ResultTopic --> Dashboard
-```
+## 流程执行在运行时怎么接上去
 
-### 内部事件系统
+当用户进入流程窗口后，运行时主链会继续延伸到：
 
-```csharp
-// 事件总线示例
-public interface IEventBus
-{
-    void Publish\<T\>(T eventData) where T : class;
-    void Subscribe\<T\>(Action\<T\> handler) where T : class;
-    void Unsubscribe\<T\>(Action\<T\> handler) where T : class;
-}
+- `DisplayFlow` 负责刷新当前流程模板、启动或停止流程
+- `FlowControl` 负责启动和停止运行中的流程
+- `FlowEngineLib` 负责具体节点执行
+- `MQTTRCService` 提供流程运行所需的服务令牌和状态更新
 
-// 典型事件类型
-public class TemplateExecutionStarted
-{
-    public string TemplateId { get; set; }
-    public DateTime StartTime { get; set; }
-}
+执行过程中，运行时还会持续更新：
 
-public class DeviceStatusChanged
-{
-    public string DeviceId { get; set; }
-    public DeviceStatus Status { get; set; }
-}
-```
+- 当前运行节点
+- 执行日志文本
+- 批次进度
+- 节点记录和消息记录
 
-## 配置流向
+## 运行时最常见的失败点
 
-### 配置层次结构
+### 启动阶段
 
-```mermaid
-graph TD
-    AppConfig[应用程序配置]
-    UserConfig[用户配置]
-    ProjectConfig[项目配置]
-    DeviceConfig[设备配置]
-    PluginConfig[插件配置]
+- 插件依赖不满足
+- 上次异常退出导致需要手动决定是否禁用插件
+- 命令行分支提前返回，误以为程序没有继续启动
 
-    AppConfig --> UserConfig
-    UserConfig --> ProjectConfig
-    ProjectConfig --> DeviceConfig
-    ProjectConfig --> PluginConfig
-    
-    AppConfig -.->|默认值| UserConfig
-    UserConfig -.->|继承| ProjectConfig
-```
+### 服务准备阶段
 
-### 配置加载流程
+- 数据库没有连通，导致服务树或模板没有正常装载
+- 注册中心或 MQTT 侧没有准备好，导致服务令牌为空
 
-1. **应用程序级配置** - 系统全局设置
-2. **用户级配置** - 用户偏好和个人设置
-3. **项目级配置** - 特定项目的配置
-4. **设备级配置** - 硬件设备参数
-5. **插件级配置** - 插件特定设置
+### 执行阶段
 
-## 线程与调度模型
+- 流程模板未选中或起始节点缺失
+- 设备服务存在，但运行时状态还没同步到可执行状态
 
-### 线程架构
+## 继续阅读
 
-```mermaid
-graph TB
-    MainThread[主线程 - UI]
-    WorkerThreads[工作线程池]
-    IOThread[I/O 线程]
-    MQTTThread[MQTT 通信线程]
-    DeviceThreads[设备控制线程]
+- [系统架构概览](./system-overview.md)
+- [组件交互](./component-interactions.md)
+- [工作流程](../../01-user-guide/workflow/README.md)
+- [日志查看器](../../01-user-guide/interface/log-viewer.md)
 
-    MainThread -.->|委托| WorkerThreads
-    MainThread -.->|异步调用| IOThread
-    WorkerThreads --> MQTTThread
-    WorkerThreads --> DeviceThreads
-    
-    subgraph "同步机制"
-        TaskScheduler[任务调度器]
-        ThreadSafeCollections[线程安全集合]
-        AsyncAwait[async/await 模式]
-    end
-```
+## 说明
 
-### 调度策略
-
-- **UI 线程**: 专用于界面更新，避免阻塞操作
-- **工作线程池**: 处理算法计算和文件 I/O
-- **设备控制线程**: 每个设备独立线程，避免相互阻塞
-- **MQTT 通信线程**: 专用于网络通信
-
-## 异常与恢复策略
-
-### 异常处理层次
-
-```mermaid
-graph TD
-    UserException[用户级异常]
-    ServiceException[服务级异常]
-    SystemException[系统级异常]
-    CriticalException[关键异常]
-
-    UserException -->|记录日志| LogService
-    ServiceException -->|服务重启| ServiceRecovery
-    SystemException -->|系统通知| UserNotification
-    CriticalException -->|安全关闭| GracefulShutdown
-    
-    LogService --> ErrorReport[错误报告]
-    ServiceRecovery --> ServiceMonitor[服务监控]
-    UserNotification --> UIFeedback[界面反馈]
-    GracefulShutdown --> DataBackup[数据备份]
-```
-
-### 恢复机制
-
-1. **自动重试**: 临时性错误的自动重试机制
-2. **服务重启**: 服务异常时的自动重启
-3. **状态回滚**: 操作失败时的状态恢复
-4. **数据备份**: 关键数据的自动备份
-5. **用户通知**: 及时的错误反馈和建议
-
-### 监控和诊断
-
-- **健康检查**: 定期系统健康状态检查
-- **性能监控**: CPU、内存、磁盘使用情况监控
-- **日志聚合**: 集中化日志收集和分析
-- **指标收集**: 系统运行指标的收集和报告
-
----
-
-*最后更新: 2024-09-28 | 状态: draft*
+- 本页只保留当前代码能支撑的运行时链路，不再继续维护脱离实现的统一启动时序图。
+- 相关入口主要位于 `ColorVision/App.xaml.cs`、`UI/ColorVision.UI/Plugins/PluginLoader.cs`、`Engine/ColorVision.Engine/Services/ServiceManager.cs`、`Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs` 和 `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`。

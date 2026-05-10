@@ -1,122 +1,418 @@
-﻿using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Cie;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
 using System;
+using System.Collections.Generic;
+using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
-
-    public class CIEColorConverter
-    {
-        // 线性化RGB值
-        private static double Linearize(double value)
-        {
-            value = value / 255.0;
-
-            if (value <= 0.04045)
-            {
-                return value / 12.92;
-            }
-            else
-            {
-                return Math.Pow((value + 0.055) / 1.055, 2.4);
-            }
-        }
-
-        // 转换RGB到XYZ
-        private static double[] RgbToXyz(int r, int g, int b)
-        {
-            // 线性化RGB值
-            double R = Linearize(r);
-            double G = Linearize(g);
-            double B = Linearize(b);
-
-            // 使用sRGB的转换矩阵
-            double X = R * 0.4124 + G * 0.3576 + B * 0.1805;
-            double Y = R * 0.2126 + G * 0.7152 + B * 0.0722;
-            double Z = R * 0.0193 + G * 0.1192 + B * 0.9505;
-
-            return new double[] { X, Y, Z };
-        }
-
-        // 从XYZ到CIE 1931 xy色度坐标
-        private static double[] XyzToCie1931xy(double[] xyz)
-        {
-            double X = xyz[0];
-            double Y = xyz[1];
-            double Z = xyz[2];
-
-            double x = X / (X + Y + Z);
-            double y = Y / (X + Y + Z);
-
-            return new double[] { x, y };
-        }
-
-        public static double[] RgbToCie1931xy(int r, int g, int b)
-        {
-            double[] xyz = RgbToXyz(r, g, b);
-            return XyzToCie1931xy(xyz);
-        }
-    }
-
     /// <summary>
     /// WindowCIE.xaml 的交互逻辑
     /// </summary>
     public partial class WindowCIE : Window
     {
+        private bool _isInitialized;
+        private bool _isUpdatingOptions;
+        private CieChromaticity? _selectedXy;
+
         public WindowCIE()
         {
             InitializeComponent();
+            CieView.CursorTextChanged += CieView_CursorTextChanged;
             this.ApplyCaption();
         }
-        public ImageViewModel ImageViewModel => ImageView.ImageViewModel;
-        private void Window_Initialized(object sender, System.EventArgs e)
+
+        public CieDiagramView DiagramView => CieView;
+
+        private void Window_Initialized(object sender, EventArgs e)
         {
-            ImageView.ToolBarTop.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarRight.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarLeft.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarAl.Visibility = Visibility.Collapsed;
-
-            ImageViewModel.Crosshair.IsShow = true;
-            ImageView.SetImageSource(new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.png", UriKind.Relative)));
-
-            ImageView.ComboBoxLayers.Visibility = Visibility.Collapsed;
-            ImageView.Zoombox1.ZoomUniform();
+            _isInitialized = true;
+            UpdateDiagramKind();
+            UpdateDisplayedGamuts();
+            UpdateDisplayedIlluminants();
+            UpdateDiagramSummary();
+            UpdateSelectedReadout();
+            CieView.ZoomUniform();
         }
 
-        public void ChangeSelect(double x,double y)
+        public void ChangeSelect(double x, double y)
         {
-            if (!ImageViewModel.Crosshair.IsShow)
-                ImageViewModel.Crosshair.IsShow = true;
-
-            x = 60 + 755 * x;
-            y = 689 - 755 * y;
-            x = x / ImageViewModel.Crosshair.Ratio;
-            y = y / ImageViewModel.Crosshair.Ratio;
-            ImageViewModel.Crosshair.DrawImage(new Point(x, y));
+            SetSelectedXy(new CieChromaticity(x, y), Colors.Black, "Current");
         }
 
-
-        public void ChangeSelect(ImageInfo imageInfo)
+        public void ChangeSelect(ImagePixelSample pixelSample)
         {
-            if (!ImageViewModel.Crosshair.IsShow)
-                ImageViewModel.Crosshair.IsShow = true;
+            if (!pixelSample.HasRgbSourceChannels)
+            {
+                _selectedXy = null;
+                CieView.ClearSelection();
+                UpdateSelectedReadout();
+                return;
+            }
 
-            double[] doubles = CIEColorConverter.RgbToCie1931xy(imageInfo.R,imageInfo.G,imageInfo.B);
-            double x =60 + 755 * doubles[0];
-            double Y = 689 - 755 * doubles[1];
-            x = x / ImageViewModel.Crosshair.Ratio;
-            Y = Y / ImageViewModel.Crosshair.Ratio;
-
-            ImageViewModel.Crosshair.DrawImage(new Point(x, Y));
+            CieChromaticity xy = CieColorConverter.RgbToCie1931xy(pixelSample.PreviewColor.R, pixelSample.PreviewColor.G, pixelSample.PreviewColor.B);
+            SetSelectedXy(xy, pixelSample.PreviewColor, "RGB");
         }
 
-
-        private void Button_Click(object sender, RoutedEventArgs e)
+        public void SetDiagram(CieDiagramKind kind)
         {
-            ImageView.ImageShow.Source = new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/cie_1976_ucs.png", UriKind.Relative));
-            ImageView.Zoombox1.ZoomUniformToFill();
+            _isUpdatingOptions = true;
+            ComboBoxDiagram.SelectedIndex = kind switch
+            {
+                CieDiagramKind.Cie1960uv => 1,
+                CieDiagramKind.Cie1976uv => 2,
+                _ => 0
+            };
+            _isUpdatingOptions = false;
+
+            CieView.SetDiagram(kind);
+            UpdateDiagramSummary();
+        }
+
+        public void SetGamuts(IEnumerable<CieGamut> gamuts)
+        {
+            CieView.SetGamuts(gamuts);
+        }
+
+        public void AddGamut(CieGamut gamut)
+        {
+            CieView.AddGamut(gamut);
+        }
+
+        public void ClearGamuts()
+        {
+            CieView.ClearGamuts();
+        }
+
+        private void ComboBoxDiagram_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isInitialized || _isUpdatingOptions)
+            {
+                return;
+            }
+
+            UpdateDiagramKind();
+        }
+
+        private void GamutCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized || _isUpdatingOptions)
+            {
+                return;
+            }
+
+            UpdateDisplayedGamuts();
+        }
+
+        private void IlluminantCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized || _isUpdatingOptions)
+            {
+                return;
+            }
+
+            UpdateDisplayedIlluminants();
+        }
+
+        private void CctCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized || _isUpdatingOptions)
+            {
+                return;
+            }
+
+            CieView.ShowCctReference = CheckBoxCct.IsChecked == true;
+        }
+
+        private void DaylightCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized || _isUpdatingOptions)
+            {
+                return;
+            }
+
+            CieView.ShowDaylightReference = CheckBoxDaylight.IsChecked == true;
+        }
+
+        private void CieView_CursorTextChanged(object? sender, string text)
+        {
+            TextBlockCursor.Text = string.IsNullOrWhiteSpace(text) ? "Cursor: --" : text;
+        }
+
+        private void ButtonFit_Click(object sender, RoutedEventArgs e)
+        {
+            CieView.ZoomUniform();
+        }
+
+        private void PresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.Tag is not string preset)
+            {
+                return;
+            }
+
+            ApplyPreset(preset);
+        }
+
+        private void UpdateDiagramKind()
+        {
+            CieDiagramKind kind = ComboBoxDiagram.SelectedIndex switch
+            {
+                1 => CieDiagramKind.Cie1960uv,
+                2 => CieDiagramKind.Cie1976uv,
+                _ => CieDiagramKind.Cie1931xy
+            };
+            CieView.SetDiagram(kind);
+            UpdateDiagramSummary();
+        }
+
+        private void UpdateDiagramSummary()
+        {
+            TextBlockDiagramSummary.Text = CieView.Profile.Name;
+        }
+
+        private void UpdateDisplayedGamuts()
+        {
+            List<CieGamut> gamuts = new();
+
+            if (CheckBoxSRgb.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.SRgb);
+            }
+
+            if (CheckBoxRec709.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.Rec709);
+            }
+
+            if (CheckBoxAdobeRgb.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.AdobeRgb);
+            }
+
+            if (CheckBoxDisplayP3.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.DisplayP3);
+            }
+
+            if (CheckBoxNtsc.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.Ntsc1953);
+            }
+
+            if (CheckBoxDciP3.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.DciP3);
+            }
+
+            if (CheckBoxRec2020.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.Rec2020);
+            }
+
+            if (CheckBoxPal.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.EbuPal);
+            }
+
+            if (CheckBoxSmpteC.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.SmpteC);
+            }
+
+            if (CheckBoxProPhoto.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.ProPhotoRgb);
+            }
+
+            if (CheckBoxAcesCg.IsChecked == true)
+            {
+                gamuts.Add(CieGamuts.AcesCg);
+            }
+
+            CieView.SetGamuts(gamuts);
+        }
+
+        private void UpdateDisplayedIlluminants()
+        {
+            List<CieMarker> illuminants = new();
+
+            if (CheckBoxD65.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D65);
+            }
+
+            if (CheckBoxE.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.E);
+            }
+
+            if (CheckBoxD50.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D50);
+            }
+
+            if (CheckBoxD55.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D55);
+            }
+
+            if (CheckBoxD60.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D60);
+            }
+
+            if (CheckBoxC.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.C);
+            }
+
+            if (CheckBoxA.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.A);
+            }
+
+            if (CheckBoxD75.IsChecked == true)
+            {
+                illuminants.Add(CieIlluminants.D75);
+            }
+
+            CieView.SetReferenceMarkers(illuminants);
+        }
+
+        private void ApplyPreset(string preset)
+        {
+            _isUpdatingOptions = true;
+            try
+            {
+                SetChecked(GetGamutCheckBoxes(), false);
+                SetChecked(GetIlluminantCheckBoxes(), false);
+                CheckBoxCct.IsChecked = false;
+                CheckBoxDaylight.IsChecked = false;
+
+                switch (preset)
+                {
+                    case "Display":
+                        CheckBoxSRgb.IsChecked = true;
+                        CheckBoxRec709.IsChecked = true;
+                        CheckBoxAdobeRgb.IsChecked = true;
+                        CheckBoxDisplayP3.IsChecked = true;
+                        CheckBoxRec2020.IsChecked = true;
+                        CheckBoxD65.IsChecked = true;
+                        CheckBoxD50.IsChecked = true;
+                        CheckBoxCct.IsChecked = true;
+                        CheckBoxDaylight.IsChecked = true;
+                        break;
+                    case "Cinema":
+                        CheckBoxRec709.IsChecked = true;
+                        CheckBoxDisplayP3.IsChecked = true;
+                        CheckBoxDciP3.IsChecked = true;
+                        CheckBoxRec2020.IsChecked = true;
+                        CheckBoxPal.IsChecked = true;
+                        CheckBoxSmpteC.IsChecked = true;
+                        CheckBoxD65.IsChecked = true;
+                        CheckBoxD60.IsChecked = true;
+                        CheckBoxCct.IsChecked = true;
+                        CheckBoxDaylight.IsChecked = true;
+                        break;
+                    case "All":
+                        SetChecked(GetGamutCheckBoxes(), true);
+                        SetChecked(GetIlluminantCheckBoxes(), true);
+                        CheckBoxCct.IsChecked = true;
+                        CheckBoxDaylight.IsChecked = true;
+                        break;
+                }
+            }
+            finally
+            {
+                _isUpdatingOptions = false;
+            }
+
+            UpdateDisplayedGamuts();
+            UpdateDisplayedIlluminants();
+            CieView.ShowCctReference = CheckBoxCct.IsChecked == true;
+            CieView.ShowDaylightReference = CheckBoxDaylight.IsChecked == true;
+        }
+
+        private IEnumerable<CheckBox> GetGamutCheckBoxes()
+        {
+            yield return CheckBoxSRgb;
+            yield return CheckBoxRec709;
+            yield return CheckBoxAdobeRgb;
+            yield return CheckBoxDisplayP3;
+            yield return CheckBoxNtsc;
+            yield return CheckBoxDciP3;
+            yield return CheckBoxRec2020;
+            yield return CheckBoxPal;
+            yield return CheckBoxSmpteC;
+            yield return CheckBoxProPhoto;
+            yield return CheckBoxAcesCg;
+        }
+
+        private IEnumerable<CheckBox> GetIlluminantCheckBoxes()
+        {
+            yield return CheckBoxD65;
+            yield return CheckBoxE;
+            yield return CheckBoxD50;
+            yield return CheckBoxD55;
+            yield return CheckBoxD60;
+            yield return CheckBoxC;
+            yield return CheckBoxA;
+            yield return CheckBoxD75;
+        }
+
+        private static void SetChecked(IEnumerable<CheckBox> checkBoxes, bool isChecked)
+        {
+            foreach (CheckBox checkBox in checkBoxes)
+            {
+                checkBox.IsChecked = isChecked;
+            }
+        }
+
+        private void SetSelectedXy(CieChromaticity xy, Color color, string name)
+        {
+            _selectedXy = xy.IsFinite ? xy : null;
+            if (_selectedXy.HasValue)
+            {
+                CieView.SetSelectedXy(xy, color, name);
+            }
+            else
+            {
+                CieView.ClearSelection();
+            }
+
+            UpdateSelectedReadout();
+        }
+
+        private void UpdateSelectedReadout()
+        {
+            if (!_selectedXy.HasValue || !_selectedXy.Value.IsFinite)
+            {
+                TextBlockSelectedXy.Text = "xy: --";
+                TextBlockSelectedUv1960.Text = "uv: --";
+                TextBlockSelectedUv1976.Text = "u'v': --";
+                TextBlockSelectedCct.Text = "CCT: --";
+                return;
+            }
+
+            CieChromaticity xy = _selectedXy.Value;
+            CieChromaticity uv1960 = CieColorConverter.XyToCie1960uv(xy);
+            CieChromaticity uv1976 = CieColorConverter.XyToCie1976uv(xy);
+            CieCctResult cct = CieColorConverter.EstimateCctAndDuv(xy);
+
+            TextBlockSelectedXy.Text = $"xy: x={xy.X:F5}  y={xy.Y:F5}";
+            TextBlockSelectedUv1960.Text = uv1960.IsFinite
+                ? $"uv: u={uv1960.X:F5}  v={uv1960.Y:F5}"
+                : "uv: --";
+            TextBlockSelectedUv1976.Text = uv1976.IsFinite
+                ? $"u'v': u'={uv1976.X:F5}  v'={uv1976.Y:F5}"
+                : "u'v': --";
+            TextBlockSelectedCct.Text = cct.IsFinite
+                ? $"CCT: {cct.TemperatureKelvin:F0}K  Duv={cct.Duv:+0.00000;-0.00000;0.00000}"
+                : "CCT: --";
         }
     }
 }

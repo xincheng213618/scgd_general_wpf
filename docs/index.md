@@ -10,57 +10,66 @@ hero:
     alt: ColorVision
   actions:
     - theme: brand
-      text: 快速开始
+      text: 开始安装
       link: /00-getting-started/README
     - theme: alt
-      text: 系统架构
-      link: /03-architecture/README
+      text: 日常使用
+      link: /01-user-guide/README
     - theme: alt
-      text: GitHub
-      link: https://github.com/xincheng213618/scgd_general_wpf
+      text: 设计与架构
+      link: /03-architecture/README
 
 features:
   - icon: 🚀
-    title: 快速入门
-    details: 简单的安装过程，详细的入门指南，让您快速开始使用 ColorVision
+    title: 安装与首次使用
+    details: 先确认系统要求，再完成安装、首次启动和最小闭环体验
     link: /00-getting-started/README
   
+  - icon: 📖
+    title: 日常使用
+    details: 按界面、设备、工作流程和故障排查组织的用户文档入口
+    link: /01-user-guide/README
+  
+  - icon: 🧩
+    title: 开发与交付
+    details: 面向插件、Engine、部署、更新和构建脚本的开发者入口
+    link: /02-developer-guide/README
+  
   - icon: 🏗️
-    title: 模块化架构
-    details: 清晰的模块化设计，UI 层和 Engine 层分离，易于扩展和维护
+    title: 设计与架构
+    details: 从系统级视角理解运行时、组件交互和模板系统设计
     link: /03-architecture/README
   
-  - icon: 🔌
-    title: 插件系统
-    details: 强大的插件架构，支持第三方功能扩展，满足个性化需求
-    link: /02-developer-guide/plugin-development/overview
+  - icon: 📚
+    title: API 与源码导读
+    details: 查接口、看模块入口、定位模板和插件实现位置
+    link: /04-api-reference/README
   
-  - icon: ⚙️
-    title: 流程引擎
-    details: 灵活的流程引擎和任务调度系统，支持复杂的自动化工作流程
-    link: /03-architecture/components/engine/flow-engine
-  
-  - icon: 📱
-    title: 设备管理
-    details: 支持多种光电设备的集成与控制，包括相机、校准设备、传感器等
-    link: /01-user-guide/devices/overview
-  
-  - icon: 🖥️
-    title: 现代化界面
-    details: 基于 WPF 的现代化用户界面，支持多主题、多语言，提供优秀的用户体验
-    link: /01-user-guide/interface/main-window
+  - icon: 🗂️
+    title: 结构与附录
+    details: 用项目结构总览和模块文档对照表快速定位仓库内容
+    link: /05-resources/README
 ---
 
-## 📚 文档导航
+## 📚 如何选文档
 
-| 分类 | 说明 | 快速链接 |
+| 如果你现在想做什么 | 应该先看哪里 | 说明 |
 |------|------|----------|
-| 📚 快速入门 | 安装、配置、首次运行 | [开始使用](/00-getting-started/README) |
-| 📖 用户指南 | 界面使用、设备操作 | [用户手册](/01-user-guide/README) |
-| 👨‍💻 开发指南 | 插件开发、系统扩展 | [开发文档](/02-developer-guide/README) |
-| 🏗️ 架构设计 | 系统架构、设计模式 | [架构说明](/03-architecture/README) |
-| 📚 API 参考 | API 文档、代码示例 | [API 文档](/04-api-reference/README) |
-| 📦 资源中心 | 项目结构、模板资源 | [资源文档](/05-resources/README) |
+| 安装程序或确认机器能不能跑 | [入门指南](/00-getting-started/README) | 覆盖系统要求、安装、首次运行和快速上手 |
+| 已经装好程序，想学界面和操作 | [用户指南](/01-user-guide/README) | 面向日常使用，不展开内部实现 |
+| 要改代码、做插件、打包发布 | [开发指南](/02-developer-guide/README) | 面向扩展点、构建、部署和交付流程 |
+| 想理解系统为什么这样设计 | [架构设计](/03-architecture/README) | 关注运行时关系、组件边界和设计思路 |
+| 想直接查模块、接口和实现入口 | [API 参考](/04-api-reference/README) | 面向源码导航，不是用户手册 |
+| 想看仓库目录、附录和文档映射 | [附录与资源](/05-resources/README) | 用于快速定位资料，不承载主教程 |
+
+## 当前整理原则
+
+- 安装与首次使用，集中放在 `00-getting-started/`
+- 日常操作，集中放在 `01-user-guide/`
+- 二次开发、部署和交付，集中放在 `02-developer-guide/`
+- 设计边界与运行时理解，集中放在 `03-architecture/`
+- 模块、接口和实现导读，集中放在 `04-api-reference/`
+- 项目结构、附录和稳定索引，集中放在 `05-resources/`
 
 ## 技术栈
 

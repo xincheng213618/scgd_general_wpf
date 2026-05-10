@@ -1,4 +1,5 @@
 using ColorVision.UI;
+using ColorVision.Core;
 using System;
 using System.ComponentModel;
 using System.Windows;
@@ -56,6 +57,13 @@ namespace Conoscope.Core
             {
                 get => config.DisplayChannel;
                 set => config.DisplayChannel = value;
+            }
+
+            [Category("显示"), DisplayName("伪彩色映射")]
+            public ColormapTypes PseudoColorMap
+            {
+                get => config.PseudoColorMap;
+                set => config.PseudoColorMap = value;
             }
 
             [Category("滤波"), DisplayName("打开时应用滤波")]

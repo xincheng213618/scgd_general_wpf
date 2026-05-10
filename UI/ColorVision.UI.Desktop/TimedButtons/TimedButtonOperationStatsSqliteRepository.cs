@@ -1,7 +1,5 @@
-using ColorVision.UI;
 using SqlSugar;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.UI.Desktop.TimedButtons
 {

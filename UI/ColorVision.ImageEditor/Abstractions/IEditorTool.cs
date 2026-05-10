@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -47,6 +48,11 @@ namespace ColorVision.ImageEditor
     public interface IEditorTextTool : IEditorTool
     {
         public Binding Binding { get; set; }
+    }
+
+    public interface IEditorCustomControlTool : IEditorTool
+    {
+        FrameworkElement CreateToolControl();
     }
 
     /// <summary>

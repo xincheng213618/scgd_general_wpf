@@ -73,8 +73,15 @@ namespace ColorVision.ImageEditor
     {
         public IEditorToggleTool? Current { get; set; }
 
+        public event EventHandler? CurrentChanged;
+
         public void SetCurrentDrawEditor(IEditorToggleTool? drawEditor)
         {
+            if (ReferenceEquals(Current, drawEditor))
+            {
+                return;
+            }
+
             if (Current != null)
             {
                 Current.IsChecked = false;
@@ -84,6 +91,8 @@ namespace ColorVision.ImageEditor
             {
                 Current.IsChecked = true;
             }
+
+            CurrentChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }

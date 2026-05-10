@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -136,7 +135,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public static void ApplyToDefault(EditorContext? editorContext)
         {
             var key = ResolveCalibrationKey(editorContext);
-            editorContext?.Config.AddProperties(CalibrationSourceKeyProperty, key);
+            editorContext?.Config.SetViewState(CalibrationSourceKeyProperty, key, nameof(ImageCalibrationConfig), "当前视窗使用的标定档案键");
 
             var profile = ImageCalibrationConfig.Instance.GetOrCreateProfile(key);
             profile.ApplyTo(DefalutTextAttribute.Defalut);

@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using Spectrum.PropertyEditor;
 using System.Collections.ObjectModel;

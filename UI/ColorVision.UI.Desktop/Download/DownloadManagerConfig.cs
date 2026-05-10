@@ -1,8 +1,6 @@
 using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using System.ComponentModel;
 using System.IO;
-using System;
 
 namespace ColorVision.UI.Desktop.Download
 {

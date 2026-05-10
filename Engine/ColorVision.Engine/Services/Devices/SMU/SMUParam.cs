@@ -1,15 +1,12 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
-using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Text;
 namespace ColorVision.Engine.Services.Devices.SMU
 {
 

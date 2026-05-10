@@ -17,8 +17,10 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
+using System.Collections.Generic;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
+using System.Linq;
 using cvColorVision;
 using log4net;
 using SqlSugar;
@@ -26,13 +28,19 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
+    internal sealed record DeviceCameraCalibrationFile(
+        string SlotKey,
+        CalibrationType CalibrationType,
+        string DisplayName,
+        string RelativePath,
+        string FullPath);
+
     public class DeviceCamera : DeviceService<ConfigCamera>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
@@ -197,19 +205,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 lastPhyCamera.DeviceCamera = this;
                 lastPhyCamera.DeviceCamera = null;
             }
-            Config.Channel = e.Channel;
-            Config.CFW.CopyFrom(e.CFW);
-            Config.MotorConfig.CopyFrom(e.MotorConfig);
-            Config.CameraID = e.CameraID;
-            Config.CameraMode = e.CameraMode;
-            Config.CameraType = e.CameraType;
-            Config.CameraModel = e.CameraModel;
-            Config.TakeImageMode = e.TakeImageMode;
-            Config.ImageBpp = e.ImageBpp;
-            Config.GainMin = e.CameraParameterLimit.GainMin;
-            Config.GainMax = e.CameraParameterLimit.GainMax;
-            Config.ExpTimeMax = e.CameraParameterLimit.ExpMax;
-            Config.ExpTimeMin = e.CameraParameterLimit.ExpMin;
+            e.ApplyTo(Config);
 
             DisplayConfig.Gain = e.CameraParameterLimit.GainDefault;
             DisplayConfig.ExpTime = e.CameraParameterLimit.ExpDefalut;
@@ -277,15 +273,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 PhyCamera.SetDeviceCamera(this);
 
-                Config.Channel = PhyCamera.Config.Channel;
-                Config.CFW.CopyFrom(PhyCamera.Config.CFW);
-                Config.MotorConfig.CopyFrom(PhyCamera.Config.MotorConfig);
-                Config.CameraID = PhyCamera.Config.CameraID;
-                Config.CameraMode = PhyCamera.Config.CameraMode;
-                Config.CameraType = PhyCamera.Config.CameraType;
-                Config.CameraModel = PhyCamera.Config.CameraModel;
-                Config.TakeImageMode = PhyCamera.Config.TakeImageMode;
-                Config.ImageBpp = PhyCamera.Config.ImageBpp;
+                PhyCamera.Config.ApplyTo(Config);
 
                 OnPropertyChanged(nameof(PhyCamera));
             }
@@ -328,6 +316,83 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 
         public DisplayCamera GetDisplayCamera()=> new DisplayCamera(this);
+
+        internal bool TryGetCalibrationTemplateFiles(CalibrationParam? param, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage)
+        {
+            calibrationFiles = Array.Empty<DeviceCameraCalibrationFile>();
+            errorMessage = null;
+
+            if (param == null || param.Id == -1)
+            {
+                return true;
+            }
+
+            if (PhyCamera == null)
+            {
+                errorMessage = "物理相机未配置";
+                return false;
+            }
+
+            GroupResource? groupResource = PhyCamera.VisualChildren
+                .OfType<GroupResource>()
+                .FirstOrDefault(resource => resource.Name == param.CalibrationMode);
+            groupResource?.SetCalibrationResource();
+
+            bool hasSelectedCalibration = CalibrationSlotDefinitions.AllSlots.Any(slot => slot.ParamGetter(param).IsSelected);
+            if (groupResource == null || !hasSelectedCalibration)
+            {
+                errorMessage = $"使用{param.Name}模板,需要确认校正文件已经配置";
+                return false;
+            }
+
+            List<DeviceCameraCalibrationFile> resolvedFiles = new();
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                CalibrationBase selectedCalibration = slot.ParamGetter(param);
+                if (!selectedCalibration.IsSelected)
+                {
+                    continue;
+                }
+
+                CalibrationResource? resource = slot.GroupGetter(groupResource);
+                if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath))
+                {
+                    string displayName = resource?.Name ?? slot.Key;
+                    errorMessage = $"使用{param.Name}模板, {displayName} 文件不存在";
+                    return false;
+                }
+
+                resolvedFiles.Add(new DeviceCameraCalibrationFile(
+                    slot.Key,
+                    slot.ServiceType.ToCalibrationType(),
+                    resource.Name,
+                    relativePath,
+                    fullPath));
+            }
+
+            calibrationFiles = resolvedFiles;
+            return true;
+        }
+
+        internal bool TryResolveCalibrationFilePath(CalibrationResource resource, out string fullPath, out string relativePath)
+        {
+            fullPath = string.Empty;
+            relativePath = string.Empty;
+
+            if (PhyCamera == null || !Directory.Exists(PhyCamera.Config.FileServerCfg.FileBasePath))
+            {
+                return false;
+            }
+
+            relativePath = resource.SysResourceModel.Value ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                return false;
+            }
+
+            fullPath = Path.Combine(PhyCamera.Config.FileServerCfg.FileBasePath, PhyCamera.Code, "cfg", relativePath);
+            return File.Exists(fullPath);
+        }
 
         public override MQTTServiceBase? GetMQTTService()
         {

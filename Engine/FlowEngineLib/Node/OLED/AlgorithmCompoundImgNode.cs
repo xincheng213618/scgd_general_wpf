@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.OLED;
 
 [STNode("/03_3 Image")]
-public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
+public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmCompoundImgNode));
 
@@ -60,7 +60,8 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 	{
 		operatorCode = "CompoundImg";
 		m_in_text = "IN_IMG1";
-		m_in2_text = "IN_IMG2";
+		m_in_textHub[0] = "IN_IMG1";
+		m_in_textHub[1] = "IN_IMG2";
 		_OutputFileName = "result.cvraw";
 		_OrderIndex = -1;
 		_BufferLen = 1024;

@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:Conoscope="clr-namespace:Conoscope.Core"
+    xmlns:local="clr-namespace:Conoscope"
         xmlns:properties="clr-namespace:Conoscope.Properties"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
@@ -27,17 +27,68 @@
         <Style x:Key="PanelPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
+        <Style x:Key="OverlayToolButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+        <Style x:Key="OverlayToolToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="MinWidth" Value="46"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+        <DrawingBrush x:Key="TransparentGridBrush" Opacity="0.1" TileMode="Tile" Viewport="0 0 20 20" ViewportUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <!--  Gray square  -->
+                    <GeometryDrawing Brush="Gray" Geometry="M0,0 L0,10 10,10 10,0 Z" />
+                    <!--  Transparent square  -->
+                    <GeometryDrawing Brush="Transparent" Geometry="M10,0 L10,10 20,10 20,0 Z" />
+                    <!--  Another row  -->
+                    <GeometryDrawing Brush="Transparent" Geometry="M0,10 L0,20 10,20 10,10 Z" />
+                    <GeometryDrawing Brush="Gray" Geometry="M10,10 L10,20 20,20 20,10 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
     </UserControl.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="420"/>
+            <ColumnDefinition Width="*" MinWidth="520"/>
             <ColumnDefinition Width="6"/>
-            <ColumnDefinition Width="540" MinWidth="420"/>
+            <ColumnDefinition Width="390" MinWidth="320"/>
         </Grid.ColumnDefinitions>
 
-        <Grid x:Name="ImageViewHost" Grid.Column="0">
-            <im:ImageView x:Name="ImageView" />
+        <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{StaticResource TransparentGridBrush}">
+            <local:ConoscopeImageHost x:Name="ImageView" />
+            <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
+                <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
+                    <ToggleButton x:Name="tglPanMode" Style="{StaticResource OverlayToolToggleStyle}" Content="平移" ToolTip="开启后左键拖拽可平移图像；关闭后按住 Ctrl 再平移。" IsChecked="True" Checked="tglPanMode_Checked" Unchecked="tglPanMode_Unchecked" />
+                    <Separator/>
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="-" FontSize="16" FontWeight="Bold" ToolTip="缩小" Click="ToolbarZoomOut_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="放大" Click="ToolbarZoomIn_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="1:1" ToolTip="原始尺寸" Click="ToolbarZoomNone_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="适" ToolTip="适应窗口" Click="ToolbarZoomUniform_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="填" ToolTip="铺满窗口" Click="ToolbarZoomUniformToFill_Click" />
+                    <TextBox x:Name="txtToolbarZoomRatio" Width="54" Margin="4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Text="1.00" ToolTip="当前缩放倍率" PreviewKeyDown="txtToolbarZoomRatio_PreviewKeyDown" LostFocus="txtToolbarZoomRatio_LostFocus" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="全" ToolTip="切换图像全屏" Click="ToolbarFullScreen_Click" />
+                    <Separator/>
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="3D" ToolTip="打开当前图像的 3D 视图" Click="ToolbarOpen3D_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="CIE" ToolTip="打开 CIE 色度图" Click="ToolbarOpenCie_Click" />
+                </ToolBar>
+            </Border>
+            <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Padding="8" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
+                <StackPanel>
+                    <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="SemiBold" Text="Y" HorizontalAlignment="Center" />
+                    <TextBlock x:Name="tbPseudoColorLegendMax" Margin="0,6,0,4" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
+                    <Border Width="18" Height="124" BorderBrush="#55FFFFFF" BorderThickness="1">
+                        <Image x:Name="imgPseudoColorLegend" Stretch="Fill" />
+                    </Border>
+                    <TextBlock x:Name="tbPseudoColorLegendMin" Margin="0,4,0,0" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
+                </StackPanel>
+            </Border>
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
             </Border>
@@ -51,7 +102,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <TabControl Grid.Row="0" MaxHeight="238" MinHeight="128">
+            <TabControl Grid.Row="0" MaxHeight="220" MinHeight="112">
                 <TabItem Header="显示">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
@@ -142,9 +193,16 @@
                         <StackPanel Margin="5">
                             <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
                                 <StackPanel>
-                                    <TextBlock Text="预处理 / 滤波" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <TextBlock Text="当前预处理预设" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <TextBlock x:Name="tbPreprocessSummary" Margin="0,0,0,6" Foreground="Gray" TextWrapping="Wrap"/>
+                                    <WrapPanel Margin="0,0,0,2">
+                                        <Button Content="应用当前预设" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                                        <Button Content="完整参数" Command="{Binding EditConoscopeConfigCommand}" Style="{StaticResource PanelCompactButtonStyle}"/>
+                                    </WrapPanel>
+                                    <StackPanel Visibility="Collapsed">
                                     <WrapPanel Margin="0,4,0,6">
                                         <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用预处理" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
+                                        <CheckBox x:Name="chkClampNonPositiveXyzOnLoad" Content="加载时将 XYZ&lt;=0 修正为 1e-6" IsChecked="{Binding Config.ClampNonPositiveXyzOnLoad}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
                                         <CheckBox x:Name="chkDustRemovalEnabled" Content="灰尘滤除" IsChecked="{Binding Config.DustRemovalEnabled}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
                                         <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" MinWidth="130">
@@ -267,6 +325,7 @@
                                             </Grid>
                                         </StackPanel>
                                     </Expander>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

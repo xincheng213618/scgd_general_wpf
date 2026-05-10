@@ -1,10 +1,4 @@
 using ColorVision.Common.ThirdPartyApps;
-using ColorVision.UI;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {

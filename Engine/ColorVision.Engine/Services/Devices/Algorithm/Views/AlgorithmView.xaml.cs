@@ -2,17 +2,13 @@
 using ColorVision.Database;
 using ColorVision.ImageEditor;
 using ColorVision.UI.Sorts;
-using ColorVision.UI.Views;
 using log4net;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;

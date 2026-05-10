@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
-using ProjectLUX.Process.W255AR;
 using System.ComponentModel;
 
 namespace ProjectLUX.Process.AR.W51AR

@@ -1,16 +1,12 @@
-using ColorVision.Common.NativeMethods;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.ImageEditor.Draw;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
 using SqlSugar;
+using SqlSugar.Extensions;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.AOI
 {
@@ -36,33 +32,68 @@ namespace ProjectARVRPro.Process.AOI
 
                 foreach (var master in masters)
                 {
+
                     if (master.ImgFileType == ViewResultAlgType.ImageConvert)
                     {
-                        log.Info("正在复制 " + master.ResultImagFile);
-
                         string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
                         if (!Directory.Exists(Dir))
                         {
                             Directory.CreateDirectory(Dir);
                         }
-                        string ResultImagFile = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
-                        File.Copy(master.ResultImagFile, ResultImagFile, true);
 
-                        string ImgFile = Path.Combine(Dir, Path.GetFileName(master.ImgFile));
-                        File.Copy(master.ImgFile, ImgFile, true);
+                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                        var list = db.Queryable<AlgResultImageModel>().Where(it => it.Pid == master.Id).ToList();
 
+                        foreach (var imageModel in list)
+                        {
+                            if (File.Exists(imageModel.FileName))
+                            {
+                                log.Info("正在复制 " + imageModel.FileName);
+                                string destFile = Path.Combine(Dir, Path.GetFileName(imageModel.FileName));
+                                File.Copy(imageModel.FileName, destFile, true);
+                            }
+                        }
                     }
                     if (master.ImgFileType == ViewResultAlgType.OLED_CombineQuaterImages)
                     {
-                        log.Info("正在复制 " + master.ResultImagFile);
-
-                        string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
-                        if (!Directory.Exists(Dir))
+                        try
                         {
-                            Directory.CreateDirectory(Dir);
+                            log.Info("正在复制 " + master.ResultImagFile);
+                            string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                            if (!Directory.Exists(Dir))
+                            {
+                                Directory.CreateDirectory(Dir);
+                            }
+                            string imgPath = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
+                            File.Copy(master.ResultImagFile, imgPath, true);
                         }
-                        string imgPath = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
-                        File.Copy(master.ResultImagFile, imgPath, true);
+                        catch(Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+                       
+                    }
+
+                    if (master.ImgFileType == ViewResultAlgType.OLED_RebuildPixelsMem)
+                    {
+                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                        var list = db.Queryable<AlgResultPoiCieFileModel>().Where(it => it.Pid == master.Id).ToList();
+
+                        foreach (var ciefile in list)
+                        {
+                            if (File.Exists(ciefile.FileUrl))
+                            {
+                                log.Info("正在复制 " + ciefile.FileUrl);
+                                string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                                if (!Directory.Exists(Dir))
+                                {
+                                    Directory.CreateDirectory(Dir);
+                                }
+                                string destFile = Path.Combine(Dir, Path.GetFileName(ciefile.FileUrl));
+                                File.Copy(ciefile.FileUrl, destFile, true);
+                            }
+
+                        }
                     }
                 }
 

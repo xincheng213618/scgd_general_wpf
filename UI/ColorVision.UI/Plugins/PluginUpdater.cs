@@ -91,7 +91,9 @@ del ""%~f0"" & exit
         /// 2. Generates a batch script to kill the main process, replace the old plugin files with the new ones, and restart the application.
         /// </summary>
         /// <param name="downloadPaths">Full paths to the downloaded plugin ZIP files.</param>
-        public static void UpdatePlugin(params string[] downloadPaths)
+        public static void UpdatePlugin(params string[] downloadPaths) => UpdatePluginWithRestartArguments("-c MenuPluginManager", downloadPaths);
+
+        public static void UpdatePluginWithRestartArguments(string? restartArguments, params string[] downloadPaths)
         {
             if (downloadPaths == null || downloadPaths.Length == 0) return;
 
@@ -127,7 +129,8 @@ del ""%~f0"" & exit
                     batchFilePath: batchFilePath,
                     stagingRoot: stagingRoot,
                     baseDir: baseDir,
-                    exeName: exeName
+                    exeName: exeName,
+                    restartArguments: restartArguments
                 );
 
                 // 6. 启动批处理（管理员权限：如果安装在 Program Files 下）
@@ -260,6 +263,7 @@ del ""%~f0"" & exit
             string stagingRoot,
             string baseDir,
             string exeName,
+            string? restartArguments = "-c MenuPluginManager",
             bool mirrorMode = false,         // true = 使用 /MIR（危险：删除目标中不存在的文件）
             bool enableBackup = false,       // true = 启用备份
             string backupParentDir = null,   // 为 null 则默认放在 baseDir 的同级目录
@@ -360,7 +364,14 @@ del ""%~f0"" & exit
             sb.AppendLine();
 
             sb.AppendLine(Properties.Resources.EchoRestartingProgram);
-            sb.AppendLine($"start \"\" \"{escapedExePath}\" -c MenuPluginManager");
+            if (string.IsNullOrWhiteSpace(restartArguments))
+            {
+                sb.AppendLine($"start \"\" \"{escapedExePath}\"");
+            }
+            else
+            {
+                sb.AppendLine($"start \"\" \"{escapedExePath}\" {restartArguments}");
+            }
             sb.AppendLine();
 
             sb.AppendLine(Properties.Resources.EchoSchedulingCleanup);

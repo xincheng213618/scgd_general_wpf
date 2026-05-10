@@ -1,7 +1,6 @@
 using ST.Library.UI.NodeEditor;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms.Integration;
 
 namespace ColorVision.Engine.Templates.Flow
 {

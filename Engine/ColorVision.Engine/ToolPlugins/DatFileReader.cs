@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.ThirdPartyApps;
-using ColorVision.UI.Menus;
 using Microsoft.Win32;
 using OpenCvSharp;
 using System;

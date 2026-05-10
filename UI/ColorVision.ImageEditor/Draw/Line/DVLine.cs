@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class DVLine : DrawingVisualBase<LineProperties>, IDrawingVisual
+    public class DVLine : DrawingVisualBase<LineProperties>, IDrawingVisual, ILayoutScaleDrawingVisual
     {
 
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -13,13 +14,28 @@ namespace ColorVision.ImageEditor.Draw
         public DVLine()
         {
             Attribute = new LineProperties();
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
         }
 
         public DVLine(LineProperties attribute)
         {
             Attribute = attribute;
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
+        }
+
+        private void Attribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(LineProperties.Pen) || e.PropertyName == nameof(LineProperties.StrokeThickness))
+            {
+                LayoutBasePenThickness = null;
+            }
+
+            Render();
+        }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
         }
 
 

@@ -1,205 +1,114 @@
-# 基于JSON的通用模板
+# JSON 模板
 
+本页只描述当前仓库里真实可用的 JSON 模板宿主链，不再继续维护“通用算法 DSL 平台 + 跨项目配置框架”式旧稿。
 
-# 基于JSON的通用模板
+## 先看这个模块现在是什么
 
-## 目录
-1. [介绍](#介绍)
-2. [项目结构](#项目结构)
-3. [核心组件](#核心组件)
-4. [架构概览](#架构概览)
-5. [详细组件分析](#详细组件分析)
-6. [依赖关系分析](#依赖关系分析)
-7. [性能考虑](#性能考虑)
-8. [故障排查指南](#故障排查指南)
-9. [结论](#结论)
-10. [附录](#附录)
+按当前源码状态，JSON 模板系统不是一套脱离数据库独立存在的配置平台，而是 `ColorVision.Engine` 模板体系中的一个具体分支。它当前的核心目标是：
 
-## 介绍
-本项目实现了一个基于JSON配置的通用算法模板框架，支持通过编辑JSON文件灵活定义复杂的算法逻辑和参数，广泛应用于黑斑（BlackMura）、KB等多种场景。该模板极大提升了算法开发的灵活性和可扩展性，使用户无需修改代码即可通过配置JSON实现算法定制。
+- 把 `ModMasterModel.JsonVal` 里的 JSON 内容托管成模板项。
+- 通过通用编辑器 `EditTemplateJson` 提供文本编辑和属性编辑两种模式。
+- 让具体模板类型以 `ITemplateJson<T>` 的形式复用同一套加载、保存、导入导出逻辑。
+- 为像 `PoiAnalysis`、`SFRFindROI` 这类 JSON 驱动模板提供统一宿主。
 
-本文档旨在详细介绍该项目的代码结构、核心组件、架构设计及其功能实现，帮助不同技术水平的用户理解和使用该通用模板。
+因此它更像“数据库中的 JSON 模板分支”，而不是一个完全独立的配置子系统。
 
-## 项目结构
+## 当前最关键的文件
 
-项目采用模块化设计，代码按照功能和技术层次划分为多个目录。核心的算法模板及其JSON配置相关代码主要集中在`/Engine/ColorVision.Engine/Templates/Jsons`目录下。项目整体结构包括：
+- `Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs`
+- `Engine/ColorVision.Engine/Templates/Jsons/TemplateJsonParam.cs`
+- `Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml`
+- `Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs`
+- `Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs`
+- `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs`
 
-```mermaid
-graph TD
-  A[项目根目录]
-  A --> B[Engine]
-  B --> C[ColorVision.Engine]
-  C --> D[Templates]
-  D --> E[Jsons]
-  E --> F[TemplateJsonParam.cs]
-  E --> G[EditTemplateJson.xaml.cs]
-```
+如果只是想看“JSON 模板现在怎么存、怎么编、怎么挂进模板窗口”，这些文件已经覆盖主干。
 
-- `/Engine/ColorVision.Engine/Templates/Jsons`：存放基于JSON的算法模板相关代码，实现了JSON配置的读取、编辑和校验功能。
-- `/Projects`：包含各个具体项目如BlackMura、KB等，体现了基于通用模板的具体应用。
-- `/UI`、`/Plugins`等目录：负责用户界面、插件管理等辅助功能。
+## 当前主链怎么跑
 
-该结构清晰，功能分区明确，有助于维护和扩展。
+### 宿主基类
 
-## 核心组件
+`ITemplateJson<T>` 是 JSON 模板分支的通用宿主。它当前负责：
 
-基于JSON配置的通用模板的关键组件包括：
+- 用 `TemplateDicId` 从 MySQL 读取 `ModMasterModel`
+- 把每条记录包装成 `TemplateModel<T>`
+- 提供保存、删除、复制、导入、导出
+- 在创建新模板时，从字典模板默认 JSON 生成初始内容
 
-1. **TemplateJsonParam.cs**  
-   - 负责JSON配置参数的封装与操作。
-   - 实现了对JSON字符串的校验、格式化、美化。
-   - 提供重置配置、打开外部编辑工具的命令接口。
-   - 通过事件机制通知JSON内容变更。
+这意味着 JSON 模板虽然长得像纯文本编辑，但当前仍然深度依赖模板字典和数据库记录。
 
-2. **EditTemplateJson.xaml.cs**  
-   - 提供基于AvalonEdit控件的JSON编辑界面。
-   - 支持代码缩进、行号显示、内容变更事件的防抖处理。
-   - 绑定到`TemplateJsonParam`，实现UI与数据的双向同步。
-   - 提供帮助按钮，链接在线JSON编辑工具。
+### 参数对象
 
-## 架构概览
+`TemplateJsonParam` 当前是最基础的 JSON 模板参数对象。它持有：
 
-整体架构围绕“模板参数-编辑界面-算法执行”流程设计：
+- `TemplateJsonModel`
+- `ResetCommand`
+- `CheckCommand`
+- `JsonValueChanged` 事件
 
-- **数据层**：`TemplateJsonParam`封装JSON配置数据，支持数据库关联（通过`DicTemplateJsonDao`访问字典数据）。
-- **表示层**：`EditTemplateJson`作为用户控件，提供友好的JSON编辑体验，支持实时预览和校验。
-- **服务层**：命令模式（`RelayCommand`）实现用户操作的解耦，方便扩展如重置、校验、打开编辑工具等功能。
-- **事件机制**：通过`JsonValueChanged`事件实现数据与界面的同步更新，保证配置变更即时反映。
+其中 `JsonValue` 的真实语义是：
 
-此架构保证了配置的灵活性和系统的可维护性。
+- 读取时用 `JsonHelper.BeautifyJson(...)` 格式化
+- 写入时只有在 JSON 合法时才回写 `TemplateJsonModel.JsonVal`
 
-## 详细组件分析
+`ResetValue()` 则会回到字典模板记录的默认 JSON，而不是简单清空本地文本。
 
-### 1. TemplateJsonParam.cs
+### 编辑器控件
 
-此类继承自`ParamBase`，实现接口`IEditTemplateJson`，封装了JSON配置数据及相关操作。
+`EditTemplateJson` 是当前真正的编辑入口。它现在同时支持：
 
-主要成员及功能：
+- AvalonEdit 文本模式
+- `JsonPropertyEditorControl` 属性模式
+- 描述注释视图切换
+- 校验按钮
+- 外部 JSON 网站辅助入口
 
-- `TemplateJsonModel TemplateJsonModel`  
-  存储JSON配置的模型数据，包含JSON字符串及元信息。
+其中右下角的 `json` 按钮当前实际行为很明确：
 
-- `RelayCommand ResetCommand`  
-  重置JSON配置为数据库中默认值。
+- 打开 `https://www.json.cn/`
+- 把当前 JSON 复制到剪贴板
 
-- `RelayCommand CheckCommand`  
-  触发配置校验事件。
+这就是当前活动文件里 `Button_Click_1` 的真实作用，不是其它隐藏命令。
 
-- `RelayCommand OpenEditToolCommand`  
-  打开外部JSON编辑器（HTML页面）以辅助编辑。
+### 模式切换与同步
 
-- `string JsonValue`  
-  JSON字符串属性，设置时自动校验格式并美化显示。
+`EditTemplateJson` 当前不是简单文本框包装。它会：
 
-- `event EventHandler JsonValueChanged`  
-  JSON内容变更事件，供界面监听。
+- 用防抖定时器同步文本改动
+- 通过 `IEditTemplateJson.JsonValueChanged` 反向刷新界面
+- 在文本模式与属性模式之间切换时同步 JSON 内容
+- 用 `EditTemplateJsonConfig` 记住宽度和默认编辑模式
 
-- `void ResetValue()`  
-  从数据库加载默认JSON配置，失败时弹窗提示。
+因此这里的复杂度主要在“两个编辑面保持同一份 JSON 一致”，而不是算法本身。
 
-- `void OpenEditTool()`  
-  复制当前JSON到剪贴板，启动编辑器页面。
+## 当前几个最容易写错的点
 
-示例代码片段：
+### 它不是通用文件模板平台
 
-```csharp
-public string JsonValue
-{
-    get => JsonHelper.BeautifyJson(TemplateJsonModel.JsonVal);
-    set
-    {
-        if (JsonHelper.IsValidJson(value))
-        {
-            TemplateJsonModel.JsonVal = value;
-            NotifyPropertyChanged();
-        }
-    }
-}
-```
+当前 JSON 模板的主存储是 MySQL 的 `ModMasterModel.JsonVal`，不是仓库里一组任意 JSON 文件。继续把它写成“读取磁盘配置目录”会偏离真实实现。
 
-此设计确保了JSON数据的有效性和格式美观，方便用户编辑和后续解析。
+### 不是所有 JSON 模板共享同一个业务 schema
 
-### 2. EditTemplateJson.xaml.cs
+`ITemplateJson<T>` 只提供宿主链；每个具体模板实际需要什么字段，仍由各自的 JSON 约定决定。文档不能再把某一类 JSON 结构写成全系统统一规范。
 
-该类为WPF用户控件，基于AvalonEdit实现功能丰富的JSON编辑器。
+### 编辑器已经不只是文本编辑器
 
-关键点：
+当前 `EditTemplateJson` 已经支持属性模式和描述模式切换。只描述 AvalonEdit 文本框，会漏掉用户实际看到的一半功能。
 
-- 初始化时设置编辑器宽度、行号显示、缩进策略。
-- 文本变更时，使用防抖定时器避免频繁事件触发，提高性能。
-- 通过`SetParam`方法绑定`IEditTemplateJson`接口，实现数据与UI同步。
-- 提供帮助按钮，链接至在线JSON格式化工具，并复制当前JSON到剪贴板。
+### “校验”当前主要是事件触发，不是完整编译器
 
-示例代码片段：
+`CheckCommand` 触发的是 `JsonValueChanged` 事件链，具体怎么响应取决于调用方。不要把它写成独立的 JSON 规则引擎。
 
-```csharp
-public void EditTemplateJsonChanged()
-{
-    Application.Current.Dispatcher.Invoke(() =>
-    {
-        if (IEditTemplateJson != null)
-        {
-            IEditTemplateJson.JsonValue = textEditor.Text;
-        }
-    });
-}
-```
+## 推荐阅读顺序
 
-此控件为用户提供了直观、易用的JSON编辑体验，极大提升了配置的灵活性。
+1. `Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs`
+2. `Engine/ColorVision.Engine/Templates/Jsons/TemplateJsonParam.cs`
+3. `Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs`
+4. `Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs`
+5. `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs`
 
-## 依赖关系分析
+## 继续阅读
 
-- `TemplateJsonParam`依赖于`TemplateJsonModel`和数据库访问对象`DicTemplateJsonDao`，实现数据持久化和默认配置加载。
-- `EditTemplateJson`依赖于`IEditTemplateJson`接口，实现对不同JSON参数对象的通用编辑。
-- `RelayCommand`实现命令模式，解耦UI操作和业务逻辑。
-- 使用`JsonHelper`进行JSON格式校验和美化，保证配置的正确性。
-- 通过`Common.NativeMethods.Clipboard`操作剪贴板，提升交互便捷性。
-
-## 性能考虑
-
-- JSON编辑时采用防抖机制（50ms延迟）减少频繁的事件处理，提升编辑性能。
-- JSON字符串的格式化和校验操作在设置时执行，避免无效数据进入系统。
-- 启动外部编辑器通过系统默认程序打开HTML文件，轻量且快速。
-
-## 故障排查指南
-
-- 若重置JSON配置失败，提示“无法重置，请检查数据库相关配置”，应检查数据库连接及字典表数据完整性。
-- 编辑器显示异常或内容不同步，检查事件订阅是否正确，确认`SetParam`调用是否正确绑定数据。
-- 外部编辑器无法启动，确认项目根目录下`Assets/Tool/EditJson/Editjson.html`文件存在且路径正确。
-
-## 结论
-
-本项目通过基于JSON的通用模板设计，实现了灵活且强大的算法配置能力。用户可通过直观的JSON编辑界面快速定义复杂算法参数，无需修改代码即可适配多场景应用，如黑斑检测、KB检测等。该设计极大提升了系统的扩展性和维护性，是工业视觉检测领域的高效解决方案。
-
-## 附录
-
-### 相关源码链接
-
-- [TemplateJsonParam.cs](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Engine/ColorVision.Engine/Templates/Jsons/TemplateJsonParam.cs)
-- [EditTemplateJson.xaml.cs](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs)
-
-### Mermaid 类图示例
-
-```mermaid
-classDiagram
-    class TemplateJsonParam {
-        +TemplateJsonModel TemplateJsonModel
-        +RelayCommand ResetCommand
-        +RelayCommand CheckCommand
-        +RelayCommand OpenEditToolCommand
-        +string JsonValue
-        +event JsonValueChanged
-        +void ResetValue()
-        +void OpenEditTool()
-        +void Check()
-    }
-
-    class EditTemplateJson {
-        +void SetParam(object param)
-        +void EditTemplateJsonChanged()
-    }
-
-    TemplateJsonParam <|.. IEditTemplateJson
-    EditTemplateJson --> IEditTemplateJson : uses
-```
-
+- [Templates API 参考](./api-reference.md)
+- [模板管理](./template-management.md)
+- [ColorVision.Engine](../../engine-components/ColorVision.Engine.md)

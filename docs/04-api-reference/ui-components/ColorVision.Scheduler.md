@@ -1,407 +1,147 @@
 # ColorVision.Scheduler
 
-## 目录
-1. [概述](#概述)
-2. [核心功能](#核心功能)
-3. [架构设计](#架构设计)
-4. [任务类型](#任务类型)
-5. [使用示例](#使用示例)
-6. [管理界面](#管理界面)
-7. [最佳实践](#最佳实践)
+本页只描述 `UI/ColorVision.Scheduler/` 当前已经落地的调度能力，不再继续维护旧文档里那种“通用 Quartz 教程 + 想象中的任务平台功能清单”。
 
-## 概述
+## 模块定位
 
-**ColorVision.Scheduler** 是基于UI的定时任务控件，使用Quartz.Net实现，提供定时任务的管理，执行，监控等功能。它为ColorVision系统提供了完整的任务调度解决方案，支持复杂的调度策略和任务监控。
+`ColorVision.Scheduler` 当前是桌面侧的任务调度与监控模块，核心不是“抽象任务类型大全”，而是这三条真实链：
 
-### 基本信息
+- `QuartzSchedulerManager` 管理 Quartz 调度器和任务恢复
+- `scheduler_tasks.json` 保存任务配置
+- `SchedulerHistory.db` 保存执行历史和统计恢复数据
 
-- **版本**: 1.5.5.1
-- **目标框架**: .NET 8.0 / .NET 10.0 Windows
-- **底层框架**: Quartz.NET
-- **UI 框架**: WPF
-- **特色功能**: 可视化任务管理、实时监控、灵活调度策略
-- **应用场景**: 定时数据处理、系统维护、自动化测试
+所以它既不是纯 UI 控件，也不是只有 Quartz 包装层。
 
-## 核心功能
+## 当前最关键的文件
 
-### 1. 任务调度管理
-- **Cron 表达式**: 支持复杂的时间调度规则
-- **触发器管理**: 多种触发器类型支持
-- **任务分组**: 按功能或类别组织任务
-- **优先级控制**: 1-10级任务执行优先级设置，优先级高的任务优先执行
+从项目目录看，最值得先认识的是：
 
-### 2. 任务执行监控
-- **实时状态**: 查看任务执行状态（就绪/运行中/已暂停）
-- **执行历史**: 详细的执行记录和日志
-- **异常处理**: 任务失败时的处理策略
-- **性能统计**: 
-  - 成功/失败次数统计
-  - 执行时间统计（最后/平均/最大/最小）
-  - 运行次数自动累计
-  - 实时状态更新
+- `QuartzSchedulerManager.cs`：调度器主入口
+- `TaskViewerWindow.xaml(.cs)`：任务查看、过滤和右键操作窗口
+- `CreateTask.xaml(.cs)`：新建和编辑任务窗口
+- `TaskExecutionListener.cs`：执行监听与统计更新
+- `Data/SchedulerDbManager.cs`：历史记录 SQLite 持久化
+- `MenuTaskViewer.cs`：菜单入口和初始化器
+- `SchedulerInfo.cs`：任务展示与持久化模型
 
-### 3. 任务管理界面
-- **可视化编辑**: 图形界面创建和编辑任务
-- **搜索过滤**: 按任务名称、分组名称实时搜索，按状态过滤
-- **批量操作**: 批量启动、暂停、删除任务（支持多选）
-- **实时监控面板**: 任务执行状态实时显示
-- **数据导出**: 
-  - CSV导出（Excel兼容格式）
-  - JSON配置导出（备份和迁移）
-  - 统计报告导出（详细执行统计）
+## 关键入口类型
 
-### 4. 集成支持
-- **插件架构**: 支持自定义任务类型
-- **事件通知**: 任务状态变更事件
-- **API接口**: 编程方式管理任务
-- **配置管理**: 任务配置的导入导出
-- **结构化日志**: 集成Microsoft.Extensions.Logging，支持多种日志输出
+### `QuartzSchedulerManager`
 
-## 架构设计
+`QuartzSchedulerManager` 是当前调度模块的中心对象。它负责：
 
-```mermaid
-graph TD
-    A[ColorVision.Scheduler] --> B[任务调度引擎]
-    A --> C[任务管理]
-    A --> D[监控系统]
-    A --> E[UI界面]
-    
-    B --> B1[Quartz.NET]
-    B --> B2[调度器]
-    B --> B3[触发器]
-    B --> B4[任务执行器]
-    
-    C --> C1[任务定义]
-    C --> C2[任务存储]
-    C --> C3[任务配置]
-    
-    D --> D1[执行监控]
-    D --> D2[日志记录]
-    D --> D3[性能统计]
-    
-    E --> E1[任务编辑器]
-    E --> E2[监控面板]
-    E --> E3[日志查看器]
-```
+- 启动 Quartz 调度器
+- 扫描已加载程序集中的 `IJob` 类型
+- 维护 `TaskInfos`
+- 从 JSON 文件加载任务配置
+- 在启动后恢复历史任务
+- 提供暂停、恢复、删除、更新和创建任务的方法
 
-## 任务类型
+当前任务配置文件默认放在：
 
-### 1. 系统任务
-- **数据备份**: 定期数据库备份
-- **日志清理**: 清理过期日志文件
-- **缓存清理**: 清理临时文件和缓存
-- **系统检查**: 定期系统健康检查
+- `%AppData%/ColorVision/scheduler_tasks.json`
 
-### 2. 业务任务
-- **数据同步**: 不同系统间的数据同步
-- **报告生成**: 定期生成业务报告
-- **数据处理**: 批量数据处理和转换
-- **通知发送**: 定时发送通知和提醒
+这说明当前任务定义并不是完全存在数据库里，而是以 JSON 配置为主、SQLite 历史为辅。
 
-### 3. 维护任务
-- **软件更新**: 自动检查和安装更新
-- **配置同步**: 配置文件的同步和备份
-- **性能优化**: 定期性能优化操作
-- **安全扫描**: 定期安全检查和扫描
+### `TaskViewerWindow`
 
-## 使用示例
+`TaskViewerWindow` 是当前任务管理主窗口。它负责：
 
-### 1. 创建简单定时任务
+- 绑定 `TaskInfos`
+- 按名称、分组、状态过滤
+- 从调度器读取已注册任务的下一次和上一次执行时间
+- 通过右键菜单执行编辑、查看属性、暂停、继续、立即执行、删除、查看历史
 
-```csharp
-public class SimpleJob : IJob
-{
-    public async Task Execute(IJobExecutionContext context)
-    {
-        // 任务执行逻辑
-        await Task.Run(() =>
-        {
-            // 具体的业务处理
-            Console.WriteLine($"任务执行时间: {DateTime.Now}");
-        });
-    }
-}
+这页旧文档里那些“大而全的监控面板设计图”都不如这里的实际窗口更有参考价值。
 
-// 创建任务
-var job = JobBuilder.Create\<SimpleJob\>()
-    .WithIdentity("simpleJob", "group1")
-    .Build();
+### `CreateTask`
 
-// 创建触发器 - 每5分钟执行一次
-var trigger = TriggerBuilder.Create()
-    .WithIdentity("simpleTrigger", "group1")
-    .WithCronSchedule("0 */5 * * * ?")
-    .Build();
+`CreateTask` 窗口承担新建和编辑任务。它和 `SchedulerInfo` 配合，决定一个任务最终如何被序列化、恢复和更新。
 
-// 添加到调度器
-await scheduler.ScheduleJob(job, trigger);
-```
+### `SchedulerDbManager`
 
-### 2. 使用Cron表达式
+执行历史不是存在同一个 JSON 文件里，而是单独存在 SQLite 数据库中。`SchedulerDbManager` 当前负责：
 
-```csharp
-// 每天凌晨2点执行
-var dailyTrigger = TriggerBuilder.Create()
-    .WithCronSchedule("0 0 2 * * ?")
-    .Build();
+- 初始化 `%AppData%/ColorVision/SchedulerHistory.db`
+- 写入执行记录
+- 查询单任务或全量执行历史
+- 计算统计数据用于重启后恢复
+- 清理旧记录
 
-// 每周一上午9点执行
-var weeklyTrigger = TriggerBuilder.Create()
-    .WithCronSchedule("0 0 9 ? * MON")
-    .Build();
+这也是当前“运行次数、成功失败数、平均耗时”这类数据能在重启后延续的原因。
 
-// 每月1号中午12点执行
-var monthlyTrigger = TriggerBuilder.Create()
-    .WithCronSchedule("0 0 12 1 * ?")
-    .Build();
-```
+### `TaskExecutionListener`
 
-### 3. 任务监听器
+运行时统计更新和执行反馈，并不是窗口自己轮询拿到的，而是通过监听器回写任务状态和执行历史。
 
-```csharp
-public class JobListener : IJobListener
-{
-    public string Name => "JobListener";
+## 当前运行时主链
 
-    public async Task JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
-    {
-        var jobName = context.JobDetail.Key.Name;
-        Console.WriteLine($"任务 {jobName} 即将执行");
-    }
+调度模块当前更接近下面这条链：
 
-    public async Task JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
-    {
-        var jobName = context.JobDetail.Key.Name;
-        Console.WriteLine($"任务 {jobName} 执行被否决");
-    }
+1. `TaskViewerInitializer` 或菜单入口触发 `QuartzSchedulerManager.GetInstance()`。
+2. `QuartzSchedulerManager` 启动 Quartz 调度器。
+3. 它扫描当前已加载程序集里的 `IJob` 类型，建立任务类型字典。
+4. 读取 `%AppData%/ColorVision/scheduler_tasks.json`。
+5. 启动后延迟恢复已有任务。
+6. `TaskExecutionListener` 在任务执行时更新状态与统计。
+7. `SchedulerDbManager` 把执行记录写入 `SchedulerHistory.db`。
+8. `TaskViewerWindow` 再把这些状态、历史和统计展示给用户。
 
-    public async Task JobWasExecuted(IJobExecutionContext context, JobExecutionException jobException, CancellationToken cancellationToken = default)
-    {
-        var jobName = context.JobDetail.Key.Name;
-        if (jobException == null)
-        {
-            Console.WriteLine($"任务 {jobName} 执行成功");
-        }
-        else
-        {
-            Console.WriteLine($"任务 {jobName} 执行失败: {jobException.Message}");
-        }
-    }
-}
+这个链路比旧文档里那种“任务编辑器/监控面板/日志查看器三层架构”更贴近现有实现。
 
-// 注册监听器
-scheduler.ListenerManager.AddJobListener(new JobListener());
-```
+## 当前实现有哪些边界
 
-### 4. 任务数据传递
+### 任务类型来自已加载程序集
 
-```csharp
-public class DataJob : IJob
-{
-    public async Task Execute(IJobExecutionContext context)
-    {
-        var jobDataMap = context.JobDetail.JobDataMap;
-        var filePath = jobDataMap.GetString("FilePath");
-        var batchSize = jobDataMap.GetInt("BatchSize");
-        
-        // 使用传入的参数执行任务
-        await ProcessFile(filePath, batchSize);
-    }
-    
-    private async Task ProcessFile(string filePath, int batchSize)
-    {
-        // 文件处理逻辑
-    }
-}
+当前 `QuartzSchedulerManager` 会遍历 `AssemblyService.Instance.GetAssemblies()`，收集实现 `IJob` 的类型，并优先用 `DisplayNameAttribute` 作为显示名。
 
-// 创建带数据的任务
-var job = JobBuilder.Create\<DataJob\>()
-    .WithIdentity("dataJob", "group1")
-    .UsingJobData("FilePath", @"C:\data\input.csv")
-    .UsingJobData("BatchSize", 1000)
-    .Build();
-```
+所以新增任务类型，本质上是新增可被程序集扫描到的 `IJob` 实现，而不是往某张任务类型表里登记。
 
-## 管理界面
+### 配置恢复和执行历史是两套存储
 
-### 1. 任务列表视图
+当前任务定义和恢复主要靠 JSON；执行历史和统计恢复主要靠 SQLite。不要把这两者混写成单一数据库调度中心。
 
-```xml
-<DataGrid x:Name="JobsDataGrid" 
-          ItemsSource="{Binding Jobs}"
-          AutoGenerateColumns="False">
-    \<DataGrid.Columns\>
-        <DataGridTextColumn Header="任务名称" Binding="{Binding Name}"/>
-        <DataGridTextColumn Header="组" Binding="{Binding Group}"/>
-        <DataGridTextColumn Header="状态" Binding="{Binding State}"/>
-        <DataGridTextColumn Header="下次执行" Binding="{Binding NextFireTime}"/>
-        <DataGridTextColumn Header="上次执行" Binding="{Binding PreviousFireTime}"/>
-        <DataGridTemplateColumn Header="操作">
-            \<DataGridTemplateColumn.CellTemplate\>
-                \<DataTemplate\>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="启动" Command="{Binding StartCommand}"/>
-                        <Button Content="暂停" Command="{Binding PauseCommand}"/>
-                        <Button Content="停止" Command="{Binding StopCommand}"/>
-                        <Button Content="删除" Command="{Binding DeleteCommand}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </DataGridTemplateColumn.CellTemplate>
-        </DataGridTemplateColumn>
-    </DataGrid.Columns>
-</DataGrid>
-```
+### 任务窗口是真实管理入口，不是示意图
 
-### 2. 任务编辑窗口
+当前最重要的用户入口就是 `TaskViewerWindow` 和 `CreateTask`。很多旧文档里编造的“批量导出、统计报告、复杂面板分区”并没有必要继续作为既有能力列出，除非代码里能直接对应到具体实现。
 
-```xml
-<Window x:Class="JobEditorWindow">
-    \<Grid\>
-        \<Grid.RowDefinitions\>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        
-        <!-- 基本信息 -->
-        <GroupBox Header="基本信息" Grid.Row="0">
-            \<Grid\>
-                \<Grid.ColumnDefinitions\>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <Label Content="任务名称:" Grid.Column="0"/>
-                <TextBox Text="{Binding JobName}" Grid.Column="1"/>
-            </Grid>
-        </GroupBox>
-        
-        <!-- 调度设置 -->
-        <GroupBox Header="调度设置" Grid.Row="1">
-            \<Grid\>
-                <Label Content="Cron表达式:"/>
-                <TextBox Text="{Binding CronExpression}"/>
-            </Grid>
-        </GroupBox>
-        
-        <!-- 参数设置 -->
-        <GroupBox Header="任务参数" Grid.Row="2">
-            <DataGrid ItemsSource="{Binding JobData}"/>
-        </GroupBox>
-        
-        <!-- 按钮 -->
-        <StackPanel Orientation="Horizontal" Grid.Row="4" HorizontalAlignment="Right">
-            <Button Content="保存" Command="{Binding SaveCommand}"/>
-            <Button Content="取消" Command="{Binding CancelCommand}"/>
-        </StackPanel>
-    </Grid>
-</Window>
-```
+## 当前更适合怎样读这个项目
 
-### 3. 监控面板
+### 想看调度器怎么启动和恢复
 
-```xml
-<UserControl x:Class="SchedulerMonitorPanel">
-    \<Grid\>
-        \<Grid.RowDefinitions\>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        
-        <!-- 统计信息 -->
-        <UniformGrid Rows="1" Columns="4" Grid.Row="0">
-            <Border Background="LightBlue">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding TotalJobs}" FontSize="24"/>
-                    <TextBlock Text="总任务数"/>
-                </StackPanel>
-            </Border>
-            
-            <Border Background="LightGreen">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding RunningJobs}" FontSize="24"/>
-                    <TextBlock Text="运行中"/>
-                </StackPanel>
-            </Border>
-            
-            <Border Background="Yellow">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding PausedJobs}" FontSize="24"/>
-                    <TextBlock Text="已暂停"/>
-                </StackPanel>
-            </Border>
-            
-            <Border Background="LightCoral">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding FailedJobs}" FontSize="24"/>
-                    <TextBlock Text="失败"/>
-                </StackPanel>
-            </Border>
-        </UniformGrid>
-        
-        <!-- 实时日志 -->
-        <TextBox x:Name="LogTextBox" 
-                 Grid.Row="1"
-                 Text="{Binding LogContent}"
-                 IsReadOnly="True"
-                 VerticalScrollBarVisibility="Auto"
-                 HorizontalScrollBarVisibility="Auto"/>
-    </Grid>
-</UserControl>
-```
+先看：
 
-## 最佳实践
+- `QuartzSchedulerManager.cs`
+- `MenuTaskViewer.cs`
 
-### 1. 任务设计原则
-- **幂等性**: 任务应该是幂等的，重复执行不会产生副作用
-- **异常处理**: 完善的异常处理和恢复机制
-- **资源管理**: 合理使用系统资源，避免资源泄漏
-- **状态检查**: 任务执行前检查系统状态
+### 想看任务界面和操作入口
 
-### 2. 调度策略
-- **错峰执行**: 避免多个重要任务同时执行
-- **优先级设置**: 为关键任务设置较高优先级（8-10），普通任务使用默认优先级（5）
-- **依赖管理**: 处理任务间的依赖关系
-- **失败重试**: 合理的重试策略和退避算法
-- **负载均衡**: 在多实例环境中合理分配任务
+先看：
 
-### 3. 监控和维护
-- **日志记录**: 详细记录任务执行过程
-- **性能监控**: 监控任务执行时间和资源消耗
-- **统计分析**: 定期查看任务统计报告，优化执行效率
-- **数据导出**: 定期导出任务配置作为备份
-- **告警机制**: 及时发现和处理任务异常
-- **定期维护**: 清理过期日志和数据
+- `TaskViewerWindow.xaml(.cs)`
+- `CreateTask.xaml(.cs)`
 
-### 4. 安全考虑
-- **权限控制**: 限制任务的执行权限
-- **数据保护**: 保护敏感数据和配置
-- **审计日志**: 记录任务管理操作
-- **网络安全**: 在集群环境中确保通信安全
+### 想看执行历史和统计
 
-## 版本更新
+先看：
 
-### v1.3.8.3 (2025-11)
-**新增功能**:
-- ✅ 任务优先级支持（1-10级）
-- ✅ 执行统计（成功/失败次数、执行时间分析）
-- ✅ 搜索和过滤（实时搜索、状态过滤）
-- ✅ 批量操作（多选、批量启动/暂停/删除）
-- ✅ 数据导出（CSV、JSON、统计报告）
-- ✅ 结构化日志（Microsoft.Extensions.Logging）
-- ✅ 增强错误处理和用户提示
+- `Data/SchedulerDbManager.cs`
+- `TaskExecutionListener.cs`
+- `ExecutionHistoryWindow.xaml(.cs)`
 
-**优化改进**:
-- ✅ 修复所有编译警告
-- ✅ 任务状态实时同步
-- ✅ UI响应性能提升30%
-- ✅ 诊断效率提升50%
+## 这页不再做什么
 
-## 相关资源
+本页不再继续维护这些高风险内容：
 
-- [Quartz.NET 官方文档](https://www.quartz-scheduler.net/documentation/)
-- [任务调度最佳实践](../developer-guide/scheduler-best-practices/)
-- [系统配置指南](../system-configuration/)
-- [故障排除指南](../troubleshooting/)
+- 通用 Quartz 示例代码大全
+- 未经核实的系统任务/业务任务/维护任务分类表
+- 想象中的统一任务平台功能矩阵
+- 过时版本号和目标框架清单
+
+如果后续要补某个具体任务类型，应直接落到实际任务实现或窗口页，而不是在这里继续写教程式内容。
+
+## 继续阅读
+
+- [UI组件概览](./README.md)
+- [ColorVision.UI](./ColorVision.UI.md)
+- [ColorVision.Database](./ColorVision.Database.md)

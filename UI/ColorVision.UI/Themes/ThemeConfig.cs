@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Properties;
 using ColorVision.UI;
-using log4net.Core;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;

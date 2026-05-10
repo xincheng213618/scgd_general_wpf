@@ -2,10 +2,7 @@ using ColorVision.Themes;
 using log4net;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
-using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop

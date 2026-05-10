@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
+using Newtonsoft.Json;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -27,26 +29,26 @@ namespace ColorVision.ImageEditor.Draw
         [Category("TextAttribute"), DisplayName("FontSize")]
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("Brush")]
+        [Category("TextAttribute"), DisplayName("Brush"), JsonIgnore]
         public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("FontFamily")]
+        [Category("TextAttribute"), DisplayName("FontFamily"), JsonIgnore]
         public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("FontStyle")]
+        [Category("TextAttribute"), DisplayName("FontStyle"), JsonIgnore]
         public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; OnPropertyChanged(); } }
-        [Category("TextAttribute"), DisplayName("FontWeight")]
+        [Category("TextAttribute"), DisplayName("FontWeight"), JsonIgnore]
         public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; OnPropertyChanged(); } }
-        [Category("TextAttribute"), DisplayName("FontStretch")]
+        [Category("TextAttribute"), DisplayName("FontStretch"), JsonIgnore]
         public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("FlowDirection")]
+        [Category("TextAttribute"), DisplayName("FlowDirection"), JsonIgnore]
         public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; OnPropertyChanged(); } }
     }
 
 
 
-    public class DVRectangleText : DrawingVisualBase<RectangleTextProperties>, IDrawingVisual,IRectangle
+    public class DVRectangleText : DrawingVisualBase<RectangleTextProperties>, IDrawingVisual,IRectangle, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
@@ -65,6 +67,11 @@ namespace ColorVision.ImageEditor.Draw
             Attribute = rectangleTextProperties;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
         }
 
         public override void Render()
@@ -139,6 +146,16 @@ namespace ColorVision.ImageEditor.Draw
         {
             Rect = rect;
             Render();
+        }
+
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        {
+            return new CompactInspectorItem[]
+            {
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "填充" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = "文本" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "字号" },
+            };
         }
     }
 

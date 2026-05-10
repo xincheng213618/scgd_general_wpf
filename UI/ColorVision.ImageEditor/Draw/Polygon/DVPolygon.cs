@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -9,7 +10,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-    public class DVPolygon : DrawingVisualBase<PolygonProperties>, IDrawingVisual
+    public class DVPolygon : DrawingVisualBase<PolygonProperties>, IDrawingVisual, ILayoutScaleDrawingVisual
     {
 
         public bool AutoAttributeChanged { get; set; } = true;
@@ -21,10 +22,33 @@ namespace ColorVision.ImageEditor.Draw
             Attribute = new PolygonProperties();
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
 
         }
+
+        public DVPolygon(PolygonProperties attribute)
+        {
+            Attribute = attribute;
+            Attribute.Points ??= new List<Point>();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
+        }
+
+        private void Attribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PolygonProperties.Pen) || e.PropertyName == nameof(PolygonProperties.StrokeThickness))
+            {
+                LayoutBasePenThickness = null;
+            }
+
+            Render();
+        }
+
         public List<Point> Points { get => Attribute.Points; }
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            ApplyLayoutScaleCore(context, Pen, value => Pen = value);
+        }
 
         public override void Render()
         {

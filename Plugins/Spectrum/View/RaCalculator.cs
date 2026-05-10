@@ -1,5 +1,3 @@
-using System;
-
 namespace Spectrum.View
 {
     /// <summary>

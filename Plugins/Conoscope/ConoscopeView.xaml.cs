@@ -1,9 +1,8 @@
-﻿using ColorVision.FileIO;
-using ColorVision.ImageEditor;
+﻿using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
-using OpenCvSharp.WpfExtensions;
 using Conoscope.Core;
 using System;
 using System.Collections.ObjectModel;
@@ -14,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -46,8 +46,14 @@ namespace Conoscope
         private OpenCvSharp.Mat? colorDifferenceReferenceUMat;
         private OpenCvSharp.Mat? colorDifferenceReferenceVMat;
         private string? colorDifferenceReferenceFileName;
+        private bool isUpdatingDisplayControls;
         private bool isUpdatingColorDifferenceControls;
         private bool isUpdatingFilterControls;
+        private WindowCIE? cieWindow;
+        private ImageFullScreenMode? imageFullScreenMode;
+        private ConoscopeModelProfile? subscribedModelProfile;
+        private const float MinPositiveXyzValue = 0.000001f;
+        private const double Conoscope3DInitialHeightScale = 160.0;
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
@@ -57,7 +63,21 @@ namespace Conoscope
         private void RefreshReferenceLineProfileBinding()
         {
             GridSetting.Children.Clear();
-            GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.CoordinateAxisParam));
+            GridSetting.RowDefinitions.Clear();
+            GridSetting.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GridSetting.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            Border fieldOfViewEditorHost = new Border
+            {
+                Margin = new Thickness(0, 0, 0, 10),
+                Child = PropertyEditorHelper.GenPropertyEditorControl(new ConoscopeFieldOfViewSettings(CurrentModelProfile))
+            };
+            GridSetting.Children.Add(fieldOfViewEditorHost);
+            Grid.SetRow(fieldOfViewEditorHost, 0);
+
+            UIElement coordinateAxisEditor = PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.CoordinateAxisParam);
+            GridSetting.Children.Add(coordinateAxisEditor);
+            Grid.SetRow(coordinateAxisEditor, 1);
         }
 
 
@@ -71,11 +91,43 @@ namespace Conoscope
         internal void RefreshConoscopeConfiguration()
         {
             RefreshModelDependentUi();
+            RefreshPreprocessControlsFromConfig();
             UpdateReferencePlotHeader();
             if (HasXyzData())
             {
                 RefreshDisplayedImage();
             }
+        }
+
+        internal void RefreshPreprocessControlsFromConfig()
+        {
+            InitializeFilterControls();
+        }
+
+        internal void RefreshRenderingFromConfig()
+        {
+            RefreshDisplayControlsFromConfig();
+            RefreshPreprocessControlsFromConfig();
+            UpdatePseudoColorMapPreview();
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
+        }
+
+        private void RefreshDisplayControlsFromConfig()
+        {
+            isUpdatingDisplayControls = true;
+            try
+            {
+                SelectComboBoxItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+            }
+            finally
+            {
+                isUpdatingDisplayControls = false;
+            }
+
+            UpdateColorDifferencePanelVisibility();
         }
 
         public ConoscopeView()
@@ -91,18 +143,59 @@ namespace Conoscope
             RefreshReferenceLineProfileBinding();
 
             this.DataContext = ConoscopeManager.GetInstance();
-            SelectComboBoxItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+            RefreshDisplayControlsFromConfig();
             RefreshQuickControlsFromAxisParam();
             InitializeColorDifferenceControls();
             InitializeFilterControls();
             UpdateReferenceControlVisibility();
             UpdateColorDifferencePanelVisibility();
+            AttachCurrentModelProfile();
 
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig_ModelTypeChanged(sender, ConoscopeConfig.CurrentModel);
             InitializePlot(wpfPlotReference, "参考曲线 (Reference Distribution)");
             UpdateReferencePlotHeader();
+
+            imageFullScreenMode = new ImageFullScreenMode(ImageViewHost);
+            ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            ImageView.Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
+            UpdatePseudoColorMapPreview();
+            UpdateToolbarZoomRatio();
+            UpdatePanModeState();
+        }
+
+        private void Zoombox1_ContentMatrixChanged(object? sender, EventArgs e)
+        {
+            UpdateToolbarZoomRatio();
+        }
+
+        private void UpdateToolbarZoomRatio()
+        {
+            if (txtToolbarZoomRatio == null)
+            {
+                return;
+            }
+
+            double zoomRatio = ImageView.Zoombox1.ContentMatrix.M11;
+            txtToolbarZoomRatio.Text = double.IsFinite(zoomRatio) ? zoomRatio.ToString("F2", CultureInfo.InvariantCulture) : "1.00";
+        }
+
+        private void UpdatePanModeState()
+        {
+            bool isPanModeEnabled = tglPanMode?.IsChecked == true;
+            ImageView.Zoombox1.ActivateOn = isPanModeEnabled ? ModifierKeys.None : ModifierKeys.Control;
+            ImageView.Zoombox1.Cursor = isPanModeEnabled ? Cursors.Hand : Cursors.Arrow;
+        }
+
+        private void tglPanMode_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdatePanModeState();
+        }
+
+        private void tglPanMode_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UpdatePanModeState();
         }
 
         private static void SelectComboBoxItemByTag(ComboBox comboBox, string tag)
@@ -114,71 +207,6 @@ namespace Conoscope
                     comboBox.SelectedItem = item;
                     return;
                 }
-            }
-        }
-
-        private void InitializeFilterControls()
-        {
-            isUpdatingFilterControls = true;
-            try
-            {
-                MigrateLegacyDustRemovalFilterType();
-                SelectComboBoxItemByTag(cbFilterType, NormalizeFilterType(ConoscopeConfig.FilterType).ToString());
-                SelectComboBoxItemByTag(cbDustMode, ConoscopeConfig.DustRemovalMode.ToString());
-                chkDustRemovalEnabled.IsChecked = ConoscopeConfig.DustRemovalEnabled;
-
-                sliderKernelSize.Value = ConoscopeConfig.FilterKernelSize;
-                sliderSigma.Value = ConoscopeConfig.FilterSigma;
-                sliderD.Value = ConoscopeConfig.FilterD;
-                sliderSigmaColor.Value = ConoscopeConfig.FilterSigmaColor;
-                sliderSigmaSpace.Value = ConoscopeConfig.FilterSigmaSpace;
-                sliderDustThreshold.Value = ConoscopeConfig.DustThresholdPercent;
-                sliderDustMinArea.Value = ConoscopeConfig.DustMinArea;
-                sliderDustMaxArea.Value = Math.Max(ConoscopeConfig.DustMinArea, ConoscopeConfig.DustMaxArea);
-                sliderDustRepairRadius.Value = ConoscopeConfig.DustRepairRadius;
-            }
-            finally
-            {
-                isUpdatingFilterControls = false;
-            }
-
-            UpdateFilterParameterVisibility(GetSelectedFilterType());
-        }
-
-        private void FilterParameter_Changed(object sender, RoutedEventArgs e)
-        {
-            if (isUpdatingFilterControls || !IsInitialized)
-            {
-                return;
-            }
-
-            SaveFilterControlsToConfig();
-            UpdateFilterParameterVisibility(GetSelectedFilterType());
-        }
-
-        private void SaveFilterControlsToConfig()
-        {
-            ConoscopeConfig.FilterType = NormalizeFilterType(GetSelectedFilterType());
-            ConoscopeConfig.FilterKernelSize = NormalizeKernelSize((int)(sliderKernelSize?.Value ?? ConoscopeConfig.FilterKernelSize));
-            ConoscopeConfig.FilterSigma = sliderSigma?.Value ?? ConoscopeConfig.FilterSigma;
-            ConoscopeConfig.FilterD = Math.Max(1, (int)(sliderD?.Value ?? ConoscopeConfig.FilterD));
-            ConoscopeConfig.FilterSigmaColor = sliderSigmaColor?.Value ?? ConoscopeConfig.FilterSigmaColor;
-            ConoscopeConfig.FilterSigmaSpace = sliderSigmaSpace?.Value ?? ConoscopeConfig.FilterSigmaSpace;
-            ConoscopeConfig.DustRemovalEnabled = IsDustRemovalEnabled();
-            ConoscopeConfig.DustRemovalMode = GetSelectedDustRemovalMode();
-            ConoscopeConfig.DustThresholdPercent = sliderDustThreshold?.Value ?? ConoscopeConfig.DustThresholdPercent;
-            ConoscopeConfig.DustMinArea = Math.Max(1, (int)(sliderDustMinArea?.Value ?? ConoscopeConfig.DustMinArea));
-            ConoscopeConfig.DustMaxArea = Math.Max(ConoscopeConfig.DustMinArea, (int)(sliderDustMaxArea?.Value ?? ConoscopeConfig.DustMaxArea));
-            ConoscopeConfig.DustRepairRadius = Math.Max(1, (int)(sliderDustRepairRadius?.Value ?? ConoscopeConfig.DustRepairRadius));
-        }
-
-        private void MigrateLegacyDustRemovalFilterType()
-        {
-            const int legacyDustRemovalFilterValue = 6;
-            if ((int)ConoscopeConfig.FilterType == legacyDustRemovalFilterValue)
-            {
-                ConoscopeConfig.DustRemovalEnabled = true;
-                ConoscopeConfig.FilterType = ImageFilterType.None;
             }
         }
 
@@ -450,7 +478,50 @@ namespace Conoscope
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
         {
+            AttachCurrentModelProfile();
             RefreshModelDependentUi();
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
+        }
+
+        private void AttachCurrentModelProfile()
+        {
+            if (ReferenceEquals(subscribedModelProfile, CurrentModelProfile))
+            {
+                return;
+            }
+
+            if (subscribedModelProfile != null)
+            {
+                subscribedModelProfile.PropertyChanged -= CurrentModelProfile_PropertyChanged;
+            }
+
+            subscribedModelProfile = CurrentModelProfile;
+            subscribedModelProfile.PropertyChanged -= CurrentModelProfile_PropertyChanged;
+            subscribedModelProfile.PropertyChanged += CurrentModelProfile_PropertyChanged;
+        }
+
+        private void CurrentModelProfile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(ConoscopeModelProfile.MaxAngle)
+                && e.PropertyName != nameof(ConoscopeModelProfile.CalculationDiameterPixels)
+                && e.PropertyName != nameof(ConoscopeModelProfile.ManualConoscopeCoefficient))
+            {
+                return;
+            }
+
+            CurrentModelProfile.CoordinateAxisParam.MaxAngle = MaxAngle;
+            CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle, MaxAngle));
+            RefreshQuickControlsFromAxisParam();
+            SetReferencePlotLimits();
+            UpdateReferencePlotHeader();
+
+            if (HasXyzData())
+            {
+                RefreshDisplayedImage();
+            }
         }
 
         private void InitializePlot(ScottPlot.WPF.WpfPlot plot, string title)
@@ -471,819 +542,6 @@ namespace Conoscope
             plot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
 
             plot.Refresh();
-        }
-
-        private void cbFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (cbFilterType == null) return;
-            
-            var selectedFilter = GetSelectedFilterType();
-
-            if (!isUpdatingFilterControls)
-            {
-                SaveFilterControlsToConfig();
-            }
-
-            UpdateFilterParameterVisibility(selectedFilter);
-
-            if (sliderKernelSize != null && sliderSigma != null && sliderD != null && sliderSigmaColor != null && sliderSigmaSpace != null)
-            {
-                sliderKernelSize.IsEnabled = false;
-                sliderSigma.IsEnabled = false;
-                sliderD.IsEnabled = false;
-                sliderSigmaColor.IsEnabled = false;
-                sliderSigmaSpace.IsEnabled = false;
-
-                switch (selectedFilter)
-                {
-                    case ImageFilterType.None:
-                        break;
-                    case ImageFilterType.LowPass:
-                    case ImageFilterType.MovingAverage:
-                    case ImageFilterType.Median:
-                        sliderKernelSize.IsEnabled = true;
-                        break;
-                    case ImageFilterType.Gaussian:
-                        sliderKernelSize.IsEnabled = true;
-                        sliderSigma.IsEnabled = true;
-                        break;
-                    case ImageFilterType.Bilateral:
-                        sliderD.IsEnabled = true;
-                        sliderSigmaColor.IsEnabled = true;
-                        sliderSigmaSpace.IsEnabled = true;
-                        break;
-                }
-            }
-        }
-
-        private void UpdateFilterParameterVisibility(ImageFilterType selectedFilter)
-        {
-            if (rowFilterKernel == null || rowFilterSigma == null || rowFilterD == null || rowFilterSigmaColor == null || rowFilterSigmaSpace == null
-                || rowDustMode == null || rowDustThreshold == null || rowDustMinArea == null || rowDustMaxArea == null || rowDustRepairRadius == null)
-            {
-                return;
-            }
-
-            bool showKernel = selectedFilter is ImageFilterType.LowPass or ImageFilterType.MovingAverage or ImageFilterType.Gaussian or ImageFilterType.Median;
-            bool showSigma = selectedFilter == ImageFilterType.Gaussian;
-            bool showBilateral = selectedFilter == ImageFilterType.Bilateral;
-            bool showDust = IsDustRemovalEnabled();
-
-            rowFilterKernel.Visibility = showKernel ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterSigma.Visibility = showSigma ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterD.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterSigmaColor.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterSigmaSpace.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
-            rowDustMode.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustThreshold.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustMinArea.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustMaxArea.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustRepairRadius.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-
-            if (sliderDustThreshold != null && sliderDustMinArea != null && sliderDustMaxArea != null && sliderDustRepairRadius != null && cbDustMode != null)
-            {
-                sliderDustThreshold.IsEnabled = showDust;
-                sliderDustMinArea.IsEnabled = showDust;
-                sliderDustMaxArea.IsEnabled = showDust;
-                sliderDustRepairRadius.IsEnabled = showDust;
-                cbDustMode.IsEnabled = showDust;
-            }
-
-        }
-
-        /// <summary>
-        /// 对单通道Mat应用指定滤波
-        /// </summary>
-        private OpenCvSharp.Mat ApplyFilterToMat(OpenCvSharp.Mat src, ImageFilterType filterType, int kernelSize, double sigma, int d, double sigmaColor, double sigmaSpace)
-        {
-            var dst = new OpenCvSharp.Mat();
-
-            OpenCvSharp.Mat src8U = new OpenCvSharp.Mat();
-            bool needConvert = src.Depth() != OpenCvSharp.MatType.CV_8U && src.Depth() != OpenCvSharp.MatType.CV_32F;
-
-            OpenCvSharp.Mat workMat = src;
-
-            switch (filterType)
-            {
-                case ImageFilterType.LowPass:
-                    OpenCvSharp.Cv2.Blur(workMat, dst, new OpenCvSharp.Size(kernelSize, kernelSize));
-                    break;
-                case ImageFilterType.MovingAverage:
-                    OpenCvSharp.Cv2.BoxFilter(workMat, dst, workMat.Type(), new OpenCvSharp.Size(kernelSize, kernelSize));
-                    break;
-                case ImageFilterType.Gaussian:
-                    OpenCvSharp.Cv2.GaussianBlur(workMat, dst, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
-                    break;
-                case ImageFilterType.Median:
-                    // MedianBlur 需要 CV_8U 或 CV_32F
-                    if (src.Depth() == OpenCvSharp.MatType.CV_32F)
-                    {
-                        OpenCvSharp.Cv2.MedianBlur(workMat, dst, kernelSize);
-                    }
-                    else
-                    {
-                        // 转为 CV_32F 再处理
-                        OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
-                        workMat.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
-                        OpenCvSharp.Cv2.MedianBlur(floatMat, dst, kernelSize);
-                        // 转回原始类型
-                        var result = new OpenCvSharp.Mat();
-                        dst.ConvertTo(result, src.Type());
-                        floatMat.Dispose();
-                        dst.Dispose();
-                        dst = result;
-                    }
-                    break;
-                case ImageFilterType.Bilateral:
-                    // BilateralFilter 需要 CV_8U 或 CV_32F
-                    if (src.Depth() == OpenCvSharp.MatType.CV_32F)
-                    {
-                        OpenCvSharp.Cv2.BilateralFilter(workMat, dst, d, sigmaColor, sigmaSpace);
-                    }
-                    else
-                    {
-                        OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
-                        workMat.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
-                        OpenCvSharp.Cv2.BilateralFilter(floatMat, dst, d, sigmaColor, sigmaSpace);
-                        var result = new OpenCvSharp.Mat();
-                        dst.ConvertTo(result, src.Type());
-                        floatMat.Dispose();
-                        dst.Dispose();
-                        dst = result;
-                    }
-                    break;
-                default:
-                    return src.Clone();
-            }
-
-            return dst;
-        }
-
-        private void btnApplyFilter_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                SaveFilterControlsToConfig();
-
-                if (!HasXyzData())
-                {
-                    MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (!HasPreprocessEnabled())
-                {
-                    RestoreOriginalMats();
-                    RefreshDisplayedImage();
-                    log.Info("已恢复原始数据");
-                    MessageBox.Show("已恢复原始数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                RestoreOriginalMats();
-                log.Info($"开始应用预处理: dust={ConoscopeConfig.DustRemovalEnabled}, filter={ConoscopeConfig.FilterType}");
-                ApplyPreprocessToCurrentMats();
-                RefreshDisplayedImage();
-
-                log.Info("预处理应用成功，数据已更新");
-                MessageBox.Show("预处理应用成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                log.Error($"应用滤波失败: {ex.Message}", ex);
-                MessageBox.Show($"应用滤波失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        public OpenCvSharp.Mat? XMat { get; set; }
-        public OpenCvSharp.Mat? YMat { get; set; }
-        public OpenCvSharp.Mat? ZMat { get; set; }
-
-        string Filename = string.Empty;
-        public void OpenConoscope(string filename)
-        {
-            try
-            {
-                Filename = filename;
-                HideCoordinateDragOverlay();
-                DisposeCoordinateAxis();
-                ImageView.Clear();
-                LoadConoscopeData(filename);
-
-                if (chkApplyFilterOnOpen?.IsChecked == true)
-                {
-                    ConoscopeConfig.ApplyFilterOnOpen = true;
-                    ApplyPreprocessToCurrentMats();
-                }
-
-                RefreshDisplayedImage();
-            }
-            catch (Exception ex)
-            {
-                log.Error($"打开Conoscope图像失败: {ex.Message}", ex);
-                MessageBox.Show($"打开图像失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void LoadConoscopeData(string filename)
-        {
-            if (!CVFileUtil.IsCVCIEFile(filename))
-            {
-                throw new NotSupportedException("当前视图仅支持 CVCIE XYZ 图像文件");
-            }
-
-            ClearMatData();
-
-            CVFileUtil.Read(filename, out CVCIEFile fileInfo);
-            if (fileInfo.Channels < 3)
-            {
-                throw new NotSupportedException($"CVCIE 文件通道数不足: {fileInfo.Channels}");
-            }
-
-            int bytesPerPixel = fileInfo.Bpp / 8;
-            int channelSize = fileInfo.Cols * fileInfo.Rows * bytesPerPixel;
-            if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
-            {
-                throw new InvalidDataException("CVCIE 文件数据长度不足，无法拆分 XYZ 通道");
-            }
-
-            OpenCvSharp.MatType singleChannelType = GetSingleChannelMatType(fileInfo.Bpp);
-            XMat = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-            YMat = CreateFloatChannelMat(fileInfo.Data, channelSize, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-            ZMat = CreateFloatChannelMat(fileInfo.Data, channelSize * 2, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-
-            log.Info($"已加载 CVCIE XYZ 数据: {fileInfo.Cols}x{fileInfo.Rows}, Bpp={fileInfo.Bpp}");
-        }
-
-        private static OpenCvSharp.MatType GetSingleChannelMatType(int bpp)
-        {
-            return bpp switch
-            {
-                8 => OpenCvSharp.MatType.CV_8UC1,
-                16 => OpenCvSharp.MatType.CV_16UC1,
-                32 => OpenCvSharp.MatType.CV_32FC1,
-                64 => OpenCvSharp.MatType.CV_64FC1,
-                _ => throw new NotSupportedException($"Bpp {bpp} not supported")
-            };
-        }
-
-        private static OpenCvSharp.Mat CreateFloatChannelMat(byte[] source, int offset, int channelSize, int rows, int cols, OpenCvSharp.MatType sourceType)
-        {
-            byte[] channelData = new byte[channelSize];
-            Buffer.BlockCopy(source, offset, channelData, 0, channelSize);
-
-            using OpenCvSharp.Mat raw = OpenCvSharp.Mat.FromPixelData(rows, cols, sourceType, channelData);
-            OpenCvSharp.Mat copied = raw.Clone();
-            if (copied.Type() == OpenCvSharp.MatType.CV_32FC1)
-            {
-                return copied;
-            }
-
-            OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
-            copied.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
-            copied.Dispose();
-            return floatMat;
-        }
-
-        private void ApplyPreprocessToCurrentMats()
-        {
-            SaveFilterControlsToConfig();
-
-            if (ConoscopeConfig.DustRemovalEnabled)
-            {
-                ApplyDustRemovalToCurrentMats();
-            }
-
-            ImageFilterType filterType = NormalizeFilterType(ConoscopeConfig.FilterType);
-            if (filterType != ImageFilterType.None)
-            {
-                ApplyFilterToCurrentMats(filterType);
-            }
-        }
-
-        private bool HasPreprocessEnabled()
-        {
-            return ConoscopeConfig.DustRemovalEnabled || NormalizeFilterType(ConoscopeConfig.FilterType) != ImageFilterType.None;
-        }
-
-        private void ApplyFilterToCurrentMats(ImageFilterType filterType)
-        {
-            if (filterType == ImageFilterType.None)
-            {
-                return;
-            }
-
-            int kernelSize = ConoscopeConfig.FilterKernelSize;
-            double sigma = ConoscopeConfig.FilterSigma;
-            int d = ConoscopeConfig.FilterD;
-            double sigmaColor = ConoscopeConfig.FilterSigmaColor;
-            double sigmaSpace = ConoscopeConfig.FilterSigmaSpace;
-
-            if (XMat != null)
-            {
-                OpenCvSharp.Mat filtered = ApplyFilterToMat(XMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
-                XMat.Dispose();
-                XMat = filtered;
-            }
-            if (YMat != null)
-            {
-                OpenCvSharp.Mat filtered = ApplyFilterToMat(YMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
-                YMat.Dispose();
-                YMat = filtered;
-            }
-            if (ZMat != null)
-            {
-                OpenCvSharp.Mat filtered = ApplyFilterToMat(ZMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
-                ZMat.Dispose();
-                ZMat = filtered;
-            }
-
-            log.Info($"滤波应用到XYZ通道完成: {filterType}, kernelSize={kernelSize}");
-        }
-
-        private void ApplyDustRemovalToCurrentMats()
-        {
-            if (XMat == null || YMat == null || ZMat == null)
-            {
-                return;
-            }
-
-            DustRemovalOptions options = GetDustRemovalOptions();
-            int darkComponents;
-            int brightComponents;
-            using OpenCvSharp.Mat darkMask = ShouldDetectDarkDust(options.Mode)
-                ? CreateDustMask(YMat, options, darkSpot: true, out darkComponents)
-                : CreateEmptyMask(YMat, out darkComponents);
-            using OpenCvSharp.Mat brightMask = ShouldDetectBrightDust(options.Mode)
-                ? CreateDustMask(YMat, options, darkSpot: false, out brightComponents)
-                : CreateEmptyMask(YMat, out brightComponents);
-
-            int darkPixels = OpenCvSharp.Cv2.CountNonZero(darkMask);
-            int brightPixels = OpenCvSharp.Cv2.CountNonZero(brightMask);
-            if (darkPixels == 0 && brightPixels == 0)
-            {
-                log.Info($"灰尘滤除未检测到候选区域: mode={options.Mode}, threshold={options.ThresholdPercent:F1}%");
-                return;
-            }
-
-            XMat = ReplaceChannelWithDustRepair(XMat, darkMask, brightMask, options);
-            YMat = ReplaceChannelWithDustRepair(YMat, darkMask, brightMask, options);
-            ZMat = ReplaceChannelWithDustRepair(ZMat, darkMask, brightMask, options);
-
-            log.Info($"灰尘滤除完成: mode={options.Mode}, darkComponents={darkComponents}, brightComponents={brightComponents}, darkPixels={darkPixels}, brightPixels={brightPixels}, threshold={options.ThresholdPercent:F1}%, area={options.MinArea}-{options.MaxArea}, radius={options.RepairRadius}");
-        }
-
-        private DustRemovalOptions GetDustRemovalOptions()
-        {
-            int minArea = Math.Max(1, ConoscopeConfig.DustMinArea);
-            int maxArea = Math.Max(minArea, ConoscopeConfig.DustMaxArea);
-            return new DustRemovalOptions(
-                ConoscopeConfig.DustRemovalMode,
-                ConoscopeConfig.DustThresholdPercent,
-                minArea,
-                maxArea,
-                Math.Max(1, ConoscopeConfig.DustRepairRadius));
-        }
-
-        private static bool ShouldDetectDarkDust(DustRemovalMode mode)
-        {
-            return mode is DustRemovalMode.DarkSpot or DustRemovalMode.Both;
-        }
-
-        private static bool ShouldDetectBrightDust(DustRemovalMode mode)
-        {
-            return mode is DustRemovalMode.BrightSpot or DustRemovalMode.Both;
-        }
-
-        private static OpenCvSharp.Mat CreateEmptyMask(OpenCvSharp.Mat source, out int componentCount)
-        {
-            componentCount = 0;
-            return new OpenCvSharp.Mat(source.Rows, source.Cols, OpenCvSharp.MatType.CV_8UC1, new OpenCvSharp.Scalar(0));
-        }
-
-        private static OpenCvSharp.Mat CreateDustMask(OpenCvSharp.Mat luminance, DustRemovalOptions options, bool darkSpot, out int componentCount)
-        {
-            using OpenCvSharp.Mat gray8 = NormalizeToGray8(luminance);
-            int backgroundKernelSize = NormalizeKernelSize(options.RepairRadius * 2 + 1);
-            using OpenCvSharp.Mat kernel = OpenCvSharp.Cv2.GetStructuringElement(
-                OpenCvSharp.MorphShapes.Ellipse,
-                new OpenCvSharp.Size(backgroundKernelSize, backgroundKernelSize));
-            using OpenCvSharp.Mat background = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat diff = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat rawMask = new OpenCvSharp.Mat();
-
-            OpenCvSharp.Cv2.MorphologyEx(gray8, background, darkSpot ? OpenCvSharp.MorphTypes.Close : OpenCvSharp.MorphTypes.Open, kernel);
-            if (darkSpot)
-            {
-                OpenCvSharp.Cv2.Subtract(background, gray8, diff);
-            }
-            else
-            {
-                OpenCvSharp.Cv2.Subtract(gray8, background, diff);
-            }
-
-            double threshold = Math.Max(1, Math.Min(255, 255.0 * options.ThresholdPercent / 100.0));
-            OpenCvSharp.Cv2.Threshold(diff, rawMask, threshold, 255, OpenCvSharp.ThresholdTypes.Binary);
-
-            OpenCvSharp.Mat filteredMask = FilterMaskByArea(rawMask, options.MinArea, options.MaxArea, out componentCount);
-            if (componentCount > 0)
-            {
-                int dilateKernelSize = NormalizeKernelSize(Math.Max(1, options.RepairRadius));
-                using OpenCvSharp.Mat dilateKernel = OpenCvSharp.Cv2.GetStructuringElement(
-                    OpenCvSharp.MorphShapes.Ellipse,
-                    new OpenCvSharp.Size(dilateKernelSize, dilateKernelSize));
-                OpenCvSharp.Cv2.Dilate(filteredMask, filteredMask, dilateKernel);
-            }
-
-            return filteredMask;
-        }
-
-        private static OpenCvSharp.Mat NormalizeToGray8(OpenCvSharp.Mat source)
-        {
-            OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
-            OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
-            OpenCvSharp.Cv2.Normalize(source, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
-            normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
-            normalized.Dispose();
-            return gray8;
-        }
-
-        private static OpenCvSharp.Mat FilterMaskByArea(OpenCvSharp.Mat rawMask, int minArea, int maxArea, out int componentCount)
-        {
-            OpenCvSharp.Mat filtered = new OpenCvSharp.Mat(rawMask.Rows, rawMask.Cols, OpenCvSharp.MatType.CV_8UC1, new OpenCvSharp.Scalar(0));
-            using OpenCvSharp.Mat labels = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat stats = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat centroids = new OpenCvSharp.Mat();
-
-            int labelsCount = OpenCvSharp.Cv2.ConnectedComponentsWithStats(rawMask, labels, stats, centroids);
-            componentCount = 0;
-            for (int labelIndex = 1; labelIndex < labelsCount; labelIndex++)
-            {
-                int area = stats.At<int>(labelIndex, 4);
-                if (area < minArea || area > maxArea)
-                {
-                    continue;
-                }
-
-                using OpenCvSharp.Mat componentMask = new OpenCvSharp.Mat();
-                OpenCvSharp.Cv2.InRange(labels, new OpenCvSharp.Scalar(labelIndex), new OpenCvSharp.Scalar(labelIndex), componentMask);
-                filtered.SetTo(new OpenCvSharp.Scalar(255), componentMask);
-                componentCount++;
-            }
-
-            return filtered;
-        }
-
-        private static OpenCvSharp.Mat? ReplaceChannelWithDustRepair(OpenCvSharp.Mat? channel, OpenCvSharp.Mat darkMask, OpenCvSharp.Mat brightMask, DustRemovalOptions options)
-        {
-            if (channel == null)
-            {
-                return null;
-            }
-
-            OpenCvSharp.Mat repaired = ApplyDustRepairToChannel(channel, darkMask, brightMask, options);
-            channel.Dispose();
-            return repaired;
-        }
-
-        private static OpenCvSharp.Mat ApplyDustRepairToChannel(OpenCvSharp.Mat source, OpenCvSharp.Mat darkMask, OpenCvSharp.Mat brightMask, DustRemovalOptions options)
-        {
-            OpenCvSharp.Mat result = source.Clone();
-            int backgroundKernelSize = NormalizeKernelSize(options.RepairRadius * 2 + 1);
-            using OpenCvSharp.Mat kernel = OpenCvSharp.Cv2.GetStructuringElement(
-                OpenCvSharp.MorphShapes.Ellipse,
-                new OpenCvSharp.Size(backgroundKernelSize, backgroundKernelSize));
-
-            if (OpenCvSharp.Cv2.CountNonZero(darkMask) > 0)
-            {
-                using OpenCvSharp.Mat darkBackground = new OpenCvSharp.Mat();
-                OpenCvSharp.Cv2.MorphologyEx(source, darkBackground, OpenCvSharp.MorphTypes.Close, kernel);
-                darkBackground.CopyTo(result, darkMask);
-            }
-
-            if (OpenCvSharp.Cv2.CountNonZero(brightMask) > 0)
-            {
-                using OpenCvSharp.Mat brightBackground = new OpenCvSharp.Mat();
-                OpenCvSharp.Cv2.MorphologyEx(source, brightBackground, OpenCvSharp.MorphTypes.Open, kernel);
-                brightBackground.CopyTo(result, brightMask);
-            }
-
-            return result;
-        }
-
-        private readonly struct DustRemovalOptions
-        {
-            public DustRemovalOptions(DustRemovalMode mode, double thresholdPercent, int minArea, int maxArea, int repairRadius)
-            {
-                Mode = mode;
-                ThresholdPercent = thresholdPercent;
-                MinArea = minArea;
-                MaxArea = maxArea;
-                RepairRadius = repairRadius;
-            }
-
-            public DustRemovalMode Mode { get; }
-            public double ThresholdPercent { get; }
-            public int MinArea { get; }
-            public int MaxArea { get; }
-            public int RepairRadius { get; }
-        }
-
-        private static int NormalizeKernelSize(int kernelSize)
-        {
-            kernelSize = Math.Max(1, kernelSize);
-            return kernelSize % 2 == 0 ? kernelSize + 1 : kernelSize;
-        }
-
-        private void RestoreOriginalMats()
-        {
-            if (string.IsNullOrWhiteSpace(Filename))
-            {
-                return;
-            }
-
-            LoadConoscopeData(Filename);
-        }
-
-        private void RefreshDisplayedImage()
-        {
-            if (!HasXyzData())
-            {
-                return;
-            }
-
-            ExportChannel displayChannel = GetSelectedDisplayChannel();
-            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(displayChannel);
-            using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
-
-            OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
-            normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
-            OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, OpenCvSharp.ColormapTypes.Jet);
-            WriteableBitmap bitmap = pseudoColor.ToWriteableBitmap();
-            bitmap.Freeze();
-
-            DisposeCoordinateAxis();
-            ImageView.Clear();
-            ImageView.SetImageSource(bitmap);
-            ImageView.UpdateZoomAndScale();
-
-            CreateAndAnalyzePolarLines();
-        }
-
-        private OpenCvSharp.Mat CreateDisplayChannelMat(ExportChannel channel)
-        {
-            if (XMat == null || YMat == null || ZMat == null)
-            {
-                throw new InvalidOperationException("XYZ 数据未加载");
-            }
-
-            if (channel == ExportChannel.ColorDifference)
-            {
-                return CreateColorDifferenceMat();
-            }
-
-            return ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, channel);
-        }
-
-        private OpenCvSharp.Mat CreateColorDifferenceMat()
-        {
-            if (XMat == null || YMat == null || ZMat == null)
-            {
-                throw new InvalidOperationException("XYZ 数据未加载");
-            }
-
-            ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage)
-            {
-                EnsureColorDifferenceReferenceReady();
-                return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, colorDifferenceReferenceUMat!, colorDifferenceReferenceVMat!);
-            }
-
-            ConoscopeUvReference reference = ResolvePointColorDifferenceReference();
-            return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, reference.U, reference.V);
-        }
-
-        private void EnsureColorDifferenceReferenceReady()
-        {
-            ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage && (colorDifferenceReferenceUMat == null || colorDifferenceReferenceVMat == null))
-            {
-                throw new InvalidOperationException("请先点击“保存色差基准图”，再计算实测图色差");
-            }
-
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage && XMat != null && colorDifferenceReferenceUMat != null
-                && (XMat.Width != colorDifferenceReferenceUMat.Width || XMat.Height != colorDifferenceReferenceUMat.Height))
-            {
-                throw new InvalidOperationException("当前图像尺寸与色差基准图不一致，无法逐点计算");
-            }
-
-            if (mode == ColorDifferenceReferenceMode.Custom && !TryParseCustomColorDifferenceReference(out _))
-            {
-                throw new InvalidOperationException("请输入有效的自定义 u/v 基准坐标");
-            }
-        }
-
-        private bool HasXyzData()
-        {
-            return XMat != null && YMat != null && ZMat != null;
-        }
-
-        private ImageFilterType GetSelectedFilterType()
-        {
-            if (cbFilterType?.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string filterTag
-                && Enum.TryParse(filterTag, out ImageFilterType filterType))
-            {
-                return NormalizeFilterType(filterType);
-            }
-
-            if (cbFilterType?.SelectedIndex >= 0)
-            {
-                return NormalizeFilterType((ImageFilterType)cbFilterType.SelectedIndex);
-            }
-
-            return NormalizeFilterType(ConoscopeConfig.FilterType);
-        }
-
-        private static ImageFilterType NormalizeFilterType(ImageFilterType filterType)
-        {
-            return Enum.IsDefined(filterType) ? filterType : ImageFilterType.None;
-        }
-
-        private bool IsDustRemovalEnabled()
-        {
-            return chkDustRemovalEnabled?.IsChecked == true;
-        }
-
-        private DustRemovalMode GetSelectedDustRemovalMode()
-        {
-            if (cbDustMode?.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string modeTag
-                && Enum.TryParse(modeTag, out DustRemovalMode mode))
-            {
-                return mode;
-            }
-
-            return ConoscopeConfig.DustRemovalMode;
-        }
-
-        private ExportChannel GetSelectedDisplayChannel()
-        {
-            if (cbDisplayChannel?.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string channelTag &&
-                Enum.TryParse(channelTag, out ExportChannel channel))
-            {
-                return channel;
-            }
-
-            return ConoscopeConfig.DisplayChannel;
-        }
-
-        private void DisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ExportChannel channel = GetSelectedDisplayChannel();
-            ConoscopeConfig.DisplayChannel = channel;
-            UpdateColorDifferencePanelVisibility();
-
-            if (HasXyzData())
-            {
-                try
-                {
-                    RefreshDisplayedImage();
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"刷新显示通道失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
-
-        private void ExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateColorDifferencePanelVisibility();
-        }
-
-        private void btnSaveConoscopeConfig_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                SaveFilterControlsToConfig();
-                ConfigService.Instance.Save<ConoscopeConfig>();
-                MessageBox.Show("配置已保存", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                log.Error($"保存 Conoscope 配置失败: {ex.Message}", ex);
-                MessageBox.Show($"保存配置失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ColorDifferenceReference_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isUpdatingColorDifferenceControls)
-            {
-                return;
-            }
-
-            ConoscopeConfig.ColorDifferenceReferenceMode = GetSelectedColorDifferenceReferenceMode();
-            UpdateColorDifferenceReferenceUi();
-
-            if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && HasXyzData())
-            {
-                try
-                {
-                    RefreshDisplayedImage();
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"切换色差基准失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
-
-        private void ColorDifferenceCustom_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (isUpdatingColorDifferenceControls)
-            {
-                return;
-            }
-
-            if (!TryParseCustomColorDifferenceReference(out _))
-            {
-                MessageBox.Show("请输入有效的自定义 u/v 基准坐标", "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            UpdateColorDifferenceReferenceUi();
-            if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.Custom && HasXyzData())
-            {
-                RefreshDisplayedImage();
-            }
-        }
-
-        private void btnSaveColorDifferenceReference_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (!HasXyzData() || XMat == null || YMat == null || ZMat == null)
-                {
-                    MessageBox.Show("请先加载一张实测图", "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                colorDifferenceReferenceUMat?.Dispose();
-                colorDifferenceReferenceVMat?.Dispose();
-                colorDifferenceReferenceUMat = ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, ExportChannel.CieU);
-                colorDifferenceReferenceVMat = ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, ExportChannel.CieV);
-                colorDifferenceReferenceFileName = Filename;
-
-                isUpdatingColorDifferenceControls = true;
-                try
-                {
-                    SelectComboBoxItemByTag(cbColorDifferenceReference, ColorDifferenceReferenceMode.ReferenceImage.ToString());
-                    ConoscopeConfig.ColorDifferenceReferenceMode = ColorDifferenceReferenceMode.ReferenceImage;
-                }
-                finally
-                {
-                    isUpdatingColorDifferenceControls = false;
-                }
-
-                UpdateColorDifferenceReferenceUi();
-            }
-            catch (Exception ex)
-            {
-                log.Error($"保存色差基准图失败: {ex.Message}", ex);
-                MessageBox.Show($"保存色差基准图失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void btnCalculateColorDifference_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                EnsureColorDifferenceReferenceReady();
-                SelectComboBoxItemByTag(cbDisplayChannel, ExportChannel.ColorDifference.ToString());
-                if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && HasXyzData())
-                {
-                    RefreshDisplayedImage();
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"计算色差失败: {ex.Message}", ex);
-                MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
-        private void ClearMatData()
-        {
-            XMat?.Dispose();
-            XMat = null;
-            YMat?.Dispose();
-            YMat = null;
-            ZMat?.Dispose();
-            ZMat = null;
         }
 
         private void InitializeCoordinateAxis(Point center, int radius)
@@ -1335,6 +593,7 @@ namespace Conoscope
                 return;
             }
 
+            UpdateCieWindowSelection(e.Position);
             HideCoordinateDragOverlay();
 
             if (!e.IsValueChanged && !e.IsFinal)
@@ -1359,6 +618,7 @@ namespace Conoscope
                 return;
             }
 
+            UpdateCieWindowSelection(e.Position);
             ShowCoordinateDragOverlay(e);
         }
 
@@ -1382,32 +642,244 @@ namespace Conoscope
                 return GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
             }
 
-            int imageWidth = currentBitmapSource.PixelWidth;
-            int imageHeight = currentBitmapSource.PixelHeight;
-            int ix = ClampToInt((int)Math.Round(e.Position.X), 0, imageWidth - 1);
-            int iy = ClampToInt((int)Math.Round(e.Position.Y), 0, imageHeight - 1);
+            if (!TryGetChromaticityAtPosition(e.Position, out PixelChromaticitySample sample))
+            {
+                return GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
+            }
 
-            int xyzWidth = YMat?.Width ?? XMat?.Width ?? ZMat?.Width ?? imageWidth;
-            int xyzHeight = YMat?.Height ?? XMat?.Height ?? ZMat?.Height ?? imageHeight;
-            int xyzX = ClampToInt(ix, 0, xyzWidth - 1);
-            int xyzY = ClampToInt(iy, 0, xyzHeight - 1);
-            ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
-
-            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
             ExportChannel displayChannel = GetSelectedDisplayChannel();
-            double displayValue = GetChannelValue(xyzX, xyzY, X, Y, Z, displayChannel);
+            double displayValue = GetChannelValue(sample.XyzX, sample.XyzY, sample.X, sample.Y, sample.Z, displayChannel);
             double azimuthAngle = GetFullAzimuthAngle(e.Position);
             double polarAngle = GetPolarRadiusAngle(e.Position);
 
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"参考: {GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)}");
-            builder.AppendLine($"像素: X={ix}, Y={iy}");
+            builder.AppendLine($"像素: X={sample.ImageX}, Y={sample.ImageY}");
             builder.AppendLine($"极坐标: 方位={azimuthAngle:F2}°, 极角={polarAngle:F2}°");
             builder.AppendLine($"{GetChannelLabel(displayChannel)}: {displayValue:F6}");
-            builder.AppendLine($"XYZ: X={X:F4}, Y={Y:F4}, Z={Z:F4}");
-            builder.AppendLine($"xy: x={chromaticity.x:F6}, y={chromaticity.y:F6}");
-            builder.Append($"uv: u={chromaticity.u:F6}, v={chromaticity.v:F6}, CCT={ConoscopeColorimetry.FormatCct(chromaticity.Cct)}");
+            builder.AppendLine($"XYZ: X={sample.X:F4}, Y={sample.Y:F4}, Z={sample.Z:F4}");
+            builder.AppendLine($"xy: x={sample.Chromaticity.x:F6}, y={sample.Chromaticity.y:F6}");
+            builder.Append($"uv: u={sample.Chromaticity.u:F6}, v={sample.Chromaticity.v:F6}, CCT={ConoscopeColorimetry.FormatCct(sample.Chromaticity.Cct)}");
             return builder.ToString();
+        }
+
+        private void btnOpenCieWindow_Click(object sender, RoutedEventArgs e)
+        {
+            OpenCieWindow();
+        }
+
+        private void ToolbarOpenCie_Click(object sender, RoutedEventArgs e)
+        {
+            OpenCieWindow();
+        }
+
+        internal void OpenCieForCurrentView()
+        {
+            OpenCieWindow();
+        }
+
+        private void OpenCieWindow()
+        {
+            if (!HasXyzData() || currentBitmapSource == null || coordinateAxisController == null)
+            {
+                MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            EnsureCieWindow();
+            SyncCieWindowFromCurrentPointer();
+        }
+
+        private void EnsureCieWindow()
+        {
+            if (cieWindow == null)
+            {
+                cieWindow = new WindowCIE();
+                Window? owner = Window.GetWindow(this);
+                if (owner != null)
+                {
+                    cieWindow.Owner = owner;
+                }
+
+                cieWindow.Closed += (_, _) => cieWindow = null;
+            }
+
+            cieWindow.Show();
+            cieWindow.Activate();
+        }
+
+        private void SyncCieWindowFromCurrentPointer()
+        {
+            if (cieWindow == null || coordinateAxisController == null)
+            {
+                return;
+            }
+
+            Point point = Mouse.GetPosition(ImageView.ImageShow);
+            if (!coordinateAxisController.Axis.ContainsInteractivePoint(point))
+            {
+                return;
+            }
+
+            UpdateCieWindowSelection(point);
+        }
+
+        private void ToolbarZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.Zoom(1.25);
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.Zoom(0.8);
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomNone_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.ZoomNone();
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomUniform_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.ZoomUniform();
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarZoomUniformToFill_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Zoombox1.ZoomUniformToFill();
+            UpdateToolbarZoomRatio();
+        }
+
+        private void txtToolbarZoomRatio_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                ApplyToolbarZoomRatio();
+                e.Handled = true;
+            }
+        }
+
+        private void txtToolbarZoomRatio_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ApplyToolbarZoomRatio();
+        }
+
+        private void ApplyToolbarZoomRatio()
+        {
+            if (txtToolbarZoomRatio == null)
+            {
+                return;
+            }
+
+            if (!TryParseDouble(txtToolbarZoomRatio.Text, out double zoomRatio) || !double.IsFinite(zoomRatio) || zoomRatio <= 0)
+            {
+                UpdateToolbarZoomRatio();
+                return;
+            }
+
+            double currentZoom = ImageView.Zoombox1.ContentMatrix.M11;
+            if (!double.IsFinite(currentZoom) || currentZoom <= 0)
+            {
+                currentZoom = 1;
+            }
+
+            ImageView.Zoombox1.Zoom(zoomRatio / currentZoom);
+            UpdateToolbarZoomRatio();
+        }
+
+        private void ToolbarFullScreen_Click(object sender, RoutedEventArgs e)
+        {
+            imageFullScreenMode ??= new ImageFullScreenMode(ImageViewHost);
+            imageFullScreenMode.ToggleFullScreen();
+        }
+
+        private void ToolbarOpen3D_Click(object sender, RoutedEventArgs e)
+        {
+            Open3DForCurrentView();
+        }
+
+        internal void Open3DForCurrentView()
+        {
+            if (!HasXyzData() || currentBitmapSource == null)
+            {
+                MessageBox.Show("当前图像尚未准备好 3D 视图", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                WriteableBitmap heightBitmap = Create3DHeightBitmapForCurrentView();
+                Window3D window3D = new(heightBitmap, Conoscope3DInitialHeightScale)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                window3D.Show();
+            }
+            catch (Exception ex)
+            {
+                log.Error("打开 Conoscope 3D 视图失败", ex);
+                MessageBox.Show($"打开 3D 视图失败: {ex.Message}", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private WriteableBitmap Create3DHeightBitmapForCurrentView()
+        {
+            return ConoscopePseudoColorRenderer.CreateHeightMapBitmap(
+                XMat!,
+                YMat!,
+                ZMat!,
+                GetSelectedDisplayChannel(),
+                CreateColorDifferenceMat);
+        }
+
+        private void UpdateCieWindowSelection(Point position)
+        {
+            if (cieWindow == null)
+            {
+                return;
+            }
+
+            if (TryGetChromaticityAtPosition(position, out PixelChromaticitySample sample))
+            {
+                cieWindow.ChangeSelect(sample.Chromaticity.x, sample.Chromaticity.y);
+            }
+        }
+
+        private bool TryGetChromaticityAtPosition(Point position, out PixelChromaticitySample sample)
+        {
+            sample = default;
+            if (currentBitmapSource == null || !HasXyzData())
+            {
+                return false;
+            }
+
+            int imageWidth = currentBitmapSource.PixelWidth;
+            int imageHeight = currentBitmapSource.PixelHeight;
+            if (imageWidth <= 0 || imageHeight <= 0)
+            {
+                return false;
+            }
+
+            int imageX = ClampToInt((int)Math.Round(position.X), 0, imageWidth - 1);
+            int imageY = ClampToInt((int)Math.Round(position.Y), 0, imageHeight - 1);
+
+            int xyzWidth = YMat?.Width ?? XMat?.Width ?? ZMat?.Width ?? imageWidth;
+            int xyzHeight = YMat?.Height ?? XMat?.Height ?? ZMat?.Height ?? imageHeight;
+            if (xyzWidth <= 0 || xyzHeight <= 0)
+            {
+                return false;
+            }
+
+            int xyzX = ClampToInt(imageX, 0, xyzWidth - 1);
+            int xyzY = ClampToInt(imageY, 0, xyzHeight - 1);
+            ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
+            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
+            sample = new PixelChromaticitySample(imageX, imageY, xyzX, xyzY, X, Y, Z, chromaticity);
+            return true;
         }
 
         private double GetFullAzimuthAngle(Point point)
@@ -2039,6 +1511,14 @@ namespace Conoscope
         {
             ConoscopeModuleService.Unregister(this);
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            if (subscribedModelProfile != null)
+            {
+                subscribedModelProfile.PropertyChanged -= CurrentModelProfile_PropertyChanged;
+                subscribedModelProfile = null;
+            }
+            ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            cieWindow?.Close();
+            cieWindow = null;
             XMat?.Dispose();
             XMat = null;
             YMat?.Dispose();
@@ -2052,6 +1532,47 @@ namespace Conoscope
             DisposeCoordinateAxis();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private readonly record struct PixelChromaticitySample(
+            int ImageX,
+            int ImageY,
+            int XyzX,
+            int XyzY,
+            double X,
+            double Y,
+            double Z,
+            ConoscopeChromaticity Chromaticity);
+
+        private sealed class ConoscopeFieldOfViewSettings
+        {
+            private readonly ConoscopeModelProfile modelProfile;
+
+            public ConoscopeFieldOfViewSettings(ConoscopeModelProfile modelProfile)
+            {
+                this.modelProfile = modelProfile;
+            }
+
+            [Category("视场"), DisplayName("视场角(度)"), Description("设计视场角。分析半径 = 视场角 * 生效视场系数。")]
+            public int MaxAngle
+            {
+                get => modelProfile.MaxAngle;
+                set => modelProfile.MaxAngle = value;
+            }
+
+            [Category("视场"), DisplayName("完整像素数(px)"), Description("对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 使用图像短边一半。输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 计算。")]
+            public double FullScalePixelCount
+            {
+                get => modelProfile.FullScalePixelCount;
+                set => modelProfile.FullScalePixelCount = value;
+            }
+
+            [Category("视场"), DisplayName("ConoscopeCoefficient(度/像素)"), Description("可直接输入 60/3100 这类小数。填 0 表示按完整像素数自动计算。分析半径 = 视场角 / 该系数。")]
+            public double DirectConoscopeCoefficient
+            {
+                get => modelProfile.DirectConoscopeCoefficient;
+                set => modelProfile.DirectConoscopeCoefficient = value;
+            }
         }
 
         public void AdvancedExport()

@@ -1,364 +1,125 @@
-# EventVWR Plugin - 事件查看器与Dump管理
-
-## 目录
-
-1. [概述](#概述)
-2. [主要功能](#主要功能)
-3. [架构设计](#架构设计)
-4. [使用指南](#使用指南)
-5. [API参考](#api参考)
-6. [配置说明](#配置说明)
-7. [故障排除](#故障排除)
-8. [最佳实践](#最佳实践)
-9. [版本历史](#版本历史)
-
-## 概述
-
-**EventVWR** 是 ColorVision 的系统事件查看与应用程序崩溃转储(Dump)管理插件，提供Windows事件日志查看和应用程序Dump文件配置功能，帮助开发者和运维人员快速诊断系统问题和应用崩溃。
-
-### 基本信息
-
-- **版本**: 1.0.0
-- **目标框架**: .NET 8.0 / .NET 10.0 Windows
-- **主要功能**: Windows事件日志查看、Dump文件管理
-- **依赖**: ColorVision.UI, ColorVision.Common
-- **权限要求**: 配置Dump需要管理员权限
-
-## 主要功能
-
-### 1. 事件查看器
-
-- **Windows事件日志查看** - 查看系统应用程序事件日志
-- **错误事件筛选** - 自动筛选并显示错误级别的事件
-- **事件详情展示** - 点击事件查看详细错误信息和堆栈跟踪
-- **时间倒序排列** - 最新发生的事件显示在最前面
-- **现代化界面** - 采用Material Design风格的用户界面
-
-### 2. Dump文件管理
-
-- **Dump类型配置** - 支持自定义、小型、完全三种Dump类型
-- **注册表配置** - 通过Windows注册表配置LocalDumps
-- **Dump文件夹设置** - 自定义Dump文件保存路径
-- **Dump数量限制** - 设置保留的Dump文件数量
-- **自定义Dump标志** - 支持MinidumpType标志组合
-
-### 3. 菜单集成
-
-- **帮助菜单集成** - 在帮助菜单下添加Dump文件设置子菜单
-- **动态菜单项** - 根据当前配置动态显示选中状态
-- **快捷操作** - 一键保存Dump、清空Dump配置
-
-## 架构设计
-
-```mermaid
-graph TD
-    A[EventVWR Plugin] --> B[EventWindow]
-    A --> C[DumpConfig]
-    A --> D[MenuDump]
-    
-    B --> B1[事件列表]
-    B --> B2[详情面板]
-    B --> B3[错误筛选]
-    
-    C --> C1[注册表操作]
-    C --> C2[Dump类型]
-    C --> C3[路径配置]
-    
-    D --> D1[菜单项]
-    D --> D2[命令绑定]
-    D --> D3[状态同步]
-```
-
-### 核心组件
-
-```
-EventVWR/
-├── EventWindow.xaml(.cs)      # 事件查看器窗口
-├── EventVWRPlugins.cs         # 插件入口
-├── ExportEventWindow.cs       # 事件导出
-└── Dump/
-    ├── DumpConfig.cs          # Dump配置管理
-    ├── DumpType.cs            # Dump类型枚举
-    ├── MinidumpType.cs        # Minidump标志枚举
-    ├── MenuDump.cs            # Dump菜单项
-    └── DumpFileCollector.cs   # Dump文件收集器
-```
-
-## 使用指南
-
-### 查看Windows事件日志
-
-1. 启动 ColorVision 主程序
-2. 通过菜单访问事件查看器（如已配置菜单项）
-3. 在事件列表中查看所有错误级别的事件
-4. 点击事件查看详细信息
-
-界面说明：
-- **左侧列表** - 显示所有错误级别的事件，包含时间和来源
-- **右侧详情** - 显示选中事件的详细错误信息
-- **状态栏** - 显示当前状态
-
-### 配置Dump文件
-
-```csharp
-// 获取Dump配置
-var dumpConfig = new DumpConfig();
-
-// 设置Dump类型
-dumpConfig.DumpType = DumpType.Mini;
-
-// 设置Dump文件夹
-dumpConfig.DumpFolder = @"C:\CrashDumps";
-
-// 设置Dump数量限制
-dumpConfig.DumpCount = 10;
-
-// 应用配置（需要管理员权限）
-dumpConfig.SetDump();
-```
-
-### Dump类型说明
-
-| 类型 | 值 | 说明 |
-|------|-----|------|
-| Custom | 0 | 自定义转储，使用CustomDumpFlags指定详细选项 |
-| Mini | 1 | 小型转储，包含基本信息，文件较小 |
-| Full | 2 | 完全转储，包含完整内存信息，文件较大 |
-
-### MinidumpType标志
-
-参考 [Microsoft文档](https://learn.microsoft.com/en-us/windows/win32/api/minidumpapiset/ne-minidumpapiset-minidump_type)
-
-常用标志：
-
-| 标志 | 值 | 说明 |
-|------|-----|------|
-| MiniDumpNormal | 0x00000000 | 正常小型转储 |
-| MiniDumpWithDataSegs | 0x00000001 | 包含数据段 |
-| MiniDumpWithFullMemory | 0x00000002 | 包含完整内存 |
-| MiniDumpWithHandleData | 0x00000004 | 包含句柄数据 |
-| MiniDumpWithProcessThreadData | 0x00000100 | 包含进程线程数据 |
-| MiniDumpWithThreadInfo | 0x00001000 | 包含线程信息 |
-
-## API参考
-
-### EventWindow
-
-事件查看器主窗口。
-
-```csharp
-public partial class EventWindow : Window
-{
-    // 事件日志条目集合
-    public ObservableCollection<EventLogEntry> logEntries { get; set; }
-    
-    // 构造函数
-    public EventWindow();
-    
-    // 窗口初始化时加载事件日志
-    private void Window_Initialized(object sender, EventArgs e);
-    
-    // 选择变更时显示事件详情
-    private void ListViewEvent_SelectionChanged(object sender, SelectionChangedEventArgs e);
-}
-```
-
-### DumpConfig
-
-Dump文件配置类。
-
-```csharp
-public class DumpConfig : IConfig
-{
-    // 默认Dump文件夹路径
-    public string DumpFolder { get; set; } = 
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), 
-        "AppData", "Local", "CrashDumps");
-    
-    // Dump类型
-    public DumpType DumpType { get; set; } = DumpType.Mini;
-    
-    // Dump文件数量限制
-    public int DumpCount { get; set; } = 10;
-    
-    // 自定义Dump标志
-    public MinidumpType CustomDumpFlags { get; set; } = MinidumpType.MiniDumpNormal;
-    
-    // 应用配置到注册表（需要管理员权限）
-    public void SetDump();
-    
-    // 保存当前Dump
-    public void SaveDump();
-    
-    // 清除Dump配置
-    public void ClearDump();
-}
-```
-
-### DumpType
-
-Dump类型枚举。
+# EventVWR 插件
 
-```csharp
-public enum DumpType
-{
-    Custom = 0,  // 自定义转储
-    Mini = 1,    // 小型转储
-    Full = 2     // 完全转储
-}
-```
-
-### EventVWRPlugins
-
-插件入口类。
-
-```csharp
-public class EventVWRPlugins : IPluginBase
-{
-    public override string Header => "事件插件";
-    public override string Description => "增强的异常管理,提供事件插件和Dump设置";
-}
-```
-
-## 配置说明
-
-### 注册表路径
-
-Dump配置存储在以下注册表路径：
-
-```
-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\{AppName}.exe
-```
-
-### 配置项
-
-| 配置项 | 类型 | 说明 |
-|--------|------|------|
-| DumpFolder | string (ExpandString) | Dump文件保存文件夹路径 |
-| DumpCount | DWORD | 保留的Dump文件数量 |
-| DumpType | DWORD | Dump类型 (0=Custom, 1=Mini, 2=Full) |
-| CustomDumpFlags | DWORD | 自定义Dump标志（当DumpType=0时使用） |
-
-### 示例配置
-
-```powershell
-# 使用PowerShell配置Dump
-$appName = "ColorVision.exe"
-$keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\$appName"
-
-# 创建注册表项
-New-Item -Path $keyPath -Force
-
-# 设置Dump文件夹
-Set-ItemProperty -Path $keyPath -Name "DumpFolder" -Value "C:\CrashDumps" -Type ExpandString
-
-# 设置Dump类型为Mini
-Set-ItemProperty -Path $keyPath -Name "DumpType" -Value 1 -Type DWord
-
-# 设置Dump数量限制
-Set-ItemProperty -Path $keyPath -Name "DumpCount" -Value 10 -Type DWord
-```
-
-## 故障排除
-
-### 问题1: 无法配置Dump（权限不足）
-
-**症状**: 点击设置Dump时提示"操作需要使用管理员权限"
-
-**解决方案**:
-1. 以管理员身份运行 ColorVision
-2. 或右键点击应用程序选择"以管理员身份运行"
-
-### 问题2: 事件日志为空
-
-**症状**: 事件查看器中不显示任何事件
-
-**可能原因**:
-- 应用程序事件日志为空
-- 没有错误级别的事件
-- 权限不足
-
-**解决方案**:
-1. 使用Windows事件查看器验证日志是否存在
-2. 检查应用程序是否有写入事件日志的权限
-3. 以管理员身份运行
-
-### 问题3: Dump文件未生成
-
-**症状**: 应用程序崩溃后未生成Dump文件
-
-**检查清单**:
-- [ ] Dump配置已正确应用
-- [ ] 应用程序名称与配置匹配
-- [ ] Dump文件夹存在且有写入权限
-- [ ] Windows Error Reporting服务正常运行
-
-## 最佳实践
-
-### 1. Dump文件管理
-
-- **定期清理** - 定期清理旧的Dump文件以释放磁盘空间
-- **合理选择类型** - 使用Mini类型进行日常调试，Full类型进行深度分析
-- **路径设置** - 将Dump文件夹设置在非系统盘以避免系统盘空间不足
-
-```csharp
-// 定期清理示例
-public void CleanOldDumps(string dumpFolder, int keepDays)
-{
-    var cutoffDate = DateTime.Now.AddDays(-keepDays);
-    var dumpFiles = Directory.GetFiles(dumpFolder, "*.dmp");
-    
-    foreach (var file in dumpFiles)
-    {
-        var fileInfo = new FileInfo(file);
-        if (fileInfo.CreationTime < cutoffDate)
-        {
-            File.Delete(file);
-        }
-    }
-}
-```
-
-### 2. 事件日志监控
-
-- **关注重复错误** - 关注重复出现的错误事件
-- **时间关联** - 结合时间戳定位问题发生时机
-- **来源分析** - 查看事件来源确定问题组件
-
-### 3. 权限处理
-
-```csharp
-// 检查管理员权限
-if (!Tool.IsAdministrator())
-{
-    MessageBox.Show(
-        Application.Current.GetActiveWindow(),
-        "操作需要使用管理员权限",
-        "权限不足",
-        MessageBoxButton.OK,
-        MessageBoxImage.Warning);
-    return;
-}
-```
-
-## 版本历史
-
-### v1.0.0（2026-02）
-
-**初始版本**:
-- ✅ Windows事件日志查看功能
-- ✅ Dump文件配置管理
-- ✅ 菜单集成
-- ✅ 现代化UI界面
-
----
-
-*文档版本: 1.0*  
-*最后更新: 2026-04-02*
-
-## 相关资源
-
-- [Windows Error Reporting 文档](https://docs.microsoft.com/en-us/windows/win32/wer/collecting-user-mode-dumps)
-- [MinidumpType 枚举文档](https://learn.microsoft.com/en-us/windows/win32/api/minidumpapiset/ne-minidumpapiset-minidump_type)
-- [源代码](../../../../Plugins/EventVWR/)
-- [CHANGELOG](../../../../Plugins/EventVWR/CHANGELOG.md)
+本页只描述当前仓库里实际存在的 EventVWR 插件实现，不再继续维护“完整子系统手册 + 理想化 API 表”的旧稿。
+
+## 先看这个插件现在做什么
+
+从当前源码看，EventVWR 主要做两件事：
+
+- 提供一个只读的 Windows Application 事件错误查看窗口。
+- 提供一组 Dump 配置菜单，用于写入或清除 Windows Error Reporting 的 LocalDumps 注册表项。
+
+因此它不是一个复杂的诊断平台，而是“事件窗口 + Dump 配置菜单”两条很直接的功能链。
+
+## 当前最关键的文件
+
+- `Plugins/EventVWR/EventVWRPlugins.cs`
+- `Plugins/EventVWR/ExportEventWindow.cs`
+- `Plugins/EventVWR/EventWindow.xaml(.cs)`
+- `Plugins/EventVWR/Dump/DumpConfig.cs`
+- `Plugins/EventVWR/Dump/MenuDump.cs`
+- `Plugins/EventVWR/manifest.json`
+
+如果只是想弄清插件如何进入宿主、如何打开事件窗口、如何修改 Dump 设置，这几处代码已经足够。
+
+## 当前接入宿主的两条菜单链
+
+### 事件窗口入口
+
+`ExportEventWindow` 继承 `MenuItemBase`，当前挂在 `Help` 菜单下：
+
+- `OwnerGuid = "Help"`
+- `GuidId = "EventWindow"`
+- `Order = 1000`
+
+执行时会打开 `EventWindow` 对话框。
+
+这个入口还有一个重要约束：`Execute()` 当前带有 `RequiresPermission(PermissionMode.Administrator)`，说明它不是纯本地辅助菜单，而是受宿主权限模式约束的。
+
+### Dump 设置入口
+
+`MenuDump` 也是 `Help` 菜单下的一个父级菜单项，`MenuThemeProvider` 则继续为它提供子菜单：
+
+- 各 `DumpType` 枚举项
+- 清空 Dmp
+- 保存 Dmp
+
+因此 EventVWR 当前不是只有一个窗口入口，而是帮助菜单下的两组独立能力。
+
+## 事件窗口当前怎么工作
+
+`EventWindow.xaml.cs` 的逻辑非常直接：
+
+1. 窗口初始化时打开 Windows `Application` 事件日志。
+2. 读取所有 `EventLogEntry`。
+3. 只保留 `EntryType == Error` 的事件。
+4. 按 `TimeGenerated` 倒序排列。
+5. 把结果绑定到左侧列表。
+6. 选择某条记录时，把 `Message` 显示到详情区域。
+
+这意味着当前窗口并没有复杂的筛选器、搜索器或异步分页逻辑，本质上是一个“错误事件快速浏览器”。
+
+## Dump 配置当前怎么落地
+
+`DumpConfig` 负责真正的系统设置写入，当前核心点包括：
+
+- 目标注册表路径是 `HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps`。
+- 会优先读取默认 LocalDumps 配置，再覆盖到当前进程对应的 `LocalDumps\{Name}.exe`。
+- 当前管理的关键字段有：
+  - `DumpFolder`
+  - `DumpCount`
+  - `DumpType`
+  - `CustomDumpFlags`
+
+写入配置和清除配置都要求管理员权限；如果当前不是管理员，会直接弹窗提示而不继续执行。
+
+除了注册表配置外，`SaveDump()` 还会调用 `DumpHelper.WriteMiniDump(...)`，把当前进程转储写到目标目录。
+
+## 当前 manifest 信息
+
+按 `manifest.json`，这个插件当前公开的基本信息是：
+
+- `Id = "EventVWR"`
+- `name = "事件插件"`
+- `version = "1.0"`
+- `dllpath = "EventVWR.dll"`
+- `requires = "1.3.15.10"`
+
+这比旧文档里那种“目标框架、依赖矩阵、完整 API 表”更接近当前插件装载模型真正关心的信息。
+
+## 当前几个容易写错的点
+
+### 它不是完整的事件诊断中心
+
+当前实现只读取 Windows Application 日志中的错误项，并展示消息文本。不要把它继续写成带高级检索、导出和多日志源分析的平台。
+
+### Dump 配置是系统级写入
+
+`DumpConfig` 当前操作的是 HKLM 下的 LocalDumps 注册表项，不是应用内部配置文件。也正因为这样，写入和清理都要求管理员权限。
+
+### 插件入口类本身很轻
+
+`EventVWRPlugins` 现在只是一个很薄的 `IPluginBase` 壳，主要提供 Header 和 Description。真正的功能入口并不在这里，而在菜单项和对应窗口/配置类里。
+
+### 权限边界分成两层
+
+- 事件窗口菜单入口本身受 `RequiresPermission(PermissionMode.Administrator)` 约束。
+- Dump 注册表写入和清理还会在运行时再次检查是否具备管理员权限。
+
+如果只记录其中一层，文档就会把当前行为说得过于简单。
+
+## 推荐阅读顺序
+
+1. `Plugins/EventVWR/ExportEventWindow.cs`
+2. `Plugins/EventVWR/EventWindow.xaml.cs`
+3. `Plugins/EventVWR/Dump/DumpConfig.cs`
+4. `Plugins/EventVWR/Dump/MenuDump.cs`
+5. `Plugins/EventVWR/manifest.json`
+
+这样能先看到宿主入口，再看到窗口行为和系统级配置落点。
+
+## 继续阅读
+
+- [Plugins/README.md](../../../../Plugins/README.md)
+- [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
+- [docs/04-api-reference/plugins/standard-plugins/system-monitor.md](./system-monitor.md)

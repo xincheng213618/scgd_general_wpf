@@ -12,6 +12,8 @@ namespace ColorVision.UI
 
         public static string DirAppData { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\";
 
+        public static string DirLocalAppData { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + $"\\{AssemblyCompany}\\";
+
         public static string? DirLog { get; set; } = GetLogFilePath();
 
         private static string? GetLogFilePath()

@@ -19,6 +19,14 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
+    public class AutoUpdatePlan
+    {
+        public required Version CurrentVersion { get; init; }
+        public required Version LatestVersion { get; init; }
+        public required Version TargetVersion { get; init; }
+        public required bool IsIncremental { get; init; }
+    }
+
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
@@ -320,6 +328,37 @@ namespace ColorVision.Update
             }
 
             return new Version(versionString.Trim());
+        }
+
+        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync()
+        {
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+            if (LatestVersion == new Version())
+                return null;
+
+            Version? currentVersion = CurrentVersion;
+            if (currentVersion == null || LatestVersion <= currentVersion)
+                return null;
+
+            bool isIncrement = LatestVersion.Minor == currentVersion.Minor;
+            Version targetVersion = LatestVersion;
+            if (isIncrement && LatestVersion.Build != currentVersion.Build)
+            {
+                targetVersion = new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Build + 1, 1);
+            }
+
+            return new AutoUpdatePlan
+            {
+                CurrentVersion = currentVersion,
+                LatestVersion = LatestVersion,
+                TargetVersion = targetVersion,
+                IsIncremental = isIncrement,
+            };
+        }
+
+        public void StartUpdatePlan(AutoUpdatePlan plan)
+        {
+            Update(plan.TargetVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), plan.IsIncremental);
         }
 
         private void UpdateApplication(string downloadPath, bool isIncrement)

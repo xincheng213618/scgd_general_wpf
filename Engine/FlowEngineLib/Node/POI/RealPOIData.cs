@@ -10,6 +10,8 @@ public class RealPOIData
 
 	public int POI_MasterId { get; set; }
 
+	public int MasterResultType { get; set; }
+
 	public CVTemplateParam FilterTemplate { get; set; }
 
 	public CVTemplateParam ReviseTemplate { get; set; }
@@ -26,12 +28,13 @@ public class RealPOIData
 
 	public SMUResultData SMUData { get; set; }
 
-	public RealPOIData(string imgFileName, string filterTempName, string reviseTempName, string reviseFileName, string outTempName, POITypeData poiData, int cie_mid, int poi_mid, bool isResultAdd, bool isSubPixel, bool isCCTWave)
+	public RealPOIData(string imgFileName, string filterTempName, string reviseTempName, string reviseFileName, string outTempName, POITypeData poiData, int cie_mid, int cie_resultType, int poi_mid, bool isResultAdd, bool isSubPixel, bool isCCTWave)
 	{
 		ImgFileName = imgFileName;
 		POIReviseFileName = reviseFileName;
 		POITypeData = poiData;
 		CIE_MasterId = cie_mid;
+		MasterResultType = cie_resultType;
 		POI_MasterId = poi_mid;
 		FilterTemplate = new CVTemplateParam
 		{

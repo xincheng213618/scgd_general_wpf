@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using System;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -29,188 +27,105 @@ namespace ColorVision.ImageEditor.Draw
         private double _DefalutHeight = 30;
     }
 
-    public class RectangleManager :IEditorToggleToolBase, IDisposable
+    public class RectangleManager : DragDrawingToolBase
     {
         public RectangleManagerConfig Config { get; set; } = new RectangleManagerConfig();
-        private Zoombox Zoombox1 => EditorContext.Zoombox;
-        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
+        private DVRectangleText? DrawingRectangleCache;
 
-        public EditorContext EditorContext { get; set; }
-
-        public RectangleManager(EditorContext context)
+        public RectangleManager(EditorContext context) : base(context)
         {
-            EditorContext = context;
-            ToolBarLocal = ToolBarLocal.Draw;
             Order = 4;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageRect");
         }
 
-        private DVRectangleText DrawingRectangleCache;
+        protected override bool IgnoreWhenCtrlPressed => true;
 
-
-        private bool _IsChecked;
-        public override bool IsChecked
+        protected override IEnumerable<CompactInspectorItem> BuildCompactInspectorItems()
         {
-            get => _IsChecked; set
+            return new CompactInspectorItem[]
             {
-                if (_IsChecked == value) return;
-                _IsChecked = value;
-                if (value)
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
-                    Load();
-                }
-                else
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    ImageViewModel.SlectStackPanel.Children.Clear();
-                    UnLoad();
-                }
-                OnPropertyChanged();
-            }
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsContinuous), Icon = CompactInspectorIcons.CreateText("∞"), Order = 10, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "连续绘制" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsLocked), Icon = CompactInspectorIcons.CreateGlyph("\uE72E"), Order = 20, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "锁定默认尺寸" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.UseCenter), Icon = CompactInspectorIcons.CreateText("◎"), Order = 30, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "以中心创建" },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.DefalutWidth), Label = "W", ShowLabel = true, Width = 56, Order = 40, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.DefalutHeight), Label = "H", ShowLabel = true, Width = 56, Order = 50, EditorKind = CompactInspectorEditorKind.Number },
+            };
         }
 
-        public void Load()
+        protected override void OnDeactivated()
         {
-            DrawCanvas.MouseMove += MouseMove;
-            DrawCanvas.MouseEnter += MouseEnter;
-            DrawCanvas.MouseLeave += MouseLeave;
-            DrawCanvas.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
-            DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
-        }
-
-        public void UnLoad()
-        {
-            DrawCanvas.MouseMove -= MouseMove;
-            DrawCanvas.MouseEnter -= MouseEnter;
-            DrawCanvas.MouseLeave -= MouseLeave;
-            DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
-            DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             DrawingRectangleCache = null;
         }
 
-
-
-        Point MouseDownP { get; set; }
-        Point MouseUpP { get; set; }
-
-        bool IsMouseDown;
-
-
-
-        private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        protected override void OnBeginDraw(Point startPoint, MouseButtonEventArgs e)
         {
-            if (Keyboard.IsKeyDown(Key.LeftCtrl))
-            {
-                return;
-            }
-
-            DrawCanvas.CaptureMouse();
-            MouseDownP = e.GetPosition(DrawCanvas);
-            IsMouseDown = true;
-
-            if (ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
-            {
-                return;
-            }
-            int did = CheckNo();
-
-            RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
-            rectangleTextProperties.Id = did;
-            if (Config.UseCenter)
-            {
-                rectangleTextProperties.Rect = new System.Windows.Rect(new Point(MouseDownP.X + Config.DefalutWidth / 2, MouseDownP.Y + Config.DefalutHeight / 2), new Point(MouseDownP.X - Config.DefalutWidth / 2, MouseDownP.Y - Config.DefalutHeight / 2));
-            }
-            else
-            {
-                rectangleTextProperties.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + Config.DefalutWidth, MouseDownP.Y + Config.DefalutHeight));
-            }
-            rectangleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-            rectangleTextProperties.Text = "Point_" + did;
-            DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
-            DrawCanvas.AddVisualCommand(DrawingRectangleCache);
-
-            e.Handled = true;
-        }
-        public int CheckNo()
-        {
-            if (EditorContext.DrawingVisualLists.Count > 0 &&  EditorContext.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
-            {
-                return drawingVisual.ID + 1;
-            }
-            else
-            {
-                return 1;
-            }
-        }
-
-        private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
-            DrawCanvas.ReleaseMouseCapture();
-            IsMouseDown = false;
-
             if (DrawingRectangleCache != null)
             {
-                MouseUpP = e.GetPosition(DrawCanvas);
+                e.Handled = true;
+                return;
+            }
 
-                ImageViewModel.SelectEditorVisual.SetRender(DrawingRectangleCache);
+            int did = GetNextDrawingVisualId();
+            RectangleTextProperties rectangleTextProperties = new RectangleTextProperties
+            {
+                Id = did,
+                Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11),
+                Text = "Point_" + did,
+            };
+
+            if (Config.UseCenter)
+            {
+                rectangleTextProperties.Rect = new Rect(
+                    new Point(startPoint.X + Config.DefalutWidth / 2, startPoint.Y + Config.DefalutHeight / 2),
+                    new Point(startPoint.X - Config.DefalutWidth / 2, startPoint.Y - Config.DefalutHeight / 2));
+            }
+            else
+            {
+                rectangleTextProperties.Rect = new Rect(startPoint, new Point(startPoint.X + Config.DefalutWidth, startPoint.Y + Config.DefalutHeight));
+            }
+
+            DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
+            DrawCanvas.AddVisualCommand(DrawingRectangleCache);
+            e.Handled = true;
+        }
+
+        protected override void OnUpdateDraw(Point currentPoint, MouseEventArgs e)
+        {
+            if (DrawingRectangleCache != null)
+            {
+                DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownPoint, currentPoint);
+                DrawingRectangleCache.Render();
+            }
+        }
+
+        protected override void OnEndDraw(Point endPoint, MouseButtonEventArgs e)
+        {
+            if (DrawingRectangleCache != null)
+            {
+                SelectVisual(DrawingRectangleCache);
                 if (DrawingRectangleCache.Attribute.Rect.Width == Config.DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == Config.DefalutHeight)
+                {
                     DrawingRectangleCache.Render();
-
+                }
 
                 if (!Config.IsLocked)
                 {
                     Config.DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                     Config.DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
                 }
+
                 if (!Config.IsContinuous)
+                {
                     IsChecked = false;
+                }
 
                 DrawingRectangleCache = null;
             }
 
             e.Handled = true;
         }
-
-
-
-        private void MouseMove(object sender, MouseEventArgs e)
-        {
-            if (IsMouseDown)
-            {
-                if (DrawingRectangleCache != null)
-                {
-                    var point = e.GetPosition(DrawCanvas);
-
-                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
-                    DrawingRectangleCache.Render();
-                }
-            }
-            e.Handled = true;
-        }
-
-        private void MouseEnter(object sender, MouseEventArgs e)
-        {
-        }
-
-        private void MouseLeave(object sender, MouseEventArgs e)
-        {
-        }
-
-
-
-
-
-
-
-
-        public void Dispose()
-        {
-            UnLoad();
-
-            GC.SuppressFinalize(this);
-        }
     }
 }
+
+
+

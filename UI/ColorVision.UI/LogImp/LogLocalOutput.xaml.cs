@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -13,7 +12,7 @@ namespace ColorVision.UI.LogImp
     /// This is the core log-file-monitoring component that can be hosted in DockingManager panels
     /// or any other container. WindowLogLocal uses this control as its content.
     /// </summary>
-    public partial class LogLocalOutput : UserControl
+    public partial class LogLocalOutput : UserControl, IDisposable
     {
         /// <summary>
         /// Log file path being monitored.
@@ -30,6 +29,7 @@ namespace ColorVision.UI.LogImp
         private readonly object _fileLock = new object();
         private FileSystemWatcher? _fileWatcher;
         private bool _fileChangePending;
+        private bool _isDisposed;
 
         /// <summary>
         /// File encoding (defaults to system default; use GB2312 for C++ logs on Chinese Windows).
@@ -51,9 +51,7 @@ namespace ColorVision.UI.LogImp
             InitializeComponent();
             this.SizeChanged += (s, e) =>
             {
-                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
-                ButtonAutoRefresh.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoRefreshButton ? Visibility.Visible : Visibility.Collapsed;
-                SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
+                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1);
             };
         }
 
@@ -92,6 +90,9 @@ namespace ColorVision.UI.LogImp
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_isDisposed)
+                return;
+
             if (Config.AutoRefresh)
             {
                 _refreshTimer?.Start();
@@ -367,7 +368,7 @@ namespace ColorVision.UI.LogImp
 
         private void UpdateSearchResults(string newContent)
         {
-            var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
+            var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             if (string.IsNullOrEmpty(searchText)) return;
 
             var newLines = newContent.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
@@ -421,31 +422,52 @@ namespace ColorVision.UI.LogImp
 
         private void ApplySearchFilter()
         {
-            var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                logTextBox.Visibility = Visibility.Collapsed;
-                logTextBoxSerch.Visibility = Visibility.Visible;
-                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                if (!LogSearchHelper.FilterLines(searchText, logLines, out var filteredLines))
-                {
-                    SearchBar1.BorderBrush = Brushes.Red;
-                    return;
-                }
-                logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                SearchBar1.BorderBrush = SearchBar1Brush;
-            }
-            else
-            {
-                logTextBoxSerch.Visibility = Visibility.Collapsed;
-                logTextBox.Visibility = Visibility.Visible;
-            }
+            var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
+            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(LogFilePath);
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+
+            Loaded -= UserControl_Loaded;
+            Unloaded -= UserControl_Unloaded;
+            Config.PropertyChanged -= Config_PropertyChanged;
+
+            if (_refreshTimer != null)
+            {
+                _refreshTimer.Stop();
+                _refreshTimer.Tick -= RefreshTimer_Tick;
+                _refreshTimer = null;
+            }
+
+            if (_fileWatcher != null)
+            {
+                try
+                {
+                    _fileWatcher.EnableRaisingEvents = false;
+                }
+                catch
+                {
+                }
+
+                _fileWatcher.Changed -= OnFileChanged;
+                _fileWatcher.Created -= OnFileChanged;
+                _fileWatcher.Dispose();
+                _fileWatcher = null;
+            }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

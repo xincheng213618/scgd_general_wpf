@@ -5,8 +5,6 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons

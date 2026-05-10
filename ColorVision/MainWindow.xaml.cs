@@ -7,7 +7,6 @@ using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
 using AvalonDock.Layout;
 using log4net;

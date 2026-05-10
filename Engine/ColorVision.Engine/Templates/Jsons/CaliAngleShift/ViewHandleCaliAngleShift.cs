@@ -4,7 +4,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using log4net;
-using NPOI.SS.Formula.Functions;
 using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,5 +1,4 @@
 using ColorVision.UI.Menus;
-using ColorVision.UI.Views;
 using System.Windows;
 
 namespace ColorVision.Solution.Workspace

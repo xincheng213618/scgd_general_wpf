@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+.tools/
+.android-sdk/
+
+app/build/

@@ -38,7 +38,6 @@ namespace ColorVision.ImageEditor.Draw
         public DrawCanvas DrawCanvas { get; set; }
 
         public Zoombox ZoomboxSub { get; set; }
-        public ImageViewModel ImageViewModel { get; set; }
 
         private DrawingVisual SelectRect = new DrawingVisual();
 
@@ -46,7 +45,6 @@ namespace ColorVision.ImageEditor.Draw
         public SelectEditorVisual(EditorContext editorContext)
         {
             EditorContext = editorContext;
-            ImageViewModel = EditorContext.ImageViewModel;
             DrawCanvas = EditorContext.DrawCanvas;
             ZoomboxSub = EditorContext.Zoombox;
             DrawCanvas.AddVisual(this);
@@ -181,6 +179,7 @@ namespace ColorVision.ImageEditor.Draw
         public void ClearRender()
         {
             Clear();
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
             Render();
         }
         private void Clear()
@@ -189,6 +188,8 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
             ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
         }
+
+        public ISelectVisual? PrimarySelectedVisual => SelectVisuals.Count == 1 ? SelectVisuals[0] : null;
 
 
         public void SetRender<T>(T selectVisual)  where T :ISelectVisual
@@ -206,6 +207,7 @@ namespace ColorVision.ImageEditor.Draw
                 DrawCanvas.PreviewKeyDown += PreviewKeyDown;
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
             }
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
             if (!DrawCanvas.ContainsVisual(this))
             {
                 DrawCanvas.AddVisual(this);
@@ -217,6 +219,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
         public event EventHandler<ISelectVisual> SelectVisualChanged;
+        public event EventHandler? SelectionChanged;
 
 
         public void SetRenders<T>(IEnumerable<T> selectVisuals) where T : ISelectVisual
@@ -239,6 +242,7 @@ namespace ColorVision.ImageEditor.Draw
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
 
             }
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
             if (!DrawCanvas.ContainsVisual(this))
             {
                 DrawCanvas.AddVisual(this);
@@ -423,7 +427,7 @@ namespace ColorVision.ImageEditor.Draw
         }
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (SelectVisuals.Count == 0 || !ImageViewModel.ImageEditMode )
+            if (SelectVisuals.Count == 0 || !EditorContext.IsImageEditMode )
             {
                 e.Handled = true;
                 return;
@@ -530,7 +534,7 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            if (!ImageViewModel.ImageEditMode || EditorContext.DrawEditorManager.Current !=null)
+            if (!EditorContext.IsImageEditMode || EditorContext.DrawEditorManager.Current !=null)
                 return;
 
             // 双击检测
@@ -555,7 +559,7 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             if (MouseVisual is IDrawingVisual drawingVisual)
             {
-                if (ImageViewModel.ImageEditMode == true)
+                if (EditorContext.IsImageEditMode == true)
                 {
                     if (drawingVisual is ISelectVisual visual)
                     {
@@ -595,7 +599,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (visual is IEditableDrawingVisual editableVisual && visual.GetRect().Contains(point))
                 {
-                    editableVisual.HandleDoubleClick(DrawCanvas, point);
+                    editableVisual.HandleDoubleClick(EditorContext, point);
                     return;
                 }
             }
@@ -605,7 +609,7 @@ namespace ColorVision.ImageEditor.Draw
             if (clickedVisual is IEditableDrawingVisual editable && clickedVisual is ISelectVisual selectVisual)
             {
                 SetRender(selectVisual);
-                editable.HandleDoubleClick(DrawCanvas, point);
+                editable.HandleDoubleClick(EditorContext, point);
             }
         }
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -673,7 +677,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else
                 {
-                    if (!(drawCanvas.GetVisual<Visual>(point) == ImageViewModel.SelectEditorVisual && GetContainingRect(point)))
+                    if (!(drawCanvas.GetVisual<Visual>(point) == this && GetContainingRect(point)))
                         ZoomboxSub.Cursor = Cursors.Cross;
                 }
                 LastMouseMove = point;
@@ -689,13 +693,13 @@ namespace ColorVision.ImageEditor.Draw
                     IsMouseDown = false;
                     var MouseUpP = e.GetPosition(drawCanvas);
 
-                    if (!ImageViewModel.SelectEditorVisual.Contains(MouseUpP))
-                        ImageViewModel.SelectEditorVisual.ClearRender();
+                    if (!Contains(MouseUpP))
+                        ClearRender();
 
                     if (drawCanvas.ContainsVisual(SelectRect))
                     {
                         var List = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
-                        ImageViewModel.SelectEditorVisual.SetRenders(List.Cast<ISelectVisual>());
+                        SetRenders(List.Cast<ISelectVisual>());
                         drawCanvas.RemoveVisual(SelectRect);
                     }
 

@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
-using System.Collections.Generic;
-using System.Windows;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {

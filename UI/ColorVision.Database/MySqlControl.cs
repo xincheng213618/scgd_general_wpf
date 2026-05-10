@@ -1,12 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Database.SqliteLog;
 using log4net;
 using MySqlConnector;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.RC;
 using log4net;
 using MQTTnet;
 using Newtonsoft.Json;
@@ -11,7 +10,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
-using System.Windows;
 
 namespace ColorVision.Engine.Services
 {

@@ -20,19 +20,68 @@ namespace ColorVision.UI
     public class TextAppender : AppenderSkeleton
     {
         private LogStatusBarProvider LogStatusBarProvider;
+        private readonly object _syncLock = new object();
+        private string _latestMessage = string.Empty;
+        private bool _updateQueued;
+
         public TextAppender(LogStatusBarProvider logStatusBarProvider)
         {
             LogStatusBarProvider = logStatusBarProvider;
         }
+
         protected override void Append(LoggingEvent loggingEvent)
         {
             var renderedMessage = RenderLoggingEvent(loggingEvent);
             string messageToShow = renderedMessage.Length > 10 ? string.Concat(renderedMessage.AsSpan(0, 10), "...") : renderedMessage;
 
-            Application.Current?.Dispatcher.BeginInvoke(() =>
+            bool shouldQueueUpdate = false;
+            lock (_syncLock)
             {
-                LogStatusBarProvider.Log = messageToShow;
-            });
+                _latestMessage = messageToShow;
+                if (!_updateQueued)
+                {
+                    _updateQueued = true;
+                    shouldQueueUpdate = true;
+                }
+            }
+
+            if (shouldQueueUpdate)
+            {
+                QueueStatusUpdate();
+            }
+        }
+
+        private void QueueStatusUpdate()
+        {
+            Application.Current?.Dispatcher.BeginInvoke(new Action(ProcessPendingStatusUpdate));
+        }
+
+        private void ProcessPendingStatusUpdate()
+        {
+            string messageToShow;
+            bool shouldQueueUpdate = false;
+
+            lock (_syncLock)
+            {
+                messageToShow = _latestMessage;
+                _updateQueued = false;
+            }
+
+            LogStatusBarProvider.Log = messageToShow;
+
+            lock (_syncLock)
+            {
+                if (!_updateQueued && !string.Equals(messageToShow, _latestMessage, StringComparison.Ordinal))
+                {
+                    _updateQueued = true;
+                    shouldQueueUpdate = true;
+                }
+            }
+
+            if (shouldQueueUpdate)
+            {
+                QueueStatusUpdate();
+            }
         }
     }
 
@@ -111,10 +160,7 @@ namespace ColorVision.UI
             this.ApplyCaption();
             this.SizeChanged += (s, e) =>
             {
-                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
-                ButtonAutoRefresh.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoRefreshButton ? Visibility.Visible : Visibility.Collapsed;
-                cmlog.Visibility = this.ActualWidth > LogConstants.MinWidthForLevelComboBox ? Visibility.Visible : Visibility.Collapsed;
-                SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
+                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1, cmlog);
             };
         }
         TextBoxAppender TextBoxAppender { get; set; }
@@ -130,6 +176,7 @@ namespace ColorVision.UI
             this.Closed += (s, e) =>
             {
                 Hierarchy.Root.RemoveAppender(TextBoxAppender);
+                TextBoxAppender.Dispose();
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
             };
 
@@ -185,63 +232,74 @@ namespace ColorVision.UI
             var logReserve = LogConfig.Instance.LogReserve;
             DateTime today = DateTime.Today;
             DateTime startupTime = Process.GetCurrentProcess().StartTime;
-            StringBuilder logBuilder = new StringBuilder();
+            List<string> matchingEntries = new List<string>();
+            StringBuilder? currentEntry = null;
+            bool currentEntryIncluded = false;
 
-            string line;
+            string? line;
             while ((line = reader.ReadLine()) != null)
             {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                string timestampLine = line;
-                string logContentLine = reader.ReadLine(); // 读取日志内容行
-
-                if (timestampLine.Length > LogConstants.LogTimestampLength && 
-                    DateTime.TryParseExact(timestampLine.Substring(0, LogConstants.LogTimestampLength), 
-                        LogConstants.LogTimestampFormat, null, DateTimeStyles.None, out DateTime logTime))
+                if (TryParseLogTimestamp(line, out DateTime logTime))
                 {
-                    if (logLoadState == LogLoadState.AllToday && logTime.Date != today)
+                    if (currentEntryIncluded && currentEntry != null)
                     {
-                        continue;
+                        matchingEntries.Add(currentEntry.ToString());
                     }
-                    else if (logLoadState == LogLoadState.SinceStartup && logTime < startupTime)
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    // 如果时间解析失败，跳过当前日志条目
+
+                    currentEntryIncluded = ShouldIncludeLogEntry(logLoadState, today, startupTime, logTime);
+                    currentEntry = currentEntryIncluded ? new StringBuilder(line) : null;
                     continue;
                 }
 
-                // 找到符合条件的日志条目后，读取并添加后续所有日志条目
-                logBuilder.AppendLine(timestampLine);
-                logBuilder.AppendLine(logContentLine);
-
-                while ((line = reader.ReadLine()) != null)
+                if (currentEntryIncluded && currentEntry != null)
                 {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-
-                    logBuilder.AppendLine(line);
-                    logContentLine = reader.ReadLine(); // 读取日志内容行
-                    if (!string.IsNullOrWhiteSpace(logContentLine))
-                    {
-                        logBuilder.AppendLine(logContentLine);
-                    }
+                    currentEntry.AppendLine();
+                    currentEntry.Append(line);
                 }
-
-                break; // 退出外层循环
             }
 
-            // 将日志内容添加到日志文 框中
+            if (currentEntryIncluded && currentEntry != null)
+            {
+                matchingEntries.Add(currentEntry.ToString());
+            }
+
             if (logReserve)
             {
-                logTextBox.Text = logBuilder.ToString() + logTextBox.Text;
+                matchingEntries.Reverse();
             }
-            else
+
+            logTextBox.Text = string.Join(Environment.NewLine, matchingEntries);
+        }
+
+        private static bool TryParseLogTimestamp(string line, out DateTime logTime)
+        {
+            logTime = default;
+            if (string.IsNullOrWhiteSpace(line) || line.Length < LogConstants.LogTimestampLength)
             {
-                logTextBox.AppendText(logBuilder.ToString());
+                return false;
             }
+
+            return DateTime.TryParseExact(
+                line.Substring(0, LogConstants.LogTimestampLength),
+                LogConstants.LogTimestampFormat,
+                null,
+                DateTimeStyles.None,
+                out logTime);
+        }
+
+        private static bool ShouldIncludeLogEntry(LogLoadState logLoadState, DateTime today, DateTime startupTime, DateTime logTime)
+        {
+            if (logLoadState == LogLoadState.AllToday)
+            {
+                return logTime.Date == today;
+            }
+
+            if (logLoadState == LogLoadState.SinceStartup)
+            {
+                return logTime >= startupTime;
+            }
+
+            return true;
         }
 
         private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -266,27 +324,9 @@ namespace ColorVision.UI
         private Brush SearchBar1Brush;
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
+            var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             TextBoxAppender.SearchText = searchText;
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                logTextBox.Visibility = Visibility.Collapsed;
-                logTextBoxSerch.Visibility = Visibility.Visible;
-                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                if (!LogSearchHelper.FilterLines(searchText, logLines, out var filteredLines))
-                {
-                    SearchBar1.BorderBrush = Brushes.Red;
-                    return;
-                }
-                logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                SearchBar1.BorderBrush = SearchBar1Brush;
-            }
-            else
-            {
-                logTextBoxSerch.Visibility = Visibility.Collapsed;
-                logTextBox.Visibility = Visibility.Visible;
-            }
+            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
         }
 
 

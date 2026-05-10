@@ -67,7 +67,7 @@ public:
 - 使用 CUDA streams 异步执行
 
 **新增 Kernel**:
-```cuda
+```cpp
 // 3x3 Box filter on GPU
 __global__ void box_filter_kernel(const double* src, double* dst, 
                                    int M, int N, int kernel_size);

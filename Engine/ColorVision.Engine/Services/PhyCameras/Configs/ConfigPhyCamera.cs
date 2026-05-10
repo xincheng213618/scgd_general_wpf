@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using cvColorVision;
 using System;
 using System.ComponentModel;
@@ -45,6 +46,34 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public int Fileversion { get => _Fileversion; set { _Fileversion = value; OnPropertyChanged(); } }
         private int _Fileversion = 2;
+
+        public void ApplyTo(ConfigCamera target, bool includeCameraId = true, bool includeCameraType = true)
+        {
+            ArgumentNullException.ThrowIfNull(target);
+
+            target.Channel = Channel;
+            target.CFW.CopyFrom(CFW);
+            target.MotorConfig.CopyFrom(MotorConfig);
+
+            if (includeCameraId)
+            {
+                target.CameraID = CameraID;
+            }
+
+            if (includeCameraType)
+            {
+                target.CameraType = CameraType;
+            }
+
+            target.CameraMode = CameraMode;
+            target.CameraModel = CameraModel;
+            target.TakeImageMode = TakeImageMode;
+            target.ImageBpp = ImageBpp;
+            target.GainMin = CameraParameterLimit.GainMin;
+            target.GainMax = CameraParameterLimit.GainMax;
+            target.ExpTimeMax = CameraParameterLimit.ExpMax;
+            target.ExpTimeMin = CameraParameterLimit.ExpMin;
+        }
 
     }
 

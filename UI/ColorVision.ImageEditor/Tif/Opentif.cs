@@ -1,6 +1,5 @@
 ﻿using ColorVision.ImageEditor.Abstractions;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
@@ -113,11 +112,11 @@ namespace ColorVision.ImageEditor.Tif
 
             // Get file metadata
             FileInfo fileInfo = new FileInfo(filePath);
-            context.Config.AddProperties("FileSource", filePath);
-            context.Config.AddProperties("FileName", fileInfo.Name);
-            context.Config.AddProperties("FileSize", fileInfo.Length);
-            context.Config.AddProperties("FileCreationTime", fileInfo.CreationTime);
-            context.Config.AddProperties("FileModifiedTime", fileInfo.LastWriteTime);
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, filePath, nameof(Opentif), "打开器接收到的源文件路径");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, fileInfo.Name, nameof(Opentif), "当前文件名");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileInfo.Length, nameof(Opentif), "当前文件大小（字节）");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileCreationTime, fileInfo.CreationTime, nameof(Opentif), "当前文件创建时间");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileModifiedTime, fileInfo.LastWriteTime, nameof(Opentif), "当前文件修改时间");
 
             WriteableBitmap? writeableBitmap = null;
             BitmapMetadata? metadata = null;
@@ -159,7 +158,7 @@ namespace ColorVision.ImageEditor.Tif
                         source.Freeze();
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     return;
                 }
@@ -168,12 +167,17 @@ namespace ColorVision.ImageEditor.Tif
 
             if (source == null) return;
 
-            // 【修改点】判断格式，应用转换
+            // Gray32Float TIFF 可按打开器配置决定是否先归一化转换为 Gray16。
             if (source.Format == PixelFormats.Gray32Float)
             {
-                RenderOptions.SetBitmapScalingMode(context.DrawCanvas, BitmapScalingMode.NearestNeighbor);
-
-                writeableBitmap = ConvertGray32FloatToBitmapSource(source);
+                if (TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen)
+                {
+                    writeableBitmap = ConvertGray32FloatToBitmapSource(source);
+                }
+                else
+                {
+                    writeableBitmap = new WriteableBitmap(source);
+                }
             }
             else
             {
@@ -183,8 +187,8 @@ namespace ColorVision.ImageEditor.Tif
             if (writeableBitmap == null) return;
 
             // Add image dimensions
-            context.Config.AddProperties("ImageWidth", writeableBitmap.PixelWidth);
-            context.Config.AddProperties("ImageHeight", writeableBitmap.PixelHeight);
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(Opentif), "位图像素宽度");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(Opentif), "位图像素高度");
 
             // Add EXIF metadata if available
             if (metadata != null)
@@ -192,17 +196,17 @@ namespace ColorVision.ImageEditor.Tif
                 try
                 {
                     if (metadata.CameraModel != null)
-                        context.Config.AddProperties("CameraModel", metadata.CameraModel);
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.CameraModel, metadata.CameraModel, nameof(Opentif), "EXIF 相机型号");
                     if (metadata.CameraManufacturer != null)
-                        context.Config.AddProperties("CameraManufacturer", metadata.CameraManufacturer);
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.CameraManufacturer, metadata.CameraManufacturer, nameof(Opentif), "EXIF 相机厂商");
                     if (metadata.DateTaken != null)
-                        context.Config.AddProperties("DateTaken", metadata.DateTaken);
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.DateTaken, metadata.DateTaken, nameof(Opentif), "EXIF 拍摄时间");
                     if (metadata.ApplicationName != null)
-                        context.Config.AddProperties("ApplicationName", metadata.ApplicationName);
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.ApplicationName, metadata.ApplicationName, nameof(Opentif), "EXIF 应用程序名");
                     if (metadata.Title != null)
-                        context.Config.AddProperties("ImageTitle", metadata.Title);
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageTitle, metadata.Title, nameof(Opentif), "EXIF 标题");
                     if (metadata.Subject != null)
-                        context.Config.AddProperties("ImageSubject", metadata.Subject);
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageSubject, metadata.Subject, nameof(Opentif), "EXIF 主题");
                 }
                 catch
                 {
@@ -211,9 +215,6 @@ namespace ColorVision.ImageEditor.Tif
             }
 
             context.ImageView.SetImageSource(writeableBitmap);
-            context.ImageView.ComboBoxLayers.SelectedIndex = 0;
-            context.ImageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
-            context.ImageView.AddSelectionChangedHandler(context.ImageView.ComboBoxLayersSelectionChanged);
             context.ImageView.UpdateZoomAndScale();
         }
     }

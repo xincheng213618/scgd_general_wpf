@@ -2,18 +2,11 @@ using AvalonDock.Layout;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.Zoom;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
-using ColorVision.UI.Desktop;
 using ColorVision.UI.Menus;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 

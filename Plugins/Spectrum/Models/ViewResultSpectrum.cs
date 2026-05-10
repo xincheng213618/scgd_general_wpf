@@ -9,7 +9,6 @@ using Spectrum.View;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using WpfBrush = System.Windows.Media.SolidColorBrush;
-using WpfColor = System.Windows.Media.Color;
 
 namespace Spectrum.Models
 {

@@ -1,6 +1,7 @@
 ﻿using ColorVision.UI.LogImp;
 using log4net.Appender;
 using log4net.Core;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,18 +18,20 @@ namespace ColorVision.UI
     /// 该追加器使用批量刷新机制（默认100ms），减少 UI 更新频率，提升性能。
     /// 支持智能滚动控制和实时搜索过滤。
     /// </remarks>
-    public class TextBoxAppender : AppenderSkeleton
+    public class TextBoxAppender : AppenderSkeleton, IDisposable
     {
         private readonly TextBox _textBox;
         private readonly StringBuilder _buffer = new StringBuilder();
         private readonly object _lock = new object();
         private readonly System.Timers.Timer _flushTimer;
+        private readonly PropertyChangedEventHandler _configChangedHandler;
+        private bool _isClosed;
 
         /// <summary>
         /// 批量刷新间隔，单位：毫秒
         /// </summary>
         /// <value>默认值为100ms</value>
-        public int FlushIntervalMs { get; set; } = LogConstants.DefaultFlushIntervalMs;
+        public int FlushIntervalMs { get; private set; } = LogConstants.DefaultFlushIntervalMs;
         
         private bool _reverseLastState = false;
 
@@ -52,17 +55,35 @@ namespace ColorVision.UI
         {
             _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
             _logTextBoxSearch = logTextBoxSerch ?? throw new ArgumentNullException(nameof(logTextBoxSerch));
+            FlushIntervalMs = GetFlushIntervalMs();
 
             // 使用后台计时器，避免每次 Tick 在 UI线程上触发大量工作
             _flushTimer = new System.Timers.Timer(FlushIntervalMs) { AutoReset = true };
             _flushTimer.Elapsed += (s, e) => FlushBuffer();
             _flushTimer.Start();
 
+            _configChangedHandler = (_, e) =>
+            {
+                if (e.PropertyName == nameof(LogConfig.LogFlushIntervalMs))
+                {
+                    FlushIntervalMs = GetFlushIntervalMs();
+                    _flushTimer.Interval = FlushIntervalMs;
+                }
+            };
+            LogConfig.Instance.PropertyChanged += _configChangedHandler;
+
             //仍在 Loaded 时附加滚动事件到视觉树中的 ScrollViewer
             textBox.Loaded += (s, e) =>
             {
                 AttachScrollEventHandlers();
             };
+        }
+
+        private static int GetFlushIntervalMs()
+        {
+            return LogConfig.Instance.LogFlushIntervalMs > 0
+                ? LogConfig.Instance.LogFlushIntervalMs
+                : LogConstants.DefaultFlushIntervalMs;
         }
 
         /// <summary>
@@ -117,60 +138,88 @@ namespace ColorVision.UI
         {
             try
             {
-                if (reverse)
+                UpdateMainTextBox(logs, reverse);
+
+                if (IsSearchEnabled)
                 {
-                    if (LogConfig.Instance.MaxChars > LogConstants.MinMaxCharsForTrimming && _textBox.Text.Length > LogConfig.Instance.MaxChars)
-                    {
-                        _textBox.Text = _textBox.Text.Substring(0,LogConfig.Instance.MaxChars);
-                        _textBox.CaretIndex = _textBox.Text.Length;
-                    }
-                    if (IsSearchEnabled && logs.Contains(SearchText))
-                    {
-                        var logLines = logs.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                        var filteredLines = logLines.Where(line => line.Contains(SearchText, StringComparison.OrdinalIgnoreCase)).ToArray();
-                        if (filteredLines.Length ==0) return;
-                        logs = Environment.NewLine + string.Join(Environment.NewLine, filteredLines);
-                        _logTextBoxSearch.Text = logs + _logTextBoxSearch.Text;
-                    }
-                    else
-                    {
-                        // 倒序插入时尽量使用 StringBuilder 构建一次性字符串
-                        var sb = new StringBuilder(logs.Length + _textBox.Text.Length);
-                        sb.Append(logs);
-                        sb.Append(_textBox.Text);
-                        _textBox.Text = sb.ToString();
-                    }
-                }
-                else
-                {
-                    if (LogConfig.Instance.MaxChars > LogConstants.MinMaxCharsForTrimming && _textBox.Text.Length > LogConfig.Instance.MaxChars)
-                    {
-                        _textBox.Text = _textBox.Text.Substring(_textBox.Text.Length - LogConfig.Instance.MaxChars);
-                        _textBox.CaretIndex = _textBox.Text.Length;
-                    }
-                    if (IsSearchEnabled )
-                    {
-                        var logLines = logs.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                        var filteredLines = logLines.Where(line=>line.Contains(SearchText, StringComparison.OrdinalIgnoreCase)).ToArray();
-                        if (filteredLines.Length==0) return;
-                        logs = Environment.NewLine + string.Join(Environment.NewLine, filteredLines);
-                        _logTextBoxSearch.AppendText(logs);
-                        if (LogConfig.Instance.AutoScrollToEnd && !suspendAutoScroll)
-                            _logTextBoxSearch.ScrollToEnd();
-                    }
-                    else
-                    {
-                        // 使用 AppendText 比直接修改 Text 更高效
-                        _textBox.AppendText(logs);
-                        if (LogConfig.Instance.AutoScrollToEnd && !suspendAutoScroll)
-                            _textBox.ScrollToEnd();
-                    }
+                    UpdateSearchTextBox(logs, reverse);
                 }
             }
             catch (Exception)
             {
                 // 忽略 UI 层异常，避免阻塞日志子系统
             }
+        }
+
+        private void UpdateMainTextBox(string logs, bool reverse)
+        {
+            if (reverse)
+            {
+                // 倒序插入时尽量使用 StringBuilder 构建一次性字符串
+                var sb = new StringBuilder(logs.Length + _textBox.Text.Length);
+                sb.Append(logs);
+                sb.Append(_textBox.Text);
+                _textBox.Text = sb.ToString();
+                TrimTextBox(_textBox, reverse);
+                _textBox.CaretIndex = _textBox.Text.Length;
+                return;
+            }
+
+            // 使用 AppendText 比直接修改 Text 更高效
+            _textBox.AppendText(logs);
+            TrimTextBox(_textBox, reverse);
+            if (LogConfig.Instance.AutoScrollToEnd && !suspendAutoScroll)
+                _textBox.ScrollToEnd();
+        }
+
+        private void UpdateSearchTextBox(string logs, bool reverse)
+        {
+            var logLines = logs.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            if (!LogSearchHelper.FilterLines(SearchText, logLines, out var filteredLines) || filteredLines.Length == 0)
+            {
+                return;
+            }
+
+            var filteredLogs = string.Join(Environment.NewLine, filteredLines);
+            if (string.IsNullOrEmpty(filteredLogs))
+            {
+                return;
+            }
+
+            if (reverse)
+            {
+                _logTextBoxSearch.Text = string.IsNullOrEmpty(_logTextBoxSearch.Text)
+                    ? filteredLogs
+                    : filteredLogs + Environment.NewLine + _logTextBoxSearch.Text;
+                TrimTextBox(_logTextBoxSearch, reverse);
+                _logTextBoxSearch.ScrollToHome();
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(_logTextBoxSearch.Text))
+            {
+                _logTextBoxSearch.AppendText(Environment.NewLine + filteredLogs);
+            }
+            else
+            {
+                _logTextBoxSearch.Text = filteredLogs;
+            }
+
+            TrimTextBox(_logTextBoxSearch, reverse);
+            if (LogConfig.Instance.AutoScrollToEnd && !suspendAutoScroll)
+                _logTextBoxSearch.ScrollToEnd();
+        }
+
+        private static void TrimTextBox(TextBox textBox, bool reverse)
+        {
+            if (LogConfig.Instance.MaxChars <= LogConstants.MinMaxCharsForTrimming || textBox.Text.Length <= LogConfig.Instance.MaxChars)
+            {
+                return;
+            }
+
+            textBox.Text = reverse
+                ? textBox.Text.Substring(0, LogConfig.Instance.MaxChars)
+                : textBox.Text.Substring(textBox.Text.Length - LogConfig.Instance.MaxChars);
         }
 
 
@@ -258,9 +307,16 @@ namespace ColorVision.UI
         /// </summary>
         protected override void OnClose()
         {
+            if (_isClosed)
+            {
+                return;
+            }
+
+            _isClosed = true;
             base.OnClose();
             try
             {
+                LogConfig.Instance.PropertyChanged -= _configChangedHandler;
                 _flushTimer?.Stop();
                 _flushTimer?.Dispose();
                 resumeScrollTimer?.Stop();
@@ -268,6 +324,12 @@ namespace ColorVision.UI
             catch { }
             // 在关闭前最后刷新一次（在 UI线程）
             _textBox.Dispatcher.BeginInvoke(new Action(() => FlushBuffer()));
+        }
+
+        public void Dispose()
+        {
+            Close();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -1,9 +1,6 @@
 using log4net;
 using SqlSugar;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.Scheduler.Data
 {

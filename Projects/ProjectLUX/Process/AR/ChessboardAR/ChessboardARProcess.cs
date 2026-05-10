@@ -8,7 +8,6 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
-using ProjectLUX.Process.W255;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;

@@ -16,12 +16,13 @@ namespace ColorVision.Update
         {
             // 如果是调试模式，不进行更新检测
             if (Debugger.IsAttached) return Task.CompletedTask;
+            if (ColorVision.UI.Desktop.Marketplace.CombinedUpdateWorkflowConfig.Instance.IsActive) return Task.CompletedTask;
 
             if (AutoUpdateConfig.Instance.IsAutoUpdate)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    AutoUpdater.GetInstance().CheckAndUpdateV1(false, true);
+                    _ = AutoUpdater.GetInstance().CheckAndUpdateV1(false, true);
                 });
             }
             return Task.CompletedTask;

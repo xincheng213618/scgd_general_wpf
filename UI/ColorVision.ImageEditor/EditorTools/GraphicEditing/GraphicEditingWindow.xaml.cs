@@ -1049,7 +1049,17 @@ namespace ColorVision.ImageEditor
 
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
-            EditorContext.DrawCanvas.Clear();
+            EditorContext.ImageView.ClearAnnotations();
+        }
+
+        private void ExportAnnotations_Click(object sender, RoutedEventArgs e)
+        {
+            EditorContext.ImageView.ExportAnnotations();
+        }
+
+        private void ImportAnnotations_Click(object sender, RoutedEventArgs e)
+        {
+            EditorContext.ImageView.ImportAnnotations();
         }
     }
 }

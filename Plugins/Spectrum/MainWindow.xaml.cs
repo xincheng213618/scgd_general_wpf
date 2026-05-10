@@ -1,4 +1,5 @@
 using AvalonDock.Layout;
+using ColorVision.ImageEditor.Cie;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
@@ -8,23 +9,16 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Sorts;
 using cvColorVision;
 using log4net;
-using OpenCvSharp;
-using OpenCvSharp.WpfExtensions;
 using ScottPlot;
 using Spectrum.Data;
 using Spectrum.Layout;
-using Spectrum.Menus;
 using Spectrum.Models;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.IO.Ports;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 
 namespace Spectrum
 {
@@ -68,19 +62,9 @@ namespace Spectrum
         public static ObservableCollection<ViewResultSpectrum> ViewResultSpectrums => ViewResultManager.ViewResluts;
 
         public static MainWindowConfig Config => MainWindowConfig.Instance;
-        BitmapSource pic1931;
-        BitmapSource pic1976;
-        Mat src1931;
-        Mat src1976;
 
         public MainWindow()
         {
-            string path1931 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1931.jpg");
-            string path1976 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1976.jpg");
-            if (File.Exists(path1931))
-                src1931 = new Mat(path1931, ImreadModes.Color);
-            if (File.Exists(path1976))
-                src1976 = new Mat(path1976, ImreadModes.Color);
             InitializeComponent();
             Instance = this;
             Config.SetWindow(this);
@@ -151,8 +135,7 @@ namespace Spectrum
 
             StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum");
 
-            image1931.Source = src1931?.ToBitmapSource();
-            image1976.Source = src1976?.ToBitmapSource();
+            InitializeCieDiagramViews();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
 
@@ -229,22 +212,28 @@ namespace Spectrum
             }
             this.DataContext = Manager;
 
-            pic1931 = src1931?.ToBitmapSource();
-            pic1976 = src1976?.ToBitmapSource();
-
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => ViewResultList.SelectAll(), (s, e) => e.CanExecute = true));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, CopyVisibleColumns, (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
 
-            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
-            {
-                image1931.Source = pic1931;
-                image1976.Source = pic1976;
-            });
-
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
             InitializeSmuTimedButtons();
             _ = AutoConnectSmuIfNeededAsync();
+        }
+
+        private void InitializeCieDiagramViews()
+        {
+            ConfigureCompactCieView(Cie1931View, CieDiagramKind.Cie1931xy);
+            ConfigureCompactCieView(Cie1976View, CieDiagramKind.Cie1976uv);
+        }
+
+        private static void ConfigureCompactCieView(CieDiagramView diagramView, CieDiagramKind kind)
+        {
+            diagramView.SetDiagram(kind);
+            diagramView.SetGamuts(new[] { CieGamuts.SRgb });
+            diagramView.SetReferenceMarkers(new[] { CieIlluminants.D65 });
+            diagramView.ShowCctReference = true;
+            diagramView.ShowDaylightReference = false;
         }
 
         private async Task AutoConnectSmuIfNeededAsync()

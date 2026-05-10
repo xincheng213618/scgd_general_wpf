@@ -9,7 +9,6 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
-using ProjectLUX.Process.AR.W51AR;
 using System.Windows;
 using System.Windows.Media;
 

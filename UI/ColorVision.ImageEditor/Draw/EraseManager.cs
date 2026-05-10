@@ -1,52 +1,24 @@
 ﻿#pragma warning disable CS0414,CS8625
-using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class EraseManager : IEditorToggleToolBase, IDisposable
+    public class EraseManager : RegionOperationToolBase
     {
-        private Zoombox Zoombox1 => EditorContext.Zoombox;
-        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
-
-        public EditorContext EditorContext { get; set; }
-
-        public EraseManager(EditorContext context)
+        public EraseManager(EditorContext context) : base(context)
         {
-            EditorContext = context;
             Order = 2;
-            ToolBarLocal = ToolBarLocal.Draw;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageeraser");
         }
+
+        protected override Cursor ActiveCursor => Input.Cursors.Eraser;
+        protected override Cursor InactiveCursor => Cursors.Cross;
+
         DrawingVisual EraseVisual { get; set; }
 
-        public override bool IsChecked
-        {
-            get => _IsChecked; set
-            {
-                if (_IsChecked == value) return;
-                _IsChecked = value;
-                if (value)
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    Zoombox1.Cursor = Input.Cursors.Eraser;
-                    Load();
-                }
-                else
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    Zoombox1.Cursor = Cursors.Cross;
-                    UnLoad();
-                }
-                OnPropertyChanged();
-            }
-        }
-
-
-        public void Load()
+        protected override void LoadCore()
         {
             EraseVisual = new DrawingVisual();
             DrawCanvas.MouseMove += MouseMove;
@@ -56,7 +28,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
         }
 
-        public void UnLoad()
+        protected override void UnLoadCore()
         {
             DrawCanvas.MouseMove -= MouseMove;
             DrawCanvas.MouseEnter -= MouseEnter;
@@ -86,7 +58,7 @@ namespace ColorVision.ImageEditor.Draw
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, MouseDownP));
             DrawCanvas.AddVisualCommand(EraseVisual);
 
-            ImageViewModel.SelectEditorVisual.ClearRender();
+            EditorContext.SelectionVisual.ClearRender();
             e.Handled = true;
         }
 
@@ -137,15 +109,5 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-
-        private bool _IsChecked;
-
-
-        public void Dispose()
-        {
-            UnLoad();
-
-            GC.SuppressFinalize(this);
-        }
     }
 }

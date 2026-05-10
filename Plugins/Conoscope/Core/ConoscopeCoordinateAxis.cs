@@ -3,10 +3,8 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -114,7 +112,7 @@ namespace Conoscope.Core
 
         [Category("遮罩"), DisplayName("遮罩不透明度(0-255)")]
         public byte MaskOpacity { get => _MaskOpacity; set { _MaskOpacity = value; OnPropertyChanged(); } }
-        private byte _MaskOpacity = 150;
+        private byte _MaskOpacity = 255;
 
         [Category("遮罩"), DisplayName("遮罩颜色")]
         public Color MaskColor { get => _MaskColor; set { _MaskColor = value; OnPropertyChanged(); } }

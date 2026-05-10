@@ -1,7 +1,6 @@
 ﻿
 using ColorVision.Scheduler.Data;
 using log4net;
-using log4net.Repository.Hierarchy;
 using Quartz;
 using Quartz.Listener;
 using System.Diagnostics;

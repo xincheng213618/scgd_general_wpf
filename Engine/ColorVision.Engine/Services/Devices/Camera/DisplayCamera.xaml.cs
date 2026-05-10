@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Core;
 using ColorVision.Database;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
@@ -11,9 +9,8 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.HDR;
-using ColorVision.ImageEditor.Abstractions;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -24,17 +21,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 
@@ -117,11 +110,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public string DisPlayName => Device.Config.Name;
 
         // Video display related fields
-        private VideoReaderConfig VideoConfig { get; set; }
-        private DVRectangleText DVRectangleText { get; set; }
-        private DVText DVText { get; set; }
-        private VideoFrameProcessor? _localFrameProcessor;
-        private bool _visualsAdded = false;
+        private readonly CameraRealtimeFramePipeline _localRealtimePipeline;
         private bool _isOpeningLocalVideo;
 
         public DisplayCamera(DeviceCamera device)
@@ -135,9 +124,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
 
             // Initialize video display components
-            VideoConfig = ConfigService.Instance.GetRequiredService<VideoReaderConfig>();
-            DVRectangleText = new DVRectangleText(VideoConfig.RectangleTextProperties);
-            DVText = new DVText(VideoConfig.TextProperties);
+            _localRealtimePipeline = new CameraRealtimeFramePipeline();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -622,7 +609,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private async Task<(bool isSuccess, string errorMessage)> CloseLocalVideoInternalAsync(VideoFrameProcessor? frameProcessor)
+        private async Task<(bool isSuccess, string errorMessage)> CloseLocalVideoInternalAsync()
         {
             return await Task.Run(() =>
             {
@@ -634,7 +621,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         cvCameraCSLib.CM_Close(m_hCamHandle);
                     }
 
-                    frameProcessor?.Dispose();
                     return (true, string.Empty);
                 }
                 catch (Exception ex)
@@ -835,9 +821,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
 
             // Clean up video display resources
-            Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
-            _localFrameProcessor?.Dispose();
-            _localFrameProcessor = null;
+            _localRealtimePipeline.Dispose();
             this.DisposeTimedButtonOperations();
             GC.SuppressFinalize(this);
         }
@@ -956,117 +940,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
-        double articulation;
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
-            Application.Current?.Dispatcher.Invoke(new Action(() =>
+            if (!Device.DisplayConfig.IsLocalVideoOpen)
             {
-                if (!Device.DisplayConfig.IsLocalVideoOpen)
-                {
-                    return;
-                }
+                return 0;
+            }
 
-                var pseudoColorService = Device.View.ImageView.PseudoColorService;
-                bool enablePseudo = pseudoColorService.IsEnabled;
-                bool enableArticulation = VideoConfig.IsCalArtculation;
-                bool shouldProcess = VideoConfig.IsUseCacheFile && (enablePseudo || enableArticulation);
+            var pixelFormat = GetPixelFormat(channels, bpp);
+            int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
+            int frameBytes = sourceStride * height;
 
-                if (shouldProcess)
-                {
-                    Rect rect = DVRectangleText.Rect;
-
-                    if (rect.Width <= 0 || rect.Height <= 0)
-                    {
-                        rect = new Rect(0, 0, width, height);
-                    }
-
-                    int frameBytes = width * height * channels * Math.Max(1, bpp / 8);
-                    PseudoColorFrameRequest? pseudoColorRequest = null;
-                    if (enablePseudo && pseudoColorService.TryCreateRequest(out var capturedRequest, 0))
-                    {
-                        pseudoColorRequest = capturedRequest;
-                    }
-
-                    var request = new VideoFrameProcessingRequest
-                    {
-                        EnableArticulation = enableArticulation,
-                        FocusAlgorithm = VideoConfig.EvaFunc,
-                        Roi = new RoiRect(rect),
-                        PseudoColor = pseudoColorRequest
-                    };
-                    _localFrameProcessor?.SubmitFrame(pData, frameBytes, width, height, channels, bpp, width * channels * Math.Max(1, bpp / 8), request);
-                }
-
-                // Normal display (non-pseudo color)
-                if (!enablePseudo)
-                {
-                    WriteableBitmap writeableBitmap = Device.View.ImageView.ImageShow.Source as WriteableBitmap;
-                    bool needNewBitmap = writeableBitmap == null
-                        || writeableBitmap.PixelWidth != width
-                        || writeableBitmap.PixelHeight != height
-                        || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
-
-                    if (needNewBitmap)
-                    {
-                        writeableBitmap = new WriteableBitmap(
-                            width,
-                            height,
-                            96, 96,
-                            GetPixelFormat(channels, bpp),
-                            null);
-                        Device.View.ImageView.ImageShow.Source = writeableBitmap;
-                    }
-                    writeableBitmap!.Lock();
-
-                    OpenCvSharp.MatType matType = writeableBitmap.Format.GetPixelFormat();
-
-                    // 2. 包装源数据 (pData) -> Zero Copy
-                    using var srcMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, pData);
-
-                    using var dstMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
-
-                    if (Device.DisplayConfig.FlipMode == CVImageFlipMode.None)
-                    {
-                        srcMat.CopyTo(dstMat);
-                    }
-                    else
-                    {
-                        OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
-                    }
-
-                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-
-                    writeableBitmap.Unlock();
-                }
-
-                Interlocked.Increment(ref frameCount);
-                if (fpsTimer.ElapsedMilliseconds >= 1000)
-                {
-                    lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
-                    logger.Info($"Current FPS: {lastFps:F2}");
-                    Interlocked.Exchange(ref frameCount, 0);
-                    fpsTimer.Restart();
-                }
-
-                if (!enablePseudo)
-                {
-                    DVText.Attribute.Text = $"fps:{lastFps:F1} Articulation: {articulation:F5}";
-                    if (first)
-                    {
-                        first = false;
-                        Device.View.ImageView.Zoombox1.ZoomUniform();
-                    }
-                }
-            }));
+            _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride);
             return 0;
         }
 
-
         cvCameraCSLib.QHYCCDProcCallBack callback;
-        private int frameCount;
-        private readonly Stopwatch fpsTimer = new Stopwatch();
-        private double lastFps;
-        bool first = true;
 
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
@@ -1077,23 +966,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 TimedButtonOperationScope? localVideoCloseScope = operations.Begin(LocalVideoButton, runningText: "Close Video");
                 bool closeSucceeded = false;
                 string closeError = string.Empty;
-                VideoFrameProcessor? frameProcessor = _localFrameProcessor;
-                _localFrameProcessor = null;
 
                 try
                 {
                     Device.DisplayConfig.IsLocalVideoOpen = false;
-                    fpsTimer.Stop();
-                    Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
+                    _localRealtimePipeline.Stop(resetRealtime: true);
 
-                    if (_visualsAdded)
-                    {
-                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
-                        Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
-                        _visualsAdded = false;
-                    }
-
-                    (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync(frameProcessor);
+                    (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync();
                 }
                 finally
                 {
@@ -1121,13 +1000,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             try
             {
-                _localFrameProcessor ??= new VideoFrameProcessor(HandleLocalFrameProcessed);
-
                 (bool isSuccess, string errorMessage) = await Task.Run(OpenLocalVideoInternal);
                 if (!isSuccess)
                 {
-                    _localFrameProcessor?.Dispose();
-                    _localFrameProcessor = null;
                     if (!string.IsNullOrWhiteSpace(errorMessage))
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
@@ -1135,28 +1010,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
                 }
 
-                if (!_visualsAdded)
-                {
-                    Device.View.ImageView.ImageShow.AddVisualCommand(DVRectangleText);
-                    Device.View.ImageView.ImageShow.AddVisualCommand(DVText);
-                    _visualsAdded = true;
-                }
-
-                if (Device.View.ImageView.Config.IsPseudo)
-                {
-                    VideoConfig.IsUseCacheFile = true;
-                    VideoConfig.IsCalArtculation = true;
-                }
-
-                Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
-                Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
-
                 button.Content = "Close Video";
-                first = true;
-                articulation = 0;
-                Interlocked.Exchange(ref frameCount, 0);
-                lastFps = 0;
-                fpsTimer.Restart();
+                _localRealtimePipeline.Start(Device.View.ImageView, flipModeProvider: () => Device.DisplayConfig.FlipMode);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 localVideoOpened = true;
                 logger.Info("视频模式初始化结束");
@@ -1167,12 +1022,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 operations.RefreshIdleState(LocalVideoButton);
                 _isOpeningLocalVideo = false;
             }
-        }
-
-        private void VideoConfig_PseudoChanged(object? sender, EventArgs e)
-        {
-            if (Device.View.ImageView.Config.IsPseudo)
-                VideoConfig.IsUseCacheFile = true;
         }
 
         private (bool isSuccess, string errorMessage) OpenLocalVideoInternal()
@@ -1257,46 +1106,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             return string.Empty;
-        }
-
-        private void HandleLocalFrameProcessed(VideoFrameProcessingResult result)
-        {
-            Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (!Device.DisplayConfig.IsLocalVideoOpen)
-                {
-                    if (result.PseudoImage is HImage staleImage)
-                    {
-                        staleImage.Dispose();
-                    }
-                    return;
-                }
-
-                if (result.Articulation is double value)
-                {
-                    articulation = value;
-                    logger.Info($"Video Articulation: {articulation}");
-                }
-
-                if (result.PseudoImage is HImage pseudoImage)
-                {
-                    if (Device.View.ImageView.PseudoColorService.IsEnabled)
-                    {
-                        VideoFrameUiHelper.ApplyPseudoImage(Device.View.ImageView.PseudoColorService, pseudoImage);
-                        if (first)
-                        {
-                            first = false;
-                            Device.View.ImageView.Zoombox1.ZoomUniform();
-                        }
-                    }
-                    else
-                    {
-                        pseudoImage.Dispose();
-                    }
-                }
-
-                DVText.Attribute.Text = $"fps:{lastFps:F1} Articulation: {articulation:F5}";
-            }));
         }
 
         private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

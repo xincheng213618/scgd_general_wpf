@@ -1,8 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 

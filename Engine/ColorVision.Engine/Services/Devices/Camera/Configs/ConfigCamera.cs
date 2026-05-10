@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using cvColorVision;
-using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
@@ -30,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; OnPropertyChanged();  } }
         private CameraModel _CameraModel;
 
-        public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; OnPropertyChanged(); } }
+        public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsExpThree)); } }
         private TakeImageMode _TakeImageMode;
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; OnPropertyChanged(); } }
@@ -46,8 +45,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; OnPropertyChanged(); } }
         private bool _IsCVCIEFileSave = true;
-
-
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
         private float _GainMin = 0;
 

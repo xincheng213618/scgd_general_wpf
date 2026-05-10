@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.PropertyEditor;
-using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Scheduler;
 using System.ComponentModel;
 

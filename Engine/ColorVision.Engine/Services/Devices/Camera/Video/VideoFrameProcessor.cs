@@ -1,6 +1,4 @@
 using ColorVision.Core;
-using ColorVision.Engine.Media;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.Runtime.InteropServices;
@@ -54,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int depth, int stride, VideoFrameProcessingRequest request)
         {
-            if (sourceBuffer == null) throw new ArgumentNullException(nameof(sourceBuffer));
+            ArgumentNullException.ThrowIfNull(sourceBuffer);
             if (length <= 0 || length > sourceBuffer.Length || request == null || !request.NeedsProcessing || _disposed) return;
 
             unsafe
@@ -227,14 +225,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _workingFrame?.Dispose();
             _frameReady.Dispose();
             _cts.Dispose();
-        }
-    }
-
-    internal static class VideoFrameUiHelper
-    {
-        public static void ApplyPseudoImage(IPseudoColorService pseudoColorService, HImage pseudoImage)
-        {
-            pseudoColorService.ApplyProcessedImage(pseudoImage);
         }
     }
 }

@@ -1,300 +1,118 @@
 # 流程引擎
 
+本页只描述当前仓库里 `Engine/ColorVision.Engine/Templates/Flow` 这一层的真实职责，不再继续维护“把整个 Flow 执行内核、宿主桥接、节点库都混成一页”的旧稿。
 
-# 流程引擎
+## 先看这页现在讲什么
 
-## 目录
-1. [简介](#简介)
-2. [项目结构](#项目结构)
-3. [核心组件](#核心组件)
-4. [架构概览](#架构概览)
-5. [详细组件分析](#详细组件分析)
-6. [依赖关系分析](#依赖关系分析)
-7. [性能考虑](#性能考虑)
-8. [故障排除指南](#故障排除指南)
-9. [结论](#结论)
+当前这页讲的不是 `FlowEngineLib` 执行内核本身，而是主程序里围绕流程模板的宿主层，重点包括：
 
-## 简介
-ColorVision 的流程引擎是一个可视化的流程设计和执行工具，支持通过拖拽节点来设计复杂的测试或分析流程。用户可以通过图形化界面创建、编辑和管理流程，节点代表不同的功能模块或操作，流程参数化支持灵活配置。该引擎旨在简化测试流程的设计，提高自动化和可维护性。
+- 流程模板怎样从数据库和资源表加载。
+- 双击流程模板后怎样打开编辑窗口。
+- 编辑窗口怎样托管 `STNodeEditor`、属性面板和节点树。
+- 宿主层怎样把设备、模板和节点配置器挂到流程编辑器里。
 
-本文件档将详细介绍流程引擎的架构、核心组件及其实现，帮助用户理解其设计理念和使用方法。
+如果要看节点执行语义和节点基类，请转到 [FlowEngineLib](../../engine-components/FlowEngineLib.md)。
 
-## 项目结构
+## 当前最关键的文件
 
-ColorVision 项目采用模块化设计，代码按照功能模块和技术层次划分，主要涉及 UI 层、引擎层、服务层和数据访问层。流程引擎相关代码主要集中在：
+- `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`
+- `Engine/ColorVision.Engine/Templates/Flow/FlowEngineToolWindow.xaml.cs`
+- `Engine/ColorVision.Engine/Templates/Flow/STNodeEditorHelper.cs`
+- `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/*.cs`
 
-```
-/Engine/ColorVision.Engine/Templates/Flow/
-```
+这几处代码共同决定了主程序里的流程模板是如何编辑、保存和配置的。
 
-该目录包含流程引擎的核心实现文件，如流程编辑窗口、流程模板管理及节点编辑辅助类。
+## 当前主链怎么跑
 
-### 主要目录说明
+### 流程模板入口
 
-1. `/Engine/ColorVision.Engine/Templates/Flow/`
-   - 该目录是流程引擎的核心实现位置。
-   - 包含流程编辑窗口（FlowEngineToolWindow.xaml.cs）、流程模板管理（TemplateFlow.cs）和节点编辑辅助类（STNodeEditorHelper.cs）。
-   - 负责实现流程的可视化编辑、流程数据的加载保存及节点管理。
+`MenuTemplateFlow` 会打开 `TemplateEditorWindow(new TemplateFlow())`。`TemplateFlow` 本身是 `ITemplate<FlowParam>` 的一个具体实现，当前负责：
 
-2. `/Engine/ColorVision.Engine/Services/Devices/`
-   - 设备服务相关实现，流程节点往往关联不同设备的服务配置。
+- 从 MySQL 读取流程模板主表
+- 把节点图内容从 `SysResourceModel.Value` 取回成 Base64
+- 将其包装进 `FlowParam`
+- 管理保存、删除、导入、导出和新建
 
-3. `/Engine/ColorVision.Engine/MySql/`
-   - 数据库访问层，负责流程模板及流程数据的持久化存储。
+因此当前流程模板不是单纯的磁盘文件列表，而是“数据库主记录 + 资源表二进制内容”的组合。
 
-4. `/UI/`
-   - 用户界面相关的公共控件和主题，支持流程引擎的界面展示。
+### 双击后的编辑窗口
 
-5. `/Engine/ColorVision.Engine/`
-   - 引擎核心代码，包含流程引擎的主逻辑和辅助工具。
+`TemplateFlow.PreviewMouseDoubleClick(...)` 会直接打开 `FlowEngineToolWindow`。这说明流程模板和很多普通模板不同：
 
-整体架构体现了清晰的分层设计，UI 与引擎逻辑分离，数据访问独立，便于维护和扩展。
+- 列表窗口只是入口
+- 真正的流程编辑发生在独立窗口里
 
-```mermaid
-graph TD
-  A[ColorVision项目]
-  A --> B[Engine/ColorVision.Engine/Templates/Flow]
-  A --> C[Engine/ColorVision.Engine/Services/Devices]
-  A --> D[Engine/ColorVision.Engine/MySql]
-  A --> E[UI]
-  B --> F[FlowEngineToolWindow.xaml.cs]
-  B --> G[TemplateFlow.cs]
-  B --> H[STNodeEditorHelper.cs]
-```
+窗口里再通过 `STNodeEditorHelper` 托管节点画布、属性面板、节点树、剪贴板和右键菜单。
 
-## 核心组件
+### 编辑器辅助层
 
-### 1. FlowEngineToolWindow.xaml.cs
-- 这是流程引擎的主编辑窗口类，基于 WPF 实现。
-- 支持流程的加载、保存、撤销/重做操作。
-- 通过 STNodeEditor 控件实现节点的拖拽编辑。
-- 绑定命令实现快捷键支持，如 Ctrl+S 保存，Ctrl+R 刷新，Ctrl+L 自动布局。
-- 处理画布缩放和平移，支持键盘箭头移动画布或节点。
-- 支持流程文件的导入导出，文件格式为 `.stn` 或 Base64 编码流程数据。
+`STNodeEditorHelper` 当前负责的事情很多，远不止“帮忙调一下节点树”：
 
-### 2. TemplateFlow.cs
-- 流程模板管理类，负责流程模板的加载、保存、导入导出和复制。
-- 与数据库交互，使用 ModMasterDao 和 ModFlowDetailDao 访问流程模板数据。
-- 支持单个或多个流程模板导出为文件或压缩包。
-- 支持从文件导入流程模板，并转换为 Base64 数据存储。
-- 提供创建新模板的方法，自动关联系统字典和流程详细参数。
+- 节点复制和粘贴的压缩序列化
+- 当前选中节点与属性面板同步
+- 节点树初始化和装配
+- 右键菜单、删除、全选等命令
+- 合法性检查和自动布局
+- 设备与模板选择面板的宿主挂接
 
-### 3. STNodeEditorHelper.cs
-- 流程节点编辑辅助类，封装了节点编辑器 STNodeEditor 的操作和事件处理。
-- 管理节点的复制、粘贴、选择、删除等操作。
-- 负责节点属性面板的绑定和更新，动态根据选中节点类型加载对应的属性模板。
-- 实现流程图的自动布局算法，支持树形布局和多父节点布局调整。
-- 提供流程合法性检查，确保存在起始节点和结束节点，并且两者间存在有效路径。
-- 管理右键菜单，支持节点复制、删除、锁定位置和选项。
+这意味着流程编辑窗口的大量交互逻辑都集中在这个 helper 里，而不是散落在每个节点控件中。
 
-## 架构概览
+### 节点配置器桥接
 
-流程引擎基于可视化节点编辑器构建，核心架构包括：
+`NodeConfigurator` 目录当前是主程序和节点库之间的重要桥接层。这里会把：
 
-- **UI层**：FlowEngineToolWindow 提供窗口界面，STNodeEditor 控件作为画布展示和编辑流程节点。属性面板和树视图辅助编辑。
-- **流程数据层**：TemplateFlow 管理流程模板的加载与保存，支持数据库和文件两种存储方式。
-- **节点编辑辅助层**：STNodeEditorHelper 负责节点操作、事件响应及自动布局，实现流程编辑的交互逻辑。
-- **数据库访问层**：通过 ORM 模型访问流程模板和流程详细参数，实现持久化存储。
-- **命令与操作管理**：支持撤销重做命令栈，保证用户操作的可逆性。
+- 设备服务列表
+- 本地图像路径输入
+- 普通模板选择器
+- JSON 模板选择器
 
-整体架构采用 MVVM 模式，界面与逻辑分离，支持模块化扩展和高内聚低耦合。
+装进节点属性面板。
 
-```mermaid
-classDiagram
-    class FlowEngineToolWindow {
-        +Undo()
-        +Redo()
-        +Save()
-        +OpenFlowBase64(FlowParam)
-        +AutoAlignment()
-    }
-    class TemplateFlow {
-        +Load()
-        +Save()
-        +ImportFile(string)
-        +Export(int)
-        +Create(string)
-    }
-    class STNodeEditorHelper {
-        +Copy()
-        +Paste()
-        +SelectAll()
-        +CheckFlow() bool
-        +ApplyTreeLayout()
-        +AutoSize()
-    }
-    FlowEngineToolWindow --> STNodeEditorHelper : uses
-    TemplateFlow --> FlowParam : manages
-    STNodeEditorHelper --> STNodeEditor : controls
-```
+例如 POI 相关配置器会把 `TemplatePoi`、`TemplatePoiFilterParam`、`TemplatePoiReviseParam`、`TemplatePoiOutputParam` 等模板接回流程节点。也就是说，节点在宿主里的可编辑体验，并不完全由 `FlowEngineLib` 决定。
 
-## 详细组件分析
+## 当前存储与导出边界
 
-### FlowEngineToolWindow.xaml.cs
+### 主存储仍是数据库
 
-- **功能说明**：
-  - 作为流程编辑器窗口，支持流程的可视化编辑和管理。
-  - 初始化时加载流程模板数据，绑定命令，设置键盘快捷操作。
-  - 支持撤销和重做操作，维护操作栈。
-  - 处理画布的缩放和移动，支持键盘和鼠标交互。
-  - 实现流程文件的打开、保存（包括Base64格式）和新建操作。
-  - 自动保存功能，关闭窗口时提示保存。
+`TemplateFlow.Load()` 和 `Save2DB(...)` 当前都围绕 MySQL 主表、明细表以及 `SysResourceModel` 展开。Base64 节点图内容会落到资源表，再通过明细记录关联回来。
 
-- **关键方法**：
-  1. `Undo()` / `Redo()`：管理操作栈，支持撤销和重做。
-  2. `OpenFlowBase64(FlowParam flowParam)`：加载Base64编码的流程数据到画布。
-  3. `Save()`：保存当前流程到文件或数据库。
-  4. `AutoAlignment()`：调用 STNodeEditorHelper 实现自动布局。
-  5. 事件处理：键盘事件处理节点或画布移动，鼠标事件处理拖拽等。
+### 导出不只是一种格式
 
-- **代码示例**（撤销操作）：
+当前流程模板导出至少有两种实际形式：
 
-```csharp
-public void Undo()
-{
-    if (UndoStack.Count > 0)
-    {
-        var undoAction = UndoStack[^1];
-        UndoStack.RemoveAt(UndoStack.Count - 1);
-        undoAction.UndoAction();
-        RedoStack.Add(undoAction);
-    }
-}
-```
+- `.stn`：节点图原始文件
+- `.cvflow`：带关联模板信息的流程包
 
-- **设计亮点**：
-  - 结合 WPF MVVM 设计，界面与逻辑分离。
-  - 使用 ObservableCollection 管理操作栈，支持UI自动更新。
-  - 通过命令绑定实现快捷键响应，提升用户体验。
+因此把流程模板简单写成“只是一张节点图文件”，会漏掉当前包导出的能力。
 
-### TemplateFlow.cs
+## 当前几个最容易写错的点
 
-- **功能说明**：
-  - 管理流程模板集合，支持模板的加载、保存、导入导出。
-  - 与数据库交互，支持多租户环境下的模板管理。
-  - 支持导出单个模板为 `.stn` 文件，或多个模板打包为 `.zip`。
-  - 支持从文件导入流程模板，转换为 Base64 存储。
+### 这页不是 FlowEngineLib 重复页
 
-- **关键方法**：
-  1. `Load()`：从数据库加载所有流程模板，更新内存集合。
-  2. `Save()`：保存修改的模板到数据库。
-  3. `Export(int index)`：导出模板为文件或压缩包。
-  4. `ImportFile(string filePath)`：导入模板文件，转换为 Base64。
-  5. `Create(string templateName)`：新建流程模板并保存。
+`FlowEngineLib` 负责节点执行与基类体系；本页这层负责主程序里的模板管理、窗口编辑和宿主桥接。两层都叫“流程引擎”，但边界不同。
 
-- **代码示例**（导出多个模板为zip）：
+### 流程模板不是纯磁盘资产
 
-```csharp
-string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-Directory.CreateDirectory(tempDirectory);
-try
-{
-    foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
-    {
-        string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.stn");
-        byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
-        File.WriteAllBytes(filePath, fileBytes);
-    }
-    using (FileStream zipToOpen = new FileStream(sfd.FileName, FileMode.Create))
-    {
-        using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
-        {
-            foreach (string filePath in Directory.GetFiles(tempDirectory))
-            {
-                archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
-            }
-        }
-    }
-}
-finally
-{
-    Directory.Delete(tempDirectory, true);
-}
-```
+当前主路径仍然是数据库 + 资源表，不是扫描某个目录里的 `.stn` 文件。导入导出只是附加能力。
 
-- **设计亮点**：
-  - 灵活支持单个和多个模板导出。
-  - 结合数据库和文件系统，支持多种存储方式。
-  - 使用 ObservableCollection 绑定UI，支持动态更新。
+### 节点属性编辑大量依赖宿主代码
 
-### STNodeEditorHelper.cs
+真正把设备下拉框、模板下拉框、JSON 模板下拉框挂进节点属性区的，是 `NodeConfigurator` 和 `STNodeEditorHelper` 这一层，而不只是节点类本身。
 
-- **功能说明**：
-  - 辅助管理流程节点编辑器 STNodeEditor。
-  - 实现节点的复制、粘贴、选择、删除操作。
-  - 动态生成节点属性面板内容，根据节点类型绑定不同模板参数。
-  - 实现流程图的自动布局，支持树形结构和多父节点特殊布局。
-  - 验证流程结构合法性，确保起始和结束节点存在且连通。
-  - 管理节点右键菜单，支持复制、删除及锁定操作。
+### 窗口行为和一般模板编辑器不同
 
-- **关键方法和功能**：
-  1. `Copy()` / `Paste()`：实现节点复制粘贴，复制节点属性并偏移位置。
-  2. `ApplyTreeLayout()`：递归布局节点，自动调整节点位置使流程图清晰。
-  3. `CheckFlow()`：检查流程中是否存在起始节点和结束节点，且两者间有路径。
-  4. `AddStackPanel\<T\>()`：动态生成属性编辑面板，绑定不同设备或模板参数。
-  5. 事件绑定：节点添加、激活改变，自动更新界面。
+普通模板多半在 `TemplateEditorWindow` 右侧编辑；流程模板当前走的是“列表窗口 + 独立流程编辑器窗口”的路径。继续沿用一般模板的叙述会误导读者。
 
-- **自动布局示意**：
+## 推荐阅读顺序
 
-```mermaid
-flowchart TD
-    RootNode --> Child1
-    RootNode --> Child2
-    Child1 --> GrandChild1
-    Child2 --> GrandChild2
-    Child2 --> GrandChild3
-```
+1. `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`
+2. `Engine/ColorVision.Engine/Templates/Flow/FlowEngineToolWindow.xaml.cs`
+3. `Engine/ColorVision.Engine/Templates/Flow/STNodeEditorHelper.cs`
+4. `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/POINodeConfigurators.cs`
+5. `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator` 下其它配置器
 
-- **设计亮点**：
-  - 结合 WPF 和 WinForms 控件，灵活实现复杂交互。
-  - 使用反射动态复制节点属性，提高复用性。
-  - 自动布局算法考虑多父节点情况，保证布局合理。
-  - 属性面板支持多种模板参数，方便用户配置节点细节。
+## 继续阅读
 
-## 依赖关系分析
-
-- **模块耦合**：
-  - FlowEngineToolWindow 依赖 STNodeEditorHelper 进行节点管理和布局。
-  - TemplateFlow 依赖数据库访问层（ModMasterDao、ModFlowDetailDao）进行模板数据持久化。
-  - STNodeEditorHelper 依赖多个设备服务集合（DeviceCamera、DeviceSensor 等）动态加载属性模板。
-  - 节点类（STNode及其子类）作为流程的基本单元，贯穿编辑和执行流程。
-
-- **接口契约**：
-  - TemplateFlow 实现 ITemplate\\<FlowParam\> 接口，规范模板管理行为。
-  - STNodeEditorHelper 通过事件和命令绑定与 UI 层交互，保证解耦。
-
-- **潜在优化**：
-  - 节点复制粘贴操作中大量使用反射，可能影响性能，后续可考虑缓存属性信息。
-  - 自动布局算法递归较多，复杂流程时性能需关注。
-
-## 性能考虑
-
-- 撤销/重做操作使用 ObservableCollection 管理命令栈，支持 UI 实时响应，但栈过大时可能影响性能。
-- 自动布局算法采用递归遍历节点，复杂流程图时布局计算可能较慢。
-- 节点复制粘贴使用反射复制属性，频繁操作时可能成为性能瓶颈。
-- 流程文件采用 Base64 编码保存，文件大小和加载速度受影响，建议合理控制流程复杂度。
-
-## 故障排除指南
-
-- **无法找到起始或结束节点**：
-  - 确认流程中包含 MQTTStartNode 和 CVEndNode 节点。
-  - 使用流程检查功能（CheckFlow）验证流程连通性。
-
-- **流程保存失败**：
-  - 确认流程文件路径有效，数据库连接正常。
-  - 检查是否有未保存的操作阻塞。
-
-- **节点无法复制或粘贴**：
-  - 确认选中节点有效。
-  - 检查是否有权限或锁定限制。
-
-- **自动布局异常**：
-  - 确认流程结构合理，无循环依赖。
-  - 尝试手动调整节点位置后重新自动布局。
-
-## 结论
-
-ColorVision 的流程引擎通过可视化节点编辑实现复杂流程的设计与执行，具备强大的模板管理和自动布局功能。其架构合理，模块分明，支持多种设备和算法节点，满足多样化测试需求。通过撤销重做、快捷键支持和属性动态绑定，提升了用户体验。未来可在性能优化和界面交互上持续改进，进一步提升系统稳定性和易用性。
-
-本档详细解析了流程引擎的关键代码文件，帮助用户和开发者深入理解其设计与实现，为后续使用、维护和扩展提供坚实基础。
-
+- [FlowEngineLib](../../engine-components/FlowEngineLib.md)
+- [Flow 节点扩展](../../extensions/flow-node.md)
+- [ColorVision.Engine](../../engine-components/ColorVision.Engine.md)

@@ -1,222 +1,70 @@
 # ColorVision Plugins
 
-> 插件系统目录，包含系统扩展插件和第三方功能模块
+本目录只表示当前源码仓库里实际存在的插件项目，不再继续维护把所有历史插件或外部插件都列成“标准插件列表”的旧索引。
 
-## 插件系统概述
+## 当前仓库里真实存在的插件目录
 
-ColorVision 采用插件化架构，所有功能模块都以插件形式加载。插件位于 `Plugins` 目录下，主程序启动时会自动扫描并加载所有有效插件。
+从当前源码树看，`Plugins/` 下实际可对上的项目是：
 
-### 插件特点
+- [Plugins/Conoscope/README.md](Conoscope/README.md)：锥镜相关采集、预处理和分析插件。
+- [Plugins/EventVWR/README.md](EventVWR/README.md)：Windows 事件查看与 Dump 管理。
+- [Plugins/Spectrum/README.md](Spectrum/README.md)：光谱仪测试与色彩分析。
+- [Plugins/SystemMonitor/README.md](SystemMonitor/README.md)：系统性能监控与状态栏显示。
+- [Plugins/WindowsServicePlugin/README.md](WindowsServicePlugin/README.md)：Windows 服务和相关运维工具。
 
-- **动态加载** - 运行时自动发现和加载插件
-- **独立部署** - 每个插件独立目录，便于管理和更新
-- **版本兼容** - 通过 manifest.json 声明依赖版本
-- **菜单集成** - 自动集成到主程序菜单系统
-- **配置持久化** - 支持插件级配置保存和恢复
+同时还能看到若干辅助文件：
 
-## 标准插件列表
+- `Conoscope.bat`
+- `EventVWR.bat`
+- `Spectrum.bat`
+- `SystemMonitor.bat`
+- `WindowsServicePlugin.bat`
+- `Directory.Build.props`
 
-| 插件名称 | 版本 | 功能描述 | 目标框架 |
-|----------|------|----------|----------|
-| [EventVWR](./EventVWR/) | 1.0.0 | Windows事件查看器与Dump文件管理 | .NET 8.0/10.0 |
-| [SystemMonitor](./SystemMonitor/) | 1.0.1 | 系统性能监控工具（CPU/内存/磁盘） | .NET 8.0/10.0 |
-| [Pattern](./Pattern/) | 1.0.0 | 图卡生成工具，支持11种测试图案 | .NET 8.0/10.0 |
-| [ScreenRecorder](./ScreenRecorder/) | 1.0.0 | 屏幕录制工具，支持多源录制 | .NET 8.0/10.0 |
-| [WindowsServicePlugin](./WindowsServicePlugin/) | 1.0.0 | Windows服务管理与运维工具 | .NET 8.0/10.0 |
-| [ImageProjector](./ImageProjector/) | 1.0.0 | 图片投影工具，支持多显示器 | .NET 8.0/10.0 |
-| [Spectrum](./Spectrum/) | 2.1.4.0 | 光谱仪测试与色彩分析工具 | .NET 8.0/10.0 |
-| [YoloObjectDetection](./YoloObjectDetection/) | 0.1.0 | YOLO ONNX 工业检测实践插件 | .NET 10.0 |
+这些条目都能在当前仓库里直接找到。相反，旧索引里提到的 Pattern、ScreenRecorder、ImageProjector、YoloObjectDetection 当前都不在这个源码目录下。
 
-## 插件目录结构
+## 插件当前是怎么被主程序加载的
 
-每个插件目录遵循标准结构：
+按 [UI/ColorVision.UI/Plugins/PluginLoader.cs](../UI/ColorVision.UI/Plugins/PluginLoader.cs) 的现状，主程序启动时会：
 
-```
-Plugins/
-├── PluginName/
-│   ├── manifest.json          # 插件清单文件（必需）
-│   ├── PluginName.csproj      # 项目文件
-│   ├── README.md              # 插件说明文档
-│   ├── CHANGELOG.md           # 更新日志（可选）
-│   ├── App.xaml/.cs           # 应用程序定义
-│   ├── MainWindow.xaml/.cs    # 主窗口
-│   ├── Sources/               # 源代码目录
-│   ├── Properties/            # 资源文件
-│   └── Assets/                # 静态资源
-```
+1. 扫描 `Plugins/` 下的一级子目录。
+2. 优先读取各目录下的 `manifest.json`。
+3. 根据 `manifest.json` 里的插件标识和 DLL 路径更新内部缓存。
+4. 如果目录里存在单个 `.deps.json`，还会先检查 `ColorVision.*` 依赖版本。
+5. 最终用 `Assembly.LoadFrom(...)` 装载插件程序集。
 
-## manifest.json 格式
+如果目录里没有 `manifest.json`，当前实现仍会尝试按“目录名同名 DLL”的方式装载，但这只是兼容路径，不应继续写成主推荐形态。
 
-```json
-{
-  "manifest_version": 1,
-  "Id": "PluginName",
-  "name": "插件显示名称",
-  "version": "1.0.0",
-  "description": "插件功能描述",
-  "dllpath": "PluginName.dll",
-  "requires": "1.3.12.0",
-  "author": "作者名称",
-  "entry_point": "Namespace.PluginClass"
-}
-```
+## 当前目录结构的真实特点
 
-字段说明：
-- `manifest_version` - 清单格式版本
-- `Id` - 插件唯一标识符
-- `name` - 插件显示名称
-- `version` - 插件版本号
-- `description` - 插件功能描述
-- `dllpath` - 主程序集路径
-- `requires` - 最低 ColorVision 版本要求
-- `author` - 作者信息
-- `entry_point` - 插件入口类（可选）
+这个仓库里的插件目录并不遵循单一模板。以当前几个项目为例：
 
-## 插件开发指南
+- `Conoscope/` 同时包含 `Docs/`、`Analysis/`、`Layout/`、`MVS/` 等较重的业务目录。
+- `Spectrum/` 包含 `Calibration/`、`Configs/`、`Data/`、`Help/`、`License/`、`Menus/`、`PropertyEditor/` 等多块功能区。
+- `SystemMonitor/` 体量较轻，主要围绕 `SystemMonitors.cs`、`SystemMonitorControl.xaml(.cs)` 和状态栏提供器展开。
+- `WindowsServicePlugin/` 则更偏运维工具集合，目录里既有 `ServiceManager/` 也有 `Menus/`、`CVWinSMS/`。
 
-### 推荐提交形态
+因此这里不再继续给出那种“每个插件都会有 App.xaml、MainWindow、Sources、Assets”的统一目录模板，因为它和当前源码并不相符。
 
-如果插件作者不在平台源码仓库内开发，推荐把插件作为独立项目提交，结构保持为一个可直接复制到 `Plugins/<PluginId>/` 的目录：
+## 现在怎么读这个目录最有效
 
-```text
-PluginId/
-├── PluginId.csproj
-├── manifest.json
-├── README.md
-├── CHANGELOG.md
-├── PackageIcon.png           # 可选
-├── Assets/                   # 可选
-└── Sources/ 或 *.cs/*.xaml
-```
+如果你要理解插件体系，建议按下面顺序读：
 
-核心要求：
+1. 先看 [UI/ColorVision.UI/Plugins/PluginLoader.cs](../UI/ColorVision.UI/Plugins/PluginLoader.cs)，理解插件发现和装载模型。
+2. 再看各插件自己的 `manifest.json` 和 `.csproj`，确认它到底是不是当前工作区里的真实项目。
+3. 最后进入具体插件目录，例如 [Plugins/Spectrum/README.md](Spectrum/README.md) 或 [Plugins/EventVWR/README.md](EventVWR/README.md)。
 
-- `manifest.json` 必须包含 `id`、`name`、`version`、`description`、`dllpath`。
-- 菜单入口建议实现 `IMenuItemProvider`，由平台自动扫描程序集并挂到主菜单。
-- 插件菜单项类和 `IMenuItemProvider` 必须是非抽象、非开放泛型、有公开无参构造的类型。
-- 插件包内不要重复携带平台主程序已经提供的 `ColorVision.*.dll`，避免版本冲突。
-- 第三方依赖应随插件输出目录一起提交，尤其是 ONNX Runtime、OpenCV、设备 SDK 这类运行时依赖。
-- 大模型、设备驱动、样例数据建议放在独立 `Models/`、`Drivers/` 或 `Assets/` 目录，并在 README 中说明来源和版本。
+## 当前已知的文档漂移
 
-### 平台源码内开发
+- 旧版插件索引仍然列出当前源码树里不存在的目录。
+- [docs/04-api-reference/plugins/standard-plugins/pattern.md](../docs/04-api-reference/plugins/standard-plugins/pattern.md) 已经改成现状说明，因为对应插件源码当前缺失。
+- `docs/04-api-reference/plugins/standard-plugins/` 下其余几页也仍有明显的旧模板痕迹，阅读时需要继续以源码为准。
 
-平台源码内开发可以先使用 `ProjectReference` 引用 UI 库，便于调试：
+## 继续阅读
 
-```xml
-<ProjectReference Include="..\..\UI\ColorVision.Common\ColorVision.Common.csproj" Private="false" />
-<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" Private="false" />
-```
-
-### 独立插件开发
-
-当 `ColorVision.Common`、`ColorVision.UI` 等包版本发布一致后，外部插件应切换为 NuGet 引用：
-
-```xml
-<PackageReference Include="ColorVision.Common" Version="1.5.5.1" PrivateAssets="all" />
-<PackageReference Include="ColorVision.UI" Version="1.5.5.1" PrivateAssets="all" />
-```
-
-NuGet 模式提交前请检查插件生成的 `.deps.json`，确认 `ColorVision.*` 依赖版本不高于目标平台实际版本。
-
-### 快速开始
-
-1. **创建项目**
-   ```bash
-   dotnet new wpf -n MyPlugin -o Plugins/MyPlugin
-   ```
-
-2. **实现插件接口**
-   ```csharp
-   public class MyPlugin : IPluginBase
-   {
-       public override string Header => "我的插件";
-       public override string Description => "插件功能描述";
-       
-       public override void Execute()
-       {
-           // 插件执行逻辑
-       }
-   }
-   ```
-
-3. **创建 manifest.json**
-   ```json
-   {
-     "manifest_version": 1,
-     "Id": "MyPlugin",
-     "name": "我的插件",
-     "version": "1.0.0",
-     "description": "插件功能描述",
-     "dllpath": "MyPlugin.dll",
-     "requires": "1.3.12.0"
-   }
-   ```
-
-4. **配置构建输出**
-   ```xml
-   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-     <Exec Command="xcopy /Y /E /I $(TargetDir)* $(SolutionDir)ColorVision\bin\$(ConfigurationName)\net8.0-windows\Plugins\MyPlugin\" /&#xD;&#xA;" />
-   </Target>
-   ```
-
-### 详细文档
-
-- [插件开发概览](../docs/02-developer-guide/plugin-development/overview.md)
-- [插件开发入门](../docs/02-developer-guide/plugin-development/getting-started.md)
-- [插件生命周期](../docs/02-developer-guide/plugin-development/lifecycle.md)
-- [API参考 - 插件](../docs/04-api-reference/plugins/)
-
-## 插件分类
-
-### 系统工具类
-- **EventVWR** - 系统事件查看与Dump管理
-- **SystemMonitor** - 系统性能监控
-- **WindowsServicePlugin** - Windows服务管理
-
-### 图像处理类
-- **Pattern** - 测试图案生成
-- **ImageProjector** - 图片投影工具
-- **ScreenRecorder** - 屏幕录制
-
-### 专业测试类
-- **Spectrum** - 光谱仪测试与色彩分析
-
-## 构建所有插件
-
-```bash
-# 构建所有插件
-dotnet build Plugins/Directory.Build.props
-
-# 构建特定插件
-dotnet build Plugins/Spectrum/Spectrum.csproj
-
-# 发布模式构建
-dotnet build Plugins/ -c Release
-```
-
-## 插件调试
-
-1. 设置启动项目为 ColorVision
-2. 在插件代码中设置断点
-3. 按 F5 启动调试
-4. 触发插件功能，断点将自动命中
-
-## 常见问题
-
-### 插件无法加载
-- 检查 manifest.json 格式是否正确
-- 确认 requires 版本与主程序兼容
-- 验证 dllpath 指向的文件是否存在
-
-### 菜单未显示
-- 确保插件类正确实现 IPlugin 或 IPluginBase 接口
-- 检查 OwnerGuid 是否正确设置
-- 验证菜单排序 Order 值
-
-### 依赖冲突
-- 确保插件引用的库与主程序兼容
-- 避免引用不同版本的相同库
-- 使用主程序已加载的共享库
+- [docs/02-developer-guide/plugin-development/overview.md](../docs/02-developer-guide/plugin-development/overview.md)
+- [docs/04-api-reference/plugins/standard-plugins/pattern.md](../docs/04-api-reference/plugins/standard-plugins/pattern.md)
+- [docs/04-api-reference/README.md](../docs/04-api-reference/README.md)
 
 ## 维护者
 

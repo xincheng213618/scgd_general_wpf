@@ -1,51 +1,47 @@
-# Deployment Documentation
+# 部署概览
 
-系统部署文档，包括安装、配置和运维指南。
+本页只保留当前仓库仍在使用的部署入口，重点覆盖 Windows 桌面应用、安装器和更新机制。
 
-## 目录结构
+## 当前部署对象
 
-- [Installation Guide](installation-guide.md) - 详细安装指南
-- [Configuration](configuration.md) - 系统配置说明
-- [Environment Setup](environment-setup.md) - 环境准备和依赖配置
-- [Docker Deployment](docker-deployment.md) - 容器化部署方案
-- [Production Setup](production-setup.md) - 生产环境部署最佳实践
+- `ColorVision/`：主程序本体
+- `ColorVisionSetup/`：安装与更新相关程序
+- `Scripts/`：构建、打包、发布辅助脚本
+- `Plugins/`：运行时加载的插件目录
 
-## 概述
+## 当前推荐路径
 
-ColorVision 支持多种部署方式和环境：
+### 开发或测试环境
 
-### 部署方式
+直接从源码构建并运行主程序：
 
-- **单机部署**: 适用于开发和测试环境
-- **分布式部署**: 适用于大规模生产环境
-- **容器部署**: 使用 Docker 进行标准化部署
-- **云部署**: 支持主流云平台部署
+```powershell
+dotnet restore
+dotnet build -p:Platform=x64
+dotnet run --project ColorVision/ColorVision.csproj
+```
 
-### 系统要求
+### 交付环境
 
-- **操作系统**: Windows 10/11, Windows Server 2019+
-- **运行时**: .NET 8.0+ Runtime
-- **数据库**: SQLite (本地) / MySQL 8.0+ (生产)
-- **硬件**: 参考[系统要求](../getting-started/prerequisites/系统要求.md)
+- 使用安装器交付完整桌面程序
+- 按需携带插件目录和运行时依赖
+- 若涉及在线更新，继续阅读 [自动更新系统](./auto-update.md)
 
-### 网络架构
+## 部署前确认项
 
-- **MQTT Broker**: 消息队列服务
-- **Database Server**: 数据库服务器
-- **File Server**: 文件存储服务
-- **Load Balancer**: 负载均衡器 (可选)
+- 目标环境为 Windows
+- 主应用按 x64 构建
+- 运行时依赖和本地 DLL 已正确随包输出
+- 需要的配置文件已复制到输出目录
 
-## 相关组件
+## 配套文档
 
-- `Scripts/` - 部署和构建脚本
-- `ColorVisionSetup/` - 安装程序项目
+- [入门指南](../../00-getting-started/README.md)
+- [系统要求](../../00-getting-started/prerequisites.md)
+- [自动更新系统](./auto-update.md)
+- [构建与发布脚本](../scripts/README.md)
 
-## 相关文档
+## 说明
 
-- [安装指南](../getting-started/installation/安装_ColorVision.md)
-- [系统要求](../getting-started/prerequisites/系统要求.md)
-- [性能优化指南](../performance/README.md)
-
----
-
-*最后更新: 2024-09-28*
+- 旧的 Docker、云部署、生产集群等说明不再作为默认部署路径。
+- 如果某个项目有特殊交付方式，应在对应项目目录或项目文档中单独维护，而不是继续堆在通用部署页里。

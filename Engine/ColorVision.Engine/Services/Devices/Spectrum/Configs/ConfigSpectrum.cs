@@ -3,7 +3,6 @@ using ColorVision.Database;
 using ColorVision.Engine.Cache;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.CfwPort;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.UI;
 using System;

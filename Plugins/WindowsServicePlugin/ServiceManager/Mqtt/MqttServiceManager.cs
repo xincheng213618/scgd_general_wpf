@@ -2,8 +2,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 
 namespace WindowsServicePlugin.ServiceManager
 {

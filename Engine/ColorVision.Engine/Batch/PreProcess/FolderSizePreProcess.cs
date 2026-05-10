@@ -1,6 +1,5 @@
 using log4net;
 using Newtonsoft.Json;
-using Quartz.Util;
 using ColorVision.Engine.PropertyEditor;
 using System;
 using System.Collections.Generic;

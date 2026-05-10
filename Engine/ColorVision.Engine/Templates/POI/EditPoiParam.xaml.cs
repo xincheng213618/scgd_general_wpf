@@ -56,34 +56,33 @@ namespace ColorVision.Engine.Templates.POI
 
             this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
             {
-                ImageViewModel?.Dispose();
+                ImageView?.Dispose();
             }))));
             this.Title = poiParam.Name + "-" + this.Title;
         }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageView.EditorContext.DrawingVisualLists;
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
         public Zoombox Zoombox1 => ImageView.Zoombox1;
 
         public DrawCanvas ImageShow => ImageView.ImageShow;
-        public ImageViewModel ImageViewModel => ImageView.ImageViewModel;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = PoiParam;
             ListView1.ItemsSource = DrawingVisualLists;
             ListView1.ContextMenu = new ContextMenu();
-            ImageView.ImageViewModel.ImageEditMode = true;
-            ImageView.ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
+            ImageView.ImageEditMode = true;
+            ImageView.EditorContext.SelectionVisual.SelectVisualChanged += (s, e) =>
             {
                 ListView1.SelectedItem = e;
                 ListView1.ScrollIntoView(e);
             };
-            if (ImageView.ImageViewModel.IEditorToolFactory.GetIEditorTool<CircleManager>() is CircleManager circleManager)
+            if (ImageView.IEditorToolFactory.GetIEditorTool<CircleManager>() is CircleManager circleManager)
                 circleManager.Config.IsContinuous = true;
-            if (ImageView.ImageViewModel.IEditorToolFactory.GetIEditorTool<RectangleManager>() is RectangleManager rectangleManager)
+            if (ImageView.IEditorToolFactory.GetIEditorTool<RectangleManager>() is RectangleManager rectangleManager)
                 rectangleManager.Config.IsContinuous = true;
 
 
@@ -1007,7 +1006,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is ISelectVisual drawingVisua)
             {
-                ImageView.ImageViewModel.SelectEditorVisual.SetRender(drawingVisua);
+                ImageView.EditorContext.SelectionVisual.SetRender(drawingVisua);
             }
         }
 
@@ -1778,11 +1777,11 @@ namespace ColorVision.Engine.Templates.POI
             ListView1.ContextMenu.Items.Clear();
 
             Type type = DrawingVisualLists[ListView1.SelectedIndex].GetType();
-            foreach (var provider in ImageView.ImageViewModel.IEditorToolFactory.ContextMenuProviders)
+            foreach (var provider in ImageView.IEditorToolFactory.ContextMenuProviders)
             {
                 if (provider.ContextType.IsAssignableFrom(type))
                 {
-                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel.EditorContext, DrawingVisualLists[ListView1.SelectedIndex]);
+                    var items = provider.GetContextMenuItems(ImageView.EditorContext, DrawingVisualLists[ListView1.SelectedIndex]);
                     foreach (var item in items)
                         ListView1.ContextMenu.Items.Add(item);
                 }

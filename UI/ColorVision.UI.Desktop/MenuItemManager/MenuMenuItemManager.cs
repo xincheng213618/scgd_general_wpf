@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.MenuItemManager

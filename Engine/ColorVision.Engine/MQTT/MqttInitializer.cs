@@ -4,7 +4,6 @@ using log4net;
 using System;
 using System.ServiceProcess;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
@@ -72,11 +71,6 @@ namespace ColorVision.Engine.MQTT
                     log.Info(ex.Message);
                 }
             }
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
-                mQTTConnect.ShowDialog();
-            });
         }
     }
     }

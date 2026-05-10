@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.OLED;
 
 [STNode("/03_5 OLED")]
-public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
+public class OLEDRebuildPixelsNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDRebuildPixelsNode));
 
@@ -79,7 +79,8 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 	{
 		operatorCode = "OLED.RebuildPixels";
 		m_in_text = "IN_IMG";
-		m_in2_text = "IN_POI";
+		m_in_textHub[0] = "IN_IMG";
+		m_in_textHub[1] = "IN_POI";
 		_OutputTemplateName = string.Empty;
 		_Channel = CVOLED_Channel.GREEN;
 		_ImgFileName = string.Empty;

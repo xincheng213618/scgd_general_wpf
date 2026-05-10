@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
-using Microsoft.VisualBasic.Logging;
 using Spectrum.TimedButtons;
 using System.IO.Ports;
 using System.Text;

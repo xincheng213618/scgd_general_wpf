@@ -1,551 +1,186 @@
 # ColorVision.ImageEditor
 
-## 目录
-1. [概述](#概述)
-2. [核心功能](#核心功能)
-3. [视频播放功能](#视频播放功能)
-4. [架构设计](#架构设计)
-5. [主要组件](#主要组件)
-6. [绘图工具](#绘图工具)
-7. [图像处理功能](#图像处理功能)
-8. [使用示例](#使用示例)
-9. [视频播放使用指南](#视频播放使用指南)
-10. [扩展开发](#扩展开发)
-11. [性能优化建议](#性能优化建议)
-12. [最佳实践](#最佳实践)
-13. [改进建议](#改进建议)
-14. [相关资源](#相关资源)
+本页只描述 UI/ColorVision.ImageEditor 当前已经落地的主控链和扩展点，不再继续维护旧文档里那种“功能大全 + 教程示例 + 性能数字承诺”的写法。
 
-## 概述
+## 模块定位
 
-**ColorVision.ImageEditor** 是一个功能完整的 WPF 图像编辑控件库，提供了专业级的图像显示、编辑、标注、分析和视频播放功能。它支持多种图像格式，包括高精度的 RGB48 格式，提供了丰富的绘图工具和图像处理算法，以及高性能的视频播放能力。
+ColorVision.ImageEditor 当前不是单纯的图片显示控件，而是一套“图像宿主 + 可缩放画布 + 绘图工具 + 打开器 + 运行时工具覆盖 + 设置系统”的组合模块。
 
-基于UI和Core的图像展示控件，提供图像的展示，编辑，保存等功能。可以调整对比度，gamma，色调等功能，可以绘制图形，比如文字、矩形，圆，线，贝塞尔曲线等，可以删除或者编辑，可以保存为图片。**v1.5+ 版本新增视频播放功能**，支持多种视频格式的高性能播放。
+它的主线更接近：
 
-### 基本信息
+- `ImageView` 作为宿主
+- `EditorContext` 作为当前视图运行时容器
+- `DrawCanvas` 作为真实绘制画布
+- `IEditorToolFactory` 负责发现和装配工具、菜单、打开器
+- `IImageOpen` 负责不同文件类型的打开链
 
-- **版本**: 1.5.5.1
-- **目标框架**: .NET 10.0 Windows
-- **UI 框架**: WPF
-- **特色功能**: RGB48 支持、矢量绘图、图像分析、3D可视化、**视频播放**
-- **支持格式**: 
-  - 图像：RGB48、PNG、JPG、BMP、TIFF、CVRAW、CVCIE
-  - 视频：MP4、AVI、MKV、MOV、WMV、FLV、WebM
+## 当前最关键的目录
 
-## 核心功能
+从项目目录看，最值得优先阅读的是：
 
-### 1. 图像显示与交互
-- **多格式支持**: 支持常见图像格式和 RGB48 高精度格式
-- **缩放与平移**: 流畅的缩放、平移和适配功能
-- **全屏显示**: 沉浸式图像浏览体验
-- **网格显示**: 像素级精确定位辅助
+- `ImageView.xaml(.cs)`：主控件和运行时编排入口
+- `EditorContext.cs`：每个视图实例的运行时容器
+- `DrawCanvas.cs`：视觉树和绘图画布
+- `EditorToolFactory.cs`：工具、菜单、打开器发现与装配
+- `Abstractions/`：编辑器扩展点边界
+- `Draw/`：图元、工具、选择框、注释导入导出
+- `EditorTools/`：非图元类工具，例如缩放、伪彩色、3D、算法、全屏
+- `Video/`：视频打开器
+- `Layers/`：图层/通道切换语义
+- `Realtime/`、`Settings/`：实时图像和设置相关支持
 
-### 2. 视频播放 (v1.5+)
-- **格式支持**: MP4、AVI、MKV、MOV、WMV、FLV、WebM
-- **音频同步**: 基于 WPF MediaPlayer 的音视频同步
-- **播放控制**: 播放/暂停/停止、进度拖拽、倍速播放
-- **降采样预览**: 支持 1x/1/2/1/4/1/8 缩放，优化高分辨率视频
-- **自动隐藏**: 播放时工具栏自动隐藏
-- **帧丢弃**: 高分辨率视频自动丢弃帧保证流畅
+## 关键入口类型
 
-### 3. 图像编辑功能
-- **色彩调整**: 对比度、Gamma、色调、饱和度调整
-- **图像翻转** (v1.4.1+): 水平翻转（FlipHorizontal）和垂直翻转（FlipVertical），支持手动旋转图片
-- **伪彩色显示**: 科学数据可视化，支持 21 种色彩映射（JET、RAINBOW、HOT、VIRIDIS 等），**LUT 查表优化**（性能从 85ms 提升至 40ms），**上下限模式**（v1.4.4+）
-- **直方图分析**: 实时直方图显示和分析
-- **配置文件剖析**: 像素数据分析工具
-- **参考线遮罩** (v1.3.16+): 参考线增加遮罩模式
+### ImageView
 
-### 4. 绘图与标注工具
-- **几何图形**: 矩形、圆形、线条、多边形
-- **文本标注**: 自定义字体、颜色和样式
-- **贝塞尔曲线**: 复杂路径绘制
-- **测量工具**: 距离和角度测量
+`ImageView` 是当前编辑器模块的主入口。它负责：
 
-### 5. 3D 可视化 (v2.0+ 优化)
-基于 HelixToolkit.Wpf 的 3D 渲染模块，包含两个独立查看器：
+- 初始化 `EditorContext`
+- 绑定 `DrawCanvas`、`Zoombox`、上下文菜单和状态栏
+- 执行 `IImageComponent` 一次性初始化
+- 管理标准文件命令
+- 接线配置变化、缩放变化和 overlay 刷新
+- 处理图像打开、清理、保存、导入导出注释等流程
 
-**Window3D — 图像转 3D 表面**
-- 2D 图像 → 高度图 3D 曲面（支持 RGB48/Gray8 等多格式自动转换）
-- 双线性插值降采样（替代最近邻，消除锯齿）
-- 逐顶点法线计算（从高度梯度推导，提升光照效果）
-- 24 种伪彩色映射（jet/viridis/plasma 等）+ 色条图例
-- 实时高度缩放（键盘 +/- 或按钮）
-- 3D 拾取悬停提示（`VisualTreeHelper.HitTest` raycast，显示 3D 坐标和像素值）
-- 截图导出（PNG/JPEG/BMP）、模型导出（OBJ/STL）
-- 智能网格缓存：三角索引和纹理坐标只构建一次，高度缩放时仅更新顶点位置和法线
+如果要理解这个模块，首要入口就是 `ImageView.xaml.cs`。
 
-**ModelViewer3DControl — OBJ/STL 模型查看器**
-- 异步后台加载 OBJ/STL 文件，自动预处理无效 mtllib 行
-- 自动法线生成、材质可见性检测与回退
-- 真实线框模式（`MeshGeometryHelper.FindEdges` + 边圆柱体渲染）
-- 正交/透视投影实时切换（`OrthographicCamera` ↔ `PerspectiveCamera`）
-- 模型树视图（隔离/显示全部），暗色主题样式
-- 预设视角（前/后/左/右/上/下/ISO）
-- 基于模型包围盒中心的对象旋转（非世界原点）
-- 截图/模型导出（OBJ/STL 含材质和纹理）
+### EditorContext
 
-**Viewport3DHelper — 共享工具类**
-- 相机初始化、重置、帧适配（支持 PerspectiveCamera 和 OrthographicCamera）
-- 固定角坐标轴指示器（PipeVisual3D + SphereVisual3D + BillboardTextVisual3D）
-- 统一键盘移动处理（L/T/R/B/A/C/D/F）— `HandleCameraKey()` 方法
-- 共享 UI 样式（`ThreeDStyles.xaml` 资源字典：ToolBtn/ActionBtn/ToggleActionBtn/DarkTreeView）
-- 线框几何体生成、截图/导出
+`EditorContext` 是每个 `ImageView` 实例的运行时容器，当前会集中保存：
 
-**内存管理**
-- `ModelViewer3DControl.DisposeViewer()` 递归释放网格缓冲区（Positions/Indices/Normals）、材质纹理（ImageBrush.ImageSource）
-- `Model3DEditor`（AvalonDock 标签页）使用命名委托 + Closing 事件中主动取消订阅，打破 lambda 闭包引用链
-- 关闭时强制 GC（`GC.Collect(2, Forced)` + `WaitForPendingFinalizers()`）释放 WPF 3D 非托管渲染资源
+- 当前 `ImageView`
+- `DrawCanvas`
+- `Zoombox`
+- `ImageViewConfig`
+- `DrawEditorManager`
+- `IEditorToolFactory`
+- 当前 opener、上下文菜单、图元列表
+- 一组轻量 service 注册表
 
-## 视频播放功能
-
-### 技术架构
-
-视频播放采用 C++ 解码 + C# 渲染的架构：
-
-```mermaid
-graph LR
-    A[视频文件] --> B[C++ OpenCV解码]
-    B --> C[HImage 内存共享]
-    C --> D[C# WriteableBitmap]
-    D --> E[WPF Image 渲染]
-    
-    F[音频文件] --> G[WPF MediaPlayer]
-    G --> H[音频同步]
-```
-
-### 性能优化策略
-
-| 优化点 | 说明 | 效果 |
-|--------|------|------|
-| 最新帧槽模型 | 生产者不阻塞，始终推送最新帧 | 避免播放卡顿 |
-| pyrDown 降采样 | OpenCV 图像金字塔下采样 | 减少 75% 数据传输 |
-| 并行内存拷贝 | 多线程拷贝大帧数据 | 8K帧 25ms→5ms |
-| 帧丢弃机制 | UI 繁忙时自动跳过帧 | 保证时间线稳定 |
-| UI更新节流 | 进度条每10帧更新一次 | 减少UI开销 |
-
-### 分辨率支持
-
-| 分辨率 | 原始帧率 | 建议设置 | 预期效果 |
-|--------|----------|----------|----------|
-| 1080p | 60fps | 1x | ✅ 流畅 |
-| 4K | 60fps | 1x | ✅ 流畅 |
-| 8K | 60fps | 1/4x 或 1/8x | ⚠️ 需降采样 |
-
-## 架构设计
-
-```mermaid
-graph TD
-    A[ColorVision.ImageEditor] --> B[显示层]
-    A --> C[编辑层]
-    A --> D[绘图层]
-    A --> E[分析层]
-    A --> F[视频层]
-    
-    B --> B1[ImageView]
-    B --> B2[缩放控制]
-    B --> B3[全屏模式]
-    
-    C --> C1[色彩调整]
-    C --> C2[图像变换]
-    C --> C3[格式转换]
-    
-    D --> D1[绘图工具]
-    D --> D2[矢量图形]
-    D --> D3[文本标注]
-    
-    E --> E1[直方图]
-    E --> E2[配置文件]
-    E --> E3[3D视图]
-    
-    F --> F1[VideoOpen]
-    F --> F2[C++解码器]
-    F --> F3[音频同步]
-```
-
-## 主要组件
-
-### ImageView 主控件
-核心显示控件，负责图像/视频的渲染、交互和事件处理。
-
-**主要功能：**
-- 图像/视频显示和缩放
-- 鼠标交互处理
-- 绘图工具集成
-- 性能优化的渲染
-
-### VideoOpen 视频播放器 (v1.5+)
-视频播放控制器，实现 `IImageOpen` 接口。
-
-**主要功能：**
-- 通过 `OpenCVMediaHelper` 与 C++ 层交互
-- 管理 WPF MediaPlayer 音频播放
-- 处理播放控制UI（工具栏）
-- 实现帧丢弃和降采样逻辑
-- 音视频同步修正
-
-**关键方法：**
-```csharp
-public void OpenImage(EditorContext context, string filePath)
-private void PlayVideo()
-private void PauseVideo()
-private void OnFrameReceived(int handle, ref HImage frame, int currentFrame, int totalFrames, IntPtr userData)
-private static void UpdateWriteableBitmapFast(WriteableBitmap writeableBitmap, HImage hImage)
-```
-
-### ImageViewModel
-MVVM模式的视图模型，管理图像数据和用户界面状态。
-
-**主要功能：**
-- 图像数据管理
-- 命令绑定
-- 属性通知
-- 状态同步
+它既是运行时状态容器，也带一点局部 service locator 性质，这也是当前模块的重要实现边界。
 
 ### DrawCanvas
-基于WPF DrawingVisual的高性能绘图画布。
-
-**主要功能：**
-- 矢量图形渲染
-- 撤销/重做管理
-- 命中测试
-- 视觉树管理
-
-## 绘图工具
-
-### 几何图形工具
-- **矩形工具**: 支持填充和边框样式，可设置圆角
-- **圆形工具**: 椭圆和正圆绘制，支持填充和描边
-- **线条工具**: 直线、折线和箭头线
-- **多边形工具**: 任意多边形区域绘制
-- **贝塞尔工具**: 平滑曲线绘制和路径编辑
-- **标尺工具**: 距离测量和比例尺显示
-
-### 文本工具
-- **文本标注**: 可编辑文本框
-- **字体设置**: 字体、大小、颜色
-- **对齐选项**: 左对齐、居中、右对齐
-
-### 测量工具
-- **距离测量**: 两点间距离计算
-- **角度测量**: 角度计算和显示
-- **面积测量**: 区域面积计算
-
-## 图像处理功能
-
-### 色彩调整
-- **亮度/对比度**: 线性调整
-- **Gamma校正**: 非线性色调调整
-- **色调/饱和度**: HSV颜色空间调整
-- **色彩平衡**: RGB通道独立调整
-
-### 图像变换
-- **水平翻转**: `FlipHorizontal()` - 基于 WPF ScaleTransform 的水平镜像
-- **垂直翻转**: `FlipVertical()` - 基于 WPF ScaleTransform 的垂直镜像
-- **旋转菜单集成**: 翻转操作集成在旋转菜单中（Order 3/4）
-
-### 伪彩色映射
-- **21 种色彩映射**: AUTUMN、BONE、JET、WINTER、RAINBOW、OCEAN、SUMMER、SPRING、COOL、HSV、PINK、HOT、PARULA、MAGMA、INFERNO、PLASMA、VIRIDIS、CIVIDIS、TWILIGHT、TWILIGHT_SHIFTED、TURBO、DEEPGREEN
-- **LUT 查表优化**: 使用查找表加速伪彩色渲染，性能从 85ms 提升至 40ms
-- **上下限模式** (v1.4.4+): 支持自定义伪彩色值范围的上限和下限
-- **自动范围**: `M_PseudoColorAutoRange` 自动计算数据范围
-- **通道选择**: 支持按通道应用伪彩色映射
-
-## 使用示例
-
-### 1. 基础图像显示
-
-```xml
-<cv:ImageView x:Name="imageView" 
-              Source="{Binding ImageSource}"
-              ZoomMode="Fit"
-              ShowGrid="True" />
-```
-
-### 2. 视频播放
-
-```csharp
-// 打开视频文件
-var videoOpen = new VideoOpen(editorContext);
-videoOpen.OpenImage(editorContext, "path/to/video.mp4");
-
-// 视频播放由 UI 工具栏控制：
-// - ▶/⏸ 播放/暂停
-// - ■ 停止
-// - 进度条 跳转
-// - 速度选择 0.25x-4x
-// - 缩放选择 1x/1/2/1/4/1/8
-// - 🔊/🔇 静音
-// - Auto Hide 自动隐藏
-```
-
-### 3. 色彩调整功能
-
-```csharp
-imageView.ColorAdjustment.Brightness = 0.1;
-imageView.ColorAdjustment.Contrast = 1.2;
-imageView.ColorAdjustment.Gamma = 2.2;
-```
-
-### 4. 绘图工具使用
-
-```csharp
-// 启用矩形绘制工具
-imageView.DrawingTool = DrawingToolType.Rectangle;
-imageView.IsDrawingEnabled = true;
-
-// 设置绘制样式
-imageView.DrawingStyle.StrokeColor = Colors.Red;
-imageView.DrawingStyle.StrokeThickness = 2;
-```
-
-### 5. 直方图分析
-
-```csharp
-// 获取直方图数据
-var histogram = imageView.GetHistogram();
-histogramView.DataSource = histogram;
-```
-
-### 6. 3D 可视化
-
-```csharp
-// 打开3D视图（从当前 WriteableBitmap 创建）
-var window3D = new Window3D(writeableBitmap);
-window3D.Show();
-
-// Window3D 特性：
-// - 双线性插值降采样到目标分辨率（默认 512x512）
-// - 24 种伪彩色映射 + 色条图例
-// - 逐顶点法线计算（高度梯度推导）
-// - 3D 拾取悬停提示（raycast 显示坐标和像素值）
-// - 实时高度缩放（+/- 按钮或键盘）
-// - 相机位置/视角控制（L/T/R/B/A/C/D/F）
-// - Home 键重置视角
-// - 截图/模型导出
-
-// OBJ/STL 模型查看器（通过菜单 Tools → 3D模型查看器）
-var window = new ModelViewer3DWindow();
-window.Show();
-
-// 或嵌入 AvalonDock 标签页（Model3DEditor 自动处理）
-// 打开 .obj/.stl 文件即可
-
-// ModelViewer3DControl 特性：
-// - 异步后台加载 + 加载遮罩
-// - 真实线框模式（边圆柱体渲染）
-// - 正交/透视投影切换
-// - 模型树视图（隔离/显示全部）
-// - 预设视角（前/后/左/右/上/下/ISO）
-// - 基于模型中心的对象旋转
-```
-
-## 视频播放使用指南
-
-### 界面控制说明
-
-打开视频文件后，底部工具栏会显示视频控制按钮：
-
-| 控件 | 功能 |
-|------|------|
-| ▶/⏸ | 播放/暂停 |
-| ■ | 停止并回到开头 |
-| 🔊/🔇 | 静音/取消静音 |
-| 进度条 | 点击或拖拽跳转 |
-| 速度选择 | 0.25x / 0.5x / 1x / 1.5x / 2x / 4x |
-| 缩放选择 | 1x / 1/2 / 1/4 / 1/8 |
-| Auto Hide | 启用/禁用自动隐藏工具栏 |
-
-### 播放高分辨率视频建议
-
-对于 4K/8K 高分辨率视频：
-1. **使用降采样**: 选择 1/4 或 1/8 预览可大幅提升流畅度
-2. **关闭其他应用**: 释放 CPU/GPU 资源
-3. **使用 SSD**: 视频文件存放在 SSD 上减少 IO 瓶颈
-4. **适当降低倍速**: 高分辨率时建议使用 1x 或更低倍速
-
-### 音画同步修正
-
-播放器会自动检测音频漂移并修正。如果观察到音画不同步：
-1. 暂停后重新播放
-2. 跳转到其他位置再跳回
-3. 检查视频文件本身是否音画同步
-
-## 扩展开发
-
-### 自定义绘图工具
-
-```csharp
-public class CustomDrawingTool : IDrawingTool
-{
-    public string Name => "Custom Tool";
-    public Cursor Cursor => Cursors.Cross;
-    
-    public void OnMouseDown(Point point) { /* 实现 */ }
-    public void OnMouseMove(Point point) { /* 实现 */ }
-    public void OnMouseUp(Point point) { /* 实现 */ }
-}
-```
-
-### 自定义图像处理算法
-
-```csharp
-public class CustomImageProcessor : IImageProcessor
-{
-    public string Name => "Custom Filter";
-    
-    public ImageData Process(ImageData input)
-    {
-        // 自定义处理逻辑
-        return processedImage;
-    }
-}
-```
-
-## 性能优化建议
-
-### 图像处理
-1. **大图像处理**: 使用分块加载和虚拟化
-2. **内存管理**: 及时释放不需要的图像资源
-3. **GPU加速**: 利用硬件加速进行图像处理
-4. **缓存策略**: 合理使用图像缓存机制
-
-### 视频播放
-1. **使用降采样**: 高分辨率视频使用 1/2、1/4 或 1/8 预览
-2. **帧丢弃容忍**: 允许播放器自动丢弃帧保持流畅
-3. **UI更新节流**: 进度条每10帧更新是正常优化行为
-4. **并行拷贝**: 8K视频使用多线程内存拷贝
-
-### 3D 视图
-1. **合理设置分辨率**: 默认 512x512 适合大多数场景，4K 图像可使用 256x256 提升流畅度
-2. **高度缩放缓存**: 网格顶点位置和法线缓存，高度缩放时只更新 Z 坐标和法线，避免重建整个 Mesh
-3. **冻结资源**: 颜色映射纹理在加载时 Freeze，减少 UI 线程开销
-4. **及时释放**: `DisposeViewer()` 递归释放网格缓冲区和材质纹理，关闭时强制 GC 释放非托管渲染资源
-5. **线框模式性能**: 大模型（>50k 边）的线框渲染可能较慢，建议对大模型关闭线框
-6. **降采样质量**: 使用双线性插值替代最近邻，消除高度图锯齿，但不增加计算开销
-
-## 最佳实践
-
-1. **MVVM模式**: 使用数据绑定和命令模式
-2. **异步处理**: 大图像操作使用异步方法
-3. **错误处理**: 完善的异常处理机制
-4. **用户体验**: 提供进度指示和取消操作
-5. **资源释放**: 关闭视频时正确释放资源，避免内存泄漏
-
-## 改进建议
-
-为了持续提升 ColorVision.ImageEditor 的质量和功能，我们制定了详细的改进计划：
-
-### 📚 主要改进方向
-
-1. **架构优化** 🔴
-   - 依赖注入改造
-   - 接口抽象设计
-   - 命令模式改进
-
-2. **性能优化** 🔴
-   - 异步编程改进
-   - 内存优化（对象池、弱引用缓存）
-   - 渲染优化（虚拟化、GPU加速）
-   - **视频硬件解码** - 使用 GPU 解码器减轻 CPU 负担
-
-3. **代码质量** 🟡
-   - 命名规范统一
-   - 代码复用提升
-   - SOLID原则应用
-
-4. **功能增强** 🟢
-   - 图层支持
-   - 选区工具
-   - AI功能集成
-   - **视频编辑功能** - 剪辑、合并、导出
-
-5. **用户体验** 🟡
-   - 快捷键系统
-   - 工具提示改进
-   - 进度指示优化
-   - **播放列表** - 连续播放多个视频
-
-6. **测试与质量保证** 🟡
-   - 单元测试
-   - 集成测试
-   - 性能测试
-
-7. **安全性** 🔴
-   - 输入验证
-   - 安全文件操作
-
-### 📖 详细文档
-
-完整的改进建议和实现方案请参考：
-- [ColorVision.ImageEditor 改进建议](../../UI/ColorVision.ImageEditor/改进建议.md) - 详细的改进方案和代码示例
-
-## 更新日志
-
-### v2.0.x (2026-04)
-- ✅ 3D 视图性能优化：网格缓存，高度缩放时仅更新顶点位置
-- ✅ 修复 3D 视图相机控制语义错误（Position 返回 LookDirection 的问题）
-- ✅ 3D 视图新增截图导出功能（PNG/JPG/BMP）
-- ✅ 3D 视图新增重置视角按钮和 Home 快捷键
-- ✅ 补齐 3D 视图缺失的键盘快捷键（T/D/F/C）
-- ✅ 3D 视图事件处理器重命名，提升可维护性
-- ✅ 修复正交投影切换：真正替换 PerspectiveCamera ↔ OrthographicCamera
-- ✅ 修复线框模式：使用 MeshGeometryHelper.FindEdges + 边圆柱体渲染真实线框
-- ✅ 修复 ClearAxes 类型不匹配：检查 PipeVisual3D/SphereVisual3D/BillboardTextVisual3D
-- ✅ 移除无意义的 async void（HeightScaleIncrease/Decrease_Click）
-- ✅ 高度图添加逐顶点法线计算（从高度梯度推导，提升光照效果）
-- ✅ 降采样从最近邻改为双线性插值（消除锯齿）
-- ✅ 3D 拾取悬停提示（VisualTreeHelper.HitTest raycast，显示 3D 坐标和像素值）
-- ✅ ModelViewer3D 对象旋转修复为基于模型包围盒中心（非世界原点）
-- ✅ 提取共享 UI 样式到 ThreeDStyles.xaml 资源字典
-- ✅ 提取共享键盘逻辑到 Viewport3DHelper.HandleCameraKey()
-- ✅ Window3DConfig 独立成文件
-- ✅ ModelViewer3DControl.DisposeViewer() 递归释放网格缓冲区和材质纹理
-- ✅ Model3DEditor 内存泄漏修复：命名委托 + Closing 事件取消订阅打破闭包引用链
-
-### v1.5.1.1 (2026-02)
-- ✅ 新增视频播放功能（MP4/AVI/MKV/MOV/WMV/FLV/WebM）
-- ✅ 实现 C++/C# 跨语言视频解码架构
-- ✅ 添加音频同步播放支持
-- ✅ 实现最新帧槽模型（无阻塞生产者）
-- ✅ 添加 pyrDown 降采样预览优化
-- ✅ 实现帧丢弃机制（高分辨率视频流畅播放）
-- ✅ 添加自动隐藏工具栏功能
-- ✅ 优化 8K 视频播放性能（并行内存拷贝）
-- ✅ 支持 0.25x-4x 倍速播放
-
-### v1.4.4.1 (2026-03)
-- ✅ 伪彩色增加上下限模式
-- ✅ 修复图像切换图层时强制切换回原图层
-- ✅ 视频模式翻转支持
-
-### v1.4.2.1 (2026-02)
-- ✅ 图像编辑控件支持预览视频
-- ✅ OpenCV 更新至 4.13
-
-### v1.4.1.1 (2026-02)
-- ✅ 新增图像 Flip 翻转（水平/垂直）
-- ✅ 重构图像控件架构
-- ✅ 支持 .NET 10.0
-
-### v1.3.18.1 (2026-02)
-- ✅ 使用 LUT 优化伪彩色性能（85ms → 40ms）
-- ✅ 优化图像模块性能切换和内存占用
-- ✅ 支持文件夹预览图片
-- ✅ 本地视频模式
-
-### v1.3.16.1 (2025-12)
-- ✅ 参考线增加遮罩模式
-
-### v1.3.x 及更早
-- 基础图像编辑功能
-- RGB48 高位深支持
-- 矢量绘图工具
-- 3D 可视化
-
-## 相关资源
-
-- [用户指南 - 图像编辑器](../01-user-guide/image-editor/overview.md)
-- [示例项目](../developer-guide/examples/)
-- [故障排除](../troubleshooting/common-issues/)
-- [改进建议详细文档](../../UI/ColorVision.ImageEditor/改进建议.md)
+
+`DrawCanvas` 是真实的绘图承载层。它不只是显示控件，还负责：
+
+- 维护视觉对象集合
+- 执行命中测试
+- 处理图元增删
+- 维护撤销/重做
+- 作为大量绘图工具挂接鼠标事件的目标
+
+### IEditorToolFactory
+
+名字虽然叫 `IEditorToolFactory`，当前它其实是一个具体类，不是接口。它会在构造时反射扫描并装配：
+
+- `IDVContextMenu`
+- `IIEditorToolContextMenu`
+- `IEditorTool`
+- `IImageComponent`
+- `IImageOpen`
+
+同时，它还会维护“全局工具 + 当前 opener runtime tools”的生效视图，并按 `GuidId` 做覆盖重建工具栏。
+
+这也是当前 ImageEditor 初始化成本和扩展能力最集中的地方。
+
+### IImageOpen 及其扩展接口
+
+当前打开链不靠一个统一文件管理器，而是由各个 `IImageOpen` 实现负责。
+
+另外，`IImageOpen` 还可以可选实现：
+
+- `IImageOpenEditorToolProvider`
+- `IImageOpenEditorToolLifecycle`
+
+这样某些特殊文件类型就能在打开后临时接管或覆盖工具栏能力，而不是把所有分支都堆进全局工具里。
+
+### VideoOpen / Window3D / ModelViewer3DControl
+
+视频和 3D 能力当前是编辑器模块里的真实子功能，但它们属于附加打开器或工具，不是整个模块唯一主线：
+
+- `Video/VideoOpen.cs`：视频打开器
+- `EditorTools/ThreeD/Window3D.xaml.cs`：图像转 3D 表面窗口
+- `EditorTools/ThreeD/ModelViewer3DControl.xaml.cs`：OBJ/STL 查看控件
+
+旧文档里对这些能力展开得很重，但更可靠的读法仍然是先搞清楚 `ImageView` 和工具工厂主链。
+
+## 当前运行时主链
+
+现有控制链大致是：
+
+1. 创建 `ImageView`。
+2. 初始化 `EditorContext`、`SelectionVisual`、`CompactInspectorPresenter`。
+3. 创建 `IEditorToolFactory` 并反射装配全局工具、上下文菜单、图像组件、打开器。
+4. 执行所有 `IImageComponent.Execute(ImageView)`。
+5. 用户打开文件后，根据扩展名选中 `IImageOpen`。
+6. opener 调用 `SetImageSource(...)`，并可选提供自己的 runtime tools。
+7. `DrawCanvas`、overlay、状态栏、图层切换、伪彩色等围绕当前图像上下文继续工作。
+
+## 当前实现有哪些边界
+
+### ImageView 不是纯显示控件
+
+`SetImageSource(...)` 当前不只是设置 `ImageShow.Source`，还可能触发伪彩色配置、标定服务和其他编辑器运行时副作用。
+
+如果只是纯显示场景，需要注意 `EnableEditorImageServices` 这类开关，不能默认把整个 ImageView 当成无副作用图片框。
+
+### 工具发现是反射驱动的
+
+`IEditorToolFactory` 当前每个视图实例都会做多轮扫描和创建，这是一条真实而重要的控制链。旧文档里那种“静态工具架构图”会掩盖掉这件事。
+
+### EditorContext 既是状态容器也带服务定位器属性
+
+当前设计并没有把“配置”“工具状态”“运行时服务”彻底解耦，而是部分集中在 `EditorContext`、`ImageViewConfig` 和少量 service 上。这是阅读和后续重构时必须承认的现状。
+
+### 注释导入导出已经有实际落点
+
+图元持久化不是停留在概念层，当前实际落在 `Draw/Annotations/` 以及 `ImageView` 的导入导出入口上。阅读标注能力时，应该直接看这条链，而不是泛化成“任意绘图工具可自动持久化”。
+
+## 当前更适合怎样读这个模块
+
+### 想看主控链和初始化编排
+
+先看：
+
+- `ImageView.xaml.cs`
+- `EditorContext.cs`
+- `EditorToolFactory.cs`
+
+### 想看绘图和选择逻辑
+
+先看：
+
+- `DrawCanvas.cs`
+- `Draw/`
+- `Abstractions/Draw/`
+
+### 想看文件打开链和 runtime tool 覆盖
+
+先看：
+
+- `Abstractions/IImageEditor.cs`
+- `Video/VideoOpen.cs`
+- 具体 opener 实现所在目录
+
+### 想看注释、伪彩色、3D 这些子能力
+
+先看：
+
+- `Draw/Annotations/`
+- `EditorTools/PseudoColor/`
+- `EditorTools/ThreeD/`
+
+## 这页不再做什么
+
+本页不再继续维护这些高风险内容：
+
+- 大段性能数字承诺
+- 覆盖全模块的教程式示例集
+- 把视频或 3D 写成整个模块的唯一主线
+- 编造与当前代码不匹配的统一视图模型或抽象接口
+
+## 继续阅读
+
+- [UI组件概览](./README.md)
+- [ColorVision.UI](./ColorVision.UI.md)
+- [ColorVision.Themes](./ColorVision.Themes.md)

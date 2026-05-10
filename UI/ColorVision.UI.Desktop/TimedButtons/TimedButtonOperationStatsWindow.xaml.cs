@@ -1,10 +1,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.UI;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

@@ -1,82 +1,93 @@
 # 安全与权限控制
 
-## 概述
+本章只描述当前仓库里已经落地的权限与会话实现，不再继续维护把 ColorVision 写成一套覆盖网络、数据、审计、认证全链路的通用安全白皮书。
 
-ColorVision 提供基于角色的访问控制 (RBAC) 系统，确保系统安全性和数据保护。
+## 当前真正存在的两层权限边界
 
-## 目录
+从代码看，当前安全相关能力主要分成两层：
 
-1. [用户管理](#用户管理)
-2. [角色权限](#角色权限)
-3. [数据安全](#数据安全)
-4. [网络安全](#网络安全)
-5. [审计日志](#审计日志)
+- `UI/ColorVision.Common/Authorizations/` 下的粗粒度 `PermissionMode`
+- `UI/ColorVision.Solution/Rbac/` 下的本地 RBAC 子系统
 
-## 用户管理
+这两层不是互斥关系，而是并存。
 
-### 用户认证
-- 支持本地用户认证
-- 密码策略配置
-- 多因素认证（规划中）
+## 第一层：全局粗粒度权限
 
-### 用户类型
-- **管理员**: 拥有所有系统权限
-- **操作员**: 具有设备操作权限
-- **访客**: 只读权限
+`Authorization.Instance.PermissionMode` 仍然是当前很多窗口和操作的第一道边界。
 
-## 角色权限
+它提供的级别包括：
 
-### 权限分类
-- **系统管理**: 用户管理、系统配置
-- **设备控制**: 设备操作、参数配置
-- **数据管理**: 数据查看、导出、删除
-- **模板管理**: 模板创建、编辑、删除
+- `SuperAdministrator`
+- `Administrator`
+- `PowerUser`
+- `User`
+- `Guest`
 
-### 权限矩阵
-| 功能 | 管理员 | 操作员 | 访客 |
-|------|--------|--------|------|
-| 用户管理 | ✅ | ❌ | ❌ |
-| 设备操作 | ✅ | ✅ | ❌ |
-| 数据查看 | ✅ | ✅ | ✅ |
-| 数据导出 | ✅ | ✅ | ❌ |
+很多 UI 入口当前直接用这层做判断，例如“只有管理员可以打开用户管理和权限管理窗口”。
 
-## 数据安全
+所以如果只看 RBAC 服务层，很容易高估当前系统已经完成的细粒度接入范围。
 
-### 数据加密
-- 数据库密码加密存储
-- 敏感配置信息加密
-- 网络通信加密
+## 第二层：Solution 侧本地 RBAC
 
-### 数据备份
-- 定期自动备份
-- 备份文件加密
-- 备份完整性验证
+更细的用户、角色、权限、会话和审计能力，当前集中在 `UI/ColorVision.Solution/Rbac/`。
 
-## 网络安全
+这个子系统当前的特点是：
 
-### 通信安全
-- MQTT 连接加密
-- 证书验证
-- 防止中间人攻击
+- 使用本地 SQLite 数据库
+- 数据库默认位于 `%AppData%/ColorVision/Config/Rbac.db`
+- 通过 SqlSugar CodeFirst 初始化表结构
+- 提供登录、用户管理、权限管理、会话和审计服务
 
-### 访问控制
+它更像“Solution 侧本地账户与权限模块”，而不是整个产品所有安全能力的唯一总入口。
+
+## 当前安全章最该关注什么
+
+### 登录与会话
+
+当前 `AuthService` 负责用户名密码登录和基于 SessionToken 的自动登录恢复，`SessionService` 负责创建、校验、撤销和清理会话。
+
+这部分是当前代码里最明确的认证链。
+
+### 角色与权限
+
+当前 `RbacManager` 会初始化角色、权限、用户和角色-权限映射，并通过 `PermissionChecker` 做细粒度权限码校验。
+
+### 审计
+
+当前 `AuditLogService` 已经存在，但它是围绕 RBAC 相关动作记录本地审计日志，而不是一套覆盖整个应用所有操作的全局审计平台。
+
+## 当前没有证据支撑的内容
+
+以下内容不应继续在本章里作为既有能力陈述：
+
+- 多因素认证
+- 全局网络通信加密策略
+- 证书验证体系
 - IP 白名单
-- 端口访问限制
-- 防火墙配置建议
+- 防火墙策略
+- 覆盖所有模块的统一审计与拦截链
 
-## 审计日志
+如果将来这些能力真的落地，应基于实际代码另开专题页，而不是提前写进架构概览。
 
-### 日志内容
-- 用户登录记录
-- 操作行为记录
-- 系统事件记录
-- 异常情况记录
+## 推荐阅读顺序
 
-### 日志管理
-- 日志轮转机制
-- 长期存储策略
-- 日志查询和分析
+推荐按这条线读：
 
----
+1. `UI/ColorVision.Common/Authorizations/PermissionMode.cs`
+2. `UI/ColorVision.Common/Authorizations/AccessControl.cs`
+3. `UI/ColorVision.Solution/Rbac/RbacManager.cs`
+4. `UI/ColorVision.Solution/Rbac/Services/Auth/AuthService.cs`
+5. `UI/ColorVision.Solution/Rbac/Services/SessionService.cs`
+6. `UI/ColorVision.Solution/Rbac/Services/PermissionChecker.cs`
+7. `UI/ColorVision.Solution/Rbac/UserManagerWindow.xaml.cs`
+8. `UI/ColorVision.Solution/Rbac/PermissionManagerWindow.xaml.cs`
 
-*此文档持续更新中...*
+## 继续阅读
+
+- [RBAC 模块](./rbac.md)
+- [架构运行时](../overview/runtime.md)
+- [组件交互](../overview/component-interactions.md)
+
+## 说明
+
+- 本页只保留当前实现里可验证的权限与会话边界，不再继续维护泛化安全能力清单。

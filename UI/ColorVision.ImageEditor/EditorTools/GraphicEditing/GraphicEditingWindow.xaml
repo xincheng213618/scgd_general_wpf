@@ -165,6 +165,10 @@
                         <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
                         <Button  Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="清除" Click="Button3_Click"/>
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Margin="5" Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left" Content="导出标注" Click="ExportAnnotations_Click"/>
+                        <Button Margin="5" Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left" Content="导入标注" Click="ImportAnnotations_Click"/>
+                    </StackPanel>
 
                 </StackPanel>
 

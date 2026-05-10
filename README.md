@@ -40,69 +40,54 @@ git clone https://github.com/xincheng213618/scgd_general_wpf.git
 dotnet restore
 
 # 构建项目
-dotnet build
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 
 # 运行主程序
-dotnet run --project ColorVision/ColorVision.csproj
+dotnet run --project .\ColorVision\ColorVision.csproj -p:Platform=x64
 ```
 
 ## 📁 项目结构
 
 ```
 ColorVision/
-├── ColorVision/              # 主程序入口
-├── Engine/                   # 核心引擎层
-│   ├── ColorVision.Engine/   # 主引擎：流程管理、设备服务、模板系统 (v1.4.2.1)
-│   ├── cvColorVision/        # 视觉处理核心：相机控制、色彩算法 (v2025.8.9.0)
-│   ├── FlowEngineLib/        # 流程引擎库：可视化节点编辑 (v1.6.1)
-│   ├── ColorVision.FileIO/   # 文件IO处理：CVRaw/CVCIE格式 (v1.3.12.24)
-│   └── ST.Library.UI/        # 节点编辑器UI库 (v1.2.0.2410)
-├── UI/                       # 用户界面层
-│   ├── ColorVision.UI/       # 主UI框架：插件系统、菜单、快捷键
-│   ├── ColorVision.Themes/   # 主题管理：五主题支持
-│   ├── ColorVision.ImageEditor/  # 图像编辑器：结果叠加显示
-│   ├── ColorVision.UI.Desktop/   # 桌面应用入口
-│   └── ColorVision.Common/   # 通用基础库：MVVM、接口定义
-├── Plugins/                  # 扩展插件
-│   ├── EventVWR/            # 事件查看器与Dump管理
-│   ├── Spectrum/            # 光谱仪测试工具 (v2.1.4.0)
-│   ├── SystemMonitor/       # 系统性能监控
-│   ├── Pattern/             # 图卡生成工具
-│   ├── ScreenRecorder/      # 屏幕录制工具
-│   ├── ImageProjector/      # 图片投影工具
-│   └── WindowsServicePlugin/ # Windows服务管理
-├── Projects/                 # 客户定制项目
-├── docs/                     # 文档资源（VitePress站点）
-└── Scripts/                  # 构建和自动化脚本
+├── ColorVision/              # 主程序入口与桌面壳层
+├── Engine/                   # 核心引擎、模板系统、流程引擎、原生互操作
+├── UI/                       # WPF UI 框架、主题、图像编辑器与桌面基础设施
+├── Plugins/                  # 运行时插件（当前源码主体含 EventVWR、Spectrum、SystemMonitor、WindowsServicePlugin 等）
+├── Projects/                 # 客户或场景定制项目包
+├── ColorVisionSetup/         # 安装器与更新器相关项目
+├── docs/                     # VitePress 文档站
+└── Scripts/                  # 构建、打包、发布脚本
 ```
 
 ## 📚 文档导航
 
-### 🚀 快速入门
-- [入门指南](docs/00-getting-started/README.md) - 新手完整安装和使用指南
-- [系统要求](docs/00-getting-started/prerequisites.md) - 环境要求和依赖
-- [安装指南](docs/00-getting-started/installation.md) - 详细安装步骤
+### 安装与首次使用
 
-### 📖 用户指南
-- [界面使用](docs/01-user-guide/interface/main-window.md) - 主窗口导览
-- [设备管理](docs/01-user-guide/devices/overview.md) - 设备服务和集成
-- [工作流程](docs/01-user-guide/workflow/README.md) - 工作流程概览
-- [故障排查](docs/01-user-guide/troubleshooting/common-issues.md) - 常见问题和解决方案
+- [入门指南](docs/00-getting-started/README.md) - 安装、首次运行与最短上手路径
+- [系统要求](docs/00-getting-started/prerequisites.md) - 运行环境与源码构建前提
+- [安装指南](docs/00-getting-started/installation.md) - 安装包安装与源码运行
 
-### 🏗️ 开发者指南
-- [插件开发](docs/02-developer-guide/plugin-development/overview.md) - 插件开发指南
-- [UI 开发](docs/02-developer-guide/ui-development/README.md) - UI开发概览与MVVM
-- [流程引擎](docs/02-developer-guide/algorithm-engine-templates/flow-engine/流程引擎.md) - 流程引擎开发
-- [模板系统](docs/02-developer-guide/algorithm-engine-templates/template-management/模板管理.md) - 模板开发
+### 日常使用
 
-### 📚 API 参考
-- [UI 组件](docs/04-api-reference/ui-components/README.md) - UI层组件文档
-- [Engine 组件](docs/04-api-reference/engine-components/README.md) - Engine层组件文档
-- [插件 API](docs/04-api-reference/plugins/) - 标准插件参考
+- [用户指南](docs/01-user-guide/README.md) - 面向日常操作的总入口
+- [主窗口导览](docs/01-user-guide/interface/main-window.md) - 熟悉主界面与基础交互
+- [设备服务概览](docs/01-user-guide/devices/overview.md) - 设备接入和管理入口
+- [工作流程概览](docs/01-user-guide/workflow/README.md) - 流程设计与执行入口
 
-### 🚀 部署运维
-- [部署文档](docs/02-developer-guide/deployment/overview.md) - 部署和配置
-- [自动更新](docs/02-developer-guide/deployment/auto-update.md) - 更新系统说明
+### 开发与交付
+
+- [开发指南](docs/02-developer-guide/README.md) - 二次开发与交付链路总览
+- [扩展性概览](docs/02-developer-guide/core-concepts/extensibility.md) - 扩展点与插件入口
+- [Engine 开发指南](docs/02-developer-guide/engine-development/README.md) - Engine 与模板相关开发
+- [插件开发总览](docs/02-developer-guide/plugin-development/README.md) - 插件开发入口
+- [部署概览](docs/02-developer-guide/deployment/overview.md) - 安装器、更新与发布链路
+
+### 设计与源码导读
+
+- [架构设计](docs/03-architecture/README.md) - 系统设计边界与运行时关系
+- [API 参考](docs/04-api-reference/README.md) - 模块、接口与实现入口
+- [项目结构总览](docs/05-resources/project-structure/README.md) - 仓库目录与文档映射
 
 **🌐 在线文档站点**: https://xincheng213618.github.io/scgd_general_wpf/
 

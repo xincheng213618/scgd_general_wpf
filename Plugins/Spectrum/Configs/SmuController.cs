@@ -2,10 +2,8 @@ using ColorVision.Common.MVVM;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
-using System;
 using System.ComponentModel;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Spectrum.Configs
 {

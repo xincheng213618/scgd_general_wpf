@@ -1,6 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
-using ColorVision.UI;
 using cvColorVision;
 using System;
 using System.Collections.Generic;

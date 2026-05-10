@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
+using Newtonsoft.Json;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -26,20 +27,20 @@ namespace ColorVision.ImageEditor.Draw
         [Category("TextAttribute"), DisplayName("FontSize")]
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("Brush")]
+        [Category("TextAttribute"), DisplayName("Brush"), JsonIgnore]
         public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("FontFamily")]
+        [Category("TextAttribute"), DisplayName("FontFamily"), JsonIgnore]
         public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("FontStyle")]
+        [Category("TextAttribute"), DisplayName("FontStyle"), JsonIgnore]
         public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; OnPropertyChanged(); } }
-        [Category("TextAttribute"), DisplayName("FontWeight")]
+        [Category("TextAttribute"), DisplayName("FontWeight"), JsonIgnore]
         public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; OnPropertyChanged(); } }
-        [Category("TextAttribute"), DisplayName("FontStretch")]
+        [Category("TextAttribute"), DisplayName("FontStretch"), JsonIgnore]
         public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; OnPropertyChanged(); } }
 
-        [Category("TextAttribute"), DisplayName("FlowDirection")]
+        [Category("TextAttribute"), DisplayName("FlowDirection"), JsonIgnore]
         public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; OnPropertyChanged(); } }
     }
 }

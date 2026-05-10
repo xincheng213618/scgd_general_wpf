@@ -1,173 +1,46 @@
 ﻿#pragma warning disable CS0414,CS8625
 using System;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public  class BezierCurveManager: IEditorToggleToolBase, IDisposable
+    public class BezierCurveManager : MultiPointDrawingToolBase<DVBezierCurve>
     {
-        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        public EditorContext EditorContext { get; set; }
-
-        public BezierCurveManager(EditorContext context)
+        public BezierCurveManager(EditorContext context) : base(context)
         {
-            EditorContext = context;
-            ToolBarLocal = ToolBarLocal.Draw;
             Order = 9;
             Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");
         }
 
-        private bool _IsChecked;
-        public override bool IsChecked
+        protected override bool SupportsKeyboardCompletion => true;
+
+        protected override DVBezierCurve CreateVisual()
         {
-            get => _IsChecked; set
-            {
-                if (_IsChecked == value) return;
-                _IsChecked = value;
-                if (value)
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-                    Load();
-                }
-                else
-                {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                    UnLoad();
-                }
-                OnPropertyChanged();
-            }
+            return new DVBezierCurve() { AutoAttributeChanged = false };
         }
 
-        public void Load()
+        protected override System.Collections.Generic.IList<Point> GetPoints(DVBezierCurve visual)
         {
-            DrawCanvas.PreviewKeyDown += DrawCanvas_PreviewKeyDown;
-            DrawCanvas.MouseMove += MouseMove;
-            DrawCanvas.MouseEnter += MouseEnter;
-            DrawCanvas.MouseLeave += MouseLeave;
-            DrawCanvas.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
-            DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
-        }
-        public void UnLoad()
-        {
-            DrawCanvas.PreviewKeyDown -= DrawCanvas_PreviewKeyDown;
-
-            DrawCanvas.MouseMove -= MouseMove;
-            DrawCanvas.MouseEnter -= MouseEnter;
-            DrawCanvas.MouseLeave -= MouseLeave;
-            DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
-            DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
-            DVBezierCurveCache = null;
-
+            return visual.Points;
         }
 
-        private void DrawCanvas_PreviewKeyDown(object sender, KeyEventArgs e)
+        protected override void RenderVisual(DVBezierCurve visual)
         {
-            Key realKey = e.Key;
-            if (realKey == Key.ImeProcessed)
-            {
-                realKey = e.ImeProcessedKey;
-            }
-            if (realKey == Key.Escape)
-            {
-                if (DVBezierCurveCache != null)
-                {
-                    DrawCanvas.RemoveVisualCommand(DVBezierCurveCache);
-                    DVBezierCurveCache = null;
-                    IsChecked = false;
-                }
-            }
-            else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
-            {
-                if (DVBezierCurveCache != null)
-                {
-                    DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                    DVBezierCurveCache.Render();
-                    EditorContext.ImageViewModel.SelectEditorVisual.SetRender(DVBezierCurveCache);
-                    DVBezierCurveCache = null;
-                    IsChecked = false;
-                }
-                e.Handled = true;
-            }
+            visual.Render();
         }
 
-
-        Point MouseDownP { get; set; }
-        Point MouseUpP { get; set; }
-
-        bool IsMouseDown;
-
-        DVBezierCurve DVBezierCurveCache { get; set; }
-
-        private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        protected override void OnVisualCreated(DVBezierCurve visual)
         {
-            DrawCanvas.CaptureMouse();
-            MouseDownP = e.GetPosition(DrawCanvas);
-            IsMouseDown = true;
-            DrawCanvas.Focus();
-
-            if (DVBezierCurveCache == null)
-            {
-                DVBezierCurveCache = new DVBezierCurve() { AutoAttributeChanged = false };
-                DVBezierCurveCache.Points.Add(MouseDownP);
-                DVBezierCurveCache.Points.Add(MouseDownP);
-
-                DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / EditorContext.Zoombox.ContentMatrix.M11);
-                DVBezierCurveCache.Render();
-                DrawCanvas.AddVisualCommand(DVBezierCurveCache);
-            }
-            else
-            {
-                DVBezierCurveCache.Points.Add(MouseDownP);
-                DVBezierCurveCache.Render();
-            }
-            e.Handled = true;
+            double zoomRatio = Math.Max(Zoombox.ContentMatrix.M11, 0.0001);
+            visual.Attribute.Brush = StyleConfig.StrokeBrush;
+            visual.Attribute.Pen = new Pen(StyleConfig.StrokeBrush, StyleConfig.StrokeThickness / zoomRatio);
         }
 
-
-        private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        protected override void OnVisualCompleted(DVBezierCurve visual)
         {
-            IsMouseDown = false;
-            if (DVBezierCurveCache != null)
-            {
-                MouseUpP = e.GetPosition(DrawCanvas);
-                DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                DVBezierCurveCache.Points.Add(MouseUpP);
-                DVBezierCurveCache.Render();
-            }
-            e.Handled = true;
-        }
-
-
-
-        private void MouseMove(object sender, MouseEventArgs e)
-        {
-            if (DVBezierCurveCache !=null)
-            {
-                var point = e.GetPosition(DrawCanvas);
-
-                DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                DVBezierCurveCache.Points.Add(point);
-                DVBezierCurveCache.Render();
-            }
-            e.Handled = true;
-        }
-
-        private void MouseEnter(object sender, MouseEventArgs e)
-        {
-        }
-
-        private void MouseLeave(object sender, MouseEventArgs e)
-        {
-
-        }
-
-
-        public void Dispose()
-        {
-            UnLoad();
-            GC.SuppressFinalize(this);
+            visual.AutoAttributeChanged = true;
+            base.OnVisualCompleted(visual);
         }
     }
 }

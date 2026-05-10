@@ -1,4 +1,3 @@
-using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;

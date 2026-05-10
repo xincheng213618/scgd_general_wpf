@@ -1,9 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
+using ColorVision.Core;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -63,14 +62,21 @@ namespace Conoscope.Core
             }
         }
 
-        public ExportChannel DisplayChannel { get => _DisplayChannel; set { _DisplayChannel = value; OnPropertyChanged(); } }
+        public ExportChannel DisplayChannel { get => _DisplayChannel; set { if (_DisplayChannel == value) return; _DisplayChannel = value; OnPropertyChanged(); } }
         private ExportChannel _DisplayChannel = ExportChannel.Y;
 
-        public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
+        public ColormapTypes PseudoColorMap { get => _PseudoColorMap; set { if (_PseudoColorMap == value) return; _PseudoColorMap = value; OnPropertyChanged(); } }
+        private ColormapTypes _PseudoColorMap = ColormapTypes.COLORMAP_JET;
+
+        public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { if (_ApplyFilterOnOpen == value) return; _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
         private bool _ApplyFilterOnOpen = true;
 
+        [Category("预处理"), DisplayName("加载时修正非正 XYZ"), Description("启用后，在加载 CVCIE 数据时把 X/Y/Z 中小于等于 0 的像素修正为 1e-6，用于错误校正文件的兜底。会改变原始 XYZ 数据。")]
+        public bool ClampNonPositiveXyzOnLoad { get => _ClampNonPositiveXyzOnLoad; set { if (_ClampNonPositiveXyzOnLoad == value) return; _ClampNonPositiveXyzOnLoad = value; OnPropertyChanged(); } }
+        private bool _ClampNonPositiveXyzOnLoad;
+
         [Category("滤波"), DisplayName("滤波类型"), Description("Conoscope 图像打开或手动应用时使用的预处理滤波类型。")]
-        public ImageFilterType FilterType { get => _FilterType; set { _FilterType = value; OnPropertyChanged(); } }
+        public ImageFilterType FilterType { get => _FilterType; set { if (_FilterType == value) return; _FilterType = value; OnPropertyChanged(); } }
         private ImageFilterType _FilterType = ImageFilterType.Gaussian;
 
         [Category("滤波"), DisplayName("核大小"), Description("均值、高斯、中值滤波使用的核大小，自动修正为奇数。")]
@@ -94,7 +100,7 @@ namespace Conoscope.Core
         private double _FilterSigmaSpace = 75;
 
         [Category("灰尘滤除"), DisplayName("启用灰尘滤除"), Description("灰尘滤除作为独立预处理步骤，可与常规滤波叠加使用。")]
-        public bool DustRemovalEnabled { get => _DustRemovalEnabled; set { _DustRemovalEnabled = value; OnPropertyChanged(); } }
+        public bool DustRemovalEnabled { get => _DustRemovalEnabled; set { if (_DustRemovalEnabled == value) return; _DustRemovalEnabled = value; OnPropertyChanged(); } }
         private bool _DustRemovalEnabled;
 
         [Category("灰尘滤除"), DisplayName("灰尘类型"), Description("暗斑用于滤除黑点灰尘，亮斑用于滤除亮点异常。")]

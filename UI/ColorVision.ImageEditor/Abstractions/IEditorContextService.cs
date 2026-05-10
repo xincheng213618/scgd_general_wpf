@@ -25,6 +25,7 @@ namespace ColorVision.ImageEditor.Abstractions
         void RefreshPreview();
         void RequestRender(int throttleDelayMs = 0);
         void Invalidate();
+        void Reset();
         bool TryCreateRequest(out PseudoColorFrameRequest request, int? channelOverride = null);
         void ApplyProcessedImage(HImage pseudoImage);
         void RestoreSource();

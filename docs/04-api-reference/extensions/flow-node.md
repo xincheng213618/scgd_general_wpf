@@ -1,886 +1,141 @@
-# FlowEngineLib 节点开发指南
+# FlowEngineLib 节点扩展
 
-> 如何为 FlowEngineLib 开发自定义流程节点
+本页只描述当前仓库里真实可用的 Flow 节点扩展路径，不再继续维护基于示意 API 的旧版“开发指南”。
 
-## 📋 目录
+## 先看节点体系实际长什么样
 
-- [概述](#概述)
-- [节点基础](#节点基础)
-- [节点类型](#节点类型)
-- [开发步骤](#开发步骤)
-- [高级特性](#高级特性)
-- [最佳实践](#最佳实践)
-- [调试技巧](#调试技巧)
-- [常见问题](#常见问题)
+从当前代码看，Flow 节点扩展主要围绕这几类基类展开：
 
-## 概述
+- `CVCommonNode`：所有节点的共同基类，提供 `NodeName`、`NodeType`、`DeviceCode`、`NodeID`、`ZIndex` 以及 `nodeEvent` / `nodeRunEvent` / `nodeEndEvent` 等公共能力。
+- `BaseStartNode`：流程开始节点，负责创建 `CVStartCFC`、维护运行中的 `startActions`，并在流程结束时抛出 `Finished`。
+- `CVBaseServerNode`：最常见的服务/算法类节点基类，负责输入输出、MQTT 请求组装、超时处理和节点级完成回传。
+- `CVEndNode`：流程结束节点，最终调用 `startAction.FireFinished()` 把整条流程标记为完成。
 
-FlowEngineLib 提供了强大的节点扩展机制，开发者可以通过继承基类来创建自定义节点，实现特定的业务逻辑。
+这意味着当前节点扩展并不是一套“实现接口即可”的轻量插件模型，而是直接建立在 `STNode` 和一组具体基类之上。
 
-### 节点分类
+## 当前最值得先看的代码锚点
 
-```
-CVCommonNode (基类)
-├── BaseStartNode (启动节点)
-│   ├── MQTTStartNode
-│   └── ModbusStartNode
-├── CVBaseServerNode (服务节点)
-│   ├── CVCameraNode
-│   ├── AlgorithmNode
-│   ├── SMUNode
-│   └── CVBaseLoopServerNode (循环节点)
-│       └── PGLoopNode
-├── CVEndNode (结束节点)
-└── LoopNode (循环控制节点)
-```
+如果你要新增或理解一个节点，优先看这些文件：
 
-## 节点基础
+- `Engine/FlowEngineLib/Base/CVCommonNode.cs`
+- `Engine/FlowEngineLib/Base/CVBaseServerNode.cs`
+- `Engine/FlowEngineLib/Start/BaseStartNode.cs`
+- `Engine/FlowEngineLib/End/CVEndNode.cs`
+- `Engine/FlowEngineLib/Algorithm/AlgorithmNode.cs`
 
-### 核心概念
+其中 `AlgorithmNode` 是一个很典型的现实例子：它不是在节点内部直接算图，而是收集模板、颜色、图像路径等参数，再拼出真正发往服务端的请求数据。
 
-1. **节点输入输出**
-   - `InputOptions` - 输入选项集合
-   - `OutputOptions` - 输出选项集合
-   - `STNodeOption` - 连接点
+## 服务节点当前通常怎么扩展
 
-2. **数据传递**
-   - `CVStartCFC` - 流程控制对象
-   - `CVTransAction` - 数据传输对象
-   - `CVLoopCFC` - 循环控制对象
+从 `CVBaseServerNode` 的实现看，当前最常见的扩展方式是：
 
-3. **节点生命周期**
-   ```
-   构造函数 → OnCreate → DoServerWork → DoTransferData
-   ```
+1. 继承 `CVBaseServerNode`。
+2. 在构造函数里确定标题、`NodeType`、服务名和设备代码，并设置 `operatorCode` 等节点行为字段。
+3. 在 `OnCreate()` 里添加输入输出或编辑控件。
+4. 通过重写 `getBaseEventData(CVStartCFC start)` 组装真正发往执行端的参数对象。
+5. 需要时重写 `OnServerResponse(...)`、`Reset(...)` 或连接相关虚方法，补充响应处理和清理逻辑。
 
-### 必需的Attribute
+旧文档里那种“重写 `DoServerWork` 就完成节点开发”的说法，和当前 `CVBaseServerNode` 的真实实现并不一致。
+
+## 一个更接近现状的骨架
 
 ```csharp
-[STNode("/Category/NodeName")]  // 节点分类和名称
-public class MyNode : CVBaseServerNode
-{
-    // 节点实现
-}
-```
-
-分类建议：
-- `/01 运算` - 运算和逻辑节点
-- `/02 相机` - 相机相关节点
-- `/03 算法` - 算法处理节点
-- `/04 设备` - 设备控制节点
-- `/05 通信` - 通信节点
-
-## 节点类型
-
-### 1. 普通服务节点
-
-最常用的节点类型，用于执行具体的业务逻辑。
-
-#### 基本模板
-
-```csharp
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using FlowEngineLib.MQTT;
 using ST.Library.UI.NodeEditor;
-
-[STNode("/Custom/MyServiceNode")]
-public class MyServiceNode : CVBaseServerNode
-{
-    // 1. 构造函数
-    public MyServiceNode()
-        : base("MyServiceNode", "ServiceNode", "SN1", "DEV01")
-    {
-        // 初始化成员变量
-    }
-    
-    // 2. 创建节点
-    protected override void OnCreate()
-    {
-        base.OnCreate();
-        
-        // 设置节点属性
-        base.AutoSize = false;
-        base.Width = 200;
-        base.Height = 120;
-        
-        // 添加自定义输入输出
-        InputOptions.Add("CustomInput", typeof(double), false);
-        OutputOptions.Add("CustomOutput", typeof(double), false);
-    }
-    
-    // 3. 执行业务逻辑
-    protected override void DoServerWork(CVStartCFC cfc)
-    {
-        try
-        {
-            // 获取输入数据
-            var inputValue = GetInputData\<double\>("CustomInput");
-            
-            // 处理数据
-            var result = ProcessData(inputValue);
-            
-            // 设置输出数据
-            SetOutputData("CustomOutput", result);
-            
-            // 构建响应数据
-            var response = BuildServerData();
-            
-            // 传递给下一节点
-            DoTransferData(m_op_data_out, cfc);
-        }
-        catch (Exception ex)
-        {
-            logger.Error($"Node {NodeName} execution failed", ex);
-            throw;
-        }
-    }
-    
-    // 4. 处理数据的私有方法
-    private double ProcessData(double input)
-    {
-        // 实现业务逻辑
-        return input * 2;
-    }
-}
-```
-
-#### 添加节点属性
-
-```csharp
-private double _threshold;
-private string _mode;
-
-[STNodeProperty("阈值", "处理阈值", false, false)]
-public double Threshold
-{
-    get => _threshold;
-    set
-    {
-        if (_threshold != value)
-        {
-            _threshold = value;
-            OnPropertyChanged();
-        }
-    }
-}
-
-[STNodeProperty("模式", "处理模式", false, false)]
-public string Mode
-{
-    get => _mode;
-    set
-    {
-        _mode = value;
-        OnPropertyChanged();
-    }
-}
-```
-
-### 2. 循环节点
-
-用于需要重复执行的场景。
-
-#### 基本模板
-
-```csharp
-[STNode("/Custom/MyLoopNode")]
-public class MyLoopNode : CVBaseLoopServerNode\<MyLoopProperty\>
-{
-    public MyLoopNode()
-        : base("MyLoopNode", "LoopNode", "LN1", "DEV01")
-    {
-    }
-    
-    protected override void OnCreate()
-    {
-        base.OnCreate();
-        
-        // 设置循环属性
-        LoopModel = new LoopDataModel
-        {
-            BeginVal = 1,
-            EndVal = 10,
-            StepVal = 1
-        };
-    }
-    
-    // 循环执行的逻辑
-    protected override void DoLoopAction(CVStartCFC cfc, int loopIndex)
-    {
-        logger.Info($"Loop iteration {loopIndex}/{LoopModel.EndVal}");
-        
-        // 执行循环任务
-        var result = ProcessLoopIteration(loopIndex);
-        
-        // 传递循环数据
-        var loopCFC = new CVLoopCFC
-        {
-            NodeName = NodeName,
-            SerialNumber = cfc.SerialNumber,
-            LoopIndex = loopIndex,
-            LoopData = result
-        };
-        
-        DoLoopTransferData(m_op_loop_out, loopCFC);
-    }
-    
-    private object ProcessLoopIteration(int index)
-    {
-        // 实现循环逻辑
-        return $"Result_{index}";
-    }
-}
-
-// 循环属性类
-public class MyLoopProperty : ILoopNodeProperty
-{
-    public int BeginValue { get; set; }
-    public int EndValue { get; set; }
-    public int StepValue { get; set; }
-}
-```
-
-### 3. MQTT节点
-
-用于MQTT通信。
-
-#### 发布节点
-
-```csharp
-[STNode("/MQTT/MyPublishNode")]
-public class MyMQTTPublishNode : CVBaseServerNode
-{
-    private string _topic;
-    
-    [STNodeProperty("主题", "MQTT主题", false, false)]
-    public string Topic
-    {
-        get => _topic;
-        set => _topic = value;
-    }
-    
-    protected override void DoServerWork(CVStartCFC cfc)
-    {
-        // 构建消息
-        var message = BuildMessage(cfc);
-        
-        // 发布到MQTT
-        MQTTHelper.PublishAsyncClient(_topic, message);
-        
-        logger.Info($"Published to {_topic}: {message}");
-        
-        // 传递给下一节点
-        DoTransferData(m_op_data_out, cfc);
-    }
-    
-    private string BuildMessage(CVStartCFC cfc)
-    {
-        return JsonConvert.SerializeObject(new
-        {
-            Timestamp = DateTime.Now,
-            FlowName = cfc.FlowName,
-            Data = cfc.Params
-        });
-    }
-}
-```
-
-#### 订阅节点
-
-```csharp
-[STNode("/MQTT/MySubscribeNode")]
-public class MyMQTTSubscribeNode : CVBaseServerNode
-{
-    private string _topic;
-    private string _receivedMessage;
-    
-    [STNodeProperty("主题", "订阅主题", false, false)]
-    public string Topic
-    {
-        get => _topic;
-        set
-        {
-            if (_topic != value)
-            {
-                if (!string.IsNullOrEmpty(_topic))
-                {
-                    MQTTHelper.UnsubscribeAsync(_topic);
-                }
-                _topic = value;
-                if (!string.IsNullOrEmpty(_topic))
-                {
-                    MQTTHelper.SubscribeAsyncClient(_topic);
-                    MQTTHelper.MessageReceived += OnMessageReceived;
-                }
-            }
-        }
-    }
-    
-    private void OnMessageReceived(string topic, string message)
-    {
-        if (topic == _topic)
-        {
-            _receivedMessage = message;
-            logger.Info($"Received from {topic}: {message}");
-        }
-    }
-    
-    protected override void DoServerWork(CVStartCFC cfc)
-    {
-        // 等待消息或超时
-        if (WaitForMessage(timeout: 5000))
-        {
-            // 解析消息
-            var data = JsonConvert.DeserializeObject<Dictionary\\<string, object>\>(_receivedMessage);
-            
-            // 设置到输出
-            SetOutputData("ReceivedData", data);
-            
-            // 传递给下一节点
-            DoTransferData(m_op_data_out, cfc);
-        }
-        else
-        {
-            throw new TimeoutException($"No message received on {_topic}");
-        }
-    }
-}
-```
-
-### 4. 相机节点
-
-用于相机控制和图像采集。
-
-```csharp
-[STNode("/Camera/MyCameraNode")]
-public class MyCameraNode : CVBaseServerNode
-{
-    private int _exposureTime;
-    private int _gain;
-    
-    [STNodeProperty("曝光时间", "曝光时间(us)", false, false)]
-    public int ExposureTime
-    {
-        get => _exposureTime;
-        set => _exposureTime = value;
-    }
-    
-    [STNodeProperty("增益", "相机增益", false, false)]
-    public int Gain
-    {
-        get => _gain;
-        set => _gain = value;
-    }
-    
-    protected override void DoServerWork(CVStartCFC cfc)
-    {
-        // 1. 设置相机参数
-        SetCameraParameters();
-        
-        // 2. 触发拍照
-        var imageData = CaptureImage();
-        
-        // 3. 保存图像
-        var imagePath = SaveImage(imageData, cfc.SerialNumber);
-        
-        // 4. 构建响应
-        var response = new CameraDataModel
-        {
-            ImagePath = imagePath,
-            Width = imageData.Width,
-            Height = imageData.Height,
-            Timestamp = DateTime.Now
-        };
-        
-        // 5. 设置输出
-        SetOutputData("ImageData", response);
-        
-        // 6. 传递给下一节点
-        DoTransferData(m_op_data_out, cfc);
-    }
-    
-    private void SetCameraParameters()
-    {
-        // 通过MQTT设置相机参数
-        var command = new
-        {
-            Command = "SetParams",
-            ExposureTime = _exposureTime,
-            Gain = _gain
-        };
-        
-        MQTTHelper.PublishAsyncClient(
-            $"Camera/{DeviceCode}/cmd",
-            JsonConvert.SerializeObject(command));
-    }
-    
-    private ImageData CaptureImage()
-    {
-        // 触发拍照并等待结果
-        var captureCmd = new { Command = "Capture" };
-        MQTTHelper.PublishAsyncClient(
-            $"Camera/{DeviceCode}/cmd",
-            JsonConvert.SerializeObject(captureCmd));
-            
-        // 等待图像数据
-        return WaitForImageData(timeout: 10000);
-    }
-}
-```
-
-### 5. 算法节点
-
-用于图像处理和数据分析。
-
-```csharp
-[STNode("/Algorithm/MyAlgorithmNode")]
-public class MyAlgorithmNode : CVBaseServerNode
-{
-    private string _algorithmType;
-    private Dictionary\\<string, object\> _parameters;
-    
-    [STNodeProperty("算法类型", "算法类型", false, false)]
-    public string AlgorithmType
-    {
-        get => _algorithmType;
-        set => _algorithmType = value;
-    }
-    
-    protected override void OnCreate()
-    {
-        base.OnCreate();
-        
-        // 添加参数输入
-        InputOptions.Add("ImageData", typeof(CameraDataModel), false);
-        InputOptions.Add("ROI", typeof(Rectangle), true);  // 可选输入
-        
-        // 添加结果输出
-        OutputOptions.Add("Result", typeof(AlgorithmResult), false);
-    }
-    
-    protected override void DoServerWork(CVStartCFC cfc)
-    {
-        // 1. 获取输入数据
-        var imageData = GetInputData\<CameraDataModel\>("ImageData");
-        var roi = GetInputData<Rectangle?>("ROI");
-        
-        // 2. 加载图像
-        var image = LoadImage(imageData.ImagePath);
-        
-        // 3. 执行算法
-        var result = ExecuteAlgorithm(image, roi);
-        
-        // 4. 保存结果
-        SaveResult(result, cfc.SerialNumber);
-        
-        // 5. 设置输出
-        SetOutputData("Result", result);
-        
-        // 6. 传递给下一节点
-        DoTransferData(m_op_data_out, cfc);
-    }
-    
-    private AlgorithmResult ExecuteAlgorithm(Image image, Rectangle? roi)
-    {
-        // 根据算法类型执行不同的算法
-        return _algorithmType switch
-        {
-            "EdgeDetection" => ExecuteEdgeDetection(image, roi),
-            "BlobAnalysis" => ExecuteBlobAnalysis(image, roi),
-            "Measurement" => ExecuteMeasurement(image, roi),
-            _ => throw new NotSupportedException($"Algorithm {_algorithmType} not supported")
-        };
-    }
-}
-```
-
-## 开发步骤
-
-### 步骤1: 创建节点类
-
-```csharp
-using FlowEngineLib.Base;
-using ST.Library.UI.NodeEditor;
-using log4net;
 
 [STNode("/Custom/MyNode")]
 public class MyNode : CVBaseServerNode
 {
-    private static readonly ILog logger = LogManager.GetLogger(typeof(MyNode));
-    
     public MyNode()
-        : base("MyNode", "CustomNode", "CN1", "DEV01")
+        : base("自定义节点", "Algorithm", "SVR.Custom", "DEV.Custom")
     {
+        operatorCode = "CustomEvent";
     }
-}
-```
 
-### 步骤2: 配置节点属性
-
-```csharp
-protected override void OnCreate()
-{
-    base.OnCreate();
-    
-    // 设置节点外观
-    base.TitleColor = Color.FromArgb(200, Color.Blue);
-    base.AutoSize = false;
-    base.Width = 200;
-    base.Height = 100;
-    
-    // 添加输入输出
-    InputOptions.Add("Input1", typeof(double), false);
-    OutputOptions.Add("Output1", typeof(double), false);
-}
-```
-
-### 步骤3: 实现业务逻辑
-
-```csharp
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    logger.Info($"Node {NodeName} starting execution");
-    
-    try
-    {
-        // 1. 验证输入
-        ValidateInputs();
-        
-        // 2. 获取数据
-        var input = GetInputData\<double\>("Input1");
-        
-        // 3. 处理数据
-        var output = ProcessData(input);
-        
-        // 4. 设置输出
-        SetOutputData("Output1", output);
-        
-        // 5. 传递数据
-        DoTransferData(m_op_data_out, cfc);
-        
-        logger.Info($"Node {NodeName} completed successfully");
-    }
-    catch (Exception ex)
-    {
-        logger.Error($"Node {NodeName} execution failed", ex);
-        throw;
-    }
-}
-```
-
-### 步骤4: 测试节点
-
-```csharp
-[TestClass]
-public class MyNodeTests
-{
-    [TestMethod]
-    public void MyNode_ValidInput_ReturnsCorrectOutput()
-    {
-        // Arrange
-        var node = new MyNode();
-        var cfc = new CVStartCFC
-        {
-            NodeName = "TestNode",
-            SerialNumber = "12345"
-        };
-        
-        // Act
-        node.DoServerWork(cfc);
-        
-        // Assert
-        var output = node.GetOutputData\<double\>("Output1");
-        Assert.AreEqual(expected, output);
-    }
-}
-```
-
-## 高级特性
-
-### 1. 自定义UI控件
-
-```csharp
-public class MyCustomControl : STNodeControl
-{
-    private TextBox _textBox;
-    
     protected override void OnCreate()
     {
         base.OnCreate();
-        
-        _textBox = new TextBox
-        {
-            Width = 100,
-            Height = 20
-        };
-        
-        Controls.Add(_textBox);
+        CreateTempControl(m_custom_item);
     }
-    
-    protected override void OnPaint(PaintEventArgs e)
+
+    protected override object getBaseEventData(CVStartCFC start)
     {
-        // 自定义绘制
+        var param = new AlgorithmParam();
+        BuildTemp(param);
+        BuildImageParam(param);
+        return param;
     }
-}
 
-// 在节点中使用
-protected override void OnCreate()
-{
-    base.OnCreate();
-    var control = new MyCustomControl();
-    Controls.Add(control);
-}
-```
-
-### 2. 节点状态管理
-
-```csharp
-public enum NodeState
-{
-    Idle,
-    Running,
-    Completed,
-    Error
-}
-
-private NodeState _state;
-
-public NodeState State
-{
-    get => _state;
-    set
+    protected override void OnServerResponse(CVServerResponse resp, CVStartCFC startCFC)
     {
-        _state = value;
-        UpdateNodeAppearance();
-    }
-}
-
-private void UpdateNodeAppearance()
-{
-    base.TitleColor = _state switch
-    {
-        NodeState.Idle => Color.Gray,
-        NodeState.Running => Color.Blue,
-        NodeState.Completed => Color.Green,
-        NodeState.Error => Color.Red,
-        _ => Color.Gray
-    };
-    Invalidate();
-}
-```
-
-### 3. 异步操作
-
-```csharp
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    // 使用异步方法
-    var result = Task.Run(async () =>
-    {
-        return await ProcessDataAsync();
-    }).GetAwaiter().GetResult();
-    
-    SetOutputData("Result", result);
-    DoTransferData(m_op_data_out, cfc);
-}
-
-private async Task\<object\> ProcessDataAsync()
-{
-    await Task.Delay(100); // 模拟异步操作
-    return ProcessData();
-}
-```
-
-### 4. 数据验证
-
-```csharp
-private void ValidateInputs()
-{
-    if (!InputOptions["Input1"].IsConnected)
-        throw new InvalidOperationException("Input1 must be connected");
-        
-    var value = GetInputData\<double\>("Input1");
-    if (value < 0 || value > 100)
-        throw new ArgumentOutOfRangeException("Input1 must be between 0 and 100");
-}
-```
-
-## 最佳实践
-
-### 1. 日志记录
-
-```csharp
-// 在关键位置记录日志
-logger.Debug($"Node {NodeName} - Input: {JsonConvert.SerializeObject(input)}");
-logger.Info($"Node {NodeName} - Processing started");
-logger.Warn($"Node {NodeName} - Unusual condition detected");
-logger.Error($"Node {NodeName} - Error occurred", exception);
-```
-
-### 2. 错误处理
-
-```csharp
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    try
-    {
-        // 业务逻辑
-    }
-    catch (DeviceNotReadyException ex)
-    {
-        logger.Warn("Device not ready, retrying...", ex);
-        Retry(() => DoServerWork(cfc), maxAttempts: 3);
-    }
-    catch (Exception ex)
-    {
-        logger.Error("Unexpected error", ex);
-        throw new NodeExecutionException($"Node {NodeName} failed", ex);
+        base.OnServerResponse(resp, startCFC);
+        // 按需处理返回数据
     }
 }
 ```
 
-### 3. 资源清理
+这个骨架和当前代码更接近：节点的核心通常是“如何构建请求数据并接入现有执行链”，而不是自己在节点里完成整段业务计算。
 
-```csharp
-public class MyNode : CVBaseServerNode, IDisposable
-{
-    private Stream _fileStream;
-    
-    public void Dispose()
-    {
-        _fileStream?.Dispose();
-        // 清理其他资源
-    }
-}
-```
+## 开始节点和结束节点分别控制什么
 
-### 4. 性能优化
+### `BaseStartNode`
 
-```csharp
-// 使用对象池
-private static readonly ObjectPool<byte[]> BufferPool = 
-    ObjectPool.Create(() => new byte[1024]);
+开始节点当前负责：
 
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    var buffer = BufferPool.Get();
-    try
-    {
-        // 使用buffer
-    }
-    finally
-    {
-        BufferPool.Return(buffer);
-    }
-}
-```
+- 创建并保存 `CVStartCFC`
+- 通过 `m_op_start` 和多个 `m_op_loop` 把启动动作分发出去
+- 管理 `Ready`、`Running` 和进行中的 `startActions`
+- 在流程真正结束后向外抛出 `Finished`
 
-## 调试技巧
+因此如果你扩展的是流程入口节点，关注点不会是模板参数，而是启动、循环输出和流程状态管理。
 
-### 1. 使用断点
+### `CVEndNode`
 
-在以下位置设置断点：
-- `OnCreate()` - 检查初始化
-- `DoServerWork()` - 检查执行流程
-- `DoTransferData()` - 检查数据传递
+结束节点当前负责：
 
-### 2. 日志调试
+- 接收 `CVStartCFC` 或循环继续动作
+- 在 `DoNodeEnded(...)` 中调用 `startAction.DoFinishing()`
+- 最终调用 `startAction.FireFinished()`
 
-```csharp
-logger.Debug($"Node state: {JsonConvert.SerializeObject(this, Formatting.Indented)}");
-```
+这也是当前代码里“整条流程 finished”的真正出口。
 
-### 3. 可视化调试
+## 当前几个最容易写错的点
 
-```csharp
-protected override string OnGetDrawTitle()
-{
-    return $"{base.Title}\n{NodeName}\nState: {State}";
-}
-```
+### `nodeEndEvent` 不等于流程完成
 
-## 常见问题
+`CVCommonNode.nodeEndEvent` 只表示节点级别的结束反馈。整条流程完成要走到 `CVEndNode`，再由 `startAction.FireFinished()` 触发。
 
-### Q1: 如何获取上一个节点的输出？
+### 不要围绕不存在的 `DoServerWork` 设计新节点
 
-```csharp
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    // 从CFC中获取
-    var previousData = cfc.Params;
-    
-    // 或从输入连接获取
-    var inputData = GetInputData\<MyDataType\>("InputName");
-}
-```
+当前 `CVBaseServerNode` 真正的扩展点更接近：
 
-### Q2: 如何处理可选输入？
+- `OnCreate()`
+- `getBaseEventData(...)`
+- `OnServerResponse(...)`
+- `Reset(...)`
 
-```csharp
-protected override void OnCreate()
-{
-    base.OnCreate();
-    // 第三个参数为true表示可选
-    InputOptions.Add("OptionalInput", typeof(string), true);
-}
+如果按旧文档去找 `DoServerWork`，会直接把扩展路径理解错。
 
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    var optionalValue = InputOptions["OptionalInput"].IsConnected
-        ? GetInputData\<string\>("OptionalInput")
-        : "default_value";
-}
-```
+### 节点和服务主题不是自动推断万能匹配
 
-### Q3: 如何实现条件分支？
+`CVBaseServerNode` 当前通过 `GetSendTopic()`、`GetRecvTopic()`、`operatorCode` 和 `FlowServiceManager` 配合消息链。如果这些字段和服务端约定不一致，节点会表现成超时或收不到响应。
 
-```csharp
-protected override void OnCreate()
-{
-    base.OnCreate();
-    OutputOptions.Add("Success", typeof(CVTransAction), false);
-    OutputOptions.Add("Failure", typeof(CVTransAction), false);
-}
+### 分类路径没有单一固定规范
 
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    if (ProcessData())
-    {
-        DoTransferData(OutputOptions["Success"], cfc);
-    }
-    else
-    {
-        DoTransferData(OutputOptions["Failure"], cfc);
-    }
-}
-```
+当前 `[STNode("...")]` 的路径字符串是实际树结构的一部分，但仓库内现有节点已经混用了 `/00 全局`、`/03_2 Algorithm` 等风格。扩展时更应该遵循相邻节点的现有分组，而不是照搬旧文档里那套假定分类表。
 
-### Q4: 如何共享数据到后续节点？
+## 推荐阅读顺序
 
-```csharp
-protected override void DoServerWork(CVStartCFC cfc)
-{
-    var result = ProcessData();
-    
-    // 方式1: 设置到CFC
-    cfc.Params = result;
-    
-    // 方式2: 设置到输出
-    SetOutputData("Output", result);
-    
-    DoTransferData(m_op_data_out, cfc);
-}
-```
+1. `CVCommonNode`：先理解公共属性、事件和控件辅助方法。
+2. `CVBaseServerNode`：再看典型服务节点怎样发起请求、等待响应和处理超时。
+3. `BaseStartNode`：理解流程启动、循环输出和 `Finished` 事件来源。
+4. `CVEndNode`：确认流程结束链在哪里闭环。
+5. `AlgorithmNode` 或其他相邻真实节点：最后照着现有节点扩展，而不是从旧教程样板出发。
 
----
+## 继续阅读
 
-## 参考资料
-
-- [FlowEngineLib API文档](../engine-components/FlowEngineLib.md)
-- [ST.Library.UI文档](../engine-components/ST.Library.UI.md)
-- [流程引擎概述](../flow-engine/flow-engine-overview.md)
-
----
-
-**文档版本**: 1.0  
-**最后更新**: 2024年  
-**维护团队**: ColorVision 开发团队
+- [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md)
+- [Engine 组件总览](../engine-components/README.md)
+- [算法系统概览](../algorithms/overview.md)

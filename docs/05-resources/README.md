@@ -1,72 +1,22 @@
-# 资源文档
+# 附录与资源
 
-ColorVision 资源中心，包含项目结构、更新日志、文档模板、法律文档等。
+这部分只保留长期稳定、适合作为索引或附录的内容，不再承载零散专题说明。
 
-## 📚 资源分类
+## 当前保留内容
 
-### 项目结构
-了解 ColorVision 的代码组织：
-- [项目结构总览](./project-structure/README.md) - 完整的目录结构和模块说明
-- [模块文档对照](./project-structure/module-documentation-map.md) - 代码模块到文档的映射
+- [项目结构总览](./project-structure/README.md)
+- [模块与文档对照表](./project-structure/module-documentation-map.md)
+- [软件许可协议](./legal/software-agreement.md)
+- [CHANGELOG.md](https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md)
 
-### 更新日志
-查看版本更新历史：
-- [更新日志窗口](./changelog/window.md) - 更新日志窗口实现
+## 使用方式
 
-完整的更新日志请查看：[CHANGELOG.md](https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md)
+- 想理解仓库结构：先看 [项目结构总览](./project-structure/README.md)
+- 想快速定位某个模块对应的文档入口：看 [模块与文档对照表](./project-structure/module-documentation-map.md)
+- 想确认版本变化：直接看仓库根目录的 `CHANGELOG.md`
+- 想查看法律文本：进入 [软件许可协议](./legal/software-agreement.md)
 
-### 文档模板
-编写文档的模板：
-- [文档模板](./templates/doc-template.md) - 通用文档模板
+## 本次整理的边界
 
-### 法律文档
-许可证和协议：
-- [API v1.1](./legal/api-v1.1.md) - ColorVision API v1.1 说明
-- [软件许可协议](./legal/software-agreement.md) - 软件许可协议
-
-### 其他资源
-- [数据存储](./data-storage.md) - 数据存储说明
-
-## 🔍 快速查找
-
-### 需要了解代码结构？
-→ 查看 [项目结构总览](./project-structure/README.md)
-
-### 需要编写文档？
-→ 使用 [文档模板](./templates/doc-template.md)
-
-### 需要查看某个模块的文档？
-→ 使用 [模块文档对照](./project-structure/module-documentation-map.md)
-
-### 需要了解更新内容？
-→ 查看 [CHANGELOG.md](https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md)
-
-## 📖 待完善内容
-
-以下资源正在完善中：
-
-- **术语表** - 项目相关术语定义
-- **迁移指南** - 版本升级迁移指南
-- **更多文档模板** - API 文档模板、教程模板等
-
-## 🔗 相关链接
-
-- [快速入门](../00-getting-started/README.md) - 快速开始使用 ColorVision
-- [用户指南](../01-user-guide/README.md) - 用户使用手册
-- [开发指南](../02-developer-guide/README.md) - 开发者指南
-- [架构设计](../03-architecture/README.md) - 系统架构
-- [API 参考](../04-api-reference/README.md) - API 文档
-
-## 💡 贡献资源
-
-欢迎贡献各类资源：
-- 补充文档模板
-- 完善术语表
-- 提供迁移指南
-- 分享最佳实践
-
-提交贡献请访问 [GitHub](https://github.com/xincheng213618/scgd_general_wpf)
-
----
-
-需要其他资源？请提交 [GitHub Issue](https://github.com/xincheng213618/scgd_general_wpf/issues)
+- 旧的 API v1.1、模板、数据存储等入口不再继续放在资源区导航中。
+- 主题性内容应回到对应章节，例如部署回到开发指南、接口回到 API 参考、系统设计回到架构设计。

@@ -3,7 +3,6 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections;
-using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
