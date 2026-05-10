@@ -16,7 +16,7 @@
 
 ### 方式三：从命令行启动（开发者）
 
-```bash
+```powershell
 cd "安装目录"
 .\ColorVision.exe
 ```
@@ -154,12 +154,12 @@ cd "安装目录"
 1. **熟悉界面**：[主窗口导览](../01-user-guide/interface/main-window.md)
 2. **学习图像操作**：[图像编辑器](../01-user-guide/image-editor/overview.md)
 3. **了解设备使用**：[设备概览](../01-user-guide/devices/overview.md)
-4. **尝试工作流程**：[流程编辑器](../01-user-guide/workflow/flow-editor.md)
+4. **尝试工作流程**：[工作流程概览](../01-user-guide/workflow/README.md)
 
 ## 技术支持
 
 如果遇到问题：
-- 查看 [常见问题](../01-user-guide/troubleshooting/faq.md)
+- 查看 [常见问题](../01-user-guide/troubleshooting/common-issues.md)
 - 提交 [GitHub Issue](https://github.com/xincheng213618/scgd_general_wpf/issues)
 - 查看 [完整文档](https://xincheng213618.github.io/scgd_general_wpf/)
 

@@ -23,7 +23,7 @@ export default withMermaid(
       '**/.*',
       'node_modules/**'
     ],
-    
+
     // Theme configuration
     themeConfig: {
       // Site branding
@@ -36,7 +36,8 @@ export default withMermaid(
         { text: '入门指南', link: '/00-getting-started/README' },
         { text: '用户指南', link: '/01-user-guide/README' },
         { text: '开发指南', link: '/02-developer-guide/README' },
-        { text: '架构设计', link: '/03-architecture/README' },
+        { text: '设计与架构', link: '/03-architecture/README' },
+        { text: 'API 参考', link: '/04-api-reference/README' },
         { text: '更新日志', link: 'https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md' },
         { text: 'GitHub', link: 'https://github.com/xincheng213618/scgd_general_wpf' }
       ],
@@ -57,7 +58,7 @@ export default withMermaid(
           ]
         },
         {
-          text: '快速入门',
+          text: '安装与首次使用',
           collapsed: false,
           items: [
             { text: '章节概览', link: '/00-getting-started/README' },
@@ -65,11 +66,11 @@ export default withMermaid(
             { text: '系统要求', link: '/00-getting-started/prerequisites' },
             { text: '安装指南', link: '/00-getting-started/installation' },
             { text: '首次运行', link: '/00-getting-started/first-steps' },
-            { text: '快速开始', link: '/00-getting-started/quick-start' }
+            { text: '快速上手', link: '/00-getting-started/quick-start' }
           ]
         },
         {
-          text: '用户使用',
+          text: '日常使用',
           collapsed: true,
           items: [
             { text: '章节概览', link: '/01-user-guide/README' },
@@ -131,7 +132,7 @@ export default withMermaid(
           ]
         },
         {
-          text: '开发与扩展',
+          text: '开发与交付',
           collapsed: true,
           items: [
             { text: '章节概览', link: '/02-developer-guide/README' },
@@ -182,7 +183,7 @@ export default withMermaid(
           ]
         },
         {
-          text: '架构与设计',
+          text: '设计与架构',
           collapsed: true,
           items: [
             { text: '章节概览', link: '/03-architecture/README' },
@@ -231,8 +232,8 @@ export default withMermaid(
               text: '算法与模板',
               collapsed: true,
               items: [
-                { text: '算法总览', link: '/04-api-reference/algorithms/README' },
-                { text: '算法总览', link: '/04-api-reference/algorithms/overview' },
+                { text: '章节概览', link: '/04-api-reference/algorithms/README' },
+                { text: '算法系统概览', link: '/04-api-reference/algorithms/overview' },
                 {
                   text: '检测器',
                   collapsed: true,
@@ -255,8 +256,8 @@ export default withMermaid(
                   items: [
                     { text: '流程引擎', link: '/04-api-reference/algorithms/templates/flow-engine' },
                     { text: '模板管理', link: '/04-api-reference/algorithms/templates/template-management' },
-                    { text: 'POI 模板详解', link: '/04-api-reference/algorithms/templates/poi-template' },
-                    { text: 'ARVR 模板详解', link: '/04-api-reference/algorithms/templates/arvr-template' },
+                    { text: 'POI 模板', link: '/04-api-reference/algorithms/templates/poi-template' },
+                    { text: 'ARVR 模板', link: '/04-api-reference/algorithms/templates/arvr-template' },
                     { text: 'JSON 模板', link: '/04-api-reference/algorithms/templates/json-templates' },
                     { text: 'Templates API 参考', link: '/04-api-reference/algorithms/templates/api-reference' }
                   ]
@@ -264,20 +265,20 @@ export default withMermaid(
               ]
             },
             {
-              text: '标准插件',
+              text: '插件与现状页',
               collapsed: true,
               items: [
-                { text: 'Pattern 插件', link: '/04-api-reference/plugins/standard-plugins/pattern' },
+                { text: 'Pattern / 图卡生成功能', link: '/04-api-reference/plugins/standard-plugins/pattern' },
+                { text: 'ImageProjector（历史状态）', link: '/04-api-reference/plugins/standard-plugins/image-projector' },
+                { text: 'ScreenRecorder（历史状态）', link: '/04-api-reference/plugins/standard-plugins/screen-recorder' },
                 { text: 'Spectrum 插件', link: '/04-api-reference/plugins/standard-plugins/spectrum' },
                 { text: 'SystemMonitor 插件', link: '/04-api-reference/plugins/standard-plugins/system-monitor' },
-                { text: 'EventVwr 插件', link: '/04-api-reference/plugins/standard-plugins/eventvwr' },
-                { text: '图像投影插件', link: '/04-api-reference/plugins/standard-plugins/image-projector' },
-                { text: '录屏插件', link: '/04-api-reference/plugins/standard-plugins/screen-recorder' },
+                { text: 'EventVWR 插件', link: '/04-api-reference/plugins/standard-plugins/eventvwr' },
                 { text: 'Windows 服务插件', link: '/04-api-reference/plugins/standard-plugins/windows-service' }
               ]
             },
             {
-              text: '扩展点',
+              text: 'FlowEngineLib 节点扩展',
               link: '/04-api-reference/extensions/flow-node'
             }
           ]
@@ -391,6 +392,9 @@ export default withMermaid(
     
     // Vue app level enhancements
     vite: {
+      build: {
+        chunkSizeWarningLimit: 2048
+      },
       server: {
         port: 3000
       }

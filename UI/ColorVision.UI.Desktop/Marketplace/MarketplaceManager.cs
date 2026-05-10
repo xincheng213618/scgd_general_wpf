@@ -1,9 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Desktop.Download;
+using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -134,6 +136,161 @@ namespace ColorVision.UI.Desktop.Marketplace
                 _refreshVersionsLock.Release();
             }
         }
+
+        public async Task<CombinedPluginUpdatePlan> BuildCombinedUpdatePlanAsync(Version hostVersion)
+        {
+            await RefreshVersionsAsync();
+
+            CombinedPluginUpdatePlan plan = new();
+            var pluginsToCheck = Plugins
+                .Where(plugin => plugin.PluginInfo.Enabled && plugin.HasUpdate && !string.IsNullOrWhiteSpace(plugin.PackageName))
+                .ToList();
+
+            if (pluginsToCheck.Count == 0)
+                return plan;
+
+            MarketplaceClient client = MarketplaceClient.GetInstance();
+            foreach (var plugin in pluginsToCheck)
+            {
+                MarketplacePluginVersionInfo? candidate = null;
+                try
+                {
+                    MarketplacePluginDetail? detail = await client.GetPluginDetailAsync(plugin.PackageName!);
+                    candidate = SelectCompatibleVersion(plugin, detail, hostVersion);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"BuildCombinedUpdatePlanAsync failed for {plugin.PackageName}: {ex.Message}");
+                }
+
+                candidate ??= CreateFallbackCandidate(plugin);
+
+                if (candidate != null)
+                {
+                    plan.Updates.Add(new CombinedPluginUpdateItem
+                    {
+                        Plugin = plugin,
+                        VersionInfo = candidate,
+                    });
+                }
+                else
+                {
+                    plan.SkippedIncompatiblePlugins.Add(plugin.Name ?? plugin.PackageName ?? "Unknown");
+                }
+            }
+
+            return plan;
+        }
+
+        public bool StartCombinedUpdate(CombinedPluginUpdatePlan plan, string? restartArguments = null, Action? noRestartAction = null)
+        {
+            if (plan.Updates.Count == 0)
+            {
+                noRestartAction?.Invoke();
+                return false;
+            }
+
+            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            var manager = Aria2cDownloadManager.GetInstance();
+            var client = MarketplaceClient.GetInstance();
+
+            int totalCount = plan.Updates.Count;
+            int completedCount = 0;
+            var completedPaths = new ConcurrentBag<string>();
+            object lockObj = new();
+
+            List<CombinedPluginUpdateItem> pluginsNeedingDownload = new();
+            foreach (var item in plan.Updates)
+            {
+                string version = item.VersionInfo.Version;
+                string? expectedHash = item.VersionInfo.FileHash;
+                string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, item.Plugin.PackageName!, version, expectedHash);
+                if (existingFile != null)
+                {
+                    log.Info($"Plugin {item.Plugin.PackageName} v{version} already exists at {existingFile}, skipping download.");
+                    completedPaths.Add(existingFile);
+                    lock (lockObj)
+                    {
+                        completedCount++;
+                    }
+                }
+                else
+                {
+                    pluginsNeedingDownload.Add(item);
+                }
+            }
+
+            if (pluginsNeedingDownload.Count == 0)
+            {
+                var cachedPaths = completedPaths.ToArray();
+                if (cachedPaths.Length > 0)
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        PluginUpdater.UpdatePluginWithRestartArguments(restartArguments, cachedPaths);
+                    });
+                    return true;
+                }
+
+                noRestartAction?.Invoke();
+                return false;
+            }
+
+            DownloadWindow.ShowInstance();
+
+            foreach (var item in pluginsNeedingDownload)
+            {
+                string version = item.VersionInfo.Version;
+                string? expectedHash = item.VersionInfo.FileHash;
+                string url = client.GetDownloadUrl(item.Plugin.PackageName!, version);
+                string expectedFileName = $"{item.Plugin.PackageName}-{version}.cvxp";
+
+                manager.AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
+                {
+                    if (task.Status == DownloadStatus.Completed)
+                    {
+                        if (!string.IsNullOrWhiteSpace(expectedHash) && !MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
+                        {
+                            log.Error($"Combined update hash mismatch for {item.Plugin.PackageName} v{version}.");
+                        }
+                        else
+                        {
+                            completedPaths.Add(task.SavePath);
+                        }
+                    }
+                    else
+                    {
+                        log.Error($"Combined update download failed for {item.Plugin.PackageName}: {task.ErrorMessage}");
+                    }
+
+                    int current;
+                    lock (lockObj)
+                    {
+                        completedCount++;
+                        current = completedCount;
+                    }
+
+                    if (current == totalCount)
+                    {
+                        var downloadedPaths = completedPaths.ToArray();
+                        if (downloadedPaths.Length > 0)
+                        {
+                            Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                PluginUpdater.UpdatePluginWithRestartArguments(restartArguments, downloadedPaths);
+                            });
+                        }
+                        else
+                        {
+                            noRestartAction?.Invoke();
+                        }
+                    }
+                }, expectedFileName);
+            }
+
+            return true;
+        }
+
         public void UpdateAll()
         {
             var pluginsToUpdate = Plugins.Where(p => p.PluginInfo.Enabled && p.HasUpdate).ToList();
@@ -238,6 +395,62 @@ namespace ColorVision.UI.Desktop.Marketplace
                     }
                 }, expectedFileName);
             }
+        }
+
+        private static MarketplacePluginVersionInfo? CreateFallbackCandidate(PluginInfoVM plugin)
+        {
+            if (plugin.LastVersion == null)
+                return null;
+
+            if (plugin.AssemblyVersion != null && plugin.LastVersion <= plugin.AssemblyVersion)
+                return null;
+
+            return new MarketplacePluginVersionInfo
+            {
+                Version = plugin.LastVersion.ToString(),
+            };
+        }
+
+        private static MarketplacePluginVersionInfo? SelectCompatibleVersion(PluginInfoVM plugin, MarketplacePluginDetail? detail, Version hostVersion)
+        {
+            if (detail == null)
+                return null;
+
+            var versions = detail.Versions
+                .Concat(detail.ArchivedVersions)
+                .OrderByDescending(version => ParseVersion(version.Version) ?? new Version())
+                .ThenByDescending(version => version.CreatedAt);
+
+            foreach (var versionInfo in versions)
+            {
+                Version? candidateVersion = ParseVersion(versionInfo.Version);
+                if (candidateVersion == null)
+                    continue;
+
+                if (plugin.AssemblyVersion != null && candidateVersion <= plugin.AssemblyVersion)
+                    continue;
+
+                string? requiresVersion = versionInfo.RequiresVersion ?? detail.RequiresVersion;
+                if (IsCompatibleWithHostVersion(requiresVersion, hostVersion))
+                    return versionInfo;
+            }
+
+            return null;
+        }
+
+        private static bool IsCompatibleWithHostVersion(string? requiresVersion, Version hostVersion)
+        {
+            if (string.IsNullOrWhiteSpace(requiresVersion))
+                return true;
+
+            return Version.TryParse(requiresVersion.Trim(), out var requiredVersion)
+                ? hostVersion >= requiredVersion
+                : true;
+        }
+
+        private static Version? ParseVersion(string? value)
+        {
+            return Version.TryParse(value, out var version) ? version : null;
         }
 
         public void Restart()

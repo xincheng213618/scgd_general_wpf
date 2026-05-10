@@ -10,6 +10,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public override async Task Initialize()
         {
             if (!MarketplaceWindowConfig.Instance.IsAutoUpdate) return;        
+            if (CombinedUpdateWorkflowConfig.Instance.IsActive) return;
             log.Info("PluginsInitializedCheck");
             try
             {

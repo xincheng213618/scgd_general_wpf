@@ -1,215 +1,130 @@
 # 模板管理
 
+本页只描述当前仓库里真实可用的模板宿主链，不再继续维护“统一框架蓝图 + 理想化 MVVM 分层 + 大段伪示例”式旧稿。
 
-# 模板管理
+## 先看这页现在在讲什么
 
-## 目录
-1. [引言](#引言)
-2. [项目结构](#项目结构)
-3. [核心组件](#核心组件)
-4. [架构概述](#架构概述)
-5. [详细组件分析](#详细组件分析)
-6. [依赖关系分析](#依赖关系分析)
-7. [性能考虑](#性能考虑)
-8. [故障排除指南](#故障排除指南)
-9. [结论](#结论)
+按当前源码状态，模板管理不是单独一个后端服务，而是一条由 `ITemplate` 基类、全局注册表、管理窗口、编辑窗口和创建窗口拼起来的宿主链。它当前负责：
 
-## 引言
-本文档详细介绍了模板管理模块的设计与实现，涵盖如何创建、编辑、复制、删除和组织算法模板。模板的参数化及版本控制机制也在文中有所阐述。文中内容基于ColorVision项目中的模板相关代码，旨在帮助技术及非技术用户理解模板管理功能的实现细节及使用方法。
+- 启动后扫描并注册具体模板类型。
+- 在主程序里按命名空间组织模板入口。
+- 提供通用的编辑、创建、导入导出、复制和重命名窗口。
+- 让 JSON 模板、流程模板、POI 模板、字典模板等共用一套宿主界面。
+- 提供 SQLite 样例库和全局搜索接入。
 
-## 项目结构
-模板管理相关代码主要位于仓库路径：
-- `/Engine/ColorVision.Engine/Templates/`
+所以这页真正要讲的，不是“模板理论”，而是主程序现在怎样托管各类模板。
 
-该目录下包含多个与模板相关的窗口、控件、数据模型和服务实现，结构清晰，职责分明。
+## 当前最关键的文件
 
-主要文件包括：
-- `TemplateManagerWindow.xaml.cs`：模板管理主窗口逻辑，负责模板列表展示和模板编辑窗口的打开。
-- `TemplateCreate.xaml.cs`：模板创建窗口逻辑，支持新建模板及从文件导入模板。
-- `TemplateEditorWindow.xaml.cs`：模板编辑窗口逻辑，支持模板的查看、编辑、复制、删除、导入导出等操作。
+- `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
+- `Engine/ColorVision.Engine/Templates/ITemplate.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateManagerWindow.xaml.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateSampleLibrary.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateSampleSaveWindow.xaml.cs`
 
-这些文件均采用WPF窗口技术实现，界面与逻辑分离清晰，便于维护和扩展。
+如果只读这几处，已经足够建立当前模板系统的主心智模型。
 
-## 核心组件
-### 1. MenuTemplateManagerWindow
-- 继承自`MenuItemBase`，定义菜单项“模板管理”。
-- 负责打开模板管理主窗口`TemplateManagerWindow`。
+## 当前主链怎么跑
 
-### 2. TemplateManagerWindow
-- 作为模板管理主界面，展示所有模板名称列表。
-- 支持搜索模板，搜索框支持多关键词匹配。
-- 通过列表选择模板，打开对应的模板编辑窗口`TemplateEditorWindow`。
+### 初始化与注册
 
-### 3. TemplateCreate
-- 模板创建窗口，支持选择默认模板或导入已有模板文件。
-- 支持模板名称输入及重复名称检测。
-- 根据模板类型不同，动态加载不同的属性编辑控件或自定义用户控件。
+`TemplateInitializer` 启动后会触发 `TemplateControl.GetInstance()`；`TemplateControl` 再扫描程序集里所有 `IITemplateLoad` 实现并执行 `Load()`。
 
-### 4. TemplateEditorWindow
-- 模板编辑窗口，支持模板项的增删改查。
-- 支持模板项列表的排序、筛选和选择。
-- 支持模板的导入、导出和复制功能。
-- 支持模板项的重命名及编辑模式切换。
-- 支持快捷键操作（如Ctrl+F搜索，Enter确认编辑）。
-- 支持动态调整界面布局以适应不同模板类型。
+另一方面，`ITemplate` 构造函数本身也会把模板实例异步注册进 `TemplateControl.ITemplateNames`。因此当前模板发现是两层机制并行工作的：
 
-## 架构概述
-模板管理模块基于MVVM设计模式，界面通过WPF实现，数据绑定和命令模式广泛应用。模板数据通过`ITemplate`接口统一管理，具体模板实现类负责数据加载、保存、导入导出等业务逻辑。UI层通过绑定`ITemplate`提供的数据集合，实现模板列表和模板项的动态展示与操作。
+- 模板对象构造时进全局注册表。
+- 具体模板加载器在 MySQL 可用后刷新内容。
 
-模块设计注重扩展性和用户交互体验，支持自定义用户控件嵌入，动态界面调整，以及丰富的快捷键和搜索功能，方便用户高效管理大量模板。
+这就是为什么很多模板页不能脱离初始化和数据库前提来理解。
 
-## 详细组件分析
+### 模板管理窗口
 
-### 1. TemplateManagerWindow.xaml.cs
+`MenuTemplateManagerWindow` 会打开 `TemplateManagerWindow`。这个窗口当前不是简单列表，而是：
 
-主要职责：
-- 初始化模板名称列表，绑定到界面列表控件。
-- 实现模板搜索功能，支持多关键词模糊匹配。
-- 处理搜索结果的键盘操作和双击事件，执行对应模板命令。
-- 响应模板列表选择，打开对应模板编辑窗口。
+- 读取 `TemplateControl.ITemplateNames`
+- 按类型命名空间分组
+- 支持搜索和筛选
+- 支持按卡片方式显示模板
+- 在选中模板后直接打开对应编辑器
 
-关键代码示例：
+因此它承担的是“模板入口聚合器”角色，不只是一个菜单弹窗。
 
-```csharp
-private void Window_Initialized(object sender, EventArgs e)
-{
-    keyValuePairs = TemplateControl.ITemplateNames.ToList();
-    ListView2.ItemsSource = keyValuePairs;
-}
+### 模板编辑窗口
 
-private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
-{
-    if (sender is TextBox textBox)
-    {
-        string searchtext = textBox.Text;
-        if (string.IsNullOrWhiteSpace(searchtext))
-        {
-            SearchPopup.IsOpen = false;
-        }
-        else
-        {
-            SearchPopup.IsOpen = true;
-            var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+`TemplateEditorWindow` 是当前最通用的模板宿主窗口。它会先 `template.Load()`，然后根据模板类型走两条路径：
 
-            filteredResults = Searches
-                .OfType\<ISearch\>()
-                .Where(template => keywords.All(keyword =>
-                    template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                    template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                    ))
-                .ToList();
-            ListView1.ItemsSource = filteredResults;
-            if (filteredResults.Count > 0)
-            {
-                ListView1.SelectedIndex = 0;
-            }
-        }
-    }
-}
-```
+- 普通模板：右侧放 `PropertyGrid`
+- 自定义模板：调用 `GetUserControl()` 并让模板自己接管右侧区域
 
-此模块通过`TemplateControl.ITemplateNames`获取所有模板名称，支持基于模板标题或GUID的搜索过滤，提升用户查找模板的效率。
+窗口还统一接好了：
 
----
+- 新建、复制、保存、删除命令
+- 选中项切换时的 `SetSaveIndex(...)`
+- `SetUserControlDataContext(...)` 或 `GetParamValue(...)`
+- 列排序、搜索和双击行为
 
-### 2. TemplateCreate.xaml.cs
+这也是当前各种模板虽然界面差异很大，但仍能共用同一个宿主壳的原因。
 
-主要职责：
-- 支持新建模板时选择默认模板或导入已有模板文件。
-- 动态生成模板文件选择单选按钮列表。
-- 根据模板类型决定加载默认属性编辑控件或自定义用户控件。
-- 校验模板名称唯一性，防止重复创建。
-- 调用模板接口完成模板创建和导入。
+### 模板创建窗口
 
-关键代码示例：
+`TemplateCreate` 现在已经不是“只给一个名称输入框”的窗口了。按当前实现，它会为新模板提供多种来源：
 
-```csharp
-private void Window_Initialized(object sender, EventArgs e)
-{
-    string AssemblyCompanyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Environments.AssemblyCompany);
-    if (!Directory.Exists(AssemblyCompanyFolder))
-        Directory.CreateDirectory(AssemblyCompanyFolder);
+- 系统默认模板
+- 当前副本（复制后暂存的模板内容）
+- SQLite 样例库中的历史样例
 
-    string TemplateFolders = Path.Combine(AssemblyCompanyFolder, "Templates");
-    if (!Directory.Exists(TemplateFolders))
-        Directory.CreateDirectory(TemplateFolders);
-    string TemplateFolder = Path.Combine(TemplateFolders, ITemplate.Code);
-    if (!Directory.Exists(TemplateFolder))
-        Directory.CreateDirectory(TemplateFolder);
+这些来源会被渲染成卡片，并按组过滤。最终由 `ApplyTemplateSource(...)` 把选中的来源注入到待创建模板里。
 
-    RadioButton radioButton = new RadioButton() { Content = "默认模板", IsChecked = true, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(3) };
-    radioButton.Checked += (s, e) => TemplateFile = string.Empty;
-    TemplateStackPanels.Children.Add(radioButton);
+这说明当前模板创建链已经不只是“CreateDefault() + 手填参数”。
 
-    foreach (var item in Directory.GetFiles(TemplateFolder))
-    {
-        RadioButton radioButton1 = new RadioButton() { Content = Path.GetFileNameWithoutExtension(item), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(3) };
-        radioButton1.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
-        TemplateStackPanels.Children.Add(radioButton1);
-    }
-}
-```
+### 搜索与样例库
 
-此模块通过文件系统组织模板文件，用户可选择基于默认模板创建或导入已有模板文件，支持灵活的模板创建方式。
+`TemplateSearchProvider` 会把所有模板名注册到全局搜索入口；`TemplateSampleLibrary` 则把模板样例存到用户文档目录下的 SQLite 库：
 
----
+- `.../Templates/TemplateSamples.db`
 
-### 3. TemplateEditorWindow.xaml.cs
+它当前保存的是：
 
-主要职责：
-- 显示模板详细列表，支持模板项的查看、编辑、排序、筛选。
-- 支持模板项的新增、删除、复制、重命名操作。
-- 支持模板的导入与导出。
-- 动态加载自定义用户控件或属性编辑控件。
-- 支持快捷键和界面交互优化。
-- 支持模板项编辑模式切换及状态管理。
+- 模板代码与模板类型
+- 分组名与样例名
+- 描述文本
+- 序列化后的模板内容
 
-关键代码示例：
+所以模板管理现在除了 MySQL 主存储之外，还有一条本地样例复用链。
 
-```csharp
-public TemplateEditorWindow(ITemplate template, int defaultIndex = 0)
-{
-    ITemplate = template;
-    DefaultIndex = defaultIndex < 0 ? -1 : defaultIndex;
-    template.Load();
-    InitializeComponent();
-    this.ApplyCaption();
-    this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
-    this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-    this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
-        ITemplate.Save();
-        HandyControl.Controls.Growl.SuccessGlobal( Title +"保存成功");
-    }, (s, e) => e.CanExecute = true));
-    this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-    this.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-}
-```
+## 当前几个最容易写错的点
 
-该窗口通过命令绑定实现模板项的增删改查，界面响应灵活，支持用户高效管理模板。模板项的排序基于接口实现的排序方法，支持按ID或名称排序。
+### 它不是纯服务层系统
 
----
+当前很多关键逻辑都直接写在 `TemplateManagerWindow`、`TemplateEditorWindow`、`TemplateCreate` 这些 WPF 窗口里。继续把它描述成“宿主只绑定 ViewModel，逻辑都在服务层”，和真实代码不符。
 
-## 依赖关系分析
-模板管理模块依赖以下关键接口和组件：
-- `ITemplate`接口：统一模板操作接口，定义模板的加载、保存、导入导出、创建、删除、复制等方法。
-- `TemplateBase`类：模板项基类，支持编辑模式、选择状态等属性。
-- `TemplateControl`类：模板控制中心，管理所有模板名称及模板实例。
-- `SearchProvider`和`ISearch`接口：实现模板搜索功能。
-- UI相关控件和命令：WPF基础控件、命令绑定、属性编辑控件、用户控件等。
+### 不同模板的持久化方式并不统一
 
-模块间耦合适中，接口设计良好，便于扩展和维护。
+有些模板主要依赖 MySQL，有些模板支持文件导入导出，有些模板还会额外走 SQLite 样例库。文档不能再假设所有模板都是同一种存储模型。
 
-## 性能考虑
-- 搜索功能基于内存集合过滤，适合中小规模模板管理，支持多关键词模糊匹配，响应迅速。
-- 模板项排序通过反射调用排序方法，适合动态多模板类型，但大量数据时可能影响性能，建议优化排序算法或缓存排序结果。
-- 动态加载用户控件时，界面调整灵活，但控件复杂度过高时可能影响界面响应，建议控件设计简洁。
+### `IsUserControl` 和 `IsSideHide` 会显著改变行为
 
-## 故障排除指南
-- 创建模板时提示模板名已存在：检查输入名称是否重复，避免名称冲突。
-- 搜索无结果：确认关键词正确，支持多关键词空格分隔，大小写不敏感。
-- 模板编辑窗口无法打开：确认模板实例有效，模板文件未损坏。
-- 导入导出失败：检查文件路径及权限，确保模板文件格式正确。
+当前模板宿主不是固定布局。`IsUserControl` 会把右侧改成交给模板自定义控件，`IsSideHide` 甚至会改变窗口布局与双击行为。忽略这两个开关，会解释不通很多模板页。
 
-## 结论
-模板管理模块设计合理，功能完善，支持模板的创建、编辑、复制、删除和组织。通过统一接口和多层设计，保证了良好的扩展性和用户体验。模块支持模板参数化及版本管理，方便用户灵活管理算法模板。未来可考虑优化性能及增强UI交互细节，提升大规模模板管理能力。
+### 模板注册和数据库连接仍然耦合
 
+虽然 `ITemplate` 构造会注册实例，但许多具体模板内容仍然要等 MySQL 连接后才能真正加载。把模板系统写成“纯本地静态注册”会遗漏关键前提。
+
+## 推荐阅读顺序
+
+1. `Engine/ColorVision.Engine/Templates/ITemplate.cs`
+2. `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
+3. `Engine/ColorVision.Engine/Templates/TemplateManagerWindow.xaml.cs`
+4. `Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs`
+5. `Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs`
+6. `Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs`
+7. `Engine/ColorVision.Engine/Templates/TemplateSampleLibrary.cs`
+
+## 继续阅读
+
+- [JSON 模板](./json-templates.md)
+- [流程引擎](./flow-engine.md)
+- [Templates 分析总结](../../../03-architecture/components/templates/analysis.md)

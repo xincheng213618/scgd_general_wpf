@@ -65,7 +65,7 @@ median_filter_3x3_kernel<<<grid, block, 0, stream>>>(d_phi, d_phi_filtered, M, N
 ### 2. 新增 CUDA Kernel
 
 #### box_filter_kernel
-```cuda
+```cpp
 __global__ void box_filter_kernel(
     const double* src, double* dst, int M, int N, int kernel_size);
 ```
@@ -73,7 +73,7 @@ __global__ void box_filter_kernel(
 - 使用共享内存优化（可进一步优化）
 
 #### median_filter_3x3_kernel
-```cuda
+```cpp
 __global__ void median_filter_3x3_kernel(
     const double* src, double* dst, int M, int N);
 ```
@@ -82,7 +82,7 @@ __global__ void median_filter_3x3_kernel(
 - 使用 bubble sort 找中值（对于固定 9 个元素足够高效）
 
 #### element_divide_kernel
-```cuda
+```cpp
 __global__ void element_divide_kernel(
     const double* err, const double* ymax, double* dst,
     int M, int N, int P);
@@ -146,7 +146,7 @@ weighted_channel_fusion_kernel<<<grid, block>>>(
 ### 2. 共享内存优化
 对于 box_filter 和 gfocus_kernel，可以使用共享内存减少全局内存访问：
 
-```cuda
+```cpp
 __shared__ double shared_mem[BLOCK_Y + 4][BLOCK_X + 4];  // 包含 halo
 // 协作加载数据到共享内存
 __syncthreads();

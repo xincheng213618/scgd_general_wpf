@@ -1,400 +1,202 @@
-# Spectrum Plugin - 光谱仪测试工具
+# Spectrum 插件
 
-## 概述
+本页只描述当前仓库里实际存在的 Spectrum 插件实现，不再继续维护“版本表 + 功能宣传 + 理想化 API 手册”式旧稿。
 
-Spectrum 是 ColorVision 的光谱仪测试与色彩分析插件，提供完整的光谱仪设备控制、光谱数据采集、色度计算和数据管理功能。支持 SP100（CMvSpectra）和 SP10（LightModule）两种光谱仪型号，具备 CIE 色度分析、显色指数 Ra 计算、EQE 外量子效率计算等专业光学测量能力。
+## 先看这个插件现在是什么
 
-**版本信息**：
-- 当前版本：v2.1.4.0
-- 最低要求：ColorVision ≥ 1.3.15.8
-- 最后更新：2026-03-29
+按当前源码状态，Spectrum 不是一个零散的设备驱动示例，而是一个以独立光谱测试窗口为中心的插件工作台。它当前至少包含四条明确的运行链：
 
-## 主要功能
+- Tool 菜单里的窗口入口。
+- `Spectrum` 目标窗口自己的菜单和状态栏。
+- 围绕 `SpectrometerManager` 的连接、标定和测量控制。
+- 围绕 `ViewResultManager` 的结果展示、SQLite 持久化和测量画像记录。
 
-### 1. 设备管理
+因此它比旧文档里“光谱仪测试工具”这类泛化描述更具体，实际是一个完整但仍然以单窗口为中心的测量工作台。
 
-- **多型号支持**：
-  - CMvSpectra（SP100）- 高精度光谱仪
-  - LightModule（SP10）- 轻量级光谱模块
+## 当前最关键的文件
 
-- **串口通信**：
-  - 可配置 COM 端口和波特率（默认 9600）
-  - 支持光谱仪、快门、ND 滤光轮、滤光轮等多设备串口控制
-  - 自动积分时间配置
+- `Plugins/Spectrum/manifest.json`
+- `Plugins/Spectrum/MainWindow.xaml(.cs)`
+- `Plugins/Spectrum/MainWindow.Connection.cs`
+- `Plugins/Spectrum/MainWindow.Measurement.cs`
+- `Plugins/Spectrum/SpectrometerManager.cs`
+- `Plugins/Spectrum/Data/ViewResultManager.cs`
+- `Plugins/Spectrum/SpectrumStatusBarProvider.cs`
+- `Plugins/Spectrum/Calibration/CalibrationGroupWindow.xaml.cs`
+- `Plugins/Spectrum/License/LicenseDatabase.cs`
 
-- **附件控制**：
-  - 快门开关（可自定义指令和延迟时间）
-  - ND 滤光轮（自动 ND 选择、暗测量端口）
-  - 滤光轮位置切换
+如果只是想弄清插件怎么进入宿主、怎么连接设备、怎么保存结果，这几处代码已经覆盖了主体。
 
-### 2. 光谱数据采集
+## 当前接入宿主的几条链
 
-- **测量模式**：
-  - 单次测量
-  - 批量连续测量
-  - 自适应校零
+### 窗口入口
 
-- **波长范围**：380–780nm（可见光波段），1nm 步进
-- **数据同步**：支持频率同步（默认 1000Hz）和滤波带宽配置
-- **安全机制**：测量过程中禁用其他操作按钮，防止冲突
+`MenuSpectrumWindow` 当前继承 `MenuItemBase`，挂在 `Tool` 菜单下，执行时直接打开 `MainWindow`。
 
-### 3. 色度分析
+这说明 Spectrum 现在最核心的宿主入口不是某个很厚的插件入口类，而是菜单项和随后打开的工作窗口。
 
-- **CIE 色度空间**：
-  - CIE 1931（2° 标准观察者）色度图绘制
-  - CIE 1976（10° 标准观察者）色度图绘制
-  - CIE 2015 色彩空间支持
+### 窗口级菜单与状态栏
 
-- **色度参数计算**：
-  - 色坐标（x, y）计算
-  - 相关色温 CCT（McCamy 公式）
-  - 主波长计算
-  - 兴奋纯度
-  - 颜色表示
+`MainWindow` 初始化时会调用：
 
-- **显色指数**：
-  - Ra（一般显色指数）计算
-  - 基于 CIE 13.3-1995 标准
-  - TCS01–TCS08 测试色样光谱反射率
-  - CIE 1931 2° 观察者颜色匹配函数
+- `MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu)`
+- `StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum")`
 
-### 4. 数据可视化
+也就是说，这个插件并不只是在主程序菜单上挂一个入口。窗口打开后，还有一套以 `TargetName = "Spectrum"` 为目标的局部菜单和状态栏扩展面。
 
-- **ScottPlot 图表**：
-  - 相对光谱曲线
-  - 绝对光谱曲线
-  - CIE 色度图叠加显示
+### 状态栏提供器
 
-- **波长转 RGB**：
-  - 将可见光波长（380–780nm）转换为显示颜色
-  - 基于 CIE 色度近似算法
+`SpectrumStatusBarProvider` 当前会把这些信息接到 `Spectrum` 窗口的状态栏：
 
-### 5. 校正管理
+- 连接状态
+- 硬件型号
+- SN 序列号
+- 当前标定组
+- 当前测量模式
+- Shutter 连接状态
+- CFW 滤光轮连接状态
 
-- **校正组**：
-  - 多组校正文件管理（每组包含波长和幅度校正）
-  - 按设备序列号独立存储
-  - 滤光轮位置关联
-
-- **校正文件验证**：
-  - 波长标定文件（WavaLength.dat）二进制格式验证
-  - 幅度标定文件（Magiude.dat）二进制格式验证
-  - 数据点计数、曝光时间、Lv 系数检查
+其中 SN 文本当前还支持点击复制，因此它不是只读装饰项。
 
-### 6. 数据持久化
+### manifest 信息
 
-- **数据库存储**：
-  - 基于 SqlSugar ORM 的光谱数据存储
-  - 色度参数 JSON 序列化
-  - 可配置查询数量和排序方式
-
-- **CSV 导出**：
-  - 光谱数据导出至桌面
-  - 自定义导出路径
-
-### 7. 其他功能
-
-- **EQE 计算**：外量子效率计算，支持电压和电流参数配置
-- **许可证管理**：本地与全局（AppData）许可证双向同步
-- **面板布局持久化**：基于 AvalonDock 的面板布局保存与恢复
-- **多语言支持**：英语、法语、日语、韩语、繁体中文、俄语
-- **内置帮助系统**：包含专业术语和使用指南
-
-## 快速开始
-
-### 启用插件
-
-1. 确保 ColorVision 版本 ≥ 1.3.15.8
-2. 插件会在启动时自动加载
-3. 在菜单栏查找 **光谱仪测试** 选项
-
-### 连接光谱仪
-
-1. 打开 **光谱仪测试** 窗口
-2. 在设备配置中选择光谱仪型号（SP100 或 SP10）
-3. 配置串口参数（COM 端口、波特率）
-4. 点击连接按钮
-
-### 执行测量
-
-1. 确保光谱仪已连接
-2. 选择校正组（如需要）
-3. 配置积分时间或启用自动积分
-4. 点击 **测量** 按钮开始采集
-5. 测量完成后在图表和列表中查看结果
-
-## 配置说明
-
-### 光谱仪配置（SpectrumConfig）
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| SpectrometerType | enum | CMvSpectra | 光谱仪型号（CMvSpectra/LightModule） |
-| IsComPort | bool | false | 是否使用 COM 端口 |
-| SzComName | string | COM1 | 串口名称 |
-| BaudRate | int | 9600 | 波特率 |
-
-### 快门配置（ShutterConfig）
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| SzComName | string | COM1 | 快门串口 |
-| BaudRate | int | 9600 | 波特率 |
-| OpenCmd | string | a | 快门打开指令 |
-| CloseCmd | string | b | 快门关闭指令 |
-| DelayTime | int | 1000 | 响应延迟（ms） |
-
-### ND 滤光轮配置（NDConfig）
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| IsNDPort | bool | false | 是否启用 ND 滤光轮 |
-| EnableResetND | bool | false | 启用 ND 自动复位 |
-| NDMaxExpTime | double | - | ND 最大曝光时间 |
-| NDMinExpTime | double | - | ND 最小曝光时间 |
-| DarkNDPort | int | -1 | 暗测量端口（-1 表示未设置） |
-
-### 数据管理配置（ViewResultManagerConfig）
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| Count | int | 50 | 查询数量限制 |
-| OrderByType | enum | Desc | 排序方式 |
-| AutoRefresh | bool | true | 自动刷新 |
-| Height | double | 300 | 视图高度 |
-| ViewImageReadDelay | int | 1000 | 图像加载延迟（ms） |
-| SavePathCsv | string | Desktop/Spectrum | CSV 导出路径 |
-
-### 窗口配置（MainWindowConfig）
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| LogControlVisibility | bool | true | 日志面板可见性 |
-| IsFull | bool | false | 全屏状态 |
-| EqeEnabled | bool | false | EQE 功能开关 |
-| EqeVoltage | float | 5.0 | EQE 电压（V） |
-| EqeCurrentMA | float | 20.0 | EQE 电流（mA） |
-| CiePointEnabled | bool | true | CIE 色度点显示 |
-
-## 技术架构
-
-### 模块结构
-
-```
-Plugins/Spectrum/
-├── MainWindow.xaml(.cs)              # 主窗口入口
-├── MainWindow.Chart.cs               # 图表可视化（ScottPlot）
-├── MainWindow.Connection.cs          # 设备连接管理
-├── MainWindow.Measurement.cs         # 光谱测量逻辑
-├── MainWindow.Export.cs              # 数据导出
-├── MainWindow.ListView.cs            # 结果列表管理
-├── MainWindow.Eqe.cs                 # EQE 外量子效率计算
-├── MainWindowConfig.cs               # 窗口配置持久化
-├── SpectrometerManager.cs            # 光谱仪核心管理器
-├── SpectrometerType.cs               # 设备类型枚举
-│
-├── Assets/Image/                     # CIE 色度图参考图
-│   ├── CIE-1931.jpg                  # CIE 1931 2° 标准观察者
-│   └── CIE-1976.jpg                  # CIE 1976 10° 观察者
-│
-├── Calibration/                      # 校正管理界面
-│   ├── CalibrationGroupWindow.xaml   # 校正组管理窗口
-│   └── GenerateAmplitudeWindow.xaml  # 幅度校正生成窗口
-│
-├── Configs/                          # 设备配置
-│   ├── SpectrumConfig.cs             # 光谱仪主配置
-│   ├── CalibrationGroupConfig.cs     # 校正组配置
-│   ├── CalibrationFileValidator.cs   # 校正文件验证器
-│   ├── FilterWheelConfig.cs          # 滤光轮配置
-│   ├── FilterWheelController.cs      # 滤光轮控制器
-│   ├── ShutterController.cs          # 快门控制器
-│   ├── SmuConfig.cs                  # SMU 配置
-│   └── SmuController.cs              # SMU 控制器
-│
-├── Data/                             # 数据管理
-│   └── ViewResultManager.cs          # 结果存储与查询（SqlSugar）
-│
-├── Help/                             # 帮助系统
-│   ├── HelpWindow.xaml               # 帮助窗口
-│   └── HelpContent.cs                # 帮助内容（术语和指南）
-│
-├── Layout/                           # 布局管理
-│   └── DockLayoutManager.cs          # AvalonDock 布局持久化
-│
-├── License/                          # 许可证管理
-│   ├── LicenseManagerWindow.xaml     # 许可证管理窗口
-│   └── LicenseSync.cs               # 许可证双向同步
-│
-├── Menus/                            # 菜单系统
-│   ├── SpectrumMenuIBase.cs          # 菜单基类
-│   └── LayoutMenuItems.cs            # 布局菜单项
-│
-├── Models/                           # 数据模型
-│   ├── SpectralData.cs               # 光谱数据点
-│   └── ViewResultSpectrum.cs         # 测量结果模型
-│
-├── Properties/                       # 多语言资源
-│   ├── Resources.resx                # 默认语言
-│   ├── Resources.en.resx             # 英语
-│   ├── Resources.fr.resx             # 法语
-│   ├── Resources.ja.resx             # 日语
-│   ├── Resources.ko.resx             # 韩语
-│   ├── Resources.ru.resx             # 俄语
-│   └── Resources.zh-Hant.resx        # 繁体中文
-│
-├── PropertyEditor/                   # 属性编辑器
-│   └── TextSerialPortPropertiesEditor.cs  # 串口属性编辑器
-│
-└── View/                             # 色度计算
-    ├── ColorimetryHelper.cs          # CIE 色度空间计算
-    ├── RaCalculator.cs               # 显色指数 Ra 计算
-    └── WavelengthToColor.cs          # 波长转 RGB 颜色
-```
-
-### 依赖关系
-
-```
-Spectrum Plugin
-├── ColorVision.UI           # UI 框架（菜单、设置、属性编辑器）
-├── ColorVision.Database     # 数据库访问（SqlSugar ORM）
-├── cvColorVision            # 视觉处理核心（COLOR_PARA 等数据结构）
-├── AvalonDock               # 可停靠面板布局
-├── ScottPlot.WPF            # 光谱图表可视化
-├── OpenCvSharp4             # 图像处理
-└── System.IO.Ports          # 串口通信
-```
-
-### 核心数据流
-
-```
-光谱仪设备 (SP100/SP10)
-    │
-    ▼ 串口通信 (System.IO.Ports)
-SpectrometerManager  ←── SpectrumConfig (设备配置)
-    │                ←── CalibrationGroupConfig (校正参数)
-    ▼
-MainWindow.Measurement  (数据采集)
-    │
-    ▼
-SpectralData[]  (380-780nm, 1nm 步进)
-    │
-    ├──▶ MainWindow.Chart  (ScottPlot 图表渲染)
-    ├──▶ ColorimetryHelper  (CIE 色坐标、CCT、主波长)
-    ├──▶ RaCalculator  (显色指数 Ra)
-    ├──▶ ViewResultSpectrum  (结果模型)
-    │       │
-    │       ├──▶ MainWindow.ListView  (UI 列表显示)
-    │       ├──▶ ViewResultManager  (数据库存储)
-    │       └──▶ MainWindow.Export  (CSV 导出)
-    │
-    └──▶ MainWindow.Eqe  (EQE 外量子效率)
-```
-
-## 色度计算说明
-
-### CIE 色坐标计算
-
-基于 CIE 1931 2° 标准观察者颜色匹配函数，在 380–780nm 范围内以 5nm 间隔进行积分：
-
-```
-X = ∫ S(λ) × x̄(λ) dλ
-Y = ∫ S(λ) × ȳ(λ) dλ
-Z = ∫ S(λ) × z̄(λ) dλ
-
-x = X / (X + Y + Z)
-y = Y / (X + Y + Z)
-```
-
-### CCT 计算（McCamy 公式）
-
-```
-n = (x - 0.3320) / (y - 0.1858)
-CCT = -449n³ + 3525n² - 6823.3n + 5520.33
-```
-
-### Ra 显色指数计算
-
-基于 CIE 13.3-1995 标准：
-1. 计算测试光源的色坐标和 CCT
-2. 确定参考照明体（普朗克辐射体或 CIE D 系列）
-3. 使用 TCS01–TCS08 测试色样计算颜色偏移
-4. Ra = 100 - 4.6 × ΔEi（8 个色样的平均值）
-
-## 校正文件格式
-
-### 波长标定文件（WavaLength.dat）
-
-```
-[uint64 DataLength]          // 数据点数量
-[double[] wavelengths]       // 波长值数组
-```
-
-### 幅度标定文件（Magiude.dat）
-
-```
-[uint64 DataLength]          // 数据长度
-[float MagExpTm]             // 标定曝光时间
-[int LvCoffe]                // Lv 系数
-[uint64 nCount]              // 数据点数量
-[double[] wavelengths]       // 波长值数组
-[double[] coefficients]      // 幅度系数数组
-```
-
-## 版本历史
-
-### v2.1.4.0（2026-03-29）
-
-**架构重构**：
-- ✅ 采用模块化设计，将 MainWindow 拆分为 Chart、Connection、Measurement、Export、ListView、Eqe 部分类
-- ✅ 新增 Configs、Models、View、Layout、Data、License、Help、Menus、Calibration、PropertyEditor 子模块
-- ✅ 新增 CalibrationFileValidator 校正文件二进制验证
-- ✅ 新增多语言支持（英语、法语、日语、韩语、繁体中文、俄语）
-- ✅ 新增内置帮助文档系统
-
-### v2.0.0.0（2026-03-23）
-
-**重大更新**：
-- 更新到 .NET 10
-- 优化 UI 界面布局
-- 增加兴奋纯度、颜色表示、校正组、状态栏显示、显色指数 Ra 计算
-- 测量过程中禁用其他按钮
-
-### v1.1.4.8（2025-09-09）
-
-- 更新第三方 UI 库
-- 取图失败自动重连（6 次）
-- 修复许可证获取问题
-- 增加数据库存储支持
-
-### v1.1.3.4（2025-07-11）
-
-- 增加 CIE 2015 色彩空间支持
-- 增加变更日志
-
-### v1.1.1.10（2025-06-25）
-
-- 许可证全局保存与同步
-- 许可证管理窗口
-- 桌面日志优化
-
-详见 [CHANGELOG.md](../../../../Plugins/Spectrum/CHANGELOG.md)
-
-## 相关资源
-
-- [插件开发概览](../../../02-developer-guide/plugin-development/overview.md)
-- [插件开发入门](../../../02-developer-guide/plugin-development/getting-started.md)
-- [插件生命周期](../../../02-developer-guide/plugin-development/lifecycle.md)
-- [设备服务概览](../../../01-user-guide/devices/overview.md)
-- [CHANGELOG](../../../../Plugins/Spectrum/CHANGELOG.md)
-- [源代码](../../../../Plugins/Spectrum/)
-
-## 许可证
-
-本插件继承 ColorVision 主项目许可证。
-
-**版权**：Copyright (C) 2025-present ColorVision Development Team
-**作者**：xincheng
-
----
-
-*最后更新：2026-03-29 | 文档版本：2.1.4.0*
+按当前 `manifest.json`，插件对宿主公开的装载信息是：
+
+- `Id = "Spectrum"`
+- `name = "Spectrum"`
+- `version = "1.0"`
+- `dllpath = "Spectrum.dll"`
+- `requires = "1.3.15.8"`
+
+这比旧文档里自定义的一长串版本和依赖表更接近当前真实装载模型。
+
+## 当前运行时核心是谁
+
+`SpectrometerManager` 是当前插件最重要的单例状态中心。它通过 `ConfigService` 取得并持有：
+
+- `SpectrumConfig`
+- `ShutterController`
+- `FilterWheelController`
+- `SmuController`
+- 当前设备句柄
+- 当前连接状态、硬件型号、序列号
+- 当前标定组配置与活动分组
+- 当前测量模式文本
+
+因此 `MainWindow` 更多是在组织 UI 和调用链，真正跨文件共享的测量状态主要都收敛在 `SpectrometerManager`。
+
+## 连接与标定当前怎么工作
+
+`MainWindow.Connection.cs` 展示了当前连接链的真实顺序：
+
+1. 连接前先调用 `LicenseDatabase.Instance.SyncToLocal()` 同步许可证。
+2. 通过 `Spectrometer.CM_CreateEmission(...)` 创建句柄。
+3. 根据配置决定走 USB 还是 COM 口初始化。
+4. 连接成功后读取设备序列号。
+5. 按序列号加载标定分组配置。
+6. 加载当前波长标定文件和幅值标定文件。
+7. 应用 SP100 参数。
+
+如果连接失败，当前实现还会尝试读取设备列表；当检测到单个设备但连接失败时，会把问题引导到许可证管理，而不是只弹一个通用错误框。
+
+### 标定分组不是简单文件选择框
+
+`CalibrationGroupWindow` 当前按光谱仪 SN 管理分组配置。编辑时变更会先暂存在内存里，只有点击保存才真正写回；直接关闭窗口会放弃未保存改动。
+
+这和旧文档里“选择一个标定文件继续测量”的说法相比，已经是更明确的一套按设备分组的配置模型。
+
+## 测量链当前怎么展开
+
+`MainWindow.Measurement.cs` 当前把单次测量拆成了几个清晰阶段：
+
+- 自动校零前置检查
+- 自动积分
+- 自适应校零
+- 采集数据
+- 渲染结果
+- 持久化结果
+
+具体行为上，当前实现已经不只是“调用一次设备 SDK 然后画图”：
+
+- 自动校零依赖 `ShutterController`。
+- 同步频率模式会走 `CM_Emission_GetDataSyncfreq(...)`。
+- 标准模式在超时时会做一次重试。
+- EQE 模式下会接入 `SmuController`，并把电压电流结果回写到窗口配置和结果对象。
+
+同时，测量过程会额外记录每个步骤的耗时、输入快照和成功状态。
+
+## 结果与持久化当前怎么落地
+
+`ViewResultManager` 当前不只是一个内存列表管理器，而是插件的数据落点。按实现看，它会：
+
+- 在 `AppData\Spectromer\Config\Spectrum.db` 维护 SQLite 数据库。
+- 保存 `SprectrumModel` 结果记录。
+- 维护 `SpectrumMeasurementProfile` 测量画像。
+- 保存测量步骤明细 JSON。
+- 在需要时更新 EQE 字段和测量总耗时。
+
+因此 Spectrum 当前不是“测完即丢”的临时工具，已经包含基本的数据追踪和回看能力。
+
+### 导出与列表操作
+
+当前主窗口还内置了：
+
+- 相对光谱 / 绝对光谱切换
+- CIE 图联动显示
+- 可见列复制
+- 普通光谱 CSV 导出
+- EQE 模式 CSV 导出
+- 结果删除与数据库清空
+
+这些行为分散在 `MainWindow.Chart.cs`、`MainWindow.ListView.cs` 和 `MainWindow.Export.cs` 中。
+
+## 当前还有哪些附加子系统
+
+### 布局持久化
+
+`MainWindow` 目前通过 `DockLayoutManager` 管理 AvalonDock 布局，并在窗口关闭时自动保存布局。这意味着它不是固定死板的单面板窗口。
+
+### 许可证同步
+
+`LicenseDatabase` 当前用 SQLite 跟踪已导入许可证文件的元数据，并在连接光谱仪前把全局许可证目录和本地 `license` 目录同步起来。
+
+### 独立启动壳存在，但不是宿主扩展重点
+
+仓库里确实还有 `App.xaml.cs`，它会在独立启动时初始化主题、日志、Socket 和主窗口。但在当前主程序插件装载模型里，文档更应该关注 manifest、菜单入口、provider 和窗口本体，而不是把这个 `Application` 类误写成日常宿主扩展入口。
+
+## 当前几个最容易写错的点
+
+### 它不是只有“连接设备 + 读一帧数据”
+
+现在的 Spectrum 实现已经把许可证同步、标定分组、窗口布局、状态栏、SQLite 结果落库和测量画像都串起来了。继续把它写成轻量测试小工具，会明显低估当前复杂度。
+
+### 结果持久化不只是一张表
+
+除了光谱结果记录，当前还会单独落 `SpectrumMeasurementProfile` 和步骤明细 JSON。旧文档如果只写导出 CSV，会漏掉真正的追踪链。
+
+### 标定是按 SN 组织的
+
+当前标定配置不是简单的全局单文件路径，而是跟序列号和活动分组绑定。这个边界对理解现场设备切换很重要。
+
+### 状态栏是窗口级扩展，不是全局主程序常驻项
+
+`SpectrumStatusBarProvider` 的目标名是 `Spectrum`，它描述的是插件窗口内部状态栏，而不是主程序任意页面都可见的全局状态条。
+
+## 推荐阅读顺序
+
+1. `Plugins/Spectrum/MainWindow.xaml.cs`
+2. `Plugins/Spectrum/SpectrometerManager.cs`
+3. `Plugins/Spectrum/MainWindow.Connection.cs`
+4. `Plugins/Spectrum/MainWindow.Measurement.cs`
+5. `Plugins/Spectrum/Data/ViewResultManager.cs`
+6. `Plugins/Spectrum/SpectrumStatusBarProvider.cs`
+7. `Plugins/Spectrum/Calibration/CalibrationGroupWindow.xaml.cs`
+8. `Plugins/Spectrum/manifest.json`
+
+这样能先看到宿主入口，再看到状态中心、设备链和结果落点。
+
+## 继续阅读
+
+- [Plugins/README.md](../../../../Plugins/README.md)
+- [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
+- [docs/04-api-reference/plugins/standard-plugins/system-monitor.md](./system-monitor.md)
