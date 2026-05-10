@@ -13,7 +13,7 @@ namespace ColorVision.UI.LogImp
     /// This is the core log-file-monitoring component that can be hosted in DockingManager panels
     /// or any other container. WindowLogLocal uses this control as its content.
     /// </summary>
-    public partial class LogLocalOutput : UserControl
+    public partial class LogLocalOutput : UserControl, IDisposable
     {
         /// <summary>
         /// Log file path being monitored.
@@ -30,6 +30,7 @@ namespace ColorVision.UI.LogImp
         private readonly object _fileLock = new object();
         private FileSystemWatcher? _fileWatcher;
         private bool _fileChangePending;
+        private bool _isDisposed;
 
         /// <summary>
         /// File encoding (defaults to system default; use GB2312 for C++ logs on Chinese Windows).
@@ -92,6 +93,9 @@ namespace ColorVision.UI.LogImp
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_isDisposed)
+                return;
+
             if (Config.AutoRefresh)
             {
                 _refreshTimer?.Start();
@@ -446,6 +450,45 @@ namespace ColorVision.UI.LogImp
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(LogFilePath);
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+
+            Loaded -= UserControl_Loaded;
+            Unloaded -= UserControl_Unloaded;
+            Config.PropertyChanged -= Config_PropertyChanged;
+
+            if (_refreshTimer != null)
+            {
+                _refreshTimer.Stop();
+                _refreshTimer.Tick -= RefreshTimer_Tick;
+                _refreshTimer = null;
+            }
+
+            if (_fileWatcher != null)
+            {
+                try
+                {
+                    _fileWatcher.EnableRaisingEvents = false;
+                }
+                catch
+                {
+                }
+
+                _fileWatcher.Changed -= OnFileChanged;
+                _fileWatcher.Created -= OnFileChanged;
+                _fileWatcher.Dispose();
+                _fileWatcher = null;
+            }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

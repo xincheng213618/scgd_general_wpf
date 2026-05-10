@@ -15,11 +15,15 @@ namespace ColorVision.UI.LogImp
     public partial class LogOutput : UserControl,IDisposable
     {
         private string? Pattern;
+        private bool _isAppenderAttached;
+        private bool _isDisposed;
 
         public LogOutput(string? pattern = null)
         {
             Pattern = pattern ?? LogConstants.DefaultLogPattern;
             InitializeComponent();
+            Loaded += LogOutput_Loaded;
+            Unloaded += LogOutput_Unloaded;
             this.SizeChanged += (s, e) =>
             {
                 ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
@@ -28,28 +32,73 @@ namespace ColorVision.UI.LogImp
                 SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
             };
         }
-        TextBoxAppender TextBoxAppender { get; set; }
-        Hierarchy Hierarchy { get; set; }
+        TextBoxAppender? TextBoxAppender { get; set; }
+        Hierarchy? Hierarchy { get; set; }
 
         public void Dispose()
         {
-            Hierarchy.Root.RemoveAppender(TextBoxAppender);
-            log4net.Config.BasicConfigurator.Configure(Hierarchy);
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+            DetachAppender();
+            Loaded -= LogOutput_Loaded;
+            Unloaded -= LogOutput_Unloaded;
             GC.SuppressFinalize(this);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            TextBoxAppender = new TextBoxAppender(logTextBox,logTextBoxSerch);
-            TextBoxAppender.Layout = new PatternLayout(Pattern);
+            this.DataContext = LogConfig.Instance;
+            cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
+            SearchBar1Brush = SearchBar1.BorderBrush;
+
+            AttachAppender();
+        }
+
+        private void LogOutput_Loaded(object sender, RoutedEventArgs e)
+        {
+            AttachAppender();
+        }
+
+        private void LogOutput_Unloaded(object sender, RoutedEventArgs e)
+        {
+            DetachAppender();
+        }
+
+        private void AttachAppender()
+        {
+            if (_isDisposed || _isAppenderAttached || Hierarchy == null)
+            {
+                return;
+            }
+
+            TextBoxAppender = new TextBoxAppender(logTextBox, logTextBoxSerch)
+            {
+                Layout = new PatternLayout(Pattern)
+            };
             Hierarchy.Root.AddAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
-
-            this.DataContext = LogConfig.Instance;
-
-            cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
+            _isAppenderAttached = true;
         }
+
+        private void DetachAppender()
+        {
+            if (!_isAppenderAttached || Hierarchy == null || TextBoxAppender == null)
+            {
+                return;
+            }
+
+            Hierarchy.Root.RemoveAppender(TextBoxAppender);
+            TextBoxAppender.Dispose();
+            TextBoxAppender = null;
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
+            _isAppenderAttached = false;
+        }
+
         private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedLevel = (KeyValuePair<Level, string>)cmlog.SelectedItem;
@@ -72,7 +121,10 @@ namespace ColorVision.UI.LogImp
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
-            TextBoxAppender.SearchText = searchText;
+            if (TextBoxAppender != null)
+            {
+                TextBoxAppender.SearchText = searchText;
+            }
 
             if (!string.IsNullOrEmpty(searchText))
             {

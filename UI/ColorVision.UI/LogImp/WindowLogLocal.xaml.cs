@@ -49,6 +49,13 @@ namespace ColorVision.UI.LogImp
             // Create and host the LogLocalOutput UserControl
             LogOutputControl = new LogLocalOutput(LogFilePath, Encoding);
             RootGrid.Children.Add(LogOutputControl);
+
+            Closed += (_, _) =>
+            {
+                LogOutputControl?.Dispose();
+                RootGrid.Children.Clear();
+                LogOutputControl = null;
+            };
         }
     }
 }

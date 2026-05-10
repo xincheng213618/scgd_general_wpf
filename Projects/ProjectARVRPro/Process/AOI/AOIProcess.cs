@@ -1,6 +1,9 @@
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
+using SqlSugar;
+using SqlSugar.Extensions;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
@@ -32,51 +35,23 @@ namespace ProjectARVRPro.Process.AOI
 
                     if (master.ImgFileType == ViewResultAlgType.ImageConvert)
                     {
-                        try
+                        string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                        if (!Directory.Exists(Dir))
                         {
-                            string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
-                            if (!Directory.Exists(Dir))
-                            {
-                                Directory.CreateDirectory(Dir);
-                            }
-
-
-                            if (!string.IsNullOrWhiteSpace(master.ResultImagFile))
-                            {
-                                log.Info("正在复制 " + master.ResultImagFile);
-                                string ResultImagFile = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
-                                if (File.Exists(ResultImagFile))
-                                {
-                                    log.Info("正在复制 " + ResultImagFile);
-                                    File.Copy(master.ResultImagFile, ResultImagFile, true);
-                                }
-                            }
-
-
-                            if (!string.IsNullOrWhiteSpace(master.ImgFile))
-                            {
-                                string ImgFile = Path.Combine(Dir, Path.GetFileName(master.ImgFile));
-                                if (File.Exists(ImgFile))
-                                {
-                                    log.Info("正在复制 " + master.ImgFile);
-                                    File.Copy(master.ImgFile, ImgFile, true);
-                                }
-
-
-                                string csvfilepath = master.ImgFile.Replace(".tif",".csv");
-                                log.Info("CSV 文件名: " + csvfilepath);
-                                string resultcsvFile = Path.Combine(Dir, Path.GetFileName(csvfilepath));
-
-                                if (File.Exists(csvfilepath))
-                                {
-                                    log.Info("正在复制 " + resultcsvFile);
-                                    File.Copy(csvfilepath, resultcsvFile, true);
-                                }
-                            }
+                            Directory.CreateDirectory(Dir);
                         }
-                        catch(Exception ex)
+
+                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                        var list = db.Queryable<AlgResultImageModel>().Where(it => it.Pid == master.Id).ToList();
+
+                        foreach (var imageModel in list)
                         {
-                            log.Error(ex);
+                            if (File.Exists(imageModel.FileName))
+                            {
+                                log.Info("正在复制 " + imageModel.FileName);
+                                string destFile = Path.Combine(Dir, Path.GetFileName(imageModel.FileName));
+                                File.Copy(imageModel.FileName, destFile, true);
+                            }
                         }
                     }
                     if (master.ImgFileType == ViewResultAlgType.OLED_CombineQuaterImages)
@@ -96,7 +71,29 @@ namespace ProjectARVRPro.Process.AOI
                         {
                             log.Error(ex);
                         }
+                       
+                    }
 
+                    if (master.ImgFileType == ViewResultAlgType.OLED_RebuildPixelsMem)
+                    {
+                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                        var list = db.Queryable<AlgResultPoiCieFileModel>().Where(it => it.Pid == master.Id).ToList();
+
+                        foreach (var ciefile in list)
+                        {
+                            if (File.Exists(ciefile.FileUrl))
+                            {
+                                log.Info("正在复制 " + ciefile.FileUrl);
+                                string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
+                                if (!Directory.Exists(Dir))
+                                {
+                                    Directory.CreateDirectory(Dir);
+                                }
+                                string destFile = Path.Combine(Dir, Path.GetFileName(ciefile.FileUrl));
+                                File.Copy(ciefile.FileUrl, destFile, true);
+                            }
+
+                        }
                     }
                 }
 
