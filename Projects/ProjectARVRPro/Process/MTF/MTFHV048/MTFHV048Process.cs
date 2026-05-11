@@ -10,7 +10,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.MTFHV048
+namespace ProjectARVRPro.Process.MTF.MTFHV048
 {
     public class MTFHV048Process : ProcessBase<MTFHV048ProcessConfig>
     {

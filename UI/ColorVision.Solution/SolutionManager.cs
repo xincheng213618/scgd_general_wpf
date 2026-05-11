@@ -70,15 +70,15 @@ namespace ColorVision.Solution
                         Directory.CreateDirectory(Default);
 
                     string DefaultSolution = Default + "\\" + "Default";
-                    if (Directory.Exists(DefaultSolution))
-                        Directory.CreateDirectory(DefaultSolution);
-                    var SolutionPath = CreateSolution(DefaultSolution);
-                }
+                if (!Directory.Exists(DefaultSolution))
+                    Directory.CreateDirectory(DefaultSolution);
+                var SolutionPath = CreateSolution(DefaultSolution);
+            }
             });
 
             SettingCommand = SolutionSetting.Instance.EditCommand;
 
-            WorkspaceManager.ContentIdSelected += (s, e) => SolutionExplorers[0].SetSelected(e);
+            WorkspaceManager.ContentIdSelected += (s, e) => CurrentSolutionExplorer?.SetSelected(e);
         }
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
@@ -98,7 +98,7 @@ namespace ColorVision.Solution
                     SolutionEnvironments.SolutionName = fileInfo.Name;
                     SolutionEnvironments.SolutionFileName = Path.GetFileName(FullPath);
                 }
-                SolutionExplorers.Clear();
+                DisposeSolutionExplorers();
                 CurrentSolutionExplorer = new SolutionExplorer(SolutionEnvironments);
                 SolutionExplorers.Add(CurrentSolutionExplorer);
                 return true;
@@ -123,6 +123,22 @@ namespace ColorVision.Solution
             SolutionCreated?.Invoke(slnName, new EventArgs());
             OpenSolution(slnName);
             return true;
+        }
+
+        private void DisposeSolutionExplorers()
+        {
+            foreach (var explorer in SolutionExplorers.ToList())
+            {
+                try
+                {
+                    explorer.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"释放旧工程资源失败: {ex.Message}", ex);
+                }
+            }
+            SolutionExplorers.Clear();
         }
         public static void OpenSolutionWindow()
         {

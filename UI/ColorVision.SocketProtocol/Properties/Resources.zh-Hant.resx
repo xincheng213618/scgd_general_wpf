@@ -204,4 +204,97 @@
   <data name="ClientNotConnected" xml:space="preserve">
     <value>目標客戶端未連接</value>
   </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>自動捲動</value>
+  </data>
+  <data name="ClientCountFormat" xml:space="preserve">
+    <value>{0} 個用戶端</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>未啟用</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>已啟用</value>
+  </data>
+  <data name="EnabledStatus" xml:space="preserve">
+    <value>啟用狀態</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="FilterReceived" xml:space="preserve">
+    <value>接收</value>
+  </data>
+  <data name="FilterSent" xml:space="preserve">
+    <value>傳送</value>
+  </data>
+  <data name="MessageCountFormat" xml:space="preserve">
+    <value>{0} 則訊息</value>
+  </data>
+  <data name="MessageSettings" xml:space="preserve">
+    <value>訊息設定</value>
+  </data>
+  <data name="NoError" xml:space="preserve">
+    <value>無</value>
+  </data>
+  <data name="OpenDatabase" xml:space="preserve">
+    <value>開啟資料庫</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>開啟失敗</value>
+  </data>
+  <data name="OpenListenAddressFailedFormat" xml:space="preserve">
+    <value>開啟 {0} 失敗: {1}</value>
+  </data>
+  <data name="OpenStatus" xml:space="preserve">
+    <value>服務開啟</value>
+  </data>
+  <data name="PrettyPrintView" xml:space="preserve">
+    <value>格式化檢視</value>
+  </data>
+  <data name="ProtocolAndClients" xml:space="preserve">
+    <value>通訊協定 / 用戶端</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>已開啟</value>
+  </data>
+  <data name="SearchTooltip" xml:space="preserve">
+    <value>依用戶端、事件名稱、MsgID、回應碼或內容篩選</value>
+  </data>
+  <data name="ServiceSettings" xml:space="preserve">
+    <value>服務設定</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>啟動中</value>
+  </data>
+  <data name="StartService" xml:space="preserve">
+    <value>啟動服務</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>未開啟</value>
+  </data>
+  <data name="Stopping" xml:space="preserve">
+    <value>停止中</value>
+  </data>
+  <data name="StopServerFailedFormat" xml:space="preserve">
+    <value>停止服務失敗: {0}</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>停止服務</value>
+  </data>
+  <data name="UpdatedAtFormat" xml:space="preserve">
+    <value>更新時間 {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="ListenAddress" xml:space="preserve">
+    <value>監聽位址</value>
+  </data>
+  <data name="SocketServer" xml:space="preserve">
+    <value>Socket 服務</value>
+  </data>
+  <data name="SocketServerConnected" xml:space="preserve">
+    <value>Socket 服務已連線</value>
+  </data>
+  <data name="SocketServerDisconnected" xml:space="preserve">
+    <value>Socket 服務未連線</value>
+  </data>
 </root>

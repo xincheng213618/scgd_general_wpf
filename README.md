@@ -52,7 +52,7 @@ dotnet run --project .\ColorVision\ColorVision.csproj -p:Platform=x64
 ColorVision/
 ├── ColorVision/              # 主程序入口与桌面壳层
 ├── Engine/                   # 核心引擎、模板系统、流程引擎、原生互操作
-├── UI/                       # WPF UI 框架、主题、图像编辑器与桌面基础设施
+├── UI/                       # WPF UI 框架、主题、图像编辑器、Socket 通信与桌面基础设施
 ├── Plugins/                  # 运行时插件（当前源码主体含 EventVWR、Spectrum、SystemMonitor、WindowsServicePlugin 等）
 ├── Projects/                 # 客户或场景定制项目包
 ├── ColorVisionSetup/         # 安装器与更新器相关项目
@@ -82,11 +82,13 @@ ColorVision/
 - [Engine 开发指南](docs/02-developer-guide/engine-development/README.md) - Engine 与模板相关开发
 - [插件开发总览](docs/02-developer-guide/plugin-development/README.md) - 插件开发入口
 - [部署概览](docs/02-developer-guide/deployment/overview.md) - 安装器、更新与发布链路
+- [Socket 通信优化路线](docs/02-developer-guide/performance/socket-protocol-optimization-roadmap.md) - TCP 服务、消息历史和管理窗口的后续优化路径
 
 ### 设计与源码导读
 
 - [架构设计](docs/03-architecture/README.md) - 系统设计边界与运行时关系
 - [API 参考](docs/04-api-reference/README.md) - 模块、接口与实现入口
+- [ColorVision.SocketProtocol](docs/04-api-reference/ui-components/ColorVision.SocketProtocol.md) - 本地 TCP 服务、JSON/Text 分发、消息历史和管理窗口
 - [项目结构总览](docs/05-resources/project-structure/README.md) - 仓库目录与文档映射
 
 **🌐 在线文档站点**: https://xincheng213618.github.io/scgd_general_wpf/
@@ -150,5 +152,5 @@ py Scripts/publish_plugin.py -p PluginId -v 1.0.0.1
 
 ---
 
-*最后更新: 2026-04-02*  
+*最后更新: 2026-05-11*
 *ColorVision 开发团队*

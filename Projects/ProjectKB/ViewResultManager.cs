@@ -52,6 +52,11 @@ namespace ProjectKB
         [DisplayName("保存Summary"), Category("KB")]
         public bool SaveSummary { get => _SaveSummary; set { _SaveSummary = value; OnPropertyChanged(); } }
         private bool _SaveSummary = true;
+
+        [DisplayName("CSV追加Fallout统计"), Category("KB")]
+        [Description("启用后会在 CSV 末尾追加 Fallout= 与通过率统计，并在后续追加结果时自动重算该行")]
+        public bool AppendFalloutSummary { get => _AppendFalloutSummary; set { _AppendFalloutSummary = value; OnPropertyChanged(); } }
+        private bool _AppendFalloutSummary = true;
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable
@@ -135,7 +140,7 @@ namespace ProjectKB
                     dialog.FileName = csvpath;
                     dialog.RestoreDirectory = true;
                     if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                    kbItemMaster.SaveCsv(dialog.FileName);
+                    kbItemMaster.SaveCsv(dialog.FileName, Config.AppendFalloutSummary);
                 }
             }
 

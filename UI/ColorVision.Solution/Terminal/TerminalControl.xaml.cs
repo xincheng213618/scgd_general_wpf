@@ -9,7 +9,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.Solution.Terminal
 {
-    public partial class TerminalControl : UserControl
+    public partial class TerminalControl : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TerminalControl));
 
@@ -20,6 +20,7 @@ namespace ColorVision.Solution.Terminal
         private readonly Queue<string> _pendingOutput = new();
         private DispatcherTimer? _flushTimer;
         private bool _isShellRunning;
+        private bool _disposed;
         private string _currentShell = "powershell";
 
         // Input tracking for command history
@@ -633,5 +634,18 @@ namespace ColorVision.Solution.Terminal
         }
 
         #endregion
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            _flushTimer?.Stop();
+            _flushTimer = null;
+            TerminalDisplay.UrlClicked -= OnUrlClicked;
+            KillShell();
+            GC.SuppressFinalize(this);
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Rbac.Dtos;
 using ColorVision.Rbac.Entity;
 using ColorVision.Rbac.Security;
+using ColorVision.UI.Authorizations;
 using SqlSugar;
 
 namespace ColorVision.Rbac.Services.Auth
@@ -103,6 +104,7 @@ namespace ColorVision.Rbac.Services.Auth
                 var storage = _db.Storageable(new UserDetailEntity
                 {
                     UserId = user.Id,
+                    PermissionMode = PermissionMode.User,
                     CreatedAt = utcNow,
                     UpdatedAt = utcNow
                 })

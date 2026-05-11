@@ -12,15 +12,20 @@ namespace ColorVision.Solution.Explorer
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SolutionNodeFactory));
         private static bool _registriesInitialized;
+        private static readonly object _registryLock = new();
 
         public static void InitializeRegistries()
         {
             if (_registriesInitialized) return;
-            FolderMetaRegistry.RegisterFolderMetasFromAssemblies();
-            FileMetaRegistry.RegisterFileMetasFromAssemblies();
-            NewItemTemplateRegistry.Initialize();
-            ProjectTemplateRegistry.Initialize();
-            _registriesInitialized = true;
+            lock (_registryLock)
+            {
+                if (_registriesInitialized) return;
+                FolderMetaRegistry.RegisterFolderMetasFromAssemblies();
+                FileMetaRegistry.RegisterFileMetasFromAssemblies();
+                NewItemTemplateRegistry.Initialize();
+                ProjectTemplateRegistry.Initialize();
+                _registriesInitialized = true;
+            }
         }
 
         public static FolderNode CreateFolderNode(DirectoryInfo directoryInfo)
@@ -90,7 +95,12 @@ namespace ColorVision.Solution.Explorer
 
         public static async Task PopulateChildren(ISolutionNode parent, DirectoryInfo directoryInfo, SolutionCache? cache = null)
         {
-            // Always use filesystem as the authority
+            if (parent.VisualChildren.Count > 0)
+                return;
+
+            if (cache != null && cache.HasCache() && cache.ValidateDirectory(directoryInfo.FullName) && TryPopulateChildrenFromCache(parent, directoryInfo, cache))
+                return;
+
             foreach (var item in directoryInfo.GetDirectories())
             {
                 if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
@@ -114,24 +124,40 @@ namespace ColorVision.Solution.Explorer
                 log.Debug($"{item.FullName}加载时间: {sw.Elapsed.TotalSeconds} 秒");
             }
 
-            // Rebuild cache in background for future use
-            if (cache != null)
+        }
+
+        private static bool TryPopulateChildrenFromCache(ISolutionNode parent, DirectoryInfo directoryInfo, SolutionCache cache)
+        {
+            var cachedChildren = cache.GetChildren(directoryInfo.FullName);
+            if (cachedChildren.Count == 0)
+                return false;
+
+            foreach (var entry in cachedChildren)
             {
-                _ = Task.Run(() =>
+                try
                 {
-                    try
+                    if (entry.IsDirectory)
                     {
-                        if (!cache.ValidateDirectory(directoryInfo.FullName))
-                        {
-                            cache.RebuildCache(directoryInfo.FullName);
-                        }
+                        if (!Directory.Exists(entry.FullPath))
+                            continue;
+
+                        parent.AddChild(CreateFolderNode(new DirectoryInfo(entry.FullPath)));
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        log.Warn($"后台缓存重建失败: {ex.Message}");
+                        if (!File.Exists(entry.FullPath))
+                            continue;
+
+                        AddFileNode(parent, new FileInfo(entry.FullPath));
                     }
-                });
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"从缓存加载节点失败: {entry.FullPath}, {ex.Message}");
+                }
             }
+
+            return parent.VisualChildren.Count > 0;
         }
 
         /// <summary>
@@ -155,17 +181,25 @@ namespace ColorVision.Solution.Explorer
                 fileInfo = new FileInfo(targetPath);
             }
 
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                FileNode file = CreateFileNode(fileInfo);
-                parent.AddChild(file);
-            });
+            AddNode(parent, CreateFileNode(fileInfo));
         }
 
-        public static async Task AddFolderNode(ISolutionNode parent, DirectoryInfo directoryInfo)
+        public static void AddFolderNode(ISolutionNode parent, DirectoryInfo directoryInfo)
         {
-            var folder = CreateFolderNode(directoryInfo);
-            parent.AddChild(folder);
+            AddNode(parent, CreateFolderNode(directoryInfo));
+        }
+
+        private static void AddNode(ISolutionNode parent, SolutionNode node)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                parent.AddChild(node);
+            }
+            else
+            {
+                dispatcher.BeginInvoke(() => parent.AddChild(node));
+            }
         }
     }
 }

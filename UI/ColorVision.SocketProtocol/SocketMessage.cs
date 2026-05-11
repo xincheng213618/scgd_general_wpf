@@ -34,6 +34,11 @@ namespace ColorVision.SocketProtocol
         [SugarColumn(ColumnName = "Direction")]
         public SocketMessageDirection Direction { get; set; }
 
+        [SugarColumn(IsIgnore = true)]
+        public string DirectionDisplay => Direction == SocketMessageDirection.Received
+            ? Properties.Resources.FilterReceived
+            : Properties.Resources.FilterSent;
+
         /// <summary>
         /// 消息内容
         /// </summary>

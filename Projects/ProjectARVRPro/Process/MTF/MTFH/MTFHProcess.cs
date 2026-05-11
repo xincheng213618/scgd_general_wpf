@@ -11,7 +11,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.MTFH
+namespace ProjectARVRPro.Process.MTF.MTFH
 {
     /// <summary>
     /// 旧版MTFH解析 - 使用 MTFResult.result + mtfValue

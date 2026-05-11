@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.MTFV
+namespace ProjectARVRPro.Process.MTF.MTFV
 {
     /// <summary>
     /// 旧版MTFV Recipe配置（上下限）

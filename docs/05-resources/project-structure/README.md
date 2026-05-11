@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | `ColorVision/` | 主 WPF 应用入口与主窗口 | [入门指南](../../00-getting-started/README.md) / [主窗口导览](../../01-user-guide/interface/main-window.md) |
 | `UI/` | UI 框架、主题、属性编辑器、图像编辑器 | [UI 组件总览](../../04-api-reference/ui-components/README.md) |
+| `UI/ColorVision.SocketProtocol/` | 本地 TCP 服务、消息历史和管理窗口 | [ColorVision.SocketProtocol](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) / [Socket 通信优化路线](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md) |
 | `Engine/` | 核心引擎、设备服务、模板系统、流程执行 | [Engine 开发指南](../../02-developer-guide/engine-development/README.md) / [Engine 组件总览](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` | 运行时插件和扩展能力 | [插件开发概览](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | 客户项目包和业务定制实现 | [组件交互](../../03-architecture/overview/component-interactions.md) |

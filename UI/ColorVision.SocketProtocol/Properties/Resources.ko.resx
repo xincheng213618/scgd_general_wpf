@@ -204,4 +204,97 @@
   <data name="ClientNotConnected" xml:space="preserve">
     <value>대상 클라이언트가 연결되지 않았습니다.</value>
   </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>자동 스크롤</value>
+  </data>
+  <data name="ClientCountFormat" xml:space="preserve">
+    <value>{0}개 클라이언트</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>비활성화됨</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>활성화됨</value>
+  </data>
+  <data name="EnabledStatus" xml:space="preserve">
+    <value>활성 상태</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>전체</value>
+  </data>
+  <data name="FilterReceived" xml:space="preserve">
+    <value>수신</value>
+  </data>
+  <data name="FilterSent" xml:space="preserve">
+    <value>송신</value>
+  </data>
+  <data name="MessageCountFormat" xml:space="preserve">
+    <value>{0}개 메시지</value>
+  </data>
+  <data name="MessageSettings" xml:space="preserve">
+    <value>메시지 설정</value>
+  </data>
+  <data name="NoError" xml:space="preserve">
+    <value>없음</value>
+  </data>
+  <data name="OpenDatabase" xml:space="preserve">
+    <value>데이터베이스 열기</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>열기 실패</value>
+  </data>
+  <data name="OpenListenAddressFailedFormat" xml:space="preserve">
+    <value>{0} 열기 실패: {1}</value>
+  </data>
+  <data name="OpenStatus" xml:space="preserve">
+    <value>서비스 열림</value>
+  </data>
+  <data name="PrettyPrintView" xml:space="preserve">
+    <value>서식 보기</value>
+  </data>
+  <data name="ProtocolAndClients" xml:space="preserve">
+    <value>프로토콜 / 클라이언트</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>열림</value>
+  </data>
+  <data name="SearchTooltip" xml:space="preserve">
+    <value>클라이언트, 이벤트 이름, MsgID, 응답 코드 또는 내용으로 필터링</value>
+  </data>
+  <data name="ServiceSettings" xml:space="preserve">
+    <value>서비스 설정</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>시작 중</value>
+  </data>
+  <data name="StartService" xml:space="preserve">
+    <value>서비스 시작</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>열리지 않음</value>
+  </data>
+  <data name="Stopping" xml:space="preserve">
+    <value>중지 중</value>
+  </data>
+  <data name="StopServerFailedFormat" xml:space="preserve">
+    <value>서비스 중지 실패: {0}</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>서비스 중지</value>
+  </data>
+  <data name="UpdatedAtFormat" xml:space="preserve">
+    <value>업데이트 시간 {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="ListenAddress" xml:space="preserve">
+    <value>수신 주소</value>
+  </data>
+  <data name="SocketServer" xml:space="preserve">
+    <value>Socket 서버</value>
+  </data>
+  <data name="SocketServerConnected" xml:space="preserve">
+    <value>Socket 서버 연결됨</value>
+  </data>
+  <data name="SocketServerDisconnected" xml:space="preserve">
+    <value>Socket 서버 연결 안 됨</value>
+  </data>
 </root>

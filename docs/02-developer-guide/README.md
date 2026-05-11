@@ -30,6 +30,7 @@
 
 - [插件市场后端](./backend/README.md)
 - [性能优化概览](./performance/overview.md)
+- [Socket 通信模块优化路线](./performance/socket-protocol-optimization-roadmap.md)
 
 ## 推荐阅读路径
 

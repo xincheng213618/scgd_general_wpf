@@ -1,7 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 
-namespace ProjectARVRPro.Process.MTFHV
+namespace ProjectARVRPro.Process.MTF.MTFHV
 {
     public class MTFHVViewTestResult : MTFHVTestResult
     {

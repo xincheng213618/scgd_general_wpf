@@ -33,6 +33,11 @@ namespace ColorVision.Solution.Explorer
         public virtual void AddChild(SolutionNode node)
         {
             if (node == null) return;
+            if (!string.IsNullOrEmpty(node.FullPath) &&
+                VisualChildren.Any(child => string.Equals(child.FullPath, node.FullPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
             node.Parent = this;
             AddChildEventHandler?.Invoke(this, new EventArgs());
             VisualChildren.SortedAdd(node);

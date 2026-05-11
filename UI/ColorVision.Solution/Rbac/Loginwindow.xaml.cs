@@ -1,4 +1,5 @@
 ﻿using ColorVision.Rbac.Dtos;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Input;
@@ -70,6 +71,7 @@ namespace ColorVision.Rbac
                     RbacManagerConfig.Instance.LoginResult = userLoginResult;
                     config.SavedUsername = userLoginResult.User.Username;
                     Authorization.Instance.PermissionMode = userLoginResult.UserDetail.PermissionMode;
+                    ConfigService.Instance.Save<RbacManagerConfig>();
 
                     try
                     {
@@ -90,6 +92,7 @@ namespace ColorVision.Rbac
                     config.SessionToken = string.Empty;
                     config.RememberMe = false;
                     ChkRememberMe.IsChecked = false;
+                    ConfigService.Instance.Save<RbacManagerConfig>();
                     Account1.Focus();
                 }
             }
@@ -188,6 +191,7 @@ namespace ColorVision.Rbac
             {
                 config.SavedUsername = string.Empty;
             }
+            ConfigService.Instance.Save<RbacManagerConfig>();
 
             // 记录审计日志
             try

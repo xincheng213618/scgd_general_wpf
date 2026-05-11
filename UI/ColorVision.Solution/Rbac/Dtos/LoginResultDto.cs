@@ -33,7 +33,7 @@ namespace ColorVision.Rbac.Dtos
         public string? Position { get; set; }
         public string? Remark { get; set; }
         public string? UserImage { get; set; }
-        public PermissionMode PermissionMode { get; set; }
+        public PermissionMode PermissionMode { get; set; } = PermissionMode.Guest;
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }

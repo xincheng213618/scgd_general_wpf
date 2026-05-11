@@ -1,10 +1,11 @@
-﻿#pragma warning disable CS8604
+#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -41,7 +42,7 @@ namespace ColorVision.SocketProtocol
     {
         public int Code { get; set; }
         public string Msg { get; set; }
-        public dynamic Data { get; set; }
+        public dynamic? Data { get; set; }
     }
 
 
@@ -85,13 +86,13 @@ namespace ColorVision.SocketProtocol
             return new SocketResponse { Code = 404, Msg = "Handler not found for event: " + request.EventName };
         }
     }
-    
+
     /// <summary>
     /// 文本消息分发器接口
     /// </summary>
     public interface ISocketTextDispatcher
     {
-        string  Handle(NetworkStream stream, string request);
+        string? Handle(NetworkStream stream, string request);
     }
 
     /// <summary>
@@ -119,14 +120,14 @@ namespace ColorVision.SocketProtocol
                 }
             }
         }
-        
+
         /// <summary>
         /// 分发文本请求到对应的处理器
         /// </summary>
         /// <param name="stream">网络流</param>
         /// <param name="request">请求文本</param>
         /// <returns>响应文本</returns>
-        public string Dispatch(NetworkStream stream, string request)
+        public string? Dispatch(NetworkStream stream, string request)
         {
             if(_handlers.Count > 0)
             {
@@ -143,6 +144,16 @@ namespace ColorVision.SocketProtocol
         }
     }
 
+    public enum SocketServerState
+    {
+        Disabled,
+        Stopped,
+        Starting,
+        Running,
+        Stopping,
+        Error
+    }
+
 
     /// <summary>
     /// Socket连接管理器
@@ -153,7 +164,7 @@ namespace ColorVision.SocketProtocol
         private static ILog log = LogManager.GetLogger(typeof(SocketManager));
         private static SocketManager? _instance;
         private static readonly object _locker = new();
-        
+
         /// <summary>
         /// 获取SocketManager单例实例
         /// </summary>
@@ -161,7 +172,8 @@ namespace ColorVision.SocketProtocol
         public static SocketManager GetInstance() { lock (_locker) { return _instance ??= new SocketManager(); } }
 
         private static TcpListener? tcpListener;
-        
+        private volatile bool _isStopRequested;
+
         /// <summary>
         /// Socket配置信息
         /// </summary>
@@ -170,7 +182,7 @@ namespace ColorVision.SocketProtocol
         /// <summary>
         /// 编辑配置命令
         /// </summary>
-        public RelayCommand EditCommand { get; set; } 
+        public RelayCommand EditCommand { get; set; }
 
         /// <summary>
         /// JSON消息分发器
@@ -186,13 +198,16 @@ namespace ColorVision.SocketProtocol
         /// 消息管理器(用于持久化)
         /// </summary>
         public SocketMessageManager MessageManager { get; set; }
-        
+
         public SocketManager()
         {
             JsonDispatcher = new SocketJsonDispatcher();
-            TextDispatcher  = new SocketTextDispatcher();
+            TextDispatcher = new SocketTextDispatcher();
             MessageManager = SocketMessageManager.GetInstance();
-            EditCommand = new RelayCommand(a =>  new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            Config.PropertyChanged += (_, _) => NotifyServerStatusChanged();
+            TcpClients.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ClientCountText));
+            ServerState = Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled;
         }
 
         /// <summary>
@@ -203,14 +218,187 @@ namespace ColorVision.SocketProtocol
         /// <summary>
         /// 获取或设置当前连接状态
         /// </summary>
-        public bool IsConnect { get => _IsConnect; private set { if (_IsConnect == value) return;  _IsConnect = value; OnPropertyChanged(); SocketConnectChanged?.Invoke(this, _IsConnect); } }
+        public bool IsConnect
+        {
+            get => _IsConnect;
+            private set
+            {
+                if (_IsConnect == value)
+                    return;
+
+                _IsConnect = value;
+                OnPropertyChanged();
+                NotifyServerStatusChanged();
+                SocketConnectChanged?.Invoke(this, _IsConnect);
+            }
+        }
         private bool _IsConnect;
+
+        public SocketServerState ServerState
+        {
+            get => _ServerState;
+            private set
+            {
+                if (_ServerState == value)
+                    return;
+
+                _ServerState = value;
+                OnPropertyChanged();
+                NotifyServerStatusChanged();
+            }
+        }
+        private SocketServerState _ServerState;
+
+        public string ServerStateText
+        {
+            get
+            {
+                if (!Config.IsServerEnabled)
+                    return Properties.Resources.Disabled;
+
+                return ServerState switch
+                {
+                    SocketServerState.Starting => Properties.Resources.Starting,
+                    SocketServerState.Running => Properties.Resources.Running,
+                    SocketServerState.Stopping => Properties.Resources.Stopping,
+                    SocketServerState.Error => Properties.Resources.OpenFailed,
+                    _ => Properties.Resources.Stopped
+                };
+            }
+        }
+
+        public string EnabledStatusText => Config.IsServerEnabled ? Properties.Resources.Enabled : Properties.Resources.Disabled;
+
+        public string OpenStatusText
+        {
+            get
+            {
+                if (!Config.IsServerEnabled)
+                    return Properties.Resources.Stopped;
+
+                return IsConnect
+                    ? Properties.Resources.Running
+                    : ServerState == SocketServerState.Error
+                        ? Properties.Resources.OpenFailed
+                        : Properties.Resources.Stopped;
+            }
+        }
+
+        public string ListenAddress => $"{Config.IPAddress}:{Config.ServerPort}";
+
+        public string ClientCountText => FormatResource(Properties.Resources.ClientCountFormat, TcpClients.Count);
+
+        public string LastErrorMessage
+        {
+            get => _LastErrorMessage;
+            private set
+            {
+                if (_LastErrorMessage == value)
+                    return;
+
+                _LastErrorMessage = value;
+                OnPropertyChanged();
+                NotifyServerStatusChanged();
+            }
+        }
+        private string _LastErrorMessage = string.Empty;
+
+        public DateTime? LastStatusChangedTime
+        {
+            get => _LastStatusChangedTime;
+            private set
+            {
+                if (_LastStatusChangedTime == value)
+                    return;
+
+                _LastStatusChangedTime = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LastStatusChangedText));
+            }
+        }
+        private DateTime? _LastStatusChangedTime;
+
+        public string LastStatusChangedText => LastStatusChangedTime.HasValue
+            ? FormatResource(Properties.Resources.UpdatedAtFormat, LastStatusChangedTime.Value)
+            : string.Empty;
+
+        public bool HasLastError => Config.IsServerEnabled && ServerState == SocketServerState.Error && !string.IsNullOrWhiteSpace(LastErrorMessage);
+
+        public string LastErrorDisplay => HasLastError ? LastErrorMessage : Properties.Resources.NoError;
+
+        public string ServerSummary => $"{EnabledStatusText} / {OpenStatusText} / {ListenAddress}";
+
+        private static string FormatResource(string format, params object?[] args)
+        {
+#pragma warning disable CA1863
+            return string.Format(CultureInfo.CurrentUICulture, format, args);
+#pragma warning restore CA1863
+        }
+
+        private void NotifyServerStatusChanged()
+        {
+            OnPropertyChanged(nameof(ServerStateText));
+            OnPropertyChanged(nameof(EnabledStatusText));
+            OnPropertyChanged(nameof(OpenStatusText));
+            OnPropertyChanged(nameof(ListenAddress));
+            OnPropertyChanged(nameof(ClientCountText));
+            OnPropertyChanged(nameof(LastStatusChangedText));
+            OnPropertyChanged(nameof(HasLastError));
+            OnPropertyChanged(nameof(LastErrorDisplay));
+            OnPropertyChanged(nameof(ServerSummary));
+        }
+
+        private static void RunOnUiThread(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                dispatcher.Invoke(action);
+            }
+        }
+
+        private void SetServerState(SocketServerState state)
+        {
+            RunOnUiThread(() =>
+            {
+                ServerState = state;
+                LastStatusChangedTime = DateTime.Now;
+            });
+        }
+
+        private void ClearLastError()
+        {
+            RunOnUiThread(() => LastErrorMessage = string.Empty);
+        }
+
+        private void SetLastError(string message)
+        {
+            RunOnUiThread(() =>
+            {
+                LastErrorMessage = message;
+                LastStatusChangedTime = DateTime.Now;
+                ServerState = SocketServerState.Error;
+            });
+        }
 
         /// <summary>
         /// 启动Socket服务器
         /// </summary>
         public void StartServer()
         {
+            if (IsConnect || ServerState == SocketServerState.Starting)
+            {
+                NotifyServerStatusChanged();
+                return;
+            }
+
+            _isStopRequested = false;
+            ClearLastError();
+            SetServerState(SocketServerState.Starting);
             Task.Run(() => CheckUpdate());
         }
 
@@ -219,6 +407,9 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public void StopServer()
         {
+            _isStopRequested = true;
+            ClearLastError();
+            SetServerState(SocketServerState.Stopping);
             if (tcpListener != null)
             {
                 try
@@ -235,11 +426,17 @@ namespace ColorVision.SocketProtocol
                         item?.Close();
                         item?.Dispose();
                     }
+                    SetServerState(Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled);
                 }
                 catch (Exception e)
                 {
                     log.Error("Error stopping server: " + e.Message);
+                    SetLastError(FormatResource(Properties.Resources.StopServerFailedFormat, e.Message));
                 }
+            }
+            else
+            {
+                SetServerState(Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled);
             }
         }
 
@@ -250,19 +447,23 @@ namespace ColorVision.SocketProtocol
 
         public void CheckUpdate()
         {
-            tcpListener = new TcpListener(IPAddress.Parse(Config.IPAddress), Config.ServerPort);
+            TcpListener? listener = null;
             try
             {
-                tcpListener.Start();
+                listener = new TcpListener(IPAddress.Parse(Config.IPAddress), Config.ServerPort);
+                tcpListener = listener;
+                listener.Start();
                 log.Info("Server started. Listening on port: " + Config.ServerPort);
-                Application.Current.Dispatcher.Invoke(() =>
+                RunOnUiThread(() =>
                 {
                     IsConnect = true;
+                    ServerState = SocketServerState.Running;
+                    LastStatusChangedTime = DateTime.Now;
                 });
                 while (true)
                 {
-                    TcpClient client = tcpListener.AcceptTcpClient();
-                    Application.Current.Dispatcher.Invoke(() =>
+                    TcpClient client = listener.AcceptTcpClient();
+                    RunOnUiThread(() =>
                     {
                         TcpClients.Add(client);
                     });
@@ -272,12 +473,41 @@ namespace ColorVision.SocketProtocol
             }
             catch (SocketException e)
             {
-                log.Error("Socket server error on port " + Config.ServerPort + ": " + e.Message);
+                if (_isStopRequested || !Config.IsServerEnabled)
+                {
+                    log.Info("Socket server stopped: " + e.Message);
+                }
+                else
+                {
+                    log.Error("Socket server error on port " + Config.ServerPort + ": " + e.Message);
+                    SetLastError(FormatResource(Properties.Resources.OpenListenAddressFailedFormat, ListenAddress, e.Message));
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                log.Info("Socket server stopped.");
+            }
+            catch (Exception e)
+            {
+                log.Error("Socket server error: " + e.Message);
+                SetLastError(FormatResource(Properties.Resources.OpenListenAddressFailedFormat, ListenAddress, e.Message));
             }
             finally
             {
-                tcpListener.Stop();
-                IsConnect = false;
+                listener?.Stop();
+                RunOnUiThread(() =>
+                {
+                    IsConnect = false;
+                    if (_isStopRequested || !Config.IsServerEnabled)
+                    {
+                        ServerState = Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled;
+                        LastErrorMessage = string.Empty;
+                    }
+                    else if (ServerState != SocketServerState.Error)
+                    {
+                        ServerState = Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled;
+                    }
+                });
                 // 不修改 Config.IsServerEnabled，保留用户配置
                 // 下次启动时仍会尝试开启服务器
             }
@@ -290,7 +520,7 @@ namespace ColorVision.SocketProtocol
 
             NetworkStream stream = client.GetStream();
             // Use RemoteEndPoint if available, otherwise use LocalEndPoint with a unique hash
-            string clientEndPoint = client.Client.RemoteEndPoint?.ToString() 
+            string clientEndPoint = client.Client.RemoteEndPoint?.ToString()
                 ?? $"Local:{client.Client.LocalEndPoint}:{client.GetHashCode():X8}";
 
             byte[] buffer = Config.SocketBufferSize > 1024 ? new byte[Config.SocketBufferSize] : new byte[1024];
@@ -300,7 +530,7 @@ namespace ColorVision.SocketProtocol
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    
+
                     // 创建接收消息记录并持久化
                     var receivedMsg = new SocketMessage
                     {
@@ -309,7 +539,7 @@ namespace ColorVision.SocketProtocol
                         Content = message,
                         MessageTime = DateTime.Now
                     };
-                    
+
                     log.Info("Received raw message: " + message);
                     switch (Config.SocketPhraseType)
                     {
@@ -320,7 +550,7 @@ namespace ColorVision.SocketProtocol
                                 request = JsonConvert.DeserializeObject<SocketRequest>(message);
                                 receivedMsg.EventName = request?.EventName;
                                 receivedMsg.MsgID = request?.MsgID;
-                                
+
                                 // 持久化接收消息
                                 MessageManager.AddMessage(receivedMsg);
 
@@ -329,7 +559,7 @@ namespace ColorVision.SocketProtocol
                                 if (response != null)
                                 {
                                     string respString = JsonConvert.SerializeObject(response);
-                                    
+
                                     // 创建发送消息记录并持久化
                                     var sentMsg = new SocketMessage
                                     {
@@ -342,7 +572,7 @@ namespace ColorVision.SocketProtocol
                                         ResponseCode = response.Code
                                     };
                                     MessageManager.AddMessage(sentMsg);
-                                    
+
                                     stream.Write(Encoding.UTF8.GetBytes(respString));
                                 }
                             }
@@ -358,12 +588,12 @@ namespace ColorVision.SocketProtocol
                                     Msg = ex.Message,
                                     Data = null
                                 };
-                                
+
                                 // 持久化接收消息(即使出错)
                                 MessageManager.AddMessage(receivedMsg);
-                                
+
                                 string respString = JsonConvert.SerializeObject(response);
-                                
+
                                 // 创建错误响应消息记录并持久化
                                 var sentMsg = new SocketMessage
                                 {
@@ -387,7 +617,7 @@ namespace ColorVision.SocketProtocol
                             {
                                 // 持久化接收消息
                                 MessageManager.AddMessage(receivedMsg);
-                                
+
                                 var string1 = TextDispatcher.Dispatch(stream, message);
                                 if (string1 != null)
                                 {
@@ -400,7 +630,7 @@ namespace ColorVision.SocketProtocol
                                         MessageTime = DateTime.Now
                                     };
                                     MessageManager.AddMessage(sentMsg);
-                                    
+
                                     byte[] respBytes = Encoding.UTF8.GetBytes(string1);
                                     stream.Write(respBytes, 0, respBytes.Length);
                                 }
@@ -408,7 +638,7 @@ namespace ColorVision.SocketProtocol
                             catch (Exception ex)
                             {
                                 log.Error(ex);
-                                
+
                                 // 创建错误响应消息记录并持久化
                                 var sentMsg = new SocketMessage
                                 {
@@ -418,7 +648,7 @@ namespace ColorVision.SocketProtocol
                                     MessageTime = DateTime.Now
                                 };
                                 MessageManager.AddMessage(sentMsg);
-                                
+
                                 byte[] respBytes = Encoding.UTF8.GetBytes(ex.Message);
                                 stream.Write(respBytes, 0, respBytes.Length);
                             }

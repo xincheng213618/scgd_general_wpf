@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
 		Microsoft ResX Schema
@@ -183,5 +183,98 @@
   </data>
   <data name="ClientNotConnected" xml:space="preserve">
     <value>目标客户端未连接</value>
+  </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>自动滚动</value>
+  </data>
+  <data name="ClientCountFormat" xml:space="preserve">
+    <value>{0} 个客户端</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>未启用</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>已启用</value>
+  </data>
+  <data name="EnabledStatus" xml:space="preserve">
+    <value>启用状态</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="FilterReceived" xml:space="preserve">
+    <value>接收</value>
+  </data>
+  <data name="FilterSent" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="MessageCountFormat" xml:space="preserve">
+    <value>{0} 条消息</value>
+  </data>
+  <data name="MessageSettings" xml:space="preserve">
+    <value>消息设置</value>
+  </data>
+  <data name="NoError" xml:space="preserve">
+    <value>无</value>
+  </data>
+  <data name="OpenDatabase" xml:space="preserve">
+    <value>打开数据库</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>打开失败</value>
+  </data>
+  <data name="OpenListenAddressFailedFormat" xml:space="preserve">
+    <value>打开 {0} 失败: {1}</value>
+  </data>
+  <data name="OpenStatus" xml:space="preserve">
+    <value>服务打开</value>
+  </data>
+  <data name="PrettyPrintView" xml:space="preserve">
+    <value>格式化查看</value>
+  </data>
+  <data name="ProtocolAndClients" xml:space="preserve">
+    <value>协议 / 客户端</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>已打开</value>
+  </data>
+  <data name="SearchTooltip" xml:space="preserve">
+    <value>按客户端、事件名、MsgID、响应码或内容过滤</value>
+  </data>
+  <data name="ServiceSettings" xml:space="preserve">
+    <value>服务设置</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>启动中</value>
+  </data>
+  <data name="StartService" xml:space="preserve">
+    <value>启动服务</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>未打开</value>
+  </data>
+  <data name="Stopping" xml:space="preserve">
+    <value>停止中</value>
+  </data>
+  <data name="StopServerFailedFormat" xml:space="preserve">
+    <value>停止服务失败: {0}</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>停止服务</value>
+  </data>
+  <data name="UpdatedAtFormat" xml:space="preserve">
+    <value>更新时间 {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="ListenAddress" xml:space="preserve">
+    <value>监听地址</value>
+  </data>
+  <data name="SocketServer" xml:space="preserve">
+    <value>Socket 服务</value>
+  </data>
+  <data name="SocketServerConnected" xml:space="preserve">
+    <value>Socket 服务已连接</value>
+  </data>
+  <data name="SocketServerDisconnected" xml:space="preserve">
+    <value>Socket 服务未连接</value>
   </data>
 </root>

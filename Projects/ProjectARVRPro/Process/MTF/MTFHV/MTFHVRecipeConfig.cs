@@ -3,7 +3,7 @@ using ColorVision.Common.MVVM;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.MTFHV
+namespace ProjectARVRPro.Process.MTF.MTFHV
 {
     public class MTFHVRecipeConfig : ViewModelBase, IRecipeConfig
     {

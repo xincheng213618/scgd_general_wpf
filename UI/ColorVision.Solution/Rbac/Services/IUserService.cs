@@ -9,6 +9,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Rbac.Services
 {
@@ -55,6 +56,7 @@ namespace ColorVision.Rbac.Services
             await _db.Insertable(new UserDetailEntity
             {
                 UserId = userId,
+                PermissionMode = PermissionMode.User,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow
             }).ExecuteCommandAsync();

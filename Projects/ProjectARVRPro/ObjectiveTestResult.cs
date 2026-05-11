@@ -2,9 +2,9 @@
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
-using ProjectARVRPro.Process.MTFHV;
-using ProjectARVRPro.Process.MTFHV048;
-using ProjectARVRPro.Process.MTFHV058;
+using ProjectARVRPro.Process.MTF.MTFHV;
+using ProjectARVRPro.Process.MTF.MTFHV048;
+using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.RGB.Blue;
 using ProjectARVRPro.Process.RGB.Green;

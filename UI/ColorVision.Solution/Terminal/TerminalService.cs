@@ -1,5 +1,6 @@
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution.Terminal
@@ -66,6 +67,9 @@ namespace ColorVision.Solution.Terminal
             var grid = new Grid();
             var terminalControl = new TerminalControl();
             grid.Children.Add(terminalControl);
+
+            if (Application.Current != null)
+                Application.Current.Exit += (_, _) => terminalControl.Dispose();
 
             TerminalService.GetInstance().SetTerminalControl(terminalControl);
 

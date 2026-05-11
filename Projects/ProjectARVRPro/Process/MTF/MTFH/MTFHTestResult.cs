@@ -1,7 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 
-namespace ProjectARVRPro.Process.MTFH
+namespace ProjectARVRPro.Process.MTF.MTFH
 {
     /// <summary>
     /// 旧版MTFH测试结果 - 9个测试点（Center_0F + 4角×0.5F + 4角×0.8F）

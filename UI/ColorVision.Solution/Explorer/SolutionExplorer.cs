@@ -48,6 +48,7 @@ namespace ColorVision.Solution.Explorer
         public static SolutionSetting Setting => SolutionSetting.Instance;
         private FileSystemWatcher _fileSystemWatcher;
         private DispatcherTimer _changedDebounceTimer;
+        private readonly EventHandler _processExitHandler;
         public SolutionConfig Config { get; private set; }
         public FileInfo ConfigFileInfo { get; private set; }
         public SolutionEnvironments SolutionEnvironments { get; }
@@ -110,7 +111,8 @@ namespace ColorVision.Solution.Explorer
                 });
             }
 
-            AppDomain.CurrentDomain.ProcessExit += (_, __) => SaveConfig();
+            _processExitHandler = (_, __) => SaveConfig();
+            AppDomain.CurrentDomain.ProcessExit += _processExitHandler;
         }
 
 
@@ -156,10 +158,16 @@ namespace ColorVision.Solution.Explorer
                 _fileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName)
                 {
                     EnableRaisingEvents = true,
-                    IncludeSubdirectories = false
+                    IncludeSubdirectories = true,
+                    InternalBufferSize = 64 * 1024,
+                    NotifyFilter = NotifyFilters.FileName |
+                                   NotifyFilters.DirectoryName |
+                                   NotifyFilters.LastWrite |
+                                   NotifyFilters.Size
                 };
                 _fileSystemWatcher.Created += FileSystemWatcher_Created;
                 _fileSystemWatcher.Deleted += FileSystemWatcher_Deleted;
+                _fileSystemWatcher.Renamed += FileSystemWatcher_Renamed;
                 _fileSystemWatcher.Changed += (s, e) => Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     _changedDebounceTimer.Stop();
@@ -174,28 +182,34 @@ namespace ColorVision.Solution.Explorer
             if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
                 return;
 
+            string? parentPath = Path.GetDirectoryName(e.FullPath);
+            if (string.IsNullOrWhiteSpace(parentPath))
+                return;
+
             // Update cache
             if (Cache != null)
             {
                 if (File.Exists(e.FullPath))
-                    Cache.AddFile(e.FullPath, DirectoryInfo.FullName);
+                    Cache.AddFile(e.FullPath, parentPath);
                 else if (Directory.Exists(e.FullPath))
-                    Cache.AddDirectory(e.FullPath, DirectoryInfo.FullName);
+                    Cache.AddDirectory(e.FullPath, parentPath);
             }
 
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
+                var parentNode = FindNodeByFullPath(parentPath) ?? this;
+
                 // Duplicate protection
-                if (VisualChildren.Any(c => c.FullPath == e.FullPath))
+                if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
                     return;
 
                 if (File.Exists(e.FullPath))
                 {
-                    SolutionNodeFactory.AddFileNode(this, new FileInfo(e.FullPath));
+                    SolutionNodeFactory.AddFileNode(parentNode, new FileInfo(e.FullPath));
                 }
                 else if (Directory.Exists(e.FullPath))
                 {
-                    SolutionNodeFactory.AddFolderNode(this, new DirectoryInfo(e.FullPath));
+                    SolutionNodeFactory.AddFolderNode(parentNode, new DirectoryInfo(e.FullPath));
                 }
             });
         }
@@ -207,12 +221,48 @@ namespace ColorVision.Solution.Explorer
 
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                var child = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
+                var child = FindNodeByFullPath(e.FullPath);
                 if (child != null)
                 {
-                    VisualChildren.Remove(child);
+                    child.Parent?.RemoveChild(child);
+                    if (child is IDisposable disposable)
+                        disposable.Dispose();
                 }
                 VisualChildrenEventHandler?.Invoke(this, EventArgs.Empty);
+            });
+        }
+
+        private void FileSystemWatcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            Cache?.Remove(e.OldFullPath);
+
+            string? parentPath = Path.GetDirectoryName(e.FullPath);
+            if (string.IsNullOrWhiteSpace(parentPath))
+                return;
+
+            if (File.Exists(e.FullPath))
+                Cache?.AddFile(e.FullPath, parentPath);
+            else if (Directory.Exists(e.FullPath))
+                Cache?.AddDirectory(e.FullPath, parentPath);
+
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                var oldNode = FindNodeByFullPath(e.OldFullPath);
+                if (oldNode != null)
+                {
+                    oldNode.Parent?.RemoveChild(oldNode);
+                    if (oldNode is IDisposable disposable)
+                        disposable.Dispose();
+                }
+
+                var parentNode = FindNodeByFullPath(parentPath) ?? this;
+                if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
+                    return;
+
+                if (File.Exists(e.FullPath))
+                    SolutionNodeFactory.AddFileNode(parentNode, new FileInfo(e.FullPath));
+                else if (Directory.Exists(e.FullPath))
+                    SolutionNodeFactory.AddFolderNode(parentNode, new DirectoryInfo(e.FullPath));
             });
         }
 
@@ -419,6 +469,41 @@ namespace ColorVision.Solution.Explorer
             Config?.ToJsonNFile(ConfigFileInfo.FullName);
         }
 
+        private SolutionNode? FindNodeByFullPath(string fullPath)
+        {
+            foreach (var child in VisualChildren)
+            {
+                if (PathEquals(child.FullPath, fullPath))
+                    return child;
+
+                var found = FindNodeByFullPath(child, fullPath);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
+        }
+
+        private static SolutionNode? FindNodeByFullPath(SolutionNode node, string fullPath)
+        {
+            foreach (var child in node.VisualChildren)
+            {
+                if (PathEquals(child.FullPath, fullPath))
+                    return child;
+
+                var found = FindNodeByFullPath(child, fullPath);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
+        }
+
+        private static bool PathEquals(string? left, string? right)
+        {
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
         /// <summary>
         /// 显示文件夹属性
         /// </summary>
@@ -429,8 +514,12 @@ namespace ColorVision.Solution.Explorer
 
         public void Dispose()
         {
+            AppDomain.CurrentDomain.ProcessExit -= _processExitHandler;
             _fileSystemWatcher?.Dispose();
             _changedDebounceTimer?.Stop();
+            foreach (var child in VisualChildren.OfType<IDisposable>().ToList())
+                child.Dispose();
+            VisualChildren.Clear();
             Cache?.Dispose();
             GC.SuppressFinalize(this);
         }

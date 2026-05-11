@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.ComponentModel;
@@ -136,11 +137,7 @@ namespace ColorVision.Rbac
             // 未登录时，先弹出登录窗口
             if (!rbacManager.IsUserLoggedIn())
             {
-                var loginWindow = new LoginWindow()
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
+                var loginWindow = CreateLoginWindow();
                 bool? loginResult = loginWindow.ShowDialog();
                 if (loginResult != true || !rbacManager.IsUserLoggedIn())
                 {
@@ -151,6 +148,35 @@ namespace ColorVision.Rbac
             }
 
             SetupPropertyChangeListener(rbacManager);
+        }
+
+        private LoginWindow CreateLoginWindow()
+        {
+            var loginWindow = new LoginWindow();
+            var owner = GetShownOwner();
+            if (owner != null)
+            {
+                loginWindow.Owner = owner;
+                loginWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+            else
+            {
+                loginWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+
+            return loginWindow;
+        }
+
+        private Window? GetShownOwner()
+        {
+            if (Owner != null && Owner.IsVisible)
+                return Owner;
+
+            var activeWindow = Application.Current.GetActiveWindow();
+            if (activeWindow != null && activeWindow != this && activeWindow.IsVisible)
+                return activeWindow;
+
+            return IsVisible ? this : null;
         }
 
         private void SetupPropertyChangeListener(RbacManager rbacManager)
@@ -239,6 +265,7 @@ namespace ColorVision.Rbac
                 
                 // 重置权限
                 Authorization.Instance.PermissionMode = UI.Authorizations.PermissionMode.Guest;
+                ConfigService.Instance.Save<RbacManagerConfig>();
                 
                 // 退出登录后引导重新登录
                 var loginWindow = new LoginWindow()

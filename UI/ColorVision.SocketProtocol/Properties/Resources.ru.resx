@@ -204,4 +204,97 @@
   <data name="ClientNotConnected" xml:space="preserve">
     <value>Целевой клиент не подключен</value>
   </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>Автопрокрутка</value>
+  </data>
+  <data name="ClientCountFormat" xml:space="preserve">
+    <value>{0} клиентов</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Отключено</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Включено</value>
+  </data>
+  <data name="EnabledStatus" xml:space="preserve">
+    <value>Состояние включения</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>Все</value>
+  </data>
+  <data name="FilterReceived" xml:space="preserve">
+    <value>Полученные</value>
+  </data>
+  <data name="FilterSent" xml:space="preserve">
+    <value>Отправленные</value>
+  </data>
+  <data name="MessageCountFormat" xml:space="preserve">
+    <value>{0} сообщений</value>
+  </data>
+  <data name="MessageSettings" xml:space="preserve">
+    <value>Настройки сообщений</value>
+  </data>
+  <data name="NoError" xml:space="preserve">
+    <value>Нет</value>
+  </data>
+  <data name="OpenDatabase" xml:space="preserve">
+    <value>Открыть базу</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>Ошибка открытия</value>
+  </data>
+  <data name="OpenListenAddressFailedFormat" xml:space="preserve">
+    <value>Не удалось открыть {0}: {1}</value>
+  </data>
+  <data name="OpenStatus" xml:space="preserve">
+    <value>Сервис открыт</value>
+  </data>
+  <data name="PrettyPrintView" xml:space="preserve">
+    <value>Форматированный вид</value>
+  </data>
+  <data name="ProtocolAndClients" xml:space="preserve">
+    <value>Протокол / Клиенты</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>Открыто</value>
+  </data>
+  <data name="SearchTooltip" xml:space="preserve">
+    <value>Фильтр по клиенту, событию, MsgID, коду ответа или содержимому</value>
+  </data>
+  <data name="ServiceSettings" xml:space="preserve">
+    <value>Настройки сервиса</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>Запуск</value>
+  </data>
+  <data name="StartService" xml:space="preserve">
+    <value>Запустить сервис</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>Не открыт</value>
+  </data>
+  <data name="Stopping" xml:space="preserve">
+    <value>Остановка</value>
+  </data>
+  <data name="StopServerFailedFormat" xml:space="preserve">
+    <value>Не удалось остановить сервис: {0}</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>Остановить сервис</value>
+  </data>
+  <data name="UpdatedAtFormat" xml:space="preserve">
+    <value>Обновлено {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="ListenAddress" xml:space="preserve">
+    <value>Адрес прослушивания</value>
+  </data>
+  <data name="SocketServer" xml:space="preserve">
+    <value>Socket-сервер</value>
+  </data>
+  <data name="SocketServerConnected" xml:space="preserve">
+    <value>Socket-сервер подключен</value>
+  </data>
+  <data name="SocketServerDisconnected" xml:space="preserve">
+    <value>Socket-сервер отключен</value>
+  </data>
 </root>

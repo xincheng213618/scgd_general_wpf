@@ -204,4 +204,97 @@
   <data name="ClientNotConnected" xml:space="preserve">
     <value>Client cible non connecté</value>
   </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>Défilement auto</value>
+  </data>
+  <data name="ClientCountFormat" xml:space="preserve">
+    <value>{0} clients</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Désactivé</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Activé</value>
+  </data>
+  <data name="EnabledStatus" xml:space="preserve">
+    <value>État d’activation</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>Tous</value>
+  </data>
+  <data name="FilterReceived" xml:space="preserve">
+    <value>Reçus</value>
+  </data>
+  <data name="FilterSent" xml:space="preserve">
+    <value>Envoyés</value>
+  </data>
+  <data name="MessageCountFormat" xml:space="preserve">
+    <value>{0} messages</value>
+  </data>
+  <data name="MessageSettings" xml:space="preserve">
+    <value>Paramètres des messages</value>
+  </data>
+  <data name="NoError" xml:space="preserve">
+    <value>Aucune</value>
+  </data>
+  <data name="OpenDatabase" xml:space="preserve">
+    <value>Ouvrir la base</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>Échec de l’ouverture</value>
+  </data>
+  <data name="OpenListenAddressFailedFormat" xml:space="preserve">
+    <value>Échec de l’ouverture de {0} : {1}</value>
+  </data>
+  <data name="OpenStatus" xml:space="preserve">
+    <value>Service ouvert</value>
+  </data>
+  <data name="PrettyPrintView" xml:space="preserve">
+    <value>Affichage formaté</value>
+  </data>
+  <data name="ProtocolAndClients" xml:space="preserve">
+    <value>Protocole / Clients</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>Ouvert</value>
+  </data>
+  <data name="SearchTooltip" xml:space="preserve">
+    <value>Filtrer par client, événement, MsgID, code de réponse ou contenu</value>
+  </data>
+  <data name="ServiceSettings" xml:space="preserve">
+    <value>Paramètres du service</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>Démarrage</value>
+  </data>
+  <data name="StartService" xml:space="preserve">
+    <value>Démarrer le service</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>Non ouvert</value>
+  </data>
+  <data name="Stopping" xml:space="preserve">
+    <value>Arrêt</value>
+  </data>
+  <data name="StopServerFailedFormat" xml:space="preserve">
+    <value>Échec de l’arrêt du service : {0}</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>Arrêter le service</value>
+  </data>
+  <data name="UpdatedAtFormat" xml:space="preserve">
+    <value>Mis à jour {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="ListenAddress" xml:space="preserve">
+    <value>Adresse d’écoute</value>
+  </data>
+  <data name="SocketServer" xml:space="preserve">
+    <value>Serveur Socket</value>
+  </data>
+  <data name="SocketServerConnected" xml:space="preserve">
+    <value>Serveur Socket connecté</value>
+  </data>
+  <data name="SocketServerDisconnected" xml:space="preserve">
+    <value>Serveur Socket déconnecté</value>
+  </data>
 </root>

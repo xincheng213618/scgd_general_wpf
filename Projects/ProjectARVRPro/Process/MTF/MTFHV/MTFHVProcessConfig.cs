@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.MTFHV
+namespace ProjectARVRPro.Process.MTF.MTFHV
 {
     public class MTFHVProcessConfig : ProcessConfigBase
     {
