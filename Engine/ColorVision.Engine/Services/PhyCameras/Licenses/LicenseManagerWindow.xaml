@@ -22,10 +22,71 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
-        <Style x:Key="ToolbarButtonStyle" TargetType="{x:Type Button}">
+        <Style x:Key="BaseActionButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="MinHeight" Value="32"/>
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Padding" Value="12,5"/>
             <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}"/>
+        <Style x:Key="PrimaryToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="DangerToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+            <Setter Property="Foreground" Value="#FFE53935"/>
+            <Setter Property="BorderBrush" Value="#FFE53935"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+        </Style>
+        <Style x:Key="LicenseGridHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+        <Style x:Key="LicenseGridRowStyle" TargetType="{x:Type DataGridRow}">
+            <Setter Property="MinHeight" Value="42"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style x:Key="LicenseGridCellStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,4"/>
         </Style>
     </Window.Resources>
 
@@ -55,11 +116,11 @@
                     <Button Content="SaveToLincense" Command="{Binding SaveToLincenseCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
                     <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"/>
+                            Style="{StaticResource PrimaryToolbarButtonStyle}"/>
                     <Button Content="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
                     <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"/>
+                            Style="{StaticResource DangerToolbarButtonStyle}"/>
                     <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
                     <Button Content="License Notice" Command="{Binding EditLicenseNotificationConfigCommand}"
@@ -76,8 +137,11 @@
                       IsReadOnly="True"
                       SelectionMode="Single"
                       HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="None"
                       Background="Transparent"
+                      RowStyle="{StaticResource LicenseGridRowStyle}"
+                      CellStyle="{StaticResource LicenseGridCellStyle}"
+                      ColumnHeaderStyle="{StaticResource LicenseGridHeaderStyle}"
                       BorderThickness="0">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>

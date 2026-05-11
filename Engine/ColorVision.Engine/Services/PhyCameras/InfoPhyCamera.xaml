@@ -64,6 +64,55 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
+
+        <Style x:Key="BaseActionButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="IconButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <Style x:Key="OutlinedCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -108,7 +157,7 @@
                         <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False"
                                       Width="22" Height="22" Margin="0,0,10,0"
                                       IsChecked="{Binding IsLicensed, Mode=OneWay}"/>
-                        <Button Command="{Binding EditCommand}" Width="36" Height="34" Padding="0"
+                        <Button Command="{Binding EditCommand}" Style="{StaticResource IconButtonStyle}"
                                 ToolTip="{x:Static properties:Resources.ModifyConfiguration}">
                             <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="17"
                                        Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -166,17 +215,18 @@
                         <TextBlock Text="{x:Static properties:Resources.Manager}" Style="{StaticResource SectionTitleStyle}"/>
                         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto">
-                            <UniformGrid x:Name="CommandGrid" VerticalAlignment="Top">
-                                <Button Margin="5" Padding="10,8" Height="70"
-                                        Background="{Binding LicenseSolidColorBrush}"
+                            <UniformGrid x:Name="CommandGrid" Columns="4" VerticalAlignment="Top">
+                                <Button Style="{StaticResource OutlinedCommandButtonStyle}"
+                                        BorderBrush="{Binding LicenseExpiryColor}"
+                                        Foreground="{Binding LicenseExpiryColor}"
                                         Command="{Binding UploadLicenseCommand}"
                                         ToolTip="{x:Static properties:Resources.ModifyLicense}">
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock Text="{x:Static properties:Resources.ModifyLicense}"
-                                                   HorizontalAlignment="Center" Foreground="White"
+                                                   HorizontalAlignment="Center" Foreground="{Binding LicenseExpiryColor}"
                                                    FontWeight="SemiBold"/>
                                         <TextBlock Text="{Binding CameraLicenseModel.ExpiryDate, StringFormat=yyyy/MM/dd}"
-                                                   HorizontalAlignment="Center" Foreground="White"
+                                                   HorizontalAlignment="Center" Foreground="{Binding LicenseExpiryColor}"
                                                    FontSize="11" Opacity="0.9"/>
                                     </StackPanel>
                                 </Button>

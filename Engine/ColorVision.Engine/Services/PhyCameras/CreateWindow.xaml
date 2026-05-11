@@ -49,6 +49,46 @@
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="Margin" Value="0,0,10,10"/>
         </Style>
+
+        <Style x:Key="BaseActionButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryActionButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="18,8"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="14">
@@ -261,17 +301,23 @@
                         </Grid>
                     </StackPanel>
                 </Border>
+
+                <Border Style="{StaticResource PanelBorderStyle}" Padding="14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="高级配置" Style="{StaticResource SectionTitleStyle}"/>
+                        <StackPanel x:Name="GeneratedConfigPanel"/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 
-        <Border Grid.Row="2" Style="{StaticResource PanelBorderStyle}" Padding="10" Margin="0,12,0,0">
-            <Button Content="{x:Static properties:Resources.Submit}"
-                    Height="36"
-                    MinWidth="130"
-                    HorizontalAlignment="Right"
-                    Foreground="White"
-                    Background="{StaticResource PrimaryBrush}"
-                    Click="Button_Click"/>
-        </Border>
+        <Button Grid.Row="2"
+                Content="{x:Static properties:Resources.Submit}"
+                Style="{StaticResource PrimaryActionButtonStyle}"
+                Height="38"
+                MinWidth="150"
+                HorizontalAlignment="Right"
+                Margin="0,12,0,0"
+                Click="Button_Click"/>
     </Grid>
 </Window>

@@ -175,9 +175,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
 
             };
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.CameraCfg));
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.MotorConfig));
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.FileServerCfg));
+            GeneratedConfigPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.CameraCfg));
+            GeneratedConfigPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.MotorConfig));
+            GeneratedConfigPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.FileServerCfg));
 
             DataContext = this;
         }
