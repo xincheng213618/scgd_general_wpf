@@ -211,10 +211,10 @@
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="AngleShift" Content="上传" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="ColorDiff 变种：角度相关的色差校正">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="角度校正">
                                         <Run Text="AngleShift" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="色差校正变种" />
+                                        <Run FontSize="10" Foreground="Gray" Text="角度校正" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxAngleShift" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding AngleShift}" />
                                 </DockPanel>
