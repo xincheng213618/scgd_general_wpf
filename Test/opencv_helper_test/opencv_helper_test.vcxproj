@@ -77,11 +77,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)include;$(SolutionDir)Core\opencv_helper;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Native\include;$(SolutionDir)Native\opencv_helper;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>$(SolutionDir)x64\Release;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)include;$(SolutionDir)Core\opencv_helper;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Native\include;$(SolutionDir)Native\opencv_helper;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -169,7 +169,7 @@
     <None Include="opencv_helper_test.vcxproj.new" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\opencv_helper\opencv_helper.vcxproj">
+    <ProjectReference Include="..\..\Native\opencv_helper\opencv_helper.vcxproj">
       <Project>{aa343239-476e-43e3-bee3-d3313c883341}</Project>
     </ProjectReference>
   </ItemGroup>

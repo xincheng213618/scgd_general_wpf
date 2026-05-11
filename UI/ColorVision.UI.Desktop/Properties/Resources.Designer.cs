@@ -340,6 +340,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 确认删除 的本地化字符串。
+        /// </summary>
+        public static string ConfirmDelete {
+            get {
+                return ResourceManager.GetString("ConfirmDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件已存在于磁盘，是否同时删除文件？ 的本地化字符串。
         /// </summary>
         public static string ConfirmDeleteFile {
@@ -651,6 +660,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string EchoXCOPYFailed {
             get {
                 return ResourceManager.GetString("EchoXCOPYFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑 的本地化字符串。
+        /// </summary>
+        public static string Edit {
+            get {
+                return ResourceManager.GetString("Edit", resourceCulture);
             }
         }
         
@@ -1605,6 +1623,60 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string ThirdPartyApps {
             get {
                 return ResourceManager.GetString("ThirdPartyApps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加自定义应用 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsAddCustomApp {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsAddCustomApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加快捷脚本 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsAddQuickScript {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsAddQuickScript", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsAll {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 个应用 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsCountFormat {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsCountFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要删除自定义应用 &quot;{0}&quot; 吗？ 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsDeleteCustomAppMessage {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsDeleteCustomAppMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分类 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsGroups {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsGroups", resourceCulture);
             }
         }
         

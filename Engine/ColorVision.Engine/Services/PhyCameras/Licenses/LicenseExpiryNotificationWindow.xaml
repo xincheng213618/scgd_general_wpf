@@ -4,11 +4,26 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="许可证过期提醒" Height="400" Width="600"
-        WindowStartupLocation="CenterScreen" 
+        Title="许可证过期提醒" Height="440" Width="660"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
+        Background="{DynamicResource GlobalBackground}"
         ShowInTaskbar="True">
-    <Grid>
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="PanelBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -16,147 +31,101 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Title -->
-        <Border Grid.Row="0" Background="#FFF9E6" BorderBrush="Orange" BorderThickness="0,0,0,1" Padding="15,10">
-            <StackPanel>
-                <TextBlock FontSize="16" FontWeight="Bold" Foreground="DarkOrange">
-                    <Run Text="⚠ 许可证过期提醒"/>
-                </TextBlock>
-                <TextBlock x:Name="TextBlockSummary" FontSize="12" Foreground="#666" Margin="0,5,0,0"/>
-            </StackPanel>
+        <Border Grid.Row="0" Style="{StaticResource PanelBorderStyle}" Padding="14,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="44"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="34" Height="34" CornerRadius="17" Background="#FFFF8A00">
+                    <TextBlock Text="!" Foreground="White" FontSize="20" FontWeight="Bold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                    <TextBlock Text="许可证过期提醒" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="TextBlockSummary" FontSize="12" Opacity="0.65"
+                               Margin="0,5,0,0"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
-        <!-- Camera List -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="15,10">
-            <ItemsControl x:Name="CameraListControl">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="White" BorderBrush="#DDD" BorderThickness="1" 
-                                Margin="0,0,0,10" Padding="12" CornerRadius="4">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+        <Border Grid.Row="1" Style="{StaticResource PanelBorderStyle}" Padding="8">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="CameraListControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource ButtonBackground}"
+                                    BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                    BorderThickness="1"
+                                    Margin="0,0,0,8" Padding="12" CornerRadius="7">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
-                                <!-- Status Icon -->
-                                <Ellipse Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" 
-                                         Width="40" Height="40" 
-                                         Fill="{Binding StatusColor}"
-                                         Margin="0,0,15,0" VerticalAlignment="Top"/>
-                                <TextBlock Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" 
-                                          Text="⚠" FontSize="24" 
-                                          Foreground="White"
-                                          HorizontalAlignment="Center" 
-                                          VerticalAlignment="Center"/>
+                                    <Ellipse Grid.Row="0" Grid.RowSpan="3" Grid.Column="0"
+                                             Width="34" Height="34"
+                                             Fill="{Binding StatusColor}"
+                                             Margin="0,0,12,0" VerticalAlignment="Top"/>
+                                    <TextBlock Grid.Row="0" Grid.RowSpan="3" Grid.Column="0"
+                                               Text="!" FontSize="19" FontWeight="Bold"
+                                               Foreground="White"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
 
-                                <!-- Camera Name -->
-                                <TextBlock Grid.Row="0" Grid.Column="1" 
-                                          Text="{Binding CameraName}" 
-                                          FontSize="14" FontWeight="Bold"
-                                          Foreground="#333"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding CameraName}"
+                                               FontSize="14" FontWeight="SemiBold"/>
 
-                                <!-- License Status -->
-                                <TextBlock Grid.Row="1" Grid.Column="1" 
-                                          Text="{Binding StatusMessage}" 
-                                          FontSize="12" 
-                                          Foreground="{Binding StatusTextColor}"
-                                          Margin="0,4,0,0"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Text="{Binding StatusMessage}"
+                                               FontSize="12"
+                                               Foreground="{Binding StatusTextColor}"
+                                               Margin="0,5,0,0"/>
 
-                                <!-- License Info -->
-                                <TextBlock Grid.Row="2" Grid.Column="1" 
-                                          Text="{Binding LicenseInfo}" 
-                                          FontSize="11" 
-                                          Foreground="#666"
-                                          TextWrapping="Wrap"
-                                          Margin="0,4,0,0"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                                    <TextBlock Grid.Row="2" Grid.Column="1"
+                                               Text="{Binding LicenseInfo}"
+                                               FontSize="11"
+                                               Opacity="0.68"
+                                               TextWrapping="Wrap"
+                                               Margin="0,5,0,0"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
 
-        <!-- Don't Show Again Checkbox -->
-        <CheckBox x:Name="CheckBoxDontShowAgain" 
-                  Grid.Row="2" 
-                  Content="不再提示此类警告" 
-                  Margin="15,0,15,10"
+        <CheckBox x:Name="CheckBoxDontShowAgain"
+                  Grid.Row="2"
+                  Content="不再提示此类警告"
+                  Foreground="{DynamicResource GlobalTextBrush}"
+                  Margin="2,12,0,10"
                   VerticalAlignment="Center"/>
 
-        <!-- Buttons -->
-        <Grid Grid.Row="3" Background="#F5F5F5" Height="60">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0">
-                <Button x:Name="ButtonGoToManager" 
-                        Content="前往相机管理器" 
-                        Width="120" Height="32"
-                        Margin="0,0,10,0"
-                        Click="ButtonGoToManager_Click"
-                        Background="#FF5722" 
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        FontWeight="SemiBold">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#FF5722"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="{TemplateBinding Background}" 
-                                                CornerRadius="4" 
-                                                Padding="10,5">
-                                            <ContentPresenter HorizontalAlignment="Center" 
-                                                            VerticalAlignment="Center"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#E64A19"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-                <Button x:Name="ButtonClose" 
-                        Content="关闭" 
-                        Width="80" Height="32"
-                        Click="ButtonClose_Click"
-                        Background="#607D8B" 
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#607D8B"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="{TemplateBinding Background}" 
-                                                CornerRadius="4" 
-                                                Padding="10,5">
-                                            <ContentPresenter HorizontalAlignment="Center" 
-                                                            VerticalAlignment="Center"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#546E7A"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-            </StackPanel>
-        </Grid>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="ButtonGoToManager"
+                    Content="前往相机管理器"
+                    Width="130" Height="32"
+                    Margin="0,0,8,0"
+                    Click="ButtonGoToManager_Click"
+                    Background="{StaticResource PrimaryBrush}"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    FontWeight="SemiBold"/>
+            <Button x:Name="ButtonClose"
+                    Content="关闭"
+                    Width="86" Height="32"
+                    Click="ButtonClose_Click"
+                    Cursor="Hand"/>
+        </StackPanel>
     </Grid>
 </Window>

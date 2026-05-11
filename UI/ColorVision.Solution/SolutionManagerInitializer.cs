@@ -26,9 +26,9 @@ namespace ColorVision.Solution
 
             parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
-            if (File.Exists(input) && Path.GetExtension(input) == ".cvsln")
+            if (SolutionManager.IsSupportedOpenPath(input))
             {
-                parser.SetValue("solutionpath",input);
+                parser.SetValue("solutionpath", input!);
             }
 
             var solutionpath = parser.GetValue("solutionpath");

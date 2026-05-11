@@ -645,4 +645,28 @@
   <data name="ConfirmDeleteFile" xml:space="preserve">
     <value>파일이 디스크에 있습니다. 파일도 삭제하시겠습니까?</value>
   </data>
+  <data name="ThirdPartyAppsAll" xml:space="preserve">
+    <value>전체</value>
+  </data>
+  <data name="ThirdPartyAppsCountFormat" xml:space="preserve">
+    <value>{0}개 앱</value>
+  </data>
+  <data name="ThirdPartyAppsAddCustomApp" xml:space="preserve">
+    <value>사용자 지정 앱 추가</value>
+  </data>
+  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
+    <value>빠른 스크립트 추가</value>
+  </data>
+  <data name="ThirdPartyAppsGroups" xml:space="preserve">
+    <value>분류</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>편집</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>삭제 확인</value>
+  </data>
+  <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
+    <value>사용자 지정 앱 "{0}"을(를) 삭제하시겠습니까?</value>
+  </data>
 </root>

@@ -685,4 +685,28 @@
   <data name="ServerAddressNotConfigured" xml:space="preserve">
     <value>无法确定服务器地址</value>
   </data>
+  <data name="ThirdPartyAppsAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="ThirdPartyAppsCountFormat" xml:space="preserve">
+    <value>{0} 个应用</value>
+  </data>
+  <data name="ThirdPartyAppsAddCustomApp" xml:space="preserve">
+    <value>添加自定义应用</value>
+  </data>
+  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
+    <value>添加快捷脚本</value>
+  </data>
+  <data name="ThirdPartyAppsGroups" xml:space="preserve">
+    <value>分类</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
+    <value>确定要删除自定义应用 "{0}" 吗？</value>
+  </data>
 </root>

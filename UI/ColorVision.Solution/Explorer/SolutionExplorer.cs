@@ -128,7 +128,9 @@ namespace ColorVision.Solution.Explorer
             {
                 ConfigFileInfo = new FileInfo(fullPath);
                 DirectoryInfo = ConfigFileInfo.Directory ?? new DirectoryInfo(fullPath);
-                Name1 = Path.GetFileNameWithoutExtension(fullPath);
+                Name1 = string.IsNullOrWhiteSpace(SolutionEnvironments.SolutionFileName)
+                    ? Path.GetFileNameWithoutExtension(fullPath)
+                    : SolutionEnvironments.SolutionFileName;
                 if (DirectoryInfo?.Root != null)
                 {
                     DriveInfo = new DriveInfo(DirectoryInfo.Root.FullName);

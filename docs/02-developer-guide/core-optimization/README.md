@@ -48,8 +48,8 @@ public:
 - 符合现代 C++ 实践
 
 **相关文件**:
-- `Core/opencv_helper/custom_file.cpp`
-- `Core/opencv_helper/common.cpp`
+- `Native/opencv_helper/custom_file.cpp`
+- `Native/opencv_helper/common.cpp`
 - `docs/02-developer-guide/core-optimization/memory-management.md`
 
 ---
@@ -85,8 +85,8 @@ __global__ void median_filter_3x3_kernel(const double* src, double* dst,
 | 总体 | ~200ms | ~120ms | 1.7x |
 
 **相关文件**:
-- `Core/opencv_cuda/cudamath.h`
-- `Core/opencv_cuda/Fusion.h`
+- `Native/opencv_cuda/cudamath.h`
+- `Native/opencv_cuda/Fusion.h`
 - `docs/02-developer-guide/core-optimization/cuda-optimization.md`
 
 ---
@@ -132,7 +132,7 @@ Stage 3: Process (GPU)
 - `CM_Fusion_Async()` - 异步融合接口
 
 **相关文件**:
-- `Core/opencv_cuda/cuda_export.cpp`
+- `Native/opencv_cuda/cuda_export.cpp`
 - `docs/02-developer-guide/core-optimization/async-pipeline.md`
 
 ---
@@ -168,7 +168,7 @@ cv::parallel_for_(cv::Range(0, src.rows),
 | Batch (100张) | 4K | 4500ms | 650ms | 6.9x |
 
 **相关文件**:
-- `Core/opencv_helper/algorithm_optimized.cpp`
+- `Native/opencv_helper/algorithm_optimized.cpp`
 - `docs/02-developer-guide/core-optimization/cpu-parallelization.md`
 
 ---
@@ -223,9 +223,9 @@ Image output = result.first;
 ```
 
 **相关文件**:
-- `include/cvcore/cvcore_base.h`
-- `include/cvcore/cvcore_image.h`
-- `include/cvcore/cvcore_processing.h`
+- `Native/include/cvcore/cvcore_base.h`
+- `Native/include/cvcore/cvcore_image.h`
+- `Native/include/cvcore/cvcore_processing.h`
 - `docs/02-developer-guide/core-optimization/api-design.md`
 
 ---
@@ -260,21 +260,21 @@ Image output = result.first;
 
 | 文件 | 变更类型 | 说明 |
 |------|----------|------|
-| `include/custom_file.h` | 修改 | 添加工具类声明 |
-| `Core/opencv_helper/custom_file.cpp` | 重写 | 修复内存泄漏，添加 RAII |
-| `Core/opencv_helper/common.cpp` | 修改 | 优化 UTF8ToGB |
-| `Core/opencv_cuda/cudamath.h` | 重写 | 新增 GPU kernels |
-| `Core/opencv_cuda/Fusion.h` | 重写 | 全 GPU 实现 |
-| `Core/opencv_cuda/cuda_export.cpp` | 重写 | 异步流水线支持 |
+| `Native/include/custom_file.h` | 修改 | 添加工具类声明 |
+| `Native/opencv_helper/custom_file.cpp` | 重写 | 修复内存泄漏，添加 RAII |
+| `Native/opencv_helper/common.cpp` | 修改 | 优化 UTF8ToGB |
+| `Native/opencv_cuda/cudamath.h` | 重写 | 新增 GPU kernels |
+| `Native/opencv_cuda/Fusion.h` | 重写 | 全 GPU 实现 |
+| `Native/opencv_cuda/cuda_export.cpp` | 重写 | 异步流水线支持 |
 
 ### 新增的文件
 
 | 文件 | 说明 |
 |------|------|
-| `Core/opencv_helper/algorithm_optimized.cpp` | 并行优化算法 |
-| `include/cvcore/cvcore_base.h` | 基础类型定义 |
-| `include/cvcore/cvcore_image.h` | Image 类定义 |
-| `include/cvcore/cvcore_processing.h` | 处理函数声明 |
+| `Native/opencv_helper/algorithm_optimized.cpp` | 并行优化算法 |
+| `Native/include/cvcore/cvcore_base.h` | 基础类型定义 |
+| `Native/include/cvcore/cvcore_image.h` | Image 类定义 |
+| `Native/include/cvcore/cvcore_processing.h` | 处理函数声明 |
 | `docs/02-developer-guide/core-optimization/*.md` | 优化文档 |
 
 ---

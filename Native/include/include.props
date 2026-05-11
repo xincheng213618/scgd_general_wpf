@@ -3,10 +3,13 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(MSBuildThisFileDirectory);$(IncludePath)</IncludePath>
     <LibraryPath>;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
+    <ClCompile>
+      <DisableSpecificWarnings>4819;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
     <Link>
       <AdditionalDependencies>;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>

@@ -9,7 +9,7 @@
 ### 1. custom_file.cpp 中的内存泄漏
 
 #### 问题 1: CVWrite 函数中的 ostream 未释放
-**位置**: `Core/opencv_helper/custom_file.cpp:87-103`
+**位置**: `Native/opencv_helper/custom_file.cpp:87-103`
 
 **原始代码**:
 ```cpp
@@ -29,7 +29,7 @@ MallocGuard streamGuard(ostream);
 ```
 
 #### 问题 2: CVRead 函数中的 o2stream 未释放
-**位置**: `Core/opencv_helper/custom_file.cpp:138-143`
+**位置**: `Native/opencv_helper/custom_file.cpp:138-143`
 
 **原始代码**:
 ```cpp
@@ -50,7 +50,7 @@ return cloned;
 ```
 
 #### 问题 3: CVRead 函数中的 data 未释放
-**位置**: `Core/opencv_helper/custom_file.cpp:147-151`
+**位置**: `Native/opencv_helper/custom_file.cpp:147-151`
 
 **原始代码**:
 ```cpp
@@ -71,7 +71,7 @@ return mat1.clone();  // 复制后返回，原始 data 自动释放
 ### 2. common.cpp 中的内存管理改进
 
 #### 问题: UTF8ToGB 使用裸指针
-**位置**: `Core/opencv_helper/common.cpp:28-46`
+**位置**: `Native/opencv_helper/common.cpp:28-46`
 
 **原始代码**:
 ```cpp
@@ -180,9 +180,9 @@ if (some_error) {
 
 | 文件 | 修改内容 |
 |------|----------|
-| `include/custom_file.h` | 添加工具类声明，更新接口 |
-| `Core/opencv_helper/custom_file.cpp` | 修复内存泄漏，添加 RAII 工具类 |
-| `Core/opencv_helper/common.cpp` | 优化 UTF8ToGB 内存管理 |
+| `Native/include/custom_file.h` | 添加工具类声明，更新接口 |
+| `Native/opencv_helper/custom_file.cpp` | 修复内存泄漏，添加 RAII 工具类 |
+| `Native/opencv_helper/common.cpp` | 优化 UTF8ToGB 内存管理 |
 
 ## 验证建议
 

@@ -10,7 +10,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance phy:PhyCamera}"
         Title="{x:Static properties:Resources.CalibrationFileManagement}"
-        Width="1280" Height="720"
+        Width="1280" Height="760" MinWidth="980" MinHeight="620"
         Background="{DynamicResource GlobalBackground}"
         Closed="Window_Closed" Initialized="Window_Initialized">
     <Window.Resources>
@@ -20,27 +20,61 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
         </Style>
+        <Style x:Key="PanelBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style x:Key="ToolbarButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+        </Style>
     </Window.Resources>
-    <Grid Margin="6">
+    <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-            <Button Margin="0,0,5,0" Click="Button_Add_Click" Content="{x:Static properties:Resources.AddGroup}" />
-            <Button Margin="0,0,5,0" Click="Button_Delete_Click" Content="{x:Static properties:Resources.DeleteGroup}" />
-            <Button Margin="0,0,5,0" Command="{Binding UploadCalibrationCommand}" Content="{x:Static properties:Resources.Upload}" />
-            <Button Margin="0,0,5,0" Click="Export_Click" Content="{x:Static properties:Resources.ExportCalibration}" />
-            <Button Margin="0,0,5,0" Command="{Binding OepnCalibrationToolCommand}" Content="{x:Static properties:Resources.CreateCalibration}" />
-            <Button Margin="0,0,5,0" Click="Help_Click" Content="校正手册 &#x2753;" ToolTip="打开校正系统参考手册，查看各校正步骤的算法原理和配置说明" />
-        </StackPanel>
+        <Border Style="{StaticResource PanelBorderStyle}" Padding="14,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{x:Static properties:Resources.CalibrationFileManagement}" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Text="维护相机校正组、上传校正文件，并为当前组选择每类校正资源。"
+                               FontSize="12" Opacity="0.62" Margin="0,5,0,0" />
+                </StackPanel>
+                <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Click="Button_Add_Click" Content="{x:Static properties:Resources.AddGroup}" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Click="Button_Delete_Click" Content="{x:Static properties:Resources.DeleteGroup}" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Command="{Binding UploadCalibrationCommand}" Content="{x:Static properties:Resources.Upload}" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Click="Export_Click" Content="{x:Static properties:Resources.ExportCalibration}" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Command="{Binding OepnCalibrationToolCommand}" Content="{x:Static properties:Resources.CreateCalibration}" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Click="Help_Click" Content="校正手册 &#x2753;" ToolTip="打开校正系统参考手册，查看各校正步骤的算法原理和配置说明" />
+                </WrapPanel>
+            </Grid>
+        </Border>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Grid Grid.Row="0" Margin="0,0,5,0">
-                <ListView x:Name="ListView1" Grid.Row="0" Padding="0,5,0,0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged" Style="{DynamicResource ListView.Small}">
+            <Border Grid.Column="0" Style="{StaticResource PanelBorderStyle}" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="2,0,2,10">
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding Items.Count, ElementName=ListView1, StringFormat={}{0}}" FontWeight="SemiBold" Opacity="0.7" />
+                        <TextBlock Text="{x:Static properties:Resources.CalibrationGroupManagement}" FontSize="16" FontWeight="SemiBold" />
+                    </DockPanel>
+                    <ListView x:Name="ListView1" Grid.Row="1" Padding="0,5,0,0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged" Style="{DynamicResource ListView.Small}">
                     <ListView.ItemContainerStyle>
                         <Style BasedOn="{StaticResource ListViewItemBaseStyle.Small}" TargetType="{x:Type ListViewItem}">
                             <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
@@ -74,12 +108,13 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
-            </Grid>
-            <Grid d:DataContext="{d:DesignInstance local:GroupResource}" x:Name="StackPanelCab" Grid.Column="1">
-                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" />
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="5">
-                        <StackPanel Margin="5,0,0,0">
+                </Grid>
+            </Border>
+            <Grid d:DataContext="{d:DesignInstance local:GroupResource}" x:Name="StackPanelCab" Grid.Column="2">
+                <Border Style="{StaticResource PanelBorderStyle}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Margin="10">
+                    <StackPanel>
+                        <Border Style="{StaticResource PanelBorderStyle}" Padding="10" Margin="0,0,0,10">
                             <UniformGrid Columns="4">
                                 <DockPanel Margin="5">
                                     <TextBlock Width="80" DockPanel.Dock="Left" Text="{x:Static properties:Resources.ExpTime}" />
@@ -106,7 +141,7 @@
                                     <TextBox Width="80" HorizontalAlignment="Left" Text="{Binding Config.FocusDistanceShow}" />
                                 </DockPanel>
                             </UniformGrid>
-                        </StackPanel>
+                        </Border>
 
                         <!--  基础校正项：按固定顺序依次执行 DarkNoise → DefectPoint → DSNU → Uniformity → ColorShift → Distortion  -->
                         <GroupBox Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}" Header="基础校正（按顺序依次执行）">

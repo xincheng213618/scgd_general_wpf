@@ -1,6 +1,7 @@
-﻿using ColorVision.Common.ThirdPartyApps;
+using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Themes;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -28,8 +29,8 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         }
 
         private ObservableCollection<ThirdPartyAppInfo> _allApps = new();
-        private List<string> _groups = new();
-        private const string AllGroupsKey = "All";
+        private List<ThirdPartyAppGroupItem> _groups = new();
+        private string _allGroupsLabel = string.Empty;
         private CustomAppsConfig _customConfig = null!;
 
         public ThirdPartyAppsWindow()
@@ -41,6 +42,14 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         private void Window_Initialized(object sender, EventArgs e)
         {
             _customConfig = CustomAppsConfig.Instance;
+            _allGroupsLabel = GetResourceString("ThirdPartyAppsAll", "All");
+
+            SearchBox.ToolTip = Properties.Resources.Search;
+            BtnAddApp.ToolTip = GetResourceString("ThirdPartyAppsAddCustomApp", "添加自定义应用");
+            BtnAddScript.ToolTip = GetResourceString("ThirdPartyAppsAddQuickScript", "添加快捷脚本");
+            BtnRefresh.ToolTip = Properties.Resources.Refresh;
+            GroupsLabelText.Text = GetResourceString("ThirdPartyAppsGroups", "分类");
+
             var manager = ThirdPartyAppManager.GetInstance();
             _allApps = manager.Apps;
             RefreshGroups();
@@ -52,11 +61,11 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 .GroupBy(a => a.Group)
                 .Where(g => !string.IsNullOrEmpty(g.Key))
                 .OrderBy(g => g.Min(a => a.Order))
-                .Select(g => g.Key)
+                .Select(g => new ThirdPartyAppGroupItem(g.Key, g.Count()))
                 .ToList();
 
             GroupListBox.Items.Clear();
-            GroupListBox.Items.Add(AllGroupsKey);
+            GroupListBox.Items.Add(new ThirdPartyAppGroupItem(_allGroupsLabel, _allApps.Count, true));
             foreach (var group in _groups)
             {
                 GroupListBox.Items.Add(group);
@@ -77,13 +86,13 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         private void ApplyFilter()
         {
             string keyword = SearchBox.Text.Trim();
-            string? selectedGroup = GroupListBox.SelectedItem as string;
+            ThirdPartyAppGroupItem? selectedGroup = GroupListBox.SelectedItem as ThirdPartyAppGroupItem;
 
             IEnumerable<ThirdPartyAppInfo> filtered = _allApps;
 
-            if (!string.IsNullOrEmpty(selectedGroup) && selectedGroup != AllGroupsKey)
+            if (selectedGroup is { IsAll: false })
             {
-                filtered = filtered.Where(a => a.Group == selectedGroup);
+                filtered = filtered.Where(a => a.Group == selectedGroup.Name);
             }
 
             if (!string.IsNullOrEmpty(keyword))
@@ -93,7 +102,11 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
             var result = filtered.OrderBy(a => a.Order).ThenBy(a => a.Name).ToList();
             AppsListBox.ItemsSource = result;
-            AppCountText.Text = result.Count.ToString();
+            AppCountText.Text = string.Format(
+                CultureInfo.CurrentUICulture,
+                GetResourceString("ThirdPartyAppsCountFormat", "{0} apps"),
+                result.Count);
+            CurrentGroupText.Text = selectedGroup?.DisplayName ?? _allGroupsLabel;
         }
 
         private void AppsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -149,17 +162,16 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                     }
                 }
 
-                // Check if this is a custom app — if so, show edit and delete options
                 var customEntry = FindCustomEntry(app);
                 if (customEntry != null)
                 {
                     contextMenu.Items.Add(new Separator());
 
-                    MenuItem editItem = new MenuItem { Header = "编辑" };
+                    MenuItem editItem = new MenuItem { Header = GetResourceString("Edit", "编辑") };
                     editItem.Click += (s, args) => EditCustomApp(customEntry, app);
                     contextMenu.Items.Add(editItem);
 
-                    MenuItem deleteItem = new MenuItem { Header = "删除" };
+                    MenuItem deleteItem = new MenuItem { Header = Properties.Resources.Delete };
                     deleteItem.Click += (s, args) => DeleteCustomApp(customEntry, app);
                     contextMenu.Items.Add(deleteItem);
                 }
@@ -207,7 +219,12 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         private void DeleteCustomApp(CustomAppEntry entry, ThirdPartyAppInfo app)
         {
-            if (MessageBox.Show($"确定要删除自定义应用 \"{entry.Name}\" 吗？", "确认删除",
+            string message = string.Format(
+                CultureInfo.CurrentUICulture,
+                GetResourceString("ThirdPartyAppsDeleteCustomAppMessage", "确定要删除自定义应用 \"{0}\" 吗？"),
+                entry.Name);
+
+            if (MessageBox.Show(message, GetResourceString("ConfirmDelete", "确认删除"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 _customConfig.Entries.Remove(entry);
@@ -235,7 +252,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             var entry = new CustomAppEntry { AppType = CustomAppType.CmdScript };
             var dlg = new AddCustomAppWindow(entry) { Owner = this };
-            dlg.Title = "添加快捷脚本";
+            dlg.Title = GetResourceString("ThirdPartyAppsAddQuickScript", "添加快捷脚本");
             if (dlg.ShowDialog() == true && dlg.Result != null)
             {
                 _customConfig.Entries.Add(dlg.Result);
@@ -248,6 +265,26 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             ThirdPartyAppManager.GetInstance().LoadApps();
             _allApps = ThirdPartyAppManager.GetInstance().Apps;
             RefreshGroups();
+        }
+
+        private static string GetResourceString(string key, string fallback)
+        {
+            return Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? fallback;
+        }
+
+        public sealed class ThirdPartyAppGroupItem
+        {
+            public ThirdPartyAppGroupItem(string name, int count, bool isAll = false)
+            {
+                Name = name;
+                Count = count;
+                IsAll = isAll;
+            }
+
+            public string Name { get; }
+            public string DisplayName => Name;
+            public int Count { get; }
+            public bool IsAll { get; }
         }
     }
 }

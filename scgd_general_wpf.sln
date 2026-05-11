@@ -60,9 +60,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemMonitor", "Plugins\Sy
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ColorVisionIcons64", "Core\ColorVisionIcons64\ColorVisionIcons64.vcxproj", "{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_cuda", "Core\opencv_cuda\opencv_cuda.vcxproj", "{7568CD41-78C1-415F-9F3B-73283392B60D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_cuda", "Native\opencv_cuda\opencv_cuda.vcxproj", "{7568CD41-78C1-415F-9F3B-73283392B60D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "Core\opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "Native\opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.SocketProtocol", "UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj", "{70F1E145-B0F9-4D7D-8557-D9996B45EC2A}"
 EndProject

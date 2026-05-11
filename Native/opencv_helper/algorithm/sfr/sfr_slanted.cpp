@@ -444,7 +444,8 @@ double find_freq_at_threshold(
         return 0.0;
     }
 
-    int i = std::distance(sfr_data.begin(), it);
+    const auto index = std::distance(sfr_data.begin(), it);
+    const int i = static_cast<int>(index);
     double y1 = sfr_data[i];
     double y2 = sfr_data[i + 1];
     double x1 = freq_axis[i];
