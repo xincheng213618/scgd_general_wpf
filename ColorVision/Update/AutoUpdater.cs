@@ -501,7 +501,7 @@ namespace ColorVision.Update
             return versions;
         }
 
-        private static string GetIncrementalPackageFileName(Version version) => $"ColorVision-Update-[{version}].cvx";
+        public static string GetIncrementalPackageFileName(Version version) => $"ColorVision-Update-[{version}].cvx";
 
         private void UpdateApplication(string downloadPath, bool isIncrement)
         {
@@ -528,6 +528,11 @@ namespace ColorVision.Update
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths)
         {
+            RestartIsIncrementApplication(downloadPaths, null);
+        }
+
+        public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
+        {
             // 保存数据库配置
             try
             {
@@ -546,6 +551,21 @@ namespace ColorVision.Update
 
                     ZipFile.ExtractToDirectory(downloadPath, tempDirectory, true);
                     hasAnyPackage = true;
+                }
+
+                if (pluginDownloadPaths != null)
+                {
+                    string pluginsDirectory = Path.Combine(tempDirectory, "Plugins");
+                    Directory.CreateDirectory(pluginsDirectory);
+
+                    foreach (string pluginDownloadPath in pluginDownloadPaths)
+                    {
+                        if (string.IsNullOrWhiteSpace(pluginDownloadPath) || !File.Exists(pluginDownloadPath))
+                            continue;
+
+                        ZipFile.ExtractToDirectory(pluginDownloadPath, pluginsDirectory, true);
+                        hasAnyPackage = true;
+                    }
                 }
 
                 if (!hasAnyPackage)
