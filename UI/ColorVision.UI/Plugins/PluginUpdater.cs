@@ -157,45 +157,6 @@ del ""%~f0"" & exit
         }
 
         /// <summary>
-        /// 规范化多语言目录：
-        /// 在任意子层级找到名为 en, fr, ja, ko, ru, zh-Hant 的文件夹，将其内容合并提升到 stagingRoot\\{lang}\\
-        /// </summary>
-        private static void NormalizeLanguageDirectories(string stagingRoot, string stagingRoot1)
-        {
-            string[] langFolders = { "en", "fr", "ja", "ko", "ru", "zh-Hant" };
-
-            // 确保语言根目录存在（若后续需要合并）
-            foreach (var lang in langFolders)
-            {
-                Directory.CreateDirectory(Path.Combine(stagingRoot1, lang));
-            }
-
-            // 遍历所有子目录，找到语言目录
-            var allDirs = Directory.GetDirectories(stagingRoot, "*", SearchOption.AllDirectories)
-                                   .OrderByDescending(d => d.Length) // 先处理更深层，避免移动后路径改变影响枚举
-                                   .ToList();
-
-            foreach (var dir in allDirs)
-            {
-                string name = Path.GetFileName(dir);
-                if (langFolders.Contains(name, StringComparer.OrdinalIgnoreCase))
-                {
-                    string targetLangDir = Path.Combine(stagingRoot1, name);
-
-                    // 如果本身就是根语言目录，跳过
-                    if (string.Equals(dir.TrimEnd(Path.DirectorySeparatorChar), targetLangDir, StringComparison.Ordinal))
-                        continue;
-
-                    // 合并内容到根语言目录
-                    MergeDirectory(dir, targetLangDir);
-
-                    // 删除原目录
-                    //SafeDeleteDirectory(dir);
-                }
-            }
-        }
-
-        /// <summary>
         /// 合并 srcDir 到 destDir，同名文件覆盖
         /// </summary>
         private static void MergeDirectory(string srcDir, string destDir)

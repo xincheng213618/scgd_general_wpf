@@ -1,9 +1,9 @@
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Marketplace;
-using ColorVision.UI.Menus;
 using log4net;
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,16 +23,12 @@ namespace ColorVision.Update
             await _locker.WaitAsync();
             try
             {
-                AutoUpdatePlan? applicationPlan = await AutoUpdater.GetInstance().GetUpdatePlanAsync();
-                CombinedPluginUpdatePlan? pluginPlan = null;
-                Version? currentVersion = AutoUpdater.CurrentVersion;
+                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
+                    includeApplicationUpdates: true,
+                    includePluginUpdates: true,
+                    respectSkippedVersion: false);
 
-                if (applicationPlan == null && currentVersion != null)
-                {
-                    pluginPlan = await MarketplaceManager.GetInstance().BuildCombinedUpdatePlanAsync(currentVersion);
-                }
-
-                if (applicationPlan == null && (pluginPlan == null || !pluginPlan.HasUpdates))
+                if (!HasUpdates(applicationPlan, pluginPlan))
                 {
                     ShowNoUpdatesMessage(pluginPlan);
                     return;
@@ -43,16 +39,7 @@ namespace ColorVision.Update
                     return;
                 }
 
-                WorkflowConfig.Activate(CombinedUpdateStage.UpdatingApplication);
-                ConfigService.Instance.SaveConfigs();
-
-                if (applicationPlan != null)
-                {
-                    AutoUpdater.GetInstance().StartUpdatePlan(applicationPlan);
-                    return;
-                }
-
-                await StartPluginUpdateAsync(pluginPlan!, showNoUpdatesMessage: true);
+                await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: true);
             }
             catch (Exception ex)
             {
@@ -60,6 +47,70 @@ namespace ColorVision.Update
                 WorkflowConfig.Clear();
                 ConfigService.Instance.SaveConfigs();
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _locker.Release();
+            }
+        }
+
+        public static async Task CheckForUpdatesOnStartupAsync()
+        {
+            if (Debugger.IsAttached)
+                return;
+
+            if (WorkflowConfig.IsActive)
+                return;
+
+            bool includeApplicationUpdates = AutoUpdateConfig.Instance.IsAutoUpdate;
+            bool includePluginUpdates = MarketplaceWindowConfig.Instance.IsAutoUpdate;
+
+            if (!includeApplicationUpdates && !includePluginUpdates)
+                return;
+
+            await _locker.WaitAsync();
+            try
+            {
+                if (WorkflowConfig.IsActive)
+                    return;
+
+                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
+                    includeApplicationUpdates,
+                    includePluginUpdates,
+                    respectSkippedVersion: true);
+
+                if (!HasUpdates(applicationPlan, pluginPlan))
+                    return;
+
+                MessageBoxButton buttons = applicationPlan != null ? MessageBoxButton.YesNoCancel : MessageBoxButton.YesNo;
+                MessageBoxResult result = MessageBox1.Show(
+                    Application.Current.GetActiveWindow(),
+                    BuildStartMessage(applicationPlan, pluginPlan),
+                    "ColorVision",
+                    buttons);
+
+                if (applicationPlan != null)
+                {
+                    if (result == MessageBoxResult.No)
+                    {
+                        AutoUpdateConfig.Instance.SkippedVersion = applicationPlan.LatestVersion.ToString();
+                        ConfigService.Instance.SaveConfigs();
+                        return;
+                    }
+
+                    if (result != MessageBoxResult.Yes)
+                        return;
+                }
+                else if (result != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+
+                await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
             }
             finally
             {
@@ -90,7 +141,7 @@ namespace ColorVision.Update
                 {
                     WorkflowConfig.Stage = CombinedUpdateStage.UpdatingApplication;
                     ConfigService.Instance.SaveConfigs();
-                    AutoUpdater.GetInstance().StartUpdatePlan(applicationPlan);
+                    AutoUpdater.GetInstance().StartUpdatePlan(applicationPlan, ClearWorkflowState);
                     return;
                 }
 
@@ -120,6 +171,79 @@ namespace ColorVision.Update
             {
                 _locker.Release();
             }
+        }
+
+        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(bool includeApplicationUpdates, bool includePluginUpdates, bool respectSkippedVersion)
+        {
+            AutoUpdatePlan? applicationPlan = null;
+            if (includeApplicationUpdates)
+            {
+                applicationPlan = await AutoUpdater.GetInstance().GetUpdatePlanAsync();
+                if (respectSkippedVersion && ShouldSkipApplicationPlan(applicationPlan))
+                {
+                    applicationPlan = null;
+                }
+            }
+
+            CombinedPluginUpdatePlan? pluginPlan = null;
+            if (includePluginUpdates)
+            {
+                Version? hostVersion = applicationPlan?.LatestVersion ?? AutoUpdater.CurrentVersion;
+                if (hostVersion != null)
+                {
+                    pluginPlan = await MarketplaceManager.GetInstance().BuildCombinedUpdatePlanAsync(hostVersion);
+                }
+            }
+
+            return (applicationPlan, pluginPlan);
+        }
+
+        private static async Task StartWorkflowAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool showNoUpdatesMessage)
+        {
+            if (!HasUpdates(applicationPlan, pluginPlan))
+            {
+                if (showNoUpdatesMessage)
+                {
+                    ShowNoUpdatesMessage(pluginPlan);
+                }
+                return;
+            }
+
+            WorkflowConfig.Activate(CombinedUpdateStage.UpdatingApplication);
+            ConfigService.Instance.SaveConfigs();
+
+            if (applicationPlan != null)
+            {
+                AutoUpdater.GetInstance().StartUpdatePlan(applicationPlan, ClearWorkflowState);
+                return;
+            }
+
+            await StartPluginUpdateAsync(pluginPlan!, showNoUpdatesMessage);
+        }
+
+        private static bool HasUpdates(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
+        {
+            return applicationPlan != null || pluginPlan?.HasUpdates == true;
+        }
+
+        private static bool ShouldSkipApplicationPlan(AutoUpdatePlan? applicationPlan)
+        {
+            if (applicationPlan == null || string.IsNullOrWhiteSpace(AutoUpdateConfig.Instance.SkippedVersion))
+                return false;
+
+            if (!Version.TryParse(AutoUpdateConfig.Instance.SkippedVersion.Trim(), out Version? skippedVersion))
+            {
+                AutoUpdateConfig.Instance.SkippedVersion = string.Empty;
+                return false;
+            }
+
+            return skippedVersion == applicationPlan.LatestVersion;
+        }
+
+        private static void ClearWorkflowState()
+        {
+            WorkflowConfig.Clear();
+            ConfigService.Instance.SaveConfigs();
         }
 
         private static async Task StartPluginUpdateAsync(CombinedPluginUpdatePlan pluginPlan, bool showNoUpdatesMessage)
@@ -165,19 +289,32 @@ namespace ColorVision.Update
             StringBuilder builder = new();
             if (applicationPlan != null)
             {
-                builder.AppendLine($"检测到主体新版本 {applicationPlan.LatestVersion}。程序会先把主体更新到最新版本，过程中可能重启多次。");
+                if (applicationPlan.IsIncremental && applicationPlan.HasMultipleSteps)
+                {
+                    builder.AppendLine($"检测到主体新版本 {applicationPlan.LatestVersion}。程序会先下载 {applicationPlan.VersionsToApply.Count} 个主体增量包并顺序应用，主体阶段只重启一次。");
+                }
+                else if (applicationPlan.IsIncremental)
+                {
+                    builder.AppendLine($"检测到主体新版本 {applicationPlan.LatestVersion}。程序会先应用 1 个主体增量包。");
+                }
+                else
+                {
+                    builder.AppendLine($"检测到主体新版本 {applicationPlan.LatestVersion}。程序会先更新主体到最新版本。");
+                }
             }
 
             if (pluginPlan?.HasUpdates == true)
             {
-                builder.AppendLine($"完成主体更新后，还会继续更新 {pluginPlan.Updates.Count} 个插件。");
-            }
-            else
-            {
-                builder.AppendLine("主体完成后会再检查一次插件更新。");
+                builder.AppendLine($"随后还会继续更新 {pluginPlan.Updates.Count} 个插件。");
             }
 
-            builder.Append("是否继续？");
+            if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
+            {
+                string skippedPlugins = string.Join("、", pluginPlan.SkippedIncompatiblePlugins);
+                builder.AppendLine($"以下插件会因兼容性要求被跳过：{skippedPlugins}");
+            }
+
+            builder.Append(pluginPlan?.HasUpdates == true && applicationPlan == null ? "是否继续更新插件？" : "是否继续？");
             return builder.ToString();
         }
 
@@ -199,16 +336,5 @@ namespace ColorVision.Update
         public override int Order { get => 0; set { } }
 
         public override Task Initialize() => CombinedUpdateCoordinator.ResumeIfNeededAsync();
-    }
-
-    public class MenuCombinedUpdate : MenuItemBase
-    {
-        public override string OwnerGuid => nameof(MenuUpdate);
-
-        public override int Order => 101;
-
-        public override string Header => "更新主体和插件";
-
-        public override void Execute() => _ = CombinedUpdateCoordinator.StartInteractiveAsync();
     }
 }
