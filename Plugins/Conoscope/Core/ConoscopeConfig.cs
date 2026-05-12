@@ -73,7 +73,7 @@ namespace Conoscope.Core
 
         [Category("预处理"), DisplayName("加载时修正非正 XYZ"), Description("启用后，在加载 CVCIE 数据时把 X/Y/Z 中小于等于 0 的像素修正为 1e-6，用于错误校正文件的兜底。会改变原始 XYZ 数据。")]
         public bool ClampNonPositiveXyzOnLoad { get => _ClampNonPositiveXyzOnLoad; set { if (_ClampNonPositiveXyzOnLoad == value) return; _ClampNonPositiveXyzOnLoad = value; OnPropertyChanged(); } }
-        private bool _ClampNonPositiveXyzOnLoad;
+        private bool _ClampNonPositiveXyzOnLoad = true;
 
         [Category("滤波"), DisplayName("滤波类型"), Description("Conoscope 图像打开或手动应用时使用的预处理滤波类型。")]
         public ImageFilterType FilterType { get => _FilterType; set { if (_FilterType == value) return; _FilterType = value; OnPropertyChanged(); } }

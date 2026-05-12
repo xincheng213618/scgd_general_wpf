@@ -9,7 +9,7 @@ namespace Conoscope
 {
     public partial class ConoscopeWindow
     {
-        private ConoscopeView AddConoscopeView(string? filePath, bool activate)
+        private ConoscopeView AddConoscopeView(string? filePath, bool activate, string? exposureSummary = null, ConoscopeView? reuseView = null)
         {
             if (!string.IsNullOrWhiteSpace(filePath))
             {
@@ -17,7 +17,7 @@ namespace Conoscope
                 LayoutDocument? existingDocument = ViewDocumentPane.Children
                     .OfType<LayoutDocument>()
                     .FirstOrDefault(item => item.ContentId == existingContentId);
-                if (existingDocument?.Content is ConoscopeView existingView)
+                if (existingDocument?.Content is ConoscopeView existingView && !ReferenceEquals(existingView, reuseView))
                 {
                     SelectDocument(existingDocument);
                     ConoscopeModuleService.Activate(existingView);
@@ -25,10 +25,31 @@ namespace Conoscope
                 }
             }
 
+            if (reuseView != null && !string.IsNullOrWhiteSpace(filePath))
+            {
+                LayoutDocument? reuseDocument = GetDocument(reuseView);
+                if (reuseDocument != null)
+                {
+                    reuseView.OpenConoscope(filePath, exposureSummary);
+                    reuseDocument.Title = Path.GetFileName(filePath);
+                    reuseDocument.ContentId = GetContentId(filePath);
+                    if (activate)
+                    {
+                        SelectDocument(reuseDocument);
+                    }
+                    else
+                    {
+                        RefreshActiveViewUi();
+                    }
+
+                    return reuseView;
+                }
+            }
+
             ConoscopeView view = new ConoscopeView();
             if (!string.IsNullOrWhiteSpace(filePath))
             {
-                view.OpenConoscope(filePath);
+                view.OpenConoscope(filePath, exposureSummary);
             }
 
             LayoutDocument layoutDocument = new LayoutDocument
@@ -45,9 +66,14 @@ namespace Conoscope
                 if (layoutDocument.IsActive)
                 {
                     ConoscopeModuleService.Activate(view);
+                    RefreshActiveViewUi();
                 }
             };
-            layoutDocument.Closing += (s, e) => view.Dispose();
+            layoutDocument.Closing += (s, e) =>
+            {
+                view.Dispose();
+                Dispatcher.BeginInvoke(RefreshActiveViewUi);
+            };
 
             ViewDocumentPane.Children.Add(layoutDocument);
             if (activate)
@@ -67,9 +93,7 @@ namespace Conoscope
                 ConoscopeModuleService.Activate(view);
             }
 
-            btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && ActiveView != null;
-            btnOpenActiveView3D.IsEnabled = ActiveView != null;
-            btnOpenActiveViewCie.IsEnabled = ActiveView != null;
+            RefreshActiveViewUi();
         }
 
         private ConoscopeView? GetActiveView()
@@ -102,6 +126,13 @@ namespace Conoscope
                 .Where(item => item != null)
                 .Cast<ConoscopeView>()
                 .ToArray();
+        }
+
+        private LayoutDocument? GetDocument(ConoscopeView view)
+        {
+            return ViewDocumentPane.Children
+                .OfType<LayoutDocument>()
+                .FirstOrDefault(item => ReferenceEquals(item.Content, view));
         }
 
         private static string GetContentId(string filePath)

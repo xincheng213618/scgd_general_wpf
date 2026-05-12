@@ -13,12 +13,17 @@ namespace Conoscope
         public OpenCvSharp.Mat? ZMat { get; set; }
 
         string Filename = string.Empty;
+        private string? captureExposureSummary;
 
-        public void OpenConoscope(string filename)
+        public bool HasCaptureExposureSummary => !string.IsNullOrWhiteSpace(captureExposureSummary);
+        public string CaptureExposureSummary => captureExposureSummary ?? "未记录";
+
+        public void OpenConoscope(string filename, string? exposureSummary = null)
         {
             try
             {
                 Filename = filename;
+                captureExposureSummary = string.IsNullOrWhiteSpace(exposureSummary) ? null : exposureSummary;
                 HideCoordinateDragOverlay();
                 DisposeCoordinateAxis();
                 ImageView.Clear();
@@ -30,6 +35,7 @@ namespace Conoscope
                 }
 
                 RefreshDisplayedImage();
+                SyncCieWindowFromCurrentPointer();
             }
             catch (Exception ex)
             {

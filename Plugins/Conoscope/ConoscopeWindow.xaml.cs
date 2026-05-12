@@ -91,9 +91,34 @@ namespace Conoscope
 
         public ConoscopeView? ActiveView => GetActiveView();
 
-        public void OpenConoscope(string filename)
+        public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
-            AddConoscopeView(filename, activate: true);
+            ConoscopeView? reuseView = preferReuseActiveView ? ActiveView : null;
+            AddConoscopeView(filename, activate: true, exposureSummary, reuseView);
+        }
+
+        private void RefreshActiveViewUi()
+        {
+            ConoscopeView? activeView = ActiveView;
+            btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
+            btnOpenActiveView3D.IsEnabled = activeView != null;
+            btnOpenActiveViewCie.IsEnabled = activeView != null;
+
+            if (tbExposureStatus == null)
+            {
+                return;
+            }
+
+            if (activeView?.HasCaptureExposureSummary == true)
+            {
+                tbExposureStatus.Text = activeView.CaptureExposureSummary;
+                tbExposureStatus.Foreground = Brushes.LimeGreen;
+            }
+            else
+            {
+                tbExposureStatus.Text = "未记录";
+                tbExposureStatus.Foreground = Brushes.Gray;
+            }
         }
 
         internal void RefreshConoscopeConfiguration()
@@ -140,8 +165,7 @@ namespace Conoscope
             RefreshCameraDevices();
             InitializePseudoColorMapOptions();
             InitializePreprocessControls();
-            btnOpenActiveView3D.IsEnabled = ActiveView != null;
-            btnOpenActiveViewCie.IsEnabled = ActiveView != null;
+            RefreshActiveViewUi();
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)

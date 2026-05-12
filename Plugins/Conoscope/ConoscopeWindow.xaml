@@ -212,7 +212,8 @@
                                 <Border Style="{StaticResource RibbonGroupStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
@@ -247,7 +248,14 @@
                                                 <TextBlock Text="&#xE722;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="测量相机" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <CheckBox x:Name="chkReuseActiveViewOnCapture"
+                                                  Grid.Row="1"
+                                                  Margin="0,8,0,0"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="True"
+                                                  Content="复用当前视图"
+                                                  ToolTip="勾选后，拍图结果会直接刷新当前活动 View，减少额外内存占用" />
+                                        <TextBlock Grid.Row="2" Text="测量相机" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -303,6 +311,7 @@
                                                       Content="XYZ 修正"
                                                       Checked="WindowPreprocess_Changed"
                                                       Unchecked="WindowPreprocess_Changed"
+                                                      Visibility="Collapsed"
                                                       Margin="0,0,12,0"
                                                       VerticalAlignment="Center" />
                                             <CheckBox x:Name="chkWindowDustRemovalEnabled"
@@ -449,7 +458,7 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenContrastTest" Click="btnOpenContrastTest_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开黑白对比度测试">
+                                            <Button x:Name="btnOpenContrastTest" Click="btnOpenContrastTest_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开对比度测试">
                                                 <TextBlock Text="&#xE9D2;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
                                             <Button x:Name="btnOpenColorGamut" Click="btnOpenColorGamut_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开 RGB 色域计算">
@@ -528,6 +537,12 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Margin="0,0,5,0" Text="{x:Static properties:Resources.CurrentModel}" />
                     <TextBlock x:Name="tbCurrentModel" Text="VA60" FontWeight="SemiBold" />
+                </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="12,0,5,0" Text="曝光" />
+                    <TextBlock x:Name="tbExposureStatus" Text="未记录" Foreground="Gray" FontWeight="SemiBold" />
                 </StackPanel>
             </StatusBarItem>
             <StatusBarItem>

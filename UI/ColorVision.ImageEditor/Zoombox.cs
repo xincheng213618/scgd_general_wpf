@@ -426,6 +426,7 @@ namespace ColorVision.ImageEditor
                 TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, delta.Translation.X);
                 TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, delta.Translation.Y);
                 this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, TranslateTransform.Value));
+                ContentMatrixChanged?.Invoke(this, new EventArgs());
             }
 
             // Calling InvalidateRequerySuggested as we are using RoutedCommands
@@ -495,6 +496,7 @@ namespace ColorVision.ImageEditor
                 TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, delta.Y);
                 this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, TranslateTransform.Value));
                 this.position = newPos;
+                ContentMatrixChanged?.Invoke(this, new EventArgs());
             }
 
             base.OnMouseMove(e);

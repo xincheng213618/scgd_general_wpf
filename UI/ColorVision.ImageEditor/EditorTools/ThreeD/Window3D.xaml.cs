@@ -20,6 +20,7 @@ namespace ColorVision.ImageEditor
         private ModelVisual3D? modelVisual;
         private MeshGeometry3D? currentMesh;
         private byte[]? grayPixels;
+        private byte[]? alphaPixels;
         private int newWidth;
         private int newHeight;
         private double heightScale = 100.0;
@@ -109,7 +110,7 @@ namespace ColorVision.ImageEditor
                 ? initialHeightScaleOverride.Value
                 : Config.DefaultHeightScale;
 
-            (grayPixels, newWidth, newHeight) = ConvertBitmapToGray(
+            (grayPixels, alphaPixels, newWidth, newHeight) = ConvertBitmapToGray(
                 colorBitmap, Config.TargetPixelsX, Config.TargetPixelsY);
 
             if (grayPixels == null || grayPixels.Length == 0) return;
@@ -199,6 +200,7 @@ namespace ColorVision.ImageEditor
             cachedPositions = null;
             colormapMaterial = null;
             grayPixels = null;
+            alphaPixels = null;
             currentColormap = null;
             axesVisuals = null;
 
@@ -373,7 +375,7 @@ namespace ColorVision.ImageEditor
                 Config.TargetPixelsX = x;
                 Config.TargetPixelsY = y;
 
-                (grayPixels, newWidth, newHeight) = ConvertBitmapToGray(colorBitmap, x, y);
+                (grayPixels, alphaPixels, newWidth, newHeight) = ConvertBitmapToGray(colorBitmap, x, y);
                 if (grayPixels == null || grayPixels.Length == 0) return;
 
                 // Reset mesh on resolution change (need to rebuild)
@@ -509,7 +511,7 @@ namespace ColorVision.ImageEditor
         /// <summary>
         /// Convert WriteableBitmap to downsampled grayscale bytes (pure C#, handles all WPF pixel formats).
         /// </summary>
-        private static (byte[] Gray, int Width, int Height) ConvertBitmapToGray(
+        private static (byte[] Gray, byte[]? Alpha, int Width, int Height) ConvertBitmapToGray(
             WriteableBitmap bitmap, int targetX, int targetY)
         {
             int origW = bitmap.PixelWidth;
@@ -523,14 +525,31 @@ namespace ColorVision.ImageEditor
             int newW = Math.Max(origW / scaleFactor, 2);
             int newH = Math.Max(origH / scaleFactor, 2);
 
-            // WPF FormatConvertedBitmap handles all format conversions (16bit, float, BGR, etc.)
-            var graySource = new FormatConvertedBitmap(bitmap, PixelFormats.Gray8, null, 0);
-            int grayStride = origW; // Gray8 = 1 byte per pixel
-            byte[] fullGray = new byte[origH * grayStride];
-            graySource.CopyPixels(fullGray, grayStride, 0);
+            var colorSource = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
+            int colorStride = origW * 4;
+            byte[] fullColor = new byte[origH * colorStride];
+            colorSource.CopyPixels(fullColor, colorStride, 0);
+
+            byte[] fullGray = new byte[origW * origH];
+            byte[] fullAlpha = new byte[origW * origH];
+            bool hasTransparency = false;
+
+            for (int i = 0; i < fullGray.Length; i++)
+            {
+                int offset = i * 4;
+                byte blue = fullColor[offset];
+                byte green = fullColor[offset + 1];
+                byte red = fullColor[offset + 2];
+                byte alpha = fullColor[offset + 3];
+
+                fullGray[i] = (byte)Math.Clamp(Math.Round(blue * 0.114 + green * 0.587 + red * 0.299), 0, 255);
+                fullAlpha[i] = alpha;
+                hasTransparency |= alpha < 255;
+            }
 
             // Bilinear interpolation downsample
             byte[] gray = new byte[newW * newH];
+            byte[]? alphaMask = hasTransparency ? new byte[newW * newH] : null;
             double scaleX = (double)(origW - 1) / Math.Max(newW - 1, 1);
             double scaleY = (double)(origH - 1) / Math.Max(newH - 1, 1);
 
@@ -548,10 +567,15 @@ namespace ColorVision.ImageEditor
                     int x1 = Math.Min(x0 + 1, origW - 1);
                     double fx = srcX - x0;
 
-                    double v00 = fullGray[y0 * grayStride + x0];
-                    double v10 = fullGray[y0 * grayStride + x1];
-                    double v01 = fullGray[y1 * grayStride + x0];
-                    double v11 = fullGray[y1 * grayStride + x1];
+                    int idx00 = y0 * origW + x0;
+                    int idx10 = y0 * origW + x1;
+                    int idx01 = y1 * origW + x0;
+                    int idx11 = y1 * origW + x1;
+
+                    double v00 = fullGray[idx00];
+                    double v10 = fullGray[idx10];
+                    double v01 = fullGray[idx01];
+                    double v11 = fullGray[idx11];
 
                     double value = v00 * (1 - fx) * (1 - fy)
                                  + v10 * fx * (1 - fy)
@@ -559,10 +583,23 @@ namespace ColorVision.ImageEditor
                                  + v11 * fx * fy;
 
                     gray[y * newW + x] = (byte)Math.Clamp(Math.Round(value), 0, 255);
+
+                    if (alphaMask != null)
+                    {
+                        double a00 = fullAlpha[idx00];
+                        double a10 = fullAlpha[idx10];
+                        double a01 = fullAlpha[idx01];
+                        double a11 = fullAlpha[idx11];
+                        double alphaValue = a00 * (1 - fx) * (1 - fy)
+                                          + a10 * fx * (1 - fy)
+                                          + a01 * (1 - fx) * fy
+                                          + a11 * fx * fy;
+                        alphaMask[y * newW + x] = (byte)Math.Clamp(Math.Round(alphaValue), 0, 255);
+                    }
                 }
             }
 
-            return (gray, newW, newH);
+            return (gray, alphaMask, newW, newH);
         }
 
         private void CreateColormapMaterial(byte[] lut)
@@ -592,10 +629,35 @@ namespace ColorVision.ImageEditor
         /// Separated from mesh creation to allow position-only updates.
         /// </summary>
         private static (Point3D[] Positions, int[] Indices, Point[] TexCoords, Vector3D[] Normals) BuildMeshArrays(
-            byte[] pixels, int width, int height, double heightScale)
+            byte[] pixels, byte[]? alphaMask, int width, int height, double heightScale)
         {
             int vertexCount = width * height;
-            int indexCount = (width - 1) * (height - 1) * 6;
+            int visibleQuadCount = 0;
+            if (alphaMask == null)
+            {
+                visibleQuadCount = (width - 1) * (height - 1);
+            }
+            else
+            {
+                for (int y = 0; y < height - 1; y++)
+                {
+                    int rowStart = y * width;
+                    int nextRowStart = rowStart + width;
+                    for (int x = 0; x < width - 1; x++)
+                    {
+                        int tl = rowStart + x;
+                        int tr = tl + 1;
+                        int bl = nextRowStart + x;
+                        int br = bl + 1;
+                        if (IsQuadVisible(alphaMask, tl, tr, bl, br))
+                        {
+                            visibleQuadCount++;
+                        }
+                    }
+                }
+            }
+
+            int indexCount = visibleQuadCount * 6;
 
             var positions = new Point3D[vertexCount];
             var texCoords = new Point[vertexCount];
@@ -604,6 +666,8 @@ namespace ColorVision.ImageEditor
 
             double wm1 = Math.Max(width - 1, 1);
             double hm1 = Math.Max(height - 1, 1);
+            double centerX = wm1 / 2.0;
+            double centerY = hm1 / 2.0;
 
             // Shared vertex grid
             for (int y = 0; y < height; y++)
@@ -613,9 +677,17 @@ namespace ColorVision.ImageEditor
                 for (int x = 0; x < width; x++)
                 {
                     int idx = rowOffset + x;
+                    texCoords[idx] = new Point(x / wm1, y / hm1);
+
+                    if (!IsVertexVisible(alphaMask, idx))
+                    {
+                        positions[idx] = new Point3D(centerX, centerY, 0);
+                        normals[idx] = new Vector3D(0, 0, 1);
+                        continue;
+                    }
+
                     double z = pixels[idx] / 255.0 * heightScale;
                     positions[idx] = new Point3D(x, flippedY, z);
-                    texCoords[idx] = new Point(x / wm1, y / hm1);
                 }
             }
 
@@ -626,6 +698,12 @@ namespace ColorVision.ImageEditor
                 for (int x = 0; x < width; x++)
                 {
                     int idx = rowOffset + x;
+                    if (!IsVertexVisible(alphaMask, idx))
+                    {
+                        normals[idx] = new Vector3D(0, 0, 1);
+                        continue;
+                    }
+
                     double zL = x > 0 ? pixels[idx - 1] / 255.0 * heightScale : positions[idx].Z;
                     double zR = x < width - 1 ? pixels[idx + 1] / 255.0 * heightScale : positions[idx].Z;
                     double zU = y > 0 ? pixels[idx - width] / 255.0 * heightScale : positions[idx].Z;
@@ -653,6 +731,11 @@ namespace ColorVision.ImageEditor
                     int bl = nextRowStart + x;
                     int br = bl + 1;
 
+                    if (!IsQuadVisible(alphaMask, tl, tr, bl, br))
+                    {
+                        continue;
+                    }
+
                     indices[ii++] = tl;
                     indices[ii++] = tr;
                     indices[ii++] = bl;
@@ -663,6 +746,20 @@ namespace ColorVision.ImageEditor
             }
 
             return (positions, indices, texCoords, normals);
+        }
+
+        private static bool IsVertexVisible(byte[]? alphaMask, int index)
+        {
+            return alphaMask == null || alphaMask[index] > 127;
+        }
+
+        private static bool IsQuadVisible(byte[]? alphaMask, int topLeft, int topRight, int bottomLeft, int bottomRight)
+        {
+            return alphaMask == null
+                || (alphaMask[topLeft] > 127
+                    && alphaMask[topRight] > 127
+                    && alphaMask[bottomLeft] > 127
+                    && alphaMask[bottomRight] > 127);
         }
 
         /// <summary>
@@ -679,6 +776,8 @@ namespace ColorVision.ImageEditor
                 cachedPositions.Clear();
 
             var normals = new Vector3DCollection(newWidth * newHeight);
+            double centerX = Math.Max(newWidth - 1, 1) / 2.0;
+            double centerY = Math.Max(newHeight - 1, 1) / 2.0;
 
             for (int y = 0; y < newHeight; y++)
             {
@@ -687,6 +786,14 @@ namespace ColorVision.ImageEditor
                 for (int x = 0; x < newWidth; x++)
                 {
                     int idx = rowOffset + x;
+
+                    if (!IsVertexVisible(alphaPixels, idx))
+                    {
+                        cachedPositions.Add(new Point3D(centerX, centerY, 0));
+                        normals.Add(new Vector3D(0, 0, 1));
+                        continue;
+                    }
+
                     double z = grayPixels[idx] / 255.0 * heightScale;
                     cachedPositions.Add(new Point3D(x, flippedY, z));
 
@@ -743,10 +850,11 @@ namespace ColorVision.ImageEditor
             if (grayPixels == null || viewport == null) return;
 
             var pixels = grayPixels;
+            var alpha = alphaPixels;
             int w = newWidth, h = newHeight;
             double hs = heightScale;
 
-            var (positions, indices, texCoords, normals) = await Task.Run(() => BuildMeshArrays(pixels, w, h, hs));
+            var (positions, indices, texCoords, normals) = await Task.Run(() => BuildMeshArrays(pixels, alpha, w, h, hs));
 
             currentMesh = new MeshGeometry3D
             {

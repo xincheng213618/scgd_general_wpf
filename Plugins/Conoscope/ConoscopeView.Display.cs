@@ -177,6 +177,7 @@ namespace Conoscope
                 try
                 {
                     RefreshDisplayedImage();
+                    UpdateReferencePlot();
                 }
                 catch (Exception ex)
                 {

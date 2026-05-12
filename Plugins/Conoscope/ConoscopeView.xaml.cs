@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using Conoscope.Core;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -49,11 +50,18 @@ namespace Conoscope
         private bool isUpdatingDisplayControls;
         private bool isUpdatingColorDifferenceControls;
         private bool isUpdatingFilterControls;
+        private ReferencePlotDisplayMode referencePlotDisplayMode;
         private WindowCIE? cieWindow;
         private ImageFullScreenMode? imageFullScreenMode;
         private ConoscopeModelProfile? subscribedModelProfile;
         private const float MinPositiveXyzValue = 0.000001f;
         private const double Conoscope3DInitialHeightScale = 160.0;
+
+        private enum ReferencePlotDisplayMode
+        {
+            Cartesian,
+            Polar
+        }
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
 
@@ -155,6 +163,7 @@ namespace Conoscope
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig_ModelTypeChanged(sender, ConoscopeConfig.CurrentModel);
             InitializePlot(wpfPlotReference, "参考曲线 (Reference Distribution)");
+            UpdateReferencePlotDisplayMode();
             UpdateReferencePlotHeader();
 
             imageFullScreenMode = new ImageFullScreenMode(ImageViewHost);
@@ -410,6 +419,15 @@ namespace Conoscope
                 sliderQuickReferenceAngle.Value = axisParam.ReferenceAngle;
                 sliderQuickReferenceRadius.Maximum = MaxAngle;
                 sliderQuickReferenceRadius.Value = Math.Max(0, Math.Min(axisParam.ReferenceRadiusAngle, MaxAngle));
+                if (txtQuickReferenceAngle != null)
+                {
+                    txtQuickReferenceAngle.Text = axisParam.ReferenceAngle.ToString("F2", CultureInfo.InvariantCulture);
+                }
+
+                if (txtQuickReferenceRadius != null)
+                {
+                    txtQuickReferenceRadius.Text = axisParam.ReferenceRadiusAngle.ToString("F2", CultureInfo.InvariantCulture);
+                }
             }
             finally
             {
@@ -476,6 +494,69 @@ namespace Conoscope
             }
         }
 
+        private void QuickReferenceTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(sender, txtQuickReferenceAngle))
+            {
+                ApplyQuickReferenceAngleFromText();
+            }
+            else if (ReferenceEquals(sender, txtQuickReferenceRadius))
+            {
+                ApplyQuickReferenceRadiusFromText();
+            }
+
+            e.Handled = true;
+        }
+
+        private void txtQuickReferenceAngle_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ApplyQuickReferenceAngleFromText();
+        }
+
+        private void txtQuickReferenceRadius_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ApplyQuickReferenceRadiusFromText();
+        }
+
+        private void ApplyQuickReferenceAngleFromText()
+        {
+            if (txtQuickReferenceAngle == null)
+            {
+                return;
+            }
+
+            if (!TryParseDouble(txtQuickReferenceAngle.Text, out double angle) || !double.IsFinite(angle))
+            {
+                RefreshQuickControlsFromAxisParam();
+                return;
+            }
+
+            CurrentModelProfile.CoordinateAxisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
+            RefreshQuickControlsFromAxisParam();
+        }
+
+        private void ApplyQuickReferenceRadiusFromText()
+        {
+            if (txtQuickReferenceRadius == null)
+            {
+                return;
+            }
+
+            if (!TryParseDouble(txtQuickReferenceRadius.Text, out double radiusAngle) || !double.IsFinite(radiusAngle))
+            {
+                RefreshQuickControlsFromAxisParam();
+                return;
+            }
+
+            CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
+            RefreshQuickControlsFromAxisParam();
+        }
+
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
         {
             AttachCurrentModelProfile();
@@ -528,7 +609,7 @@ namespace Conoscope
         {
             plot.Plot.Title(title);
             plot.Plot.XLabel("Degrees");
-            plot.Plot.YLabel("Luminance (cd/m²)");
+            plot.Plot.YLabel(GetChannelAxisLabel(ExportChannel.Y));
             plot.Plot.Legend.FontName = ScottPlot.Fonts.Detect("中文");
 
             string fontSample = $"中文 Luminance Voltage";
@@ -542,6 +623,40 @@ namespace Conoscope
             plot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
 
             plot.Refresh();
+        }
+
+        private void UpdateReferencePlotDisplayMode()
+        {
+            bool isPolar = referencePlotDisplayMode == ReferencePlotDisplayMode.Polar;
+
+            if (wpfPlotReference != null)
+            {
+                wpfPlotReference.Visibility = isPolar ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            if (polarPlotReference != null)
+            {
+                polarPlotReference.Visibility = isPolar ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (tglReferencePolarMode != null && tglReferencePolarMode.IsChecked != isPolar)
+            {
+                tglReferencePolarMode.IsChecked = isPolar;
+            }
+        }
+
+        private void tglReferencePolarMode_Checked(object sender, RoutedEventArgs e)
+        {
+            referencePlotDisplayMode = ReferencePlotDisplayMode.Polar;
+            UpdateReferencePlotDisplayMode();
+            UpdateReferencePlot();
+        }
+
+        private void tglReferencePolarMode_Unchecked(object sender, RoutedEventArgs e)
+        {
+            referencePlotDisplayMode = ReferencePlotDisplayMode.Cartesian;
+            UpdateReferencePlotDisplayMode();
+            UpdateReferencePlot();
         }
 
         private void InitializeCoordinateAxis(Point center, int radius)
@@ -833,7 +948,9 @@ namespace Conoscope
                 YMat!,
                 ZMat!,
                 GetSelectedDisplayChannel(),
-                CreateColorDifferenceMat);
+                CreateColorDifferenceMat,
+                currentImageCenter,
+                currentImageRadius);
         }
 
         private void UpdateCieWindowSelection(Point position)
@@ -1289,6 +1406,72 @@ namespace Conoscope
             return ConoscopeColorimetry.GetChannelLabel(channel);
         }
 
+        private static string GetChannelAxisLabel(ExportChannel channel)
+        {
+            string label = GetChannelLabel(channel);
+            return channel is ExportChannel.X or ExportChannel.Y or ExportChannel.Z
+                ? $"{label} (cd/m2)"
+                : label;
+        }
+
+        private static Brush GetChannelPlotBrush(ExportChannel channel)
+        {
+            return channel switch
+            {
+                ExportChannel.X => Brushes.Gold,
+                ExportChannel.Y => Brushes.DimGray,
+                ExportChannel.Z => Brushes.Violet,
+                ExportChannel.CieX => Brushes.OrangeRed,
+                ExportChannel.CieY => Brushes.SeaGreen,
+                ExportChannel.CieU => Brushes.DodgerBlue,
+                ExportChannel.CieV => Brushes.MediumPurple,
+                ExportChannel.ColorDifference => Brushes.Crimson,
+                _ => Brushes.DimGray
+            };
+        }
+
+        private static double GetPolarReferenceRadiusMaximum(IEnumerable<double> values)
+        {
+            double maxValue = values
+                .Where(double.IsFinite)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            if (maxValue <= 0)
+            {
+                return 1;
+            }
+
+            const int ringCount = 6;
+            double rawStep = maxValue / ringCount;
+            double magnitude = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
+            double normalized = rawStep / magnitude;
+            double niceNormalized = normalized <= 1 ? 1
+                : normalized <= 2 ? 2
+                : normalized <= 2.5 ? 2.5
+                : normalized <= 5 ? 5
+                : 10;
+
+            return niceNormalized * magnitude * ringCount;
+        }
+
+        private static double NormalizePolarPlotAngle(double angleDegrees)
+        {
+            double normalized = angleDegrees % 360.0;
+            return normalized < 0 ? normalized + 360.0 : normalized;
+        }
+
+        private void UpdatePolarReferencePlot(IReadOnlyList<PolarPlotPoint> points, ExportChannel channel, bool closePath)
+        {
+            if (polarPlotReference == null)
+            {
+                return;
+            }
+
+            double radialMaximum = GetPolarReferenceRadiusMaximum(points.Select(point => point.Radius));
+            polarPlotReference.UpdatePlot(points, GetChannelPlotBrush(channel), $"半径: {GetChannelAxisLabel(channel)}", radialMaximum, closePath);
+        }
+
         private static ScottPlot.Color GetPlotColor(ExportChannel channel)
         {
             return channel switch
@@ -1436,6 +1619,22 @@ namespace Conoscope
         {
             try
             {
+                if (referencePlotDisplayMode == ReferencePlotDisplayMode.Polar)
+                {
+                    if (selectedPolarLine == null || selectedPolarLine.RgbData.Count == 0)
+                    {
+                        polarPlotReference?.Clear();
+                        return;
+                    }
+
+                    ExportChannel polarChannel = GetSelectedDisplayChannel();
+                    PolarPlotPoint[] polarPoints = selectedPolarLine.RgbData
+                        .Select(sample => new PolarPlotPoint(NormalizePolarPlotAngle(sample.Position), GetChannelValue(sample, polarChannel)))
+                        .ToArray();
+                    UpdatePolarReferencePlot(polarPoints, polarChannel, closePath: false);
+                    return;
+                }
+
                 wpfPlotReference.Plot.Clear();
 
                 if (selectedPolarLine == null || selectedPolarLine.RgbData.Count == 0)
@@ -1454,7 +1653,7 @@ namespace Conoscope
 
                 wpfPlotReference.Plot.Title($"方位角 {selectedPolarLine.Angle}° {GetChannelLabel(channel)}分布曲线");
                 wpfPlotReference.Plot.XLabel("角度 (°)");
-                wpfPlotReference.Plot.YLabel(GetChannelLabel(channel));
+                wpfPlotReference.Plot.YLabel(GetChannelAxisLabel(channel));
                 wpfPlotReference.Plot.Legend.IsVisible = true;
                 wpfPlotReference.Plot.Axes.AutoScale();
 
@@ -1475,6 +1674,22 @@ namespace Conoscope
         {
             try
             {
+                if (referencePlotDisplayMode == ReferencePlotDisplayMode.Polar)
+                {
+                    if (selectedCircleLine == null || selectedCircleLine.RgbData.Count == 0)
+                    {
+                        polarPlotReference?.Clear();
+                        return;
+                    }
+
+                    ExportChannel polarChannel = GetSelectedDisplayChannel();
+                    PolarPlotPoint[] polarPoints = selectedCircleLine.RgbData
+                        .Select(sample => new PolarPlotPoint(NormalizePolarPlotAngle(sample.Position), GetChannelValue(sample, polarChannel)))
+                        .ToArray();
+                    UpdatePolarReferencePlot(polarPoints, polarChannel, closePath: true);
+                    return;
+                }
+
                 wpfPlotReference.Plot.Clear();
 
                 if (selectedCircleLine == null || selectedCircleLine.RgbData.Count == 0)
@@ -1493,7 +1708,7 @@ namespace Conoscope
 
                 wpfPlotReference.Plot.Title($"极角 {selectedCircleLine.RadiusAngle}° {GetChannelLabel(channel)}圆周分布曲线");
                 wpfPlotReference.Plot.XLabel("圆周角度 (°)");
-                wpfPlotReference.Plot.YLabel(GetChannelLabel(channel));
+                wpfPlotReference.Plot.YLabel(GetChannelAxisLabel(channel));
                 wpfPlotReference.Plot.Legend.IsVisible = true;
                 wpfPlotReference.Plot.Axes.AutoScale();
 

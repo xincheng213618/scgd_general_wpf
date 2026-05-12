@@ -201,12 +201,12 @@ namespace ProjectKB
 
             string passRate = totalCount == 0
                 ? "0.00"
-                : ((double)passCount / totalCount * 100).ToString("F2", CultureInfo.InvariantCulture);
+                : ((double)(totalCount-passCount) / totalCount * 100).ToString("F2", CultureInfo.InvariantCulture);
 
             return string.Join(",", new[]
             {
                 EscapeCsv(FalloutLabel),
-                EscapeCsv($"{passRate}% ({passCount}/{totalCount})")
+                EscapeCsv($"{passRate}% ({totalCount-passCount}/{totalCount})")
             });
         }
 

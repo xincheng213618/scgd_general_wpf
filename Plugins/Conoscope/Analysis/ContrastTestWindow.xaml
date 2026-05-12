@@ -1,7 +1,7 @@
 <Window x:Class="Conoscope.Analysis.ContrastTestWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="黑白对比度测试" Height="430" Width="820" Background="{DynamicResource GlobalBackground}">
+        Title="对比度测试" Height="430" Width="820" Background="{DynamicResource GlobalBackground}">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
