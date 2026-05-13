@@ -7,7 +7,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 		<ApplicationIcon>Assets\ProjectKB.ico</ApplicationIcon>
-		<VersionPrefix>1.4.1.27</VersionPrefix>
+		<VersionPrefix>1.4.1.28</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -36,12 +36,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="MQTTMessageLib">
-			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
-		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>

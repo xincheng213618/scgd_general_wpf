@@ -6,10 +6,12 @@ using ColorVision.UI.Menus;
 using Conoscope.Core;
 using Conoscope.MVS;
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Conoscope
 {
@@ -39,6 +41,10 @@ namespace Conoscope
         private bool isUpdatingModelSelection;
         private bool isUpdatingPreprocessControls;
         private bool isRunningOperation;
+        private readonly Stopwatch operationProgressStopwatch = new Stopwatch();
+        private readonly DispatcherTimer operationProgressTimer;
+        private string operationProgressLabel = string.Empty;
+        private double operationExpectedDurationMs;
 
         private MVSViewWindow? observationCameraWindow;
 
@@ -56,6 +62,13 @@ namespace Conoscope
         private ConoscopeWindow(bool createInitialView)
         {
             InitializeComponent();
+            operationProgressTimer = new DispatcherTimer(DispatcherPriority.Background, Dispatcher)
+            {
+                Interval = TimeSpan.FromMilliseconds(100)
+            };
+            operationProgressTimer.Tick += OperationProgressTimer_Tick;
+            StopOperationProgress();
+
             Instance = this;
             Title = "Conoscope " + (Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? string.Empty);
             DataContext = ConoscopeManager.GetInstance();
@@ -64,6 +77,7 @@ namespace Conoscope
             InitializeTheme();
             InitializeModelSelector();
             InitializeOperationControls();
+            InitializeAnalysisRibbonControls();
 
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -90,6 +104,10 @@ namespace Conoscope
         }
 
         public ConoscopeView? ActiveView => GetActiveView();
+        private ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
+        private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
+        private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
+        private ConoscopeCaptureSettings CaptureConfig => ConoscopeConfig.Capture;
 
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
@@ -103,6 +121,8 @@ namespace Conoscope
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
             btnOpenActiveView3D.IsEnabled = activeView != null;
             btnOpenActiveViewCie.IsEnabled = activeView != null;
+            RefreshHomeQuickControlState(activeView);
+            RefreshAnalysisRibbonState(activeView);
 
             if (tbExposureStatus == null)
             {
@@ -163,9 +183,52 @@ namespace Conoscope
         {
             RefreshFlowTemplates();
             RefreshCameraDevices();
-            InitializePseudoColorMapOptions();
+            EnsureCaptureTimedButtonOperations();
             InitializePreprocessControls();
             RefreshActiveViewUi();
+        }
+
+        private void StartOperationProgress(string label, double expectedDurationMs)
+        {
+            operationProgressLabel = label;
+            operationExpectedDurationMs = Math.Max(1000, expectedDurationMs);
+
+            pbOperationProgress.Value = 0;
+            pbOperationProgress.Foreground = Brushes.DodgerBlue;
+            tbOperationProgressText.Foreground = Brushes.DodgerBlue;
+            operationProgressStatusItem.Visibility = Visibility.Visible;
+
+            operationProgressStopwatch.Restart();
+            UpdateOperationProgress();
+            operationProgressTimer.Start();
+        }
+
+        private void StopOperationProgress()
+        {
+            operationProgressTimer.Stop();
+            operationProgressStopwatch.Reset();
+            operationProgressLabel = string.Empty;
+            operationExpectedDurationMs = 0;
+
+            pbOperationProgress.Value = 0;
+            tbOperationProgressText.Text = string.Empty;
+            operationProgressStatusItem.Visibility = Visibility.Collapsed;
+        }
+
+        private void OperationProgressTimer_Tick(object? sender, EventArgs e)
+        {
+            UpdateOperationProgress();
+        }
+
+        private void UpdateOperationProgress()
+        {
+            double elapsedMilliseconds = operationProgressStopwatch.Elapsed.TotalMilliseconds;
+            double progressValue = operationExpectedDurationMs <= 0
+                ? 0
+                : Math.Min(99, elapsedMilliseconds / operationExpectedDurationMs * 100);
+
+            pbOperationProgress.Value = progressValue;
+            tbOperationProgressText.Text = $"{operationProgressLabel} {TimedButtonOperationTextFormatter.FormatDuration(elapsedMilliseconds)} / 预计 {TimedButtonOperationTextFormatter.FormatDuration(operationExpectedDurationMs)}";
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
@@ -288,6 +351,10 @@ namespace Conoscope
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
+            DetachHomeQuickControlView();
+            operationProgressTimer.Stop();
+            operationProgressTimer.Tick -= OperationProgressTimer_Tick;
+            this.DisposeTimedButtonOperations();
             if (themeChangedHandler != null)
             {
                 ThemeManager.Current.CurrentUIThemeChanged -= themeChangedHandler;

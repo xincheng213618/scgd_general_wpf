@@ -4,7 +4,6 @@ using ColorVision.Engine.Cache;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -33,50 +32,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (msg.DeviceCode != Config.Code) return;
             switch (msg.EventName)
             {
-                case MQTTFileServerEventEnum.Event_File_List_All:
-                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(msg.Data));
-                    switch (data.FileExtType)
-                    {
-                        case FileExtType.Raw:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                data.Files.Reverse();
-                                RawImageFiles = data.Files;
-                                foreach (var item in RawImageFiles)
-                                {
-                                    if (!ImageFiles.Contains(item))
-                                        ImageFiles.Add(item);
-                                }
-                            });
-                            break;
-                        case FileExtType.Src:
-                            break;
-                        case FileExtType.CIE:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                data.Files.Reverse();
-                                CIEImageFiles = data.Files;
-                                foreach (var item in CIEImageFiles)
-                                {
-                                    if (!ImageFiles.Contains(item))
-                                        ImageFiles.Add(item);
-                                }
-                            });
-                            break;
-                        case FileExtType.Calibration:
-                            break;
-                        case FileExtType.Tif:
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(msg.Data));
-                    if (pm_dl != null)
-                    {
-                    }
-                    break;
                 default:
                     // 判断 msg.Data 不为 null 并且包含 MasterId 属性
                     if (msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
@@ -114,17 +69,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public void GetRawFiles(string deviceCode, string deviceType)
         {
-
-            if (!GetHistoryPath(deviceCode))
-            {
-                MsgSend msg = new()
-                {
-                    EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                    Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
-                };
-                PublishAsyncClient(msg);
-            }
-
+            GetHistoryPath(deviceCode);
         }
         public bool GetHistoryPath(string deviceCode)
         {
@@ -205,16 +150,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public void GetCIEFiles(string deviceCode, string deviceType)
         {
-            if (!GetHistoryPath(deviceCode))
-            {
-                MsgSend msg = new()
-                {
-                    EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                    Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
-                };
-                PublishAsyncClient(msg);
-
-            }
+            GetHistoryPath(deviceCode);
         }
 
 
@@ -226,29 +162,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 Device.View.ImageView.OpenImage(fullpath);
             }
-            else
-            {
-                MsgSend msg = new()
-                {
-                    EventName = MQTTFileServerEventEnum.Event_File_Download,
-                    ServiceName = Config.Code,
-                    Params = new Dictionary<string, object> { { "FileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType }, { "FileExtType", extType } }
-                };
-                PublishAsyncClient(msg);
-            }
-
-
-        }
-
-        public void UploadCIEFile(string fileName)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
-            };
-            PublishAsyncClient(msg);
         }
 
         public MsgRecord CacheClear()

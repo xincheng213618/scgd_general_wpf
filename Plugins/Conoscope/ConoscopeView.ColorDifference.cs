@@ -1,4 +1,6 @@
+using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.Globalization;
 using System.IO;
@@ -15,9 +17,9 @@ namespace Conoscope
             isUpdatingColorDifferenceControls = true;
             try
             {
-                ComboBoxHelper.SelectItemByTag(cbColorDifferenceReference, ConoscopeConfig.ColorDifferenceReferenceMode.ToString());
-                txtColorDifferenceCustomU.Text = ConoscopeConfig.ColorDifferenceCustomU.ToString("F4", CultureInfo.InvariantCulture);
-                txtColorDifferenceCustomV.Text = ConoscopeConfig.ColorDifferenceCustomV.ToString("F4", CultureInfo.InvariantCulture);
+                ComboBoxHelper.SelectItemByTag(cbColorDifferenceReference, ColorDifferenceConfig.ReferenceMode.ToString());
+                txtColorDifferenceCustomU.Text = ColorDifferenceConfig.CustomU.ToString("F4", CultureInfo.InvariantCulture);
+                txtColorDifferenceCustomV.Text = ColorDifferenceConfig.CustomV.ToString("F4", CultureInfo.InvariantCulture);
             }
             finally
             {
@@ -39,7 +41,7 @@ namespace Conoscope
 
         private ColorDifferenceReferenceMode GetSelectedColorDifferenceReferenceMode()
         {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbColorDifferenceReference, ConoscopeConfig.ColorDifferenceReferenceMode);
+            return ComboBoxHelper.GetSelectedEnumByTag(cbColorDifferenceReference, ColorDifferenceConfig.ReferenceMode);
         }
 
         private static ConoscopeUvReference GetStandardColorDifferenceReference(ColorDifferenceReferenceMode mode)
@@ -63,8 +65,8 @@ namespace Conoscope
                 return false;
             }
 
-            ConoscopeConfig.ColorDifferenceCustomU = u;
-            ConoscopeConfig.ColorDifferenceCustomV = v;
+            ColorDifferenceConfig.CustomU = u;
+            ColorDifferenceConfig.CustomV = v;
             reference = new ConoscopeUvReference(u, v);
             return true;
         }
@@ -175,7 +177,7 @@ namespace Conoscope
                 ColorDifferenceReferenceMode.A => "A: u=0.2560, v=0.5242",
                 ColorDifferenceReferenceMode.D75 => "D75: u=0.1952, v=0.4670",
                 ColorDifferenceReferenceMode.ImageCenter => "基准: 当前图像中心直径 50px 关注点平均 uv",
-                ColorDifferenceReferenceMode.Custom => $"自定义: u={ConoscopeConfig.ColorDifferenceCustomU:F4}, v={ConoscopeConfig.ColorDifferenceCustomV:F4}",
+                ColorDifferenceReferenceMode.Custom => $"自定义: u={ColorDifferenceConfig.CustomU:F4}, v={ColorDifferenceConfig.CustomV:F4}",
                 ColorDifferenceReferenceMode.ReferenceImage => colorDifferenceReferenceUMat == null
                     ? "基准: 尚未保存实测基准图"
                     : $"基准图: {Path.GetFileName(colorDifferenceReferenceFileName)}",
@@ -194,11 +196,11 @@ namespace Conoscope
             if (mode == ColorDifferenceReferenceMode.ReferenceImage)
             {
                 EnsureColorDifferenceReferenceReady();
-                return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, colorDifferenceReferenceUMat!, colorDifferenceReferenceVMat!);
+                return ColorDifferenceMatFactory.Create(XMat, YMat, ZMat, colorDifferenceReferenceUMat!, colorDifferenceReferenceVMat!);
             }
 
             ConoscopeUvReference reference = ResolvePointColorDifferenceReference();
-            return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, reference.U, reference.V);
+            return ColorDifferenceMatFactory.Create(XMat, YMat, ZMat, reference);
         }
 
         private void EnsureColorDifferenceReferenceReady()
@@ -228,7 +230,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeConfig.ColorDifferenceReferenceMode = GetSelectedColorDifferenceReferenceMode();
+            ColorDifferenceConfig.ReferenceMode = GetSelectedColorDifferenceReferenceMode();
             UpdateColorDifferenceReferenceUi();
 
             if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && HasXyzData())
@@ -287,7 +289,7 @@ namespace Conoscope
                 try
                 {
                     ComboBoxHelper.SelectItemByTag(cbColorDifferenceReference, ColorDifferenceReferenceMode.ReferenceImage.ToString());
-                    ConoscopeConfig.ColorDifferenceReferenceMode = ColorDifferenceReferenceMode.ReferenceImage;
+                    ColorDifferenceConfig.ReferenceMode = ColorDifferenceReferenceMode.ReferenceImage;
                 }
                 finally
                 {
@@ -339,7 +341,6 @@ namespace Conoscope
         private double GetColorDifferenceValue(int ix, int iy, double X, double Y, double Z)
         {
             ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
-            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
 
             if (mode == ColorDifferenceReferenceMode.ReferenceImage)
             {
@@ -349,15 +350,11 @@ namespace Conoscope
                     return 0;
                 }
 
-                int x = ConoscopeNumericHelper.ClampToInt(ix, 0, colorDifferenceReferenceUMat.Width - 1);
-                int y = ConoscopeNumericHelper.ClampToInt(iy, 0, colorDifferenceReferenceUMat.Height - 1);
-                double referenceU = colorDifferenceReferenceUMat.At<float>(y, x);
-                double referenceV = colorDifferenceReferenceVMat.At<float>(y, x);
-                return ConoscopeColorimetry.CalculateColorDifferenceFromUv(chromaticity.u, chromaticity.v, referenceU, referenceV);
+                return ColorDifferenceMatFactory.GetValue(ix, iy, X, Y, Z, colorDifferenceReferenceUMat, colorDifferenceReferenceVMat);
             }
 
             ConoscopeUvReference reference = ResolvePointColorDifferenceReference();
-            return ConoscopeColorimetry.CalculateColorDifferenceFromUv(chromaticity.u, chromaticity.v, reference.U, reference.V);
+            return ColorDifferenceMatFactory.GetValue(X, Y, Z, reference);
         }
     }
 }

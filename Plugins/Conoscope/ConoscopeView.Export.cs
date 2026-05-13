@@ -1,4 +1,6 @@
+using ColorVision.UI;
 using Conoscope.Core;
+using Conoscope.Presentation.Helpers;
 using Microsoft.Win32;
 using System;
 using System.IO;
@@ -253,14 +255,41 @@ namespace Conoscope
             }
         }
 
-        private CurrentCurveExportSettings? ShowCurrentCurveExportDialog()
+        private ConoscopeCrossSectionExportOptions? ShowCurrentCurveExportDialog()
         {
-            CurrentCurveExportDialog dialog = new CurrentCurveExportDialog
+            CurrentCurveExportDialog dialog = new CurrentCurveExportDialog(GetCurrentCurveExportOptions())
             {
                 Owner = Window.GetWindow(this)
             };
 
-            return dialog.ShowDialog() == true ? dialog.Settings : null;
+            return dialog.ShowDialog() == true ? dialog.ExportOptions : null;
+        }
+
+        private static ConoscopeCrossSectionExportOptions GetCurrentCurveExportOptions()
+        {
+            ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
+            return new ConoscopeCrossSectionExportOptions
+            {
+                StepDegrees = exportConfig.CurrentCurveStepDegrees,
+                IncludeMetadata = exportConfig.IncludeMetadata
+            };
+        }
+
+        private static void SaveCurrentCurveExportOptions(ConoscopeCrossSectionExportOptions options)
+        {
+            ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
+            exportConfig.CurrentCurveStepDegrees = options.StepDegrees;
+            exportConfig.IncludeMetadata = options.IncludeMetadata;
+
+            try
+            {
+                ConfigService.Instance.Save<ConoscopeConfig>();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"保存当前曲线导出配置失败: {ex.Message}", ex);
+                MessageBox.Show($"导出已完成，但保存当前曲线导出配置失败: {ex.Message}", "当前曲线导出", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void btnExportCurrentAzimuth_Click(object sender, RoutedEventArgs e)
@@ -280,8 +309,8 @@ namespace Conoscope
                 }
 
                 ExportChannel channel = GetSelectedExportChannel();
-                CurrentCurveExportSettings? exportSettings = ShowCurrentCurveExportDialog();
-                if (exportSettings == null)
+                ConoscopeCrossSectionExportOptions? exportOptions = ShowCurrentCurveExportDialog();
+                if (exportOptions == null)
                 {
                     return;
                 }
@@ -297,12 +326,9 @@ namespace Conoscope
                     channel,
                     CreateExportContext(),
                     selectedPolarLine.Angle,
-                    new ConoscopeCrossSectionExportOptions
-                    {
-                        StepDegrees = exportSettings.StepDegrees,
-                        IncludeMetadata = exportSettings.IncludeMetadata
-                    });
+                    exportOptions);
                 MessageBox.Show($"方位角 {selectedPolarLine.Angle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                SaveCurrentCurveExportOptions(exportOptions);
                 log.Info($"单个方位角导出成功: {filePath}");
             }
             catch (Exception ex)
@@ -329,8 +355,8 @@ namespace Conoscope
                 }
 
                 ExportChannel channel = GetSelectedExportChannel();
-                CurrentCurveExportSettings? exportSettings = ShowCurrentCurveExportDialog();
-                if (exportSettings == null)
+                ConoscopeCrossSectionExportOptions? exportOptions = ShowCurrentCurveExportDialog();
+                if (exportOptions == null)
                 {
                     return;
                 }
@@ -346,12 +372,9 @@ namespace Conoscope
                     channel,
                     CreateExportContext(),
                     selectedCircleLine.RadiusAngle,
-                    new ConoscopeCrossSectionExportOptions
-                    {
-                        StepDegrees = exportSettings.StepDegrees,
-                        IncludeMetadata = exportSettings.IncludeMetadata
-                    });
+                    exportOptions);
                 MessageBox.Show($"极角 {selectedCircleLine.RadiusAngle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                SaveCurrentCurveExportOptions(exportOptions);
                 log.Info($"单个极角导出成功: {filePath}");
             }
             catch (Exception ex)

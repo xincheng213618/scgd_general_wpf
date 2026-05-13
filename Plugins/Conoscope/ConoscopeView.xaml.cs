@@ -4,6 +4,7 @@ using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
 using Conoscope.Core;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -51,7 +52,6 @@ namespace Conoscope
         private string? colorDifferenceReferenceFileName;
         private bool isUpdatingDisplayControls;
         private bool isUpdatingColorDifferenceControls;
-        private bool isUpdatingFilterControls;
         private ReferencePlotDisplayMode referencePlotDisplayMode;
         private WindowCIE? cieWindow;
         private ImageFullScreenMode? imageFullScreenMode;
@@ -101,17 +101,13 @@ namespace Conoscope
         internal void RefreshConoscopeConfiguration()
         {
             RefreshModelDependentUi();
-            RefreshPreprocessControlsFromConfig();
+            RefreshRenderingFromConfig();
             UpdateReferencePlotHeader();
-            if (HasXyzData())
-            {
-                RefreshDisplayedImage();
-            }
         }
 
         internal void RefreshPreprocessControlsFromConfig()
         {
-            InitializeFilterControls();
+            InitializePreprocessControls();
         }
 
         internal void RefreshRenderingFromConfig()
@@ -130,7 +126,7 @@ namespace Conoscope
             isUpdatingDisplayControls = true;
             try
             {
-                ComboBoxHelper.SelectItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+                ComboBoxHelper.SelectItemByTag(cbDisplayChannel, RenderingConfig.DisplayChannel.ToString());
             }
             finally
             {
@@ -143,10 +139,20 @@ namespace Conoscope
         public ConoscopeView()
         {
             InitializeComponent();
+            ImageView.FocusCircleCalculationRequested += ImageView_FocusCircleCalculationRequested;
+            ImageView.FocusCirclesChanged += ImageView_FocusCirclesChanged;
             ConoscopeModuleService.Register(this);
         }
 
+        private void ImageView_FocusCirclesChanged(object? sender, EventArgs e)
+        {
+            UpdateFocusCircleToolbarState();
+        }
+
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
+        private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
+        private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
+        private ConoscopeColorDifferenceSettings ColorDifferenceConfig => ConoscopeConfig.ColorDifference;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -156,7 +162,7 @@ namespace Conoscope
             RefreshDisplayControlsFromConfig();
             RefreshQuickControlsFromAxisParam();
             InitializeColorDifferenceControls();
-            InitializeFilterControls();
+            InitializePreprocessControls();
             UpdateReferenceControlVisibility();
             UpdateColorDifferencePanelVisibility();
             AttachCurrentModelProfile();
@@ -173,6 +179,7 @@ namespace Conoscope
             ImageView.Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
             UpdatePseudoColorMapPreview();
             UpdateToolbarZoomRatio();
+            InitializeFocusPointTools();
             UpdatePanModeState();
         }
 
@@ -256,6 +263,8 @@ namespace Conoscope
                 subscribedModelProfile = null;
             }
             ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            ImageView.FocusCircleCalculationRequested -= ImageView_FocusCircleCalculationRequested;
+            ImageView.FocusCirclesChanged -= ImageView_FocusCirclesChanged;
             cieWindow?.Close();
             cieWindow = null;
             XMat?.Dispose();

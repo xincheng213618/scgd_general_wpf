@@ -72,6 +72,7 @@
             <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
                     <ToggleButton x:Name="tglPanMode" Style="{StaticResource OverlayToolToggleStyle}" Content="平移" ToolTip="开启后左键拖拽可平移图像；关闭后按住 Ctrl 再平移。" IsChecked="True" Checked="tglPanMode_Checked" Unchecked="tglPanMode_Unchecked" />
+                    <ToggleButton x:Name="tglReferenceInteraction" Style="{StaticResource OverlayToolToggleStyle}" Content="参考拖拽" ToolTip="允许在图上直接拖动参考方位线和极角圆；进入关注点模式时会临时关闭。" IsChecked="True" Checked="tglReferenceInteraction_Checked" Unchecked="tglReferenceInteraction_Unchecked" />
                     <Separator/>
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="-" FontSize="16" FontWeight="Bold" ToolTip="缩小" Click="ToolbarZoomOut_Click" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="放大" Click="ToolbarZoomIn_Click" />
@@ -98,6 +99,17 @@
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
             </Border>
+            <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
+                <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
+                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" Content="编辑关注点" ToolTip="开启后进入关注点工具模式；绘制、编辑、橡皮三种子工具互斥，并会临时关闭参考拖拽。" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" Content="圆" ToolTip="仅绘制新的关注点圆" IsChecked="True" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="编辑" ToolTip="选中并拖拽已有关注点圆" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" Content="橡皮" ToolTip="框选擦除关注点圆" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
+                    <Separator/>
+                    <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="算" ToolTip="计算全部关注点" Click="btnCalculateFocusCircles_Click" />
+                    <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="清" ToolTip="清空全部关注点" Click="btnClearFocusCircles_Click" />
+                </ToolBar>
+            </Border>
         </Grid>
 
         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
@@ -112,6 +124,13 @@
                 <TabItem Header="显示">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
+                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                                <WrapPanel Margin="0,0,0,2">
+                                    <Button Content="应用当前预设" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                                    <Button Content="预处理设置" Click="btnOpenPreprocessSettings_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+                                </WrapPanel>
+                            </Border>
+
                             <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
                                 <StackPanel>
                                     <TextBlock Text="显示与参考" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
@@ -190,150 +209,6 @@
                                         <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
                                     </WrapPanel>
                                     <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="预处理">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <StackPanel>
-                                    <TextBlock Text="当前预处理预设" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <TextBlock x:Name="tbPreprocessSummary" Margin="0,0,0,6" Foreground="Gray" TextWrapping="Wrap"/>
-                                    <WrapPanel Margin="0,0,0,2">
-                                        <Button Content="应用当前预设" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
-                                        <Button Content="完整参数" Command="{Binding EditConoscopeConfigCommand}" Style="{StaticResource PanelCompactButtonStyle}"/>
-                                    </WrapPanel>
-                                    <StackPanel Visibility="Collapsed">
-                                    <WrapPanel Margin="0,4,0,6">
-                                        <CheckBox x:Name="chkApplyFilterOnOpen" Content="打开时应用预处理" IsChecked="{Binding Config.ApplyFilterOnOpen}" VerticalAlignment="Center" Margin="5,0,14,0"/>
-                                        <CheckBox x:Name="chkClampNonPositiveXyzOnLoad" Content="加载时将 XYZ&lt;=0 修正为 1e-6" IsChecked="{Binding Config.ClampNonPositiveXyzOnLoad}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
-                                        <CheckBox x:Name="chkDustRemovalEnabled" Content="灰尘滤除" IsChecked="{Binding Config.DustRemovalEnabled}" Checked="FilterParameter_Changed" Unchecked="FilterParameter_Changed" VerticalAlignment="Center" Margin="5,0,14,0"/>
-                                        <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbFilterType" SelectionChanged="cbFilterType_SelectionChanged" MinWidth="130">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="None"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="LowPass"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="MovingAverage"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="Gaussian"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="Median"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="Bilateral"/>
-                                        </ComboBox>
-                                        <Button x:Name="btnApplyFilter" Content="应用预处理" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="10,0,0,0"/>
-                                    </WrapPanel>
-                                    <Expander Header="滤波参数" Margin="5,0,5,0">
-                                        <StackPanel Margin="0,5,0,0">
-                                            <Grid x:Name="rowFilterKernel" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                            <Grid x:Name="rowFilterSigma" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="σ" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                            <Grid x:Name="rowFilterD" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="d" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                            <Grid x:Name="rowFilterSigmaColor" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="σColor" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                            <Grid x:Name="rowFilterSigmaSpace" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="σSpace" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="False" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Expander>
-                                    <Expander Header="灰尘滤除参数" Margin="5,4,5,0" IsExpanded="{Binding ElementName=chkDustRemovalEnabled, Path=IsChecked}" IsEnabled="{Binding ElementName=chkDustRemovalEnabled, Path=IsChecked}">
-                                        <StackPanel Margin="0,5,0,0">
-                                            <Grid x:Name="rowDustMode" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="灰尘类型" VerticalAlignment="Center"/>
-                                                <ComboBox x:Name="cbDustMode" Grid.Column="1" MinWidth="120" HorizontalAlignment="Left" SelectionChanged="FilterParameter_Changed">
-                                                    <ComboBoxItem Content="暗斑" Tag="DarkSpot"/>
-                                                    <ComboBoxItem Content="亮斑" Tag="BrightSpot"/>
-                                                    <ComboBoxItem Content="暗斑 + 亮斑" Tag="Both"/>
-                                                </ComboBox>
-                                            </Grid>
-                                            <Grid x:Name="rowDustThreshold" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="阈值%" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustThreshold, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="60" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                            <Grid x:Name="rowDustMinArea" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="最小面积" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMinArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="1" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                            <Grid x:Name="rowDustMaxArea" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="最大面积" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMaxArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="10" Maximum="5000" Value="500" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                            <Grid x:Name="rowDustRepairRadius" Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="修复半径" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustRepairRadius, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                                <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="3" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="FilterParameter_Changed"/>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Expander>
-                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

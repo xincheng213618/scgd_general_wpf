@@ -20,8 +20,8 @@
             <StackPanel Margin="8,6,8,8">
                 <DockPanel Margin="0,0,0,8">
                     <TextBlock Text="采样间隔 (度):" Width="110" VerticalAlignment="Center"/>
-                    <TextBox x:Name="txtStepDegrees" Width="90" Text="0.01" VerticalAlignment="Center"/>
-                    <TextBlock Text="默认 0.01，可调" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                    <TextBox x:Name="txtStepDegrees" Width="90" Text="1" VerticalAlignment="Center"/>
+                    <TextBlock Text="默认 1，可调并保存" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
                 </DockPanel>
                 <TextBlock Text="方位角模式会按 -MaxAngle 到 +MaxAngle 采样，极角模式会按 0 到 360 采样。"
                            TextWrapping="Wrap"

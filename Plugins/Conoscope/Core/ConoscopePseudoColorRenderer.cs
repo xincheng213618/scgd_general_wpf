@@ -31,19 +31,29 @@ namespace Conoscope.Core
             OpenCvSharp.Mat zMat,
             ExportChannel channel,
             ColormapTypes colormap,
-            Func<OpenCvSharp.Mat> createColorDifferenceMat)
+            Func<OpenCvSharp.Mat> createColorDifferenceMat,
+            bool usePseudoColor)
         {
             using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat);
             using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
             using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
 
             OpenCvSharp.Cv2.MinMaxLoc(channelMat, out double minValue, out double maxValue);
             OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
             normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
-            OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, ResolveOpenCvColormap(colormap));
 
-            WriteableBitmap bitmap = pseudoColor.ToWriteableBitmap();
+            WriteableBitmap bitmap;
+            if (usePseudoColor)
+            {
+                using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
+                OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, ResolveOpenCvColormap(colormap));
+                bitmap = pseudoColor.ToWriteableBitmap();
+            }
+            else
+            {
+                bitmap = gray8.ToWriteableBitmap();
+            }
+
             bitmap.Freeze();
 
             return new ConoscopePseudoColorRenderResult(bitmap, channel, minValue, maxValue);

@@ -19,15 +19,18 @@
                     <ColumnDefinition Width="70"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Text="白图" VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox x:Name="WhiteFileTextBox" Grid.Column="1" IsReadOnly="True" VerticalContentAlignment="Center" Margin="0,0,8,6"/>
                 <Button Grid.Column="2" Content="选择白图" Click="SelectWhite_Click" Padding="12,4" Margin="0,0,0,6"/>
+                <Button Grid.Column="3" Content="记录当前白点" Click="CaptureWhiteFocusPoint_Click" Padding="12,4" Margin="8,0,0,6"/>
 
                 <TextBlock Grid.Row="1" Text="黑图" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBox x:Name="BlackFileTextBox" Grid.Row="1" Grid.Column="1" IsReadOnly="True" VerticalContentAlignment="Center" Margin="0,0,8,0"/>
                 <Button Grid.Row="1" Grid.Column="2" Content="选择黑图" Click="SelectBlack_Click" Padding="12,4"/>
+                <Button Grid.Row="1" Grid.Column="3" Content="记录当前黑点" Click="CaptureBlackFocusPoint_Click" Padding="12,4" Margin="8,0,0,0"/>
             </Grid>
         </GroupBox>
 

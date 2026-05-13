@@ -39,16 +39,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             return PublishAsyncClient(msg);
         }
 
-        internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Download,
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType }, { "FileExtType", extType } }
-            };
-            PublishAsyncClient(msg);
-        }
         public MsgRecord CacheClear()
         {
             MsgSend msg = new()
@@ -58,14 +48,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             };
             return PublishAsyncClient(msg);
         }
-        public void GetRawFiles(string deviceCode, string deviceType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
-            };
-            PublishAsyncClient(msg);
-        }
+
     }
 }

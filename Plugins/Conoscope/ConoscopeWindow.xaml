@@ -1,7 +1,8 @@
 <Window x:Class="Conoscope.ConoscopeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:core="clr-namespace:Conoscope.Core"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:Conoscope.Properties"
@@ -196,6 +197,40 @@
                                         <TextBlock Grid.Row="1" Text="模型" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
+
+                                <Border x:Name="bdHomeQuickControls" Style="{StaticResource RibbonGroupStyle}" Visibility="Collapsed">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <WrapPanel>
+                                            <TextBlock Text="通道" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <ComboBox x:Name="cbHomeDisplayChannel" Width="112" SelectionChanged="cbHomeDisplayChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                <ComboBoxItem Content="X 通道" Tag="X"/>
+                                                <ComboBoxItem Content="Y 通道" Tag="Y"/>
+                                                <ComboBoxItem Content="Z 通道" Tag="Z"/>
+                                                <ComboBoxItem Content="x 色度" Tag="CieX"/>
+                                                <ComboBoxItem Content="y 色度" Tag="CieY"/>
+                                                <ComboBoxItem Content="u 色度" Tag="CieU"/>
+                                                <ComboBoxItem Content="v 色度" Tag="CieV"/>
+                                                <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
+                                            </ComboBox>
+                                            <TextBlock Text="参考" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <ComboBox x:Name="cbHomeReferenceMode" Width="118" SelectionChanged="cbHomeReferenceMode_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                <ComboBoxItem Content="方位角直线" Tag="AzimuthLine"/>
+                                                <ComboBoxItem Content="极角圆" Tag="PolarCircle"/>
+                                            </ComboBox>
+                                            <TextBlock x:Name="tbHomeReferenceValueLabel" Text="方位角(°)" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBox x:Name="txtHomeReferenceValue"
+                                                     Width="76"
+                                                     Style="{StaticResource RibbonTextBoxStyle}"
+                                                     PreviewKeyDown="txtHomeReferenceValue_PreviewKeyDown"
+                                                     LostFocus="txtHomeReferenceValue_LostFocus" />
+                                        </WrapPanel>
+                                        <TextBlock Grid.Row="1" Text="当前视图" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
@@ -331,26 +366,13 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
                                             <CheckBox x:Name="chkWindowApplyFilterOnOpen"
-                                                      Content="打开时应用"
-                                                      Checked="WindowPreprocess_Changed"
-                                                      Unchecked="WindowPreprocess_Changed"
-                                                      Margin="0,0,12,0"
-                                                      VerticalAlignment="Center" />
-                                            <CheckBox x:Name="chkWindowClampNonPositiveXyzOnLoad"
-                                                      Content="XYZ 修正"
-                                                      Checked="WindowPreprocess_Changed"
-                                                      Unchecked="WindowPreprocess_Changed"
-                                                      Visibility="Collapsed"
-                                                      Margin="0,0,12,0"
-                                                      VerticalAlignment="Center" />
-                                            <CheckBox x:Name="chkWindowDustRemovalEnabled"
-                                                      Content="灰尘滤除"
+                                                      Content="启用预处理"
                                                       Checked="WindowPreprocess_Changed"
                                                       Unchecked="WindowPreprocess_Changed"
                                                       Margin="0,0,12,0"
                                                       VerticalAlignment="Center" />
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="数据清洗" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="启用" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -362,23 +384,48 @@
                                         </Grid.RowDefinitions>
                                         
                                         <StackPanel Orientation="Horizontal">
-                                            
-                                            <TextBlock Text="滤波类型" />
                                             <ComboBox x:Name="cbWindowFilterType"
                                                       Width="162"
+                                                      SelectedValuePath="Tag"
                                                       SelectionChanged="cbWindowFilterType_SelectionChanged"
                                                       Style="{StaticResource ComboBox.Small}">
-                                                <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="None" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="LowPass" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="MovingAverage" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="Gaussian" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="Median" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="Bilateral" />
+                                                <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="{x:Static core:ImageFilterType.None}" />
+                                                <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="{x:Static core:ImageFilterType.LowPass}" />
+                                                <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="{x:Static core:ImageFilterType.MovingAverage}" />
+                                                <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="{x:Static core:ImageFilterType.Gaussian}" />
+                                                <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="{x:Static core:ImageFilterType.Median}" />
+                                                <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="{x:Static core:ImageFilterType.Bilateral}" />
                                             </ComboBox>
-                                            <Button Command="{Binding EditConoscopeConfigCommand}"
+                                            <Border Padding="8,4"
+                                                    Margin="0,0,6,0"
+                                                    Background="{DynamicResource GlobalBorderBrush}"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock x:Name="tbWindowFilterConfigSummary"
+                                                           Width="250"
+                                                           Foreground="Gray"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                                            </Border>
+                                            <Button x:Name="btnOpenPreprocessSettings"
+                                                    Click="btnOpenPreprocessSettings_Click"
                                                     Style="{StaticResource RibbonLargeButtonStyle}"
                                                     ToolTip="打开完整滤波和灰尘滤除参数">
-                                                <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="设置" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button x:Name="btnApplyPreprocessToActiveView"
+                                                    Click="btnApplyPreprocessToActiveView_Click"
+                                                    Style="{StaticResource RibbonPrimaryButtonStyle}"
+                                                    ToolTip="按当前预处理预设处理激活视图">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="执行" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
                                             </Button>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="滤波" Style="{StaticResource RibbonGroupHeaderStyle}" />
@@ -392,20 +439,12 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="伪彩来源" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                            <ComboBox x:Name="cbWindowPseudoColorChannel"
-                                                      Width="138"
-                                                      SelectionChanged="cbWindowPseudoColorChannel_SelectionChanged"
-                                                      Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="X 通道" Tag="X" />
-                                                <ComboBoxItem Content="Y 通道" Tag="Y" />
-                                                <ComboBoxItem Content="Z 通道" Tag="Z" />
-                                                <ComboBoxItem Content="x 色度" Tag="CieX" />
-                                                <ComboBoxItem Content="y 色度" Tag="CieY" />
-                                                <ComboBoxItem Content="u 色度" Tag="CieU" />
-                                                <ComboBoxItem Content="v 色度" Tag="CieV" />
-                                                <ComboBoxItem Content="Δuv 色差" Tag="ColorDifference" />
-                                            </ComboBox>
+                                            <CheckBox x:Name="chkWindowUsePseudoColor"
+                                                      Content="伪彩显示"
+                                                      Margin="0,0,12,0"
+                                                      Checked="WindowDisplay_Changed"
+                                                      Unchecked="WindowDisplay_Changed"
+                                                      VerticalAlignment="Center" />
                                             <TextBlock Text="色带" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbWindowPseudoColorMap"
                                                       Width="138"
@@ -415,25 +454,10 @@
                                                 <Image x:Name="imgWindowPseudoColorMapPreview" Stretch="Fill" />
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="伪彩色" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="显示" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
-                                <Border Style="{StaticResource RibbonGroupStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <Button x:Name="btnApplyPreprocessToActiveView"
-                                                Click="btnApplyPreprocessToActiveView_Click"
-                                                Style="{StaticResource RibbonPrimaryButtonStyle}"
-                                                ToolTip="按当前预处理与伪彩色设置刷新激活视图">
-                                            <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
-                                        </Button>
-                                        <TextBlock Grid.Row="1" Text="刷新" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
@@ -487,14 +511,39 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenContrastTest" Click="btnOpenContrastTest_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开对比度测试">
-                                                <TextBlock Text="&#xE9D2;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                            <Button x:Name="btnOpenColorGamut" Click="btnOpenColorGamut_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开 RGB 色域计算">
-                                                <TextBlock Text="&#xE790;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
+                                            <WrapPanel Margin="0,0,0,4">
+                                                <TextBlock Text="标准" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <ComboBox x:Name="cbRibbonGamutStandard" Width="120" Style="{StaticResource RibbonComboBoxStyle}" />
+                                                <Button x:Name="btnComputeGamut" Click="btnComputeGamut_Click" Content="计算色域" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="对当前记录的 R/G/B 数据执行计算，并弹出结果窗口" />
+                                                <Button x:Name="btnClearGamut" Click="btnClearGamut_Click" Content="清空" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="清空当前色域记录" />
+                                            </WrapPanel>
+                                            <WrapPanel>
+                                                <Button x:Name="btnRecordGamutRed" Click="btnRecordGamutRed_Click" Content="记录 R" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录 R 数据" />
+                                                <Button x:Name="btnRecordGamutGreen" Click="btnRecordGamutGreen_Click" Content="记录 G" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录 G 数据" />
+                                                <Button x:Name="btnRecordGamutBlue" Click="btnRecordGamutBlue_Click" Content="记录 B" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录 B 数据" />
+                                            </WrapPanel>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="分析" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="色域" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel>
+                                            <WrapPanel Margin="0,0,0,4">
+                                                <Button x:Name="btnRecordContrastWhite" Click="btnRecordContrastWhite_Click" Content="记录白" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录白场数据" />
+                                                <Button x:Name="btnRecordContrastBlack" Click="btnRecordContrastBlack_Click" Content="记录黑" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录黑场数据" />
+                                            </WrapPanel>
+                                            <WrapPanel>
+                                                <Button x:Name="btnComputeContrast" Click="btnComputeContrast_Click" Content="计算对比度" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="对当前记录的白/黑数据执行计算，并弹出结果窗口" />
+                                                <Button x:Name="btnClearContrast" Click="btnClearContrast_Click" Content="清空" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="清空当前对比度记录" />
+                                            </WrapPanel>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="对比度" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
@@ -534,6 +583,73 @@
                                         <TextBlock Grid.Row="1" Text="配置" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
+
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button x:Name="btnOpenColorGamut" Click="btnOpenColorGamut_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开旧版 RGB 色域窗口">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE790;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="色域窗口" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button x:Name="btnOpenContrastTest" Click="btnOpenContrastTest_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开旧版黑白对比度窗口">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE9D2;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="对比度窗口" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="分析窗口" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="帮助">
+                        <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
+                            <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button x:Name="btnOpenHelpCenter"
+                                                    Click="btnOpenConoscopeHelp_Click"
+                                                    Style="{StaticResource RibbonLargeButtonStyle}"
+                                                    ToolTip="打开可搜索的 Conoscope 帮助中心，查看使用路径、算法原理和名词解析">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE897;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="帮助中心" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="打开" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="帮助中心窗口里已经集成快速开始、使用路径、算法原理和名词解析。直接打开一个窗口，在里面搜索或切换分类即可。"
+                                                   TextWrapping="Wrap"
+                                                   Width="320"
+                                                   Foreground="Gray"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="1" Text="说明" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
@@ -560,6 +676,18 @@
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock x:Name="tbOperationStatus" Text="就绪" Foreground="Gray" />
+            </StatusBarItem>
+            <StatusBarItem x:Name="operationProgressStatusItem" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="tbOperationProgressText" Margin="12,0,8,0" Foreground="DodgerBlue" />
+                    <ProgressBar x:Name="pbOperationProgress"
+                                 Width="180"
+                                 Height="12"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 VerticalAlignment="Center"
+                                 Foreground="DodgerBlue" />
+                </StackPanel>
             </StatusBarItem>
             <Separator />
             <StatusBarItem>

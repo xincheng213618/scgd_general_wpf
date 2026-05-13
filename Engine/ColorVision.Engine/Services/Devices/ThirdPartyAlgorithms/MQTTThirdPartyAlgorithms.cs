@@ -28,45 +28,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             }
         }
 
-        public void GetRawFiles(string deviceCode, string deviceType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
-            };
-            PublishAsyncClient(msg);
-        }
-
-
-        public void GetCIEFiles(string deviceCode, string deviceType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE } ,{ "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
-            };
-            PublishAsyncClient(msg);
-        }
-
-
-
-        public MsgRecord Close()
-        {
-            MsgSend msg = new() { EventName = "Close" };
-            return PublishAsyncClient(msg);
-        }
-
-        internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Download,
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType }, { "FileExtType", extType } }
-            };
-            PublishAsyncClient(msg);
-        }
 
 
 
@@ -86,16 +47,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             return PublishAsyncClient(msg);
         }
 
-        public void UploadCIEFile(string fileName)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
-            };
-            PublishAsyncClient(msg);
-        }
 
         public MsgRecord CacheClear()
         {  

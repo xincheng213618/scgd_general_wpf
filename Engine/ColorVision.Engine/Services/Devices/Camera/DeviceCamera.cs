@@ -82,8 +82,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             RefreshCommand = new RelayCommand(a => RestartRCService());
 
-            ServiceClearCommand = new RelayCommand(a => ServiceClear(), b => AccessControl.Check(ServiceClear));
-
             EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
 
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
@@ -213,21 +211,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DisplayConfig.ExpTimeG = e.CameraParameterLimit.ExpDefalut;
             DisplayConfig.ExpTimeB = e.CameraParameterLimit.ExpDefalut;
             Save();
-        }
-
-        [CommandDisplay("ClearServiceCache")]
-        public RelayCommand ServiceClearCommand { get; set; }
-        [RequiresPermission(PermissionMode.Administrator)]
-        private void ServiceClear()
-        {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-            {
-                var MsgRecord = DService.ClearDataCache();
-                MsgRecord.MsgSucessed += (s,e) =>
-                {
-                    MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
-                };
-            }
         }
 
         [RequiresPermission(PermissionMode.Administrator)]

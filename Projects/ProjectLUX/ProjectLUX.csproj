@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.4.23</VersionPrefix>
+		<VersionPrefix>1.1.4.24</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -24,12 +24,6 @@
 			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
 			<Private>True</Private>
 		</Reference> 
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="CVCommCore">
-			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
-		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>

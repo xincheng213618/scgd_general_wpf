@@ -1,5 +1,7 @@
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using Conoscope.Presentation.Formatters;
+using Conoscope.Presentation.Helpers;
 using Conoscope.Core;
 using System;
 using System.Windows;
@@ -14,6 +16,7 @@ namespace Conoscope
             if (!HasXyzData())
             {
                 UpdatePseudoColorLegendVisibility(false);
+                RaiseWindowQuickControlStateChanged();
                 return;
             }
 
@@ -23,10 +26,19 @@ namespace Conoscope
                 YMat!,
                 ZMat!,
                 displayChannel,
-                ConoscopeConfig.PseudoColorMap,
-                CreateColorDifferenceMat);
+                RenderingConfig.PseudoColorMap,
+                CreateColorDifferenceMat,
+                RenderingConfig.UsePseudoColor);
 
-            UpdatePseudoColorLegend(renderResult.Channel, renderResult.MinValue, renderResult.MaxValue);
+            UpdateReferenceScale(renderResult.Channel, renderResult.MaxValue);
+            if (RenderingConfig.UsePseudoColor)
+            {
+                UpdatePseudoColorLegend(renderResult.Channel, renderResult.MinValue, renderResult.MaxValue);
+            }
+            else
+            {
+                UpdatePseudoColorLegendVisibility(false);
+            }
 
             DisposeCoordinateAxis();
             ImageView.Clear();
@@ -34,12 +46,12 @@ namespace Conoscope
             ImageView.UpdateZoomAndScale();
 
             CreateAndAnalyzePolarLines();
+            RaiseWindowQuickControlStateChanged();
         }
 
         private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)
         {
-            currentReferenceScaleChannel = channel;
-            currentReferenceScaleMaximum = maxValue;
+            UpdateReferenceScale(channel, maxValue);
 
             if (tbPseudoColorLegendTitle == null || tbPseudoColorLegendMin == null || tbPseudoColorLegendMax == null)
             {
@@ -53,6 +65,12 @@ namespace Conoscope
             UpdatePseudoColorLegendVisibility(true);
         }
 
+        private void UpdateReferenceScale(ExportChannel channel, double maxValue)
+        {
+            currentReferenceScaleChannel = channel;
+            currentReferenceScaleMaximum = maxValue;
+        }
+
         private void UpdatePseudoColorMapPreview()
         {
             if (imgPseudoColorLegend == null)
@@ -60,7 +78,7 @@ namespace Conoscope
                 return;
             }
 
-            imgPseudoColorLegend.Source = ColormapConstats.CreatePreviewImage(ConoscopeConfig.PseudoColorMap);
+            imgPseudoColorLegend.Source = ColormapConstats.CreatePreviewImage(RenderingConfig.PseudoColorMap);
         }
 
         private void UpdatePseudoColorLegendVisibility(bool isVisible)
@@ -78,39 +96,9 @@ namespace Conoscope
             return XMat != null && YMat != null && ZMat != null;
         }
 
-        private ImageFilterType GetSelectedFilterType()
-        {
-            if (cbFilterType?.SelectedItem is ComboBoxItem)
-            {
-                return NormalizeFilterType(ComboBoxHelper.GetSelectedEnumByTag(cbFilterType, NormalizeFilterType(ConoscopeConfig.FilterType)));
-            }
-
-            if (cbFilterType?.SelectedIndex >= 0)
-            {
-                return NormalizeFilterType((ImageFilterType)cbFilterType.SelectedIndex);
-            }
-
-            return NormalizeFilterType(ConoscopeConfig.FilterType);
-        }
-
-        private static ImageFilterType NormalizeFilterType(ImageFilterType filterType)
-        {
-            return Enum.IsDefined(filterType) ? filterType : ImageFilterType.None;
-        }
-
-        private bool IsDustRemovalEnabled()
-        {
-            return chkDustRemovalEnabled?.IsChecked == true;
-        }
-
-        private DustRemovalMode GetSelectedDustRemovalMode()
-        {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbDustMode, ConoscopeConfig.DustRemovalMode);
-        }
-
         private ExportChannel GetSelectedDisplayChannel()
         {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel);
+            return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, RenderingConfig.DisplayChannel);
         }
 
         private void DisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -121,7 +109,7 @@ namespace Conoscope
             }
 
             ExportChannel channel = GetSelectedDisplayChannel();
-            ConoscopeConfig.DisplayChannel = channel;
+            RenderingConfig.DisplayChannel = channel;
             UpdateColorDifferencePanelVisibility();
 
             if (HasXyzData())
@@ -148,7 +136,6 @@ namespace Conoscope
         {
             try
             {
-                SaveFilterControlsToConfig();
                 ConfigService.Instance.Save<ConoscopeConfig>();
                 MessageBox.Show("配置已保存", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
             }

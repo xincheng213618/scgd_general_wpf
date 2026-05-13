@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.5.24</VersionPrefix>
+		<VersionPrefix>1.1.5.25</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -23,12 +23,6 @@
 		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\Engine\ST.Library.UI\ST.Library.UI.csproj')">
 			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
 			<Private>True</Private>
-		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="CVCommCore">
-			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 

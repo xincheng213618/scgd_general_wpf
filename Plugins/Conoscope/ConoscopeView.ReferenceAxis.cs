@@ -1,4 +1,6 @@
 using Conoscope.Core;
+using Conoscope.Presentation.Formatters;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -37,6 +39,8 @@ namespace Conoscope
                 {
                     txtQuickReferenceRadius.Text = axisParam.ReferenceRadiusAngle.ToString("F2", CultureInfo.InvariantCulture);
                 }
+
+                SyncReferenceInteractionToggle();
             }
             finally
             {
@@ -44,6 +48,7 @@ namespace Conoscope
             }
 
             UpdateReferenceControlVisibility();
+            RaiseWindowQuickControlStateChanged();
         }
 
         private void UpdateReferenceControlVisibility()

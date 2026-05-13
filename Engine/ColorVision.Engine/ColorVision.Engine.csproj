@@ -33,17 +33,6 @@
 		<PackageReference Include="YamlDotNet" Version="17.0.1" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Reference Include="CVCommCore">
-			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="MQTTMessageLib">
-			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
-	</ItemGroup>
-
 
 	<ItemGroup>
 		<None Remove="Assets\Image\background0.png" />

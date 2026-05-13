@@ -1,5 +1,6 @@
 using ColorVision.UI;
 using ColorVision.Core;
+using Conoscope;
 using System;
 using System.ComponentModel;
 using System.Windows;
@@ -21,6 +22,7 @@ namespace Conoscope.Core
             cbCurrentModel.ItemsSource = Enum.GetValues<ConoscopeModelType>();
             cbCurrentModel.SelectedItem = config.CurrentModel;
             GlobalSettingsHost.Content = PropertyEditorHelper.GenPropertyEditorControl(globalSettings);
+            PreprocessSettingsHost.Content = new ConoscopePreprocessSettingsControl(config, persistChanges: false);
             RefreshModelProfileEditor();
         }
 
@@ -45,116 +47,48 @@ namespace Conoscope.Core
 
         private sealed class ConoscopeGlobalSettings
         {
-            private readonly ConoscopeConfig config;
+            private readonly ConoscopeRenderingSettings rendering;
+            private readonly ConoscopeExportSettings export;
 
             public ConoscopeGlobalSettings(ConoscopeConfig config)
             {
-                this.config = config;
+                rendering = config.Rendering;
+                export = config.Export;
             }
 
             [Category("显示"), DisplayName("显示通道")]
             public ExportChannel DisplayChannel
             {
-                get => config.DisplayChannel;
-                set => config.DisplayChannel = value;
+                get => rendering.DisplayChannel;
+                set => rendering.DisplayChannel = value;
             }
 
             [Category("显示"), DisplayName("伪彩色映射")]
             public ColormapTypes PseudoColorMap
             {
-                get => config.PseudoColorMap;
-                set => config.PseudoColorMap = value;
+                get => rendering.PseudoColorMap;
+                set => rendering.PseudoColorMap = value;
             }
 
-            [Category("滤波"), DisplayName("打开时应用滤波")]
-            public bool ApplyFilterOnOpen
+            [Category("显示"), DisplayName("使用伪彩色")]
+            public bool UsePseudoColor
             {
-                get => config.ApplyFilterOnOpen;
-                set => config.ApplyFilterOnOpen = value;
+                get => rendering.UsePseudoColor;
+                set => rendering.UsePseudoColor = value;
             }
 
-            [Category("滤波"), DisplayName("滤波类型")]
-            public ImageFilterType FilterType
+            [Category("导出"), DisplayName("当前曲线采样间隔(度)"), Description("当前曲线 CSV 导出的默认采样间隔。")]
+            public double CurrentCurveExportStepDegrees
             {
-                get => config.FilterType;
-                set => config.FilterType = value;
+                get => export.CurrentCurveStepDegrees;
+                set => export.CurrentCurveStepDegrees = value;
             }
 
-            [Category("滤波"), DisplayName("核大小")]
-            public int FilterKernelSize
+            [Category("导出"), DisplayName("当前曲线导出元数据"), Description("是否在当前曲线 CSV 顶部写入标题和元数据。")]
+            public bool CurrentCurveExportIncludeMetadata
             {
-                get => config.FilterKernelSize;
-                set => config.FilterKernelSize = value;
-            }
-
-            [Category("滤波"), DisplayName("高斯 Sigma")]
-            public double FilterSigma
-            {
-                get => config.FilterSigma;
-                set => config.FilterSigma = value;
-            }
-
-            [Category("滤波"), DisplayName("双边 d")]
-            public int FilterD
-            {
-                get => config.FilterD;
-                set => config.FilterD = value;
-            }
-
-            [Category("滤波"), DisplayName("双边 SigmaColor")]
-            public double FilterSigmaColor
-            {
-                get => config.FilterSigmaColor;
-                set => config.FilterSigmaColor = value;
-            }
-
-            [Category("滤波"), DisplayName("双边 SigmaSpace")]
-            public double FilterSigmaSpace
-            {
-                get => config.FilterSigmaSpace;
-                set => config.FilterSigmaSpace = value;
-            }
-
-            [Category("灰尘滤除"), DisplayName("启用灰尘滤除")]
-            public bool DustRemovalEnabled
-            {
-                get => config.DustRemovalEnabled;
-                set => config.DustRemovalEnabled = value;
-            }
-
-            [Category("灰尘滤除"), DisplayName("灰尘类型")]
-            public DustRemovalMode DustRemovalMode
-            {
-                get => config.DustRemovalMode;
-                set => config.DustRemovalMode = value;
-            }
-
-            [Category("灰尘滤除"), DisplayName("检测阈值(%)")]
-            public double DustThresholdPercent
-            {
-                get => config.DustThresholdPercent;
-                set => config.DustThresholdPercent = value;
-            }
-
-            [Category("灰尘滤除"), DisplayName("最小面积(px)")]
-            public int DustMinArea
-            {
-                get => config.DustMinArea;
-                set => config.DustMinArea = value;
-            }
-
-            [Category("灰尘滤除"), DisplayName("最大面积(px)")]
-            public int DustMaxArea
-            {
-                get => config.DustMaxArea;
-                set => config.DustMaxArea = value;
-            }
-
-            [Category("灰尘滤除"), DisplayName("修复半径(px)")]
-            public int DustRepairRadius
-            {
-                get => config.DustRepairRadius;
-                set => config.DustRepairRadius = value;
+                get => export.IncludeMetadata;
+                set => export.IncludeMetadata = value;
             }
         }
     }

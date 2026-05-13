@@ -114,43 +114,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private bool IsTemplateSelected(ComboBox comboBox, string errorMessage)
-        {
-            if (comboBox.SelectedIndex == -1)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
-                return false;
-            }
-            return true;
-        }
-           
-
-        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
-        {
-            string type = string.Empty;
-            string code = string.Empty;
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-            {
-                type = deviceService.ServiceTypes.ToString();
-                code = deviceService.Code;
-            }
-            DService.GetCIEFiles(code, type);
-        }
-
-        private void Button_Click_Upload(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "CVCIE files (*.cvcie) | *.cvcie";
-            openFileDialog.RestoreDirectory = true;
-            openFileDialog.FilterIndex = 1;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                DService.UploadCIEFile(openFileDialog.FileName);
-            }
-        }
-
-
-
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -170,7 +133,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 type = deviceService.ServiceTypes.ToString();
                 code = deviceService.Code;
             }
-            DService.GetRawFiles(code, type);
         }
 
 
