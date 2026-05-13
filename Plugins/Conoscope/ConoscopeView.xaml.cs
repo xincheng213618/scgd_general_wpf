@@ -139,6 +139,7 @@ namespace Conoscope
         public ConoscopeView()
         {
             InitializeComponent();
+            ImageView.FocusCircleCalculationRequested += ImageView_FocusCircleCalculationRequested;
             ConoscopeModuleService.Register(this);
         }
 
@@ -172,6 +173,7 @@ namespace Conoscope
             ImageView.Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
             UpdatePseudoColorMapPreview();
             UpdateToolbarZoomRatio();
+            InitializeFocusPointTools();
             UpdatePanModeState();
         }
 
@@ -255,6 +257,7 @@ namespace Conoscope
                 subscribedModelProfile = null;
             }
             ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            ImageView.FocusCircleCalculationRequested -= ImageView_FocusCircleCalculationRequested;
             cieWindow?.Close();
             cieWindow = null;
             XMat?.Dispose();

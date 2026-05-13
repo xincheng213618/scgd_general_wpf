@@ -17,6 +17,12 @@
 		<None Remove="README.md" />
 	</ItemGroup>
 	<ItemGroup>
+		<Reference Include="CVCommCore">
+			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
+		</Reference>
+		<Reference Include="MQTTMessageLib">
+			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
+		</Reference>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />

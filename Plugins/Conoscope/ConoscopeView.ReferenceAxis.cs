@@ -39,6 +39,8 @@ namespace Conoscope
                 {
                     txtQuickReferenceRadius.Text = axisParam.ReferenceRadiusAngle.ToString("F2", CultureInfo.InvariantCulture);
                 }
+
+                SyncReferenceInteractionToggle();
             }
             finally
             {
