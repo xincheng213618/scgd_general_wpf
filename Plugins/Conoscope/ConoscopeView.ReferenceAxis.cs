@@ -1,4 +1,6 @@
 using Conoscope.Core;
+using Conoscope.Presentation.Formatters;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.ComponentModel;
 using System.Globalization;

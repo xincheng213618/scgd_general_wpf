@@ -1,4 +1,6 @@
 using Conoscope.Core;
+using Conoscope.Domain.Models;
+using Conoscope.Infrastructure.FileIO;
 using System;
 using System.Windows;
 
@@ -46,7 +48,7 @@ namespace Conoscope
         {
             ClearMatData();
 
-            using ConoscopeXyzData data = ConoscopeXyzDataLoader.Load(filename);
+            using ConoscopeImageData data = CvcieImageLoader.Load(filename);
             (OpenCvSharp.Mat xMat, OpenCvSharp.Mat yMat, OpenCvSharp.Mat zMat) = data.Detach();
             XMat = xMat;
             YMat = yMat;

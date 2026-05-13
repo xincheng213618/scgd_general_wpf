@@ -1,4 +1,5 @@
 using Conoscope.Core;
+using Conoscope.Presentation.Formatters;
 using System;
 using System.Collections.Generic;
 using System.Linq;

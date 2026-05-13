@@ -4,6 +4,7 @@ using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
 using Conoscope.Core;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;

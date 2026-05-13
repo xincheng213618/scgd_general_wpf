@@ -1,4 +1,5 @@
 using Conoscope.Core;
+using Conoscope.Presentation.Helpers;
 using Microsoft.Win32;
 using System;
 using System.IO;

@@ -1,4 +1,6 @@
+using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.Globalization;
 using System.IO;
@@ -194,11 +196,11 @@ namespace Conoscope
             if (mode == ColorDifferenceReferenceMode.ReferenceImage)
             {
                 EnsureColorDifferenceReferenceReady();
-                return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, colorDifferenceReferenceUMat!, colorDifferenceReferenceVMat!);
+                return ColorDifferenceMatFactory.Create(XMat, YMat, ZMat, colorDifferenceReferenceUMat!, colorDifferenceReferenceVMat!);
             }
 
             ConoscopeUvReference reference = ResolvePointColorDifferenceReference();
-            return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, reference.U, reference.V);
+            return ColorDifferenceMatFactory.Create(XMat, YMat, ZMat, reference);
         }
 
         private void EnsureColorDifferenceReferenceReady()
@@ -349,15 +351,11 @@ namespace Conoscope
                     return 0;
                 }
 
-                int x = ConoscopeNumericHelper.ClampToInt(ix, 0, colorDifferenceReferenceUMat.Width - 1);
-                int y = ConoscopeNumericHelper.ClampToInt(iy, 0, colorDifferenceReferenceUMat.Height - 1);
-                double referenceU = colorDifferenceReferenceUMat.At<float>(y, x);
-                double referenceV = colorDifferenceReferenceVMat.At<float>(y, x);
-                return ConoscopeColorimetry.CalculateColorDifferenceFromUv(chromaticity.u, chromaticity.v, referenceU, referenceV);
+                return ColorDifferenceMatFactory.GetValue(ix, iy, X, Y, Z, colorDifferenceReferenceUMat, colorDifferenceReferenceVMat);
             }
 
             ConoscopeUvReference reference = ResolvePointColorDifferenceReference();
-            return ConoscopeColorimetry.CalculateColorDifferenceFromUv(chromaticity.u, chromaticity.v, reference.U, reference.V);
+            return ColorDifferenceMatFactory.GetValue(X, Y, Z, reference);
         }
     }
 }

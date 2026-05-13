@@ -2,6 +2,8 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Conoscope.Core;
+using Conoscope.Presentation.Formatters;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.Linq;
 using System.Windows;
@@ -49,17 +51,8 @@ namespace Conoscope
         {
             cbWindowPseudoColorMap.DisplayMemberPath = nameof(PseudoColorMapOption.Name);
             cbWindowPseudoColorMap.ItemsSource = Enum.GetValues<ColormapTypes>()
-                .Select(item => new PseudoColorMapOption(FormatColormapName(item), item))
+                .Select(item => new PseudoColorMapOption(ColormapNameFormatter.Format(item), item))
                 .ToArray();
-        }
-
-        private static string FormatColormapName(ColormapTypes colormapType)
-        {
-            const string prefix = "COLORMAP_";
-            string name = colormapType.ToString();
-            return name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-                ? name[prefix.Length..]
-                : name;
         }
 
         private void SelectPseudoColorMap(ColormapTypes colormapType)

@@ -1,4 +1,6 @@
-namespace Conoscope.Core
+using Conoscope.Core;
+
+namespace Conoscope.Presentation.Formatters
 {
     internal static class ConoscopeChannelDisplayFormatter
     {

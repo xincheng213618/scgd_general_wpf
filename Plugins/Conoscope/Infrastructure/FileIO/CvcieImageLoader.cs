@@ -1,64 +1,14 @@
 using ColorVision.FileIO;
+using Conoscope.Domain.Models;
 using OpenCvSharp;
 using System;
 using System.IO;
 
-namespace Conoscope.Core
+namespace Conoscope.Infrastructure.FileIO
 {
-    public sealed class ConoscopeXyzData : IDisposable
+    internal static class CvcieImageLoader
     {
-        private Mat? x;
-        private Mat? y;
-        private Mat? z;
-
-        public ConoscopeXyzData(Mat x, Mat y, Mat z, int bitsPerPixel)
-        {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            Width = x.Width;
-            Height = x.Height;
-            BitsPerPixel = bitsPerPixel;
-        }
-
-        public int BitsPerPixel { get; }
-
-        public int Width { get; }
-
-        public int Height { get; }
-
-        public Mat X => x ?? throw new ObjectDisposedException(nameof(ConoscopeXyzData));
-
-        public Mat Y => y ?? throw new ObjectDisposedException(nameof(ConoscopeXyzData));
-
-        public Mat Z => z ?? throw new ObjectDisposedException(nameof(ConoscopeXyzData));
-
-        public (Mat X, Mat Y, Mat Z) Detach()
-        {
-            Mat detachedX = X;
-            Mat detachedY = Y;
-            Mat detachedZ = Z;
-            x = null;
-            y = null;
-            z = null;
-            return (detachedX, detachedY, detachedZ);
-        }
-
-        public void Dispose()
-        {
-            x?.Dispose();
-            x = null;
-            y?.Dispose();
-            y = null;
-            z?.Dispose();
-            z = null;
-            GC.SuppressFinalize(this);
-        }
-    }
-
-    internal static class ConoscopeXyzDataLoader
-    {
-        public static ConoscopeXyzData Load(string filename)
+        public static ConoscopeImageData Load(string filename)
         {
             if (!CVFileUtil.IsCVCIEFile(filename))
             {
@@ -82,7 +32,7 @@ namespace Conoscope.Core
             Mat x = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
             Mat y = CreateFloatChannelMat(fileInfo.Data, channelSize, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
             Mat z = CreateFloatChannelMat(fileInfo.Data, channelSize * 2, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-            return new ConoscopeXyzData(x, y, z, fileInfo.Bpp);
+            return new ConoscopeImageData(x, y, z, fileInfo.Bpp);
         }
 
         private static MatType GetSingleChannelMatType(int bpp)

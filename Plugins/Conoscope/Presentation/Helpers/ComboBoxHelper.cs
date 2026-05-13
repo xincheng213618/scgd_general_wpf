@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Controls;
 
-namespace Conoscope.Core
+namespace Conoscope.Presentation.Helpers
 {
     internal static class ComboBoxHelper
     {

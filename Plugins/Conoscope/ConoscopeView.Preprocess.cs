@@ -1,4 +1,8 @@
+using Conoscope.ApplicationServices.Preprocess;
 using Conoscope.Core;
+using Conoscope.Presentation.Formatters;
+using Conoscope.Presentation.Helpers;
+using Conoscope.Processing.Preprocess;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -79,18 +83,9 @@ namespace Conoscope
             string filterPolicy = NormalizeFilterType(ConoscopeConfig.FilterType) == ImageFilterType.None
                 ? "无滤波"
                 : ConoscopeConfig.FilterType.ToString();
-            string pseudoColorPolicy = $"{ConoscopeChannelDisplayFormatter.GetLabel(ConoscopeConfig.DisplayChannel)} / {FormatColormapName(ConoscopeConfig.PseudoColorMap)}";
+            string pseudoColorPolicy = $"{ConoscopeChannelDisplayFormatter.GetLabel(ConoscopeConfig.DisplayChannel)} / {ColormapNameFormatter.Format(ConoscopeConfig.PseudoColorMap)}";
 
             tbPreprocessSummary.Text = $"{openPolicy} / {clampPolicy} / {dustPolicy} / {filterPolicy} / 伪彩 {pseudoColorPolicy}";
-        }
-
-        private static string FormatColormapName(ColorVision.Core.ColormapTypes colormapType)
-        {
-            const string prefix = "COLORMAP_";
-            string name = colormapType.ToString();
-            return name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-                ? name[prefix.Length..]
-                : name;
         }
 
         private void MigrateLegacyDustRemovalFilterType()
@@ -236,9 +231,9 @@ namespace Conoscope
                 return;
             }
 
-            int clampedX = ConoscopePreprocessService.ClampNonPositive(XMat, options.PositiveFloor);
-            int clampedY = ConoscopePreprocessService.ClampNonPositive(YMat, options.PositiveFloor);
-            int clampedZ = ConoscopePreprocessService.ClampNonPositive(ZMat, options.PositiveFloor);
+            int clampedX = XyzClampProcessor.ClampNonPositive(XMat, options.PositiveFloor);
+            int clampedY = XyzClampProcessor.ClampNonPositive(YMat, options.PositiveFloor);
+            int clampedZ = XyzClampProcessor.ClampNonPositive(ZMat, options.PositiveFloor);
             if (clampedX + clampedY + clampedZ > 0)
             {
                 log.Warn($"加载时已将 XYZ<=0 修正为 {options.PositiveFloor}: X={clampedX}, Y={clampedY}, Z={clampedZ}");
@@ -250,7 +245,7 @@ namespace Conoscope
             OpenCvSharp.Mat? xMat = XMat;
             OpenCvSharp.Mat? yMat = YMat;
             OpenCvSharp.Mat? zMat = ZMat;
-            ConoscopePreprocessService.Apply(ref xMat, ref yMat, ref zMat, CreatePreprocessOptions(), log);
+            ConoscopePreprocessPipeline.Apply(ref xMat, ref yMat, ref zMat, CreatePreprocessOptions(), log);
             XMat = xMat;
             YMat = yMat;
             ZMat = zMat;

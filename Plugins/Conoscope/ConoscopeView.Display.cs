@@ -1,5 +1,7 @@
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using Conoscope.Presentation.Formatters;
+using Conoscope.Presentation.Helpers;
 using Conoscope.Core;
 using System;
 using System.Windows;
