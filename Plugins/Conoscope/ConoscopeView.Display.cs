@@ -38,6 +38,9 @@ namespace Conoscope
 
         private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)
         {
+            currentReferenceScaleChannel = channel;
+            currentReferenceScaleMaximum = maxValue;
+
             if (tbPseudoColorLegendTitle == null || tbPseudoColorLegendMin == null || tbPseudoColorLegendMax == null)
             {
                 return;

@@ -17,7 +17,7 @@ namespace Conoscope
         private static readonly Pen MajorGridPen = CreatePen(Color.FromRgb(210, 210, 210), 1.0);
         private static readonly Pen OuterGridPen = CreatePen(Color.FromRgb(176, 176, 176), 1.2);
         private static readonly Typeface PlotTypeface = new Typeface("Segoe UI");
-        private static readonly Brush DefaultSeriesBrush = CreateBrush(Color.FromRgb(34, 139, 34));
+        private static readonly Brush DefaultSeriesBrush = CreateBrush(Colors.LimeGreen);
 
         private IReadOnlyList<PolarPlotPoint> points = Array.Empty<PolarPlotPoint>();
         private Brush seriesBrush = DefaultSeriesBrush;
@@ -180,8 +180,8 @@ namespace Conoscope
         {
             double radians = angleDegrees * Math.PI / 180.0;
             return new Point(
-                center.X + radius * Math.Sin(radians),
-                center.Y - radius * Math.Cos(radians));
+                center.X + radius * Math.Cos(radians),
+                center.Y - radius * Math.Sin(radians));
         }
 
         private static double NormalizeAngle(double angleDegrees)

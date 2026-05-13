@@ -14,9 +14,9 @@
         MinWidth="1080"
         Background="{DynamicResource GlobalBackground}">
     <Window.Resources>
-        <sys:Double x:Key="RibbonHostHeight">82</sys:Double>
-        <sys:Double x:Key="RibbonContentHeight">44</sys:Double>
-        <Thickness x:Key="RibbonTabContentMargin">3,1,3,1</Thickness>
+        <sys:Double x:Key="RibbonHostHeight">96</sys:Double>
+        <sys:Double x:Key="RibbonContentHeight">50</sys:Double>
+        <Thickness x:Key="RibbonTabContentMargin">4,3,4,2</Thickness>
 
         <DataTemplate x:Key="DocumentHeaderTemplate">
             <StackPanel Orientation="Horizontal">
@@ -37,9 +37,9 @@
         </Style>
 
         <Style x:Key="RibbonGroupStyle" TargetType="Border">
-            <Setter Property="MinHeight" Value="38" />
-            <Setter Property="Margin" Value="0,0,6,0" />
-            <Setter Property="Padding" Value="3,2,3,1" />
+            <Setter Property="MinHeight" Value="46" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Padding" Value="5,4,5,3" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Background" Value="Transparent" />
@@ -47,26 +47,30 @@
         </Style>
 
         <Style x:Key="RibbonGroupHeaderStyle" TargetType="TextBlock">
-            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Visibility" Value="Visible" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="Foreground" Value="Gray" />
+            <Setter Property="Margin" Value="0,6,0,0" />
         </Style>
 
         <Style x:Key="RibbonFieldLabelStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="Gray" />
-            <Setter Property="FontSize" Value="10.5" />
-            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="RibbonButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="MinHeight" Value="26" />
-            <Setter Property="MinWidth" Value="30" />
-            <Setter Property="Padding" Value="6,2" />
-            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="MinWidth" Value="38" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="RibbonLargeButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonButtonStyle}">
-            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinWidth" Value="58" />
             <Setter Property="ToolTipService.ShowDuration" Value="12000" />
         </Style>
 
@@ -80,11 +84,18 @@
 
         <Style x:Key="RibbonIconTextStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="16" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Margin" Value="0" />
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        </Style>
+
+        <Style x:Key="RibbonButtonCaptionStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="5,0,0,0" />
         </Style>
 
         <Style x:Key="RibbonInlineButtonContentStyle" TargetType="StackPanel">
@@ -173,30 +184,13 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="流程模板" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                            <ComboBox x:Name="cbFlowTemplate" Width="168" DisplayMemberPath="Key" SelectionChanged="cbFlowTemplate_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <Button x:Name="btnEditFlowTemplates" Click="btnEditFlowTemplates_Click" ToolTip="打开流程模板管理" Style="{StaticResource RibbonSmallButtonStyle}">
-                                                <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                            <Button x:Name="btnRunFlow" Click="btnRunFlow_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="执行当前流程并打开结果图像">
-                                                <TextBlock Text="&#xE768;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                        </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="流程" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
-
-                                <Border Style="{StaticResource RibbonGroupStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="型号" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbModelType" Width="132" SelectionChanged="cbModelType_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
                                             <Button x:Name="btnOpenObservationCamera" Click="btnOpenObservationCamera_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开观察相机窗口">
-                                                <TextBlock Text="&#xE890;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE890;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="观察相机" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
                                             </Button>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="模型" Style="{StaticResource RibbonGroupHeaderStyle}" />
@@ -217,6 +211,39 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="流程模板" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <ComboBox x:Name="cbFlowTemplate" Width="176" DisplayMemberPath="Key" SelectionChanged="cbFlowTemplate_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
+                                            <Button x:Name="btnEditFlowTemplates" Click="btnEditFlowTemplates_Click" ToolTip="打开流程模板管理" Style="{StaticResource RibbonLargeButtonStyle}">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="设置" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button x:Name="btnRunFlow" Click="btnRunFlow_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="执行当前流程并打开结果图像">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE768;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="执行" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                        <CheckBox x:Name="chkReuseActiveViewOnCapture"
+                                                  Grid.Row="1"
+                                                  Margin="0,8,0,0"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="True"
+                                                  Content="流程/拍图结果复用当前视图"
+                                                  ToolTip="勾选后，流程结果和相机拍图结果都会直接刷新当前活动 View，减少额外内存占用" />
+                                        <TextBlock Grid.Row="2" Text="流程采集" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="相机" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbCameraDevice"
                                                       Width="176"
@@ -232,30 +259,32 @@
                                             <Button x:Name="btnEditCalibrationTemplates"
                                                     Click="btnEditCalibrationTemplates_Click"
                                                     ToolTip="打开当前相机的校正模板管理"
-                                                    Style="{StaticResource RibbonSmallButtonStyle}">
-                                                <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    Style="{StaticResource RibbonLargeButtonStyle}">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="校正" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
                                             </Button>
                                             <Button x:Name="btnRefreshCameraDevices"
                                                     Click="btnRefreshCameraDevices_Click"
                                                     ToolTip="刷新相机与校正模板列表"
                                                     Style="{StaticResource RibbonButtonStyle}">
-                                                <TextBlock Text="&#xE72C;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE72C;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="刷新" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
                                             </Button>
                                             <Button x:Name="btnCaptureCamera"
                                                     Click="btnCaptureCamera_Click"
                                                     Style="{StaticResource RibbonPrimaryButtonStyle}"
                                                     ToolTip="使用当前相机与校正模板拍照">
-                                                <TextBlock Text="&#xE722;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE722;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="拍照" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <CheckBox x:Name="chkReuseActiveViewOnCapture"
-                                                  Grid.Row="1"
-                                                  Margin="0,8,0,0"
-                                                  VerticalAlignment="Center"
-                                                  IsChecked="True"
-                                                  Content="复用当前视图"
-                                                  ToolTip="勾选后，拍图结果会直接刷新当前活动 View，减少额外内存占用" />
-                                        <TextBlock Grid.Row="2" Text="测量相机" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="测量相机" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 

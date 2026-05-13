@@ -484,7 +484,7 @@ namespace Conoscope
                 string? filePath = await WaitForFlowCvcieAsync(result);
                 if (!string.IsNullOrWhiteSpace(filePath))
                 {
-                    OpenConoscope(filePath);
+                    OpenConoscope(filePath, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     SetOperationStatus($"已打开 {Path.GetFileName(filePath)}", Brushes.LimeGreen);
                 }
                 else

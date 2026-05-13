@@ -39,6 +39,8 @@ namespace Conoscope
         private Point currentImageCenter;
         private int currentImageRadius;
         private double currentPixelsPerDegree;
+        private ExportChannel currentReferenceScaleChannel = ExportChannel.Y;
+        private double currentReferenceScaleMaximum = 1;
 
         private ConoscopeCoordinateAxisController? coordinateAxisController;
         private PolarAngleLine? coordinateAxisPolarLine;
@@ -1414,29 +1416,24 @@ namespace Conoscope
                 : label;
         }
 
-        private static Brush GetChannelPlotBrush(ExportChannel channel)
+        private static SolidColorBrush GetChannelPlotBrush(ExportChannel channel)
         {
             return channel switch
             {
                 ExportChannel.X => Brushes.Gold,
-                ExportChannel.Y => Brushes.DimGray,
+                ExportChannel.Y => Brushes.LimeGreen,
                 ExportChannel.Z => Brushes.Violet,
                 ExportChannel.CieX => Brushes.OrangeRed,
                 ExportChannel.CieY => Brushes.SeaGreen,
                 ExportChannel.CieU => Brushes.DodgerBlue,
                 ExportChannel.CieV => Brushes.MediumPurple,
                 ExportChannel.ColorDifference => Brushes.Crimson,
-                _ => Brushes.DimGray
+                _ => Brushes.LimeGreen
             };
         }
 
-        private static double GetPolarReferenceRadiusMaximum(IEnumerable<double> values)
+        private static double GetNicePolarReferenceRadiusMaximum(double maxValue)
         {
-            double maxValue = values
-                .Where(double.IsFinite)
-                .DefaultIfEmpty(0)
-                .Max();
-
             if (maxValue <= 0)
             {
                 return 1;
@@ -1447,12 +1444,33 @@ namespace Conoscope
             double magnitude = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
             double normalized = rawStep / magnitude;
             double niceNormalized = normalized <= 1 ? 1
+                : normalized <= 1.5 ? 1.5
                 : normalized <= 2 ? 2
                 : normalized <= 2.5 ? 2.5
+                : normalized <= 3 ? 3
+                : normalized <= 4 ? 4
                 : normalized <= 5 ? 5
                 : 10;
 
             return niceNormalized * magnitude * ringCount;
+        }
+
+        private double GetStablePolarReferenceRadiusMaximum(ExportChannel channel, IEnumerable<double> values)
+        {
+            double curveMaximum = values
+                .Where(double.IsFinite)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            double scaleMaximum = curveMaximum;
+            if (channel == currentReferenceScaleChannel
+                && double.IsFinite(currentReferenceScaleMaximum)
+                && currentReferenceScaleMaximum > 0)
+            {
+                scaleMaximum = Math.Max(scaleMaximum, currentReferenceScaleMaximum);
+            }
+
+            return GetNicePolarReferenceRadiusMaximum(scaleMaximum);
         }
 
         private static double NormalizePolarPlotAngle(double angleDegrees)
@@ -1468,7 +1486,7 @@ namespace Conoscope
                 return;
             }
 
-            double radialMaximum = GetPolarReferenceRadiusMaximum(points.Select(point => point.Radius));
+            double radialMaximum = GetStablePolarReferenceRadiusMaximum(channel, points.Select(point => point.Radius));
             polarPlotReference.UpdatePlot(points, GetChannelPlotBrush(channel), $"半径: {GetChannelAxisLabel(channel)}", radialMaximum, closePath);
         }
 
@@ -1477,14 +1495,14 @@ namespace Conoscope
             return channel switch
             {
                 ExportChannel.X => ScottPlot.Color.FromColor(System.Drawing.Color.Gold),
-                ExportChannel.Y => ScottPlot.Color.FromColor(System.Drawing.Color.DimGray),
+                ExportChannel.Y => ScottPlot.Color.FromColor(System.Drawing.Color.LimeGreen),
                 ExportChannel.Z => ScottPlot.Color.FromColor(System.Drawing.Color.Violet),
                 ExportChannel.CieX => ScottPlot.Color.FromColor(System.Drawing.Color.OrangeRed),
                 ExportChannel.CieY => ScottPlot.Color.FromColor(System.Drawing.Color.SeaGreen),
                 ExportChannel.CieU => ScottPlot.Color.FromColor(System.Drawing.Color.DodgerBlue),
                 ExportChannel.CieV => ScottPlot.Color.FromColor(System.Drawing.Color.MediumPurple),
                 ExportChannel.ColorDifference => ScottPlot.Color.FromColor(System.Drawing.Color.Crimson),
-                _ => ScottPlot.Color.FromColor(System.Drawing.Color.DimGray)
+                _ => ScottPlot.Color.FromColor(System.Drawing.Color.LimeGreen)
             };
         }
 
