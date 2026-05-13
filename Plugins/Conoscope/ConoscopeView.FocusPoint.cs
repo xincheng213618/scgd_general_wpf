@@ -16,12 +16,20 @@ namespace Conoscope
 {
     public partial class ConoscopeView
     {
+        private enum FocusCircleToolKind
+        {
+            Draw,
+            Select,
+            Erase,
+        }
+
         private bool isUpdatingFocusCircleToolSelection;
+        private bool shouldRestoreReferenceInteractionAfterFocusMode;
 
         private void InitializeFocusPointTools()
         {
             SyncReferenceInteractionToggle();
-            SetFocusCircleToolSelection(useDrawTool: true, useEraseTool: false);
+            SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
             UpdateFocusCircleModeState();
         }
 
@@ -56,36 +64,73 @@ namespace Conoscope
                 return;
             }
 
-            bool isEditMode = tglFocusCircleMode?.IsChecked == true;
-            bool isReferenceInteractionEnabled = tglReferenceInteraction?.IsChecked == true;
-            bool useEraseTool = isEditMode && tglFocusCircleEraseTool?.IsChecked == true;
-            bool useDrawTool = isEditMode && !useEraseTool;
+            bool isFocusCircleModeEnabled = tglFocusCircleMode?.IsChecked == true;
+            ApplyFocusCircleReferenceInteractionLock(isFocusCircleModeEnabled);
 
-            if (isEditMode && tglFocusCircleDrawTool?.IsChecked != true && tglFocusCircleEraseTool?.IsChecked != true)
+            bool useDrawTool = isFocusCircleModeEnabled && tglFocusCircleDrawTool?.IsChecked == true;
+            bool useSelectTool = isFocusCircleModeEnabled && tglFocusCircleSelectTool?.IsChecked == true;
+            bool useEraseTool = isFocusCircleModeEnabled && tglFocusCircleEraseTool?.IsChecked == true;
+
+            if (isFocusCircleModeEnabled && !useDrawTool && !useSelectTool && !useEraseTool)
             {
-                SetFocusCircleToolSelection(useDrawTool: true, useEraseTool: false);
+                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
                 useDrawTool = true;
             }
 
-            ImageView.SetFocusCircleEditMode(isEditMode);
-            ImageView.SetFocusCircleSelectionEnabled(!isEditMode && !isReferenceInteractionEnabled);
+            ImageView.SetFocusCircleEditMode(isFocusCircleModeEnabled);
+            ImageView.SetFocusCircleSelectionEnabled(isFocusCircleModeEnabled && useSelectTool);
             ImageView.SetFocusCircleDrawMode(useDrawTool);
             ImageView.SetFocusCircleEraseMode(useEraseTool);
             UpdateFocusCircleToolbarState();
             UpdatePanModeState();
         }
 
+        private void ApplyFocusCircleReferenceInteractionLock(bool isFocusCircleModeEnabled)
+        {
+            if (tglReferenceInteraction == null)
+            {
+                return;
+            }
+
+            if (isFocusCircleModeEnabled)
+            {
+                if (tglReferenceInteraction.IsChecked == true)
+                {
+                    shouldRestoreReferenceInteractionAfterFocusMode = true;
+                    tglReferenceInteraction.IsChecked = false;
+                }
+
+                tglReferenceInteraction.IsEnabled = false;
+                return;
+            }
+
+            tglReferenceInteraction.IsEnabled = true;
+            if (shouldRestoreReferenceInteractionAfterFocusMode)
+            {
+                shouldRestoreReferenceInteractionAfterFocusMode = false;
+                if (tglReferenceInteraction.IsChecked != true)
+                {
+                    tglReferenceInteraction.IsChecked = true;
+                }
+            }
+        }
+
         private void UpdateFocusCircleToolbarState()
         {
-            bool isEditMode = tglFocusCircleMode?.IsChecked == true;
+            bool isFocusCircleModeEnabled = tglFocusCircleMode?.IsChecked == true;
             if (tglFocusCircleDrawTool != null)
             {
-                tglFocusCircleDrawTool.IsEnabled = isEditMode;
+                tglFocusCircleDrawTool.IsEnabled = isFocusCircleModeEnabled;
+            }
+
+            if (tglFocusCircleSelectTool != null)
+            {
+                tglFocusCircleSelectTool.IsEnabled = isFocusCircleModeEnabled;
             }
 
             if (tglFocusCircleEraseTool != null)
             {
-                tglFocusCircleEraseTool.IsEnabled = isEditMode;
+                tglFocusCircleEraseTool.IsEnabled = isFocusCircleModeEnabled;
             }
 
             bool hasFocusCircles = ImageView.FocusCircles.Count > 0;
@@ -100,7 +145,7 @@ namespace Conoscope
             }
         }
 
-        private void SetFocusCircleToolSelection(bool useDrawTool, bool useEraseTool)
+        private void SetFocusCircleToolSelection(FocusCircleToolKind toolKind)
         {
             if (isUpdatingFocusCircleToolSelection)
             {
@@ -112,12 +157,17 @@ namespace Conoscope
             {
                 if (tglFocusCircleDrawTool != null)
                 {
-                    tglFocusCircleDrawTool.IsChecked = useDrawTool;
+                    tglFocusCircleDrawTool.IsChecked = toolKind == FocusCircleToolKind.Draw;
+                }
+
+                if (tglFocusCircleSelectTool != null)
+                {
+                    tglFocusCircleSelectTool.IsChecked = toolKind == FocusCircleToolKind.Select;
                 }
 
                 if (tglFocusCircleEraseTool != null)
                 {
-                    tglFocusCircleEraseTool.IsChecked = useEraseTool;
+                    tglFocusCircleEraseTool.IsChecked = toolKind == FocusCircleToolKind.Erase;
                 }
             }
             finally
@@ -130,7 +180,7 @@ namespace Conoscope
         {
             if (!isUpdatingFocusCircleToolSelection)
             {
-                SetFocusCircleToolSelection(useDrawTool: true, useEraseTool: false);
+                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
             }
 
             UpdateFocusCircleModeState();
@@ -138,9 +188,30 @@ namespace Conoscope
 
         private void tglFocusCircleDrawTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleEraseTool?.IsChecked != true)
+            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleSelectTool?.IsChecked != true && tglFocusCircleEraseTool?.IsChecked != true)
             {
-                SetFocusCircleToolSelection(useDrawTool: true, useEraseTool: false);
+                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
+                return;
+            }
+
+            UpdateFocusCircleModeState();
+        }
+
+        private void tglFocusCircleSelectTool_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!isUpdatingFocusCircleToolSelection)
+            {
+                SetFocusCircleToolSelection(FocusCircleToolKind.Select);
+            }
+
+            UpdateFocusCircleModeState();
+        }
+
+        private void tglFocusCircleSelectTool_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleDrawTool?.IsChecked != true && tglFocusCircleEraseTool?.IsChecked != true)
+            {
+                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
                 return;
             }
 
@@ -151,7 +222,7 @@ namespace Conoscope
         {
             if (!isUpdatingFocusCircleToolSelection)
             {
-                SetFocusCircleToolSelection(useDrawTool: false, useEraseTool: true);
+                SetFocusCircleToolSelection(FocusCircleToolKind.Erase);
             }
 
             UpdateFocusCircleModeState();
@@ -159,9 +230,9 @@ namespace Conoscope
 
         private void tglFocusCircleEraseTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleDrawTool?.IsChecked != true)
+            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleDrawTool?.IsChecked != true && tglFocusCircleSelectTool?.IsChecked != true)
             {
-                SetFocusCircleToolSelection(useDrawTool: true, useEraseTool: false);
+                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
                 return;
             }
 

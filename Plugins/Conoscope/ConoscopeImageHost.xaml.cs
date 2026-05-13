@@ -120,6 +120,7 @@ namespace Conoscope
             if (isEnabled)
             {
                 focusCircleEraseTool.IsChecked = false;
+                ClearFocusCircleSelection();
             }
 
             RefreshFocusCircleInteractionState();
@@ -255,20 +256,18 @@ namespace Conoscope
 
         private void RefreshFocusCircleInteractionState()
         {
-            if (IsFocusCircleEditMode)
-            {
-                if (!IsFocusCircleDrawMode && !IsFocusCircleEraseMode)
-                {
-                    focusCircleDrawTool.IsChecked = true;
-                }
-            }
-            else
+            if (!IsFocusCircleEditMode)
             {
                 focusCircleDrawTool.IsChecked = false;
                 focusCircleEraseTool.IsChecked = false;
             }
 
-            EditorContext.IsImageEditMode = IsFocusCircleEditMode || isFocusCircleSelectionEnabled;
+            if (!isFocusCircleSelectionEnabled)
+            {
+                ClearFocusCircleSelection();
+            }
+
+            EditorContext.IsImageEditMode = isFocusCircleSelectionEnabled;
             UpdateCanvasCursor();
         }
 
@@ -291,6 +290,10 @@ namespace Conoscope
             if (contextMenuFocusCircle != null && isFocusCircleSelectionEnabled)
             {
                 SelectFocusCircle(contextMenuFocusCircle);
+            }
+            else if (!isFocusCircleSelectionEnabled)
+            {
+                ClearFocusCircleSelection();
             }
         }
 

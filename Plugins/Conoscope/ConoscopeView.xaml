@@ -72,7 +72,7 @@
             <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
                     <ToggleButton x:Name="tglPanMode" Style="{StaticResource OverlayToolToggleStyle}" Content="平移" ToolTip="开启后左键拖拽可平移图像；关闭后按住 Ctrl 再平移。" IsChecked="True" Checked="tglPanMode_Checked" Unchecked="tglPanMode_Unchecked" />
-                    <ToggleButton x:Name="tglReferenceInteraction" Style="{StaticResource OverlayToolToggleStyle}" Content="参考拖拽" ToolTip="允许在图上直接拖动参考方位线和极角圆；关闭后可直接选择和拖动关注点圆。" IsChecked="True" Checked="tglReferenceInteraction_Checked" Unchecked="tglReferenceInteraction_Unchecked" />
+                    <ToggleButton x:Name="tglReferenceInteraction" Style="{StaticResource OverlayToolToggleStyle}" Content="参考拖拽" ToolTip="允许在图上直接拖动参考方位线和极角圆；进入关注点模式时会临时关闭。" IsChecked="True" Checked="tglReferenceInteraction_Checked" Unchecked="tglReferenceInteraction_Unchecked" />
                     <Separator/>
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="-" FontSize="16" FontWeight="Bold" ToolTip="缩小" Click="ToolbarZoomOut_Click" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="放大" Click="ToolbarZoomIn_Click" />
@@ -101,8 +101,9 @@
             </Border>
             <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" Content="编辑关注点" ToolTip="开启后使用底部工具绘制或擦除关注点；关闭后在关闭参考拖拽时可直接选择和拖动关注点。" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" Content="圆" ToolTip="绘制关注点圆" IsChecked="True" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" Content="编辑关注点" ToolTip="开启后进入关注点工具模式；绘制、编辑、橡皮三种子工具互斥，并会临时关闭参考拖拽。" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" Content="圆" ToolTip="仅绘制新的关注点圆" IsChecked="True" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="编辑" ToolTip="选中并拖拽已有关注点圆" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" />
                     <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" Content="橡皮" ToolTip="框选擦除关注点圆" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
                     <Separator/>
                     <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="算" ToolTip="计算全部关注点" Click="btnCalculateFocusCircles_Click" />
