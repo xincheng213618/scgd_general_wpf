@@ -540,6 +540,10 @@ namespace Conoscope
 
             CurrentModelProfile.CoordinateAxisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
             RefreshQuickControlsFromAxisParam();
+            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            {
+                ApplyCoordinateAxisReference();
+            }
         }
 
         private void ApplyQuickReferenceRadiusFromText()
@@ -557,6 +561,10 @@ namespace Conoscope
 
             CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
             RefreshQuickControlsFromAxisParam();
+            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
+            {
+                ApplyCoordinateAxisReference();
+            }
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
