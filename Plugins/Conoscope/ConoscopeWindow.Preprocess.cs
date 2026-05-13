@@ -32,6 +32,8 @@ namespace Conoscope
                 InitializePseudoColorMapOptions();
                 chkWindowApplyFilterOnOpen.IsChecked = PreprocessConfig.ApplyFilterOnOpen;
                 cbWindowFilterType.SelectedValue = NormalizeFilterType(PreprocessConfig.FilterType);
+                tbWindowFilterConfigSummary.Text = BuildWindowFilterConfigSummary();
+                tbWindowFilterConfigSummary.ToolTip = BuildWindowFilterConfigToolTip();
                 chkWindowUsePseudoColor.IsChecked = RenderingConfig.UsePseudoColor;
                 SelectPseudoColorMap(RenderingConfig.PseudoColorMap);
                 imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(RenderingConfig.PseudoColorMap);
@@ -42,6 +44,55 @@ namespace Conoscope
             }
 
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && ActiveView != null;
+        }
+
+        private string BuildWindowFilterConfigSummary()
+        {
+            string filterSummary = NormalizeFilterType(PreprocessConfig.FilterType) switch
+            {
+                ImageFilterType.None => "不过滤",
+                ImageFilterType.LowPass => $"低通 核 {PreprocessConfig.FilterKernelSize}",
+                ImageFilterType.MovingAverage => $"均值 核 {PreprocessConfig.FilterKernelSize}",
+                ImageFilterType.Gaussian => $"高斯 核 {PreprocessConfig.FilterKernelSize}  σ {PreprocessConfig.FilterSigma:F1}",
+                ImageFilterType.Median => $"中值 核 {PreprocessConfig.FilterKernelSize}",
+                ImageFilterType.Bilateral => $"双边 d {PreprocessConfig.FilterD}  σC {PreprocessConfig.FilterSigmaColor:F0}  σS {PreprocessConfig.FilterSigmaSpace:F0}",
+                _ => "使用默认参数"
+            };
+
+            string dustSummary = PreprocessConfig.DustRemovalEnabled
+                ? $"灰尘 {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)} {PreprocessConfig.DustThresholdPercent:F1}%"
+                : "灰尘关闭";
+
+            return $"{filterSummary} | {dustSummary}";
+        }
+
+        private string BuildWindowFilterConfigToolTip()
+        {
+            string dustSummary = PreprocessConfig.DustRemovalEnabled
+                ? $"灰尘滤除: {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)}，阈值 {PreprocessConfig.DustThresholdPercent:F1}% ，面积 {PreprocessConfig.DustMinArea}-{PreprocessConfig.DustMaxArea}px，修复半径 {PreprocessConfig.DustRepairRadius}px"
+                : "灰尘滤除: 关闭";
+
+            return NormalizeFilterType(PreprocessConfig.FilterType) switch
+            {
+                ImageFilterType.None => $"滤波: 无。{dustSummary}",
+                ImageFilterType.LowPass => $"滤波: 低通，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
+                ImageFilterType.MovingAverage => $"滤波: 均值，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
+                ImageFilterType.Gaussian => $"滤波: 高斯，核大小 {PreprocessConfig.FilterKernelSize}，Sigma {PreprocessConfig.FilterSigma:F1}。{dustSummary}",
+                ImageFilterType.Median => $"滤波: 中值，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
+                ImageFilterType.Bilateral => $"滤波: 双边，d {PreprocessConfig.FilterD}，SigmaColor {PreprocessConfig.FilterSigmaColor:F0}，SigmaSpace {PreprocessConfig.FilterSigmaSpace:F0}。{dustSummary}",
+                _ => $"滤波: 使用默认参数。{dustSummary}"
+            };
+        }
+
+        private static string FormatDustRemovalMode(DustRemovalMode mode)
+        {
+            return mode switch
+            {
+                DustRemovalMode.DarkSpot => "暗斑",
+                DustRemovalMode.BrightSpot => "亮斑",
+                DustRemovalMode.Both => "暗斑+亮斑",
+                _ => mode.ToString()
+            };
         }
 
         private void WindowPreprocess_Changed(object sender, RoutedEventArgs e)

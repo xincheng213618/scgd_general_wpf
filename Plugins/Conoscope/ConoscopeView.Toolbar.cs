@@ -25,9 +25,14 @@ namespace Conoscope
 
         private void UpdatePanModeState()
         {
-            bool isPanModeEnabled = tglPanMode?.IsChecked == true && !ImageView.IsFocusCircleDrawMode;
+            bool isFocusCircleInteractionEnabled = ImageView.IsFocusCircleEditMode || ImageView.IsFocusCircleSelectionEnabled;
+            bool isPanModeEnabled = tglPanMode?.IsChecked == true && !isFocusCircleInteractionEnabled;
             ImageView.Zoombox1.ActivateOn = isPanModeEnabled ? ModifierKeys.None : ModifierKeys.Control;
-            ImageView.Zoombox1.Cursor = ImageView.IsFocusCircleDrawMode ? Cursors.Cross : isPanModeEnabled ? Cursors.Hand : Cursors.Arrow;
+            if (!ImageView.IsFocusCircleEditMode)
+            {
+                ImageView.Zoombox1.Cursor = isPanModeEnabled ? Cursors.Hand : Cursors.Arrow;
+                ImageView.ImageShow.Cursor = isPanModeEnabled ? Cursors.Hand : Cursors.Arrow;
+            }
         }
 
         private void tglPanMode_Checked(object sender, RoutedEventArgs e)

@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
              FocusVisualStyle="{x:Null}">
-    <Grid Background="Transparent">
+    <Grid x:Name="HostRoot" Background="Transparent">
         <im:Zoombox x:Name="ZoomBox"
                     MaxZoom="80"
                     MinZoom="0.02">

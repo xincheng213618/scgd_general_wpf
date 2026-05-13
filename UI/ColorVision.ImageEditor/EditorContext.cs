@@ -12,12 +12,24 @@ namespace ColorVision.ImageEditor
     public class EditorContext
     {
         private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
+        private readonly Panel _textEditorOverlay;
 
         public EditorContext(ImageView imageView, DrawCanvas drawCanvas, Zoombox zoombox)
+            : this(drawCanvas, zoombox, imageView.TextEditorOverlay)
         {
             ImageView = imageView;
+        }
+
+        public EditorContext(DrawCanvas drawCanvas, Zoombox zoombox, Panel textEditorOverlay)
+        {
+            ArgumentNullException.ThrowIfNull(drawCanvas);
+            ArgumentNullException.ThrowIfNull(zoombox);
+            ArgumentNullException.ThrowIfNull(textEditorOverlay);
+
+            ImageView = null!;
             DrawCanvas = drawCanvas;
             Zoombox = zoombox;
+            _textEditorOverlay = textEditorOverlay;
             MouseInfoProvider = new ImageMouseInfoProvider(this);
         }
 
@@ -57,7 +69,7 @@ namespace ColorVision.ImageEditor
 
         public Zoombox Zoombox { get; set; }
 
-        public Panel TextEditorOverlay => ImageView.TextEditorOverlay;
+        public Panel TextEditorOverlay => _textEditorOverlay;
 
         public Point TranslatePointToTextEditorOverlay(Point point)
         {

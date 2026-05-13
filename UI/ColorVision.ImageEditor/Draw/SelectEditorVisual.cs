@@ -530,12 +530,12 @@ namespace ColorVision.ImageEditor.Draw
 
         private void DrawCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (!EditorContext.IsImageEditMode || EditorContext.DrawEditorManager.Current !=null)
+                return;
+
             DrawCanvas.CaptureMouse();
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
-
-            if (!EditorContext.IsImageEditMode || EditorContext.DrawEditorManager.Current !=null)
-                return;
 
             // 双击检测
             DateTime now = DateTime.Now;
