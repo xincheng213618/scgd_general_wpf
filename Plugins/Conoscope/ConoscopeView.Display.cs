@@ -26,9 +26,18 @@ namespace Conoscope
                 ZMat!,
                 displayChannel,
                 RenderingConfig.PseudoColorMap,
-                CreateColorDifferenceMat);
+                CreateColorDifferenceMat,
+                RenderingConfig.UsePseudoColor);
 
-            UpdatePseudoColorLegend(renderResult.Channel, renderResult.MinValue, renderResult.MaxValue);
+            UpdateReferenceScale(renderResult.Channel, renderResult.MaxValue);
+            if (RenderingConfig.UsePseudoColor)
+            {
+                UpdatePseudoColorLegend(renderResult.Channel, renderResult.MinValue, renderResult.MaxValue);
+            }
+            else
+            {
+                UpdatePseudoColorLegendVisibility(false);
+            }
 
             DisposeCoordinateAxis();
             ImageView.Clear();
@@ -40,8 +49,7 @@ namespace Conoscope
 
         private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)
         {
-            currentReferenceScaleChannel = channel;
-            currentReferenceScaleMaximum = maxValue;
+            UpdateReferenceScale(channel, maxValue);
 
             if (tbPseudoColorLegendTitle == null || tbPseudoColorLegendMin == null || tbPseudoColorLegendMax == null)
             {
@@ -53,6 +61,12 @@ namespace Conoscope
             tbPseudoColorLegendMin.Text = ConoscopeChannelDisplayFormatter.FormatValue(minValue, channel);
             tbPseudoColorLegendMax.Text = ConoscopeChannelDisplayFormatter.FormatValue(maxValue, channel);
             UpdatePseudoColorLegendVisibility(true);
+        }
+
+        private void UpdateReferenceScale(ExportChannel channel, double maxValue)
+        {
+            currentReferenceScaleChannel = channel;
+            currentReferenceScaleMaximum = maxValue;
         }
 
         private void UpdatePseudoColorMapPreview()
@@ -78,36 +92,6 @@ namespace Conoscope
         private bool HasXyzData()
         {
             return XMat != null && YMat != null && ZMat != null;
-        }
-
-        private ImageFilterType GetSelectedFilterType()
-        {
-            if (cbFilterType?.SelectedItem is ComboBoxItem)
-            {
-                return NormalizeFilterType(ComboBoxHelper.GetSelectedEnumByTag(cbFilterType, NormalizeFilterType(PreprocessConfig.FilterType)));
-            }
-
-            if (cbFilterType?.SelectedIndex >= 0)
-            {
-                return NormalizeFilterType((ImageFilterType)cbFilterType.SelectedIndex);
-            }
-
-            return NormalizeFilterType(PreprocessConfig.FilterType);
-        }
-
-        private static ImageFilterType NormalizeFilterType(ImageFilterType filterType)
-        {
-            return Enum.IsDefined(filterType) ? filterType : ImageFilterType.None;
-        }
-
-        private bool IsDustRemovalEnabled()
-        {
-            return chkDustRemovalEnabled?.IsChecked == true;
-        }
-
-        private DustRemovalMode GetSelectedDustRemovalMode()
-        {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbDustMode, PreprocessConfig.DustRemovalMode);
         }
 
         private ExportChannel GetSelectedDisplayChannel()
@@ -150,7 +134,6 @@ namespace Conoscope
         {
             try
             {
-                SaveFilterControlsToConfig();
                 ConfigService.Instance.Save<ConoscopeConfig>();
                 MessageBox.Show("配置已保存", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
             }

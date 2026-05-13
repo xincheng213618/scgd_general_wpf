@@ -181,7 +181,6 @@ namespace Conoscope
             RefreshFlowTemplates();
             RefreshCameraDevices();
             EnsureCaptureTimedButtonOperations();
-            InitializePseudoColorMapOptions();
             InitializePreprocessControls();
             RefreshActiveViewUi();
         }

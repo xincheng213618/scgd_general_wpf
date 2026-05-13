@@ -83,6 +83,18 @@ namespace Conoscope.Core
         public ColormapTypes PseudoColorMap { get => _PseudoColorMap; set { if (_PseudoColorMap == value) return; _PseudoColorMap = value; OnPropertyChanged(); } }
         private ColormapTypes _PseudoColorMap = ColormapTypes.COLORMAP_JET;
 
+        public bool UsePseudoColor
+        {
+            get => _UsePseudoColor;
+            set
+            {
+                if (_UsePseudoColor == value) return;
+                _UsePseudoColor = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _UsePseudoColor = true;
+
         public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { if (_ApplyFilterOnOpen == value) return; _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
         private bool _ApplyFilterOnOpen = true;
 
@@ -220,6 +232,12 @@ namespace Conoscope.Core
         {
             get => config.PseudoColorMap;
             set => config.PseudoColorMap = value;
+        }
+
+        public bool UsePseudoColor
+        {
+            get => config.UsePseudoColor;
+            set => config.UsePseudoColor = value;
         }
     }
 

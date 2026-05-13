@@ -52,7 +52,6 @@ namespace Conoscope
         private string? colorDifferenceReferenceFileName;
         private bool isUpdatingDisplayControls;
         private bool isUpdatingColorDifferenceControls;
-        private bool isUpdatingFilterControls;
         private ReferencePlotDisplayMode referencePlotDisplayMode;
         private WindowCIE? cieWindow;
         private ImageFullScreenMode? imageFullScreenMode;
@@ -102,17 +101,13 @@ namespace Conoscope
         internal void RefreshConoscopeConfiguration()
         {
             RefreshModelDependentUi();
-            RefreshPreprocessControlsFromConfig();
+            RefreshRenderingFromConfig();
             UpdateReferencePlotHeader();
-            if (HasXyzData())
-            {
-                RefreshDisplayedImage();
-            }
         }
 
         internal void RefreshPreprocessControlsFromConfig()
         {
-            InitializeFilterControls();
+            InitializePreprocessControls();
         }
 
         internal void RefreshRenderingFromConfig()
@@ -160,7 +155,7 @@ namespace Conoscope
             RefreshDisplayControlsFromConfig();
             RefreshQuickControlsFromAxisParam();
             InitializeColorDifferenceControls();
-            InitializeFilterControls();
+            InitializePreprocessControls();
             UpdateReferenceControlVisibility();
             UpdateColorDifferencePanelVisibility();
             AttachCurrentModelProfile();

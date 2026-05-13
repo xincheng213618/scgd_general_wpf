@@ -1,91 +1,32 @@
 using Conoscope.ApplicationServices.Preprocess;
 using Conoscope.Core;
-using Conoscope.Presentation.Formatters;
-using Conoscope.Presentation.Helpers;
 using Conoscope.Processing.Preprocess;
 using System;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Conoscope
 {
     public partial class ConoscopeView
     {
-        private void InitializeFilterControls()
+        private void InitializePreprocessControls()
         {
-            isUpdatingFilterControls = true;
-            try
-            {
-                MigrateLegacyDustRemovalFilterType();
-                ComboBoxHelper.SelectItemByTag(cbFilterType, NormalizeFilterType(PreprocessConfig.FilterType).ToString());
-                ComboBoxHelper.SelectItemByTag(cbDustMode, PreprocessConfig.DustRemovalMode.ToString());
-                chkClampNonPositiveXyzOnLoad.IsChecked = PreprocessConfig.ClampNonPositiveXyzOnLoad;
-                chkDustRemovalEnabled.IsChecked = PreprocessConfig.DustRemovalEnabled;
-
-                sliderKernelSize.Value = PreprocessConfig.FilterKernelSize;
-                sliderSigma.Value = PreprocessConfig.FilterSigma;
-                sliderD.Value = PreprocessConfig.FilterD;
-                sliderSigmaColor.Value = PreprocessConfig.FilterSigmaColor;
-                sliderSigmaSpace.Value = PreprocessConfig.FilterSigmaSpace;
-                sliderDustThreshold.Value = PreprocessConfig.DustThresholdPercent;
-                sliderDustMinArea.Value = PreprocessConfig.DustMinArea;
-                sliderDustMaxArea.Value = Math.Max(PreprocessConfig.DustMinArea, PreprocessConfig.DustMaxArea);
-                sliderDustRepairRadius.Value = PreprocessConfig.DustRepairRadius;
-            }
-            finally
-            {
-                isUpdatingFilterControls = false;
-            }
-
-            UpdateFilterParameterVisibility(GetSelectedFilterType());
-            UpdatePreprocessSummary();
+            MigrateLegacyDustRemovalFilterType();
         }
 
-        private void FilterParameter_Changed(object sender, RoutedEventArgs e)
+        private void btnOpenPreprocessSettings_Click(object sender, RoutedEventArgs e)
         {
-            if (isUpdatingFilterControls || !IsInitialized)
-            {
-                return;
-            }
-
-            SaveFilterControlsToConfig();
-            UpdateFilterParameterVisibility(GetSelectedFilterType());
-            UpdatePreprocessSummary();
+            OpenPreprocessSettings();
         }
 
-        private void SaveFilterControlsToConfig()
+        private void OpenPreprocessSettings()
         {
-            PreprocessConfig.ClampNonPositiveXyzOnLoad = chkClampNonPositiveXyzOnLoad?.IsChecked == true;
-            PreprocessConfig.FilterType = NormalizeFilterType(GetSelectedFilterType());
-            PreprocessConfig.FilterKernelSize = ConoscopeNumericHelper.NormalizeOddKernelSize((int)(sliderKernelSize?.Value ?? PreprocessConfig.FilterKernelSize));
-            PreprocessConfig.FilterSigma = sliderSigma?.Value ?? PreprocessConfig.FilterSigma;
-            PreprocessConfig.FilterD = Math.Max(1, (int)(sliderD?.Value ?? PreprocessConfig.FilterD));
-            PreprocessConfig.FilterSigmaColor = sliderSigmaColor?.Value ?? PreprocessConfig.FilterSigmaColor;
-            PreprocessConfig.FilterSigmaSpace = sliderSigmaSpace?.Value ?? PreprocessConfig.FilterSigmaSpace;
-            PreprocessConfig.DustRemovalEnabled = IsDustRemovalEnabled();
-            PreprocessConfig.DustRemovalMode = GetSelectedDustRemovalMode();
-            PreprocessConfig.DustThresholdPercent = sliderDustThreshold?.Value ?? PreprocessConfig.DustThresholdPercent;
-            PreprocessConfig.DustMinArea = Math.Max(1, (int)(sliderDustMinArea?.Value ?? PreprocessConfig.DustMinArea));
-            PreprocessConfig.DustMaxArea = Math.Max(PreprocessConfig.DustMinArea, (int)(sliderDustMaxArea?.Value ?? PreprocessConfig.DustMaxArea));
-            PreprocessConfig.DustRepairRadius = Math.Max(1, (int)(sliderDustRepairRadius?.Value ?? PreprocessConfig.DustRepairRadius));
-        }
-
-        private void UpdatePreprocessSummary()
-        {
-            if (tbPreprocessSummary == null)
+            ConoscopePreprocessSettingsWindow dialog = new ConoscopePreprocessSettingsWindow(ConoscopeConfig)
             {
-                return;
-            }
+                Owner = Window.GetWindow(this),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
 
-            string openPolicy = PreprocessConfig.ApplyFilterOnOpen ? "打开时应用" : "手动应用";
-            string clampPolicy = PreprocessConfig.ClampNonPositiveXyzOnLoad ? "XYZ<=0 修正" : "不修正 XYZ";
-            string dustPolicy = PreprocessConfig.DustRemovalEnabled ? $"灰尘滤除 {PreprocessConfig.DustRemovalMode}" : "无灰尘滤除";
-            string filterPolicy = NormalizeFilterType(PreprocessConfig.FilterType) == ImageFilterType.None
-                ? "无滤波"
-                : PreprocessConfig.FilterType.ToString();
-            string pseudoColorPolicy = $"{ConoscopeChannelDisplayFormatter.GetLabel(RenderingConfig.DisplayChannel)} / {ColormapNameFormatter.Format(RenderingConfig.PseudoColorMap)}";
-
-            tbPreprocessSummary.Text = $"{openPolicy} / {clampPolicy} / {dustPolicy} / {filterPolicy} / 伪彩 {pseudoColorPolicy}";
+            dialog.ShowDialog();
         }
 
         private void MigrateLegacyDustRemovalFilterType()
@@ -95,87 +36,6 @@ namespace Conoscope
             {
                 PreprocessConfig.DustRemovalEnabled = true;
                 PreprocessConfig.FilterType = ImageFilterType.None;
-            }
-        }
-
-        private void cbFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (cbFilterType == null)
-            {
-                return;
-            }
-
-            ImageFilterType selectedFilter = GetSelectedFilterType();
-
-            if (!isUpdatingFilterControls)
-            {
-                SaveFilterControlsToConfig();
-            }
-
-            UpdateFilterParameterVisibility(selectedFilter);
-            UpdatePreprocessSummary();
-
-            if (sliderKernelSize != null && sliderSigma != null && sliderD != null && sliderSigmaColor != null && sliderSigmaSpace != null)
-            {
-                sliderKernelSize.IsEnabled = false;
-                sliderSigma.IsEnabled = false;
-                sliderD.IsEnabled = false;
-                sliderSigmaColor.IsEnabled = false;
-                sliderSigmaSpace.IsEnabled = false;
-
-                switch (selectedFilter)
-                {
-                    case ImageFilterType.None:
-                        break;
-                    case ImageFilterType.LowPass:
-                    case ImageFilterType.MovingAverage:
-                    case ImageFilterType.Median:
-                        sliderKernelSize.IsEnabled = true;
-                        break;
-                    case ImageFilterType.Gaussian:
-                        sliderKernelSize.IsEnabled = true;
-                        sliderSigma.IsEnabled = true;
-                        break;
-                    case ImageFilterType.Bilateral:
-                        sliderD.IsEnabled = true;
-                        sliderSigmaColor.IsEnabled = true;
-                        sliderSigmaSpace.IsEnabled = true;
-                        break;
-                }
-            }
-        }
-
-        private void UpdateFilterParameterVisibility(ImageFilterType selectedFilter)
-        {
-            if (rowFilterKernel == null || rowFilterSigma == null || rowFilterD == null || rowFilterSigmaColor == null || rowFilterSigmaSpace == null
-                || rowDustMode == null || rowDustThreshold == null || rowDustMinArea == null || rowDustMaxArea == null || rowDustRepairRadius == null)
-            {
-                return;
-            }
-
-            bool showKernel = selectedFilter is ImageFilterType.LowPass or ImageFilterType.MovingAverage or ImageFilterType.Gaussian or ImageFilterType.Median;
-            bool showSigma = selectedFilter == ImageFilterType.Gaussian;
-            bool showBilateral = selectedFilter == ImageFilterType.Bilateral;
-            bool showDust = IsDustRemovalEnabled();
-
-            rowFilterKernel.Visibility = showKernel ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterSigma.Visibility = showSigma ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterD.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterSigmaColor.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
-            rowFilterSigmaSpace.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
-            rowDustMode.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustThreshold.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustMinArea.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustMaxArea.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-            rowDustRepairRadius.Visibility = showDust ? Visibility.Visible : Visibility.Collapsed;
-
-            if (sliderDustThreshold != null && sliderDustMinArea != null && sliderDustMaxArea != null && sliderDustRepairRadius != null && cbDustMode != null)
-            {
-                sliderDustThreshold.IsEnabled = showDust;
-                sliderDustMinArea.IsEnabled = showDust;
-                sliderDustMaxArea.IsEnabled = showDust;
-                sliderDustRepairRadius.IsEnabled = showDust;
-                cbDustMode.IsEnabled = showDust;
             }
         }
 
@@ -254,6 +114,11 @@ namespace Conoscope
         private ConoscopePreprocessOptions CreatePreprocessOptions()
         {
             return ConoscopePreprocessOptions.FromConfig(PreprocessConfig, MinPositiveXyzValue);
+        }
+
+        private static ImageFilterType NormalizeFilterType(ImageFilterType filterType)
+        {
+            return Enum.IsDefined(filterType) ? filterType : ImageFilterType.None;
         }
 
         private bool HasPreprocessEnabled()

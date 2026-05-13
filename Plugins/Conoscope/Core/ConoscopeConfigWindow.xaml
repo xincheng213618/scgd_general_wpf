@@ -32,11 +32,25 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <GroupBox Header="全局设置" Grid.Column="0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <ContentControl x:Name="GlobalSettingsHost" Margin="8"/>
-                </ScrollViewer>
-            </GroupBox>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <GroupBox Header="全局设置" Grid.Row="0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ContentControl x:Name="GlobalSettingsHost" Margin="8"/>
+                    </ScrollViewer>
+                </GroupBox>
+
+                <GroupBox Header="预处理设置" Grid.Row="2">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ContentControl x:Name="PreprocessSettingsHost" Margin="8"/>
+                    </ScrollViewer>
+                </GroupBox>
+            </Grid>
 
             <GroupBox Header="型号参数" Grid.Column="2">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
