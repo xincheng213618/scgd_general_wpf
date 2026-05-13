@@ -48,6 +48,7 @@ namespace Conoscope
             }
 
             UpdateReferenceControlVisibility();
+            RaiseWindowQuickControlStateChanged();
         }
 
         private void UpdateReferenceControlVisibility()

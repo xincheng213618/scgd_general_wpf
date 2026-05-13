@@ -6,7 +6,7 @@ namespace Conoscope.Analysis
 {
     public partial class ContrastTestWindow : Window
     {
-        private readonly IContrastCalculator contrastCalculator = new DefaultContrastCalculator();
+        private readonly DefaultContrastCalculator contrastCalculator = new();
         private ImageMeasurement? whiteMeasurement;
         private ImageMeasurement? blackMeasurement;
 
@@ -29,6 +29,26 @@ namespace Conoscope.Analysis
         private void SelectBlack_Click(object sender, RoutedEventArgs e)
         {
             SelectImage("选择黑图", measurement =>
+            {
+                blackMeasurement = measurement;
+                BlackFileTextBox.Text = measurement.FilePath;
+                BlackLuminanceText.Text = FormatLuminance(measurement);
+            });
+        }
+
+        private void CaptureWhiteFocusPoint_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureFocusPoint("白点", measurement =>
+            {
+                whiteMeasurement = measurement;
+                WhiteFileTextBox.Text = measurement.FilePath;
+                WhiteLuminanceText.Text = FormatLuminance(measurement);
+            });
+        }
+
+        private void CaptureBlackFocusPoint_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureFocusPoint("黑点", measurement =>
             {
                 blackMeasurement = measurement;
                 BlackFileTextBox.Text = measurement.FilePath;
@@ -62,6 +82,32 @@ namespace Conoscope.Analysis
             {
                 MessageBox.Show(this, ex.Message, "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+
+        private void CaptureFocusPoint(string slotName, Action<ImageMeasurement> applyMeasurement)
+        {
+            global::Conoscope.ConoscopeView? activeView = GetActiveView();
+            if (activeView == null)
+            {
+                MessageBox.Show(this, "当前没有活动的 Conoscope 视图。", "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!activeView.TryGetLatestFocusPointMeasurement(out ImageMeasurement measurement, out string? errorMessage))
+            {
+                MessageBox.Show(this, errorMessage ?? "当前关注点不可用。", "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            applyMeasurement(measurement);
+            StatusText.Text = $"已记录 {slotName}: {measurement.FileName}";
+            ContrastText.Text = string.Empty;
+            UpdateChromaticityText();
+        }
+
+        private static global::Conoscope.ConoscopeView? GetActiveView()
+        {
+            return global::Conoscope.ConoscopeWindow.Instance?.ActiveView;
         }
 
         private void Calculate_Click(object sender, RoutedEventArgs e)

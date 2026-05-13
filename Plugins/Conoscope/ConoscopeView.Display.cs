@@ -16,6 +16,7 @@ namespace Conoscope
             if (!HasXyzData())
             {
                 UpdatePseudoColorLegendVisibility(false);
+                RaiseWindowQuickControlStateChanged();
                 return;
             }
 
@@ -45,6 +46,7 @@ namespace Conoscope
             ImageView.UpdateZoomAndScale();
 
             CreateAndAnalyzePolarLines();
+            RaiseWindowQuickControlStateChanged();
         }
 
         private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)

@@ -6,7 +6,7 @@ namespace Conoscope.Analysis
 {
     public partial class ColorGamutWindow : Window
     {
-        private readonly IColorGamutCalculator colorGamutCalculator = new DefaultColorGamutCalculator();
+        private readonly DefaultColorGamutCalculator colorGamutCalculator = new();
         private ImageMeasurement? redMeasurement;
         private ImageMeasurement? greenMeasurement;
         private ImageMeasurement? blueMeasurement;
@@ -49,6 +49,36 @@ namespace Conoscope.Analysis
             });
         }
 
+        private void CaptureRedFocusPoint_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureFocusPoint("R", measurement =>
+            {
+                redMeasurement = measurement;
+                RedFileTextBox.Text = measurement.FilePath;
+                RedChromaticityText.Text = FormatChromaticity(measurement);
+            });
+        }
+
+        private void CaptureGreenFocusPoint_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureFocusPoint("G", measurement =>
+            {
+                greenMeasurement = measurement;
+                GreenFileTextBox.Text = measurement.FilePath;
+                GreenChromaticityText.Text = FormatChromaticity(measurement);
+            });
+        }
+
+        private void CaptureBlueFocusPoint_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureFocusPoint("B", measurement =>
+            {
+                blueMeasurement = measurement;
+                BlueFileTextBox.Text = measurement.FilePath;
+                BlueChromaticityText.Text = FormatChromaticity(measurement);
+            });
+        }
+
         private void SelectImage(string title, Action<ImageMeasurement> applyMeasurement)
         {
             OpenFileDialog openFileDialog = new()
@@ -75,6 +105,32 @@ namespace Conoscope.Analysis
             {
                 MessageBox.Show(this, ex.Message, "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+
+        private void CaptureFocusPoint(string channelName, Action<ImageMeasurement> applyMeasurement)
+        {
+            global::Conoscope.ConoscopeView? activeView = GetActiveView();
+            if (activeView == null)
+            {
+                MessageBox.Show(this, "当前没有活动的 Conoscope 视图。", "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!activeView.TryGetLatestFocusPointMeasurement(out ImageMeasurement measurement, out string? errorMessage))
+            {
+                MessageBox.Show(this, errorMessage ?? "当前关注点不可用。", "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            applyMeasurement(measurement);
+            AreaText.Text = string.Empty;
+            CoverageText.Text = string.Empty;
+            StatusText.Text = $"已记录 {channelName} 关注点: {measurement.FileName}";
+        }
+
+        private static global::Conoscope.ConoscopeView? GetActiveView()
+        {
+            return global::Conoscope.ConoscopeWindow.Instance?.ActiveView;
         }
 
         private void Calculate_Click(object sender, RoutedEventArgs e)

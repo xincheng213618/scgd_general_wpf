@@ -1,0 +1,32 @@
+<Window x:Class="Conoscope.Analysis.ContrastResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="对比度结果" Height="560" Width="940" Background="{DynamicResource GlobalBackground}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+            <TextBlock x:Name="tbSummary" Foreground="Gray"/>
+        </Border>
+
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+            <DataGrid x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="编号" Binding="{Binding Index}" Width="60"/>
+                    <DataGridTextColumn Header="关注点" Binding="{Binding PointName}" Width="110"/>
+                    <DataGridTextColumn Header="方位角(°)" Binding="{Binding AzimuthDisplay}" Width="85"/>
+                    <DataGridTextColumn Header="极角(°)" Binding="{Binding PolarDisplay}" Width="85"/>
+                    <DataGridTextColumn Header="半径(°)" Binding="{Binding RadiusDisplay}" Width="85"/>
+                    <DataGridTextColumn Header="白亮度" Binding="{Binding WhiteDisplay}" Width="120"/>
+                    <DataGridTextColumn Header="黑亮度" Binding="{Binding BlackDisplay}" Width="120"/>
+                    <DataGridTextColumn Header="对比度" Binding="{Binding RatioDisplay}" Width="100"/>
+                    <DataGridTextColumn Header="白色坐标" Binding="{Binding WhiteChromaticityDisplay}" Width="140"/>
+                    <DataGridTextColumn Header="黑色坐标" Binding="{Binding BlackChromaticityDisplay}" Width="140"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</Window>

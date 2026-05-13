@@ -1,0 +1,57 @@
+<Window x:Class="Conoscope.Analysis.ColorGamutResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie;assembly=ColorVision.ImageEditor"
+        Title="色域计算结果" Height="760" Width="1240" Background="{DynamicResource GlobalBackground}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <TextBlock Text="标准:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="tbStandardName" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,16,0"/>
+                    <TextBlock Text="显示:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="cbDisplayScope" Width="180" SelectionChanged="cbDisplayScope_SelectionChanged"/>
+                </StackPanel>
+                <TextBlock x:Name="tbSummary" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="Gray"/>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="430"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+                <cie:CieDiagramView x:Name="CieDiagram"/>
+            </Border>
+
+            <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+                <DataGrid x:Name="ResultGrid"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          SelectionMode="Single"
+                          SelectionChanged="ResultGrid_SelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="编号" Binding="{Binding Index}" Width="60"/>
+                        <DataGridTextColumn Header="关注点" Binding="{Binding PointName}" Width="110"/>
+                        <DataGridTextColumn Header="方位角(°)" Binding="{Binding AzimuthDisplay}" Width="85"/>
+                        <DataGridTextColumn Header="极角(°)" Binding="{Binding PolarDisplay}" Width="85"/>
+                        <DataGridTextColumn Header="半径(°)" Binding="{Binding RadiusDisplay}" Width="85"/>
+                        <DataGridTextColumn Header="R 色坐标" Binding="{Binding RedDisplay}" Width="130"/>
+                        <DataGridTextColumn Header="G 色坐标" Binding="{Binding GreenDisplay}" Width="130"/>
+                        <DataGridTextColumn Header="B 色坐标" Binding="{Binding BlueDisplay}" Width="130"/>
+                        <DataGridTextColumn Header="色域值(%)" Binding="{Binding CoverageDisplay}" Width="95"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

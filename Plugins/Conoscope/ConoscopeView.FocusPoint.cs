@@ -2,11 +2,13 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
+using Conoscope.Analysis;
 using Conoscope.Core;
 using CVCommCore.CVAlgorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 
@@ -79,6 +81,47 @@ namespace Conoscope
             CalculateFocusPoints(e.Circles);
         }
 
+        public bool TryGetFocusPointMeasurementCapture(string slotName, out MeasurementCapture capture, out string? errorMessage)
+        {
+            capture = default!;
+            errorMessage = null;
+
+            IReadOnlyList<DVCircleText> focusCircles = ImageView.FocusCircles;
+            if (focusCircles.Count == 0)
+            {
+                errorMessage = "请先在当前视图中绘制关注点圆。";
+                return false;
+            }
+
+            List<MeasurementPoint> points = new(focusCircles.Count);
+            foreach (DVCircleText circle in focusCircles)
+            {
+                if (!TryCreateFocusPointMeasurementPoint(circle, out MeasurementPoint point, out errorMessage))
+                {
+                    return false;
+                }
+
+                points.Add(point);
+            }
+
+            capture = MeasurementCapture.FromFocusPoints(slotName, GetFocusPointCaptureSourceLabel(), points);
+            return true;
+        }
+
+        public bool TryGetLatestFocusPointMeasurement(out ImageMeasurement measurement, out string? errorMessage)
+        {
+            measurement = default!;
+            errorMessage = null;
+
+            if (!TryGetFocusPointMeasurementCapture("Latest", out MeasurementCapture capture, out errorMessage))
+            {
+                return false;
+            }
+
+            measurement = capture.Points[^1].Measurement;
+            return true;
+        }
+
         private void CalculateFocusPoints(IReadOnlyList<DVCircleText> circles)
         {
             if (!HasXyzData() || XMat == null || YMat == null || ZMat == null || currentBitmapSource == null)
@@ -135,16 +178,13 @@ namespace Conoscope
         private bool TryCreateFocusPointResult(DVCircleText circle, out PoiResultCIExyuvData result, out string? errorMessage)
         {
             result = new PoiResultCIExyuvData();
-            errorMessage = null;
-
-            if (!TryCalculateFocusPointAverage(circle.Attribute.Center, circle.Attribute.Radius, out double avgX, out double avgY, out double avgZ, out int sampleCount))
+            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out errorMessage))
             {
-                errorMessage = $"{ResolveFocusCircleName(circle)} 没有可用像素。";
                 return false;
             }
 
-            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(avgX, avgY, avgZ);
-            double dominantWave = ColorimetryHelper.CalculateDominantWavelength(chromaticity.x, chromaticity.y);
+            ConoscopeChromaticity chromaticity = measurement.Chromaticity;
+            double dominantWave = ColorimetryHelper.CalculateDominantWavelength(measurement.Chromaticity.x, measurement.Chromaticity.y);
             if (!double.IsFinite(dominantWave) || dominantWave < 0)
             {
                 dominantWave = 0;
@@ -161,15 +201,55 @@ namespace Conoscope
             };
 
             result.Point = poiPoint;
-            result.X = avgX;
-            result.Y = avgY;
-            result.Z = avgZ;
-            result.x = chromaticity.x;
-            result.y = chromaticity.y;
-            result.u = chromaticity.u;
-            result.v = chromaticity.v;
+            result.X = measurement.X;
+            result.Y = measurement.Y;
+            result.Z = measurement.Z;
+            result.x = measurement.Chromaticity.x;
+            result.y = measurement.Chromaticity.y;
+            result.u = measurement.Chromaticity.u;
+            result.v = measurement.Chromaticity.v;
             result.CCT = chromaticity.Cct;
             result.Wave = dominantWave;
+            return true;
+        }
+
+        private bool TryCreateFocusPointMeasurement(DVCircleText circle, out ImageMeasurement measurement, out string? errorMessage)
+        {
+            measurement = default!;
+            errorMessage = null;
+
+            if (!TryCalculateFocusPointAverage(circle.Attribute.Center, circle.Attribute.Radius, out double avgX, out double avgY, out double avgZ, out int _))
+            {
+                errorMessage = $"{ResolveFocusCircleName(circle)} 没有可用像素。";
+                return false;
+            }
+
+            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(avgX, avgY, avgZ);
+            measurement = new ImageMeasurement(CreateFocusPointMeasurementLabel(circle), avgX, avgY, avgZ, chromaticity);
+            return true;
+        }
+
+        private bool TryCreateFocusPointMeasurementPoint(DVCircleText circle, out MeasurementPoint point, out string? errorMessage)
+        {
+            point = default!;
+            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out errorMessage))
+            {
+                return false;
+            }
+
+            Point center = circle.Attribute.Center;
+            double azimuthDegrees = GetFullAzimuthAngle(center);
+            double polarDegrees = GetPolarRadiusAngle(center);
+            double radiusDegrees = GetFocusCircleRadiusAngle(circle.Attribute.Radius);
+            string pointName = ResolveFocusCircleName(circle);
+
+            point = new MeasurementPoint(
+                pointName,
+                pointName,
+                measurement,
+                azimuthDegrees,
+                polarDegrees,
+                radiusDegrees);
             return true;
         }
 
@@ -252,6 +332,32 @@ namespace Conoscope
         private static string ResolveFocusCircleName(DVCircleText circle)
         {
             return string.IsNullOrWhiteSpace(circle.Attribute.Text) ? $"Focus_{circle.Attribute.Id}" : circle.Attribute.Text;
+        }
+
+        private string CreateFocusPointMeasurementLabel(DVCircleText circle)
+        {
+            string viewName = string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename);
+            return $"[关注点] {viewName} - {ResolveFocusCircleName(circle)}";
+        }
+
+        private string GetFocusPointCaptureSourceLabel()
+        {
+            return string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename);
+        }
+
+        private double GetFocusCircleRadiusAngle(double radiusPixels)
+        {
+            if (currentPixelsPerDegree > double.Epsilon)
+            {
+                return Math.Max(0, radiusPixels / currentPixelsPerDegree);
+            }
+
+            if (currentImageRadius > 0)
+            {
+                return Math.Max(0, Math.Min(radiusPixels / currentImageRadius * MaxAngle, MaxAngle));
+            }
+
+            return 0;
         }
     }
 }

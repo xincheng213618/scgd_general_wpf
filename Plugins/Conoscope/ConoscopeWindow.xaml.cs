@@ -77,6 +77,7 @@ namespace Conoscope
             InitializeTheme();
             InitializeModelSelector();
             InitializeOperationControls();
+            InitializeAnalysisRibbonControls();
 
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -120,6 +121,8 @@ namespace Conoscope
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
             btnOpenActiveView3D.IsEnabled = activeView != null;
             btnOpenActiveViewCie.IsEnabled = activeView != null;
+            RefreshHomeQuickControlState(activeView);
+            RefreshAnalysisRibbonState(activeView);
 
             if (tbExposureStatus == null)
             {
@@ -348,6 +351,7 @@ namespace Conoscope
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
+            DetachHomeQuickControlView();
             operationProgressTimer.Stop();
             operationProgressTimer.Tick -= OperationProgressTimer_Tick;
             this.DisposeTimedButtonOperations();
