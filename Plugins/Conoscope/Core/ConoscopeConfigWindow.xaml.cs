@@ -45,116 +45,134 @@ namespace Conoscope.Core
 
         private sealed class ConoscopeGlobalSettings
         {
-            private readonly ConoscopeConfig config;
+            private readonly ConoscopeRenderingSettings rendering;
+            private readonly ConoscopePreprocessSettings preprocess;
+            private readonly ConoscopeExportSettings export;
 
             public ConoscopeGlobalSettings(ConoscopeConfig config)
             {
-                this.config = config;
+                rendering = config.Rendering;
+                preprocess = config.Preprocess;
+                export = config.Export;
             }
 
             [Category("显示"), DisplayName("显示通道")]
             public ExportChannel DisplayChannel
             {
-                get => config.DisplayChannel;
-                set => config.DisplayChannel = value;
+                get => rendering.DisplayChannel;
+                set => rendering.DisplayChannel = value;
             }
 
             [Category("显示"), DisplayName("伪彩色映射")]
             public ColormapTypes PseudoColorMap
             {
-                get => config.PseudoColorMap;
-                set => config.PseudoColorMap = value;
+                get => rendering.PseudoColorMap;
+                set => rendering.PseudoColorMap = value;
             }
 
             [Category("滤波"), DisplayName("打开时应用滤波")]
             public bool ApplyFilterOnOpen
             {
-                get => config.ApplyFilterOnOpen;
-                set => config.ApplyFilterOnOpen = value;
+                get => preprocess.ApplyFilterOnOpen;
+                set => preprocess.ApplyFilterOnOpen = value;
             }
 
             [Category("滤波"), DisplayName("滤波类型")]
             public ImageFilterType FilterType
             {
-                get => config.FilterType;
-                set => config.FilterType = value;
+                get => preprocess.FilterType;
+                set => preprocess.FilterType = value;
             }
 
             [Category("滤波"), DisplayName("核大小")]
             public int FilterKernelSize
             {
-                get => config.FilterKernelSize;
-                set => config.FilterKernelSize = value;
+                get => preprocess.FilterKernelSize;
+                set => preprocess.FilterKernelSize = value;
             }
 
             [Category("滤波"), DisplayName("高斯 Sigma")]
             public double FilterSigma
             {
-                get => config.FilterSigma;
-                set => config.FilterSigma = value;
+                get => preprocess.FilterSigma;
+                set => preprocess.FilterSigma = value;
             }
 
             [Category("滤波"), DisplayName("双边 d")]
             public int FilterD
             {
-                get => config.FilterD;
-                set => config.FilterD = value;
+                get => preprocess.FilterD;
+                set => preprocess.FilterD = value;
             }
 
             [Category("滤波"), DisplayName("双边 SigmaColor")]
             public double FilterSigmaColor
             {
-                get => config.FilterSigmaColor;
-                set => config.FilterSigmaColor = value;
+                get => preprocess.FilterSigmaColor;
+                set => preprocess.FilterSigmaColor = value;
             }
 
             [Category("滤波"), DisplayName("双边 SigmaSpace")]
             public double FilterSigmaSpace
             {
-                get => config.FilterSigmaSpace;
-                set => config.FilterSigmaSpace = value;
+                get => preprocess.FilterSigmaSpace;
+                set => preprocess.FilterSigmaSpace = value;
             }
 
             [Category("灰尘滤除"), DisplayName("启用灰尘滤除")]
             public bool DustRemovalEnabled
             {
-                get => config.DustRemovalEnabled;
-                set => config.DustRemovalEnabled = value;
+                get => preprocess.DustRemovalEnabled;
+                set => preprocess.DustRemovalEnabled = value;
             }
 
             [Category("灰尘滤除"), DisplayName("灰尘类型")]
             public DustRemovalMode DustRemovalMode
             {
-                get => config.DustRemovalMode;
-                set => config.DustRemovalMode = value;
+                get => preprocess.DustRemovalMode;
+                set => preprocess.DustRemovalMode = value;
             }
 
             [Category("灰尘滤除"), DisplayName("检测阈值(%)")]
             public double DustThresholdPercent
             {
-                get => config.DustThresholdPercent;
-                set => config.DustThresholdPercent = value;
+                get => preprocess.DustThresholdPercent;
+                set => preprocess.DustThresholdPercent = value;
             }
 
             [Category("灰尘滤除"), DisplayName("最小面积(px)")]
             public int DustMinArea
             {
-                get => config.DustMinArea;
-                set => config.DustMinArea = value;
+                get => preprocess.DustMinArea;
+                set => preprocess.DustMinArea = value;
             }
 
             [Category("灰尘滤除"), DisplayName("最大面积(px)")]
             public int DustMaxArea
             {
-                get => config.DustMaxArea;
-                set => config.DustMaxArea = value;
+                get => preprocess.DustMaxArea;
+                set => preprocess.DustMaxArea = value;
             }
 
             [Category("灰尘滤除"), DisplayName("修复半径(px)")]
             public int DustRepairRadius
             {
-                get => config.DustRepairRadius;
-                set => config.DustRepairRadius = value;
+                get => preprocess.DustRepairRadius;
+                set => preprocess.DustRepairRadius = value;
+            }
+
+            [Category("导出"), DisplayName("当前曲线采样间隔(度)"), Description("当前曲线 CSV 导出的默认采样间隔。")]
+            public double CurrentCurveExportStepDegrees
+            {
+                get => export.CurrentCurveStepDegrees;
+                set => export.CurrentCurveStepDegrees = value;
+            }
+
+            [Category("导出"), DisplayName("当前曲线导出元数据"), Description("是否在当前曲线 CSV 顶部写入标题和元数据。")]
+            public bool CurrentCurveExportIncludeMetadata
+            {
+                get => export.IncludeMetadata;
+                set => export.IncludeMetadata = value;
             }
         }
     }

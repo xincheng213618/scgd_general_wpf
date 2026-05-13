@@ -11,6 +11,21 @@ namespace Conoscope.Core
 {
     public class ConoscopeConfig : ViewModelBase, IConfig
     {
+        [JsonIgnore]
+        public ConoscopeRenderingSettings Rendering { get; }
+
+        [JsonIgnore]
+        public ConoscopePreprocessSettings Preprocess { get; }
+
+        [JsonIgnore]
+        public ConoscopeColorDifferenceSettings ColorDifference { get; }
+
+        [JsonIgnore]
+        public ConoscopeCaptureSettings Capture { get; }
+
+        [JsonIgnore]
+        public ConoscopeExportSettings Export { get; }
+
         // CurrentModel 作为 Key，同时触发 ModelTypeChanged
         public ConoscopeModelType CurrentModel
         {
@@ -140,9 +155,41 @@ namespace Conoscope.Core
         }
         private ObservableCollection<ConoscopeNdCalibrationBinding> _NdCalibrationBindings = new();
 
+        [Category("导出"), DisplayName("当前曲线采样间隔(度)"), Description("当前曲线 CSV 导出的默认采样间隔，范围 0.01 到 360 度。")]
+        public double CurrentCurveExportStepDegrees
+        {
+            get => _CurrentCurveExportStepDegrees;
+            set
+            {
+                double normalized = Math.Max(0.01, Math.Min(value, 360));
+                if (Math.Abs(_CurrentCurveExportStepDegrees - normalized) < 0.000001) return;
+                _CurrentCurveExportStepDegrees = normalized;
+                OnPropertyChanged();
+            }
+        }
+        private double _CurrentCurveExportStepDegrees = 1.0;
+
+        [Category("导出"), DisplayName("当前曲线导出元数据"), Description("启用后，在当前曲线 CSV 顶部写入标题和元数据信息。")]
+        public bool CurrentCurveExportIncludeMetadata
+        {
+            get => _CurrentCurveExportIncludeMetadata;
+            set
+            {
+                if (_CurrentCurveExportIncludeMetadata == value) return;
+                _CurrentCurveExportIncludeMetadata = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _CurrentCurveExportIncludeMetadata = true;
+
 
         public ConoscopeConfig()
         {
+            Rendering = new ConoscopeRenderingSettings(this);
+            Preprocess = new ConoscopePreprocessSettings(this);
+            ColorDifference = new ConoscopeColorDifferenceSettings(this);
+            Capture = new ConoscopeCaptureSettings(this);
+            Export = new ConoscopeExportSettings(this);
             EnsureProfile(ConoscopeModelType.VA60);
             EnsureProfile(ConoscopeModelType.VA80);
         }
@@ -151,6 +198,188 @@ namespace Conoscope.Core
         {
             value = Math.Max(min, Math.Min(value, max));
             return value % 2 == 0 ? Math.Min(value + 1, max) : value;
+        }
+    }
+
+    public sealed class ConoscopeRenderingSettings
+    {
+        private readonly ConoscopeConfig config;
+
+        internal ConoscopeRenderingSettings(ConoscopeConfig config)
+        {
+            this.config = config;
+        }
+
+        public ExportChannel DisplayChannel
+        {
+            get => config.DisplayChannel;
+            set => config.DisplayChannel = value;
+        }
+
+        public ColormapTypes PseudoColorMap
+        {
+            get => config.PseudoColorMap;
+            set => config.PseudoColorMap = value;
+        }
+    }
+
+    public sealed class ConoscopePreprocessSettings
+    {
+        private readonly ConoscopeConfig config;
+
+        internal ConoscopePreprocessSettings(ConoscopeConfig config)
+        {
+            this.config = config;
+        }
+
+        public bool ApplyFilterOnOpen
+        {
+            get => config.ApplyFilterOnOpen;
+            set => config.ApplyFilterOnOpen = value;
+        }
+
+        public bool ClampNonPositiveXyzOnLoad
+        {
+            get => config.ClampNonPositiveXyzOnLoad;
+            set => config.ClampNonPositiveXyzOnLoad = value;
+        }
+
+        public ImageFilterType FilterType
+        {
+            get => config.FilterType;
+            set => config.FilterType = value;
+        }
+
+        public int FilterKernelSize
+        {
+            get => config.FilterKernelSize;
+            set => config.FilterKernelSize = value;
+        }
+
+        public double FilterSigma
+        {
+            get => config.FilterSigma;
+            set => config.FilterSigma = value;
+        }
+
+        public int FilterD
+        {
+            get => config.FilterD;
+            set => config.FilterD = value;
+        }
+
+        public double FilterSigmaColor
+        {
+            get => config.FilterSigmaColor;
+            set => config.FilterSigmaColor = value;
+        }
+
+        public double FilterSigmaSpace
+        {
+            get => config.FilterSigmaSpace;
+            set => config.FilterSigmaSpace = value;
+        }
+
+        public bool DustRemovalEnabled
+        {
+            get => config.DustRemovalEnabled;
+            set => config.DustRemovalEnabled = value;
+        }
+
+        public DustRemovalMode DustRemovalMode
+        {
+            get => config.DustRemovalMode;
+            set => config.DustRemovalMode = value;
+        }
+
+        public double DustThresholdPercent
+        {
+            get => config.DustThresholdPercent;
+            set => config.DustThresholdPercent = value;
+        }
+
+        public int DustMinArea
+        {
+            get => config.DustMinArea;
+            set => config.DustMinArea = value;
+        }
+
+        public int DustMaxArea
+        {
+            get => config.DustMaxArea;
+            set => config.DustMaxArea = value;
+        }
+
+        public int DustRepairRadius
+        {
+            get => config.DustRepairRadius;
+            set => config.DustRepairRadius = value;
+        }
+    }
+
+    public sealed class ConoscopeColorDifferenceSettings
+    {
+        private readonly ConoscopeConfig config;
+
+        internal ConoscopeColorDifferenceSettings(ConoscopeConfig config)
+        {
+            this.config = config;
+        }
+
+        public ColorDifferenceReferenceMode ReferenceMode
+        {
+            get => config.ColorDifferenceReferenceMode;
+            set => config.ColorDifferenceReferenceMode = value;
+        }
+
+        public double CustomU
+        {
+            get => config.ColorDifferenceCustomU;
+            set => config.ColorDifferenceCustomU = value;
+        }
+
+        public double CustomV
+        {
+            get => config.ColorDifferenceCustomV;
+            set => config.ColorDifferenceCustomV = value;
+        }
+    }
+
+    public sealed class ConoscopeCaptureSettings
+    {
+        private readonly ConoscopeConfig config;
+
+        internal ConoscopeCaptureSettings(ConoscopeConfig config)
+        {
+            this.config = config;
+        }
+
+        public ObservableCollection<ConoscopeNdCalibrationBinding> NdCalibrationBindings
+        {
+            get => config.NdCalibrationBindings;
+            set => config.NdCalibrationBindings = value;
+        }
+    }
+
+    public sealed class ConoscopeExportSettings
+    {
+        private readonly ConoscopeConfig config;
+
+        internal ConoscopeExportSettings(ConoscopeConfig config)
+        {
+            this.config = config;
+        }
+
+        public double CurrentCurveStepDegrees
+        {
+            get => config.CurrentCurveExportStepDegrees;
+            set => config.CurrentCurveExportStepDegrees = value;
+        }
+
+        public bool IncludeMetadata
+        {
+            get => config.CurrentCurveExportIncludeMetadata;
+            set => config.CurrentCurveExportIncludeMetadata = value;
         }
     }
 

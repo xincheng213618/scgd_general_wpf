@@ -13,7 +13,7 @@ namespace Conoscope.ApplicationServices.Preprocess
         DustRemovalOptions DustRemoval,
         ImageFilterOptions Filter)
     {
-        public static ConoscopePreprocessOptions FromConfig(ConoscopeConfig config, float positiveFloor)
+        public static ConoscopePreprocessOptions FromConfig(ConoscopePreprocessSettings config, float positiveFloor)
         {
             int minArea = Math.Max(1, config.DustMinArea);
             int maxArea = Math.Max(minArea, config.DustMaxArea);

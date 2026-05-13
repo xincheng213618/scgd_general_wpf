@@ -1,21 +1,16 @@
-using ColorVision.Database;
-using ColorVision.Engine;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Messages;
 using ColorVision.UI;
+using Conoscope.ApplicationServices.Capture;
 using Conoscope.Core;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -24,6 +19,11 @@ namespace Conoscope
 {
     public partial class ConoscopeWindow
     {
+        private const string FlowRunOperationActionKey = "flow-run";
+        private const string CameraCaptureOperationActionKey = "camera-capture";
+        private const double DefaultFlowExpectedDurationMs = 20000;
+        private const double DefaultCameraCaptureExpectedDurationMs = 20000;
+
         private void RefreshFlowTemplates()
         {
             int preferredId = GetSelectedFlowTemplate()?.Id ?? FlowEngineConfig.Instance.LastSelectFlow;
@@ -124,7 +124,7 @@ namespace Conoscope
         private static ConoscopeNdCalibrationBinding? FindNdCalibrationBinding(DeviceCamera camera, int ndPort)
         {
             string cameraCode = camera.Config.Code ?? string.Empty;
-            return ConoscopeManager.GetInstance().Config.NdCalibrationBindings
+            return ConoscopeManager.GetInstance().Config.Capture.NdCalibrationBindings
                 .FirstOrDefault(item => item.NdPort == ndPort
                     && string.Equals(item.CameraCode, cameraCode, StringComparison.OrdinalIgnoreCase));
         }
@@ -176,29 +176,98 @@ namespace Conoscope
             return camera != null;
         }
 
-        private static double[] GetCameraExpTimes(DeviceCamera camera)
-        {
-            return camera.Config.IsExpThree
-                ? new[] { camera.DisplayConfig.ExpTimeR, camera.DisplayConfig.ExpTimeG, camera.DisplayConfig.ExpTimeB }
-                : new[] { camera.DisplayConfig.ExpTime };
-        }
-
-        private static string FormatExposureSummary(double[] exposureTimes)
-        {
-            if (exposureTimes.Length <= 1)
-            {
-                return $"{exposureTimes[0].ToString("0.###", CultureInfo.InvariantCulture)} ms";
-            }
-
-            string[] channelNames = new[] { "R", "G", "B" };
-            string channelSummary = string.Join(" / ", exposureTimes
-                .Select((value, index) => $"{channelNames[Math.Min(index, channelNames.Length - 1)]}:{value.ToString("0.###", CultureInfo.InvariantCulture)}"));
-            return $"{channelSummary} ms";
-        }
-
         private bool ShouldReuseActiveViewOnCapture()
         {
             return chkReuseActiveViewOnCapture?.IsChecked == true && ActiveView != null;
+        }
+
+        private TimedButtonOperationRegistry EnsureCaptureTimedButtonOperations()
+        {
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildTimedOperationKey);
+
+            if (!operations.Contains(btnRunFlow))
+            {
+                object? originalContent = btnRunFlow.Content;
+                operations.Register(
+                    btnRunFlow,
+                    new TimedButtonOperationOptions
+                    {
+                        OperationKey = BuildTimedOperationKey(FlowRunOperationActionKey),
+                        RunningText = "执行中",
+                        ProgressForeground = Brushes.DodgerBlue,
+                        ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(FlowRunOperationActionKey, DefaultFlowExpectedDurationMs),
+                        ContentFactory = _ => originalContent ?? "执行",
+                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip("执行当前流程并打开结果图像", stats),
+                        MinimumExpectedDurationMs = 2000
+                    });
+            }
+
+            if (!operations.Contains(btnCaptureCamera))
+            {
+                object? originalContent = btnCaptureCamera.Content;
+                operations.Register(
+                    btnCaptureCamera,
+                    new TimedButtonOperationOptions
+                    {
+                        OperationKey = BuildTimedOperationKey(CameraCaptureOperationActionKey),
+                        RunningText = "拍照中",
+                        ProgressForeground = Brushes.DodgerBlue,
+                        ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(CameraCaptureOperationActionKey, DefaultCameraCaptureExpectedDurationMs),
+                        ContentFactory = _ => originalContent ?? "拍照",
+                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip("执行相机拍照并打开结果图像", stats),
+                        MinimumExpectedDurationMs = 2000
+                    });
+            }
+
+            return operations;
+        }
+
+        private static string BuildTimedOperationKey(string actionKey)
+        {
+            return $"conoscope:capture:{actionKey}";
+        }
+
+        private static double NormalizeExpectedDuration(double durationMs, double fallbackMs)
+        {
+            double resolved = durationMs > 0 ? durationMs : fallbackMs;
+            return Math.Max(1000, resolved);
+        }
+
+        private static double GetTimedOperationExpectedDurationMs(string actionKey, double fallbackMs)
+        {
+            string operationKey = BuildTimedOperationKey(actionKey);
+            TimedButtonOperationStats? stats = TimedButtonOperationStatsManager.GetAll()
+                .FirstOrDefault(item => string.Equals(item.OperationKey, operationKey, StringComparison.Ordinal))
+                ?.Stats;
+
+            if (stats != null)
+            {
+                if (stats.SuccessCount > 1 && stats.AverageElapsedMs > 0)
+                {
+                    return NormalizeExpectedDuration(stats.AverageElapsedMs, fallbackMs);
+                }
+
+                if (stats.LastElapsedMs > 0)
+                {
+                    return NormalizeExpectedDuration(stats.LastElapsedMs, fallbackMs);
+                }
+
+                if (stats.WarmupElapsedMs > 0)
+                {
+                    return NormalizeExpectedDuration(stats.WarmupElapsedMs, fallbackMs);
+                }
+            }
+
+            return NormalizeExpectedDuration(fallbackMs, fallbackMs);
+        }
+
+        private TimedButtonOperationScope? BeginTrackedOperation(Button button, string actionKey, string progressLabel, double fallbackExpectedDurationMs)
+        {
+            TimedButtonOperationRegistry operations = EnsureCaptureTimedButtonOperations();
+            double expectedDurationMs = GetTimedOperationExpectedDurationMs(actionKey, fallbackExpectedDurationMs);
+            TimedButtonOperationScope? operationScope = operations.Begin(button, expectedDurationMs, progressLabel);
+            StartOperationProgress(progressLabel, expectedDurationMs);
+            return operationScope;
         }
 
         private void SetOperationBusy(bool busy)
@@ -266,12 +335,11 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
             ConoscopeNdCalibrationBinding? binding = FindNdCalibrationBinding(camera, ndPort);
             if (binding == null)
             {
                 binding = new ConoscopeNdCalibrationBinding();
-                config.NdCalibrationBindings.Add(binding);
+                CaptureConfig.NdCalibrationBindings.Add(binding);
             }
 
             binding.CameraCode = camera.Config.Code ?? string.Empty;
@@ -299,157 +367,9 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeManager.GetInstance().Config.NdCalibrationBindings.Remove(binding);
+            CaptureConfig.NdCalibrationBindings.Remove(binding);
             ConfigService.Instance.Save<ConoscopeConfig>();
             SetOperationStatus($"已解除 ND {ndPort} 的校正绑定", Brushes.LimeGreen);
-        }
-
-        private static async Task<string?> WaitForFlowCvcieAsync(FlowControlData flowResult)
-        {
-            MeasureBatchModel? batch = null;
-            if (!string.IsNullOrWhiteSpace(flowResult.SerialNumber))
-            {
-                batch = BatchResultMasterDao.Instance.GetByCode(flowResult.SerialNumber);
-            }
-
-            batch ??= FlowEngineManager.GetInstance().Batch;
-            if (batch == null || batch.Id <= 0)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < 10; i++)
-            {
-                string? filePath = FindCvcieFile(MeasureImgResultDao.Instance.GetAllByBatchId(batch.Id));
-                if (!string.IsNullOrWhiteSpace(filePath))
-                {
-                    return filePath;
-                }
-
-                await Task.Delay(300);
-            }
-
-            return null;
-        }
-
-        private static async Task<string?> WaitForCameraCvcieAsync(MsgRecord msgRecord)
-        {
-            for (int i = 0; i < 8; i++)
-            {
-                int masterId = TryReadMsgReturnInt(msgRecord.MsgReturn, "MasterId");
-                if (masterId > 0)
-                {
-                    MeasureResultImgModel? result = MeasureImgResultDao.Instance.GetById(masterId);
-                    string? filePath = GetCvcieFilePath(result);
-                    if (!string.IsNullOrWhiteSpace(filePath))
-                    {
-                        return filePath;
-                    }
-                }
-
-                await Task.Delay(300);
-            }
-
-            return null;
-        }
-
-        private static string? FindCvcieFile(IEnumerable<MeasureResultImgModel> results)
-        {
-            foreach (MeasureResultImgModel result in results)
-            {
-                string? filePath = GetCvcieFilePath(result);
-                if (!string.IsNullOrWhiteSpace(filePath))
-                {
-                    return filePath;
-                }
-            }
-
-            return null;
-        }
-
-        private static string? GetCvcieFilePath(MeasureResultImgModel? result)
-        {
-            if (result == null)
-            {
-                return null;
-            }
-
-            foreach (string? candidate in new[] { result.FileUrl, result.RawFile })
-            {
-                if (string.IsNullOrWhiteSpace(candidate) || !File.Exists(candidate))
-                {
-                    continue;
-                }
-
-                if (string.Equals(Path.GetExtension(candidate), ".cvcie", StringComparison.OrdinalIgnoreCase))
-                {
-                    return candidate;
-                }
-            }
-
-            return null;
-        }
-
-        private static async Task<MsgRecordState> WaitForMsgRecordAsync(MsgRecord msgRecord)
-        {
-            if (IsFinalState(msgRecord.MsgRecordState))
-            {
-                return msgRecord.MsgRecordState;
-            }
-
-            TaskCompletionSource<MsgRecordState> taskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            void Handler(object? sender, MsgRecordState state)
-            {
-                if (IsFinalState(state))
-                {
-                    taskCompletionSource.TrySetResult(state);
-                }
-            }
-
-            msgRecord.MsgRecordStateChanged += Handler;
-            try
-            {
-                if (IsFinalState(msgRecord.MsgRecordState))
-                {
-                    return msgRecord.MsgRecordState;
-                }
-
-                return await taskCompletionSource.Task;
-            }
-            finally
-            {
-                msgRecord.MsgRecordStateChanged -= Handler;
-            }
-        }
-
-        private static bool IsFinalState(MsgRecordState state)
-        {
-            return state is MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout;
-        }
-
-        private static int TryReadMsgReturnInt(MsgReturn? msgReturn, string propertyName)
-        {
-            try
-            {
-                if (msgReturn?.Data == null)
-                {
-                    return 0;
-                }
-
-                dynamic data = msgReturn.Data;
-                object? value = propertyName switch
-                {
-                    "MasterId" => data.MasterId,
-                    "Port" => data.Port,
-                    _ => null
-                };
-
-                return value == null ? 0 : Convert.ToInt32(value, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                return 0;
-            }
         }
 
         private async void btnRunFlow_Click(object sender, RoutedEventArgs e)
@@ -461,31 +381,34 @@ namespace Conoscope
                 return;
             }
 
+            TimedButtonOperationScope? operationScope = null;
+            bool operationSucceeded = false;
+
             try
             {
+                operationScope = BeginTrackedOperation(btnRunFlow, FlowRunOperationActionKey, "执行流程", DefaultFlowExpectedDurationMs);
                 SetOperationBusy(true);
                 SetOperationStatus($"正在执行流程: {flowTemplate.Key}", Brushes.DodgerBlue);
 
-                FlowControlData? result = await FlowEngineManager.GetInstance().DisplayFlow.RunFlowAndWaitAsync(flowTemplate);
-                if (result == null)
+                ConoscopeFlowCaptureResult result = await ConoscopeCaptureWorkflow.RunFlowAsync(flowTemplate);
+                if (!result.Started)
                 {
                     SetOperationStatus("流程未启动", Brushes.OrangeRed);
                     return;
                 }
 
-                if (result.FlowStatus != FlowStatus.Completed)
+                if (!result.Completed)
                 {
-                    SetOperationStatus($"流程结束: {result.FlowStatus}", Brushes.OrangeRed);
-                    MessageBox.Show($"流程执行未完成: {result.FlowStatus}\n{result.Params}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus($"流程结束: {result.FlowResult!.FlowStatus}", Brushes.OrangeRed);
+                    MessageBox.Show($"流程执行未完成: {result.FlowResult.FlowStatus}\n{result.FlowResult.Params}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                SetOperationStatus("流程完成，正在查找 CVCIE 结果", Brushes.DodgerBlue);
-                string? filePath = await WaitForFlowCvcieAsync(result);
-                if (!string.IsNullOrWhiteSpace(filePath))
+                if (result.HasFile)
                 {
-                    OpenConoscope(filePath, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
-                    SetOperationStatus($"已打开 {Path.GetFileName(filePath)}", Brushes.LimeGreen);
+                    OpenConoscope(result.FilePath!, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
+                    operationSucceeded = true;
+                    SetOperationStatus($"已打开 {System.IO.Path.GetFileName(result.FilePath)}", Brushes.LimeGreen);
                 }
                 else
                 {
@@ -500,6 +423,8 @@ namespace Conoscope
             }
             finally
             {
+                operationScope?.Complete(operationSucceeded);
+                StopOperationProgress();
                 SetOperationBusy(false);
             }
         }
@@ -513,34 +438,28 @@ namespace Conoscope
                 return;
             }
 
+            TimedButtonOperationScope? operationScope = null;
+            bool operationSucceeded = false;
+
             try
             {
+                operationScope = BeginTrackedOperation(btnCaptureCamera, CameraCaptureOperationActionKey, "相机拍照", DefaultCameraCaptureExpectedDurationMs);
                 SetOperationBusy(true);
                 SetOperationStatus($"正在拍照: {camera.Config.Name}", Brushes.DodgerBlue);
 
-                double[] exposureTimes = GetCameraExpTimes(camera);
-                string exposureSummary = FormatExposureSummary(exposureTimes);
-
-                MsgRecord msgRecord = camera.DService.GetData(
-                    exposureTimes,
-                    GetSelectedCalibrationParam(),
-                    new AutoExpTimeParam { Id = -1, Name = string.Empty },
-                    new TemplateJsonParam { Id = -1, Name = string.Empty });
-
-                MsgRecordState state = await WaitForMsgRecordAsync(msgRecord);
-                if (state != MsgRecordState.Success)
+                ConoscopeCameraCaptureResult result = await ConoscopeCaptureWorkflow.CaptureCameraAsync(camera, GetSelectedCalibrationParam());
+                if (!result.Succeeded)
                 {
-                    SetOperationStatus($"拍照失败: {state}", Brushes.OrangeRed);
-                    MessageBox.Show($"拍照失败: {state}\n{msgRecord.MsgReturn?.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus($"拍照失败: {result.State}", Brushes.OrangeRed);
+                    MessageBox.Show($"拍照失败: {result.State}\n{result.MessageRecord.MsgReturn?.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                SetOperationStatus("拍照完成，正在查找 CVCIE 结果", Brushes.DodgerBlue);
-                string? filePath = await WaitForCameraCvcieAsync(msgRecord);
-                if (!string.IsNullOrWhiteSpace(filePath))
+                if (result.HasFile)
                 {
-                    OpenConoscope(filePath, exposureSummary, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
-                    SetOperationStatus($"已打开 {Path.GetFileName(filePath)}", Brushes.LimeGreen);
+                    OpenConoscope(result.FilePath!, result.ExposureSummary, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
+                    operationSucceeded = true;
+                    SetOperationStatus($"已打开 {System.IO.Path.GetFileName(result.FilePath)}", Brushes.LimeGreen);
                 }
                 else
                 {
@@ -555,6 +474,8 @@ namespace Conoscope
             }
             finally
             {
+                operationScope?.Complete(operationSucceeded);
+                StopOperationProgress();
                 SetOperationBusy(false);
             }
         }
@@ -580,7 +501,7 @@ namespace Conoscope
                 SetOperationStatus($"正在切换 ND: {port}", Brushes.DodgerBlue);
                 camera.Config.NDPort = port;
                 MsgRecord msgRecord = camera.DService.SetNDPort();
-                MsgRecordState state = await WaitForMsgRecordAsync(msgRecord);
+                MsgRecordState state = await ConoscopeCaptureWorkflow.WaitForMsgRecordAsync(msgRecord);
                 if (state == MsgRecordState.Success)
                 {
                     if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))
@@ -619,10 +540,10 @@ namespace Conoscope
                 SetOperationBusy(true);
                 SetOperationStatus("正在读取 ND", Brushes.DodgerBlue);
                 MsgRecord msgRecord = camera.DService.GetPort();
-                MsgRecordState state = await WaitForMsgRecordAsync(msgRecord);
+                MsgRecordState state = await ConoscopeCaptureWorkflow.WaitForMsgRecordAsync(msgRecord);
                 if (state == MsgRecordState.Success)
                 {
-                    int port = TryReadMsgReturnInt(msgRecord.MsgReturn, "Port");
+                    int port = ConoscopeCaptureWorkflow.ReadMsgReturnInt(msgRecord.MsgReturn, "Port");
                     camera.Config.NDPort = port;
                     txtNDPort.Text = port.ToString(CultureInfo.InvariantCulture);
                     if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))

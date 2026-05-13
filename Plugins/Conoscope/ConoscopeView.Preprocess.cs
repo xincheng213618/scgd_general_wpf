@@ -17,20 +17,20 @@ namespace Conoscope
             try
             {
                 MigrateLegacyDustRemovalFilterType();
-                ComboBoxHelper.SelectItemByTag(cbFilterType, NormalizeFilterType(ConoscopeConfig.FilterType).ToString());
-                ComboBoxHelper.SelectItemByTag(cbDustMode, ConoscopeConfig.DustRemovalMode.ToString());
-                chkClampNonPositiveXyzOnLoad.IsChecked = ConoscopeConfig.ClampNonPositiveXyzOnLoad;
-                chkDustRemovalEnabled.IsChecked = ConoscopeConfig.DustRemovalEnabled;
+                ComboBoxHelper.SelectItemByTag(cbFilterType, NormalizeFilterType(PreprocessConfig.FilterType).ToString());
+                ComboBoxHelper.SelectItemByTag(cbDustMode, PreprocessConfig.DustRemovalMode.ToString());
+                chkClampNonPositiveXyzOnLoad.IsChecked = PreprocessConfig.ClampNonPositiveXyzOnLoad;
+                chkDustRemovalEnabled.IsChecked = PreprocessConfig.DustRemovalEnabled;
 
-                sliderKernelSize.Value = ConoscopeConfig.FilterKernelSize;
-                sliderSigma.Value = ConoscopeConfig.FilterSigma;
-                sliderD.Value = ConoscopeConfig.FilterD;
-                sliderSigmaColor.Value = ConoscopeConfig.FilterSigmaColor;
-                sliderSigmaSpace.Value = ConoscopeConfig.FilterSigmaSpace;
-                sliderDustThreshold.Value = ConoscopeConfig.DustThresholdPercent;
-                sliderDustMinArea.Value = ConoscopeConfig.DustMinArea;
-                sliderDustMaxArea.Value = Math.Max(ConoscopeConfig.DustMinArea, ConoscopeConfig.DustMaxArea);
-                sliderDustRepairRadius.Value = ConoscopeConfig.DustRepairRadius;
+                sliderKernelSize.Value = PreprocessConfig.FilterKernelSize;
+                sliderSigma.Value = PreprocessConfig.FilterSigma;
+                sliderD.Value = PreprocessConfig.FilterD;
+                sliderSigmaColor.Value = PreprocessConfig.FilterSigmaColor;
+                sliderSigmaSpace.Value = PreprocessConfig.FilterSigmaSpace;
+                sliderDustThreshold.Value = PreprocessConfig.DustThresholdPercent;
+                sliderDustMinArea.Value = PreprocessConfig.DustMinArea;
+                sliderDustMaxArea.Value = Math.Max(PreprocessConfig.DustMinArea, PreprocessConfig.DustMaxArea);
+                sliderDustRepairRadius.Value = PreprocessConfig.DustRepairRadius;
             }
             finally
             {
@@ -55,19 +55,19 @@ namespace Conoscope
 
         private void SaveFilterControlsToConfig()
         {
-            ConoscopeConfig.ClampNonPositiveXyzOnLoad = chkClampNonPositiveXyzOnLoad?.IsChecked == true;
-            ConoscopeConfig.FilterType = NormalizeFilterType(GetSelectedFilterType());
-            ConoscopeConfig.FilterKernelSize = ConoscopeNumericHelper.NormalizeOddKernelSize((int)(sliderKernelSize?.Value ?? ConoscopeConfig.FilterKernelSize));
-            ConoscopeConfig.FilterSigma = sliderSigma?.Value ?? ConoscopeConfig.FilterSigma;
-            ConoscopeConfig.FilterD = Math.Max(1, (int)(sliderD?.Value ?? ConoscopeConfig.FilterD));
-            ConoscopeConfig.FilterSigmaColor = sliderSigmaColor?.Value ?? ConoscopeConfig.FilterSigmaColor;
-            ConoscopeConfig.FilterSigmaSpace = sliderSigmaSpace?.Value ?? ConoscopeConfig.FilterSigmaSpace;
-            ConoscopeConfig.DustRemovalEnabled = IsDustRemovalEnabled();
-            ConoscopeConfig.DustRemovalMode = GetSelectedDustRemovalMode();
-            ConoscopeConfig.DustThresholdPercent = sliderDustThreshold?.Value ?? ConoscopeConfig.DustThresholdPercent;
-            ConoscopeConfig.DustMinArea = Math.Max(1, (int)(sliderDustMinArea?.Value ?? ConoscopeConfig.DustMinArea));
-            ConoscopeConfig.DustMaxArea = Math.Max(ConoscopeConfig.DustMinArea, (int)(sliderDustMaxArea?.Value ?? ConoscopeConfig.DustMaxArea));
-            ConoscopeConfig.DustRepairRadius = Math.Max(1, (int)(sliderDustRepairRadius?.Value ?? ConoscopeConfig.DustRepairRadius));
+            PreprocessConfig.ClampNonPositiveXyzOnLoad = chkClampNonPositiveXyzOnLoad?.IsChecked == true;
+            PreprocessConfig.FilterType = NormalizeFilterType(GetSelectedFilterType());
+            PreprocessConfig.FilterKernelSize = ConoscopeNumericHelper.NormalizeOddKernelSize((int)(sliderKernelSize?.Value ?? PreprocessConfig.FilterKernelSize));
+            PreprocessConfig.FilterSigma = sliderSigma?.Value ?? PreprocessConfig.FilterSigma;
+            PreprocessConfig.FilterD = Math.Max(1, (int)(sliderD?.Value ?? PreprocessConfig.FilterD));
+            PreprocessConfig.FilterSigmaColor = sliderSigmaColor?.Value ?? PreprocessConfig.FilterSigmaColor;
+            PreprocessConfig.FilterSigmaSpace = sliderSigmaSpace?.Value ?? PreprocessConfig.FilterSigmaSpace;
+            PreprocessConfig.DustRemovalEnabled = IsDustRemovalEnabled();
+            PreprocessConfig.DustRemovalMode = GetSelectedDustRemovalMode();
+            PreprocessConfig.DustThresholdPercent = sliderDustThreshold?.Value ?? PreprocessConfig.DustThresholdPercent;
+            PreprocessConfig.DustMinArea = Math.Max(1, (int)(sliderDustMinArea?.Value ?? PreprocessConfig.DustMinArea));
+            PreprocessConfig.DustMaxArea = Math.Max(PreprocessConfig.DustMinArea, (int)(sliderDustMaxArea?.Value ?? PreprocessConfig.DustMaxArea));
+            PreprocessConfig.DustRepairRadius = Math.Max(1, (int)(sliderDustRepairRadius?.Value ?? PreprocessConfig.DustRepairRadius));
         }
 
         private void UpdatePreprocessSummary()
@@ -77,13 +77,13 @@ namespace Conoscope
                 return;
             }
 
-            string openPolicy = ConoscopeConfig.ApplyFilterOnOpen ? "打开时应用" : "手动应用";
-            string clampPolicy = ConoscopeConfig.ClampNonPositiveXyzOnLoad ? "XYZ<=0 修正" : "不修正 XYZ";
-            string dustPolicy = ConoscopeConfig.DustRemovalEnabled ? $"灰尘滤除 {ConoscopeConfig.DustRemovalMode}" : "无灰尘滤除";
-            string filterPolicy = NormalizeFilterType(ConoscopeConfig.FilterType) == ImageFilterType.None
+            string openPolicy = PreprocessConfig.ApplyFilterOnOpen ? "打开时应用" : "手动应用";
+            string clampPolicy = PreprocessConfig.ClampNonPositiveXyzOnLoad ? "XYZ<=0 修正" : "不修正 XYZ";
+            string dustPolicy = PreprocessConfig.DustRemovalEnabled ? $"灰尘滤除 {PreprocessConfig.DustRemovalMode}" : "无灰尘滤除";
+            string filterPolicy = NormalizeFilterType(PreprocessConfig.FilterType) == ImageFilterType.None
                 ? "无滤波"
-                : ConoscopeConfig.FilterType.ToString();
-            string pseudoColorPolicy = $"{ConoscopeChannelDisplayFormatter.GetLabel(ConoscopeConfig.DisplayChannel)} / {ColormapNameFormatter.Format(ConoscopeConfig.PseudoColorMap)}";
+                : PreprocessConfig.FilterType.ToString();
+            string pseudoColorPolicy = $"{ConoscopeChannelDisplayFormatter.GetLabel(RenderingConfig.DisplayChannel)} / {ColormapNameFormatter.Format(RenderingConfig.PseudoColorMap)}";
 
             tbPreprocessSummary.Text = $"{openPolicy} / {clampPolicy} / {dustPolicy} / {filterPolicy} / 伪彩 {pseudoColorPolicy}";
         }
@@ -91,10 +91,10 @@ namespace Conoscope
         private void MigrateLegacyDustRemovalFilterType()
         {
             const int legacyDustRemovalFilterValue = 6;
-            if ((int)ConoscopeConfig.FilterType == legacyDustRemovalFilterValue)
+            if ((int)PreprocessConfig.FilterType == legacyDustRemovalFilterValue)
             {
-                ConoscopeConfig.DustRemovalEnabled = true;
-                ConoscopeConfig.FilterType = ImageFilterType.None;
+                PreprocessConfig.DustRemovalEnabled = true;
+                PreprocessConfig.FilterType = ImageFilterType.None;
             }
         }
 
@@ -204,7 +204,7 @@ namespace Conoscope
                 }
 
                 RestoreOriginalMats();
-                log.Info($"开始应用预处理: clamp={ConoscopeConfig.ClampNonPositiveXyzOnLoad}, dust={ConoscopeConfig.DustRemovalEnabled}, filter={ConoscopeConfig.FilterType}");
+                log.Info($"开始应用预处理: clamp={PreprocessConfig.ClampNonPositiveXyzOnLoad}, dust={PreprocessConfig.DustRemovalEnabled}, filter={PreprocessConfig.FilterType}");
                 ApplyPreprocessToCurrentMats();
                 RefreshDisplayedImage();
 
@@ -253,14 +253,14 @@ namespace Conoscope
 
         private ConoscopePreprocessOptions CreatePreprocessOptions()
         {
-            return ConoscopePreprocessOptions.FromConfig(ConoscopeConfig, MinPositiveXyzValue);
+            return ConoscopePreprocessOptions.FromConfig(PreprocessConfig, MinPositiveXyzValue);
         }
 
         private bool HasPreprocessEnabled()
         {
-            return ConoscopeConfig.ClampNonPositiveXyzOnLoad
-                || ConoscopeConfig.DustRemovalEnabled
-                || NormalizeFilterType(ConoscopeConfig.FilterType) != ImageFilterType.None;
+            return PreprocessConfig.ClampNonPositiveXyzOnLoad
+                || PreprocessConfig.DustRemovalEnabled
+                || NormalizeFilterType(PreprocessConfig.FilterType) != ImageFilterType.None;
         }
     }
 }

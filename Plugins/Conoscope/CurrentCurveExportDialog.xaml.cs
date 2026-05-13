@@ -1,18 +1,21 @@
 using System;
 using System.Globalization;
 using System.Windows;
+using Conoscope.Core;
 
 namespace Conoscope
 {
     public partial class CurrentCurveExportDialog : Window
     {
-        public CurrentCurveExportSettings Settings { get; private set; } = new CurrentCurveExportSettings();
+        public ConoscopeCrossSectionExportOptions ExportOptions { get; private set; }
+            = new ConoscopeCrossSectionExportOptions { StepDegrees = 1.0, IncludeMetadata = true };
 
-        public CurrentCurveExportDialog()
+        public CurrentCurveExportDialog(ConoscopeCrossSectionExportOptions? exportOptions = null)
         {
             InitializeComponent();
-            txtStepDegrees.Text = Settings.StepDegrees.ToString("F2", CultureInfo.InvariantCulture);
-            chkIncludeMetadata.IsChecked = Settings.IncludeMetadata;
+            ExportOptions = exportOptions ?? ExportOptions;
+            txtStepDegrees.Text = ExportOptions.StepDegrees.ToString(CultureInfo.InvariantCulture);
+            chkIncludeMetadata.IsChecked = ExportOptions.IncludeMetadata;
         }
 
         private void btnExport_Click(object sender, RoutedEventArgs e)
@@ -23,7 +26,7 @@ namespace Conoscope
                 return;
             }
 
-            Settings = new CurrentCurveExportSettings
+            ExportOptions = new ConoscopeCrossSectionExportOptions
             {
                 StepDegrees = stepDegrees,
                 IncludeMetadata = chkIncludeMetadata.IsChecked == true
@@ -39,11 +42,5 @@ namespace Conoscope
                 && stepDegrees >= 0.01
                 && stepDegrees <= 360;
         }
-    }
-
-    public sealed class CurrentCurveExportSettings
-    {
-        public double StepDegrees { get; init; } = 0.01;
-        public bool IncludeMetadata { get; init; } = true;
     }
 }

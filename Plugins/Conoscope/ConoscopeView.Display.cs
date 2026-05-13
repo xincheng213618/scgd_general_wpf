@@ -25,7 +25,7 @@ namespace Conoscope
                 YMat!,
                 ZMat!,
                 displayChannel,
-                ConoscopeConfig.PseudoColorMap,
+                RenderingConfig.PseudoColorMap,
                 CreateColorDifferenceMat);
 
             UpdatePseudoColorLegend(renderResult.Channel, renderResult.MinValue, renderResult.MaxValue);
@@ -62,7 +62,7 @@ namespace Conoscope
                 return;
             }
 
-            imgPseudoColorLegend.Source = ColormapConstats.CreatePreviewImage(ConoscopeConfig.PseudoColorMap);
+            imgPseudoColorLegend.Source = ColormapConstats.CreatePreviewImage(RenderingConfig.PseudoColorMap);
         }
 
         private void UpdatePseudoColorLegendVisibility(bool isVisible)
@@ -84,7 +84,7 @@ namespace Conoscope
         {
             if (cbFilterType?.SelectedItem is ComboBoxItem)
             {
-                return NormalizeFilterType(ComboBoxHelper.GetSelectedEnumByTag(cbFilterType, NormalizeFilterType(ConoscopeConfig.FilterType)));
+                return NormalizeFilterType(ComboBoxHelper.GetSelectedEnumByTag(cbFilterType, NormalizeFilterType(PreprocessConfig.FilterType)));
             }
 
             if (cbFilterType?.SelectedIndex >= 0)
@@ -92,7 +92,7 @@ namespace Conoscope
                 return NormalizeFilterType((ImageFilterType)cbFilterType.SelectedIndex);
             }
 
-            return NormalizeFilterType(ConoscopeConfig.FilterType);
+            return NormalizeFilterType(PreprocessConfig.FilterType);
         }
 
         private static ImageFilterType NormalizeFilterType(ImageFilterType filterType)
@@ -107,12 +107,12 @@ namespace Conoscope
 
         private DustRemovalMode GetSelectedDustRemovalMode()
         {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbDustMode, ConoscopeConfig.DustRemovalMode);
+            return ComboBoxHelper.GetSelectedEnumByTag(cbDustMode, PreprocessConfig.DustRemovalMode);
         }
 
         private ExportChannel GetSelectedDisplayChannel()
         {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel);
+            return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, RenderingConfig.DisplayChannel);
         }
 
         private void DisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -123,7 +123,7 @@ namespace Conoscope
             }
 
             ExportChannel channel = GetSelectedDisplayChannel();
-            ConoscopeConfig.DisplayChannel = channel;
+            RenderingConfig.DisplayChannel = channel;
             UpdateColorDifferencePanelVisibility();
 
             if (HasXyzData())

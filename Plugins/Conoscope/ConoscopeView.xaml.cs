@@ -131,7 +131,7 @@ namespace Conoscope
             isUpdatingDisplayControls = true;
             try
             {
-                ComboBoxHelper.SelectItemByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel.ToString());
+                ComboBoxHelper.SelectItemByTag(cbDisplayChannel, RenderingConfig.DisplayChannel.ToString());
             }
             finally
             {
@@ -148,6 +148,9 @@ namespace Conoscope
         }
 
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
+        private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
+        private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
+        private ConoscopeColorDifferenceSettings ColorDifferenceConfig => ConoscopeConfig.ColorDifference;
 
         private void Window_Initialized(object sender, EventArgs e)
         {

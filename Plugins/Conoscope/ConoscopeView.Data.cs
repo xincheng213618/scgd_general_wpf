@@ -29,7 +29,7 @@ namespace Conoscope
                 ImageView.Clear();
                 LoadConoscopeData(filename);
 
-                if (ConoscopeConfig.ApplyFilterOnOpen)
+                if (PreprocessConfig.ApplyFilterOnOpen)
                 {
                     ApplyPreprocessToCurrentMats();
                 }
