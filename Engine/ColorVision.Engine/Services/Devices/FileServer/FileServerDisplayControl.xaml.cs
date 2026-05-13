@@ -46,22 +46,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         private void Service_OnImageData(object sender, FileServerDataEvent arg)
         {
-            switch (arg.EventName)
-            {
-                case MQTTFileServerEventEnum.Event_File_List_All:
-                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
-                    Application.Current.Dispatcher.Invoke(() => {
-                        FilesView.ItemsSource = data.Files;
-                        FilesView.SelectedIndex = 0;
-                    });
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    //FileDownload(pm_dl);
-                    break;
-                default:
-                    break;
-            }
+
         }
 
 
@@ -96,16 +81,5 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             }
         }
 
-        private static byte[] ReadFile(string path)
-        {
-            FileStream fileStream = new(path, FileMode.Open, FileAccess.Read);
-            BinaryReader binaryReader = new(fileStream);
-            //获取文件长度
-            long length = fileStream.Length;
-            byte[] bytes = new byte[length];
-            //读取文件中的内容并保存到字节数组中
-            binaryReader.Read(bytes, 0, bytes.Length);
-            return bytes;
-        }
     }
 }

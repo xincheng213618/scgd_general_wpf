@@ -516,25 +516,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord DownloadFile(string fileName, FileExtType extType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Download,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
-            };
-            return PublishAsyncClient(msg);
-        }
 
-        public MsgRecord ClearDataCache()
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTCameraEventEnum.Event_Delete_Data,
-                Params = new Dictionary<string, object> { }
-            };
-            return PublishAsyncClient(msg);
-        }
 
     }
 }
