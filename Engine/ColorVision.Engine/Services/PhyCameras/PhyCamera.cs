@@ -519,7 +519,29 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(LicenseSolidColorBrush)); OnPropertyChanged(nameof(LicenseExpiryText)); OnPropertyChanged(nameof(LicenseExpiryColor)); } }
+        public LicenseModel? CameraLicenseModel
+        {
+            get => _CameraLicenseModel;
+            set
+            {
+                _CameraLicenseModel = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsLicensed));
+                OnPropertyChanged(nameof(LicenseState));
+                OnPropertyChanged(nameof(LicenseSolidColorBrush));
+                OnPropertyChanged(nameof(LicenseExpiryText));
+                OnPropertyChanged(nameof(LicenseExpiryColor));
+                OnPropertyChanged(nameof(LicenseStatusText));
+                OnPropertyChanged(nameof(LicenseStatusBrush));
+                OnPropertyChanged(nameof(LicenseStatusBackgroundBrush));
+                OnPropertyChanged(nameof(HasLicenseAlert));
+                OnPropertyChanged(nameof(LicenseAlertText));
+                OnPropertyChanged(nameof(ShowLicenseListTag));
+                OnPropertyChanged(nameof(LicenseListTagText));
+                OnPropertyChanged(nameof(LicenseListTagBrush));
+                OnPropertyChanged(nameof(DeviceModeDisplayText));
+            }
+        }
         private LicenseModel? _CameraLicenseModel;
 
         public LicenseState LicenseState { get 
@@ -561,6 +583,97 @@ namespace ColorVision.Engine.Services.PhyCameras
 
 
         public bool IsLicensed { get => CameraLicenseModel != null;  }
+
+        public string DeviceModeDisplayText
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(CameraLicenseModel?.ColorVisionLicense?.DeviceMode))
+                    return CameraLicenseModel.ColorVisionLicense.DeviceMode;
+
+                if (!string.IsNullOrWhiteSpace(Config.CameraModel))
+                    return Config.CameraModel;
+
+                return "未授权";
+            }
+        }
+
+        public string LicenseStatusText
+        {
+            get
+            {
+                return LicenseState switch
+                {
+                    LicenseState.Unlicensed => "无许可证",
+                    LicenseState.Expired => "已过期",
+                    LicenseState.Invalid => "异常",
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => "即将到期",
+                    LicenseState.Licensed => "有效",
+                    _ => "异常",
+                };
+            }
+        }
+
+        public SolidColorBrush LicenseStatusBrush
+        {
+            get
+            {
+                return LicenseState switch
+                {
+                    LicenseState.Unlicensed => new SolidColorBrush(Colors.Red),
+                    LicenseState.Expired => new SolidColorBrush(Colors.Red),
+                    LicenseState.Invalid => new SolidColorBrush(Colors.Gray),
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => new SolidColorBrush(Colors.Orange),
+                    LicenseState.Licensed => new SolidColorBrush(Colors.Green),
+                    _ => new SolidColorBrush(Colors.Gray),
+                };
+            }
+        }
+
+        public SolidColorBrush LicenseStatusBackgroundBrush
+        {
+            get
+            {
+                Color color = LicenseStatusBrush.Color;
+                return new SolidColorBrush(Color.FromArgb(36, color.R, color.G, color.B));
+            }
+        }
+
+        public bool HasLicenseAlert => !string.IsNullOrWhiteSpace(LicenseAlertText);
+
+        public string LicenseAlertText
+        {
+            get
+            {
+                return LicenseState switch
+                {
+                    LicenseState.Unlicensed => "当前未检测到许可证，请导入或申请许可证。",
+                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => $"许可证已过期（{expiryDate:yyyy-MM-dd}）",
+                    LicenseState.Invalid => "许可证状态异常，请检查许可证内容。",
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => $"许可证即将到期（{expiryDate:yyyy-MM-dd}）",
+                    _ => string.Empty,
+                };
+            }
+        }
+
+        public bool ShowLicenseListTag => !string.IsNullOrWhiteSpace(LicenseListTagText);
+
+        public string LicenseListTagText
+        {
+            get
+            {
+                return LicenseState switch
+                {
+                    LicenseState.Unlicensed => "无许可证",
+                    LicenseState.Expired => "许可证过期",
+                    LicenseState.Invalid => "许可证异常",
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => "即将到期",
+                    _ => string.Empty,
+                };
+            }
+        }
+
+        public SolidColorBrush LicenseListTagBrush => LicenseStatusBrush;
 
         public string LicenseExpiryText
         {
