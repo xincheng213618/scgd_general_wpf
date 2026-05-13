@@ -23,29 +23,27 @@
                 <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
             </Style>
 
-            <Style x:Key="HeaderBadgeLabelStyle" TargetType="{x:Type TextBlock}">
-                <Setter Property="FontSize" Value="11"/>
-                <Setter Property="Opacity" Value="0.72"/>
-                <Setter Property="Margin" Value="0,0,6,0"/>
+            <Style x:Key="HeaderTitleTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource CopyableTextBoxStyle}">
+                <Setter Property="FontSize" Value="22"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="TextAlignment" Value="Left"/>
+                <Setter Property="TextWrapping" Value="NoWrap"/>
             </Style>
 
-            <Style x:Key="HeaderBadgeValueStyle" TargetType="{x:Type TextBlock}">
+            <Style x:Key="HeaderMetaTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource CopyableTextBoxStyle}">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Opacity" Value="0.64"/>
+                <Setter Property="TextAlignment" Value="Left"/>
+                <Setter Property="Margin" Value="0,4,0,0"/>
+            </Style>
+
+            <Style x:Key="HeaderStatusTextStyle" TargetType="{x:Type TextBlock}">
                 <Setter Property="FontSize" Value="11"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,6,0,0"/>
             </Style>
 
-            <Style x:Key="ConnectionBadgeStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource StatusBadgeBorderStyle}">
-                <Setter Property="Background" Value="#1F2EAD4F"/>
-                <Setter Property="BorderBrush" Value="#662EAD4F"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
-                        <Setter Property="Background" Value="#1FE53935"/>
-                        <Setter Property="BorderBrush" Value="#66E53935"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="ConnectionBadgeValueTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderBadgeValueStyle}">
+            <Style x:Key="ConnectionStatusTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
                 <Setter Property="Foreground" Value="#FF2EAD4F"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
@@ -54,28 +52,70 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="AlertBorderStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource PanelBorderStyle}">
-                <Setter Property="CornerRadius" Value="8"/>
-                <Setter Property="Padding" Value="12,10"/>
-                <Setter Property="Margin" Value="0,0,0,12"/>
-                <Setter Property="Background" Value="{Binding LicenseStatusBackgroundBrush}"/>
-                <Setter Property="BorderBrush" Value="{Binding LicenseStatusBrush}"/>
+            <Style x:Key="LicenseStatusTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
+                <Setter Property="Foreground" Value="{Binding LicenseStatusBrush}"/>
+                <Setter Property="Margin" Value="6,6,0,0"/>
+            </Style>
+
+            <Style x:Key="AlertBorderStyle" TargetType="{x:Type Border}">
+                <Setter Property="CornerRadius" Value="0"/>
+                <Setter Property="Padding" Value="0,2,0,8"/>
+                <Setter Property="Margin" Value="0,0,0,8"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
             </Style>
 
             <Style x:Key="CommandButtonTextStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="FontSize" Value="12"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
                 <Setter Property="TextAlignment" Value="Center"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+
+            <Style x:Key="CompactCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CommandActionButtonStyle}">
+                <Setter Property="MinHeight" Value="36"/>
+                <Setter Property="Margin" Value="0,0,6,6"/>
+                <Setter Property="Padding" Value="10,6"/>
+            </Style>
+
+            <Style x:Key="WarningCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CompactCommandButtonStyle}">
+                <Setter Property="Foreground" Value="#FFB7791F"/>
+                <Setter Property="BorderBrush" Value="#FFB7791F"/>
+                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            </Style>
+
+            <Style x:Key="CompactDangerCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource DangerCommandButtonStyle}">
+                <Setter Property="MinHeight" Value="40"/>
+                <Setter Property="Margin" Value="0,0,8,8"/>
+                <Setter Property="Padding" Value="12,8"/>
+            </Style>
+
+            <Style x:Key="ActionSectionTitleStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,0,0,6"/>
+            </Style>
+
+            <Style x:Key="SectionDividerStyle" TargetType="{x:Type Border}">
+                <Setter Property="Height" Value="1"/>
+                <Setter Property="Margin" Value="0,2,0,8"/>
+                <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                <Setter Property="Opacity" Value="0.45"/>
+            </Style>
+
+            <Style x:Key="InfoSectionPanelStyle" TargetType="{x:Type StackPanel}">
+                <Setter Property="Margin" Value="0,0,0,10"/>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid>
         <Border Style="{StaticResource PanelBorderStyle}"/>
-        <Grid Margin="12">
+        <Grid Margin="10">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -83,204 +123,157 @@
 
             <Border Grid.Row="0" Style="{StaticResource SectionPanelStyle}">
                 <Grid>
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBox Text="{Binding Code, Mode=OneWay}" Style="{StaticResource CopyableTitleTextBoxStyle}"/>
-                        <TextBox Style="{StaticResource CopyableSubtleTextBoxStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBox Text="{Binding Code, Mode=OneWay}" Style="{StaticResource HeaderTitleTextBoxStyle}"/>
+                        <TextBox Style="{StaticResource HeaderMetaTextBoxStyle}">
                             <TextBox.Text>
-                                <MultiBinding StringFormat="{}{0} / {1}">
+                                <MultiBinding StringFormat="{}{0} · {1}">
                                     <Binding Path="Config.CameraModel" Mode="OneWay"/>
                                     <Binding Path="Config.CameraMode" Mode="OneWay"/>
                                 </MultiBinding>
                             </TextBox.Text>
                         </TextBox>
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding SysResourceModel.Remark, Mode=OneWay, Converter={StaticResource StatusToTextConverter}}"
+                                       Style="{StaticResource ConnectionStatusTextStyle}"/>
+                            <TextBlock Text="·" Style="{StaticResource HeaderStatusTextStyle}" Opacity="0.45" Margin="6,6,0,0"/>
+                            <TextBlock Text="{Binding LicenseStatusBadgeText}"
+                                       Style="{StaticResource LicenseStatusTextStyle}"/>
+                        </StackPanel>
                     </StackPanel>
 
-                    <StackPanel HorizontalAlignment="Right">
-                        <WrapPanel HorizontalAlignment="Right" Margin="0,0,0,10">
-                            <Border Style="{StaticResource ConnectionBadgeStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="连接状态" Style="{StaticResource HeaderBadgeLabelStyle}"/>
-                                    <TextBlock Text="{Binding SysResourceModel.Remark, Mode=OneWay, Converter={StaticResource StatusToTextConverter}}"
-                                               Style="{StaticResource ConnectionBadgeValueTextStyle}"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource StatusBadgeBorderStyle}"
-                                    Background="{Binding LicenseStatusBackgroundBrush}"
-                                    BorderBrush="{Binding LicenseStatusBrush}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="许可证状态" Style="{StaticResource HeaderBadgeLabelStyle}"/>
-                                    <TextBlock Text="{Binding LicenseStatusText}" Style="{StaticResource HeaderBadgeValueStyle}"
-                                               Foreground="{Binding LicenseStatusBrush}"/>
-                                </StackPanel>
-                            </Border>
-                        </WrapPanel>
-
-                        <Button Command="{Binding EditCommand}" Style="{StaticResource ToolbarButtonStyle}"
-                                HorizontalAlignment="Right" Margin="0"
+                    <Button Grid.Column="1" Command="{Binding EditCommand}" Style="{StaticResource ToolbarButtonStyle}"
+                            VerticalAlignment="Center" Margin="16,0,0,0"
                                 ToolTip="修改当前相机配置">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/>
-                                <TextBlock Text="编辑配置"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/>
+                            <TextBlock Text="编辑配置"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
 
             <Border Grid.Row="1" Style="{StaticResource AlertBorderStyle}"
                     Visibility="{Binding HasLicenseAlert, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <DockPanel LastChildFill="False">
-                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="许可证提醒" FontWeight="SemiBold" Margin="0,0,10,0"
-                                   Foreground="{Binding LicenseStatusBrush}"/>
-                        <TextBlock Text="{Binding LicenseAlertText}" TextWrapping="Wrap"/>
-                    </StackPanel>
-                    <Button DockPanel.Dock="Right" Command="{Binding UploadLicenseCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" Margin="12,0,0,0"
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="{Binding LicenseAlertText}" TextWrapping="Wrap"
+                               FontWeight="SemiBold" Foreground="{Binding LicenseStatusBrush}"
+                               Margin="0,0,8,0"/>
+                    <Button Grid.Column="1" Command="{Binding UploadLicenseCommand}"
+                            Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0"
                             Content="更新许可证"/>
-                </DockPanel>
+                </Grid>
             </Border>
 
-            <UniformGrid Grid.Row="2" Columns="4" Margin="0,0,0,12">
-                <Border Style="{StaticResource MetricCardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="ID" Style="{StaticResource LabelTextStyle}"/>
-                        <TextBox Text="{Binding Id, Mode=OneWay}" Style="{StaticResource CopyableMetricTextBoxStyle}"/>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource MetricCardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="型号" Style="{StaticResource LabelTextStyle}"/>
-                        <TextBox Text="{Binding Config.CameraModel, Mode=OneWay}" Style="{StaticResource CopyableMetricTextBoxStyle}"/>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource MetricCardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="连接状态" Style="{StaticResource LabelTextStyle}"/>
-                        <TextBox Text="{Binding SysResourceModel.Remark, Mode=OneWay, Converter={StaticResource StatusToTextConverter}}">
-                            <TextBox.Style>
-                                <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource CopyableMetricTextBoxStyle}">
-                                    <Setter Property="Foreground" Value="#FF2EAD4F"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
-                                            <Setter Property="Foreground" Value="#FFE53935"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Style>
-                        </TextBox>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource MetricCardStyle}" Margin="0">
-                    <StackPanel>
-                        <TextBlock Text="许可证状态" Style="{StaticResource LabelTextStyle}"/>
-                        <TextBox Text="{Binding LicenseStatusText, Mode=OneWay}"
-                                 Foreground="{Binding LicenseStatusBrush}"
-                                 Style="{StaticResource CopyableMetricTextBoxStyle}"/>
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
-
-            <Grid Grid.Row="3">
+            <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1.58*"/>
                     <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="1.18*"/>
                 </Grid.ColumnDefinitions>
 
-                <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <Border Grid.Column="0" Style="{StaticResource SectionPanelStyle}" Margin="0">
                     <StackPanel>
-                        <Border Style="{StaticResource SectionPanelStyle}">
-                            <StackPanel>
-                                <TextBlock Text="配置" Style="{StaticResource SectionTitleStyle}"/>
-                                <UniformGrid Columns="3">
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding EditCommand}">
-                                        <TextBlock Text="修改配置" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
-                                        <TextBlock Text="打开配置文件" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding FilterWheelEditCommand}">
-                                        <TextBlock Text="编辑滤光轮配置" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource SectionPanelStyle}">
-                            <StackPanel>
-                                <TextBlock Text="许可证" Style="{StaticResource SectionTitleStyle}"/>
-                                <UniformGrid Columns="4">
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding UploadLicenseCommand}">
-                                        <TextBlock Text="修改许可证" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding UploadLicenseNetCommand}">
-                                        <TextBlock Text="在线下载许可证" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding CopyLicenseCommand}">
-                                        <TextBlock Text="复制许可证" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding ExportLicenseCommand}">
-                                        <TextBlock Text="导出许可证" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource SectionPanelStyle}">
-                            <StackPanel>
-                                <TextBlock Text="校正" Style="{StaticResource SectionTitleStyle}"/>
-                                <UniformGrid Columns="3">
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding UploadCalibrationCommand}">
-                                        <TextBlock Text="上传校正文件" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
-                                        <TextBlock Text="校正模板设置" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding CalibrationEditCommand}">
-                                        <TextBlock Text="校正编辑" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource SectionPanelStyle}">
-                            <StackPanel>
-                                <TextBlock Text="备份与恢复" Style="{StaticResource SectionTitleStyle}"/>
-                                <UniformGrid Columns="2">
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding CreatResotreCommand}">
-                                        <TextBlock Text="创建还原点" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource CommandActionButtonStyle}" Command="{Binding LoadResotreCommand}">
-                                        <TextBlock Text="加载还原点" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource SectionPanelStyle}" Margin="0">
-                            <StackPanel>
-                                <TextBlock Text="危险操作" Style="{StaticResource SectionTitleStyle}"/>
-                                <UniformGrid Columns="2">
-                                    <Button Style="{StaticResource DangerCommandButtonStyle}" Command="{Binding ResetCommand}">
-                                        <TextBlock Text="重置" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource DangerCommandButtonStyle}" Command="{Binding DeleteCommand}">
-                                        <TextBlock Text="删除" Style="{StaticResource CommandButtonTextStyle}"/>
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-
-                <StackPanel Grid.Column="2">
-                    <Border Style="{StaticResource SectionPanelStyle}">
                         <StackPanel>
+                            <TextBlock Text="配置" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <UniformGrid Columns="3">
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding EditCommand}">
+                                    <TextBlock Text="修改配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
+                                    <TextBlock Text="打开配置文件" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding FilterWheelEditCommand}">
+                                    <TextBlock Text="编辑滤光轮配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <Border Style="{StaticResource SectionDividerStyle}"/>
+
+                        <StackPanel>
+                            <TextBlock Text="许可证" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <UniformGrid Columns="4">
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadLicenseCommand}">
+                                    <TextBlock Text="修改许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadLicenseNetCommand}">
+                                    <TextBlock Text="在线下载许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CopyLicenseCommand}">
+                                    <TextBlock Text="复制许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding ExportLicenseCommand}">
+                                    <TextBlock Text="导出许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <Border Style="{StaticResource SectionDividerStyle}"/>
+
+                        <StackPanel>
+                            <TextBlock Text="校正" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <UniformGrid Columns="3">
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadCalibrationCommand}">
+                                    <TextBlock Text="上传校正文件" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
+                                    <TextBlock Text="校正模板设置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationEditCommand}">
+                                    <TextBlock Text="校正编辑" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <Border Style="{StaticResource SectionDividerStyle}"/>
+
+                        <StackPanel>
+                            <TextBlock Text="备份与恢复" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <UniformGrid Columns="2">
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CreatResotreCommand}">
+                                    <TextBlock Text="创建还原点" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding LoadResotreCommand}">
+                                    <TextBlock Text="加载还原点" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <Border Style="{StaticResource SectionDividerStyle}"/>
+
+                        <StackPanel>
+                            <TextBlock Text="危险操作" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <UniformGrid Columns="2">
+                                <Button Style="{StaticResource WarningCommandButtonStyle}" Command="{Binding ResetCommand}">
+                                    <TextBlock Text="重置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactDangerCommandButtonStyle}" Command="{Binding DeleteCommand}">
+                                    <TextBlock Text="删除" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                            </UniformGrid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource SectionPanelStyle}" Margin="0">
+                    <StackPanel>
+                        <StackPanel Style="{StaticResource InfoSectionPanelStyle}">
                             <TextBlock Text="配置信息" Style="{StaticResource SectionTitleStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="118"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
@@ -291,41 +284,35 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Text="CameraMode" Style="{StaticResource DetailLabelStyle}"/>
-                                <TextBox Grid.Column="1" Text="{Binding Config.CameraMode, Mode=OneWay}"
+                                <TextBlock Text="CameraID" Style="{StaticResource DetailLabelStyle}"/>
+                                <TextBox Grid.Column="1" Text="{Binding Config.CameraID, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}"/>
 
-                                <TextBlock Grid.Row="1" Text="Channel" Style="{StaticResource DetailLabelStyle}" Margin="0,8,10,0"/>
-                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Channel, Mode=OneWay}"
-                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,8,0,0"/>
+                                <TextBlock Grid.Row="1" Text="CameraModel" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.CameraModel, Mode=OneWay}"
+                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="2" Text="ImageBpp" Style="{StaticResource DetailLabelStyle}" Margin="0,8,10,0"/>
-                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.ImageBpp, Mode=OneWay}"
-                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,8,0,0"/>
+                                <TextBlock Grid.Row="2" Text="CameraMode" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.CameraMode, Mode=OneWay}"
+                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="3" Text="Endpoint" Style="{StaticResource DetailLabelStyle}" Margin="0,8,10,0"/>
-                                <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,8,0,0">
-                                    <TextBox.Text>
-                                        <MultiBinding StringFormat="{}{0}  {1}">
-                                            <Binding Path="Config.FileServerCfg.Endpoint" Mode="OneWay"/>
-                                            <Binding Path="Config.FileServerCfg.PortRange" Mode="OneWay"/>
-                                        </MultiBinding>
-                                    </TextBox.Text>
-                                </TextBox>
+                                <TextBlock Grid.Row="3" Text="Channel" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Config.Channel, Mode=OneWay}"
+                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="4" Text="Path" Style="{StaticResource DetailLabelStyle}" Margin="0,8,10,0"/>
-                                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Config.FileServerCfg.FileBasePath, Mode=OneWay}"
-                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,8,0,0"/>
+                                <TextBlock Grid.Row="4" Text="ImageBpp" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Config.ImageBpp, Mode=OneWay}"
+                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
                             </Grid>
                         </StackPanel>
-                    </Border>
 
-                    <Border Style="{StaticResource SectionPanelStyle}">
-                        <StackPanel>
+                        <Border Style="{StaticResource SectionDividerStyle}"/>
+
+                        <StackPanel Style="{StaticResource InfoSectionPanelStyle}">
                             <TextBlock Text="许可证" Style="{StaticResource SectionTitleStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="118"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
@@ -339,36 +326,36 @@
                                 <TextBox Grid.Column="1" Text="{Binding CameraLicenseModel.ColorVisionLicense.DeviceMode, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}"/>
 
-                                <TextBlock Grid.Row="1" Text="IssueDate" Style="{StaticResource DetailLabelStyle}" Margin="0,8,10,0"/>
+                                <TextBlock Grid.Row="1" Text="IssueDate" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding CameraLicenseModel.ColorVisionLicense.IssueDate, Mode=OneWay}"
-                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,8,0,0"/>
+                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="2" Text="ExpiryDate" Style="{StaticResource DetailLabelStyle}" Margin="0,8,10,0"/>
+                                <TextBlock Grid.Row="2" Text="ExpiryDate" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CameraLicenseModel.ExpiryDate, Mode=OneWay}"
-                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,8,0,0"/>
+                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="3" Text="Licensee" Style="{StaticResource DetailLabelStyle}" Margin="0,8,10,0"/>
+                                <TextBlock Grid.Row="3" Text="Licensee" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding CameraLicenseModel.ColorVisionLicense.Licensee, Mode=OneWay}"
-                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,8,0,0"/>
+                                         Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
                             </Grid>
                         </StackPanel>
-                    </Border>
 
-                    <Border Style="{StaticResource SectionPanelStyle}" Margin="0">
-                        <StackPanel>
+                        <Border Style="{StaticResource SectionDividerStyle}"/>
+
+                        <StackPanel Margin="0">
                             <TextBlock Text="校正文件管理" Style="{StaticResource SectionTitleStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="118"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Resources" Style="{StaticResource DetailLabelStyle}"/>
+                                <TextBlock Text="资源数量" Style="{StaticResource DetailLabelStyle}"/>
                                 <TextBox Grid.Column="1" Text="{Binding VisualChildren.Count, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}"/>
                             </Grid>
                         </StackPanel>
-                    </Border>
-                </StackPanel>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Grid>
     </Grid>

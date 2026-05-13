@@ -532,6 +532,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 OnPropertyChanged(nameof(LicenseExpiryText));
                 OnPropertyChanged(nameof(LicenseExpiryColor));
                 OnPropertyChanged(nameof(LicenseStatusText));
+                OnPropertyChanged(nameof(LicenseStatusBadgeText));
                 OnPropertyChanged(nameof(LicenseStatusBrush));
                 OnPropertyChanged(nameof(LicenseStatusBackgroundBrush));
                 OnPropertyChanged(nameof(HasLicenseAlert));
@@ -591,10 +592,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (!string.IsNullOrWhiteSpace(CameraLicenseModel?.ColorVisionLicense?.DeviceMode))
                     return CameraLicenseModel.ColorVisionLicense.DeviceMode;
 
-                if (!string.IsNullOrWhiteSpace(Config.CameraModel))
-                    return Config.CameraModel;
-
-                return "未授权";
+                return Config.CameraModel.ToString();
             }
         }
 
@@ -610,6 +608,22 @@ namespace ColorVision.Engine.Services.PhyCameras
                     LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => "即将到期",
                     LicenseState.Licensed => "有效",
                     _ => "异常",
+                };
+            }
+        }
+
+        public string LicenseStatusBadgeText
+        {
+            get
+            {
+                return LicenseState switch
+                {
+                    LicenseState.Unlicensed => "无许可证",
+                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => $"许可证已过期 {expiryDate:yyyy-MM-dd}",
+                    LicenseState.Invalid => "许可证异常",
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => $"许可证即将到期 {expiryDate:yyyy-MM-dd}",
+                    LicenseState.Licensed => "许可证有效",
+                    _ => "许可证异常",
                 };
             }
         }

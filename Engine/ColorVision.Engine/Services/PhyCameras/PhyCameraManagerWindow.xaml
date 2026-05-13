@@ -46,18 +46,28 @@
             </Style>
 
             <Style x:Key="CameraListCardStyle" TargetType="{x:Type Border}">
-                <Setter Property="Margin" Value="0,0,0,10"/>
-                <Setter Property="Padding" Value="12,10"/>
-                <Setter Property="CornerRadius" Value="8"/>
-                <Setter Property="MinHeight" Value="84"/>
+                <Setter Property="Margin" Value="0,0,0,6"/>
+                <Setter Property="Padding" Value="9,8"/>
+                <Setter Property="CornerRadius" Value="7"/>
+                <Setter Property="MinHeight" Value="72"/>
                 <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                        <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
                         <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                        <Setter Property="BorderThickness" Value="1.5"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="CameraListSelectionBarStyle" TargetType="{x:Type Border}">
+                <Setter Property="Width" Value="4"/>
+                <Setter Property="CornerRadius" Value="2"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -65,36 +75,20 @@
             <Style x:Key="CameraListPrimaryTextStyle" TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                        <Setter Property="Foreground" Value="White"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="CameraListSecondaryTextStyle" TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Opacity" Value="0.74"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                        <Setter Property="Foreground" Value="White"/>
-                        <Setter Property="Opacity" Value="0.88"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
-            <Style x:Key="CameraListConnectionBadgeStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource StatusBadgeBorderStyle}">
+            <Style x:Key="CameraListConnectionBadgeStyle" TargetType="{x:Type Border}">
                 <Setter Property="Margin" Value="8,0,0,0"/>
-                <Setter Property="Padding" Value="8,2"/>
-                <Setter Property="Background" Value="#1F2EAD4F"/>
-                <Setter Property="BorderBrush" Value="#662EAD4F"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
-                        <Setter Property="Background" Value="#1FE53935"/>
-                        <Setter Property="BorderBrush" Value="#66E53935"/>
-                    </DataTrigger>
-                </Style.Triggers>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
             </Style>
 
             <Style x:Key="CameraListConnectionTextStyle" TargetType="{x:Type TextBlock}">
@@ -105,17 +99,15 @@
                     <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
                         <Setter Property="Foreground" Value="#FFE53935"/>
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                        <Setter Property="Foreground" Value="White"/>
-                    </DataTrigger>
                 </Style.Triggers>
             </Style>
 
             <Style x:Key="CameraListLicenseTagStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource StatusBadgeBorderStyle}">
-                <Setter Property="Margin" Value="10,0,0,0"/>
-                <Setter Property="Padding" Value="8,2"/>
-                <Setter Property="Background" Value="{Binding LicenseStatusBackgroundBrush}"/>
-                <Setter Property="BorderBrush" Value="{Binding LicenseListTagBrush}"/>
+                <Setter Property="Margin" Value="8,0,0,0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
@@ -216,7 +208,7 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="310"/>
                 <ColumnDefinition Width="10"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
@@ -228,12 +220,12 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <DockPanel Margin="2,0,2,10">
+                    <DockPanel Margin="2,0,2,8">
                         <TextBlock DockPanel.Dock="Right" Text="{Binding PhyCameras.Count, Mode=OneWay, StringFormat={}{0}}"
                                    FontSize="13" FontWeight="SemiBold" Opacity="0.75"/>
                         <StackPanel>
                             <TextBlock Text="相机清单" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock Text="按设备状态排序，优先显示在线相机" FontSize="12" Opacity="0.58" Margin="0,3,0,0"/>
+                            <TextBlock Text="按设备状态排序，优先显示在线相机" FontSize="11" Opacity="0.58" Margin="0,2,0,0"/>
                         </StackPanel>
                     </DockPanel>
 
@@ -248,49 +240,59 @@
                             <DataTemplate DataType="{x:Type local:PhyCamera}">
                                 <Border Style="{StaticResource CameraListCardStyle}">
                                     <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="4"/>
+                                            <ColumnDefinition Width="10"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Id}" Style="{StaticResource CameraListPrimaryTextStyle}"/>
-                                            <TextBlock Text="  " Style="{StaticResource CameraListPrimaryTextStyle}"/>
-                                            <TextBlock Text="{Binding DeviceModeDisplayText}" Style="{StaticResource CameraListPrimaryTextStyle}"/>
-                                        </StackPanel>
+                                        <Border Grid.Column="0" Style="{StaticResource CameraListSelectionBarStyle}"/>
 
-                                        <Border Grid.Column="1" Style="{StaticResource CameraListConnectionBadgeStyle}">
-                                            <TextBlock Text="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToTextConverter}}"
-                                                       Style="{StaticResource CameraListConnectionTextStyle}"/>
-                                        </Border>
-
-                                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Code}"
-                                                   Style="{StaticResource CameraListSecondaryTextStyle}" Margin="0,7,0,0"/>
-
-                                        <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,7,0,0">
+                                        <Grid Grid.Column="2">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
-                                            <TextBlock Style="{StaticResource CameraListSecondaryTextStyle}">
-                                                <Run Text="{Binding Config.CameraModel}"/>
-                                                <Run Text=" / "/>
-                                                <Run Text="{Binding Config.CameraMode}"/>
-                                            </TextBlock>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Id}" Style="{StaticResource CameraListPrimaryTextStyle}"/>
+                                                <TextBlock Text="  " Style="{StaticResource CameraListPrimaryTextStyle}"/>
+                                                <TextBlock Text="{Binding DeviceModeDisplayText}" Style="{StaticResource CameraListPrimaryTextStyle}"/>
+                                            </StackPanel>
 
-                                            <Border Grid.Column="1"
-                                                    Style="{StaticResource CameraListLicenseTagStyle}"
-                                                    Visibility="{Binding ShowLicenseListTag, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <TextBlock Text="{Binding LicenseListTagText}"
-                                                           Foreground="{Binding LicenseListTagBrush}"
-                                                           FontSize="11" FontWeight="SemiBold"/>
+                                            <Border Grid.Column="1" Style="{StaticResource CameraListConnectionBadgeStyle}">
+                                                <TextBlock Text="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToTextConverter}}"
+                                                           Style="{StaticResource CameraListConnectionTextStyle}"/>
                                             </Border>
+
+                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Code}"
+                                                       Style="{StaticResource CameraListSecondaryTextStyle}" Margin="0,6,0,0"/>
+
+                                            <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Style="{StaticResource CameraListSecondaryTextStyle}">
+                                                    <Run Text="{Binding Config.CameraModel}"/>
+                                                    <Run Text=" · "/>
+                                                    <Run Text="{Binding Config.CameraMode}"/>
+                                                </TextBlock>
+
+                                                <Border Grid.Column="1"
+                                                        Style="{StaticResource CameraListLicenseTagStyle}"
+                                                        Visibility="{Binding ShowLicenseListTag, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                    <TextBlock Text="{Binding LicenseListTagText}"
+                                                               Foreground="{Binding LicenseListTagBrush}"
+                                                               FontSize="11" FontWeight="SemiBold"/>
+                                                </Border>
+                                            </Grid>
                                         </Grid>
                                     </Grid>
                                 </Border>

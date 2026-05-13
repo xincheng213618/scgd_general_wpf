@@ -17,14 +17,14 @@
     </Style>
 
     <Style x:Key="SectionPanelStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource PanelBorderStyle}">
-        <Setter Property="Padding" Value="14"/>
-        <Setter Property="Margin" Value="0,0,0,12"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
     </Style>
 
     <Style x:Key="BaseActionButtonStyle" TargetType="{x:Type Button}">
-        <Setter Property="MinHeight" Value="34"/>
-        <Setter Property="Padding" Value="14,6"/>
-        <Setter Property="Margin" Value="0,0,8,8"/>
+        <Setter Property="MinHeight" Value="32"/>
+        <Setter Property="Padding" Value="12,5"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
@@ -61,7 +61,7 @@
     </Style>
 
     <Style x:Key="ToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
-        <Setter Property="MinHeight" Value="36"/>
+        <Setter Property="MinHeight" Value="34"/>
     </Style>
 
     <Style x:Key="PrimaryToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource ToolbarButtonStyle}">
@@ -93,9 +93,9 @@
     </Style>
 
     <Style x:Key="CommandActionButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
-        <Setter Property="MinHeight" Value="48"/>
-        <Setter Property="Margin" Value="0,0,10,10"/>
-        <Setter Property="Padding" Value="14,10"/>
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="Margin" Value="0,0,8,8"/>
+        <Setter Property="Padding" Value="12,8"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
@@ -108,8 +108,8 @@
 
     <Style x:Key="StatusBadgeBorderStyle" TargetType="{x:Type Border}">
         <Setter Property="CornerRadius" Value="999"/>
-        <Setter Property="Padding" Value="10,4"/>
-        <Setter Property="Margin" Value="0,0,8,8"/>
+        <Setter Property="Padding" Value="8,3"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
@@ -117,9 +117,9 @@
 
     <Style x:Key="SectionTitleStyle" TargetType="{x:Type TextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontSize" Value="15"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
     </Style>
 
     <Style x:Key="LabelTextStyle" TargetType="{x:Type TextBlock}">
@@ -138,8 +138,8 @@
     <Style x:Key="DetailLabelStyle" TargetType="{x:Type TextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="Opacity" Value="0.58"/>
-        <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Margin" Value="0,0,10,0"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Margin" Value="0,0,8,0"/>
     </Style>
 
     <Style x:Key="DetailValueStyle" TargetType="{x:Type TextBlock}">
@@ -166,7 +166,7 @@
     </Style>
 
     <Style x:Key="CopyableValueTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource CopyableTextBoxStyle}">
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontSize" Value="12"/>
     </Style>
 
     <Style x:Key="CopyableMetricTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource CopyableTextBoxStyle}">
