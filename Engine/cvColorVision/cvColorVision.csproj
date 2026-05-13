@@ -4,7 +4,7 @@
 		<UseWPF>true</UseWPF>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<VersionPrefix>1.5.1.1</VersionPrefix>
-		<TargetFrameworks>net10.0-windows;net8.0-windows;net6.0-windows;net48</TargetFrameworks>
+		<TargetFrameworks>net10.0-windows</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -15,6 +15,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="CVCOme\**" />
+	  <EmbeddedResource Remove="CVCOme\**" />
+	  <None Remove="CVCOme\**" />
+	  <Page Remove="CVCOme\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="log4net" Version="3.3.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260330" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260302" />

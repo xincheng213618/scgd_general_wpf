@@ -22,8 +22,16 @@ namespace ColorVision.Engine.Templates.MTF
         {
             AlgResultMTFModel = detail;
             Point = new POIPoint(detail.PoiId ?? -1, -1, detail.PoiName, detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
-            var temp = JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value);
+            var temp = JsonConvert.DeserializeObject<MTFResultData>(detail.Value);
             Articulation = temp.Articulation;
+        }
+    }
+
+    public class MTFResultData
+    {
+        public double Articulation
+        {
+            get; set;
         }
     }
 }

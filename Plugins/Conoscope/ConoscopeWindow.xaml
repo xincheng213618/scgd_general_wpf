@@ -604,6 +604,49 @@
                                         <TextBlock Grid.Row="1" Text="分析窗口" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="帮助">
+                        <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
+                            <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button x:Name="btnOpenHelpCenter"
+                                                    Click="btnOpenConoscopeHelp_Click"
+                                                    Style="{StaticResource RibbonLargeButtonStyle}"
+                                                    ToolTip="打开可搜索的 Conoscope 帮助中心，查看使用路径、算法原理和名词解析">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE897;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="帮助中心" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="打开" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="帮助中心窗口里已经集成快速开始、使用路径、算法原理和名词解析。直接打开一个窗口，在里面搜索或切换分类即可。"
+                                                   TextWrapping="Wrap"
+                                                   Width="320"
+                                                   Foreground="Gray"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="1" Text="说明" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>

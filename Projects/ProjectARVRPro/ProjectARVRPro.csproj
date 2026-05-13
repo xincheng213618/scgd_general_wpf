@@ -27,12 +27,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="CVCommCore">
-			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
 		<EmbeddedResource Include="CHANGELOG.md">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</EmbeddedResource>

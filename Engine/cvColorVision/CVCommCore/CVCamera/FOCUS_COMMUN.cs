@@ -1,0 +1,10 @@
+namespace CVCommCore.CVCamera;
+
+public enum FOCUS_COMMUN
+{
+	VID_SERIAL,
+	CANON_SERIAL,
+	NED_SERIAL,
+	LONGFOOT_SERIAL,
+	TSM_SERIAL
+}

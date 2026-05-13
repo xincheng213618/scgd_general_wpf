@@ -6,42 +6,51 @@ This file maps the product requirements to implementation areas so future change
 
 | ID | Area | Current Status | Main Gap | Suggested Module |
 | --- | --- | --- | --- | --- |
-| 1 | UI function zones | Partial. Top tabs exist for home, capture, preprocess, analysis, window. | Need explicit File/Camera/Analysis/Preprocess/Calibration grouping and a cleaner command model. | `ConoscopeWindow.*.cs`, `ConoscopeWindow.xaml` |
+| 1 | UI function zones | Implemented. Top tabs now cover home, capture, preprocess, analysis, window, and home includes active-view quick controls. | Continue trimming duplicated controls between ribbon and per-view editors. | `ConoscopeWindow.*.cs`, `ConoscopeWindow.xaml` |
 | 2 | Model selection | Implemented for VA60/VA80. | Keep model-specific UI visibility centralized. | `Core/ConoscopeModelProfile.cs`, `ConoscopeWindow.Model.cs` |
 | 3 | Observation camera | Mostly implemented for VA60: open button, draggable/resizable window, size dropdown, center/scale config. | Need verify VA80 hidden path, center marker workflow, and make size/center config easier to find. | `MVS/*`, `Core/ConoscopeModelProfile.cs` |
-| 4 | 3D image display | Implemented through current view 3D window. | Verify pan/rotate UX and expose from analysis ribbon. | `ConoscopeView.Tools.cs`, `Window3D` |
+| 4 | 3D image display | Implemented through current view 3D window and analysis ribbon entry. | Verify pan/rotate UX only; entry point is already wired. | `ConoscopeWindow.Analysis.cs`, `ConoscopeView.Export.cs` |
 | 5 | Color difference | Mostly implemented: uv formula, fixed illuminants, image center, custom, reference image. | Need make reference image capture workflow more explicit in top Analysis area. | `ConoscopeView.ColorDifference.cs`, `Core/ConoscopeColorimetry.cs` |
 | 6 | ND switching | Partial: set/read ND and template binding exist. | Need ND dropdown values `0/8/64/1000` and increment/decrement controls. | `ConoscopeWindow.Capture.cs` |
 | 7 | Measurement spot selection | Partial in observation camera grating UI. | Need main measurement spot selector and shared enum/options `3/2/1/0.5mm`. | `MVS/*`, `Core/ConoscopeModelProfile.cs` |
 | 8 | Template auto matching | Implemented by ND-calibration binding. | Need user-visible binding summary/status. | `ConoscopeWindow.Capture.cs` |
-| 9 | Contrast test | Partial/manual window exists. | Need black/white capture buttons and calculate flow from measured data. | `Analysis/ContrastTestWindow.*`, `ConoscopeWindow.Analysis.cs` |
-| 10 | Color gamut | Partial/manual calculation exists with standard gamut list. | Need R/G/B capture buttons and measured-image-to-gamut flow. | `Analysis/ColorGamutWindow.*`, `ConoscopeWindow.Analysis.cs` |
-| 11 | Focus point settings | Partial: reference line/circle can be adjusted. | Need focus point object with live coordinate, azimuth/polar display, adjustable point size, conditional display after calculations. | `ConoscopeView.FocusPoint.cs` |
-| 12 | CIE diagram display | Implemented using shared CIE diagram control. | Need selected focus point highlighting and standard gamut triangle toggles in Conoscope workflow. | `ColorVision.ImageEditor/Cie/*`, `ConoscopeView.Cie.cs` |
-| 13 | XYZ/xy/contrast/difference/gamut display | Partial: channel dropdown supports XYZ/xy/uv/difference. | Need contrast/gamut result display only after corresponding calculation. | `ConoscopeView.Rendering.cs`, `ConoscopeView.AnalysisResults.cs` |
+| 9 | Contrast test | Implemented. Main ribbon records white/black batches from the active view and opens a dedicated result window; legacy manual window remains for compatibility. | Consider exporting result-window data directly. | `Analysis/ContrastResultWindow.*`, `ConoscopeWindow.AnalysisRibbon.cs` |
+| 10 | Color gamut | Implemented. Main ribbon records R/G/B batches from the active view and opens a dedicated gamut result window. | Consider adding direct result export. | `Analysis/ColorGamutResultWindow.*`, `ConoscopeWindow.AnalysisRibbon.cs` |
+| 11 | Focus point settings | Mostly implemented. Local focus circles can be drawn, sampled, and reused by gamut/contrast calculations without engine-side filtering. | Size presets and richer coordinate readback can still be expanded. | `ConoscopeView.FocusPoint.cs`, `Analysis/MeasurementCaptureModels.cs` |
+| 12 | CIE diagram display | Implemented using shared CIE diagram control and the gamut result window. | Could add stronger cross-highlighting back to the source view. | `Analysis/ColorGamutResultWindow.*`, `ColorVision.ImageEditor/Cie/*` |
+| 13 | XYZ/xy/contrast/difference/gamut display | Implemented. View-level channel display stays in the main view, while contrast/gamut results live in separate windows after calculation. | Calculated result export is still limited. | `ConoscopeView.Display.cs`, `ConoscopeWindow.AnalysisRibbon.cs` |
 | 14 | Data export | Partial: selected channel CSV export exists. | Need export dataset selector and include calculated contrast/difference/gamut results when available. | `Core/ConoscopeExportService.cs`, `ConoscopeView.Export.cs` |
 
 ## Target Code Layout
 
-`ConoscopeWindow` should only coordinate window-level commands:
+`ConoscopeWindow` currently coordinates window-level commands through these partial files:
 
 - `ConoscopeWindow.xaml.cs`: construction, theme, lifetime, high-level initialization.
 - `ConoscopeWindow.Documents.cs`: AvalonDock document/view management.
 - `ConoscopeWindow.Preprocess.cs`: top ribbon preprocess and pseudo-color preset controls.
 - `ConoscopeWindow.Capture.cs`: flow templates, cameras, ND switching, calibration binding.
-- `ConoscopeWindow.Analysis.cs`: contrast, gamut, 3D, CIE, export command routing.
-- `ConoscopeWindow.Model.cs`: VA60/VA80 selection and model-dependent visibility.
+- `ConoscopeWindow.Analysis.cs`: 3D, CIE and export command routing.
+- `ConoscopeWindow.AnalysisRibbon.cs`: gamut/contrast recording, calculation and result-window state.
+- `ConoscopeWindow.HomeQuickControls.cs`: active-view quick control bridge for home ribbon.
+- `ConoscopeWindow.Help.cs`: help window entry points from the window tab.
 
-`ConoscopeView` should be split by current image behavior:
+`ConoscopeView` is now split by current image behavior in these files:
 
 - `ConoscopeView.xaml.cs`: construction, data context, lifetime.
-- `ConoscopeView.Rendering.cs`: channel display, pseudo-color, legend, zoom toolbar.
+- `ConoscopeView.Display.cs`: channel display refresh and display-channel synchronization.
 - `ConoscopeView.Preprocess.cs`: filter/dust/clamp configuration and apply operation.
 - `ConoscopeView.ColorDifference.cs`: reference source, uv difference, reference image capture.
-- `ConoscopeView.ReferenceCurves.cs`: azimuth/polar sampling and ScottPlot updates.
-- `ConoscopeView.FocusPoint.cs`: focus point display/editing and CIE point sync.
+- `ConoscopeView.ReferenceAxis.cs`: reference mode/value synchronization and axis quick controls.
+- `ConoscopeView.ReferencePlot.cs`: azimuth/polar sampling and plot updates.
+- `ConoscopeView.FocusPoint.cs`: local focus circle display, editing and measurement entry points.
+- `ConoscopeView.WindowQuickControls.cs`: minimal state API exposed to the window-level ribbon.
 - `ConoscopeView.Export.cs`: CSV/export actions.
-- `ConoscopeView.Tools.cs`: full screen, 3D, CIE window commands.
+
+Shared calculation and result plumbing now also lives under `Analysis/`:
+
+- `MeasurementCaptureModels.cs`: active-view focus-point snapshots and batch calculators.
+- `ColorGamutResultWindow.*`: gamut result presentation.
+- `ContrastResultWindow.*`: contrast result presentation.
 
 Shared logic should live under `Core/` and avoid UI dependencies where possible:
 

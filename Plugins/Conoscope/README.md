@@ -1,182 +1,169 @@
 # Conoscope
 
-## 功能定位
+版本：1.4.2.22
 
-集成了锥光镜观察系统
+Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、关注点采样和综合色域/对比度计算的插件。当前版本已经把“图像交互”“结果计算”“结果显示”拆成了更清晰的三层：
 
-## 作用范围
+- 图像视图负责显示通道、参考线/极角圆、关注点圆和局部交互。
+- 主窗口 Ribbon 负责当前视图快捷控制、批量记录和计算触发。
+- 色域结果窗、对比度结果窗负责独立展示计算结果，不再把大量结果控件堆回主界面。
 
-锥光镜（Conoscope）观察功能，支持多语言切换。
+帮助菜单中的“Conoscope 帮助”和窗口页中的“帮助”按钮都会直接打开这份文档以及插件更新日志。
 
-## 主要功能点
+## 当前版本重点
 
-- **锥光镜观察系统** - 完整的锥光镜测试窗口（ConoscopeWindow）
-  - 支持VA60和VA80两种硬件型号
-  - VA60: 一台观察相机（视频模式）+ 一台测量相机（需要校正）
-  - VA80: 一台测量相机（需要校正）
-  - 图像滤波和处理功能
-  - 实时视频显示和图像捕获
-  - 方位角/极角分布曲线分析
-  - 参考线与同心圆辅助分析工具
-  - 基于AvalonDock的可拖拽面板布局系统
-- **MVS相机集成** - 海康威视MVS工业相机支持（MVSViewWindow）
-  - 相机设备枚举和连接
-  - 实时视频流显示
-  - 图像采集和处理
-  - 相机参数配置
-- **多语言支持** - 通过ColorVision.UI语言系统实现
-  - 支持7种语言（中文、英文、法文、日文、韩文、俄文、繁体中文）
-  - 通过LanguageConfig管理语言资源
-- **数据导出** - 多模式数据导出
-  - 方位角模式导出（Azimuth export）
-  - 极角/同心圆模式导出（Polar export）
-  - 截线导出（Cross-section export）
-  - 高级导出弹窗（AdvancedExportDialog）
-  - 支持X/Y/Z/CieX/CieY/CieU/CieV通道导出
-- **模板和流程管理** - 基于ColorVision引擎的模板系统
-- **设备服务集成** - 与ColorVision设备管理系统的深度集成
-- **MQTT通信** - 支持MQTT消息通信协议
+- 首页新增“当前视图”快捷区，可直接控制活动 View 的显示通道、参考模式和值输入。
+- 图像上支持手动绘制关注点圆，并通过右键直接计算当前关注点数据。
+- 参考图形支持圆形和极角模式切换，并保留在视图中的拖拽调整能力。
+- 分析页支持从当前活动 View 批量记录 R/G/B、白/黑关注点数据，并弹出独立结果窗口。
+- 窗口页和 Help 菜单新增帮助入口，直接读取插件目录中的 README.md 与 CHANGELOG.md。
 
-## 与主程序的依赖关系
+## 快速开始
 
-**引用的程序集**:
-- ColorVision.Engine - 核心引擎功能（设备管理、模板、MQTT、数据库）
-- ColorVision.Solution - 解决方案框架和工作区管理
-- ColorVision.ImageEditor - 图像编辑和显示功能
-- CVCommCore.dll - 通信核心组件
+1. 从主程序的工具菜单打开 VAM，进入 Conoscope 主窗口。
+2. 导入或采集图像后，确认当前标签页是需要操作的活动 View。
+3. 在主页使用“当前视图”快捷区切换显示通道、参考模式和参考值。
+4. 在图像上添加关注点圆，必要时拖动参考线或参考圆到目标位置。
+5. 在分析页记录 R/G/B 或白/黑数据，然后执行色域或对比度计算。
+6. 在结果窗口中按“全部关注点”或“单关注点”查看结果，并按需要继续导出原始曲线或图像数据。
 
-**被引用方式**:
-- 作为插件通过manifest.json注册到主程序
-- 编译后自动复制到主程序Plugins目录（PostBuild步骤）
-- 可独立启动ConoscopeWindow窗口
+## 主窗口说明
 
-## 使用方式
+### 主页
 
-### 引用方式
+- 负责新建、打开、保存和切换 Conoscope 视图。
+- “当前视图”快捷区会跟随活动标签页自动同步；当没有活动 View 时整组控件会自动隐藏。
+- 快捷区支持三类操作：
+  - 显示通道切换。
+  - 参考图形模式切换（圆 / 直线）。
+  - 参考值输入，按当前模式解释为半径或角度。
 
-```xml
-<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-<ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
-<ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
+### 采集
+
+- 管理模板、测量相机和观察相机相关操作。
+- VA60/VA80 型号差异仍由当前模型配置决定，避免在视图层分散判断。
+
+### 预处理
+
+- 用于执行滤波、伪彩色、灰尘修复、阈值与裁剪等图像预处理。
+- 预处理参数由当前视图和全局配置共同驱动，处理后立即刷新显示。
+
+### 分析
+
+- 活动 View 级工具：3D、CIE、角度导出、圆模式导出和高级导出。
+- 色域计算：
+  - 从当前活动 View 一次记录全部关注点的 R/G/B 数据。
+  - 选择标准色域后直接计算。
+  - 结果以独立窗口展示，不再挤占主界面。
+- 对比度计算：
+  - 从当前活动 View 一次记录全部关注点的白/黑数据。
+  - 直接计算关注点级黑白对比度并弹出结果窗口。
+
+### 窗口
+
+- 保存当前窗口配置。
+- 打开兼容保留的旧版色域窗口、旧版对比度窗口。
+- 打开新的帮助窗口，查看当前版本说明与更新日志。
+
+## 当前视图交互
+
+### 显示通道
+
+- 图像显示仍以当前视图为中心，主页快捷区和视图内通道控件会双向同步。
+- 切换标签页时，主页快捷区会自动切换到对应 View 的状态；没有活动 View 时不会显示空控件。
+
+### 关注点圆
+
+- Conoscope 当前使用的是插件内的本地关注点逻辑，不依赖 Engine 中带滤除流程的那套关注点计算。
+- 每个关注点以圆形绘制在图像上，便于直接对局部区域采样。
+- 右键操作可以直接触发当前关注点计算，用于快速确认当前区域数据。
+- 色域和对比度记录都会以“当前 View 的全部关注点”为一个批次快照进行保存。
+
+### 参考线与极角圆
+
+- 参考图形支持圆形和直线两种模式。
+- 切换后仍可在图像上手动旋转或移动参考图形，便于对准实际画面。
+- 如果需要只关注关注点绘制，可以先关闭参考图形，再进行圆形采样。
+
+## 色域计算流程
+
+1. 打开要作为 R 图的视图，并确保关注点位置已经调整好。
+2. 点击“记录 R”。
+3. 分别切换到 G 图、B 图后点击“记录 G”“记录 B”。
+4. 在“标准”下拉框中选择目标色域。
+5. 点击“计算色域”打开结果窗口。
+
+结果窗口说明：
+
+- 支持查看全部关注点汇总结果，也支持切换到单个关注点单独查看。
+- 内置 CIE 图展示，不需要回到主窗口重复切换。
+- 如果按钮已经记录成功，主 Ribbon 会以状态刷新提示当前记录是否完整。
+
+建议：
+
+- R/G/B 三次记录应使用一致的关注点数量和位置。
+- 若重新调整了关注点位置，建议重新记录三组数据，避免不同图之间的关注点不对应。
+
+## 对比度计算流程
+
+1. 打开白场图，确认关注点位置后点击“记录白”。
+2. 打开黑场图，使用相同关注点位置点击“记录黑”。
+3. 点击“计算对比度”打开结果窗口。
+
+结果窗口会按关注点展示：
+
+- 白场亮度。
+- 黑场亮度。
+- 对比度结果。
+
+与色域流程一样，对比度计算依赖的是“当前活动 View 的全部关注点快照”，而不是单点即时值。
+
+## 结果与导出
+
+- 主窗口仍负责打开 3D 和 CIE 视图，但计算结果展示已独立到结果窗口。
+- 导出功能保留在当前视图层，支持角度模式、圆模式以及高级导出。
+- 如果只是查看综合色域或黑白对比度，不需要再打开旧版分析窗口；旧窗口目前仅用于兼容旧流程。
+
+## 构建与输出
+
+在仓库根目录执行：
+
+```powershell
+dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 ```
 
-### 启动和运行
-- 直接运行编译后的可执行文件，启动时显示锥光镜观察窗口（ConoscopeWindow）
-- 作为插件加载到ColorVision主程序工作区
-- 可通过菜单"视图"打开MVS观察相机窗口
-- 支持通过ConoscopeModuleService以工作区标签页形式打开
+构建输出会同时复制以下文件到插件目录：
 
-### 主要功能模块
-- **锥光镜测试** - 通过ConoscopeWindow进行光学测试
-- **MVS相机控制** - 通过MVSViewWindow进行相机操作
-- **语言切换** - 通过主程序语言菜单切换系统语言
-- **设备管理** - 相机设备的连接和参数配置
+- Conoscope.dll
+- manifest.json
+- README.md
+- CHANGELOG.md
 
-## 开发调试
+这也是帮助窗口能在运行时直接读取文档的原因。
 
-```bash
-# 从解决方案根目录构建
-dotnet build build.sln
+## 运行依赖
 
-# 构建特定项目
-dotnet build Projects/ProjectStarkSemi/ProjectStarkSemi.csproj
+- 目标平台：Windows x64
+- 目标框架：net10.0-windows
+- 必需本地依赖：CVCommCore.dll、MQTTMessageLib.dll
+- UI 依赖：ColorVision.Solution、ColorVision.ImageEditor、ColorVision.Engine
 
-# 运行项目（Windows only）
-dotnet run --project Projects/ProjectStarkSemi/ProjectStarkSemi.csproj
-```
+## 维护约定
 
-## 目录说明
+如果继续调整 Conoscope 的主交互，请一起更新以下文件，避免帮助窗口和版本信息失真：
 
-- `App.xaml/.cs` - 应用程序入口和初始化
-- `ConoscopeWindow.xaml/.cs` - 锥光镜主测试窗口（多图标签窗口）
-- `ConoscopeView.xaml/.cs` - 锥光镜图像/分析视图
-- `MVSViewWindow.xaml/.cs` - MVS观察相机视频显示窗口
-- `AdvancedExportDialog.xaml/.cs` - 高级数据导出弹窗
-- `MVCamera.cs` - MVS相机SDK封装（海康威视）
-- `manifest.json` - 插件清单文件
-- `Conoscope/` - 锥光镜核心逻辑
-  - `ConoscopeManager.cs` - 锥光镜管理器（单例）
-  - `ConoscopeConfig.cs` - 配置类（型号选择、通道、滤波）
-  - `ConoscopeModelType.cs` - 硬件型号枚举（VA60/VA80）
-  - `ConoscopeModelProfile.cs` - 型号配置档案
-  - `ConoscopeModuleService.cs` - 模块服务（工作区集成、视图管理）
-  - `ConoscopeExportService.cs` - 数据导出服务
-  - `ConoscopeColorimetry.cs` - 色度学计算（RGB→XYZ转换）
-  - `ConoscopeCoordinateAxis.cs` - 坐标轴管理（极角/方位角转换）
-  - `ConoscopeConfigWindow.xaml/.cs` - 配置编辑窗口
-  - `ConoscopeImageViewContextMenu.cs` - 图像视图右键菜单
-  - `ExportMode.cs` - 导出模式和通道枚举
-  - `ImageFilterType.cs` - 图像滤波类型枚举
-  - `RgbSample.cs` - RGB采样数据模型
-  - `PolarAngleLine.cs` - 极角参考线模型
-  - `ConcentricCircleLine.cs` - 同心圆参考线模型
-  - `MenuConoscopeWindow.cs` - 锥光镜窗口菜单项
-- `Menus/` - 菜单定义
-  - `ConoscopeMenuIBase.cs` - 锥光镜菜单基类
-- `Properties/` - 项目属性和多语言资源文件
-- `Assets/Image/` - 图像资源文件
+- README.md
+- CHANGELOG.md
+- manifest.json
+- Conoscope.csproj 中的 VersionPrefix
 
-## 配置说明
+## 相关文件
 
-### 硬件型号配置
-- **VA60模式**: 双相机配置（观察相机 + 测量相机），最大角度60°
-- **VA80模式**: 单测量相机配置，最大角度80°
-- 型号切换触发角度范围联动更新
-- 配置文件通过ConoscopeConfig持久化
-
-### 语言配置
-- 支持中/英/法/日/韩/俄/繁体中文7种语言
-- 语言配置通过LanguageConfig管理
-- 资源文件位于Properties/目录（.resx）
-
-### 插件配置
-- 插件ID: ProjectStarkSemi
-- 插件版本: 1.0
-- 入口DLL: ProjectStarkSemi.dll
-- 编译后自动复制到主程序Plugins目录
-
-### 数据库和MQTT配置
-- 自动连接MySQL数据库
-- 支持MQTT消息通信
-- 服务和设备管理集成
-
-## 技术特性
-
-### 相机支持
-- 海康威视MVS工业相机SDK集成
-- 支持USB、GigE等多种接口相机
-- 实时视频流显示和图像采集
-- 相机参数可配置
-
-### 图像处理
-- 基于OpenCvSharp的图像处理
-- 支持多种图像滤波算法（低通、移动平均、高斯、中值、双边）
-- 实时图像显示和伪彩色渲染
-- 参考线/同心圆辅助分析叠加
-
-### 界面布局
-- 基于AvalonDock的可拖拽面板系统
-- 布局持久化（保存/加载/重置）
-- 面板显隐切换（控制面板、通道面板、参考曲线、设置面板）
-- 主题系统支持（亮色/暗色等）
-
-### 系统集成
-- 完整的设备服务架构
-- 模板和流程引擎支持
-- 授权和日志系统
-- 工作区标签页集成
-
-## 相关文档链接
-
-- [插件开发指南](../../docs/02-developer-guide/plugin-development/overview.md)
-- [项目架构文档](../../docs/03-architecture/README.md)
-- [引擎开发文档](../../docs/02-developer-guide/engine-development/README.md)
-- [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
-
-## 维护者
-
-ColorVision 项目团队
-
-## 版本历史
-
-参见 [CHANGELOG.md](CHANGELOG.md)
+- 主窗口：ConoscopeWindow.xaml / ConoscopeWindow.xaml.cs
+- 当前视图快捷控制：ConoscopeWindow.HomeQuickControls.cs
+- 当前视图桥接：ConoscopeView.WindowQuickControls.cs
+- 关注点逻辑：ConoscopeView.FocusPoint.cs
+- 参考图形逻辑：ConoscopeView.ReferenceAxis.cs
+- 批量计算模型：Analysis/MeasurementCaptureModels.cs
+- 色域结果窗：Analysis/ColorGamutResultWindow.xaml
+- 对比度结果窗：Analysis/ContrastResultWindow.xaml

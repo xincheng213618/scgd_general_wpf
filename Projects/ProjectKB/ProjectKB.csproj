@@ -39,12 +39,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="MQTTMessageLib">
-			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
 		<Resource Include="Assets\ProjectKB.ico" />
 		<Resource Include="Assets\ProjectKB.png" />
 	</ItemGroup>

@@ -27,12 +27,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="CVCommCore">
-			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
 		<Folder Include="Assets\" />
 	</ItemGroup>
 
