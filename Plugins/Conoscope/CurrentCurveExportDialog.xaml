@@ -1,0 +1,46 @@
+<Window x:Class="Conoscope.CurrentCurveExportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="当前曲线导出设置"
+        Width="420"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource GlobalBackground}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="当前曲线导出设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
+
+        <GroupBox Grid.Row="1" Header="采样设置" Margin="0,0,0,12">
+            <StackPanel Margin="8,6,8,8">
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="采样间隔 (度):" Width="110" VerticalAlignment="Center"/>
+                    <TextBox x:Name="txtStepDegrees" Width="90" Text="0.01" VerticalAlignment="Center"/>
+                    <TextBlock Text="默认 0.01，可调" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                </DockPanel>
+                <TextBlock Text="方位角模式会按 -MaxAngle 到 +MaxAngle 采样，极角模式会按 0 到 360 采样。"
+                           TextWrapping="Wrap"
+                           Foreground="Gray"/>
+            </StackPanel>
+        </GroupBox>
+
+        <GroupBox Grid.Row="2" Header="标题设置" Margin="0,0,0,12">
+            <StackPanel Margin="8,6,8,8">
+                <CheckBox x:Name="chkIncludeMetadata" Content="导出标题和元数据" IsChecked="True" Margin="0,0,0,6"/>
+                <TextBlock Text="取消勾选后，CSV 将直接输出带单位的列头和数据，不再写入顶部说明行。"
+                           TextWrapping="Wrap"
+                           Foreground="Gray"/>
+            </StackPanel>
+        </GroupBox>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="导出" Width="84" Margin="0,0,8,0" Click="btnExport_Click"/>
+            <Button Content="取消" Width="84" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

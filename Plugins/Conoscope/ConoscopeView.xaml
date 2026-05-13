@@ -62,9 +62,9 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="520"/>
+            <ColumnDefinition Width="2*" />
             <ColumnDefinition Width="6"/>
-            <ColumnDefinition Width="390" MinWidth="320"/>
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{StaticResource TransparentGridBrush}">

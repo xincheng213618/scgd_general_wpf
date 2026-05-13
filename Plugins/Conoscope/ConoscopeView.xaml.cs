@@ -1075,7 +1075,7 @@ namespace Conoscope
             coordinateAxisPolarLine.RgbData.Clear();
 
             var endpoints = ConoscopeCoordinateAxisVisual.GetAzimuthLineEndpoints(currentImageCenter, currentImageRadius, angle);
-            ExtractRgbAlongLine(coordinateAxisPolarLine, endpoints.Start, endpoints.End, currentBitmapSource, currentImageRadius);
+            ExtractRgbAlongLine(coordinateAxisPolarLine, endpoints.End, endpoints.Start, currentBitmapSource, currentImageRadius);
 
             selectedPolarLine = coordinateAxisPolarLine;
             SetReferencePlotLimits();
@@ -1601,9 +1601,9 @@ namespace Conoscope
                 for (int i = 0; i < numSamples; i++)
                 {
                     double anglePos = i * 360.0 / numSamples;
-                    double radians = (90 - anglePos) * Math.PI / 180.0;
+                    double radians = anglePos * Math.PI / 180.0;
                     double x = center.X + radiusPixels * Math.Cos(radians);
-                    double y = center.Y + radiusPixels * Math.Sin(radians);
+                    double y = center.Y - radiusPixels * Math.Sin(radians);
 
                     int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
                     int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
@@ -1951,6 +1951,16 @@ namespace Conoscope
             }
         }
 
+        private CurrentCurveExportSettings? ShowCurrentCurveExportDialog()
+        {
+            var dialog = new CurrentCurveExportDialog
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            return dialog.ShowDialog() == true ? dialog.Settings : null;
+        }
+
         /// <summary>
         /// 导出当前选中的方位角
         /// </summary>
@@ -1972,6 +1982,12 @@ namespace Conoscope
 
                 // Get channel selection
                 var channel = GetSelectedExportChannel();
+                CurrentCurveExportSettings? exportSettings = ShowCurrentCurveExportDialog();
+                if (exportSettings == null)
+                {
+                    return;
+                }
+
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filename = $"Azimuth_{selectedPolarLine.Angle}deg_{channel}_{timestamp}.csv";
 
@@ -1985,7 +2001,16 @@ namespace Conoscope
 
                 if (saveFileDialog.ShowDialog() == true)
                 {
-                    ConoscopeExportService.ExportAzimuthCrossSection(saveFileDialog.FileName, channel, CreateExportContext(), selectedPolarLine.Angle);
+                    ConoscopeExportService.ExportAzimuthCrossSection(
+                        saveFileDialog.FileName,
+                        channel,
+                        CreateExportContext(),
+                        selectedPolarLine.Angle,
+                        new ConoscopeCrossSectionExportOptions
+                        {
+                            StepDegrees = exportSettings.StepDegrees,
+                            IncludeMetadata = exportSettings.IncludeMetadata
+                        });
                     MessageBox.Show($"方位角 {selectedPolarLine.Angle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     log.Info($"单个方位角导出成功: {saveFileDialog.FileName}");
                 }
@@ -2018,6 +2043,12 @@ namespace Conoscope
 
                 // Get channel selection
                 var channel = GetSelectedExportChannel();
+                CurrentCurveExportSettings? exportSettings = ShowCurrentCurveExportDialog();
+                if (exportSettings == null)
+                {
+                    return;
+                }
+
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filename = $"Polar_{selectedCircleLine.RadiusAngle}deg_{channel}_{timestamp}.csv";
 
@@ -2031,7 +2062,16 @@ namespace Conoscope
 
                 if (saveFileDialog.ShowDialog() == true)
                 {
-                    ConoscopeExportService.ExportPolarCrossSection(saveFileDialog.FileName, channel, CreateExportContext(), selectedCircleLine.RadiusAngle);
+                    ConoscopeExportService.ExportPolarCrossSection(
+                        saveFileDialog.FileName,
+                        channel,
+                        CreateExportContext(),
+                        selectedCircleLine.RadiusAngle,
+                        new ConoscopeCrossSectionExportOptions
+                        {
+                            StepDegrees = exportSettings.StepDegrees,
+                            IncludeMetadata = exportSettings.IncludeMetadata
+                        });
                     MessageBox.Show($"极角 {selectedCircleLine.RadiusAngle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     log.Info($"单个极角导出成功: {saveFileDialog.FileName}");
                 }
