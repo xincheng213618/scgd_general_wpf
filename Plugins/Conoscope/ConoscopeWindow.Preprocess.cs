@@ -32,8 +32,8 @@ namespace Conoscope
                 chkWindowApplyFilterOnOpen.IsChecked = config.ApplyFilterOnOpen;
                 chkWindowClampNonPositiveXyzOnLoad.IsChecked = config.ClampNonPositiveXyzOnLoad;
                 chkWindowDustRemovalEnabled.IsChecked = config.DustRemovalEnabled;
-                SelectComboBoxItemByTag(cbWindowPseudoColorChannel, config.DisplayChannel.ToString());
-                SelectComboBoxItemByTag(cbWindowFilterType, config.FilterType.ToString());
+                ComboBoxHelper.SelectItemByTag(cbWindowPseudoColorChannel, config.DisplayChannel.ToString());
+                ComboBoxHelper.SelectItemByTag(cbWindowFilterType, config.FilterType.ToString());
                 SelectPseudoColorMap(config.PseudoColorMap);
                 imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(config.PseudoColorMap);
             }
@@ -67,18 +67,6 @@ namespace Conoscope
             cbWindowPseudoColorMap.SelectedItem = cbWindowPseudoColorMap.Items
                 .OfType<PseudoColorMapOption>()
                 .FirstOrDefault(item => item.Value == colormapType);
-        }
-
-        private static void SelectComboBoxItemByTag(ComboBox comboBox, string tag)
-        {
-            foreach (ComboBoxItem item in comboBox.Items)
-            {
-                if (string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
-                {
-                    comboBox.SelectedItem = item;
-                    return;
-                }
-            }
         }
 
         private void WindowPreprocess_Changed(object sender, RoutedEventArgs e)

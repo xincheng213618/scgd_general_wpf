@@ -22,7 +22,7 @@ if not exist "..\..\x64\Debug\opencv_helper.lib" (
     if not exist "..\..\x64\Release\opencv_helper.lib" (
         echo 警告: 未找到 opencv_helper.lib
         echo 请先编译 opencv_helper 项目
-        echo 运行: msbuild ..\..\Core\opencv_helper\opencv_helper.vcxproj /p:Configuration=Debug /p:Platform=x64
+        echo 运行: msbuild ..\..\Native\opencv_helper\opencv_helper.vcxproj /p:Configuration=Debug /p:Platform=x64
         pause
         exit /b 1
     )
@@ -37,7 +37,7 @@ echo [3/4] 编译源文件...
 REM 使用 Debug 配置编译
 cl /EHsc /std:c++17 /MDd /Zi /Od ^
    /DWIN32 /D_DEBUG /D_CONSOLE ^
-   /I"..\..\include" ^
+    /I"..\..\Native\include" ^
    /I"..\..\packages\opencv\include" ^
    /I"..\..\packages\nlohmann\include" ^
    test_find_luminous_area.cpp ^

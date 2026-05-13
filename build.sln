@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决�
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{106E1C5D-57C2-49F9-854D-A50BFFA88802}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "Core\opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "Native\opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{CC28D563-3E82-4852-82C0-A06609BB416C}"
 EndProject

@@ -19,7 +19,7 @@ namespace ColorVision.Solution.FolderMeta
         {
             foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in GetLoadableTypes(assembly))
                 {
                     if (typeof(IFolderMeta).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {
@@ -39,6 +39,22 @@ namespace ColorVision.Solution.FolderMeta
                         }
                     }
                 }
+            }
+        }
+
+        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                return ex.Types.Where(t => t != null)!;
+            }
+            catch
+            {
+                return Enumerable.Empty<Type>();
             }
         }
 

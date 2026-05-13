@@ -1,25 +1,26 @@
-﻿using ColorVision.UI.HotKey;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using System.Windows;
 using System.Windows.Input;
-using ColorVision.UI.Menus;
-using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Update
 {
-    public class MenuCheckAndUpdateV1: MenuItemBase, IHotKey
+    public class MenuCheckAndUpdateV1 : MenuItemBase, IHotKey
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new HotKeys(Properties.Resources.CheckForUpdates, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
         public override string OwnerGuid => MenuItemConstants.Help;
 
         public override int Order => 10003;
+
         public override Visibility Visibility => Visibility.Visible;
 
-        public override string Header => Properties.Resources.MenuUpdate;
+        public override string Header => Properties.Resources.CheckForUpdates;
 
         public override string InputGestureText => "Ctrl + U";
 
         [RequiresPermission(PermissionMode.Administrator)]
-        public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdateV1();
+        public override void Execute() => _ = CombinedUpdateCoordinator.StartInteractiveAsync();
     }
 }

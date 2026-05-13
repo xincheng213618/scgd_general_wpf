@@ -15,7 +15,7 @@ namespace ColorVision.Rbac.Entity
 
         [SugarColumn(ColumnName ="permission_mode")]
         public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; OnPropertyChanged(); } }
-        private PermissionMode _PermissionMode = PermissionMode.SuperAdministrator;
+        private PermissionMode _PermissionMode = PermissionMode.User;
 
         [SugarColumn(ColumnName ="email", IsNullable = true)]
         public string Email { get => _Email; set { _Email = value; OnPropertyChanged(); } }

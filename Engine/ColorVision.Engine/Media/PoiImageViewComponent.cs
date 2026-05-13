@@ -142,14 +142,10 @@ namespace ColorVision.Engine.Media
         {
             if (comboBox.SelectedValue is not PoiParam poiParams)
             {
-                imageView.Config.SetViewState(SelectedTemplateRuntimeKey, null, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
                 return;
             }
 
             imageView.Config.SetViewState(SelectedTemplateRuntimeKey, poiParams, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
-            imageView.ImageShow.Clear();
-            imageView.DrawingVisualLists.Clear();
-
             if (poiParams.Id == -1)
             {
                 return;

@@ -204,4 +204,97 @@
   <data name="ClientNotConnected" xml:space="preserve">
     <value>対象クライアントが接続されていません</value>
   </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>自動スクロール</value>
+  </data>
+  <data name="ClientCountFormat" xml:space="preserve">
+    <value>{0} クライアント</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>有効</value>
+  </data>
+  <data name="EnabledStatus" xml:space="preserve">
+    <value>有効状態</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>すべて</value>
+  </data>
+  <data name="FilterReceived" xml:space="preserve">
+    <value>受信</value>
+  </data>
+  <data name="FilterSent" xml:space="preserve">
+    <value>送信</value>
+  </data>
+  <data name="MessageCountFormat" xml:space="preserve">
+    <value>{0} 件のメッセージ</value>
+  </data>
+  <data name="MessageSettings" xml:space="preserve">
+    <value>メッセージ設定</value>
+  </data>
+  <data name="NoError" xml:space="preserve">
+    <value>なし</value>
+  </data>
+  <data name="OpenDatabase" xml:space="preserve">
+    <value>データベースを開く</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>オープン失敗</value>
+  </data>
+  <data name="OpenListenAddressFailedFormat" xml:space="preserve">
+    <value>{0} のオープンに失敗しました: {1}</value>
+  </data>
+  <data name="OpenStatus" xml:space="preserve">
+    <value>サービスオープン</value>
+  </data>
+  <data name="PrettyPrintView" xml:space="preserve">
+    <value>整形表示</value>
+  </data>
+  <data name="ProtocolAndClients" xml:space="preserve">
+    <value>プロトコル / クライアント</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>オープン済み</value>
+  </data>
+  <data name="SearchTooltip" xml:space="preserve">
+    <value>クライアント、イベント名、MsgID、応答コード、内容でフィルター</value>
+  </data>
+  <data name="ServiceSettings" xml:space="preserve">
+    <value>サービス設定</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>開始中</value>
+  </data>
+  <data name="StartService" xml:space="preserve">
+    <value>サービス開始</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>未オープン</value>
+  </data>
+  <data name="Stopping" xml:space="preserve">
+    <value>停止中</value>
+  </data>
+  <data name="StopServerFailedFormat" xml:space="preserve">
+    <value>サービス停止に失敗しました: {0}</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>サービス停止</value>
+  </data>
+  <data name="UpdatedAtFormat" xml:space="preserve">
+    <value>更新日時 {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="ListenAddress" xml:space="preserve">
+    <value>リッスンアドレス</value>
+  </data>
+  <data name="SocketServer" xml:space="preserve">
+    <value>Socket サーバー</value>
+  </data>
+  <data name="SocketServerConnected" xml:space="preserve">
+    <value>Socket サーバー接続済み</value>
+  </data>
+  <data name="SocketServerDisconnected" xml:space="preserve">
+    <value>Socket サーバー未接続</value>
+  </data>
 </root>

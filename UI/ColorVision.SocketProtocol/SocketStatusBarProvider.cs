@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace ColorVision.SocketProtocol
 {
@@ -34,8 +35,8 @@ namespace ColorVision.SocketProtocol
                 new StatusBarMeta
                 {
                     Id = "SocketServer",
-                    Name = "Socket Server",
-                    Description = isConnected ? "Socket Server Connected" : "Socket Server Disconnected",
+                    Name = Properties.Resources.SocketServer,
+                    Description = isConnected ? Properties.Resources.SocketServerConnected : Properties.Resources.SocketServerDisconnected,
                     Type = StatusBarType.Icon,
                     Alignment = StatusBarAlignment.Right,
                     Order = 998,
@@ -46,7 +47,7 @@ namespace ColorVision.SocketProtocol
             };
         }
 
-        private static UIElement CreateSocketIcon(bool isConnected)
+        private static Path CreateSocketIcon(bool isConnected)
         {
             var pathFigure1 = new PathFigure { StartPoint = new Point(2, 8), IsClosed = false };
             pathFigure1.Segments.Add(new LineSegment(new Point(6, 8), true));
@@ -71,7 +72,7 @@ namespace ColorVision.SocketProtocol
             var brush = new SolidColorBrush(color);
             brush.Freeze();
 
-            var path = new System.Windows.Shapes.Path
+            var path = new Path
             {
                 Data = geometry,
                 Stroke = brush,

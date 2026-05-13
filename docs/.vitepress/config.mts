@@ -155,7 +155,8 @@ export default withMermaid(
               text: '性能优化',
               collapsed: true,
               items: [
-                { text: '性能优化指南', link: '/02-developer-guide/performance/overview' }
+                { text: '性能优化指南', link: '/02-developer-guide/performance/overview' },
+                { text: 'Socket 通信优化路线', link: '/02-developer-guide/performance/socket-protocol-optimization-roadmap' }
               ]
             },
             {

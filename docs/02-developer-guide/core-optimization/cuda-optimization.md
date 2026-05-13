@@ -172,8 +172,8 @@ cudaGraphLaunch(graph, stream);
 
 | 文件 | 说明 |
 |------|------|
-| `Core/opencv_cuda/cudamath.h` | CUDA kernel 函数定义 |
-| `Core/opencv_cuda/Fusion.h` | 融合算法实现 |
+| `Native/opencv_cuda/cudamath.h` | CUDA kernel 函数定义 |
+| `Native/opencv_cuda/Fusion.h` | 融合算法实现 |
 
 ## 编译要求
 

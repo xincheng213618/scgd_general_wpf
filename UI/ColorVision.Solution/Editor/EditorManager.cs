@@ -1,6 +1,7 @@
 ﻿using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using System.IO;
+using System.Reflection;
 
 namespace ColorVision.Solution
 {
@@ -62,7 +63,7 @@ namespace ColorVision.Solution
                 {
                     var extLower = kv.Key.ToLowerInvariant();
                     var editorType = AssemblyService.Instance.GetAssemblies()
-                        .SelectMany(a => a.GetTypes())
+                        .SelectMany(GetLoadableTypes)
                         .FirstOrDefault(t => t.FullName == kv.Value);
                     if (editorType != null)
                         _defaultEditors[extLower] = editorType;
@@ -74,7 +75,7 @@ namespace ColorVision.Solution
             if (!string.IsNullOrEmpty(defaultFolderEditorName))
             {
                 var folderEditorType = AssemblyService.Instance.GetAssemblies()
-                    .SelectMany(a => a.GetTypes())
+                    .SelectMany(GetLoadableTypes)
                     .FirstOrDefault(t => t.FullName == defaultFolderEditorName);
                 if (folderEditorType != null && _folderEditorTypes.Contains(folderEditorType))
                     _defaultFolderEditor = folderEditorType;
@@ -85,7 +86,7 @@ namespace ColorVision.Solution
         {
             foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in GetLoadableTypes(assembly))
                 {
                     if (typeof(IEditor).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {
@@ -124,6 +125,23 @@ namespace ColorVision.Solution
                 }
             }
         }
+
+        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                return ex.Types.Where(t => t != null)!;
+            }
+            catch
+            {
+                return Enumerable.Empty<Type>();
+            }
+        }
+
         public static string GetEditorName(Type type)
         {
             var attr = type.GetCustomAttributes(typeof(EditorForExtensionAttribute), false)

@@ -139,33 +139,4 @@ namespace ColorVision
         public override bool? IsChecked => MainWindowConfig.Instance.IsOpenStatusBar ? true : null;
 
     }
-
-    public class ExportMenuViewDesktopPet : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "桌面宠物";
-        public override int Order => 140;
-
-        public override void Execute()
-        {
-            MainWindowConfig.Instance.OpenFloatingBall = !MainWindowConfig.Instance.OpenFloatingBall;
-            MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
-        }
-
-        public override bool? IsChecked => MainWindowConfig.Instance.OpenFloatingBall ? true : null;
-    }
-
-    public class ExportMenuDesktopPetSettings : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "桌面宠物设置";
-        public override int Order => 250;
-
-        public override void Execute()
-        {
-            DesktopPetService.GetInstance().OpenSettings();
-        }
-    }
-
-
 }

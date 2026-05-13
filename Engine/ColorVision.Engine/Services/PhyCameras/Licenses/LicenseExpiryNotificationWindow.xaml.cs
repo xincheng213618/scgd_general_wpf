@@ -98,12 +98,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                             }
                             _firstCamera.IsSelected = true;
 
-                            // Trigger the selection changed event by updating the TreeView
-                            var treeView = managerWindow.TreeView1;
-                            if (treeView != null)
-                            {
-                                treeView.UpdateLayout();
-                            }
+                            managerWindow.CameraList.SelectedItem = _firstCamera;
+                            managerWindow.CameraList.ScrollIntoView(_firstCamera);
+                            managerWindow.CameraList.UpdateLayout();
                         }
                         catch (Exception)
                         {

@@ -15,12 +15,4 @@ namespace ColorVision.Update
             Task.Run(() => AutoUpdater.GetInstance().ForceUpdate());
         }
     }
-    public class MemuCheckAndUpdate : MenuItemBase
-    {
-        public override string OwnerGuid => nameof(MenuUpdate);
-        public override int Order => 100;
-        public override string Header => ColorVision.Properties.Resources.CheckUpdateOld;
-
-        public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdate();
-    }
 }

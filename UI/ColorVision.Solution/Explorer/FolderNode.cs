@@ -19,7 +19,7 @@ namespace ColorVision.Solution.Explorer
         public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand AddDirCommand { get; set; }
-        FileSystemWatcher FileSystemWatcher { get; set; }
+        FileSystemWatcher? FileSystemWatcher { get; set; }
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand OpenMethodCommand { get; set; }
@@ -36,7 +36,6 @@ namespace ColorVision.Solution.Explorer
         {
             base.Initialize();
 
-            InitializeFileSystemWatcher();
             InitializeCommands();
             AddChildEventHandler += (s, e) => NotifyPropertyChanged(nameof(HasFile));
 
@@ -386,6 +385,9 @@ namespace ColorVision.Solution.Explorer
             {
                 if (disposing)
                 {
+                    foreach (var child in VisualChildren.OfType<IDisposable>().ToList())
+                        child.Dispose();
+                    VisualChildren.Clear();
                     FileSystemWatcher?.Dispose();
                 }
                 _disposed = true;

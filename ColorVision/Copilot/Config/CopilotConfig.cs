@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -39,6 +40,8 @@ namespace ColorVision.Copilot
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
                 changed = true;
             }
+
+            changed |= CopilotTemporaryProfileSource.Sync(Profiles, DateTimeOffset.UtcNow);
 
             foreach (var profile in Profiles)
             {

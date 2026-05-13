@@ -1,9 +1,13 @@
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.FileIO;
 using Newtonsoft.Json;
+using OpenCvSharp;
 using SqlSugar;
 using SqlSugar.Extensions;
+using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
@@ -25,7 +29,19 @@ namespace ProjectARVRPro.Process.AOI
             {
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
-                    ctx.Result.FileName = values[0].FileUrl;
+                {
+                    string? firstFileUrl = values[0].FileUrl;
+                    if (!string.IsNullOrWhiteSpace(firstFileUrl))
+                    {
+                        ctx.Result.FileName = firstFileUrl;
+                    }
+                }
+
+                string exportDir = GetExportDirectory(ctx.Batch.Name ?? ctx.Batch.Id.ToString());
+                if (Config.ExportOriginalImage)
+                {
+                    ExportOriginalImages(values, exportDir, Config.ExportOriginalAsTif, log);
+                }
 
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
 
@@ -35,12 +51,6 @@ namespace ProjectARVRPro.Process.AOI
 
                     if (master.ImgFileType == ViewResultAlgType.ImageConvert)
                     {
-                        string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
-                        if (!Directory.Exists(Dir))
-                        {
-                            Directory.CreateDirectory(Dir);
-                        }
-
                         using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                         var list = db.Queryable<AlgResultImageModel>().Where(it => it.Pid == master.Id).ToList();
 
@@ -49,7 +59,7 @@ namespace ProjectARVRPro.Process.AOI
                             if (File.Exists(imageModel.FileName))
                             {
                                 log.Info("正在复制 " + imageModel.FileName);
-                                string destFile = Path.Combine(Dir, Path.GetFileName(imageModel.FileName));
+                                string destFile = Path.Combine(exportDir, Path.GetFileName(imageModel.FileName));
                                 File.Copy(imageModel.FileName, destFile, true);
                             }
                         }
@@ -59,12 +69,7 @@ namespace ProjectARVRPro.Process.AOI
                         try
                         {
                             log.Info("正在复制 " + master.ResultImagFile);
-                            string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
-                            if (!Directory.Exists(Dir))
-                            {
-                                Directory.CreateDirectory(Dir);
-                            }
-                            string imgPath = Path.Combine(Dir, Path.GetFileName(master.ResultImagFile));
+                            string imgPath = Path.Combine(exportDir, Path.GetFileName(master.ResultImagFile));
                             File.Copy(master.ResultImagFile, imgPath, true);
                         }
                         catch(Exception ex)
@@ -74,7 +79,7 @@ namespace ProjectARVRPro.Process.AOI
                        
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.OLED_RebuildPixelsMem)
+                    if (Config.ExportCieFile && master.ImgFileType == ViewResultAlgType.OLED_RebuildPixelsMem)
                     {
                         using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                         var list = db.Queryable<AlgResultPoiCieFileModel>().Where(it => it.Pid == master.Id).ToList();
@@ -84,12 +89,7 @@ namespace ProjectARVRPro.Process.AOI
                             if (File.Exists(ciefile.FileUrl))
                             {
                                 log.Info("正在复制 " + ciefile.FileUrl);
-                                string Dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, ctx.Batch.Name);
-                                if (!Directory.Exists(Dir))
-                                {
-                                    Directory.CreateDirectory(Dir);
-                                }
-                                string destFile = Path.Combine(Dir, Path.GetFileName(ciefile.FileUrl));
+                                string destFile = Path.Combine(exportDir, Path.GetFileName(ciefile.FileUrl));
                                 File.Copy(ciefile.FileUrl, destFile, true);
                             }
 
@@ -152,6 +152,83 @@ namespace ProjectARVRPro.Process.AOI
             }
 
             return sb.ToString();
+        }
+
+        private static string GetExportDirectory(string batchName)
+        {
+            string dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, batchName);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            return dir;
+        }
+
+        private static void ExportOriginalImages(IEnumerable<MeasureResultImgModel> values, string exportDir, bool exportOriginalAsTif, ILog log)
+        {
+            foreach (var value in values)
+            {
+                try
+                {
+                    ExportOriginalImage(value.FileUrl, exportDir, exportOriginalAsTif, log);
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+            }
+        }
+
+        private static void ExportOriginalImage(string? fileUrl, string exportDir, bool exportOriginalAsTif, ILog log)
+        {
+            if (string.IsNullOrWhiteSpace(fileUrl) || !File.Exists(fileUrl))
+            {
+                return;
+            }
+
+            if (exportOriginalAsTif && IsCvRawFile(fileUrl))
+            {
+                ExportCvRawAsTif(fileUrl, exportDir, log);
+                return;
+            }
+
+            string destFile = Path.Combine(exportDir, Path.GetFileName(fileUrl));
+            if (PathsEqual(fileUrl, destFile))
+            {
+                return;
+            }
+
+            log.Info("正在复制原图 " + fileUrl);
+            File.Copy(fileUrl, destFile, true);
+        }
+
+        private static void ExportCvRawAsTif(string fileUrl, string exportDir, ILog log)
+        {
+            using var cvFile = CVFileUtil.OpenLocalCVFile(fileUrl);
+            var src = cvFile.ToMat();
+            if (src == null || src.Empty())
+            {
+                src?.Dispose();
+                log.Warn("原图转TIF失败，已跳过 " + fileUrl);
+                return;
+            }
+
+            using (src)
+            {
+                string destFile = Path.Combine(exportDir, Path.GetFileNameWithoutExtension(fileUrl) + ".tif");
+                log.Info("正在输出TIF原图 " + destFile);
+                src.SaveImage(destFile, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+            }
+        }
+
+        private static bool IsCvRawFile(string fileUrl)
+        {
+            return string.Equals(Path.GetExtension(fileUrl), ".cvraw", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool PathsEqual(string left, string right)
+        {
+            return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
         }
     }
 }

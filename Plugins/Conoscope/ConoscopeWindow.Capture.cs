@@ -183,6 +183,24 @@ namespace Conoscope
                 : new[] { camera.DisplayConfig.ExpTime };
         }
 
+        private static string FormatExposureSummary(double[] exposureTimes)
+        {
+            if (exposureTimes.Length <= 1)
+            {
+                return $"{exposureTimes[0].ToString("0.###", CultureInfo.InvariantCulture)} ms";
+            }
+
+            string[] channelNames = new[] { "R", "G", "B" };
+            string channelSummary = string.Join(" / ", exposureTimes
+                .Select((value, index) => $"{channelNames[Math.Min(index, channelNames.Length - 1)]}:{value.ToString("0.###", CultureInfo.InvariantCulture)}"));
+            return $"{channelSummary} ms";
+        }
+
+        private bool ShouldReuseActiveViewOnCapture()
+        {
+            return chkReuseActiveViewOnCapture?.IsChecked == true && ActiveView != null;
+        }
+
         private void SetOperationBusy(bool busy)
         {
             isRunningOperation = busy;
@@ -466,7 +484,7 @@ namespace Conoscope
                 string? filePath = await WaitForFlowCvcieAsync(result);
                 if (!string.IsNullOrWhiteSpace(filePath))
                 {
-                    OpenConoscope(filePath);
+                    OpenConoscope(filePath, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     SetOperationStatus($"已打开 {Path.GetFileName(filePath)}", Brushes.LimeGreen);
                 }
                 else
@@ -500,8 +518,11 @@ namespace Conoscope
                 SetOperationBusy(true);
                 SetOperationStatus($"正在拍照: {camera.Config.Name}", Brushes.DodgerBlue);
 
+                double[] exposureTimes = GetCameraExpTimes(camera);
+                string exposureSummary = FormatExposureSummary(exposureTimes);
+
                 MsgRecord msgRecord = camera.DService.GetData(
-                    GetCameraExpTimes(camera),
+                    exposureTimes,
                     GetSelectedCalibrationParam(),
                     new AutoExpTimeParam { Id = -1, Name = string.Empty },
                     new TemplateJsonParam { Id = -1, Name = string.Empty });
@@ -518,7 +539,7 @@ namespace Conoscope
                 string? filePath = await WaitForCameraCvcieAsync(msgRecord);
                 if (!string.IsNullOrWhiteSpace(filePath))
                 {
-                    OpenConoscope(filePath);
+                    OpenConoscope(filePath, exposureSummary, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     SetOperationStatus($"已打开 {Path.GetFileName(filePath)}", Brushes.LimeGreen);
                 }
                 else

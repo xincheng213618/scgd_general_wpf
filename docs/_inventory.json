@@ -1,4 +1,16 @@
 {
+  "status": "legacy_snapshot",
+  "note": "This file is a historical generated inventory from an older docs layout. Current documentation structure and navigation are maintained through docs/.vitepress/config.mts and the section README files. Do not treat paths here as current unless the inventory is regenerated.",
+  "current_navigation_sources": [
+    "docs/.vitepress/config.mts",
+    "docs/index.md",
+    "docs/00-getting-started/README.md",
+    "docs/01-user-guide/README.md",
+    "docs/02-developer-guide/README.md",
+    "docs/03-architecture/README.md",
+    "docs/04-api-reference/README.md",
+    "docs/05-resources/README.md"
+  ],
   "scan_date": "2025-09-28T15:51:26.709821",
   "docs_path": "/home/runner/work/scgd_general_wpf/scgd_general_wpf/docs",
   "structure": {

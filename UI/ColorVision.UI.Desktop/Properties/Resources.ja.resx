@@ -645,4 +645,28 @@
   <data name="ConfirmDeleteFile" xml:space="preserve">
     <value>ファイルがディスクに存在します。ファイルも削除しますか？</value>
   </data>
+  <data name="ThirdPartyAppsAll" xml:space="preserve">
+    <value>すべて</value>
+  </data>
+  <data name="ThirdPartyAppsCountFormat" xml:space="preserve">
+    <value>{0} アプリ</value>
+  </data>
+  <data name="ThirdPartyAppsAddCustomApp" xml:space="preserve">
+    <value>カスタム アプリを追加</value>
+  </data>
+  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
+    <value>クイック スクリプトを追加</value>
+  </data>
+  <data name="ThirdPartyAppsGroups" xml:space="preserve">
+    <value>カテゴリ</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>編集</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>削除の確認</value>
+  </data>
+  <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
+    <value>カスタム アプリ "{0}" を削除しますか？</value>
+  </data>
 </root>

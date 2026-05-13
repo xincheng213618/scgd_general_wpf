@@ -95,7 +95,7 @@ namespace ColorVision.Solution.MultiImageViewer
     /// <summary>
     /// 多图预览控件 - 支持文件夹浏览和图片切换
     /// </summary>
-    public partial class MultiImageViewer : UserControl,IDisposable
+    public partial class MultiImageViewer : UserControl, IDisposable
     {
         public static MultiImageViewerConfig Config => MultiImageViewerConfig.Instance;
 
@@ -119,6 +119,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         private string? _currentOpeningFile;
         private readonly object _openImageLock = new();
+        private bool _disposed;
 
         public MultiImageViewer()
         {
@@ -224,9 +225,21 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private async Task LoadThumbnailsAsync()
         {
+            using var semaphore = new SemaphoreSlim(Math.Max(1, Environment.ProcessorCount / 2));
             var thumbnailTasks = ImageFiles
                 .Where(f => f.FileExists)
-                .Select(f => f.LoadThumbnailAsync(Config.ThumbnailSize, Config.EnableThumbnailCache));
+                .Select(async f =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        await f.LoadThumbnailAsync(Config.ThumbnailSize, Config.EnableThumbnailCache);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
 
             await Task.WhenAll(thumbnailTasks);
         }
@@ -360,7 +373,12 @@ namespace ColorVision.Solution.MultiImageViewer
 
         public void Dispose()
         {
+            if (_disposed)
+                return;
+
+            _disposed = true;
             ImageView?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

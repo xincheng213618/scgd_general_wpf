@@ -8,6 +8,7 @@
 | --- | --- | --- | --- |
 | `ColorVision/` | 主程序入口、主窗口、应用启动 | [入门指南](../../00-getting-started/README.md) | [主窗口导览](../../01-user-guide/interface/main-window.md) |
 | `UI/` | WPF UI 框架、主题、编辑器 | [UI 组件总览](../../04-api-reference/ui-components/README.md) | [用户指南](../../01-user-guide/README.md) |
+| `UI/ColorVision.SocketProtocol/` | TCP 服务、JSON/Text 分发、消息历史、管理窗口 | [ColorVision.SocketProtocol](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) | [Socket 通信模块优化路线](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md) |
 | `Engine/ColorVision.Engine/Services/` | 设备服务、服务协调 | [设备服务概览](../../01-user-guide/devices/overview.md) | [Engine 开发指南](../../02-developer-guide/engine-development/README.md) |
 | `Engine/ColorVision.Engine/Templates/` | 模板系统、参数化算法、结果处理 | [算法总览](../../04-api-reference/algorithms/README.md) | [Templates 架构设计](../../03-architecture/components/templates/design.md) |
 | `Engine/FlowEngineLib/` | 流程节点、执行模型、可视化流程 | [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md) | [FlowNode 开发](../../04-api-reference/extensions/flow-node.md) |

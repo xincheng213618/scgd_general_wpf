@@ -110,6 +110,16 @@ ColorVision.SocketProtocol 当前是一个桌面侧本地 TCP 通信模块，主
 
 另外，`SocketManagerWindow.xaml.cs` 里还定义了一个菜单入口类 `MenuProjectManager`，当前挂在 Help 菜单下打开管理窗口。
 
+当前管理窗口已经不只是“消息列表 + 详情”的最小形态。窗口顶部会显示服务启用状态、服务是否打开、监听地址、协议模式和客户端数量；打开失败时会直接显示最后一次错误信息。消息区支持文本过滤、方向过滤、自动滚动和列表虚拟化；右侧通过“消息详情 / 连接的客户端 / 服务诊断”标签页组织信息，详情区支持 JSON 格式化查看。重发消息时会优先按原始客户端地址匹配连接，找不到时可以使用当前选中的客户端作为兜底目标。
+
+常用快捷键：
+
+- `Ctrl+F`：聚焦过滤框
+- `Esc`：清空过滤
+- `F5`：重新加载最近消息
+- `Ctrl+C`：复制选中消息内容
+- `Delete`：删除选中消息
+
 ## 当前运行时主链
 
 现有链路大致是：
@@ -168,6 +178,19 @@ ColorVision.SocketProtocol 当前是一个桌面侧本地 TCP 通信模块，主
 - `SocketMessageManager.cs`
 - `SocketManagerWindow.xaml.cs`
 
+## 优化路线
+
+这个模块后续优化建议分四层推进：
+
+| 阶段 | 目标 | 重点 |
+| --- | --- | --- |
+| P0 稳定性 | 把服务生命周期和 TCP 边界收紧 | 防重复启动、取消令牌、统一停止路径、粘包/半包处理 |
+| P1 可观测性 | 提高现场排查效率 | 消息导出、连接生命周期、错误统计、处理耗时 |
+| P2 协议化 | 降低外部设备对接成本 | 错误码、Handler 元数据、JSON Schema、版本兼容 |
+| P3 性能与容量 | 支持长期运行和更大历史量 | 分页加载、数据库索引、批量写库、保留策略 |
+
+详细路线见 [Socket 通信模块优化路线](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md)。
+
 ## 这页不再做什么
 
 本页不再继续维护这些高风险内容：
@@ -182,3 +205,4 @@ ColorVision.SocketProtocol 当前是一个桌面侧本地 TCP 通信模块，主
 - [UI组件概览](./README.md)
 - [ColorVision.Database](./ColorVision.Database.md)
 - [ColorVision.UI](./ColorVision.UI.md)
+- [Socket 通信模块优化路线](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md)

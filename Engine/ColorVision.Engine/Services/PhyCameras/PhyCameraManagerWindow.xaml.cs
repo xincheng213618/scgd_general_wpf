@@ -4,7 +4,10 @@ using ColorVision.UI.Menus;
 using System;
 using System.Collections;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras
@@ -17,15 +20,14 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (string.IsNullOrEmpty(status))
                 return "未知";
 
-            // 统一转为小写比较，防止大小写问题
-            switch (status.ToLower())
+            switch (status.ToLowerInvariant())
             {
                 case "online":
                     return ColorVision.Engine.Properties.Resources.Online;
-                case "offline": // 兼容你的拼写错误
+                case "offline":
                     return ColorVision.Engine.Properties.Resources.offline;
                 default:
-                    return status; // 如果是其他状态，直接显示原文本
+                    return status;
             }
         }
 
@@ -94,11 +96,20 @@ namespace ColorVision.Engine.Services.PhyCameras
             ApplyOnlineSorting();
             PhyCameraManager.GetInstance().PhyCameras.CollectionChanged += OnPhyCamerasCollectionChanged;
             this.Closed += (s, args) => PhyCameraManager.GetInstance().PhyCameras.CollectionChanged -= OnPhyCamerasCollectionChanged;
+
+            CameraList.SelectedItem = PhyCameraManager.GetInstance().PhyCameras.FirstOrDefault(camera => camera.IsSelected)
+                ?? PhyCameraManager.GetInstance().PhyCameras.FirstOrDefault();
+            ShowSelectedCameraDetails();
         }
 
         private void OnPhyCamerasCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             ApplyOnlineSorting();
+            if (CameraList.SelectedItem == null)
+            {
+                CameraList.SelectedItem = PhyCameraManager.GetInstance().PhyCameras.FirstOrDefault();
+            }
+            ShowSelectedCameraDetails();
         }
 
         private void ApplyOnlineSorting()
@@ -110,13 +121,28 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
-        private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private void CameraList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ShowSelectedCameraDetails();
+        }
+
+        private void ShowSelectedCameraDetails()
         {
             StackPanelShow.Children.Clear();
-            if (TreeView1.SelectedItem is PhyCamera phyCamera)
+            if (CameraList.SelectedItem is PhyCamera phyCamera)
             {
                 StackPanelShow.Children.Add(phyCamera.GetDeviceInfo());
             }
+        }
+
+        private void ToolbarMenuButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.ContextMenu == null)
+                return;
+
+            button.ContextMenu.PlacementTarget = button;
+            button.ContextMenu.Placement = PlacementMode.Bottom;
+            button.ContextMenu.IsOpen = true;
         }
     }
 }

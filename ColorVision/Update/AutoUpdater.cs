@@ -5,6 +5,7 @@ using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -16,6 +17,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Linq;
 
 namespace ColorVision.Update
 {
@@ -23,8 +25,14 @@ namespace ColorVision.Update
     {
         public required Version CurrentVersion { get; init; }
         public required Version LatestVersion { get; init; }
-        public required Version TargetVersion { get; init; }
+        public required IReadOnlyList<Version> VersionsToApply { get; init; }
         public required bool IsIncremental { get; init; }
+
+        public Version TargetVersion => VersionsToApply.Count > 0
+            ? VersionsToApply[VersionsToApply.Count - 1]
+            : LatestVersion;
+
+        public bool HasMultipleSteps => VersionsToApply.Count > 1;
     }
 
     public class AutoUpdateConfig:ViewModelBase, IConfig
@@ -80,7 +88,7 @@ namespace ColorVision.Update
 
         public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
 
-        public void Update(Version Version, string DownloadPath,bool IsIncrement = false)
+        public void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
         {
             string downloadUrl;
             string filePath;
@@ -105,6 +113,7 @@ namespace ColorVision.Update
                 else
                 {
                     log.Error($"Download failed via IDownloadService: {downloadUrl}");
+                    Application.Current?.Dispatcher.Invoke(() => downloadFailedAction?.Invoke());
                 }
             };
             string auth = "1:1";
@@ -341,25 +350,158 @@ namespace ColorVision.Update
                 return null;
 
             bool isIncrement = LatestVersion.Minor == currentVersion.Minor;
-            Version targetVersion = LatestVersion;
-            if (isIncrement && LatestVersion.Build != currentVersion.Build)
-            {
-                targetVersion = new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Build + 1, 1);
-            }
+            IReadOnlyList<Version> versionsToApply = isIncrement
+                ? BuildIncrementalUpdateChain(currentVersion, LatestVersion)
+                : new[] { LatestVersion };
 
             return new AutoUpdatePlan
             {
                 CurrentVersion = currentVersion,
                 LatestVersion = LatestVersion,
-                TargetVersion = targetVersion,
+                VersionsToApply = versionsToApply,
                 IsIncremental = isIncrement,
             };
         }
 
-        public void StartUpdatePlan(AutoUpdatePlan plan)
+        public void StartUpdatePlan(AutoUpdatePlan plan, Action? downloadFailedAction = null)
         {
-            Update(plan.TargetVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), plan.IsIncremental);
+            string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+
+            if (plan.IsIncremental)
+            {
+                UpdateIncrementalChain(plan.VersionsToApply, downloadPath, downloadFailedAction);
+                return;
+            }
+
+            Update(plan.TargetVersion, downloadPath, false, downloadFailedAction);
         }
+
+        private void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, Action? downloadFailedAction)
+        {
+            if (versions.Count == 0)
+                return;
+
+            List<Version> orderedVersions = versions.Distinct().ToList();
+            Dictionary<string, string> downloadedPaths = new(StringComparer.OrdinalIgnoreCase);
+            object lockObj = new();
+            int totalCount = orderedVersions.Count;
+            int completedCount = 0;
+            bool hasFailure = false;
+            List<Version> versionsToDownload = new();
+
+            foreach (Version version in orderedVersions)
+            {
+                string packageFileName = GetIncrementalPackageFileName(version);
+                string cachedPath = Path.Combine(downloadPath, packageFileName);
+                if (File.Exists(cachedPath))
+                {
+                    downloadedPaths[version.ToString()] = cachedPath;
+                    completedCount++;
+                }
+                else
+                {
+                    versionsToDownload.Add(version);
+                }
+            }
+
+            if (versionsToDownload.Count == 0)
+            {
+                UpdateIncrementalApplications(orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList());
+                return;
+            }
+
+            void FinalizeIfCompleted()
+            {
+                bool readyToFinalize;
+                List<string>? orderedPaths = null;
+                bool failed;
+
+                lock (lockObj)
+                {
+                    readyToFinalize = completedCount == totalCount;
+                    failed = hasFailure || downloadedPaths.Count != totalCount;
+                    if (readyToFinalize && !failed)
+                    {
+                        orderedPaths = orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList();
+                    }
+                }
+
+                if (!readyToFinalize)
+                    return;
+
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (failed || orderedPaths == null)
+                    {
+                        downloadFailedAction?.Invoke();
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resources.UpdateFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    UpdateIncrementalApplications(orderedPaths);
+                });
+            }
+
+            DownloadWindow.ShowInstance();
+
+            foreach (Version version in versionsToDownload)
+            {
+                string versionKey = version.ToString();
+                string packageFileName = GetIncrementalPackageFileName(version);
+                string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/{packageFileName}";
+
+                Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, downloadPath, "1:1", task =>
+                {
+                    lock (lockObj)
+                    {
+                        if (task.Status == DownloadStatus.Completed)
+                        {
+                            downloadedPaths[versionKey] = task.SavePath;
+                        }
+                        else
+                        {
+                            hasFailure = true;
+                            log.Error($"Download failed via IDownloadService: {downloadUrl}");
+                        }
+
+                        completedCount++;
+                    }
+
+                    FinalizeIfCompleted();
+                }, packageFileName);
+            }
+        }
+
+        private void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                ConfigHandler.GetInstance().SaveConfigs();
+                RestartIsIncrementApplication(downloadPaths);
+            });
+        }
+
+        private static List<Version> BuildIncrementalUpdateChain(Version currentVersion, Version latestVersion)
+        {
+            List<Version> versions = new();
+
+            if (latestVersion.Build != currentVersion.Build)
+            {
+                for (int build = currentVersion.Build + 1; build <= latestVersion.Build; build++)
+                {
+                    versions.Add(new Version(currentVersion.Major, currentVersion.Minor, build, 1));
+                }
+            }
+
+            if (versions.Count == 0 || versions[versions.Count - 1] < latestVersion)
+            {
+                versions.Add(latestVersion);
+            }
+
+            return versions;
+        }
+
+        public static string GetIncrementalPackageFileName(Version version) => $"ColorVision-Update-[{version}].cvx";
 
         private void UpdateApplication(string downloadPath, bool isIncrement)
         {
@@ -381,6 +523,16 @@ namespace ColorVision.Update
 
         public static void RestartIsIncrementApplication(string downloadPath)
         {
+            RestartIsIncrementApplication(new[] { downloadPath });
+        }
+
+        public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths)
+        {
+            RestartIsIncrementApplication(downloadPaths, null);
+        }
+
+        public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
+        {
             // 保存数据库配置
             try
             {
@@ -390,7 +542,34 @@ namespace ColorVision.Update
                 {
                     Directory.Delete(tempDirectory, true);
                 }
-                ZipFile.ExtractToDirectory(downloadPath, tempDirectory);
+
+                bool hasAnyPackage = false;
+                foreach (string downloadPath in downloadPaths)
+                {
+                    if (string.IsNullOrWhiteSpace(downloadPath) || !File.Exists(downloadPath))
+                        continue;
+
+                    ZipFile.ExtractToDirectory(downloadPath, tempDirectory, true);
+                    hasAnyPackage = true;
+                }
+
+                if (pluginDownloadPaths != null)
+                {
+                    string pluginsDirectory = Path.Combine(tempDirectory, "Plugins");
+                    Directory.CreateDirectory(pluginsDirectory);
+
+                    foreach (string pluginDownloadPath in pluginDownloadPaths)
+                    {
+                        if (string.IsNullOrWhiteSpace(pluginDownloadPath) || !File.Exists(pluginDownloadPath))
+                            continue;
+
+                        ZipFile.ExtractToDirectory(pluginDownloadPath, pluginsDirectory, true);
+                        hasAnyPackage = true;
+                    }
+                }
+
+                if (!hasAnyPackage)
+                    throw new InvalidOperationException("Unable to locate incremental update package.");
 
                 // 创建批处理文件内容
                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");

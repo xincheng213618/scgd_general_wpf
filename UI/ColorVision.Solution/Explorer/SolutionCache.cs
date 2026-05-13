@@ -302,8 +302,10 @@ namespace ColorVision.Solution.Explorer
             {
                 try
                 {
+                    string normalizedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    string childPrefix = normalizedPath + Path.DirectorySeparatorChar;
                     _db.Deleteable<FileTreeCacheEntry>()
-                        .Where(e => e.FullPath == fullPath || e.ParentPath.StartsWith(fullPath))
+                        .Where(e => e.FullPath == normalizedPath || e.FullPath.StartsWith(childPrefix))
                         .ExecuteCommand();
                 }
                 catch (Exception ex)

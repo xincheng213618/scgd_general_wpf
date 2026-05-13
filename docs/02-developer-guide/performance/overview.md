@@ -53,6 +53,15 @@
 - 使用双缓冲
 - 避免频繁的布局变更
 
+## 通信与运维窗口优化
+
+`UI/ColorVision.SocketProtocol` 这类带实时连接、消息历史和运维窗口的模块，优化重点不只是吞吐量，还包括服务生命周期、TCP 消息边界、长期运行后的数据库容量，以及现场排查效率。
+
+建议优先阅读：
+
+- [Socket 通信模块优化路线](./socket-protocol-optimization-roadmap.md)
+- [ColorVision.SocketProtocol API 导读](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md)
+
 ## 监控和诊断
 
 ### 性能监控
@@ -79,6 +88,7 @@
 
 ## 相关文档
 
-- [系统架构](/00-getting-started/introduction/system-architecture)
+- [系统架构](/03-architecture/overview/system-overview)
 - [故障排除](/01-user-guide/troubleshooting/common-issues)
 - [系统监控插件](/04-api-reference/plugins/standard-plugins/system-monitor)
+- [Socket 通信模块优化路线](./socket-protocol-optimization-roadmap.md)

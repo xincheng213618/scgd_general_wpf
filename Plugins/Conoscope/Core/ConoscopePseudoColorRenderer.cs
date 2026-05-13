@@ -1,6 +1,8 @@
 using ColorVision.Core;
 using OpenCvSharp.WpfExtensions;
 using System;
+using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace Conoscope.Core
@@ -52,7 +54,9 @@ namespace Conoscope.Core
             OpenCvSharp.Mat yMat,
             OpenCvSharp.Mat zMat,
             ExportChannel channel,
-            Func<OpenCvSharp.Mat> createColorDifferenceMat)
+            Func<OpenCvSharp.Mat> createColorDifferenceMat,
+            Point? maskCenter = null,
+            double? maskRadius = null)
         {
             using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat);
             using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
@@ -61,7 +65,45 @@ namespace Conoscope.Core
             OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
             normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
 
+            if (maskCenter.HasValue && maskRadius.HasValue && double.IsFinite(maskRadius.Value) && maskRadius.Value > 0)
+            {
+                return CreateMaskedHeightMapBitmap(gray8, maskCenter.Value, maskRadius.Value);
+            }
+
             WriteableBitmap bitmap = gray8.ToWriteableBitmap();
+            bitmap.Freeze();
+            return bitmap;
+        }
+
+        private static WriteableBitmap CreateMaskedHeightMapBitmap(OpenCvSharp.Mat gray8, Point center, double radius)
+        {
+            WriteableBitmap grayBitmap = gray8.ToWriteableBitmap();
+            int width = grayBitmap.PixelWidth;
+            int height = grayBitmap.PixelHeight;
+            byte[] grayPixels = new byte[width * height];
+            grayBitmap.CopyPixels(grayPixels, width, 0);
+
+            byte[] pixels = new byte[width * height * 4];
+            double radiusSquared = radius * radius;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int grayIndex = y * width + x;
+                    int pixelIndex = grayIndex * 4;
+                    byte gray = grayPixels[grayIndex];
+                    bool isInsideMask = Math.Pow(x - center.X, 2) + Math.Pow(y - center.Y, 2) <= radiusSquared;
+
+                    pixels[pixelIndex] = gray;
+                    pixels[pixelIndex + 1] = gray;
+                    pixels[pixelIndex + 2] = gray;
+                    pixels[pixelIndex + 3] = isInsideMask ? (byte)255 : (byte)0;
+                }
+            }
+
+            WriteableBitmap bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
+            bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, width * 4, 0);
             bitmap.Freeze();
             return bitmap;
         }

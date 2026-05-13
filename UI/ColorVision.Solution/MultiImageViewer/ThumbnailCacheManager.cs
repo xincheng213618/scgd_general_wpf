@@ -402,9 +402,5 @@ namespace ColorVision.Solution.MultiImageViewer
             GC.SuppressFinalize(this);
         }
 
-        ~ThumbnailCacheManager()
-        {
-            Dispose();
-        }
     }
 }

@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static MvCamCtrl.NET.MyCamera;
@@ -45,6 +47,8 @@ namespace Conoscope.MVS
         bool m_bGrabbing = false;
         Thread m_hReceiveThread = null;
         IntPtr displayHandle = IntPtr.Zero;
+        private readonly MVSGratingOverlayVisual gratingOverlay = new MVSGratingOverlayVisual();
+        private Core.ConoscopeModelProfile? hookedObservationCameraProfile;
 
         public MVSViewWindow()
         {
@@ -58,8 +62,13 @@ namespace Conoscope.MVS
         {
             MVSViewManager = MVSViewManager.GetInstance();
             this.DataContext = MVSViewManager;
+            MVSViewManager.Config.EnsureSelectedGratingDiameter();
+            MVSViewManager.Config.PropertyChanged += MVSConfig_PropertyChanged;
+            MVSViewManager.PropertyChanged += MVSViewManager_PropertyChanged;
+            HookObservationCameraProfile(MVSViewManager.CurrentModelProfile);
             imgDisplay = new ImageView();
             ImageDisplayHost.Children.Add(imgDisplay);
+            imgDisplay.ImageShow.AddOverlayVisual(gratingOverlay);
             imgDisplay.Zoombox1.ContentMatrixChanged += ImageDisplay_ContentMatrixChanged;
             cbPixelType.ItemsSource = Enum.GetValues(typeof(PixelType));
             SelectGratingDiameter(MVSViewManager.Config.SelectedGratingDiameterMillimeters);
@@ -69,28 +78,38 @@ namespace Conoscope.MVS
 
         private void SelectGratingDiameter(double diameterMillimeters)
         {
-            foreach (ComboBoxItem item in cbGratingDiameter.Items)
+            foreach (object item in cbGratingDiameter.Items)
             {
-                if (TryGetComboBoxItemDoubleTag(item, out double tagValue) && Math.Abs(tagValue - diameterMillimeters) < 0.0001)
+                if (TryGetGratingDiameter(item, out double tagValue) && AreClose(tagValue, diameterMillimeters))
                 {
                     cbGratingDiameter.SelectedItem = item;
                     return;
                 }
             }
 
-            cbGratingDiameter.SelectedIndex = 0;
+            cbGratingDiameter.SelectedIndex = cbGratingDiameter.Items.Count > 0 ? 0 : -1;
         }
 
-        private static bool TryGetComboBoxItemDoubleTag(ComboBoxItem item, out double value)
+        private static bool TryGetGratingDiameter(object? item, out double value)
         {
-            return double.TryParse(item.Tag?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+            switch (item)
+            {
+                case double doubleValue:
+                    value = doubleValue;
+                    return true;
+                case float floatValue:
+                    value = floatValue;
+                    return true;
+                case ComboBoxItem comboBoxItem:
+                    return double.TryParse(comboBoxItem.Tag?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+                default:
+                    return double.TryParse(item?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+            }
         }
 
-        private void DisplayHost_SizeChanged(object sender, SizeChangedEventArgs e)
+        private static bool AreClose(double left, double right)
         {
-            GratingOverlayCanvas.Width = e.NewSize.Width;
-            GratingOverlayCanvas.Height = e.NewSize.Height;
-            UpdateGratingOverlay();
+            return Math.Abs(left - right) < 0.0001;
         }
 
         private void ImageDisplay_ContentMatrixChanged(object? sender, EventArgs e)
@@ -98,23 +117,73 @@ namespace Conoscope.MVS
             UpdateGratingOverlay();
         }
 
-        private void cbGratingDiameter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void MVSViewManager_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (MVSViewManager?.Config == null || cbGratingDiameter.SelectedItem is not ComboBoxItem item)
+            if (e.PropertyName == nameof(MVSViewManager.CurrentModelProfile))
+            {
+                HookObservationCameraProfile(MVSViewManager.CurrentModelProfile);
+                UpdateGratingOverlay();
+            }
+        }
+
+        private void MVSConfig_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MVSViewWindowConfig.SelectedGratingDiameterMillimeters))
+            {
+                UpdateGratingOverlay();
+            }
+        }
+
+        private void ObservationCameraProfile_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(Core.ConoscopeModelProfile.ObservationCameraCenterX) ||
+                e.PropertyName == nameof(Core.ConoscopeModelProfile.ObservationCameraCenterY) ||
+                e.PropertyName == nameof(Core.ConoscopeModelProfile.ObservationCameraScaleCoefficient))
+            {
+                UpdateGratingOverlay();
+            }
+        }
+
+        private void HookObservationCameraProfile(Core.ConoscopeModelProfile profile)
+        {
+            if (ReferenceEquals(hookedObservationCameraProfile, profile))
             {
                 return;
             }
 
-            if (TryGetComboBoxItemDoubleTag(item, out double diameterMillimeters))
+            if (hookedObservationCameraProfile != null)
+            {
+                hookedObservationCameraProfile.PropertyChanged -= ObservationCameraProfile_PropertyChanged;
+            }
+
+            hookedObservationCameraProfile = profile;
+            hookedObservationCameraProfile.PropertyChanged += ObservationCameraProfile_PropertyChanged;
+        }
+
+        private void cbGratingDiameter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (MVSViewManager?.Config == null)
+            {
+                return;
+            }
+
+            if (TryGetGratingDiameter(cbGratingDiameter.SelectedItem, out double diameterMillimeters))
             {
                 MVSViewManager.Config.SelectedGratingDiameterMillimeters = diameterMillimeters;
+                UpdateGratingOverlay();
+                return;
+            }
+
+            if (cbGratingDiameter.Items.Count == 0)
+            {
+                MVSViewManager.Config.SelectedGratingDiameterMillimeters = 0;
                 UpdateGratingOverlay();
             }
         }
 
         private void UpdateGratingOverlay()
         {
-            if (GratingCircle == null || MVSViewManager?.Config == null)
+            if (MVSViewManager?.Config == null || imgDisplay == null)
             {
                 return;
             }
@@ -122,50 +191,43 @@ namespace Conoscope.MVS
             double diameterMillimeters = MVSViewManager.Config.SelectedGratingDiameterMillimeters;
             if (diameterMillimeters <= 0)
             {
-                GratingCircle.Visibility = Visibility.Collapsed;
-                tbGratingOverlayStatus.Text = "未显示光栅位置";
+                gratingOverlay.Clear();
+                tbGratingOverlayStatus.Text = "未显示测试区域";
                 return;
             }
 
-            Core.ConoscopeModelProfile currentModelProfile = Core.ConoscopeManager.GetInstance().Config.CurrentModelProfile;
+            Core.ConoscopeModelProfile currentModelProfile = MVSViewManager.CurrentModelProfile;
             double scaleCoefficient = currentModelProfile.ObservationCameraScaleCoefficient;
             if (scaleCoefficient <= double.Epsilon)
             {
-                GratingCircle.Visibility = Visibility.Collapsed;
+                gratingOverlay.Clear();
                 tbGratingOverlayStatus.Text = "观察相机尺寸系数未配置";
                 return;
             }
 
             double imagePixelDiameter = diameterMillimeters / scaleCoefficient;
-            Point displayCenter;
-            double displayDiameter;
-            if (imgDisplay?.ImageShow.Source != null)
+            if (imgDisplay.ImageShow.Source == null)
             {
-                Matrix contentMatrix = imgDisplay.Zoombox1.ContentMatrix;
-                Point imageCenter = new Point(currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
-                Point centerInZoombox = contentMatrix.Transform(imageCenter);
-                displayCenter = imgDisplay.Zoombox1.TranslatePoint(centerInZoombox, GratingOverlayCanvas);
-                displayDiameter = imagePixelDiameter * Math.Abs(contentMatrix.M11);
-            }
-            else
-            {
-                displayCenter = new Point(GratingOverlayCanvas.ActualWidth / 2.0, GratingOverlayCanvas.ActualHeight / 2.0);
-                displayDiameter = imagePixelDiameter;
-            }
-
-            if (displayDiameter <= 0 || double.IsNaN(displayDiameter) || double.IsInfinity(displayDiameter))
-            {
-                GratingCircle.Visibility = Visibility.Collapsed;
-                tbGratingOverlayStatus.Text = "光栅尺寸无效";
+                gratingOverlay.Clear();
+                tbGratingOverlayStatus.Text = $"测试区域: {diameterMillimeters:g} mm | 等待图像";
                 return;
             }
 
-            GratingCircle.Width = displayDiameter;
-            GratingCircle.Height = displayDiameter;
-            Canvas.SetLeft(GratingCircle, displayCenter.X - displayDiameter / 2.0);
-            Canvas.SetTop(GratingCircle, displayCenter.Y - displayDiameter / 2.0);
-            GratingCircle.Visibility = Visibility.Visible;
-            tbGratingOverlayStatus.Text = $"光栅: {diameterMillimeters:g} mm";
+            if (imagePixelDiameter <= 0 || double.IsNaN(imagePixelDiameter) || double.IsInfinity(imagePixelDiameter) ||
+                double.IsNaN(currentModelProfile.ObservationCameraCenterX) || double.IsNaN(currentModelProfile.ObservationCameraCenterY) ||
+                double.IsInfinity(currentModelProfile.ObservationCameraCenterX) || double.IsInfinity(currentModelProfile.ObservationCameraCenterY))
+            {
+                gratingOverlay.Clear();
+                tbGratingOverlayStatus.Text = "测试区域尺寸无效";
+                return;
+            }
+
+            gratingOverlay.Update(
+                new Point(currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY),
+                imagePixelDiameter,
+                imgDisplay.Zoombox1.ContentMatrix.M11);
+            imgDisplay.ImageShow.TopVisual(gratingOverlay);
+            tbGratingOverlayStatus.Text = $"测试区域: {diameterMillimeters:g} mm | 中心: ({currentModelProfile.ObservationCameraCenterX:F1}, {currentModelProfile.ObservationCameraCenterY:F1})";
         }
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)
@@ -539,6 +601,7 @@ namespace Conoscope.MVS
             if (!m_bGrabbing) return;
 
             MVSViewManager.Count++;
+            bool sourceChanged = false;
 
             // 检查是否需要重新创建 WriteableBitmap (宽高或像素格式改变)
             if (writeableBitmap == null ||
@@ -549,12 +612,18 @@ namespace Conoscope.MVS
                 writeableBitmap = new WriteableBitmap(width, height, 96, 96, format, null);
                 imgDisplay.ImageShow.Source = writeableBitmap;
                 imgDisplay.UpdateZoomAndScale();
+                sourceChanged = true;
             }
             else if (imgDisplay.ImageShow.Source != writeableBitmap)
             {
                 imgDisplay.ImageShow.Source = writeableBitmap;
+                sourceChanged = true;
             }
-            UpdateGratingOverlay();
+
+            if (sourceChanged)
+            {
+                UpdateGratingOverlay();
+            }
 
             try
             {
@@ -746,7 +815,15 @@ namespace Conoscope.MVS
         {
             m_bGrabbing = false;
             writeableBitmap = null;
+            MVSViewManager.Config.PropertyChanged -= MVSConfig_PropertyChanged;
+            MVSViewManager.PropertyChanged -= MVSViewManager_PropertyChanged;
+            if (hookedObservationCameraProfile != null)
+            {
+                hookedObservationCameraProfile.PropertyChanged -= ObservationCameraProfile_PropertyChanged;
+                hookedObservationCameraProfile = null;
+            }
             imgDisplay.Zoombox1.ContentMatrixChanged -= ImageDisplay_ContentMatrixChanged;
+            imgDisplay.ImageShow.RemoveOverlayVisual(gratingOverlay);
             imgDisplay.Dispose();
             bnClose_Click(null, null);
 
@@ -801,6 +878,26 @@ namespace Conoscope.MVS
             }
 
             UpdateStatusBar();
+        }
+
+        private void ParameterTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+            {
+                return;
+            }
+
+            if (sender == tbExposure)
+            {
+                CommitExposure();
+            }
+            else if (sender == tbGain)
+            {
+                CommitGain();
+            }
+
+            e.Handled = true;
+            MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
         }
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -858,8 +955,19 @@ namespace Conoscope.MVS
             }
         }
 
-        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        private void ExposureTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
+            CommitExposure();
+        }
+
+        private void GainTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            CommitGain();
+        }
+
+        private void CommitExposure()
+        {
+            BindingOperations.GetBindingExpression(tbExposure, TextBox.TextProperty)?.UpdateSource();
             if (!MVSViewManager.IsOpen) return;
             if (MVSViewManager.Config.Exposure <= 0)
             {
@@ -879,6 +987,30 @@ namespace Conoscope.MVS
                 ShowErrorMsg("Set Exposure Time Fail!", nRet);
             }
             log.Info($"ExposureTime ret{nRet}");
+            UpdateStatusBar();
+        }
+
+        private void CommitGain()
+        {
+            if (!MVSViewManager.IsOpen || string.IsNullOrWhiteSpace(tbGain.Text))
+            {
+                return;
+            }
+
+            if (!float.TryParse(tbGain.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out float gain) &&
+                !float.TryParse(tbGain.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out gain))
+            {
+                ShowErrorMsg("Please enter correct type!", 0);
+                return;
+            }
+
+            m_MyCamera.MV_CC_SetEnumValue_NET("GainAuto", 0);
+            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("Gain", gain);
+            if (nRet != MyCamera.MV_OK)
+            {
+                ShowErrorMsg("Set Gain Fail!", nRet);
+            }
+
             UpdateStatusBar();
         }
     }

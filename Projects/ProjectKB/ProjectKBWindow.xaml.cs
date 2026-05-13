@@ -649,7 +649,7 @@ namespace ProjectKB
 
                 string csvpath = ViewResultManager.Config.CsvSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
 
-                KBItemMaster.SaveCsv(csvpath);
+                KBItemMaster.SaveCsv(csvpath, ViewResultManager.Config.AppendFalloutSummary);
                 log.Info($"writecsv:{csvpath}");
             });
             Application.Current.Dispatcher.BeginInvoke(() =>

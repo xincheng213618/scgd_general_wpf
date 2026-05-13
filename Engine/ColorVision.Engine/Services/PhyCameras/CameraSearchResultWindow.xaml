@@ -4,48 +4,85 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CameraSearchResultViewModel}"
-        Title="相机搜索结果" Height="680" Width="1040" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
-    <Grid Margin="10">
+        Title="相机搜索结果" Height="700" Width="1100" MinHeight="560" MinWidth="880"
+        Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="PanelBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="170"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <TextBlock Text="{Binding SummaryText}" FontSize="16" FontWeight="SemiBold" Margin="0,0,20,0"/>
-            <TextBlock Text="{Binding ElapsedText}" FontSize="16"/>
-        </StackPanel>
+        <Border Style="{StaticResource PanelBorderStyle}" Padding="14,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding SummaryText}" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ElapsedText}" FontSize="12" Opacity="0.62"
+                               Margin="0,5,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="{x:Static properties:Resources.Close}"
+                        MinWidth="90" Height="32" Click="Close_Click"/>
+            </Grid>
+        </Border>
 
-        <DataGrid Grid.Row="1" ItemsSource="{Binding Models}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" MaxHeight="170" Margin="0,0,0,10">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="类型" Binding="{Binding CameraModel}" Width="160"/>
-                <DataGridTextColumn Header="耗时" Binding="{Binding ElapsedText}" Width="120"/>
-                <DataGridTextColumn Header="数量" Binding="{Binding CameraCount}" Width="80"/>
-                <DataGridTextColumn Header="状态" Binding="{Binding StatusText}" Width="*"/>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Border Grid.Row="1" Style="{StaticResource PanelBorderStyle}" Padding="8" Margin="0,0,0,12">
+            <DataGrid ItemsSource="{Binding Models}" AutoGenerateColumns="False" IsReadOnly="True"
+                      CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      Background="Transparent" BorderThickness="0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding CameraModel}" Width="180"/>
+                    <DataGridTextColumn Header="耗时" Binding="{Binding ElapsedText}" Width="120"/>
+                    <DataGridTextColumn Header="数量" Binding="{Binding CameraCount}" Width="90"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Status}" Binding="{Binding StatusText}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
 
-        <DataGrid Grid.Row="2" ItemsSource="{Binding Cameras}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="类型" Binding="{Binding CameraModel}" Width="130"/>
-                <DataGridTextColumn Header="状态" Binding="{Binding StatusText}" Width="90"/>
-                <DataGridTextColumn Header="MD5" Binding="{Binding MD5Id}" Width="260"/>
-                <DataGridTextColumn Header="CameraId" Binding="{Binding CameraId}" Width="*"/>
-                <DataGridTextColumn Header="类型耗时" Binding="{Binding SearchElapsedText}" Width="110"/>
-                <DataGridTemplateColumn Header="操作" Width="110">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button Content="{Binding ActionText}" Command="{Binding CreateCommand}" IsEnabled="{Binding CanCreate}" MinWidth="76" Padding="6,2"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Border Grid.Row="2" Style="{StaticResource PanelBorderStyle}" Padding="8">
+            <DataGrid ItemsSource="{Binding Cameras}" AutoGenerateColumns="False" IsReadOnly="True"
+                      CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      Background="Transparent" BorderThickness="0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding CameraModel}" Width="140"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Status}" Binding="{Binding StatusText}" Width="90"/>
+                    <DataGridTextColumn Header="MD5" Binding="{Binding MD5Id}" Width="270"/>
+                    <DataGridTextColumn Header="CameraId" Binding="{Binding CameraId}" Width="*"/>
+                    <DataGridTextColumn Header="耗时" Binding="{Binding SearchElapsedText}" Width="100"/>
+                    <DataGridTemplateColumn Header="操作" Width="120">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding ActionText}" Command="{Binding CreateCommand}"
+                                        IsEnabled="{Binding CanCreate}" MinWidth="76" Padding="8,3"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
 
-        <Button Grid.Row="3" Content="关闭" MinWidth="90" Height="30" HorizontalAlignment="Right" Margin="0,10,0,0" Click="Close_Click"/>
+        <TextBlock Grid.Row="3" Text="使用操作列创建尚未登记的相机。"
+                   FontSize="12" Opacity="0.55" Margin="2,10,0,0"/>
     </Grid>
 </Window>

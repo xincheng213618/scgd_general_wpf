@@ -38,15 +38,18 @@ namespace Conoscope
 
         private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)
         {
+            currentReferenceScaleChannel = channel;
+            currentReferenceScaleMaximum = maxValue;
+
             if (tbPseudoColorLegendTitle == null || tbPseudoColorLegendMin == null || tbPseudoColorLegendMax == null)
             {
                 return;
             }
 
             UpdatePseudoColorMapPreview();
-            tbPseudoColorLegendTitle.Text = GetChannelLabel(channel);
-            tbPseudoColorLegendMin.Text = FormatChannelValue(minValue, channel);
-            tbPseudoColorLegendMax.Text = FormatChannelValue(maxValue, channel);
+            tbPseudoColorLegendTitle.Text = ConoscopeChannelDisplayFormatter.GetLabel(channel);
+            tbPseudoColorLegendMin.Text = ConoscopeChannelDisplayFormatter.FormatValue(minValue, channel);
+            tbPseudoColorLegendMax.Text = ConoscopeChannelDisplayFormatter.FormatValue(maxValue, channel);
             UpdatePseudoColorLegendVisibility(true);
         }
 
@@ -70,44 +73,6 @@ namespace Conoscope
             PseudoColorLegendPanel.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private OpenCvSharp.Mat CreateColorDifferenceMat()
-        {
-            if (XMat == null || YMat == null || ZMat == null)
-            {
-                throw new InvalidOperationException("XYZ 数据未加载");
-            }
-
-            ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage)
-            {
-                EnsureColorDifferenceReferenceReady();
-                return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, colorDifferenceReferenceUMat!, colorDifferenceReferenceVMat!);
-            }
-
-            ConoscopeUvReference reference = ResolvePointColorDifferenceReference();
-            return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, reference.U, reference.V);
-        }
-
-        private void EnsureColorDifferenceReferenceReady()
-        {
-            ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage && (colorDifferenceReferenceUMat == null || colorDifferenceReferenceVMat == null))
-            {
-                throw new InvalidOperationException("请先点击“保存色差基准图”，再计算实测图色差");
-            }
-
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage && XMat != null && colorDifferenceReferenceUMat != null
-                && (XMat.Width != colorDifferenceReferenceUMat.Width || XMat.Height != colorDifferenceReferenceUMat.Height))
-            {
-                throw new InvalidOperationException("当前图像尺寸与色差基准图不一致，无法逐点计算");
-            }
-
-            if (mode == ColorDifferenceReferenceMode.Custom && !TryParseCustomColorDifferenceReference(out _))
-            {
-                throw new InvalidOperationException("请输入有效的自定义 u/v 基准坐标");
-            }
-        }
-
         private bool HasXyzData()
         {
             return XMat != null && YMat != null && ZMat != null;
@@ -115,10 +80,9 @@ namespace Conoscope
 
         private ImageFilterType GetSelectedFilterType()
         {
-            if (cbFilterType?.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string filterTag
-                && Enum.TryParse(filterTag, out ImageFilterType filterType))
+            if (cbFilterType?.SelectedItem is ComboBoxItem)
             {
-                return NormalizeFilterType(filterType);
+                return NormalizeFilterType(ComboBoxHelper.GetSelectedEnumByTag(cbFilterType, NormalizeFilterType(ConoscopeConfig.FilterType)));
             }
 
             if (cbFilterType?.SelectedIndex >= 0)
@@ -141,24 +105,12 @@ namespace Conoscope
 
         private DustRemovalMode GetSelectedDustRemovalMode()
         {
-            if (cbDustMode?.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string modeTag
-                && Enum.TryParse(modeTag, out DustRemovalMode mode))
-            {
-                return mode;
-            }
-
-            return ConoscopeConfig.DustRemovalMode;
+            return ComboBoxHelper.GetSelectedEnumByTag(cbDustMode, ConoscopeConfig.DustRemovalMode);
         }
 
         private ExportChannel GetSelectedDisplayChannel()
         {
-            if (cbDisplayChannel?.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string channelTag &&
-                Enum.TryParse(channelTag, out ExportChannel channel))
-            {
-                return channel;
-            }
-
-            return ConoscopeConfig.DisplayChannel;
+            return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, ConoscopeConfig.DisplayChannel);
         }
 
         private void DisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -177,6 +129,7 @@ namespace Conoscope
                 try
                 {
                     RefreshDisplayedImage();
+                    UpdateReferencePlot();
                 }
                 catch (Exception ex)
                 {
@@ -203,104 +156,6 @@ namespace Conoscope
             {
                 log.Error($"保存 Conoscope 配置失败: {ex.Message}", ex);
                 MessageBox.Show($"保存配置失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ColorDifferenceReference_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isUpdatingColorDifferenceControls)
-            {
-                return;
-            }
-
-            ConoscopeConfig.ColorDifferenceReferenceMode = GetSelectedColorDifferenceReferenceMode();
-            UpdateColorDifferenceReferenceUi();
-
-            if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && HasXyzData())
-            {
-                try
-                {
-                    RefreshDisplayedImage();
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"切换色差基准失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
-
-        private void ColorDifferenceCustom_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (isUpdatingColorDifferenceControls)
-            {
-                return;
-            }
-
-            if (!TryParseCustomColorDifferenceReference(out _))
-            {
-                MessageBox.Show("请输入有效的自定义 u/v 基准坐标", "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            UpdateColorDifferenceReferenceUi();
-            if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.Custom && HasXyzData())
-            {
-                RefreshDisplayedImage();
-            }
-        }
-
-        private void btnSaveColorDifferenceReference_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (!HasXyzData() || XMat == null || YMat == null || ZMat == null)
-                {
-                    MessageBox.Show("请先加载一张实测图", "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                colorDifferenceReferenceUMat?.Dispose();
-                colorDifferenceReferenceVMat?.Dispose();
-                colorDifferenceReferenceUMat = ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, ExportChannel.CieU);
-                colorDifferenceReferenceVMat = ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, ExportChannel.CieV);
-                colorDifferenceReferenceFileName = Filename;
-
-                isUpdatingColorDifferenceControls = true;
-                try
-                {
-                    SelectComboBoxItemByTag(cbColorDifferenceReference, ColorDifferenceReferenceMode.ReferenceImage.ToString());
-                    ConoscopeConfig.ColorDifferenceReferenceMode = ColorDifferenceReferenceMode.ReferenceImage;
-                }
-                finally
-                {
-                    isUpdatingColorDifferenceControls = false;
-                }
-
-                UpdateColorDifferenceReferenceUi();
-            }
-            catch (Exception ex)
-            {
-                log.Error($"保存色差基准图失败: {ex.Message}", ex);
-                MessageBox.Show($"保存色差基准图失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void btnCalculateColorDifference_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                EnsureColorDifferenceReferenceReady();
-                SelectComboBoxItemByTag(cbDisplayChannel, ExportChannel.ColorDifference.ToString());
-                if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && HasXyzData())
-                {
-                    RefreshDisplayedImage();
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"计算色差失败: {ex.Message}", ex);
-                MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }

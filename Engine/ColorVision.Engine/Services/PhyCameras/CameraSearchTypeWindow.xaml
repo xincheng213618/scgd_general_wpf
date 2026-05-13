@@ -4,42 +4,67 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CameraSearchTypeWindow}"
-        Title="搜索相机类型" Height="480" Width="420" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
-    <Grid Margin="10">
+        Title="搜索相机类型" Height="520" Width="460" MinHeight="420" MinWidth="380"
+        Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="PanelBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="相机类型" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <StackPanel Margin="2,0,2,12">
+            <TextBlock Text="相机类型" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Text="选择要参与在线搜索的相机型号" FontSize="12"
+                       Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.62"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
 
-        <Border Grid.Row="1" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="4">
-            <ListBox ItemsSource="{Binding CameraModels}" BorderThickness="0" Background="Transparent">
+        <Border Grid.Row="1" Style="{StaticResource PanelBorderStyle}" Padding="6">
+            <ListBox ItemsSource="{Binding CameraModels}" BorderThickness="0" Background="Transparent"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="6,4"/>
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Margin="8,5" Padding="6,4"/>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
         </Border>
 
-        <Grid Grid.Row="2" Margin="0,10,0,0">
+        <Grid Grid.Row="2" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal">
-                <Button Content="默认" MinWidth="64" Margin="0,0,6,0" Click="Default_Click"/>
-                <Button Content="全选" MinWidth="64" Margin="0,0,6,0" Click="SelectAll_Click"/>
-                <Button Content="清空" MinWidth="64" Click="Clear_Click"/>
+                <Button Content="默认" MinWidth="68" Margin="0,0,6,0" Click="Default_Click"/>
+                <Button Content="全选" MinWidth="68" Margin="0,0,6,0" Click="SelectAll_Click"/>
+                <Button Content="{x:Static properties:Resources.Clear}" MinWidth="68" Click="Clear_Click"/>
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="搜索" MinWidth="80" Margin="0,0,8,0" Background="{StaticResource PrimaryBrush}" Foreground="White" Click="Search_Click"/>
-                <Button Content="取消" MinWidth="80" Click="Cancel_Click"/>
+                <Button Content="{x:Static properties:Resources.Search}" MinWidth="86" Height="32"
+                        Margin="0,0,8,0" Background="{StaticResource PrimaryBrush}" Foreground="White"
+                        Click="Search_Click"/>
+                <Button Content="{x:Static properties:Resources.Cancel}" MinWidth="86" Height="32"
+                        Click="Cancel_Click"/>
             </StackPanel>
         </Grid>
     </Grid>

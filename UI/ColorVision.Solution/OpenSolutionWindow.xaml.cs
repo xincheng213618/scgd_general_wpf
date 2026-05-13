@@ -29,6 +29,22 @@ namespace ColorVision.Solution
         }
     }
 
+    public class MenuOpenFolder : MenuItemFileBase
+    {
+        public override string OwnerGuid => nameof(MenuOpen);
+
+        public override string GuidId => nameof(MenuOpenFolder);
+
+        public override int Order => 2;
+
+        public override string Header => ColorVision.UI.Properties.Resources.OpenFolder;
+
+        public override void Execute()
+        {
+            SolutionManager.OpenFolderDialog();
+        }
+    }
+
     /// <summary>
     /// NewCreateWindow.xaml 的交互逻辑
     /// </summary>
@@ -44,12 +60,12 @@ namespace ColorVision.Solution
 
         private void BaseWindow_Initialized(object sender, EventArgs e)
         {
+            SolutionInfos.Clear();
             foreach (var item in SolutionHistory.RecentFiles)
             {
-                FileInfo Info = new(item);
-                if (Info.Exists)
+                if (TryCreateSolutionInfo(item, out SolutionInfo solutionInfo))
                 {
-                    SolutionInfos.Add(new SolutionInfo() { Name = Info.Name, FullName = Info.FullName, CreationTime = Info.CreationTime.ToString("yyyy/MM/dd H:mm") });
+                    SolutionInfos.Add(solutionInfo);
                 }
                 else
                 {
@@ -60,7 +76,39 @@ namespace ColorVision.Solution
             ListView1.Visibility = Visibility.Visible;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private static bool TryCreateSolutionInfo(string path, out SolutionInfo solutionInfo)
+        {
+            solutionInfo = null!;
+
+            string normalizedPath = SolutionManager.NormalizeRecentPath(path);
+            if (Directory.Exists(normalizedPath))
+            {
+                DirectoryInfo directoryInfo = new(normalizedPath);
+                solutionInfo = new SolutionInfo()
+                {
+                    Name = directoryInfo.Name,
+                    FullName = directoryInfo.FullName,
+                    CreationTime = directoryInfo.CreationTime.ToString("yyyy/MM/dd H:mm")
+                };
+                return true;
+            }
+
+            if (File.Exists(normalizedPath))
+            {
+                FileInfo fileInfo = new(normalizedPath);
+                solutionInfo = new SolutionInfo()
+                {
+                    Name = fileInfo.Name,
+                    FullName = fileInfo.FullName,
+                    CreationTime = fileInfo.CreationTime.ToString("yyyy/MM/dd H:mm")
+                };
+                return true;
+            }
+
+            return false;
+        }
+
+        private void OpenSolutionFile_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.RestoreDirectory = true;
@@ -70,6 +118,20 @@ namespace ColorVision.Solution
                 SolutionManager.GetInstance().OpenSolution(openFileDialog.FileName);
                 Close();
             }
+        }
+
+        private void OpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (SolutionManager.OpenFolderDialog())
+            {
+                Close();
+            }
+        }
+
+        private void CreateSolution_Click(object sender, RoutedEventArgs e)
+        {
+            SolutionManager.GetInstance().NewCreateWindow();
+            Close();
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)

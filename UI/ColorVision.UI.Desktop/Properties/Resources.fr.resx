@@ -645,4 +645,28 @@
   <data name="ConfirmDeleteFile" xml:space="preserve">
     <value>Le fichier existe sur le disque. Voulez-vous également supprimer le fichier ?</value>
   </data>
+  <data name="ThirdPartyAppsAll" xml:space="preserve">
+    <value>Toutes</value>
+  </data>
+  <data name="ThirdPartyAppsCountFormat" xml:space="preserve">
+    <value>{0} applications</value>
+  </data>
+  <data name="ThirdPartyAppsAddCustomApp" xml:space="preserve">
+    <value>Ajouter une application</value>
+  </data>
+  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
+    <value>Ajouter un script</value>
+  </data>
+  <data name="ThirdPartyAppsGroups" xml:space="preserve">
+    <value>Catégories</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Modifier</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Confirmer la suppression</value>
+  </data>
+  <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
+    <value>Supprimer l'application personnalisée "{0}" ?</value>
+  </data>
 </root>

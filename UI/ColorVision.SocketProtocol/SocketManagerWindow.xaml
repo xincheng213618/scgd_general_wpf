@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.SocketProtocol.SocketManagerWindow"
+<Window x:Class="ColorVision.SocketProtocol.SocketManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,263 +7,591 @@
         xmlns:properties="clr-namespace:ColorVision.SocketProtocol.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SocketManager}"
-        Title="{x:Static properties:Resources.SocketManagementWindow}" Height="700" Width="1200" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.SocketManagementWindow}"
+        Height="780"
+        Width="1340"
+        MinHeight="640"
+        MinWidth="1040"
+        Background="{DynamicResource GlobalBackground}"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        Initialized="Window_Initialized"
+        KeyDown="Window_KeyDown">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
+
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="PaneCardBorder" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+
+        <Style x:Key="MetricCardBorder" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+
+        <Style x:Key="SectionTitleTextBlock" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="MetaLabelTextBlock" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="StatusValueTextBlock" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Running}">
+                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Starting}">
+                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Stopping}">
+                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Error}">
+                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="StatusDotBorder" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource ThirdlyTextBrush}"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Running}">
+                    <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Starting}">
+                    <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Stopping}">
+                    <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ServerState}" Value="{x:Static local:SocketServerState.Error}">
+                    <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ChromeButton" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="78"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DangerChromeButton" TargetType="{x:Type Button}" BasedOn="{StaticResource ChromeButton}">
+            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+        </Style>
+
+        <Style x:Key="HeroToggleButton" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Content" Value="{x:Static properties:Resources.StartService}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextIconBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Height" Value="54"/>
+            <Setter Property="MinWidth" Value="170"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="30" Height="30" CornerRadius="15" Background="#33FFFFFF" VerticalAlignment="Center">
+                                    <TextBlock x:Name="Glyph"
+                                               Text="&#xE768;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="14"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextIconBrush}"/>
+                                </Border>
+                                <ContentPresenter Grid.Column="1"
+                                                  Margin="10,0,0,0"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Glyph" Property="Text" Value="&#xE71A;"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.92"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Content" Value="{x:Static properties:Resources.StopService}"/>
+                    <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
-    <Grid>
+
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
-        <!-- 顶部工具栏 -->
-        <Grid Grid.Row="0" Margin="5,5,5,5">
-            <ToolBarTray IsLocked="True">
-                <ToolBar Padding="3,2">
-                    <Button Content="{x:Static properties:Resources.Query}" Command="{Binding MessageManager.QueryCommand}" Margin="2,0,0,0"/>
-                    <Button Content="{x:Static properties:Resources.AdvancedQuery}" Command="{Binding MessageManager.GenericQueryCommand}" Margin="2,0,0,0"/>
-                    <Button Margin="2,0,0,0" HorizontalAlignment="Left" Command="{Binding MessageManager.EditConfigCommand}" Padding="2" Height="28" Width="28" ToolTip="{x:Static properties:Resources.Settings}">
-                        <Button.Triggers>
-                            <EventTrigger RoutedEvent="Button.Click">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="rotateTransform991" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Button.Triggers>
-                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                            <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform991" CenterX="8" CenterY="8"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Button>
-                </ToolBar>
-            </ToolBarTray>
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button Content="{x:Static properties:Resources.OpenDb}" Command="{Binding MessageManager.SelectDbFileCommand}" Height="25" Margin="0,1,5,0"/>
-                <Button Command="{Binding MessageManager.MessagesClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" ToolTip="{x:Static properties:Resources.ClearMessages}">
-                    <Button.Triggers>
-                        <EventTrigger RoutedEvent="Button.Click">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True"/>
-                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Button.Triggers>
-                    <Image Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
-                        <Image.RenderTransform>
-                            <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1"/>
-                        </Image.RenderTransform>
-                    </Image>
-                </Button>
-                <Button Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" ToolTip="{x:Static properties:Resources.Settings}">
-                    <Button.Triggers>
-                        <EventTrigger RoutedEvent="Button.Click">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="rotateTransform99" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Button.Triggers>
-                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform x:Name="rotateTransform99" CenterX="8" CenterY="8"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                </Button>
-            </StackPanel>
-        </Grid>
-        
-        <!-- TCP客户端列表(上方，较小) -->
-        <GroupBox Grid.Row="1" Header="{x:Static properties:Resources.ConnectedClients}" Margin="5,0,5,5" MaxHeight="150">
-            <ListView x:Name="ClientsListView" 
-                     Background="Transparent" 
-                     ItemsSource="{Binding TcpClients}" 
-                     SelectionChanged="ClientsListView_SelectionChanged" 
-                     Padding="2">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="{x:Static properties:Resources.LocalEndPoint}" Width="200">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Client.LocalEndPoint, Mode=OneWay}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.RemoteEndPoint}" Width="200">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Client.RemoteEndPoint, Mode=OneWay}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.ConnectionStatus}" Width="100">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Connected, Mode=OneWay}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </GroupBox>
-        
-        <!-- 主内容区域：左侧消息日志，右侧详细信息 -->
+
+        <Border Grid.Row="0"
+                Padding="18"
+                Background="{DynamicResource ButtonBackground}"
+                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource GlobalBorderBrush1}" Margin="0,0,14,0">
+                        <TextBlock Text="&#xE774;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="24"
+                                   Foreground="{DynamicResource PrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{x:Static properties:Resources.SocketManagementWindow}" FontSize="24" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                            <Border Style="{StaticResource StatusDotBorder}" Margin="0,1,7,0"/>
+                            <TextBlock Text="{Binding ServerStateText}" Style="{StaticResource StatusValueTextBlock}" FontSize="17"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding LastStatusChangedText}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Grid Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ToggleButton Grid.Row="0"
+                                  Style="{StaticResource HeroToggleButton}"
+                                  IsChecked="{Binding Config.IsServerEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Checked="ServerEnabledCheckBox_Changed"
+                                  Unchecked="ServerEnabledCheckBox_Changed"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                        <Button Content="{x:Static properties:Resources.ServiceSettings}" Command="{Binding EditCommand}" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
+                        <Button Content="{x:Static properties:Resources.MessageSettings}" Command="{Binding MessageManager.EditConfigCommand}" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
+                        <Button Content="{x:Static properties:Resources.OpenDatabase}" Command="{Binding MessageManager.SelectDbFileCommand}" Style="{StaticResource ChromeButton}" MinWidth="96"/>
+                    </StackPanel>
+                </Grid>
+
+                <UniformGrid Grid.Row="1" Grid.ColumnSpan="2" Columns="4" Margin="0,18,0,0">
+                    <Border Style="{StaticResource MetricCardBorder}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="20" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{x:Static properties:Resources.EnabledStatus}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding EnabledStatusText}" FontSize="16" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource MetricCardBorder}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#xE768;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource SuccessBrush}" FontSize="20" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{x:Static properties:Resources.OpenStatus}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding OpenStatusText}" Style="{StaticResource StatusValueTextBlock}" FontSize="16"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource MetricCardBorder}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#xE839;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource WarningBrush}" FontSize="20" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{x:Static properties:Resources.ListenAddress}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding ListenAddress}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource MetricCardBorder}" Margin="0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#xE8D4;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="20" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{x:Static properties:Resources.ProtocolAndClients}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Config.SocketPhraseType}" FontSize="16" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                                    <TextBlock Text="{Binding ClientCountText}" FontSize="16" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </UniformGrid>
+
+                <Border Grid.Row="2"
+                        Grid.ColumnSpan="2"
+                        Margin="0,14,0,0"
+                        Padding="12,10"
+                        Background="{DynamicResource ButtonBackground}"
+                        BorderBrush="{DynamicResource DangerBrush}"
+                        BorderThickness="1"
+                        CornerRadius="7">
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasLastError}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <DockPanel LastChildFill="True">
+                        <TextBlock Text="&#xEA39;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource DangerBrush}" FontSize="16" Margin="0,1,8,0" DockPanel.Dock="Left"/>
+                        <TextBlock Text="{x:Static properties:Resources.OpenFailed}" FontWeight="SemiBold" Foreground="{DynamicResource DangerBrush}" Margin="0,0,10,0" DockPanel.Dock="Left"/>
+                        <TextBlock Text="{Binding LastErrorDisplay}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}"/>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1"
+                Style="{StaticResource PaneCardBorder}"
+                Padding="12,10"
+                Margin="0,10,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox x:Name="SearchTextBox"
+                             Width="330"
+                             Height="30"
+                             TextChanged="Filter_Changed"
+                             ToolTip="{x:Static properties:Resources.SearchTooltip}"/>
+                    <ComboBox x:Name="DirectionFilterCombo" Width="96" Height="30" Margin="8,0,0,0" SelectedIndex="0" SelectionChanged="Filter_Changed">
+                        <ComboBoxItem Content="{x:Static properties:Resources.FilterAll}" Tag="All"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.FilterReceived}" Tag="Received"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.FilterSent}" Tag="Sent"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox x:Name="AutoScrollCheckBox" Content="{x:Static properties:Resources.AutoScroll}" IsChecked="True" Margin="0,0,14,0"/>
+                    <CheckBox x:Name="PrettyPrintCheckBox" Content="{x:Static properties:Resources.PrettyPrintView}" IsChecked="True" Checked="PrettyPrintCheckBox_Changed" Unchecked="PrettyPrintCheckBox_Changed"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{x:Static properties:Resources.Query}" Command="{Binding MessageManager.QueryCommand}" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
+                    <Button Content="{x:Static properties:Resources.AdvancedQuery}" Command="{Binding MessageManager.GenericQueryCommand}" Style="{StaticResource ChromeButton}" MinWidth="90" Margin="0,0,8,0"/>
+                    <Button Content="{x:Static properties:Resources.ClearMessages}" Command="{Binding MessageManager.MessagesClearCommand}" Style="{StaticResource DangerChromeButton}" MinWidth="90"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="300"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*" MinWidth="300"/>
+                <ColumnDefinition Width="*" MinWidth="460"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="460" MinWidth="400"/>
             </Grid.ColumnDefinitions>
-            
-            <!-- 消息日志列表(左侧) -->
-            <GroupBox Grid.Column="0" Header="{x:Static properties:Resources.MessageLog}" Margin="5,0,0,5">
-                <ListView x:Name="MessagesListView" 
-                         Background="Transparent" 
-                         ItemsSource="{Binding MessageManager.Messages}" 
-                         SelectionChanged="MessagesListView_SelectionChanged" 
-                         Padding="2"
-                         Style="{DynamicResource ListView.Small}">
-                    <ListView.Resources>
-                        <ContextMenu x:Key="MessageContextMenu">
-                            <MenuItem Header="{x:Static properties:Resources.Copy}" Click="CopyMessage_Click" Tag="{Binding .}"/>
-                            <MenuItem Header="{x:Static properties:Resources.Resend}" Click="ResendMessage_Click" Tag="{Binding .}"/>
-                            <MenuItem Header="{x:Static properties:Resources.Delete}" Click="DeleteMessage_Click" Tag="{Binding .}"/>
-                        </ContextMenu>
-                    </ListView.Resources>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                            <Setter Property="ContextMenu" Value="{StaticResource MessageContextMenu}"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.View>
-                        <GridView>
-                            <GridView.ColumnHeaderContainerStyle>
-                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                </Style>
-                            </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn Header="{x:Static properties:Resources.Time}" Width="80">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                        <TextBlock Text="{Binding MessageTime, StringFormat=HH:mm:ss}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.Direction}" Width="50">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                        <TextBlock Text="{Binding Direction}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.Client}" Width="120">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                        <TextBlock Text="{Binding ClientEndPoint}" ToolTip="{Binding ClientEndPoint}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.EventName}" Width="100">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                        <TextBlock Text="{Binding EventName}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.Content}" Width="200">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                        <TextBlock Text="{Binding Content}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Content}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-            </GroupBox>
-            
-            <!-- 分隔条 -->
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
-            
-            <!-- 消息详细信息(右侧) -->
-            <GroupBox Grid.Column="2" Header="{x:Static properties:Resources.MessageDetail}" Margin="0,0,5,5">
-                <Grid x:Name="DetailPanel" d:DataContext="{d:DesignInstance local:SocketMessage}">
+
+            <Border Grid.Column="0" Style="{StaticResource PaneCardBorder}" Padding="0">
+                <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="14,12,14,8">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="FilteredCountTextBlock" Foreground="{DynamicResource SecondaryTextBrush}" MinWidth="86" TextAlignment="Right" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="TotalCountTextBlock" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE8BD;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="16" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static properties:Resources.MessageLog}" Style="{StaticResource SectionTitleTextBlock}"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <ListView Grid.Row="1"
+                              x:Name="MessagesListView"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              ItemsSource="{Binding MessageManager.Messages}"
+                              SelectionChanged="MessagesListView_SelectionChanged"
+                              Padding="8,0,8,8"
+                              Style="{DynamicResource ListView.Small}"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling"
+                              ScrollViewer.CanContentScroll="True">
+                        <ListView.Resources>
+                            <ContextMenu x:Key="MessageContextMenu">
+                                <MenuItem Header="{x:Static properties:Resources.Copy}" Click="CopyMessage_Click" Tag="{Binding .}"/>
+                                <MenuItem Header="{x:Static properties:Resources.Resend}" Click="ResendMessage_Click" Tag="{Binding .}"/>
+                                <MenuItem Header="{x:Static properties:Resources.Delete}" Click="DeleteMessage_Click" Tag="{Binding .}"/>
+                            </ContextMenu>
+                        </ListView.Resources>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                <Setter Property="ContextMenu" Value="{StaticResource MessageContextMenu}"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn Header="{x:Static properties:Resources.Time}" Width="92">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:SocketMessage}">
+                                            <TextBlock Text="{Binding MessageTime, StringFormat=HH:mm:ss.fff}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="{x:Static properties:Resources.Direction}" Width="60">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:SocketMessage}">
+                                            <TextBlock Text="{Binding DirectionDisplay}" FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="{x:Type TextBlock}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Direction}" Value="{x:Static local:SocketMessageDirection.Sent}">
+                                                                <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="{x:Static properties:Resources.Client}" Width="158">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:SocketMessage}">
+                                            <TextBlock Text="{Binding ClientEndPoint}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ClientEndPoint}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="{x:Static properties:Resources.EventName}" Width="140">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:SocketMessage}">
+                                            <TextBlock Text="{Binding EventName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding EventName}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="{x:Static properties:Resources.Content}" Width="420">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:SocketMessage}">
+                                            <TextBlock Text="{Binding Content}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Content}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="10" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <Border Grid.Column="2" Style="{StaticResource PaneCardBorder}" Padding="0">
+                <Grid x:Name="DetailPanel" Margin="14,12,14,12" d:DataContext="{d:DesignInstance local:SocketMessage}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    
-                    <!-- 消息元信息 -->
-                    <StackPanel Grid.Row="0" Margin="5">
-                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <TextBlock Text="{x:Static properties:Resources.Time}" FontWeight="Bold" Width="80"/>
-                            <TextBlock Text="{Binding MessageTime, StringFormat=yyyy-MM-dd HH:mm:ss.fff}"/>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding DirectionDisplay}" FontSize="13" FontWeight="SemiBold">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Direction}" Value="{x:Static local:SocketMessageDirection.Sent}">
+                                            <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="16" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static properties:Resources.MessageDetail}" Style="{StaticResource SectionTitleTextBlock}"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <TextBlock Text="{x:Static properties:Resources.Direction}" FontWeight="Bold" Width="80"/>
-                            <TextBlock Text="{Binding Direction}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <TextBlock Text="{x:Static properties:Resources.Client}" FontWeight="Bold" Width="80"/>
-                            <TextBlock Text="{Binding ClientEndPoint}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <TextBlock Text="{x:Static properties:Resources.EventName}" FontWeight="Bold" Width="80"/>
-                            <TextBlock Text="{Binding EventName}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <TextBlock Text="MsgID:" FontWeight="Bold" Width="80"/>
-                            <TextBlock Text="{Binding MsgID}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <TextBlock Text="{x:Static properties:Resources.ResponseCode}" FontWeight="Bold" Width="80"/>
-                            <TextBlock Text="{Binding ResponseCode}"/>
-                        </StackPanel>
-                    </StackPanel>
-                    
-                    <!-- 消息内容 -->
-                    <TextBox Grid.Row="1" Text="{Binding Content, Mode=OneWay}" 
-                             IsReadOnly="True" 
-                             TextWrapping="Wrap" 
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,10">
+                                <TextBlock Text="{x:Static properties:Resources.Time}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding MessageTime, StringFormat=yyyy-MM-dd HH:mm:ss.fff}" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,10">
+                                <TextBlock Text="{x:Static properties:Resources.Client}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding ClientEndPoint}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ClientEndPoint}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,10">
+                                <TextBlock Text="{x:Static properties:Resources.EventName}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding EventName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding EventName}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,10">
+                                <TextBlock Text="MsgID" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding MsgID}" TextTrimming="CharacterEllipsis" ToolTip="{Binding MsgID}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="{x:Static properties:Resources.ResponseCode}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding ResponseCode}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="1">
+                                <TextBlock Text="{x:Static properties:Resources.Direction}" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding DirectionDisplay}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <TextBox Grid.Row="2"
+                             x:Name="DetailContentTextBox"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                             BorderThickness="1"
-                             Margin="5,0,5,5"
-                             FontFamily="Consolas"/>
-                    
-                    <!-- 操作按钮 -->
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-                        <Button Content="{x:Static properties:Resources.Copy}" Click="CopyContent_Click" Margin="0,0,5,0" Padding="15,5"/>
-                        <Button Content="{x:Static properties:Resources.CopyFormatted}" Click="CopyFormattedContent_Click" Margin="0,0,5,0" Padding="15,5"/>
-                        <Button Content="{x:Static properties:Resources.Resend}" Click="ResendContent_Click" Margin="0,0,5,0" Padding="15,5"/>
-                        <Button Content="{x:Static properties:Resources.Delete}" Click="DeleteContent_Click" Padding="15,5"/>
+                             BorderBrush="{DynamicResource ButtonBorderBrush}"
+                             Background="{DynamicResource GlobalBackground}"
+                             Foreground="{DynamicResource GlobalTextBrush}"
+                             FontFamily="Consolas"
+                             FontSize="13"
+                             Padding="10"/>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Content="{x:Static properties:Resources.Copy}" Click="CopyContent_Click" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
+                        <Button Content="{x:Static properties:Resources.CopyFormatted}" Click="CopyFormattedContent_Click" Style="{StaticResource ChromeButton}" MinWidth="98" Margin="0,0,8,0"/>
+                        <Button Content="{x:Static properties:Resources.Resend}" Click="ResendContent_Click" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
+                        <Button Content="{x:Static properties:Resources.Delete}" Click="DeleteContent_Click" Style="{StaticResource DangerChromeButton}"/>
                     </StackPanel>
                 </Grid>
-            </GroupBox>
+            </Border>
         </Grid>
     </Grid>
 </Window>

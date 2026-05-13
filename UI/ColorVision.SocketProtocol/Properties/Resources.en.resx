@@ -204,4 +204,97 @@
   <data name="ClientNotConnected" xml:space="preserve">
     <value>Target client not connected</value>
   </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>Auto scroll</value>
+  </data>
+  <data name="ClientCountFormat" xml:space="preserve">
+    <value>{0} clients</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="EnabledStatus" xml:space="preserve">
+    <value>Enabled status</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="FilterReceived" xml:space="preserve">
+    <value>Received</value>
+  </data>
+  <data name="FilterSent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="MessageCountFormat" xml:space="preserve">
+    <value>{0} messages</value>
+  </data>
+  <data name="MessageSettings" xml:space="preserve">
+    <value>Message settings</value>
+  </data>
+  <data name="NoError" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="OpenDatabase" xml:space="preserve">
+    <value>Open database</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>Open failed</value>
+  </data>
+  <data name="OpenListenAddressFailedFormat" xml:space="preserve">
+    <value>Failed to open {0}: {1}</value>
+  </data>
+  <data name="OpenStatus" xml:space="preserve">
+    <value>Service open</value>
+  </data>
+  <data name="PrettyPrintView" xml:space="preserve">
+    <value>Pretty print</value>
+  </data>
+  <data name="ProtocolAndClients" xml:space="preserve">
+    <value>Protocol / Clients</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="SearchTooltip" xml:space="preserve">
+    <value>Filter by client, event name, MsgID, response code, or content</value>
+  </data>
+  <data name="ServiceSettings" xml:space="preserve">
+    <value>Service settings</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>Starting</value>
+  </data>
+  <data name="StartService" xml:space="preserve">
+    <value>Start service</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>Not open</value>
+  </data>
+  <data name="Stopping" xml:space="preserve">
+    <value>Stopping</value>
+  </data>
+  <data name="StopServerFailedFormat" xml:space="preserve">
+    <value>Failed to stop service: {0}</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>Stop service</value>
+  </data>
+  <data name="UpdatedAtFormat" xml:space="preserve">
+    <value>Updated at {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="ListenAddress" xml:space="preserve">
+    <value>Listen address</value>
+  </data>
+  <data name="SocketServer" xml:space="preserve">
+    <value>Socket Server</value>
+  </data>
+  <data name="SocketServerConnected" xml:space="preserve">
+    <value>Socket server connected</value>
+  </data>
+  <data name="SocketServerDisconnected" xml:space="preserve">
+    <value>Socket server disconnected</value>
+  </data>
 </root>

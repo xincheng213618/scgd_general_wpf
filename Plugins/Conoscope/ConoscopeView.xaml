@@ -27,6 +27,12 @@
         <Style x:Key="PanelPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
+        <Style x:Key="PanelCompactToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="MinWidth" Value="68"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
         <Style x:Key="OverlayToolButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="28"/>
@@ -56,9 +62,9 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="520"/>
+            <ColumnDefinition Width="2*" />
             <ColumnDefinition Width="6"/>
-            <ColumnDefinition Width="390" MinWidth="320"/>
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{StaticResource TransparentGridBrush}">
@@ -131,23 +137,25 @@
                                     <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="42"/>
+                                            <ColumnDefinition Width="58"/>
+                                            <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="参考方位" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceAngle, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                        <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="2" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceAngle_ValueChanged"/>
+                                        <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
+                                        <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="3" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
                                     </Grid>
 
                                     <Grid x:Name="rowReferenceRadius" Margin="5,4,5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="42"/>
+                                            <ColumnDefinition Width="58"/>
+                                            <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="参考极角" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderQuickReferenceRadius, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                                        <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="2" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="QuickReferenceRadius_ValueChanged"/>
+                                        <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
+                                        <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="3" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -388,11 +396,16 @@
                                 <TextBlock x:Name="tbReferenceMode" MinWidth="72" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                 <TextBlock Text="当前值" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
                                 <TextBlock x:Name="tbReferenceValue" MinWidth="78" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="图形" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
+                                <ToggleButton x:Name="tglReferencePolarMode" Content="极坐标" Style="{StaticResource PanelCompactToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,12,0"/>
                                 <Button Content="导出当前" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>
-                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotReference" Margin="5" />
+                    <Grid Grid.Row="1">
+                        <ScottPlot:WpfPlot x:Name="wpfPlotReference" Margin="5" />
+                        <local:ConoscopePolarPlot x:Name="polarPlotReference" Margin="5" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

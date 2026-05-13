@@ -1,71 +1,177 @@
-﻿<Window x:Class="ColorVision.Engine.Services.PhyCameras.Licenses.LicenseManagerWindow"
+<Window x:Class="ColorVision.Engine.Services.PhyCameras.Licenses.LicenseManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Licenses"
-        xmlns:dao="clr-namespace:ColorVision.Engine.Services.PhyCameras.Licenses"
-        mc:Ignorable="d"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:LicenseManagerViewModel}"
-        Title="{x:Static properties:Resources.LicenseManager}" Height="600" Width="1000" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterScreen">
-    <Grid Margin="10">
+        Title="{x:Static properties:Resources.LicenseManager}"
+        Height="640" Width="1100" MinHeight="520" MinWidth="880"
+        Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="PanelBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style x:Key="BaseActionButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}"/>
+        <Style x:Key="PrimaryToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="DangerToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+            <Setter Property="Foreground" Value="#FFE53935"/>
+            <Setter Property="BorderBrush" Value="#FFE53935"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+        </Style>
+        <Style x:Key="LicenseGridHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+        <Style x:Key="LicenseGridRowStyle" TargetType="{x:Type DataGridRow}">
+            <Setter Property="MinHeight" Value="42"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style x:Key="LicenseGridCellStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,4"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
-        <!-- Toolbar -->
-        <Grid Grid.Row="0" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal">
-                <Button Content="GetCameraLicense" Command="{Binding GetCameraLicenseCommand}" Margin="0,0,5,0"/>
-                <Button Content="GetSpectrumLicense" Command="{Binding GetSpectrumLicenseCommand}" Margin="0,0,5,0"/>
-                <Button Content="SaveToLincense" Command="{Binding SaveToLincenseCommand}" Margin="0,0,5,0"/>
-                
-                <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
-                <Button Content="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}" Margin="0,0,5,0"/>
-                <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}" Margin="0,0,5,0"/>
-                <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"  Margin="0,0,5,0"/>
-                <Button Content="EditLicenseNotificationConfig" Command="{Binding EditLicenseNotificationConfigCommand}"  Margin="0,0,5,0"/>
 
-            </StackPanel>
-        </Grid>
-        
-        <!-- License List -->
-        <DataGrid Grid.Row="1" 
-                  ItemsSource="{Binding Licenses}" 
-                  SelectedItem="{Binding SelectedLicense}"
-                  AutoGenerateColumns="False" 
-                  CanUserAddRows="False"
-                  IsReadOnly="True"
-                  SelectionMode="Single"
-                  GridLinesVisibility="All"
-                  HeadersVisibility="All">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
-                <DataGridTextColumn Header="MAC/SN" Binding="{Binding MacAddress}" Width="180"/>
-                <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding LiceTypeString}" Width="100"/>
-                <DataGridTextColumn Header="{x:Static properties:Resources.Model}" Binding="{Binding Model1}" Width="120"/>
-                <DataGridTextColumn Header="{x:Static properties:Resources.Customer}" Binding="{Binding CusTomerName}" Width="150"/>
-                <DataGridTextColumn Header="ExpiryDate" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="120"/>
-                <DataGridTemplateColumn Header="{x:Static properties:Resources.Status}" Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Ellipse Width="12" Height="12" Fill="{Binding StatusColor}" ToolTip="{Binding StatusText}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="{x:Static properties:Resources.CreateDate}" Binding="{Binding CreateDate, StringFormat=yyyy-MM-dd HH:mm}" Width="*"/>
-            </DataGrid.Columns>
-            <DataGrid.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="{x:Static properties:Resources.CopyLicense}" Command="{Binding CopyLicenseCommand}"/>
-                    <MenuItem Header="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}"/>
-                    <Separator/>
-                    <MenuItem Header="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}"/>
-                </ContextMenu>
-            </DataGrid.ContextMenu>
-        </DataGrid>
+        <Border Style="{StaticResource PanelBorderStyle}" Padding="14,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{x:Static properties:Resources.LicenseManager}" FontSize="22"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Licenses.Count, Mode=OneWay, StringFormat={}{0} licenses}"
+                               FontSize="12" Opacity="0.62" Margin="0,5,0,0"/>
+                </StackPanel>
+                <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="GetCameraLicense" Command="{Binding GetCameraLicenseCommand}"
+                            Style="{StaticResource ToolbarButtonStyle}"/>
+                    <Button Content="GetSpectrumLicense" Command="{Binding GetSpectrumLicenseCommand}"
+                            Style="{StaticResource ToolbarButtonStyle}"/>
+                    <Button Content="SaveToLincense" Command="{Binding SaveToLincenseCommand}"
+                            Style="{StaticResource ToolbarButtonStyle}"/>
+                    <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"
+                            Style="{StaticResource PrimaryToolbarButtonStyle}"/>
+                    <Button Content="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}"
+                            Style="{StaticResource ToolbarButtonStyle}"/>
+                    <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}"
+                            Style="{StaticResource DangerToolbarButtonStyle}"/>
+                    <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"
+                            Style="{StaticResource ToolbarButtonStyle}"/>
+                    <Button Content="License Notice" Command="{Binding EditLicenseNotificationConfigCommand}"
+                            Style="{StaticResource ToolbarButtonStyle}"/>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource PanelBorderStyle}" Padding="8">
+            <DataGrid ItemsSource="{Binding Licenses}"
+                      SelectedItem="{Binding SelectedLicense}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="None"
+                      Background="Transparent"
+                      RowStyle="{StaticResource LicenseGridRowStyle}"
+                      CellStyle="{StaticResource LicenseGridCellStyle}"
+                      ColumnHeaderStyle="{StaticResource LicenseGridHeaderStyle}"
+                      BorderThickness="0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                    <DataGridTextColumn Header="MAC/SN" Binding="{Binding MacAddress}" Width="190"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding LiceTypeString}" Width="100"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Model}" Binding="{Binding Model1}" Width="140"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Customer}" Binding="{Binding CusTomerName}" Width="160"/>
+                    <DataGridTextColumn Header="ExpiryDate" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="120"/>
+                    <DataGridTemplateColumn Header="{x:Static properties:Resources.Status}" Width="90">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="10" Height="10" Fill="{Binding StatusColor}" Margin="0,0,6,0"
+                                             ToolTip="{Binding StatusText}"/>
+                                    <TextBlock Text="{Binding StatusText}" FontSize="12"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.CreateDate}" Binding="{Binding CreateDate, StringFormat=yyyy-MM-dd HH:mm}" Width="*"/>
+                </DataGrid.Columns>
+                <DataGrid.ContextMenu>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                        <MenuItem Header="{x:Static properties:Resources.CopyLicense}" Command="{Binding CopyLicenseCommand}"/>
+                        <MenuItem Header="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+            </DataGrid>
+        </Border>
     </Grid>
 </Window>

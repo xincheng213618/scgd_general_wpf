@@ -60,7 +60,7 @@ namespace Conoscope.Analysis
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "黑白对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -68,7 +68,7 @@ namespace Conoscope.Analysis
         {
             if (whiteMeasurement == null || blackMeasurement == null)
             {
-                MessageBox.Show(this, "请先选择白图和黑图", "黑白对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, "请先选择白图和黑图", "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -80,7 +80,7 @@ namespace Conoscope.Analysis
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "黑白对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

@@ -97,9 +97,11 @@ namespace ColorVision.Rbac
             OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
             OpenPermissionManagerCommand = new RelayCommand(a => OpenPermissionManager());
 
-            // 若已有登录缓存则同步权限
-            if (Config.LoginResult?.UserDetail != null)
+            // 若已有有效登录缓存则同步权限；默认空 DTO 不应提升为管理员。
+            if (IsValidLoginResult(Config.LoginResult))
                 Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
+            else
+                Authorization.Instance.PermissionMode = PermissionMode.Guest;
         }
 
         private void SeedPermissionsAndRoles()
@@ -325,9 +327,14 @@ namespace ColorVision.Rbac
         /// </summary>
         public bool IsUserLoggedIn()
         {
-            return Config.LoginResult != null && 
-                   Config.LoginResult.User != null && 
-                   Config.LoginResult.UserDetail != null;
+            return IsValidLoginResult(Config.LoginResult);
+        }
+
+        private static bool IsValidLoginResult(Dtos.LoginResultDto? loginResult)
+        {
+            return loginResult?.User?.Id > 0 &&
+                   !string.IsNullOrWhiteSpace(loginResult.User.Username) &&
+                   loginResult.UserDetail?.UserId == loginResult.User.Id;
         }
 
         public async Task<bool> DeleteUserAsync(int userId, string username)
