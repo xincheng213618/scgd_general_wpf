@@ -43,7 +43,10 @@ namespace Conoscope
         public ConoscopeImageHost()
         {
             InitializeComponent();
-            EditorContext = new EditorContext(ImageCanvas, ZoomBox, HostRoot);
+            EditorContext = new EditorContext();
+            EditorContext.DrawCanvas = ImageCanvas;
+            EditorContext.Zoombox = ZoomBox;
+
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
             focusCircleDrawTool = new ConoscopeFocusCircleDrawTool(EditorContext, this);
             focusCircleEraseTool = new EraseManager(EditorContext);
