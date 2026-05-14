@@ -1,0 +1,315 @@
+<Window x:Class="ColorVision.Engine.Services.PhyCameras.EditCfwPortConfig"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:config="clr-namespace:ColorVision.Engine.Services.PhyCameras.Configs"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance config:CFWPORT}"
+        Title="编辑 CFW 配置"
+        Height="600" Width="860"
+        MinHeight="540" MinWidth="780"
+        Background="{DynamicResource GlobalBackground}"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            </Style>
+
+            <Style x:Key="FieldLabelStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Opacity" Value="0.62"/>
+                <Setter Property="Margin" Value="0,0,0,5"/>
+            </Style>
+
+            <Style x:Key="FieldBoxStyle" TargetType="{x:Type Border}">
+                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="7"/>
+                <Setter Property="Padding" Value="10,8"/>
+                <Setter Property="Margin" Value="0,0,0,10"/>
+            </Style>
+
+            <Style x:Key="ChannelHeaderStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,0,0,6"/>
+            </Style>
+
+            <Style x:Key="GridCellMarginStyle" TargetType="{x:Type hc:NumericUpDown}">
+                <Setter Property="Margin" Value="6,0,0,8"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource SectionPanelStyle}" Padding="14,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="CFW 配置" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="配置滤光轮启用状态、通讯方式和通道端口映射。"
+                               FontSize="12" Opacity="0.62" Margin="0,5,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Border Style="{StaticResource StatusBadgeBorderStyle}">
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} 个滤轮">
+                                    <Binding Path="CFWNum"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <Border Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="运行方式" Style="{StaticResource SectionTitleStyle}"/>
+
+                            <Border Style="{StaticResource FieldBoxStyle}">
+                                <DockPanel LastChildFill="True">
+                                    <ui:ToggleSwitch DockPanel.Dock="Right"
+                                                     IsChecked="{Binding IsUseCFW}"/>
+                                    <StackPanel>
+                                        <TextBlock Text="启用 CFW" Style="{StaticResource FieldLabelStyle}"/>
+                                        <TextBlock Text="关闭后保存时会清空通道映射。"
+                                                   FontSize="11" Opacity="0.55"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <Grid Visibility="{Binding IsUseCFW, Converter={StaticResource bool2VisibilityConverter}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Border Style="{StaticResource FieldBoxStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="滤轮数量" Style="{StaticResource FieldLabelStyle}"/>
+                                        <hc:NumericUpDown Value="{Binding CFWNum}" Minimum="1" Maximum="3"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Row="1" Style="{StaticResource FieldBoxStyle}">
+                                    <DockPanel LastChildFill="True">
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"
+                                                         IsChecked="{Binding IsBingNDDevice}"/>
+                                        <StackPanel>
+                                            <TextBlock Text="绑定 ND 设备" Style="{StaticResource FieldLabelStyle}"/>
+                                            <TextBlock Text="使用设备列表选择已配置的 CFW/ND 端口。"
+                                                       FontSize="11" Opacity="0.55"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+
+                                <Border Grid.Row="2" Style="{StaticResource FieldBoxStyle}">
+                                    <DockPanel LastChildFill="True">
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"
+                                                         IsChecked="{Binding IsCOM}"/>
+                                        <StackPanel>
+                                            <TextBlock Text="启用串口发送" Style="{StaticResource FieldLabelStyle}"/>
+                                            <TextBlock Text="未绑定设备时使用串口参数。"
+                                                       FontSize="11" Opacity="0.55"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SectionPanelStyle}"
+                            Visibility="{Binding IsUseCFW, Converter={StaticResource bool2VisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Text="通讯与 ND" Style="{StaticResource SectionTitleStyle}"/>
+                            <StackPanel x:Name="ConnectionFieldsPanel"/>
+
+                            <Expander Header="高级参数" Margin="0,8,0,0">
+                                <StackPanel x:Name="AdvancedFieldsPanel" Margin="0,8,0,0"/>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Column="2" Style="{StaticResource SectionPanelStyle}" Margin="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                        <Button DockPanel.Dock="Right"
+                                Style="{StaticResource ToolbarButtonStyle}"
+                                Click="ResetChannels_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/>
+                                <TextBlock Text="重置通道"/>
+                            </StackPanel>
+                        </Button>
+                        <StackPanel>
+                            <TextBlock Text="通道映射" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="每列对应一个图像通道，每行对应一个滤轮的端口位置。"
+                                       FontSize="12" Opacity="0.62"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid Grid.Row="1"
+                          Visibility="{Binding IsUseCFW, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="74"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Column="1" Text="通道 1" Style="{StaticResource ChannelHeaderStyle}" Margin="6,0,0,6"/>
+                        <TextBlock Grid.Column="2" Text="通道 2" Style="{StaticResource ChannelHeaderStyle}" Margin="6,0,0,6"/>
+                        <TextBlock Grid.Column="3" Text="通道 3" Style="{StaticResource ChannelHeaderStyle}" Margin="6,0,0,6"/>
+
+                        <ComboBox Grid.Row="1" Grid.Column="1"
+                                  x:Name="chType1"
+                                  Margin="6,0,0,8"
+                                  SelectedValue="{Binding ChannelCfgs[0].Chtype}"
+                                  SelectedValuePath="Key"
+                                  DisplayMemberPath="Value"/>
+                        <ComboBox Grid.Row="1" Grid.Column="2"
+                                  x:Name="chType2"
+                                  Margin="6,0,0,8"
+                                  SelectedValue="{Binding ChannelCfgs[1].Chtype}"
+                                  SelectedValuePath="Key"
+                                  DisplayMemberPath="Value"/>
+                        <ComboBox Grid.Row="1" Grid.Column="3"
+                                  x:Name="chType3"
+                                  Margin="6,0,0,8"
+                                  SelectedValue="{Binding ChannelCfgs[2].Chtype}"
+                                  SelectedValuePath="Key"
+                                  DisplayMemberPath="Value"/>
+
+                        <TextBlock Grid.Row="2" Text="滤轮 1" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"/>
+                        <hc:NumericUpDown Grid.Row="2" Grid.Column="1"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[0].Cfwport}"
+                                          Minimum="0"/>
+                        <hc:NumericUpDown Grid.Row="2" Grid.Column="2"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[1].Cfwport}"
+                                          Minimum="0"/>
+                        <hc:NumericUpDown Grid.Row="2" Grid.Column="3"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[2].Cfwport}"
+                                          Minimum="0"/>
+
+                        <TextBlock Grid.Row="3" Text="滤轮 2" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"
+                                   Visibility="{Binding IsCFWNum2, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <hc:NumericUpDown Grid.Row="3" Grid.Column="1"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[3].Cfwport}"
+                                          Minimum="0"
+                                          Visibility="{Binding IsCFWNum2, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <hc:NumericUpDown Grid.Row="3" Grid.Column="2"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[4].Cfwport}"
+                                          Minimum="0"
+                                          Visibility="{Binding IsCFWNum2, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <hc:NumericUpDown Grid.Row="3" Grid.Column="3"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[5].Cfwport}"
+                                          Minimum="0"
+                                          Visibility="{Binding IsCFWNum2, Converter={StaticResource bool2VisibilityConverter}}"/>
+
+                        <TextBlock Grid.Row="4" Text="滤轮 3" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"
+                                   Visibility="{Binding IsCFWNum3, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <hc:NumericUpDown Grid.Row="4" Grid.Column="1"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[6].Cfwport}"
+                                          Minimum="0"
+                                          Visibility="{Binding IsCFWNum3, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <hc:NumericUpDown Grid.Row="4" Grid.Column="2"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[7].Cfwport}"
+                                          Minimum="0"
+                                          Visibility="{Binding IsCFWNum3, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <hc:NumericUpDown Grid.Row="4" Grid.Column="3"
+                                          Style="{StaticResource GridCellMarginStyle}"
+                                          Value="{Binding ChannelCfgs[8].Cfwport}"
+                                          Minimum="0"
+                                          Visibility="{Binding IsCFWNum3, Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </Grid>
+
+                    <Border Grid.Row="1"
+                            Background="Transparent">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUseCFW}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="CFW 未启用"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="18"
+                                   Opacity="0.45"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="确定"
+                    Style="{StaticResource PrimaryToolbarButtonStyle}"
+                    MinWidth="110"
+                    Margin="0,0,8,0"
+                    Click="OkButton_Click"/>
+            <Button Content="取消"
+                    Style="{StaticResource ToolbarButtonStyle}"
+                    MinWidth="110"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
@@ -14,10 +16,74 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             _ChannelCfgs = new List<ChannelCfg> { };
         }
 
+        public CFWPORT CloneForEdit()
+        {
+            var copy = this.Clone();
+            copy.ChannelCfgs = ChannelCfgs?
+                .Select(item => new ChannelCfg { Cfwport = item.Cfwport, Chtype = item.Chtype })
+                .ToList() ?? new List<ChannelCfg>();
+            return copy;
+        }
+
+        public void EnsureChannelCfgsForEdit()
+        {
+            ChannelCfgs ??= new List<ChannelCfg>();
+
+            if (ChannelCfgs.Count == 0)
+            {
+                AddDefaultChannelCfgs();
+            }
+
+            while (ChannelCfgs.Count < 9)
+            {
+                ChannelCfgs.Add(new ChannelCfg());
+            }
+
+            OnPropertyChanged(nameof(ChannelCfgs));
+        }
+
+        public void NormalizeChannelCfgsForSave()
+        {
+            EnsureChannelCfgsForEdit();
+
+            if (CFWNum > 1)
+            {
+                ChannelCfgs[3].Chtype = ChannelCfgs[0].Chtype;
+                ChannelCfgs[4].Chtype = ChannelCfgs[1].Chtype;
+                ChannelCfgs[5].Chtype = ChannelCfgs[2].Chtype;
+            }
+
+            if (CFWNum > 2)
+            {
+                ChannelCfgs[6].Chtype = ChannelCfgs[0].Chtype;
+                ChannelCfgs[7].Chtype = ChannelCfgs[1].Chtype;
+                ChannelCfgs[8].Chtype = ChannelCfgs[2].Chtype;
+            }
+
+            int targetCount = CFWNum switch
+            {
+                1 => 3,
+                2 => 6,
+                _ => 9,
+            };
+
+            if (ChannelCfgs.Count > targetCount)
+            {
+                ChannelCfgs = ChannelCfgs.GetRange(0, targetCount);
+            }
+        }
+
+        private void AddDefaultChannelCfgs()
+        {
+            ChannelCfgs.Add(new ChannelCfg { Cfwport = 0, Chtype = ImageChannelType.Gray_Y });
+            ChannelCfgs.Add(new ChannelCfg { Cfwport = 1, Chtype = ImageChannelType.Gray_X });
+            ChannelCfgs.Add(new ChannelCfg { Cfwport = 2, Chtype = ImageChannelType.Gray_Z });
+        }
+
         public bool IsUseCFW { get => _IsUseCFW; set { _IsUseCFW = value; OnPropertyChanged(); } }
         private bool _IsUseCFW;
 
-        public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); } }
+        public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsSerialPortVisible)); } }
         private bool _IsBingNDDevice = true;
 
         [PropertyEditorType(typeof(DeviceNameEditor)), DeviceSourceType(typeof(DeviceCfwPort)), PropertyVisibility(nameof(IsBingNDDevice))]
@@ -25,14 +91,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private string _NDBindDeviceCode = "";
 
 
-        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; OnPropertyChanged(); } }
+        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsSerialPortVisible)); } }
         private bool _IsCOM;
 
-        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice), true)]
+        public bool IsSerialPortVisible => IsCOM && !IsBingNDDevice;
+
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor)), PropertyVisibility(nameof(IsSerialPortVisible))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice),true)]
+        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), PropertyVisibility(nameof(IsSerialPortVisible))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
@@ -67,6 +135,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsCFWNum2 => CFWNum >= 2;
         public bool IsCFWNum3 => CFWNum >= 3;
 
+        [Browsable(false)]
         public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; OnPropertyChanged(); } }
 
         private List<ChannelCfg> _ChannelCfgs;

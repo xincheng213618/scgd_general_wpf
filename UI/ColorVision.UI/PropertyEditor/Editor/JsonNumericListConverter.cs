@@ -171,11 +171,11 @@ namespace System.ComponentModel
 
             // 目标必须是支持的集合类型
             if (!IsSupportedCollectionType(targetType))
-                throw new NotSupportedException($"Collection type {targetType} is not supported. Supported types: List<T>, ObservableCollection<T>, Collection<T>, IList<T>, ICollection<T>, IEnumerable<T>. Element types must be numeric, string, enum, or have a registered property editor.");
+                throw new NotSupportedException($"Collection type {targetType} is not supported. Supported types: List<T>, ObservableCollection<T>, Collection<T>, IList<T>, ICollection<T>, IEnumerable<T>.");
 
             var elemType = targetType.GetGenericArguments()[0];
-            if (!IsNumericType(elemType))
-                throw new NotSupportedException($"Element type {elemType} is not supported. Supported element types: numeric types (int, double, etc.), string, enum.");
+            if (!IsSupportedElementType(elemType))
+                throw new NotSupportedException($"Element type {elemType} is not supported. Supported element types: numeric types, string, enum, nested collections, or editable configuration classes.");
 
             if (string.IsNullOrWhiteSpace(s))
             {
@@ -279,16 +279,40 @@ namespace System.ComponentModel
             return sourceList;
         }
 
-        private static bool IsNumericType(Type t)
+        private static bool IsSupportedElementType(Type t)
         {
             t = Nullable.GetUnderlyingType(t) ?? t;
-            return t == typeof(byte) || t == typeof(sbyte) ||
-                   t == typeof(short) || t == typeof(ushort) ||
-                   t == typeof(int) || t == typeof(uint) ||
-                   t == typeof(long) || t == typeof(ulong) ||
-                   t == typeof(float) || t == typeof(double) ||
-                   t == typeof(decimal) || t == typeof(string) ||
-                   t.IsEnum;
+            if (t == typeof(byte) || t == typeof(sbyte) ||
+                t == typeof(short) || t == typeof(ushort) ||
+                t == typeof(int) || t == typeof(uint) ||
+                t == typeof(long) || t == typeof(ulong) ||
+                t == typeof(float) || t == typeof(double) ||
+                t == typeof(decimal) || t == typeof(string) ||
+                t == typeof(bool) || t.IsEnum)
+            {
+                return true;
+            }
+
+            if (IsSupportedCollectionType(t))
+            {
+                return IsSupportedElementType(t.GetGenericArguments()[0]);
+            }
+
+            if (PropertyEditorHelper.GetEditorTypeForPropertyType(t) != null)
+            {
+                return true;
+            }
+
+            if (!t.IsClass || t.IsAbstract || typeof(Delegate).IsAssignableFrom(t) ||
+                typeof(System.Windows.DependencyObject).IsAssignableFrom(t) ||
+                typeof(System.Collections.IDictionary).IsAssignableFrom(t))
+            {
+                return false;
+            }
+
+            return t.GetConstructor(Type.EmptyTypes) != null ||
+                   t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                       .Any(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0);
         }
     }
 }

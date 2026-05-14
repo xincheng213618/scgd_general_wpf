@@ -24,7 +24,7 @@ namespace Conoscope
     /// <summary>
     /// ConoscopeView.xaml 的交互逻辑
     /// </summary>
-    public partial class ConoscopeView : UserControl, IDisposable
+    public partial class ConoscopeView : UserControl, IDisposable, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeView));
 
@@ -58,6 +58,8 @@ namespace Conoscope
         private ConoscopeModelProfile? subscribedModelProfile;
         private const float MinPositiveXyzValue = 0.000001f;
         private const double Conoscope3DInitialHeightScale = 160.0;
+
+        public event EventHandler StatusBarItemsChanged;
 
         private enum ReferencePlotDisplayMode
         {
@@ -134,6 +136,54 @@ namespace Conoscope
             }
 
             UpdateColorDifferencePanelVisibility();
+        }
+
+        public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
+        {
+            List<StatusBarMeta> items = new();
+            if (XMat != null)
+            {
+                items.Add(new StatusBarMeta
+                {
+                    Id = "ConoscopeImageDimensions",
+                    Name = "Image Size",
+                    Description = $"{XMat.Cols} x {XMat.Rows}",
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 100,
+                    Source = this,
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(Filename))
+            {
+                items.Add(new StatusBarMeta
+                {
+                    Id = "ConoscopeFileType",
+                    Name = "File Type",
+                    Description = Path.GetExtension(Filename).ToUpperInvariant(),
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 102,
+                    Source = this,
+                });
+            }
+
+            if (HasCaptureExposureSummary)
+            {
+                items.Add(new StatusBarMeta
+                {
+                    Id = "ConoscopeExposure",
+                    Name = "Exposure",
+                    Description = CaptureExposureSummary,
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 103,
+                    Source = this,
+                });
+            }
+
+            return items;
         }
 
         public ConoscopeView()

@@ -9,7 +9,7 @@ namespace Conoscope.Domain.Models
         private Mat? y;
         private Mat? z;
 
-        public ConoscopeImageData(Mat x, Mat y, Mat z, int bitsPerPixel)
+        public ConoscopeImageData(Mat x, Mat y, Mat z, int bitsPerPixel, string? exposureSummary = null)
         {
             this.x = x;
             this.y = y;
@@ -17,9 +17,12 @@ namespace Conoscope.Domain.Models
             Width = x.Width;
             Height = x.Height;
             BitsPerPixel = bitsPerPixel;
+            ExposureSummary = exposureSummary;
         }
 
         public int BitsPerPixel { get; }
+
+        public string? ExposureSummary { get; }
 
         public int Width { get; }
 

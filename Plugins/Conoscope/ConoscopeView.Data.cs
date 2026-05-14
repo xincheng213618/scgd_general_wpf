@@ -36,6 +36,7 @@ namespace Conoscope
 
                 RefreshDisplayedImage();
                 SyncCieWindowFromCurrentPointer();
+                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -53,6 +54,7 @@ namespace Conoscope
             XMat = xMat;
             YMat = yMat;
             ZMat = zMat;
+            captureExposureSummary ??= data.ExposureSummary;
             ClampNonPositiveXyzValuesIfEnabled();
 
             log.Info($"已加载 CVCIE XYZ 数据: {data.Width}x{data.Height}, Bpp={data.BitsPerPixel}");

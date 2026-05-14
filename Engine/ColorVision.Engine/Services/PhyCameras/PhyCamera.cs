@@ -82,6 +82,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         [CommandDisplay("EditFilterWheelConfig", Order = 103)]
         public RelayCommand FilterWheelEditCommand { get; set; }
+        [CommandDisplay("EditCfwPortConfig", Order = 104)]
+        public RelayCommand CfwPortEditCommand { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
 
@@ -99,8 +101,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
             {
-                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submited += (s, e) => Save();
+                var editConfig = Config.Clone();
+                editConfig.CFW = Config.CFW.CloneForEdit();
+                editConfig.CFW.EnsureChannelCfgsForEdit();
+
+                var propertyEditorWindow = new PropertyEditorWindow(editConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) =>
+                {
+                    editConfig.CFW.NormalizeChannelCfgsForSave();
+                    editConfig.CopyTo(Config);
+                    Save();
+                };
                 propertyEditorWindow.ShowDialog();
             });
 
@@ -138,6 +149,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             FilterWheelEditCommand = new RelayCommand(a =>
             {
                 EditFilterWheelConfig window = new EditFilterWheelConfig(Config.FilterWheelConfig);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                if (window.ShowDialog() == true)
+                {
+                    SaveConfig();
+                }
+            }, a => AccessControl.Check(PermissionMode.Administrator));
+
+            CfwPortEditCommand = new RelayCommand(a =>
+            {
+                EditCfwPortConfig window = new EditCfwPortConfig(Config.CFW);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
@@ -1211,6 +1233,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 Config.CFW.ChannelCfgs.Clear();
                 Config.CFW.IsCOM = false;
+            }
+            else
+            {
+                Config.CFW.NormalizeChannelCfgsForSave();
             }
 
             if (Config.CFW.IsBingNDDevice)

@@ -187,15 +187,18 @@
                     <StackPanel>
                         <StackPanel>
                             <TextBlock Text="配置" Style="{StaticResource ActionSectionTitleStyle}"/>
-                            <UniformGrid Columns="3">
+                            <UniformGrid Columns="4">
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding EditCommand}">
                                     <TextBlock Text="修改配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CfwPortEditCommand}">
+                                    <TextBlock Text="CFW 配置" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
                                     <TextBlock Text="打开配置文件" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding FilterWheelEditCommand}">
-                                    <TextBlock Text="编辑滤光轮配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="滤光轮配置" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                             </UniformGrid>
                         </StackPanel>
