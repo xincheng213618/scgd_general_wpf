@@ -130,6 +130,7 @@ namespace Conoscope
         private void ExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateColorDifferencePanelVisibility();
+            RaiseWindowQuickControlStateChanged();
         }
 
         private void btnSaveConoscopeConfig_Click(object sender, RoutedEventArgs e)

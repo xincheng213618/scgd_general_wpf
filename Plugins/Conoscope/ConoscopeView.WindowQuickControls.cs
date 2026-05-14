@@ -1,4 +1,5 @@
 using Conoscope.Core;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.Windows;
 
@@ -6,6 +7,7 @@ namespace Conoscope
 {
     public readonly record struct ConoscopeWindowQuickControlState(
         ExportChannel DisplayChannel,
+        ExportChannel ExportChannel,
         ConoscopeCoordinateReferenceMode ReferenceMode,
         double ReferenceValue,
         double ReferenceMaximum)
@@ -33,6 +35,7 @@ namespace Conoscope
 
             state = new ConoscopeWindowQuickControlState(
                 RenderingConfig.DisplayChannel,
+                GetSelectedExportChannel(),
                 axisParam.ReferenceMode,
                 referenceValue,
                 referenceMaximum);
@@ -77,6 +80,17 @@ namespace Conoscope
             axisParam.ReferenceMode = mode;
             RefreshQuickControlsFromAxisParam();
             ApplyCoordinateAxisReference();
+        }
+
+        public void SetWindowQuickExportChannel(ExportChannel channel)
+        {
+            if (GetSelectedExportChannel() == channel)
+            {
+                return;
+            }
+
+            ComboBoxHelper.SelectItemByTag(cbExportChannel, channel.ToString());
+            RaiseWindowQuickControlStateChanged();
         }
 
         public void SetWindowQuickReferenceValue(double value)

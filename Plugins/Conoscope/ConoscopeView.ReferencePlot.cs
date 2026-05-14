@@ -165,6 +165,11 @@ namespace Conoscope
             return normalized < 0 ? normalized + 360.0 : normalized;
         }
 
+        private static double ConvertCircleAngleToPolarDisplayAngle(double angleDegrees)
+        {
+            return NormalizePolarPlotAngle(90.0 - angleDegrees);
+        }
+
         private void UpdatePolarReferencePlot(IReadOnlyList<PolarPlotPoint> points, ExportChannel channel, bool closePath)
         {
             if (polarPlotReference == null)
@@ -361,7 +366,7 @@ namespace Conoscope
 
                     ExportChannel polarChannel = GetSelectedDisplayChannel();
                     PolarPlotPoint[] polarPoints = selectedCircleLine.RgbData
-                        .Select(sample => new PolarPlotPoint(NormalizePolarPlotAngle(sample.Position), GetChannelValue(sample, polarChannel)))
+                        .Select(sample => new PolarPlotPoint(ConvertCircleAngleToPolarDisplayAngle(sample.Position), GetChannelValue(sample, polarChannel)))
                         .ToArray();
                     UpdatePolarReferencePlot(polarPoints, polarChannel, closePath: true);
                     return;

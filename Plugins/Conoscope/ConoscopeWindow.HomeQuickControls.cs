@@ -35,6 +35,7 @@ namespace Conoscope
             try
             {
                 ComboBoxHelper.SelectItemByTag(cbHomeDisplayChannel, state.DisplayChannel.ToString());
+                ComboBoxHelper.SelectItemByTag(cbHomeExportChannel, state.ExportChannel.ToString());
                 ComboBoxHelper.SelectItemByTag(cbHomeReferenceMode, state.ReferenceMode.ToString());
                 tbHomeReferenceValueLabel.Text = state.ReferenceLabel;
                 txtHomeReferenceValue.Text = state.ReferenceValue.ToString("F2", CultureInfo.InvariantCulture);
@@ -112,6 +113,28 @@ namespace Conoscope
             ConoscopeCoordinateReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(cbHomeReferenceMode, ConoscopeCoordinateReferenceMode.AzimuthLine);
             ActiveView.SetWindowQuickReferenceMode(mode);
             SetOperationStatus(mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "已切换到方位角直线" : "已切换到极角圆", Brushes.LimeGreen);
+        }
+
+        private void cbHomeExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingHomeQuickControls || !IsInitialized || ActiveView == null)
+            {
+                return;
+            }
+
+            ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbHomeExportChannel, ExportChannel.Y);
+            ActiveView.SetWindowQuickExportChannel(channel);
+            SetOperationStatus($"已切换导出通道: {channel}", Brushes.LimeGreen);
+        }
+
+        private void btnHomeExportAngle_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.ExportAngleMode();
+        }
+
+        private void btnHomeExportCircle_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.ExportCircleMode();
         }
 
         private void txtHomeReferenceValue_PreviewKeyDown(object sender, KeyEventArgs e)

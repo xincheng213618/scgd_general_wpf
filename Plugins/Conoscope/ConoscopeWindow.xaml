@@ -227,6 +227,19 @@
                                                      Style="{StaticResource RibbonTextBoxStyle}"
                                                      PreviewKeyDown="txtHomeReferenceValue_PreviewKeyDown"
                                                      LostFocus="txtHomeReferenceValue_LostFocus" />
+                                            <TextBlock Text="导出" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <ComboBox x:Name="cbHomeExportChannel" Width="112" SelectionChanged="cbHomeExportChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                <ComboBoxItem Content="X 通道" Tag="X"/>
+                                                <ComboBoxItem Content="Y 通道" Tag="Y"/>
+                                                <ComboBoxItem Content="Z 通道" Tag="Z"/>
+                                                <ComboBoxItem Content="x 色度" Tag="CieX"/>
+                                                <ComboBoxItem Content="y 色度" Tag="CieY"/>
+                                                <ComboBoxItem Content="u 色度" Tag="CieU"/>
+                                                <ComboBoxItem Content="v 色度" Tag="CieV"/>
+                                                <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
+                                            </ComboBox>
+                                            <Button x:Name="btnHomeExportAngle" Content="方位导出" Click="btnHomeExportAngle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="按当前活动 View 的导出通道执行方位角导出" />
+                                            <Button x:Name="btnHomeExportCircle" Content="极角导出" Click="btnHomeExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="按当前活动 View 的导出通道执行极角导出" />
                                         </WrapPanel>
                                         <TextBlock Grid.Row="1" Text="当前视图" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>

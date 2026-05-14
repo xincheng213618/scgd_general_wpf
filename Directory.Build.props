@@ -10,7 +10,7 @@
 		<PackageTags>ColorVision</PackageTags>  
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>  
 		<AnalysisMode>Recommended</AnalysisMode>
-		<TargetFrameworks>net10.0-windows7.0</TargetFrameworks>
+		<TargetFrameworks>net10.0-windows</TargetFrameworks>
 		<NoWarn>CS8002</NoWarn>
 	    <VersionPrefix>1.4.7.4</VersionPrefix> 
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
