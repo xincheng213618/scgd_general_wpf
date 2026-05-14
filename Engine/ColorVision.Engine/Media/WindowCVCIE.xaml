@@ -32,6 +32,13 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
+            <Button x:Name="ButtonShowOnCieDiagram"
+                    Click="ButtonShowOnCieDiagram_Click"
+                    Margin="0,1,5,0"
+                    Padding="8,2"
+                    Height="25"
+                    Content="显示到CIE图"
+                    ToolTip="在 CIE 色度图中显示当前结果点" />
         </StackPanel>
 
         <!-- Statistics Panel -->
@@ -41,7 +48,7 @@
             </StackPanel>
         </Border>
       
-        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="2">
+        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="2" SelectionChanged="ListViewSide_SelectionChanged">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>
