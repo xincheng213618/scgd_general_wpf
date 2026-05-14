@@ -1,3 +1,4 @@
+import ctypes
 import os
 import filecmp
 import zipfile
@@ -75,24 +76,147 @@ def copy_with_progress(src, dst):
                   f"remaining time {remaining_time_hms}", end='')
 
         print()
-def get_file_version(file_path):
-    """获取可执行文件的版本信息"""
+def get_file_version_from_pefile(file_path):
     try:
         import pefile
     except ImportError:
-        raise RuntimeError("build_update.py requires pefile. Please install it before running this script.")
+        return None
 
-    pe = pefile.PE(file_path)
+    try:
+        pe = pefile.PE(file_path)
+    except Exception:
+        return None
+
     version_info = None
 
-    if hasattr(pe, 'FileInfo'):
-        for file_info in pe.FileInfo:
-            for entry in file_info:
-                if entry.Key == b'StringFileInfo':
-                    for st in entry.StringTable:
-                        if b'FileVersion' in st.entries:
-                            version_info = st.entries[b'FileVersion'].decode('utf-8')
-                            break
+    try:
+        if hasattr(pe, 'FileInfo'):
+            for file_info in pe.FileInfo:
+                for entry in file_info:
+                    if entry.Key == b'StringFileInfo':
+                        for st in entry.StringTable:
+                            if b'FileVersion' in st.entries:
+                                version_info = st.entries[b'FileVersion'].decode('utf-8')
+                                break
+    finally:
+        pe.close()
+
+    return version_info
+
+
+class VS_FIXEDFILEINFO(ctypes.Structure):
+    _fields_ = [
+        ("dwSignature", ctypes.c_uint32),
+        ("dwStrucVersion", ctypes.c_uint32),
+        ("dwFileVersionMS", ctypes.c_uint32),
+        ("dwFileVersionLS", ctypes.c_uint32),
+        ("dwProductVersionMS", ctypes.c_uint32),
+        ("dwProductVersionLS", ctypes.c_uint32),
+        ("dwFileFlagsMask", ctypes.c_uint32),
+        ("dwFileFlags", ctypes.c_uint32),
+        ("dwFileOS", ctypes.c_uint32),
+        ("dwFileType", ctypes.c_uint32),
+        ("dwFileSubtype", ctypes.c_uint32),
+        ("dwFileDateMS", ctypes.c_uint32),
+        ("dwFileDateLS", ctypes.c_uint32),
+    ]
+
+
+class LANGANDCODEPAGE(ctypes.Structure):
+    _fields_ = [
+        ("wLanguage", ctypes.c_uint16),
+        ("wCodePage", ctypes.c_uint16),
+    ]
+
+
+def query_file_version_string(version_buffer, sub_block):
+    value = ctypes.c_void_p()
+    value_len = ctypes.c_uint()
+    if not ctypes.windll.version.VerQueryValueW(
+        version_buffer,
+        sub_block,
+        ctypes.byref(value),
+        ctypes.byref(value_len),
+    ):
+        return None
+
+    if not value.value or value_len.value == 0:
+        return None
+
+    return ctypes.wstring_at(value.value).strip()
+
+
+def get_file_version_from_windows_resource(file_path):
+    """Read FileVersion from Windows version resources without third-party packages."""
+    if os.name != "nt" or not os.path.isfile(file_path):
+        return None
+
+    size = ctypes.windll.version.GetFileVersionInfoSizeW(file_path, None)
+    if not size:
+        return None
+
+    version_buffer = ctypes.create_string_buffer(size)
+    if not ctypes.windll.version.GetFileVersionInfoW(file_path, 0, size, version_buffer):
+        return None
+
+    translations = ctypes.c_void_p()
+    translations_len = ctypes.c_uint()
+    if ctypes.windll.version.VerQueryValueW(
+        version_buffer,
+        r"\VarFileInfo\Translation",
+        ctypes.byref(translations),
+        ctypes.byref(translations_len),
+    ):
+        count = translations_len.value // ctypes.sizeof(LANGANDCODEPAGE)
+        translation_array = ctypes.cast(
+            translations,
+            ctypes.POINTER(LANGANDCODEPAGE * count),
+        ).contents
+        for translation in translation_array:
+            sub_block = (
+                rf"\StringFileInfo\{translation.wLanguage:04x}"
+                rf"{translation.wCodePage:04x}\FileVersion"
+            )
+            version_info = query_file_version_string(version_buffer, sub_block)
+            if version_info:
+                return version_info
+
+    for language_codepage in ("040904b0", "040904e4", "080404b0", "080404e4"):
+        version_info = query_file_version_string(
+            version_buffer,
+            rf"\StringFileInfo\{language_codepage}\FileVersion",
+        )
+        if version_info:
+            return version_info
+
+    fixed_info = ctypes.c_void_p()
+    fixed_info_len = ctypes.c_uint()
+    if ctypes.windll.version.VerQueryValueW(
+        version_buffer,
+        "\\",
+        ctypes.byref(fixed_info),
+        ctypes.byref(fixed_info_len),
+    ):
+        if fixed_info.value and fixed_info_len.value >= ctypes.sizeof(VS_FIXEDFILEINFO):
+            fixed_version = ctypes.cast(fixed_info, ctypes.POINTER(VS_FIXEDFILEINFO)).contents
+            if fixed_version.dwSignature == 0xFEEF04BD:
+                return (
+                    f"{fixed_version.dwFileVersionMS >> 16}."
+                    f"{fixed_version.dwFileVersionMS & 0xffff}."
+                    f"{fixed_version.dwFileVersionLS >> 16}."
+                    f"{fixed_version.dwFileVersionLS & 0xffff}"
+                )
+
+    return None
+
+
+def get_file_version(file_path):
+    """获取可执行文件的版本信息"""
+    version_info = get_file_version_from_pefile(file_path)
+    if version_info:
+        return version_info
+
+    version_info = get_file_version_from_windows_resource(file_path)
     return version_info
 
 def get_all_files(directory):
