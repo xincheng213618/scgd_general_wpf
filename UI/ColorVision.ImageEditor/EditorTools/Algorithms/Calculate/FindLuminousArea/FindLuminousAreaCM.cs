@@ -53,7 +53,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                                 Polygon.Attribute.Points.Add(result1[2]);
                                 Polygon.Attribute.Points.Add(result1[3]);
                                 Polygon.Render();
-                                Context.ImageView.ImageShow.AddVisualCommand(Polygon);
+                                Context.DrawCanvas.AddVisualCommand(Polygon);
                             }
                         }
                         else
@@ -75,7 +75,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                             Polygon.Attribute.Points.Add(result1[2]);
                             Polygon.Attribute.Points.Add(result1[3]);
                             Polygon.Render();
-                            Context.ImageView.ImageShow.AddVisualCommand(Polygon);
+                            Context.DrawCanvas.AddVisualCommand(Polygon);
                         }
 
                     });
