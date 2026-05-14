@@ -13,10 +13,11 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public EditorContext EditorContext { get; set; }
+        public DrawEditorContext EditorContext { get; set; }
 
-        public Crosshair(EditorContext editorContext)
+        public Crosshair(DrawEditorContext editorContext)
         {
+            EditorContext = editorContext;
             ZoomboxSub = editorContext.Zoombox;
             DrawCanvas = editorContext.DrawCanvas;
             DrawVisualImage = new DrawingVisual();

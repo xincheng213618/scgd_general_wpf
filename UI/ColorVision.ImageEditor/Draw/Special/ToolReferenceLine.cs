@@ -651,11 +651,11 @@ namespace ColorVision.ImageEditor.Draw.Special
         // 物理尺寸转换
         [Category("物理尺寸"), DisplayName("物理尺寸X(mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double PhysicalSizeX { get => _PhysicalSizeX; set { _PhysicalSizeX = value; OnPropertyChanged(); } }
-        private double _PhysicalSizeX = 0.0;
+        private double _PhysicalSizeX;
 
         [Category("物理尺寸"), DisplayName("物理尺寸Y(mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double PhysicalSizeY { get => _PhysicalSizeY; set { _PhysicalSizeY = value; OnPropertyChanged(); } }
-        private double _PhysicalSizeY = 0.0;
+        private double _PhysicalSizeY;
 
         [Category("物理尺寸"), DisplayName("像素/单位(px/mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double PixelPerUnit { get => _PixelPerUnit; set { _PixelPerUnit = value; OnPropertyChanged(); } }
@@ -664,14 +664,15 @@ namespace ColorVision.ImageEditor.Draw.Special
     }
 
 
-    public class ToolReferenceLine: IEditorToggleToolBase
+    public class ToolReferenceLine: DrawEditorToggleToolBase
     {
         private Zoombox ZoomboxSub => EditorContext.Zoombox;
         private DrawCanvas Image => EditorContext.DrawCanvas;
 
-        public EditorContext EditorContext { get; set; }
+        public DrawEditorContext EditorContext { get; set; }
 
-        public ToolReferenceLine(EditorContext editorContext)
+
+        public ToolReferenceLine(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
             ToolBarLocal = ToolBarLocal.Draw;

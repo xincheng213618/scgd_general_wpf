@@ -25,7 +25,7 @@ namespace ColorVision.ImageEditor.Draw.Line
                     }
 
                     // 检查图像源是否为 WriteableBitmap
-                    if (context.ImageView.ImageShow.Source is WriteableBitmap writeableBitmap)
+                    if (context.DrawCanvas.Source is WriteableBitmap writeableBitmap)
                     {
                         // 提取截面数据（支持多通道）
                         ProfileData profileData = ProfileDataExtractor.ExtractAlongPath(dVLine.Points, writeableBitmap);

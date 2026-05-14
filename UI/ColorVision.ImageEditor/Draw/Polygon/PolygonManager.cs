@@ -7,7 +7,7 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class PolygonManager : MultiPointDrawingToolBase<DVPolygon>
     {
-        public PolygonManager(EditorContext context) : base(context)
+        public PolygonManager(DrawEditorContext context) : base(context)
         {
             Order = 5;
 

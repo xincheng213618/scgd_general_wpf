@@ -12,10 +12,10 @@ namespace ColorVision.ImageEditor.Draw.Special
     /// </summary>
     public class MouseMagnifierManager : IEditorToggleToolBase
     {
-        private EditorContext EditorContext { get; }
+        private DrawEditorContext EditorContext { get; }
         private readonly ImageMouseInfoProvider _mouseInfoProvider;
-
-        public MouseMagnifierManager(EditorContext editorContext)
+        
+        public MouseMagnifierManager(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
             _mouseInfoProvider = editorContext.MouseInfoProvider;

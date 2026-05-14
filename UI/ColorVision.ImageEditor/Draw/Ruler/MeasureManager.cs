@@ -2,14 +2,14 @@
 
 namespace ColorVision.ImageEditor.Draw.Ruler
 {
-    public class MeasureManager: IEditorToggleToolBase
+    public class MeasureManager: DrawEditorToggleToolBase
     {
         private Zoombox Zoombox1 => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
 
-        public EditorContext EditorContext { get; set; }
+        public DrawEditorContext EditorContext { get; set; }
 
-        public MeasureManager(EditorContext context)
+        public MeasureManager(DrawEditorContext context)
         {
             EditorContext = context;
             Order = 1;

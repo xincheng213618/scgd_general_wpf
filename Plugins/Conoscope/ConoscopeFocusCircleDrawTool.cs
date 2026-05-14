@@ -11,8 +11,7 @@ namespace Conoscope
         private readonly ConoscopeImageHost host;
         private DVCircleText? draftCircle;
 
-        public ConoscopeFocusCircleDrawTool(EditorContext editorContext, ConoscopeImageHost host)
-            : base(editorContext)
+        public ConoscopeFocusCircleDrawTool(DrawEditorContext editorContext, ConoscopeImageHost host): base(editorContext)
         {
             this.host = host;
             Order = 3;

@@ -26,7 +26,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         public CircleManagerConfig Config { get; set; } = new CircleManagerConfig();
 
-        public CircleManager(EditorContext context) : base(context)
+        public CircleManager(DrawEditorContext context) : base(context)
         {
             Order = 3;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageCircle");

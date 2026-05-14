@@ -32,7 +32,7 @@ namespace ColorVision.ImageEditor.Draw
         public RectangleManagerConfig Config { get; set; } = new RectangleManagerConfig();
         private DVRectangleText? DrawingRectangleCache;
 
-        public RectangleManager(EditorContext context) : base(context)
+        public RectangleManager(DrawEditorContext context) : base(context)
         {
             Order = 4;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageRect");

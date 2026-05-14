@@ -10,8 +10,9 @@ namespace ColorVision.ImageEditor.Draw.Special
 {
     public class GridlineManager:IEditorToggleToolBase
     {
-        public EditorContext EditorContext { get; set; }
-        public GridlineManager(EditorContext editorContext)
+        public DrawEditorContext EditorContext { get; set; }
+
+        public GridlineManager(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
             ToolBarLocal = ToolBarLocal.Top;

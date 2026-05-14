@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using System;
@@ -92,7 +93,7 @@ namespace ColorVision.ImageEditor
                 {
                     if (typeof(IEditorTool).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract && CanCreateGlobalEditorTool(type))
                     {
-                        if (Activator.CreateInstance(type, context) is IEditorTool instance)
+                        if (CreateEditorTool(type, context) is IEditorTool instance)
                         {
                             IEditorTools.Add(instance);
                             if (instance is IImageViewSettingProvider settingProvider)
@@ -265,7 +266,23 @@ namespace ColorVision.ImageEditor
 
         private static bool CanCreateGlobalEditorTool(Type type)
         {
-            return type.GetConstructor(new[] { typeof(EditorContext) }) != null;
+            return type.GetConstructor(new[] { typeof(EditorContext) }) != null
+                || type.GetConstructor(new[] { typeof(DrawEditorContext) }) != null;
+        }
+
+        private static object? CreateEditorTool(Type type, EditorContext context)
+        {
+            if (type.GetConstructor(new[] { typeof(EditorContext) }) is { } editorContextCtor)
+            {
+                return editorContextCtor.Invoke(new object[] { context });
+            }
+
+            if (type.GetConstructor(new[] { typeof(DrawEditorContext) }) is { } drawContextCtor)
+            {
+                return drawContextCtor.Invoke(new object[] { context.DrawEditorContext });
+            }
+
+            return null;
         }
 
         /// <summary>

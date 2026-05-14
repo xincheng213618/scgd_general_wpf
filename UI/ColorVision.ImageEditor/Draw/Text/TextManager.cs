@@ -27,17 +27,18 @@ namespace ColorVision.ImageEditor.Draw
         private bool _FollowZoom = true;
     }
 
-    public class TextManager : IEditorToggleToolBase, ICompactInspectorProvider, IDisposable
+    public class TextManager : DrawEditorToggleToolBase, ICompactInspectorProvider, IDisposable
     {
         private const string DefaultStyleSaveKeyPrefix = "TextManagerDefaultStyleSave_";
 
         public TextManagerConfig Config { get; set; } = new TextManagerConfig();
-        private DefaultTextStyleConfig DefaultTextStyle => DefaultTextStyleConfig.Current;
+        private static DefaultTextStyleConfig DefaultTextStyle => DefaultTextStyleConfig.Current;
         private Zoombox Zoombox => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        public EditorContext EditorContext { get; set; }
+        public DrawEditorContext EditorContext { get; set; }
 
-        public TextManager(EditorContext context)
+
+        public TextManager(DrawEditorContext context)
         {
             EditorContext = context;
             ToolBarLocal = ToolBarLocal.Draw;

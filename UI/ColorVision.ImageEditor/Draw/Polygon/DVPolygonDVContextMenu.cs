@@ -26,7 +26,7 @@ namespace ColorVision.ImageEditor.Draw.Polygon
                     }
 
                     // Check if image source is WriteableBitmap
-                    if (context.ImageView.ImageShow.Source is WriteableBitmap writeableBitmap)
+                    if (context.DrawCanvas.Source is WriteableBitmap writeableBitmap)
                     {
                         // Extract profile data along the polygon edges (with multi-channel support)
                         ProfileData profileData = ProfileDataExtractor.ExtractAlongPath(

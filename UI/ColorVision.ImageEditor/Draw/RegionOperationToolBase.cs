@@ -3,17 +3,17 @@ using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public abstract class RegionOperationToolBase : IEditorToggleToolBase, IDisposable
+    public abstract class RegionOperationToolBase : DrawEditorToggleToolBase, IDisposable
     {
         private bool _isChecked;
 
-        protected RegionOperationToolBase(EditorContext editorContext)
+        protected RegionOperationToolBase(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
             ToolBarLocal = ToolBarLocal.Draw;
         }
 
-        protected EditorContext EditorContext { get; }
+        protected DrawEditorContext EditorContext { get; }
         protected DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
         protected Zoombox Zoombox => EditorContext.Zoombox;
 

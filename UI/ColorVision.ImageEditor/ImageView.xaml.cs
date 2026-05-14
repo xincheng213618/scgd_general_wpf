@@ -104,8 +104,8 @@ namespace ColorVision.ImageEditor
         {
             _defaultDisplayConfig.PropertyChanged += DefaultDisplayConfig_PropertyChanged;
 
-            EditorContext = new EditorContext(this, ImageShow, Zoombox1);
-            EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
+            EditorContext = new EditorContext(this, ImageShow, Zoombox1, TextEditorOverlay);
+            EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext.DrawEditorContext);
             EditorContext.IEditorToolFactory = new IEditorToolFactory(this, EditorContext);
             EditorContext.CompactInspectorPresenter = new CompactInspectorPresenter(EditorContext);
             EditorContext.CompactInspectorPresenter.Refresh();
@@ -116,7 +116,7 @@ namespace ColorVision.ImageEditor
             ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
             Zoombox1.ContextMenu = EditorContext.ContextMenu;
             Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
-            _crosshair = new Crosshair(EditorContext);
+            _crosshair = new Crosshair(EditorContext.DrawEditorContext);
 
             DataContext = this;
             this.Focusable = true;
@@ -317,8 +317,11 @@ namespace ColorVision.ImageEditor
             if (ImageEditMode)
             {
                 Point mouseDownPoint = Mouse.GetPosition(ImageShow);
-                Visual mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
-                Type type = mouseVisual.GetType();
+                Visual? mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
+                if (mouseVisual == null)
+                {
+                    return;
+                }
 
                 if (mouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(mouseDownPoint) is ISelectVisual selectVisual)
                 {
@@ -350,7 +353,7 @@ namespace ColorVision.ImageEditor
                 {
                     foreach (var provider in IEditorToolFactory.ContextMenuProviders)
                     {
-                        if (provider.ContextType.IsAssignableFrom(type))
+                        if (provider.ContextType.IsAssignableFrom(mouseVisual.GetType()))
                         {
                             var items = provider.GetContextMenuItems(EditorContext, mouseVisual);
                             foreach (var item in items)

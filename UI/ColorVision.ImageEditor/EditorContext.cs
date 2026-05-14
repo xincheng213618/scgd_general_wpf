@@ -12,76 +12,82 @@ namespace ColorVision.ImageEditor
     public class EditorContext
     {
         private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
-        private readonly Panel _textEditorOverlay;
 
 
-        public EditorContext(DrawCanvas drawCanvas, Zoombox zoombox, Panel textEditorOverlay)
-        {
-            ImageView = null!;
-            DrawCanvas = drawCanvas;
-            Zoombox = zoombox;
-            _textEditorOverlay = textEditorOverlay;
-            MouseInfoProvider = new ImageMouseInfoProvider(this);
-        }
 
         public EditorContext(ImageView imageView, DrawCanvas drawCanvas, Zoombox zoombox)
+            : this(imageView, drawCanvas, zoombox, null)
+        {
+        }
+
+        public EditorContext(ImageView imageView, DrawCanvas drawCanvas, Zoombox zoombox, Panel? textEditorOverlay)
         {
             ImageView = imageView;
-            DrawCanvas = drawCanvas;
-            Zoombox = zoombox;
-            MouseInfoProvider = new ImageMouseInfoProvider(this);
+            DrawEditorContext = new DrawEditorContext(drawCanvas, zoombox, textEditorOverlay, Id);
         }
         public EditorContext()
         {
-            MouseInfoProvider = new ImageMouseInfoProvider(this);
+            DrawEditorContext = new DrawEditorContext(Id);
         }
 
         public Guid Id { get; init; } = Guid.NewGuid();
         public ContextMenu ContextMenu { get; set; } = new ContextMenu();
         public IImageOpen? IImageOpen { get; set; }
 
+        public DrawEditorContext DrawEditorContext { get; }
+
         public ImageView ImageView { get; set; }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists
+        {
+            get => DrawEditorContext.DrawingVisualLists;
+            set => DrawEditorContext.DrawingVisualLists = value;
+        }
 
         public ImageViewConfig Config { get; set; }  = new ImageViewConfig();
 
-        public DrawCanvas DrawCanvas { get; set; }
+        public DrawCanvas DrawCanvas
+        {
+            get => DrawEditorContext.DrawCanvas;
+            set => DrawEditorContext.DrawCanvas = value;
+        }
 
-        public ImageMouseInfoProvider MouseInfoProvider { get; } 
+        public ImageMouseInfoProvider MouseInfoProvider => DrawEditorContext.MouseInfoProvider;
 
-        public SelectEditorVisual SelectionVisual { get; set; }
+        public SelectEditorVisual SelectionVisual
+        {
+            get => DrawEditorContext.SelectionVisual;
+            set => DrawEditorContext.SelectionVisual = value;
+        }
 
-        public event EventHandler<bool>? ImageEditModeChanged;
+        public event EventHandler<bool>? ImageEditModeChanged
+        {
+            add => DrawEditorContext.ImageEditModeChanged += value;
+            remove => DrawEditorContext.ImageEditModeChanged -= value;
+        }
 
         public bool IsImageEditMode
         {
-            get => _isImageEditMode;
-            set
-            {
-                if (_isImageEditMode == value)
-                {
-                    return;
-                }
-
-                _isImageEditMode = value;
-                ImageEditModeChanged?.Invoke(this, value);
-            }
+            get => DrawEditorContext.IsImageEditMode;
+            set => DrawEditorContext.IsImageEditMode = value;
         }
-        private bool _isImageEditMode;
 
-        public Zoombox Zoombox { get; set; }
+        public Zoombox Zoombox
+        {
+            get => DrawEditorContext.Zoombox;
+            set => DrawEditorContext.Zoombox = value;
+        }
 
-        public Panel TextEditorOverlay => _textEditorOverlay;
+        public Panel TextEditorOverlay => DrawEditorContext.TextEditorOverlay;
 
         public Point TranslatePointToTextEditorOverlay(Point point)
         {
-            return DrawCanvas.TranslatePoint(point, TextEditorOverlay);
+            return DrawEditorContext.TranslatePointToTextEditorOverlay(point);
         }
 
-        public double ZoomRatio => Zoombox.ContentMatrix.M11;
+        public double ZoomRatio => DrawEditorContext.ZoomRatio;
 
-        public DrawEditorManager DrawEditorManager { get; init; } = new DrawEditorManager();
+        public DrawEditorManager DrawEditorManager => DrawEditorContext.DrawEditorManager;
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
 

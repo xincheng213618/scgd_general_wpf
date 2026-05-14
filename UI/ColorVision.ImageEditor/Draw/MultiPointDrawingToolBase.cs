@@ -44,18 +44,17 @@ namespace ColorVision.ImageEditor.Draw
         private double _strokeThickness = 1;
     }
 
-    public abstract class MultiPointDrawingToolBase<TVisual> : IEditorToggleToolBase, ICompactInspectorProvider, IDisposable
-        where TVisual : DrawingVisual, ISelectVisual
+    public abstract class MultiPointDrawingToolBase<TVisual> : DrawEditorToggleToolBase, ICompactInspectorProvider, IDisposable  where TVisual : DrawingVisual, ISelectVisual
     {
         private bool _isChecked;
 
-        protected MultiPointDrawingToolBase(EditorContext editorContext)
+        protected MultiPointDrawingToolBase(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
             ToolBarLocal = ToolBarLocal.Draw;
         }
 
-        protected EditorContext EditorContext { get; }
+        protected DrawEditorContext EditorContext { get; }
         protected DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
         protected Zoombox Zoombox => EditorContext.Zoombox;
         protected SelectEditorVisual SelectionVisual => EditorContext.SelectionVisual;

@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace Conoscope
 {
@@ -25,7 +26,7 @@ namespace Conoscope
     {
         internal const double MinimumFocusCircleRadius = 4;
 
-        public EditorContext EditorContext { get; }
+        public DrawEditorContext EditorContext { get; }
 
         private readonly ContextMenu focusCircleContextMenu = new();
         private readonly MenuItem calculateFocusCircleMenuItem = new();
@@ -43,9 +44,8 @@ namespace Conoscope
         public ConoscopeImageHost()
         {
             InitializeComponent();
-            EditorContext = new EditorContext();
-            EditorContext.DrawCanvas = ImageCanvas;
-            EditorContext.Zoombox = ZoomBox;
+
+            EditorContext = new DrawEditorContext(ImageCanvas, ZoomBox);
 
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
             focusCircleDrawTool = new ConoscopeFocusCircleDrawTool(EditorContext, this);

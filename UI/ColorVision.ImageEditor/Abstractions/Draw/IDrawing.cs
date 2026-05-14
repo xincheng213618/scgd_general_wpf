@@ -71,11 +71,11 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public class DrawEditorManager
     {
-        public IEditorToggleTool? Current { get; set; }
+        public ColorVision.ImageEditor.Draw.IDrawEditorToggleTool? Current { get; set; }
 
         public event EventHandler? CurrentChanged;
 
-        public void SetCurrentDrawEditor(IEditorToggleTool? drawEditor)
+        public void SetCurrentDrawEditor(ColorVision.ImageEditor.Draw.IDrawEditorToggleTool? drawEditor)
         {
             if (ReferenceEquals(Current, drawEditor))
             {
