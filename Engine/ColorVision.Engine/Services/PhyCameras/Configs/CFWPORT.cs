@@ -135,7 +135,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsCFWNum2 => CFWNum >= 2;
         public bool IsCFWNum3 => CFWNum >= 3;
 
-        [Browsable(false)]
         public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; OnPropertyChanged(); } }
 
         private List<ChannelCfg> _ChannelCfgs;

@@ -187,9 +187,12 @@
                     <StackPanel>
                         <StackPanel>
                             <TextBlock Text="配置" Style="{StaticResource ActionSectionTitleStyle}"/>
-                            <UniformGrid Columns="4">
+                            <UniformGrid Columns="3">
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding EditCommand}">
                                     <TextBlock Text="修改配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                </Button>
+                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding PropertyEditorEditCommand}">
+                                    <TextBlock Text="属性编辑器" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CfwPortEditCommand}">
                                     <TextBlock Text="CFW 配置" Style="{StaticResource CommandButtonTextStyle}"/>
