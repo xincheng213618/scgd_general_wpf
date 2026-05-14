@@ -8,9 +8,9 @@ namespace ColorVision.ImageEditor.EditorTools.Realtime
 {
     public sealed class SnapshotRealtimeFrameEditorTool : IEditorTool
     {
-        private readonly EditorContext _editorContext;
+        private readonly RealtimeEditorContext _editorContext;
 
-        public SnapshotRealtimeFrameEditorTool(EditorContext editorContext)
+        public SnapshotRealtimeFrameEditorTool(RealtimeEditorContext editorContext)
         {
             _editorContext = editorContext;
             Command = new RelayCommand(_ => SaveCurrentFrame());
@@ -28,11 +28,10 @@ namespace ColorVision.ImageEditor.EditorTools.Realtime
 
         private void SaveCurrentFrame()
         {
-            RealtimeImageViewService realtime = _editorContext.ImageView.Realtime;
+            RealtimeImageViewService realtime = _editorContext.Realtime;
             RealtimeFrameSnapshot? rawSnapshot = realtime.CaptureCurrentFrame();
-            bool hasDisplayedBitmap = _editorContext.ImageView.ImageShow.Source is System.Windows.Media.Imaging.BitmapSource;
 
-            if (rawSnapshot == null && !hasDisplayedBitmap)
+            if (rawSnapshot == null && realtime.CaptureDisplayedBitmap() == null)
             {
                 MessageBox.Show("当前没有可保存的实时帧。", "保存实时帧", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;

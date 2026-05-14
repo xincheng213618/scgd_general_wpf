@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using System.Windows.Data;
 using System.Windows.Input;
 
@@ -6,8 +7,9 @@ namespace ColorVision.ImageEditor.EditorTools
 {
     public class ZoomRatioEditorTool : ViewModelBase, IEditorTextTool
     {
-        public EditorContext EditorContext { get; set; }
-        public ZoomRatioEditorTool(EditorContext context)
+        public DrawEditorContext EditorContext { get; set; }
+
+        public ZoomRatioEditorTool(DrawEditorContext context)
         {
             EditorContext = context;
             EditorContext.Zoombox.ContentMatrixChanged += (s, e) =>

@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.Zoom
 {
-    public record class ZoomUniformEditorTool(EditorContext EditorContext) : IEditorTool
+    public record class ZoomUniformEditorTool(DrawEditorContext EditorContext) : IEditorTool
     {
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Top;
         public string? GuidId => "ZoomUniform";

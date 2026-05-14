@@ -1,6 +1,7 @@
 ﻿using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Realtime;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,6 +13,8 @@ namespace ColorVision.ImageEditor
     public class EditorContext
     {
         private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
+        private ImageView _imageView = null!;
+        private RealtimeEditorContext? _realtimeEditorContext;
 
 
 
@@ -36,7 +39,25 @@ namespace ColorVision.ImageEditor
 
         public DrawEditorContext DrawEditorContext { get; }
 
-        public ImageView ImageView { get; set; }
+        public RealtimeEditorContext RealtimeEditorContext
+        {
+            get
+            {
+                _realtimeEditorContext ??= new RealtimeEditorContext(ImageView, ImageView.Realtime);
+                return _realtimeEditorContext;
+            }
+        }
+
+        public ImageView ImageView
+        {
+            get => _imageView;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _imageView = value;
+                _realtimeEditorContext = null;
+            }
+        }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists
         {

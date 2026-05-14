@@ -9,26 +9,26 @@ namespace ColorVision.ImageEditor.EditorTools.Realtime
 {
     public sealed class FreezeRealtimeFrameEditorTool : IEditorToggleToolBase, IDisposable
     {
-        private readonly EditorContext _editorContext;
+        private readonly RealtimeEditorContext _editorContext;
 
-        public FreezeRealtimeFrameEditorTool(EditorContext editorContext)
+        public FreezeRealtimeFrameEditorTool(RealtimeEditorContext editorContext)
         {
             _editorContext = editorContext;
             ToolBarLocal = ToolBarLocal.Top;
             Order = 6;
             Icon = CreateRunPausedIcon();
-            _editorContext.ImageView.Realtime.Options.PropertyChanged += Options_PropertyChanged;
+            _editorContext.Realtime.Options.PropertyChanged += Options_PropertyChanged;
         }
 
         public override string? GuidId => nameof(FreezeRealtimeFrameEditorTool);
 
         public override bool IsChecked
         {
-            get => _editorContext.ImageView.Realtime.IsFrozen;
+            get => _editorContext.Realtime.IsFrozen;
             set
             {
-                if (_editorContext.ImageView.Realtime.IsFrozen == value) return;
-                _editorContext.ImageView.Realtime.IsFrozen = value;
+                if (_editorContext.Realtime.IsFrozen == value) return;
+                _editorContext.Realtime.IsFrozen = value;
                 OnPropertyChanged();
             }
         }
@@ -55,7 +55,7 @@ namespace ColorVision.ImageEditor.EditorTools.Realtime
 
         public void Dispose()
         {
-            _editorContext.ImageView.Realtime.Options.PropertyChanged -= Options_PropertyChanged;
+            _editorContext.Realtime.Options.PropertyChanged -= Options_PropertyChanged;
         }
     }
 }
