@@ -52,12 +52,7 @@
         <!-- Top Navigation Bar -->
         <Border Grid.Row="0" Margin="5,5,5,0" Padding="5,4" CornerRadius="5">
             <WrapPanel HorizontalAlignment="Center">
-                <Button Style="{StaticResource NavButton}" Click="ButtonLicenseManager_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="{x:Static properties:Resources.LicenseManagement}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
+
                 <Button Style="{StaticResource NavButton}" Click="ButtonPhyCameraManager_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE722;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
@@ -70,19 +65,12 @@
                         <TextBlock Text="{x:Static properties:Resources.Archive}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource NavButton}" Click="ButtonFlowManager_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="{x:Static properties:Resources.FlowEditor}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
                 <Button Style="{StaticResource NavButton}" Click="ButtonCacheSetting_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <TextBlock Text="{x:Static properties:Resources.CacheManagement}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Content="{x:Static properties:Resources.ToggleList}" Margin="3,0" FontSize="12" Click="Button_Click_2" />
                 <Button Command="{Binding WindowServiceConfig.EditCommand}" Padding="2" Height="40" Width="40" Margin="2,0" DockPanel.Dock="Right">
                     <Button.Triggers>
                         <EventTrigger RoutedEvent="Button.Click">

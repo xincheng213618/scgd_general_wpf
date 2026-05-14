@@ -94,32 +94,6 @@ namespace ColorVision.Engine.Services
         }
 
 
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            WindowServiceConfig.Instance.ShowType2 = (WindowServiceConfig.Instance.ShowType2 +1) % 3;
-            switch (WindowServiceConfig.Instance.ShowType2)
-            {
-                case 0:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
-                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
-                    break;
-                case 1:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
-                    break;
-                case 2:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private void ButtonLicenseManager_Click(object sender, RoutedEventArgs e)
-        {
-            new LicenseManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
         private void ButtonPhyCameraManager_Click(object sender, RoutedEventArgs e)
         {
@@ -141,11 +115,6 @@ namespace ColorVision.Engine.Services
             window.Content = frame;
             frame.Navigate(new Archive.Dao.ArchivePage(frame));
             window.ShowDialog();
-        }
-
-        private void ButtonFlowManager_Click(object sender, RoutedEventArgs e)
-        {
-            new FlowEngineToolWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void ButtonCacheSetting_Click(object sender, RoutedEventArgs e)
