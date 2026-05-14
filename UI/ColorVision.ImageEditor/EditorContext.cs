@@ -53,7 +53,6 @@ namespace ColorVision.ImageEditor
             get => _imageView;
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
                 _imageView = value;
                 _realtimeEditorContext = null;
             }

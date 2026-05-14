@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor.EditorTools
         {
             var MenuItemMetadatas = new  List<MenuItemMetadata>();
 
-            if (context.ImageView.ImageShow.Source is WriteableBitmap writeableBitmap)
+            if (context.DrawCanvas.Source is WriteableBitmap writeableBitmap)
             {
                 RelayCommand XCommand = new(o =>
                 {

@@ -414,8 +414,8 @@ namespace ColorVision.Engine.Media
                         {
                             ObservableCollection<PoiResultCIEYData> PoiResultCIEYData = new ObservableCollection<PoiResultCIEYData>();
 
-                            bool Isshow = EditorContext.ImageView.DrawingVisualLists.Count < 1000;
-                            foreach (var item in EditorContext.ImageView.DrawingVisualLists)
+                            bool Isshow = EditorContext.DrawingVisualLists.Count < 1000;
+                            foreach (var item in EditorContext.DrawingVisualLists)
                             {
                                 BaseProperties drawAttributeBase = item.BaseAttribute;
                                 if (drawAttributeBase is CircleTextProperties circle)
@@ -459,8 +459,8 @@ namespace ColorVision.Engine.Media
                         {
                             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
 
-                            bool Isshow = EditorContext.ImageView.DrawingVisualLists.Count < 1000;
-                            foreach (var item in EditorContext.ImageView.DrawingVisualLists)
+                            bool Isshow = EditorContext.DrawingVisualLists.Count < 1000;
+                            foreach (var item in EditorContext.DrawingVisualLists)
                             {
                                 BaseProperties drawAttributeBase = item.BaseAttribute;
                                 if (drawAttributeBase is CircleTextProperties circle)
