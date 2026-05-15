@@ -16,21 +16,6 @@ using System.Windows.Media.Animation;
 namespace ColorVision
 {
 
-    public class AskDeepWiki : MenuItemBase, IMenuItem
-    {
-        public HotKeys HotKeys => new HotKeys(Resources.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
-
-        public override string OwnerGuid => MenuItemConstants.Help;
-        public override int Order => 1;
-        public override string Header => "Ask DeepWiki";
-
-        public override void Execute()
-        {
-            ColorVision.Common.Utilities.PlatformHelper.Open("https://deepwiki.com/xincheng213618/scgd_general_wpf");
-        }
-    }
-
-
     public class AboutMsgExport : MenuItemBase,IMenuItem
     {
         public HotKeys HotKeys => new HotKeys(Resources.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);

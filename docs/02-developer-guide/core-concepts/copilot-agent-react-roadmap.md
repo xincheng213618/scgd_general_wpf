@@ -309,15 +309,12 @@ for step in 1..N:
 
 ### 1. CopilotAgentModels.cs
 
-当前问题：只有 request 和 result，没有“结构化动作”。
+当前状态：已经补上 `CopilotToolCall`、`CopilotToolObservation`、`CopilotAgentStepRecord` 这些最小轨迹模型，服务层也会把每轮工具执行记成 step record；但还没有独立的 runtime context、tool schema 和真正的 `tool call` 执行契约。
 
 建议新增：
 
 - CopilotAgentRuntimeContext
-- CopilotToolCall
 - CopilotToolArgument
-- CopilotToolObservation
-- CopilotAgentStepRecord
 
 目标：让工具调用从“整个 request 触发”变成“指定工具 + 参数调用”。
 
@@ -351,7 +348,7 @@ public interface ICopilotTool
 
 ### 4. CopilotAgentService.cs
 
-当前问题：虽然已经有最小模型驱动循环，但还不是完整的 planner-executor。
+当前状态：虽然已经有最小模型驱动循环，也已经会记录 step record 并把 observation 送入最终回答，但还不是完整的 planner-executor。
 
 建议拆成三段：
 
@@ -368,7 +365,7 @@ public interface ICopilotTool
 
 ### 5. CopilotAgentContextBuilder.cs
 
-当前问题：它只负责“最终回答提示词”，没有区分 planner 和 answerer。
+当前状态：它已经拆出 `BuildPlannerMessages`、`BuildAnswerMessages`、`BuildObservationSummary` 三个入口，不再只负责“最终回答提示词”；但 planner 和 answer 仍共享同一套 observation 序列化策略，还没有更细的 token 预算和摘要层级。
 
 建议拆成：
 

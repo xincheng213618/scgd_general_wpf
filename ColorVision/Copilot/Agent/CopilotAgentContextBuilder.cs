@@ -178,13 +178,14 @@ namespace ColorVision.Copilot
 
         private string BuildAnswerUserMessageContent(CopilotAgentRequest request, IReadOnlyList<CopilotAgentStepRecord> stepRecords)
         {
+            var observations = stepRecords ?? Array.Empty<CopilotAgentStepRecord>();
             var builder = new StringBuilder();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
 
             var applicationContext = BuildApplicationContext(request.ContextItems);
             var extraAttachmentContext = BuildAdditionalAttachmentContext(request.Attachments);
-            var hasObservations = stepRecords != null && stepRecords.Count > 0;
+            var hasObservations = observations.Count > 0;
             if (!string.IsNullOrWhiteSpace(applicationContext) || hasObservations || !string.IsNullOrWhiteSpace(extraAttachmentContext))
             {
                 builder.AppendLine();
@@ -199,7 +200,7 @@ namespace ColorVision.Copilot
                 if (hasObservations)
                 {
                     builder.AppendLine("## 工具观察");
-                    builder.AppendLine(BuildObservationSummary(stepRecords, stepRecords.Count, MaxAttachmentContentChars, includeContent: true));
+                    builder.AppendLine(BuildObservationSummary(observations, observations.Count, MaxAttachmentContentChars, includeContent: true));
                     builder.AppendLine();
                 }
             }
