@@ -21,7 +21,6 @@ namespace ColorVision.Copilot
 
             return _tools
                 .Where(tool => tool.CanHandle(request))
-                .Take(6)
                 .ToArray();
         }
 

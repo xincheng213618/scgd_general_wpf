@@ -117,6 +117,18 @@ namespace ColorVision.Copilot
             }
         }
 
+        public static bool HasAvailableLogFile()
+        {
+            try
+            {
+                return FindLatestLogFile() != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static FileInfo? FindLatestLogFile()
         {
             var logFiles = GetCandidateLogDirectories()

@@ -54,22 +54,7 @@ namespace ColorVision.Engine.Services
         {
             WindowServiceConfig = WindowServiceConfig.Instance;
             this.DataContext = this;
-            int i = WindowServiceConfig.Instance.ShowType2;
-            switch (i % 3)
-            {
-                case 0:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
-                    break;
-                case 1:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    break;
-                case 2:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    break;
-                default:
-                    break;
-            }
-            ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+            ApplyServiceListMode();
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -93,7 +78,40 @@ namespace ColorVision.Engine.Services
 
         }
 
+        private void ButtonToggleList_Click(object sender, RoutedEventArgs e)
+        {
+            WindowServiceConfig.Instance.ShowType2 = (WindowServiceConfig.Instance.ShowType2 + 1) % 3;
+            ApplyServiceListMode();
+        }
 
+        private void ApplyServiceListMode()
+        {
+            int showType = ((WindowServiceConfig.Instance.ShowType2 % 3) + 3) % 3;
+            WindowServiceConfig.Instance.ShowType2 = showType;
+            StackPanelShow.Children.Clear();
+
+            switch (showType)
+            {
+                case 0:
+                    TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
+                    ListModeText.Text = Properties.Resources.Type;
+                    break;
+                case 1:
+                    TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
+                    ListModeText.Text = "终端";
+                    break;
+                case 2:
+                    TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
+                    ListModeText.Text = "设备";
+                    break;
+                default:
+                    TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
+                    ListModeText.Text = "设备";
+                    break;
+            }
+
+            ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+        }
 
         private void ButtonPhyCameraManager_Click(object sender, RoutedEventArgs e)
         {

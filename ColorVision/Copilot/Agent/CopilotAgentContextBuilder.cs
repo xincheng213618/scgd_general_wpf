@@ -10,12 +10,34 @@ namespace ColorVision.Copilot
     {
         private const int MaxHistoryMessages = 8;
         private const int MaxAttachmentContentChars = 12000;
+        private const int MaxPlannerObservationSteps = 6;
+        private const int MaxPlannerObservationContentChars = 1200;
 
-        public CopilotAgentPreparedPrompt BuildMessages(CopilotAgentRequest request, IReadOnlyList<CopilotToolResult> toolResults)
+        public IReadOnlyList<CopilotRequestMessage> BuildPlannerMessages(
+            CopilotAgentRequest request,
+            IReadOnlyList<ICopilotTool> availableTools,
+            IReadOnlyList<CopilotAgentStepRecord> stepRecords,
+            IReadOnlyCollection<string> readableLocalFilePaths)
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var preparedUserMessageContent = BuildPreparedUserMessageContent(request, toolResults ?? Array.Empty<CopilotToolResult>());
+            return new[]
+            {
+                new CopilotRequestMessage(
+                    "user",
+                    BuildPlannerUserMessageContent(
+                        request,
+                        availableTools ?? Array.Empty<ICopilotTool>(),
+                        stepRecords ?? Array.Empty<CopilotAgentStepRecord>(),
+                        readableLocalFilePaths ?? Array.Empty<string>()))
+            };
+        }
+
+        public CopilotAgentPreparedPrompt BuildAnswerMessages(CopilotAgentRequest request, IReadOnlyList<CopilotAgentStepRecord> stepRecords)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            var preparedUserMessageContent = BuildAnswerUserMessageContent(request, stepRecords ?? Array.Empty<CopilotAgentStepRecord>());
             var messages = request.History
                 .Where(message => !string.IsNullOrWhiteSpace(message.Content))
                 .TakeLast(MaxHistoryMessages)
@@ -25,18 +47,145 @@ namespace ColorVision.Copilot
             return new CopilotAgentPreparedPrompt(messages, preparedUserMessageContent);
         }
 
+        public CopilotAgentPreparedPrompt BuildMessages(CopilotAgentRequest request, IReadOnlyList<CopilotToolResult> toolResults)
+        {
+            return BuildAnswerMessages(request, ConvertToolResultsToStepRecords(toolResults));
+        }
+
         public string BuildPreparedUserMessageContent(CopilotAgentRequest request, IReadOnlyList<CopilotToolResult> toolResults)
         {
-            ArgumentNullException.ThrowIfNull(request);
+            return BuildAnswerUserMessageContent(request, ConvertToolResultsToStepRecords(toolResults));
+        }
 
+        public string BuildObservationSummary(
+            IReadOnlyList<CopilotAgentStepRecord> stepRecords,
+            int maxSteps,
+            int maxContentChars,
+            bool includeContent)
+        {
+            if (stepRecords == null || stepRecords.Count == 0)
+                return "- 暂无";
+
+            var builder = new StringBuilder();
+            foreach (var stepRecord in stepRecords.TakeLast(Math.Max(1, maxSteps)))
+            {
+                if (stepRecord == null)
+                    continue;
+
+                var toolCall = stepRecord.ToolCall ?? new CopilotToolCall();
+                var observation = stepRecord.Observation ?? new CopilotToolObservation();
+                var toolName = string.IsNullOrWhiteSpace(toolCall.ToolName) ? "未知工具" : toolCall.ToolName;
+
+                builder.Append("- 第 ")
+                    .Append(stepRecord.Round <= 0 ? "?" : stepRecord.Round)
+                    .Append(" 轮 ")
+                    .Append(toolName);
+
+                if (toolCall.IsFallback)
+                    builder.Append("（回退）");
+
+                builder.Append(BuildToolInputDetail(toolCall))
+                    .AppendLine();
+
+                if (!string.IsNullOrWhiteSpace(toolCall.Reason))
+                    builder.Append("  规划理由：").AppendLine(toolCall.Reason);
+
+                builder.Append("  状态：")
+                    .Append(observation.Success ? "成功" : "失败")
+                    .Append("；摘要：")
+                    .AppendLine(observation.Summary);
+
+                if (!string.IsNullOrWhiteSpace(observation.ErrorMessage))
+                    builder.Append("  错误：").AppendLine(observation.ErrorMessage);
+
+                if (observation.SuggestedReadableLocalFilePaths.Count > 0)
+                {
+                    builder.Append("  候选文件：")
+                        .AppendLine(string.Join("，", observation.SuggestedReadableLocalFilePaths.Take(3)));
+                }
+
+                if (includeContent && !string.IsNullOrWhiteSpace(observation.Content))
+                {
+                    builder.AppendLine("  内容摘录：");
+                    builder.AppendLine(IndentText(TruncateContent(observation.Content.TrimEnd(), Math.Max(256, maxContentChars)), "  "));
+                }
+            }
+
+            return builder.ToString().TrimEnd();
+        }
+
+        private string BuildPlannerUserMessageContent(
+            CopilotAgentRequest request,
+            IReadOnlyList<ICopilotTool> availableTools,
+            IReadOnlyList<CopilotAgentStepRecord> stepRecords,
+            IReadOnlyCollection<string> readableLocalFilePaths)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("你现在要为 Agent 选择下一步动作。只返回 JSON。不要回答用户问题。");
+            builder.AppendLine();
+            builder.AppendLine("JSON 格式：");
+            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog/FetchUrl 等工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
+            builder.AppendLine();
+            builder.AppendLine("决策规则：");
+            builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
+            builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
+            builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
+            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog 或 FetchUrl 时，尽量填写 input.query，使用更短、更聚焦的搜索词；当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n7. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine();
+            builder.AppendLine("# 用户问题");
+            builder.AppendLine((request.UserText ?? string.Empty).Trim());
+
+            builder.AppendLine();
+            builder.AppendLine("# 当前可用工具");
+            foreach (var tool in availableTools)
+            {
+                builder.Append("- ")
+                    .Append(tool.Name)
+                    .Append(": ")
+                    .AppendLine(tool.Description);
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("# 当前可直接读取的本地文件");
+            if (readableLocalFilePaths == null || readableLocalFilePaths.Count == 0)
+            {
+                builder.AppendLine("- 无");
+            }
+            else
+            {
+                foreach (var path in readableLocalFilePaths.Take(5))
+                    builder.Append("- ").AppendLine(path);
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("# 当前可直接列出的本地文件夹");
+            if (request.ReadableLocalDirectoryPaths == null || request.ReadableLocalDirectoryPaths.Count == 0)
+            {
+                builder.AppendLine("- 无");
+            }
+            else
+            {
+                foreach (var path in request.ReadableLocalDirectoryPaths.Take(5))
+                    builder.Append("- ").AppendLine(path);
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("# 已执行工具观察");
+            builder.AppendLine(BuildObservationSummary(stepRecords, MaxPlannerObservationSteps, MaxPlannerObservationContentChars, includeContent: true));
+
+            return builder.ToString().TrimEnd();
+        }
+
+        private string BuildAnswerUserMessageContent(CopilotAgentRequest request, IReadOnlyList<CopilotAgentStepRecord> stepRecords)
+        {
             var builder = new StringBuilder();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
 
             var applicationContext = BuildApplicationContext(request.ContextItems);
             var extraAttachmentContext = BuildAdditionalAttachmentContext(request.Attachments);
-            var hasTools = toolResults.Count > 0;
-            if (!string.IsNullOrWhiteSpace(applicationContext) || hasTools || !string.IsNullOrWhiteSpace(extraAttachmentContext))
+            var hasObservations = stepRecords != null && stepRecords.Count > 0;
+            if (!string.IsNullOrWhiteSpace(applicationContext) || hasObservations || !string.IsNullOrWhiteSpace(extraAttachmentContext))
             {
                 builder.AppendLine();
                 builder.AppendLine("# 可用上下文");
@@ -47,28 +196,11 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(extraAttachmentContext))
                     builder.AppendLine(extraAttachmentContext.TrimEnd());
 
-                if (hasTools)
+                if (hasObservations)
                 {
-                    foreach (var result in toolResults)
-                    {
-                        if (result == null)
-                            continue;
-
-                        builder.AppendLine($"## 工具：{result.ToolName}");
-                        builder.AppendLine($"状态：{(result.Success ? "成功" : "失败")}");
-                        builder.AppendLine($"摘要：{result.Summary}");
-
-                        if (!string.IsNullOrWhiteSpace(result.Content))
-                        {
-                            builder.AppendLine("内容：");
-                            builder.AppendLine(result.Content.TrimEnd());
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
-                            builder.AppendLine($"错误：{result.ErrorMessage}");
-
-                        builder.AppendLine();
-                    }
+                    builder.AppendLine("## 工具观察");
+                    builder.AppendLine(BuildObservationSummary(stepRecords, stepRecords.Count, MaxAttachmentContentChars, includeContent: true));
+                    builder.AppendLine();
                 }
             }
 
@@ -171,6 +303,77 @@ namespace ColorVision.Copilot
                 CopilotAgentMode.Explain => "请把结论讲清楚，并在上下文不足时说明限制。",
                 _ => "优先利用应用提供的上下文完成分析，不要忽略工具结果。",
             };
+        }
+
+        private static IReadOnlyList<CopilotAgentStepRecord> ConvertToolResultsToStepRecords(IReadOnlyList<CopilotToolResult> toolResults)
+        {
+            if (toolResults == null || toolResults.Count == 0)
+                return Array.Empty<CopilotAgentStepRecord>();
+
+            return toolResults
+                .Select((result, index) => new CopilotAgentStepRecord
+                {
+                    Round = index + 1,
+                    ToolCall = new CopilotToolCall
+                    {
+                        ToolName = result?.ToolName ?? string.Empty,
+                    },
+                    Observation = CopilotToolObservation.FromResult(result),
+                })
+                .ToArray();
+        }
+
+        private static string BuildToolInputDetail(CopilotToolCall toolCall)
+        {
+            if (toolCall == null)
+                return string.Empty;
+
+            var toolName = toolCall.ToolName ?? string.Empty;
+            var toolInput = toolCall.ToolInput ?? CopilotAgentToolInput.Empty;
+            if (string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(toolInput.Path))
+            {
+                var builder = new StringBuilder();
+                builder.Append("（目标文件：").Append(System.IO.Path.GetFileName(toolInput.Path));
+                if (toolInput.StartLine.HasValue)
+                {
+                    builder.Append("，行号：").Append(toolInput.StartLine.Value);
+                    if (toolInput.EndLine.HasValue)
+                        builder.Append('-').Append(toolInput.EndLine.Value);
+                }
+
+                builder.Append(')');
+                return builder.ToString();
+            }
+
+            if (string.Equals(toolName, "ListDirectory", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(toolInput.Path))
+            {
+                var directoryName = System.IO.Path.GetFileName(toolInput.Path);
+                if (string.IsNullOrWhiteSpace(directoryName))
+                    directoryName = toolInput.Path;
+
+                return $"（目标目录：{directoryName}）";
+            }
+
+            if (string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(toolInput.Query))
+            {
+                var url = CopilotWebPageToolSupport.ExtractHttpUrls(toolInput.Query).FirstOrDefault() ?? toolInput.Query;
+                return $"（目标网页：{url}）";
+            }
+
+            if (!string.IsNullOrWhiteSpace(toolInput.Query))
+                return $"（查询词：{toolInput.Query}）";
+
+            return string.Empty;
+        }
+
+        private static string IndentText(string text, string prefix)
+        {
+            return string.Join(Environment.NewLine, (text ?? string.Empty)
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                .Select(line => prefix + line));
         }
 
         private static string TruncateContent(string value, int maxCharacters)

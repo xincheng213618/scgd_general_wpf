@@ -41,11 +41,7 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            if (request.ReadableLocalFilePaths.Count > 0)
-                return false;
-
-            var terms = ExtractSearchTerms(request.UserText);
-            return terms.Count > 0 && HasFileSearchIntent(request.UserText);
+            return true;
         }
 
         public Task<CopilotToolResult> ExecuteAsync(

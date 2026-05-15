@@ -30,7 +30,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var urls = CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText)
+            var urls = ResolveUrls(request, toolInput)
                 .Take(MaxUrlsPerRequest)
                 .ToArray();
 
@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
                     ToolName = Name,
                     Success = false,
                     Summary = "未检测到可抓取的网页地址。",
-                    ErrorMessage = "用户输入中没有可处理的 http/https URL。",
+                    ErrorMessage = "当前请求中没有可处理的网页地址；规划器可通过 input.query 提供一个完整 URL。",
                 };
             }
 
@@ -82,6 +82,47 @@ namespace ColorVision.Copilot
                 Content = builder.ToString().TrimEnd(),
                 ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("；", errors),
             };
+        }
+
+        private static IReadOnlyList<string> ResolveUrls(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
+        {
+            var query = (toolInput?.Query ?? string.Empty).Trim();
+            var urls = CopilotWebPageToolSupport.ExtractHttpUrls(query);
+            if (urls.Count > 0)
+                return urls;
+
+            var singleQueryUrl = TryNormalizeSingleUrl(query);
+            if (!string.IsNullOrWhiteSpace(singleQueryUrl))
+                return new[] { singleQueryUrl };
+
+            return CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText);
+        }
+
+        private static string TryNormalizeSingleUrl(string value)
+        {
+            var candidate = (value ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(candidate)
+                || candidate.Contains(' ')
+                || candidate.Contains('\t')
+                || candidate.Contains('\r')
+                || candidate.Contains('\n'))
+            {
+                return string.Empty;
+            }
+
+            var normalized = CopilotWebPageToolSupport.NormalizeWebPageUrl(candidate);
+            if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri))
+                return string.Empty;
+
+            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(uri.Host) || !uri.Host.Contains('.')
+                ? string.Empty
+                : uri.ToString();
         }
     }
 }
