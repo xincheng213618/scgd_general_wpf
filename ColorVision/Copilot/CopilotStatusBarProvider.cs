@@ -16,7 +16,7 @@ namespace ColorVision.Copilot
                 new StatusBarMeta
                 {
                     Id = "CopilotAgent",
-                    Name = "GitHub Copilot",
+                    Name = "ColorVision Copilot",
                     Description = "打开 AI 对话面板",
                     Type = StatusBarType.Icon,
                     Alignment = StatusBarAlignment.Right,
@@ -31,7 +31,7 @@ namespace ColorVision.Copilot
 
         private static UIElement CreateCopilotIcon()
         {
-            // GitHub Copilot 星形图标（简化版 sparkle）
+            // Copilot 星形图标（简化版 sparkle）
             var pathFigure = new PathFigure { StartPoint = new Point(8, 0), IsClosed = true };
             pathFigure.Segments.Add(new LineSegment(new Point(10, 6), true));
             pathFigure.Segments.Add(new LineSegment(new Point(16, 8), true));

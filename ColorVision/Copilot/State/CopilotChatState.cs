@@ -18,10 +18,17 @@ namespace ColorVision.Copilot
 
             var changed = false;
             Conversations ??= new ObservableCollection<CopilotConversationRecord>();
+            var preferredDefaultProfile = config.GetPreferredDefaultProfile();
 
-            if (config.Profiles.Count > 0 && (string.IsNullOrWhiteSpace(ActiveProfileId) || config.Profiles.All(profile => profile.Id != ActiveProfileId)))
+            if (config.Profiles.Count > 0 && (
+                string.IsNullOrWhiteSpace(ActiveProfileId)
+                || config.Profiles.All(profile => profile.Id != ActiveProfileId)
+                || (preferredDefaultProfile != null
+                    && !string.IsNullOrWhiteSpace(ActiveProfileId)
+                    && string.Equals(ActiveProfileId, config.Profiles[0].Id, StringComparison.Ordinal)
+                    && !string.Equals(ActiveProfileId, preferredDefaultProfile.Id, StringComparison.Ordinal))))
             {
-                ActiveProfileId = config.Profiles[0].Id;
+                ActiveProfileId = preferredDefaultProfile?.Id ?? config.Profiles[0].Id;
                 changed = true;
             }
 

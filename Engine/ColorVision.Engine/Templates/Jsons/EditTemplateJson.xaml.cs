@@ -1,7 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.Utilities;
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -21,10 +23,12 @@ namespace ColorVision.Engine.Templates.Jsons
 
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
+        private readonly string _copilotContextSourceId = $"template-json-editor:{Guid.NewGuid():N}";
 
         private string Description { get; set; }
         private bool _isInPropertyEditorMode = false;
         private bool _isSyncingFromPropertyEditor = false;
+        private string _loadedJsonSnapshot = string.Empty;
 
         public EditTemplateJson(string description)
         {
@@ -46,6 +50,26 @@ namespace ColorVision.Engine.Templates.Jsons
 
             // Subscribe to property editor changes
             propertyEditor.JsonValueChanged += PropertyEditor_JsonValueChanged;
+
+            Loaded += EditTemplateJson_Loaded;
+            Unloaded += EditTemplateJson_Unloaded;
+            IsKeyboardFocusWithinChanged += EditTemplateJson_IsKeyboardFocusWithinChanged;
+        }
+
+        private void EditTemplateJson_Loaded(object sender, RoutedEventArgs e)
+        {
+            PublishCopilotContext();
+        }
+
+        private void EditTemplateJson_Unloaded(object sender, RoutedEventArgs e)
+        {
+            CopilotLiveContextRegistry.Clear(_copilotContextSourceId);
+        }
+
+        private void EditTemplateJson_IsKeyboardFocusWithinChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is bool isFocused && isFocused)
+                PublishCopilotContext();
         }
 
         private void TextEditor_TextChanged(object? sender, EventArgs e)
@@ -61,6 +85,8 @@ namespace ColorVision.Engine.Templates.Jsons
                 {
                     IEditTemplateJson.JsonValue = textEditor.Text;
                 }
+
+                PublishCopilotContext();
             });
         }
 
@@ -76,6 +102,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (IEditTemplateJson !=null)
                     IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
                 IEditTemplateJson = editTemplateJson;
+                _loadedJsonSnapshot = IEditTemplateJson.JsonValue ?? string.Empty;
                 textEditor.Text = IEditTemplateJson.JsonValue;
                 IEditTemplateJson.JsonValueChanged += IEditTemplateJson_JsonValueChanged;
 
@@ -96,11 +123,13 @@ namespace ColorVision.Engine.Templates.Jsons
                 }
             }
             DescriptionButton.IsChecked = false;
+            PublishCopilotContext();
         }
 
         private void IEditTemplateJson_JsonValueChanged(object? sender, EventArgs e)
         {
             textEditor.Text = IEditTemplateJson.JsonValue;
+            PublishCopilotContext();
         }
 
         private string texttemp;
@@ -123,6 +152,8 @@ namespace ColorVision.Engine.Templates.Jsons
                     textEditor.TextChanged += TextEditor_TextChanged;
                 }
             }
+
+            PublishCopilotContext();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -168,6 +199,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
                 // Update toggle button text
                 EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.TextEdit;
+                PublishCopilotContext();
             }
             catch (Exception ex)
             {
@@ -199,6 +231,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
                 // Update toggle button text
                 EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.PropertyEdit;
+                PublishCopilotContext();
             }
             catch (Exception ex)
             {
@@ -235,11 +268,241 @@ namespace ColorVision.Engine.Templates.Jsons
                 {
                     IEditTemplateJson.JsonValue = json;
                 }
+
+                PublishCopilotContext();
             }
             finally
             {
                 _isSyncingFromPropertyEditor = false;
             }
+        }
+
+        private void AskCopilotButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.ContextMenu == null)
+                return;
+
+            button.ContextMenu.PlacementTarget = button;
+            button.ContextMenu.Placement = PlacementMode.Top;
+            button.ContextMenu.IsOpen = true;
+        }
+
+        private void AskCopilotExplainTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            AskCopilot(
+                CopilotPromptMode.Explain,
+                "请结合已附加的模板快照，先说明这个模板大致用于什么检测逻辑，再按字段解释主要参数的作用和彼此关系。",
+                sendNow: true);
+        }
+
+        private void AskCopilotExplainParameters_Click(object sender, RoutedEventArgs e)
+        {
+            AskCopilot(
+                CopilotPromptMode.Explain,
+                "请结合已附加的模板快照，逐项解释当前 JSON 参数的含义、典型影响范围，以及哪些参数组合需要一起看。",
+                sendNow: true);
+        }
+
+        private void AskCopilotDiagnoseTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            AskCopilot(
+                CopilotPromptMode.Diagnose,
+                "请结合已附加的模板快照，检查当前配置里是否存在明显异常、矛盾阈值或高风险参数，并给出判断理由与调整建议。",
+                sendNow: true);
+        }
+
+        private void AskCopilotOpenPanel_Click(object sender, RoutedEventArgs e)
+        {
+            AskCopilot(
+                CopilotPromptMode.Explain,
+                "请基于已附加的模板快照继续分析当前内容。",
+                sendNow: false);
+        }
+
+        private void AskCopilot(CopilotPromptMode mode, string prompt, bool sendNow)
+        {
+            var snapshotItem = BuildCopilotSnapshotContextItem();
+            if (snapshotItem == null)
+            {
+                MessageBox.Show(
+                    Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                    "当前模板上下文尚未准备好，无法发送给 Copilot。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            PublishCopilotContext();
+
+            var service = CopilotServiceRegistry.Current;
+            if (service == null || !service.IsAvailable)
+            {
+                MessageBox.Show(
+                    Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                    "主界面的 Copilot 面板尚未就绪。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var request = new CopilotPromptRequest
+            {
+                Prompt = prompt,
+                Mode = mode,
+                StartNewConversation = true,
+                SendNow = sendNow,
+                AttachContextSnapshot = true,
+                ContextAttachmentTitle = BuildCopilotContextDisplayLabel(),
+                ContextAttachmentSourceId = _copilotContextSourceId,
+                ContextItems = new[] { snapshotItem },
+            };
+
+            if (!service.Ask(request))
+            {
+                MessageBox.Show(
+                    Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                    "无法把当前模板发送到 Copilot。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private void PublishCopilotContext()
+        {
+            var liveContext = BuildCopilotLiveContext();
+            if (liveContext == null)
+                return;
+
+            CopilotLiveContextRegistry.Publish(liveContext);
+        }
+
+        private CopilotLiveContext? BuildCopilotLiveContext()
+        {
+            var snapshotItem = BuildCopilotSnapshotContextItem();
+            if (snapshotItem == null)
+                return null;
+
+            return new CopilotLiveContext
+            {
+                SourceId = _copilotContextSourceId,
+                Title = snapshotItem.Title,
+                Summary = snapshotItem.Summary,
+                AttachmentTitle = snapshotItem.Title,
+                SnapshotItems = new[] { snapshotItem },
+            };
+        }
+
+        private CopilotContextItem? BuildCopilotSnapshotContextItem()
+        {
+            if (IEditTemplateJson == null)
+                return null;
+
+            var templateName = GetCurrentTemplateName();
+            var currentJson = GetCurrentJsonForCopilot();
+            var lineCount = CountJsonLines(currentJson);
+            var isValidJson = !string.IsNullOrWhiteSpace(currentJson) && JsonHelper.IsValidJson(currentJson);
+            var hasUnsavedChanges = !string.Equals(
+                (_loadedJsonSnapshot ?? string.Empty).Trim(),
+                (currentJson ?? string.Empty).Trim(),
+                StringComparison.Ordinal);
+            var editorMode = GetEditorModeLabel();
+            var windowTitle = Window.GetWindow(this)?.Title ?? string.Empty;
+
+            var summary = $"JSON {lineCount} 行 · {(hasUnsavedChanges ? "已修改" : "未修改")} · {(isValidJson ? "校验通过" : "校验失败")} · {editorMode}";
+
+            var builder = new StringBuilder();
+            builder.Append("窗口：").AppendLine("模板编辑器");
+            builder.Append("模板名：").AppendLine(templateName);
+            builder.Append("当前选中项：").AppendLine(templateName);
+
+            if (!string.IsNullOrWhiteSpace(windowTitle))
+                builder.Append("窗口标题：").AppendLine(windowTitle);
+
+            builder.Append("编辑模式：").AppendLine(editorMode);
+            builder.Append("未保存修改：").AppendLine(hasUnsavedChanges ? "是" : "否");
+            builder.Append("JSON 校验：").AppendLine(isValidJson ? "通过" : "未通过");
+            builder.Append("JSON 行数：").AppendLine(lineCount.ToString());
+            builder.AppendLine();
+            builder.AppendLine("当前 JSON：");
+            builder.AppendLine("```json");
+            builder.AppendLine(currentJson);
+            builder.AppendLine("```");
+
+            return new CopilotContextItem
+            {
+                Id = $"{_copilotContextSourceId}:snapshot",
+                Title = BuildCopilotContextDisplayLabel(templateName),
+                Summary = summary,
+                Content = builder.ToString().Trim(),
+            };
+        }
+
+        private string BuildCopilotContextDisplayLabel()
+        {
+            return BuildCopilotContextDisplayLabel(GetCurrentTemplateName());
+        }
+
+        private static string BuildCopilotContextDisplayLabel(string templateName)
+        {
+            return string.IsNullOrWhiteSpace(templateName)
+                ? "模板编辑器"
+                : $"模板编辑器 · {templateName}";
+        }
+
+        private string GetCurrentTemplateName()
+        {
+            if (DataContext is TemplateJsonParam templateJsonParam && !string.IsNullOrWhiteSpace(templateJsonParam.Name))
+                return templateJsonParam.Name;
+
+            return IEditTemplateJson is TemplateJsonParam fallbackParam && !string.IsNullOrWhiteSpace(fallbackParam.Name)
+                ? fallbackParam.Name
+                : "未命名模板";
+        }
+
+        private string GetCurrentJsonForCopilot()
+        {
+            if (IEditTemplateJson == null)
+                return string.Empty;
+
+            if (DescriptionButton.IsChecked == true)
+                return IEditTemplateJson.JsonValue ?? string.Empty;
+
+            if (_isInPropertyEditorMode)
+            {
+                try
+                {
+                    var propertyJson = propertyEditor.GetJson();
+                    if (!string.IsNullOrWhiteSpace(propertyJson))
+                        return propertyJson;
+                }
+                catch
+                {
+                }
+
+                return IEditTemplateJson.JsonValue ?? string.Empty;
+            }
+
+            return textEditor.Text ?? string.Empty;
+        }
+
+        private string GetEditorModeLabel()
+        {
+            if (DescriptionButton.IsChecked == true)
+                return "注释查看";
+
+            return _isInPropertyEditorMode ? "属性编辑" : "文本编辑";
+        }
+
+        private static int CountJsonLines(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return 0;
+
+            var normalized = json.Replace("\r\n", "\n").Replace('\r', '\n');
+            return normalized.Split('\n').Length;
         }
     }
 }

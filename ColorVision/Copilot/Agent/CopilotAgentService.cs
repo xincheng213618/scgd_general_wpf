@@ -161,6 +161,7 @@ namespace ColorVision.Copilot
                 Profile = request.Profile,
                 History = request.History,
                 Attachments = request.Attachments,
+                ContextItems = request.ContextItems,
                 SearchRootPaths = request.SearchRootPaths,
                 ActiveDocumentPath = request.ActiveDocumentPath,
                 ReadableLocalFilePaths = readableLocalFilePaths.ToArray(),

@@ -2,6 +2,8 @@
 
 本文档说明 ColorVision 当前 Copilot Agent 的实际工作方式、它与 ReAct 风格 Agent 的差异，以及下一步如何演进到支持本地文件读取和更便宜的上下文检索。
 
+另见：Copilot Context Integration v1。该文档聚焦 Copilot 如何从独立聊天模块演进为软件上下文服务，与本文的 Agent/ReAct 路线互补。
+
 ## 一句话结论
 
 当前实现不是标准的 ReAct Agent，而是“静态候选筛选 + 最小模型 planner + 最多几轮工具执行 + 局部结构化文件读取参数 + 一次性压缩上下文 + 一次性调用大模型”的只读 Agent。

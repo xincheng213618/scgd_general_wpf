@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
+using ColorVision.Copilot;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Wizards;
@@ -13,6 +14,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision
@@ -38,13 +40,14 @@ namespace ColorVision
             #if(DEBUG == false)
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
             #endif
 
         }
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             log.Fatal(e.Exception);
-            MessageBox.Show(e.Exception.Message);
+            ShowUnhandledException(e.Exception, "UI Dispatcher");
             //使用这一行代码告诉运行时，该异常被处理了，不再作为UnhandledException抛出了。
             e.Handled = true;
         }
@@ -52,6 +55,37 @@ namespace ColorVision
         void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             log.Fatal(e.ExceptionObject);
+
+            if (e.IsTerminating || Application.Current?.Dispatcher == null)
+                return;
+
+            if (e.ExceptionObject is Exception exception)
+            {
+                Application.Current.Dispatcher.BeginInvoke(() => ShowUnhandledException(exception, "AppDomain"));
+            }
+        }
+
+        private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            log.Fatal(e.Exception);
+            e.SetObserved();
+
+            if (Application.Current?.Dispatcher == null)
+                return;
+
+            Application.Current.Dispatcher.BeginInvoke(() => ShowUnhandledException(e.Exception, "TaskScheduler"));
+        }
+
+        private static void ShowUnhandledException(Exception exception, string source)
+        {
+            try
+            {
+                CopilotExceptionReporter.ShowException(exception, source);
+            }
+            catch (Exception ex)
+            {
+                log.Error("显示异常窗口失败", ex);
+            }
         }
 
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
@@ -32,12 +33,16 @@ namespace ColorVision.Copilot
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
 
+            var applicationContext = BuildApplicationContext(request.ContextItems);
             var extraAttachmentContext = BuildAdditionalAttachmentContext(request.Attachments);
             var hasTools = toolResults.Count > 0;
-            if (hasTools || !string.IsNullOrWhiteSpace(extraAttachmentContext))
+            if (!string.IsNullOrWhiteSpace(applicationContext) || hasTools || !string.IsNullOrWhiteSpace(extraAttachmentContext))
             {
                 builder.AppendLine();
                 builder.AppendLine("# 可用上下文");
+
+                if (!string.IsNullOrWhiteSpace(applicationContext))
+                    builder.AppendLine(applicationContext.TrimEnd());
 
                 if (!string.IsNullOrWhiteSpace(extraAttachmentContext))
                     builder.AppendLine(extraAttachmentContext.TrimEnd());
@@ -71,6 +76,42 @@ namespace ColorVision.Copilot
             builder.AppendLine("请只基于以上上下文回答。应用可能已经抓取网页、读取文件或收集日志，但你不能声称自己直接访问了网页、本地文件、日志或设备。");
             builder.AppendLine("如果上下文不足，明确说明缺少什么；如果工具失败，只能基于失败信息说明无法分析真实内容，不能编造未提供的信息。");
             builder.AppendLine(BuildModeInstruction(request.Mode));
+
+            return builder.ToString().TrimEnd();
+        }
+
+        private static string BuildApplicationContext(IReadOnlyList<CopilotContextItem> contextItems)
+        {
+            if (contextItems == null || contextItems.Count == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            foreach (var item in contextItems)
+            {
+                if (item == null)
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(item.Title)
+                    && string.IsNullOrWhiteSpace(item.Summary)
+                    && string.IsNullOrWhiteSpace(item.Content))
+                {
+                    continue;
+                }
+
+                builder.Append("## 应用上下文");
+                if (!string.IsNullOrWhiteSpace(item.Title))
+                    builder.Append("：").Append(item.Title.Trim());
+
+                builder.AppendLine();
+
+                if (!string.IsNullOrWhiteSpace(item.Summary))
+                    builder.Append("摘要：").AppendLine(item.Summary.Trim());
+
+                if (!string.IsNullOrWhiteSpace(item.Content))
+                    builder.AppendLine(TruncateContent(item.Content, MaxAttachmentContentChars));
+
+                builder.AppendLine();
+            }
 
             return builder.ToString().TrimEnd();
         }

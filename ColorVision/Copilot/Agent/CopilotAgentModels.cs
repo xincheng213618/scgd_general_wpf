@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
@@ -63,6 +64,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
 
         public IReadOnlyList<CopilotAttachmentItem> Attachments { get; init; } = Array.Empty<CopilotAttachmentItem>();
+
+        public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
 
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
 

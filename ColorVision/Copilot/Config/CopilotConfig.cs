@@ -60,6 +60,12 @@ namespace ColorVision.Copilot
             return Profiles.FirstOrDefault(profile => string.Equals(profile.Id, profileId, System.StringComparison.Ordinal));
         }
 
+        public CopilotProfileConfig? GetPreferredDefaultProfile()
+        {
+            return Profiles.FirstOrDefault(profile => profile.IsConfigured)
+                ?? Profiles.FirstOrDefault();
+        }
+
         public void Encryption()
         {
             foreach (var profile in Profiles)
