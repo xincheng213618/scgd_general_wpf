@@ -22,6 +22,12 @@
         <SolidColorBrush x:Key="PreviewSubtleBorderBrush"
                          Color="{DynamicResource defaultgreyColor}"
                          Opacity="0.35" />
+
+        <SolidColorBrush x:Key="PreviewSelectedBorderBrush"
+                 Color="#3D6EF7" />
+
+        <SolidColorBrush x:Key="PreviewSelectedBackgroundBrush"
+                 Color="#153D6EF7" />
     </Window.Resources>
 
     <Grid Margin="16">
@@ -49,43 +55,127 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-                <Border BorderBrush="{StaticResource PreviewBorderBrush}"
+            <Border BorderBrush="{StaticResource PreviewBorderBrush}"
                     BorderThickness="1"
                     CornerRadius="6">
-                <ListView ItemsSource="{Binding Items}"
-                          SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                    <ListView.ItemTemplate>
-                        <DataTemplate DataType="{x:Type local:UpdatePreviewItem}">
-                                <Border Margin="6"
-                                    Padding="10"
-                                    BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="4">
-                                <StackPanel>
-                                    <TextBlock FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Opacity="0.72"
-                                               Text="{Binding Category}" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               FontSize="15"
-                                               FontWeight="Bold"
-                                               Text="{Binding Name}" />
-                                    <TextBlock Margin="0,6,0,0"
-                                               Opacity="0.88"
-                                               Text="{Binding VersionSummary}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock Margin="0,6,0,0"
-                                               Opacity="0.78"
-                                               Text="{Binding Summary}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="14,12,14,8">
+                        <TextBlock FontSize="16"
+                                   FontWeight="Bold"
+                                   Text="{Binding ItemsTitle}" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Opacity="0.76"
+                                   Text="{Binding ItemsSummary}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="1">
+                        <ListView ItemsSource="{Binding ItemsView}"
+                                  SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                                  Visibility="{Binding ItemsListVisibility}"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  Padding="8,0,8,8"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListView.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,8,0,6"
+                                                    Padding="8,0,8,6"
+                                                    BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
+                                                    BorderThickness="0,0,0,1">
+                                                <DockPanel LastChildFill="False">
+                                                    <TextBlock FontSize="13"
+                                                               FontWeight="Bold"
+                                                               Text="{Binding Name}" />
+                                                    <TextBlock DockPanel.Dock="Right"
+                                                               Opacity="0.68"
+                                                               Text="{Binding ItemCount, StringFormat=共 {0} 项}" />
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ListView.GroupStyle>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:UpdatePreviewItem}">
+                                    <Border Margin="0,0,0,8"
+                                            Padding="12"
+                                            CornerRadius="4">
+                                        <Border.Style>
+                                            <Style TargetType="{x:Type Border}">
+                                                <Setter Property="BorderBrush" Value="{StaticResource PreviewSubtleBorderBrush}" />
+                                                <Setter Property="BorderThickness" Value="1" />
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=IsSelected}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{StaticResource PreviewSelectedBorderBrush}" />
+                                                        <Setter Property="Background" Value="{StaticResource PreviewSelectedBackgroundBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel>
+                                            <TextBlock FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Opacity="0.72"
+                                                       Text="{Binding Category}" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       FontSize="15"
+                                                       FontWeight="Bold"
+                                                       Text="{Binding Name}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       Opacity="0.76"
+                                                       Text="{Binding SecondaryLabel}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Margin="0,6,0,0"
+                                                       Opacity="0.88"
+                                                       Text="{Binding VersionSummary}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Margin="0,6,0,0"
+                                                       Opacity="0.78"
+                                                       Text="{Binding Summary}"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <Border Margin="14"
+                                Padding="14"
+                                CornerRadius="4"
+                                BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
+                                BorderThickness="1"
+                                Visibility="{Binding ItemsEmptyVisibility}">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontSize="15"
+                                           FontWeight="Bold"
+                                           Text="当前没有可展示的更新项" />
+                                <TextBlock Margin="0,6,0,0"
+                                           Opacity="0.76"
+                                           Text="如果这里为空，通常表示本轮检查没有拿到可应用的主体或插件更新。"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
             </Border>
 
             <Border Grid.Column="2"
@@ -93,20 +183,110 @@
                     BorderThickness="1"
                     CornerRadius="6"
                     Padding="14">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top"
-                               Margin="0,0,0,12"
-                               FontSize="16"
-                               FontWeight="Bold"
-                               Text="{Binding SelectedItemTitle}" />
-                    <TextBox Background="Transparent"
-                             BorderThickness="0"
-                             Foreground="{DynamicResource GlobalTextBrush}"
-                             IsReadOnly="True"
-                             Text="{Binding SelectedDetailText, Mode=OneWay}"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto" />
-                </DockPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock FontSize="16"
+                                   FontWeight="Bold"
+                                   Text="选中项详情" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Opacity="0.76"
+                                   Text="{Binding SelectedItemDetailIntro}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Margin="0,12,0,0"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   Text="{Binding SelectedItemTitle}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Opacity="0.76"
+                                   Text="{Binding SelectedItemMetaText}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Border Grid.Row="1"
+                            Margin="0,0,0,12"
+                            Padding="12"
+                            CornerRadius="4"
+                            BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="更新概览" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Opacity="0.84"
+                                       Text="{Binding SelectedItemSummary}"
+                                       TextWrapping="Wrap" />
+
+                            <ItemsControl Margin="0,12,0,0"
+                                          ItemsSource="{Binding SelectedFacts}"
+                                          Visibility="{Binding SelectedFactsVisibility}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type local:UpdatePreviewFact}">
+                                        <Border Margin="0,0,8,8"
+                                                Padding="10,8"
+                                                MinWidth="120"
+                                                MaxWidth="220"
+                                                CornerRadius="4"
+                                                BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
+                                                BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Opacity="0.68"
+                                                           Text="{Binding Label}" />
+                                                <TextBlock Margin="0,4,0,0"
+                                                           FontSize="13"
+                                                           FontWeight="Bold"
+                                                           Text="{Binding Value}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="2"
+                            Padding="12"
+                            CornerRadius="4"
+                            BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
+                            BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="详细说明" />
+
+                            <TextBox Grid.Row="1"
+                                     Margin="0,10,0,0"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="{DynamicResource GlobalTextBrush}"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     Text="{Binding SelectedDetailText, Mode=OneWay}"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" />
+                        </Grid>
+                    </Border>
+                </Grid>
             </Border>
         </Grid>
 

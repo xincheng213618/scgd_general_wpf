@@ -16,43 +16,4 @@ namespace WindowsServicePlugin.Menus
     }
 
 
-    public class ExportNewAlgorithmLog : ExportLogBase
-    {
-        public override string OwnerGuid => nameof(MenuLog);
-        public override string Header => "NewAlgorithmLog";
-        public override int Order => 103;
-        public override string Url
-        {
-            get
-            {
-                string logpath = "C:\\Windows\\System32";
-                if (!Directory.Exists(logpath))
-                    return string.Empty;
-                string path = Path.Combine(logpath,"log");
-                if (!Directory.Exists(path))
-                    return string.Empty;
-                return path;
-            }
-        }
-    }
-
-    public class Exportx64ServiceLog1 : ExportLogBase
-    {
-        public override string OwnerGuid => nameof(MenuLog);
-        public override string Header => Resources.x64ServiceLog;
-        public override int Order => 103;
-        public override string Url
-        {
-            get
-            {
-                CVWinSMSConfig.Instance.Init();
-                if (!Directory.Exists(CVWinSMSConfig.Instance.BaseLocation))
-                    return string.Empty;
-                string path = Path.Combine(CVWinSMSConfig.Instance.BaseLocation, "CVMainWindowsService_x64", "log");
-                if (!Directory.Exists(path))
-                    return string.Empty;
-                return path;
-            }
-        }
-    }
 }
