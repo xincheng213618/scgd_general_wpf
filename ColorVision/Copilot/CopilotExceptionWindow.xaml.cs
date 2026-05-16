@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;
@@ -96,6 +97,18 @@ namespace ColorVision.Copilot
             }
         }
 
+        private void SearchGoogleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_viewModel.GoogleSearchUrl))
+            {
+                _viewModel.DispatchStatus = "当前异常没有可搜索的关键词。";
+                return;
+            }
+
+            PlatformHelper.Open(_viewModel.GoogleSearchUrl);
+            _viewModel.DispatchStatus = "已在默认浏览器中打开 Google 搜索结果。";
+        }
+
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -168,6 +181,7 @@ namespace ColorVision.Copilot
             ExceptionFingerprint = BuildFingerprint(exception);
             CanAskAi = CopilotPanelService.GetInstance().CanAskFromException;
             ExceptionTitle = BuildExceptionTitle(exception);
+            GoogleSearchUrl = BuildGoogleSearchUrl(exception);
             _exceptionSections.Add(BuildExceptionDetails(exception, source, _firstOccurredAt));
             ExceptionDetails = _exceptionSections[0];
             CurrentLogMode = CopilotRecentLogMode.RecentLines;
@@ -227,6 +241,19 @@ namespace ColorVision.Copilot
             set => SetProperty(ref _aiPromptPreview, value ?? string.Empty);
         }
         private string _aiPromptPreview = string.Empty;
+
+        public string GoogleSearchUrl
+        {
+            get => _googleSearchUrl;
+            private set
+            {
+                if (SetProperty(ref _googleSearchUrl, value ?? string.Empty))
+                    OnPropertyChanged(nameof(CanSearchGoogle));
+            }
+        }
+        private string _googleSearchUrl = string.Empty;
+
+        public bool CanSearchGoogle => !string.IsNullOrWhiteSpace(GoogleSearchUrl);
 
         public bool CanAskAi
         {
@@ -321,6 +348,34 @@ namespace ColorVision.Copilot
 
             AppendException(builder, exception, 0);
             return builder.ToString().TrimEnd();
+        }
+
+        private static string BuildGoogleSearchUrl(Exception exception)
+        {
+            var searchTerms = new List<string>();
+            AddSearchTerm(searchTerms, "ColorVision", 0);
+            AddSearchTerm(searchTerms, exception.GetType().Name, 0);
+            AddSearchTerm(searchTerms, exception.Message, 160);
+            AddSearchTerm(searchTerms, exception.TargetSite?.DeclaringType?.Name, 0);
+            AddSearchTerm(searchTerms, exception.TargetSite?.Name, 0);
+
+            var query = string.Join(" ", searchTerms);
+            if (string.IsNullOrWhiteSpace(query))
+                return string.Empty;
+
+            return $"https://www.google.com/search?hl=zh-CN&q={Uri.EscapeDataString(query)}";
+        }
+
+        private static void AddSearchTerm(List<string> searchTerms, string? value, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+
+            var normalizedValue = value.Trim();
+            if (maxLength > 0 && normalizedValue.Length > maxLength)
+                normalizedValue = normalizedValue[..maxLength];
+
+            searchTerms.Add(normalizedValue);
         }
 
         private void UpdateOccurredSummary()

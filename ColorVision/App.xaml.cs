@@ -69,11 +69,6 @@ namespace ColorVision
         {
             log.Fatal(e.Exception);
             e.SetObserved();
-
-            if (Application.Current?.Dispatcher == null)
-                return;
-
-            Application.Current.Dispatcher.BeginInvoke(() => ShowUnhandledException(e.Exception, "TaskScheduler"));
         }
 
         private static void ShowUnhandledException(Exception exception, string source)
@@ -85,6 +80,15 @@ namespace ColorVision
             catch (Exception ex)
             {
                 log.Error("显示异常窗口失败", ex);
+
+                try
+                {
+                    MessageBox.Show(exception.Message, "ColorVision");
+                }
+                catch (Exception messageBoxException)
+                {
+                    log.Error("显示异常消息框失败", messageBoxException);
+                }
             }
         }
 
