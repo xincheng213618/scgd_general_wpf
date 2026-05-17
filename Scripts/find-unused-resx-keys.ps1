@@ -161,7 +161,80 @@ function Add-UsedLiteralKeyMatches {
     }
 }
 
+function Add-UsedDisplayNameMatches {
+    param(
+        [AllowEmptyString()]
+        [Parameter(Mandatory = $true)][string]$Text,
+        [AllowEmptyCollection()]
+        [Parameter(Mandatory = $true)][System.Collections.Generic.HashSet[string]]$KnownKeys,
+        [AllowEmptyCollection()]
+        [Parameter(Mandatory = $true)][System.Collections.Generic.HashSet[string]]$UsedKeys
+    )
+
+    $patterns = @(
+        [regex]::new('(?:DisplayName|DisplayNameAttribute)\s*\(\s*(?:@)?"(?<key>[^"]+)"', [System.Text.RegularExpressions.RegexOptions]::Singleline),
+        [regex]::new('(?:CommandDisplay|CommandDisplayAttribute)\s*\(\s*(?:@)?"(?<key>[^"]+)"', [System.Text.RegularExpressions.RegexOptions]::Singleline),
+        [regex]::new('(?:Category|CategoryAttribute)\s*\(\s*(?:@)?"(?<key>[^"]+)"', [System.Text.RegularExpressions.RegexOptions]::Singleline),
+        [regex]::new('(?:Description|DescriptionAttribute)\s*\(\s*(?:@)?"(?<key>[^"]+)"', [System.Text.RegularExpressions.RegexOptions]::Singleline),
+        [regex]::new('(?:LocalizedDisplayName|LocalizedDisplayNameAttribute)\s*\((?:[^,\r\n]|\([^\)]*\))*?,\s*(?:@)?"(?<key>[^"]+)"', [System.Text.RegularExpressions.RegexOptions]::Singleline),
+        [regex]::new('(?:LocalizedDescription|LocalizedDescriptionAttribute)\s*\((?:[^,\r\n]|\([^\)]*\))*?,\s*(?:@)?"(?<key>[^"]+)"', [System.Text.RegularExpressions.RegexOptions]::Singleline),
+        [regex]::new('\bDisplayName\s*=\s*(?:@)?"(?<key>[^"]+)"', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    )
+
+    foreach ($pattern in $patterns) {
+        foreach ($match in $pattern.Matches($Text)) {
+            $key = $match.Groups['key'].Value
+            if ($KnownKeys.Contains($key)) {
+                $null = $UsedKeys.Add($key)
+            }
+        }
+    }
+}
+
+function Add-UsedPropertyNameMatches {
+    param(
+        [AllowEmptyString()]
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][hashtable]$KeyToProperty,
+        [AllowEmptyCollection()]
+        [Parameter(Mandatory = $true)][System.Collections.Generic.HashSet[string]]$UsedKeys
+    )
+
+    $propertyPattern = [regex]::new(
+        '(?m)^\s*(?:public|internal|protected)\s+(?:static\s+)?(?:new\s+|virtual\s+|override\s+|sealed\s+|abstract\s+|partial\s+)*[A-Za-z_][A-Za-z0-9_<>,\.\[\]\?]*\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\{\s*(?:get|set)',
+        [System.Text.RegularExpressions.RegexOptions]::Singleline)
+
+    foreach ($match in $propertyPattern.Matches($Text)) {
+        $propertyName = $match.Groups['name'].Value
+        if ($KeyToProperty.ContainsKey($propertyName)) {
+            $null = $UsedKeys.Add($propertyName)
+        }
+    }
+}
+
+function Add-UsedLanguageKeyMatches {
+    param(
+        [AllowEmptyString()]
+        [Parameter(Mandatory = $true)][string]$Text,
+        [AllowEmptyCollection()]
+        [Parameter(Mandatory = $true)][System.Collections.Generic.HashSet[string]]$KnownKeys,
+        [AllowEmptyCollection()]
+        [Parameter(Mandatory = $true)][System.Collections.Generic.HashSet[string]]$UsedKeys
+    )
+
+    if ($Text -notmatch 'ResourceManager\.GetString\(\s*Name\b' -and $Text -notmatch 'ResourceManager\.GetString\(\s*Thread\.CurrentThread\.CurrentUICulture\.Name\b') {
+        return
+    }
+
+    foreach ($key in $KnownKeys) {
+        if ($key -match '^[a-z]{2}(?:-[A-Za-z0-9]+)?$') {
+            $null = $UsedKeys.Add($key)
+        }
+    }
+}
+
 $baseResxPath = Resolve-NormalizedPath -Path $BaseResx
+$resourceProjectRoot = [System.IO.Path]::GetFullPath((Split-Path -Parent (Split-Path -Parent $baseResxPath)))
 
 if (-not $PSBoundParameters.ContainsKey('SearchRoot')) {
     $SearchRoot = Get-DefaultSearchRoot -StartPath $baseResxPath
@@ -205,6 +278,7 @@ $sourceFiles = Get-ChildItem -LiteralPath $searchRootPath -Recurse -File | Where
 
 foreach ($file in $sourceFiles) {
     $text = Get-Content -Raw -LiteralPath $file.FullName
+    $isResourceProjectFile = $file.FullName.StartsWith($resourceProjectRoot, [System.StringComparison]::OrdinalIgnoreCase)
 
     foreach ($pattern in $qualifiedPatterns) {
         Add-UsedPropertyMatches -Text $text -Pattern $pattern -PropertyToKey $designerInfo.PropertyToKey -UsedKeys $usedKeys
@@ -224,6 +298,12 @@ foreach ($file in $sourceFiles) {
     }
 
     Add-UsedLiteralKeyMatches -Text $text -KnownKeys $knownKeys -UsedKeys $usedKeys
+
+    if ($isResourceProjectFile) {
+        Add-UsedDisplayNameMatches -Text $text -KnownKeys $knownKeys -UsedKeys $usedKeys
+        Add-UsedPropertyNameMatches -Text $text -KeyToProperty $designerInfo.KeyToProperty -UsedKeys $usedKeys
+        Add-UsedLanguageKeyMatches -Text $text -KnownKeys $knownKeys -UsedKeys $usedKeys
+    }
 }
 
 $unused = foreach ($resource in $resources) {

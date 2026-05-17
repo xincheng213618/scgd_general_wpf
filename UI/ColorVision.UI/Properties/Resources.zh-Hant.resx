@@ -229,9 +229,6 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>通用設定</value>
   </data>
-  <data name="General" xml:space="preserve">
-    <value>一般</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>插件名稱</value>
   </data>
@@ -310,29 +307,8 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>是否確認刪除插件{0}</value>
   </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>是否啟用CUDA</value>
-  </data>
   <data name="CheckingCUDASupport" xml:space="preserve">
     <value>正在檢測是否支持CUDA</value>
-  </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>配置相關參數</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>是否啟用定時備份</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>最大備份數量</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>超過則自動清理舊備份</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>配置文件異常,已經重置</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>配置文件已從最近備份恢復</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
     <value>恢復配置文件失敗</value>

@@ -15,19 +15,19 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 
-        [DisplayName("ShowDataColumns"), Category("Control")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowDataColumns"), Category("Control")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
 
-        [DisplayName("ShowSidebar"), Category("Control")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowSidebar"), Category("Control")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView = true;
 
-        [DisplayName("DataColumSavePath"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DataColumSavePath"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; OnPropertyChanged(); } }
         private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
-        [DisplayName("AutoSaveDataColum")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "AutoSaveDataColum")]
         public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; OnPropertyChanged(); } }
         private bool _AutoSaveSideData;
 

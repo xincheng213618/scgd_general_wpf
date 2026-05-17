@@ -140,7 +140,7 @@ namespace ColorVision.Engine.PropertyEditor
             return dockPanel;
         }
 
-        private void CheckPortStatus(SerialPortModel model)
+        private static void CheckPortStatus(SerialPortModel model)
         {
             try
             {

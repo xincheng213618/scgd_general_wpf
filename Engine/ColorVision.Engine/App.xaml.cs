@@ -48,7 +48,7 @@ namespace ColorVision.Engine
             mainWindow.Show();
         }
 
-        private async Task InitializeStandaloneEngineAsync()
+        private static async Task InitializeStandaloneEngineAsync()
         {
             foreach (var initializer in GetStandaloneInitializers())
             {

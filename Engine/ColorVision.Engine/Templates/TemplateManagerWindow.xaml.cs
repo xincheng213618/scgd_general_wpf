@@ -92,9 +92,9 @@ namespace ColorVision.Engine.Templates
         private List<TemplateGroup> _templateGroups = new List<TemplateGroup>();
         private List<TemplateItem> _allTemplates = new List<TemplateItem>();
         private Dictionary<string, FrameworkElement> _groupSectionElements = new Dictionary<string, FrameworkElement>();
-        private TemplateItem _selectedTemplate = null;
+        private TemplateItem _selectedTemplate;
         private int _templateColumns = 2;
-        private FrameworkElement _currentEditorContent = null;
+        private FrameworkElement _currentEditorContent;
 
         public int TemplateColumns
         {
@@ -161,7 +161,7 @@ namespace ColorVision.Engine.Templates
         /// Example: ColorVision.Engine.Templates.Jsons.KB -> ColorVision.Engine.Templates.Jsons
         /// Example: ColorVision.Engine.Templates.SFR -> ColorVision.Engine.Templates
         /// </summary>
-        private string GetParentNamespace(Type type)
+        private static string GetParentNamespace(Type type)
         {
             string fullNamespace = type.Namespace ?? "Other";
             
@@ -172,7 +172,7 @@ namespace ColorVision.Engine.Templates
             // Base is ColorVision.Engine.Templates
             const string baseNamespace = "ColorVision.Engine.Templates";
             
-            if (fullNamespace.StartsWith(baseNamespace))
+            if (fullNamespace.StartsWith(baseNamespace, StringComparison.Ordinal))
             {
                 // Remove base namespace
                 string relative = fullNamespace.Substring(baseNamespace.Length).TrimStart('.');
@@ -219,7 +219,7 @@ namespace ColorVision.Engine.Templates
                             t.TemplateDicId.ToString().Contains(searchText, StringComparison.Ordinal))
                             .ToList()
                     })
-                    .Where(g => g.Templates.Any());
+                    .Where(g => g.Templates.Count > 0);
             }
 
             foreach (var group in groupsToShow)
@@ -326,7 +326,7 @@ namespace ColorVision.Engine.Templates
         /// <summary>
         /// Update button visual state based on selection
         /// </summary>
-        private void UpdateButtonSelectionState(Button button, bool isSelected)
+        private static void UpdateButtonSelectionState(Button button, bool isSelected)
         {
             if (isSelected)
             {
@@ -428,12 +428,12 @@ namespace ColorVision.Engine.Templates
         /// <summary>
         /// Create embedded editor content using EmbeddedTemplateEditor UserControl
         /// </summary>
-        private FrameworkElement CreateEmbeddedEditor(ITemplate template)
+        private static FrameworkElement CreateEmbeddedEditor(ITemplate template)
         {
             var temp = new TemplateEditorWindow(template);
             var content = temp.Content;
 
-            temp.Content = null;
+            temp.Content = null!;
 
 
             return (FrameworkElement)content;

@@ -59,6 +59,7 @@ namespace ColorVision.Engine.Batch
     public class FileCleanupProcess : BatchProcessBase<FileCleanupProcessConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FileCleanupProcess));
+        private static readonly char[] ExtensionSeparators = { ',', ';', ' ' };
 
         public override bool Process(IBatchContext ctx)
         {
@@ -205,7 +206,7 @@ namespace ColorVision.Engine.Batch
             }
         }
 
-        private void DeleteEmptyFolders(HashSet<string> foldersToCheck, string rootFolder)
+        private static void DeleteEmptyFolders(HashSet<string> foldersToCheck, string rootFolder)
         {
             // Order folders by depth (deepest first) to delete from bottom up
             var sortedFolders = foldersToCheck
@@ -243,18 +244,18 @@ namespace ColorVision.Engine.Batch
             }
         }
 
-        private HashSet<string> ParseExtensions(string extensionsStr)
+        private static HashSet<string> ParseExtensions(string extensionsStr)
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             
             if (string.IsNullOrWhiteSpace(extensionsStr))
                 return result;
 
-            var parts = extensionsStr.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = extensionsStr.Split(ExtensionSeparators, StringSplitOptions.RemoveEmptyEntries);
             foreach (var part in parts)
             {
                 var ext = part.Trim();
-                if (!ext.StartsWith("."))
+                if (!ext.StartsWith('.'))
                     ext = "." + ext;
                 result.Add(ext.ToLowerInvariant());
             }

@@ -12,11 +12,11 @@ namespace ColorVision.Engine.Messages
 
         public string SqliteDbPath { get => DirectoryPath + "MsgRecords.db"; }
 
-        [DisplayName("QueryCount"), Category("View")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "QueryCount"), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
 
-        [DisplayName("SortByType"), Category("View")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "SortByType"), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
 

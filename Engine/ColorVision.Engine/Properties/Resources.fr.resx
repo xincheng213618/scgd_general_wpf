@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>Afficher les données d'acceptation</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>fichier de données d'image</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>mode vidéo</value>
   </data>
@@ -573,9 +570,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>Téléchargement annulé</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>Zone de données d'image CIE</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>Nom de l'appareil</value>
   </data>
@@ -692,9 +686,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>Alias</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>taper</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Recherche Avancée</value>
@@ -857,9 +848,6 @@
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>Modèle POI</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>Paramètres du modèle d'algorithme POI</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>Service</value>
@@ -1142,9 +1130,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>Le service a été interrompu.</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>configuration du service d'annuaire de données</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>Mise en cache du service</value>
@@ -1956,12 +1941,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Échec du modèle</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>La licence de la caméra logique actuelle a expiré et la liste des périphériques ne peut pas être actualisée. Voulez-vous supprimer les caméras physiques actuellement associées au service de caméra, puis réessayer ?</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>La caméra logique actuelle est hors ligne et la liste des périphériques ne peut pas être actualisée. Voulez-vous supprimer les caméras physiques associées au service de caméra actuel, puis réessayer ?</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>Informations actuelles sur la caméra de l'appareil</value>
   </data>
@@ -2247,9 +2226,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>Supprimer la sélection</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(Double-cliquez pour renommer ; actuellement enregistré uniquement en mémoire)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>Classe de traitement</value>
   </data>
@@ -2400,18 +2376,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>Chemin de sauvegarde par défaut</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>Traitement de la caméra IVL</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Traiter uniquement les données de la caméra issues des lots IVL et les exporter.</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>Traitement spectral IVL</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Traiter uniquement les données Spectrum des lots IVL et les exporter</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>bande LED</value>
   </data>
@@ -2480,12 +2444,6 @@
   </data>
   <data name="IsFront" xml:space="preserve">
     <value>Activer le panneau avant</value>
-  </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>traitement par scanner IV</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>Traiter les données de numérisation SMU, les enregistrer au format CSV et tracer les courbes IV.</value>
   </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>Ouvrir le Gestionnaire de périphériques</value>

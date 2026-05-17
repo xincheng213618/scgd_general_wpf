@@ -935,7 +935,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return $"camera:{Device.Config.Code}:{actionKey}";
         }
 
-        private void SaveDisplayConfig()
+        private static void SaveDisplayConfig()
         {
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }

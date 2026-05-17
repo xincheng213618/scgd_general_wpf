@@ -194,7 +194,7 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private void AddStatisticItem(WrapPanel parent, string label, string value)
+        private static void AddStatisticItem(WrapPanel parent, string label, string value)
         {
             var border = new Border
             {

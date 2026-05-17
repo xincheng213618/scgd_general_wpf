@@ -134,7 +134,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
             WpfPlot.Refresh();
         }
 
-        private IEnumerable<(string label, double[] xs, double[] ys)> EnumerateSeries(SFR2ResultItem poi, Sfr2ShowType type)
+        private static IEnumerable<(string label, double[] xs, double[] ys)> EnumerateSeries(SFR2ResultItem poi, Sfr2ShowType type)
         {
             if (poi?.data == null) yield break;
 

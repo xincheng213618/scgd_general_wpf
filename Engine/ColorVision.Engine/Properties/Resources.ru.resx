@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>Посмотреть данные о приемке</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>файл данных изображения</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>видео режим</value>
   </data>
@@ -573,9 +570,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>Загрузка отменена</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>Область данных изображения CIE</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>Имя устройства</value>
   </data>
@@ -689,9 +683,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>Псевдоним</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>тип</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Расширенный поиск</value>
@@ -854,9 +845,6 @@
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>Шаблон POI</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>Настройки шаблона алгоритма POI</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>Сервис</value>
@@ -1139,9 +1127,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>Служба была закрыта.</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>Конфигурация службы каталогов данных</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>Кэширование сервисов</value>
@@ -1953,12 +1938,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Шаблон не удался</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>Текущая лицензия на логическую камеру истекла, и список устройств не может быть обновлен. Хотите удалить физические камеры, привязанные к сервису камер, и повторить попытку?</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>Текущая логическая камера отключена, и список устройств не может быть обновлен. Хотите удалить физические камеры, привязанные к текущей службе камер, и повторить попытку?</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>Текущая информация о камере устройства</value>
   </data>
@@ -2244,9 +2223,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>Удалить выбранное</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(Дважды щелкните, чтобы переименовать; в настоящее время сохраняется только в памяти)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>Класс обработки</value>
   </data>
@@ -2397,18 +2373,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>Путь сохранения по умолчанию</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>Обработка данных с камеры IVL</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Обрабатывайте только данные камер из пакетов IVL и экспортируйте их.</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>Спектральная обработка ИВЛ</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Обрабатывать только данные Spectrum из партий IVL и экспортировать</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>светодиодная лента</value>
   </data>
@@ -2477,12 +2441,6 @@
   </data>
   <data name="IsFront" xml:space="preserve">
     <value>Включить переднюю панель</value>
-  </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>Обработка внутривенного сканирования</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>Обработать данные сканирования SMU, сохранить в CSV и построить кривые IV</value>
   </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>Откройте Диспетчер устройств</value>

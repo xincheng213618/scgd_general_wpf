@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>승인 데이터 보기</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>이미지 데이터 파일</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>비디오 모드</value>
   </data>
@@ -570,9 +567,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>다운로드가 취소되었습니다</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE 이미지 데이터 영역</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>장치 이름</value>
   </data>
@@ -689,9 +683,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>별명</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>유형</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>고급 검색</value>
@@ -854,9 +845,6 @@
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>POI 템플릿</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>POI 알고리즘 템플릿 설정</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>서비스</value>
@@ -1139,9 +1127,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>서비스가 중단되었습니다.</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>데이터 디렉토리 서비스 구성</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>서비스 캐싱</value>
@@ -1953,12 +1938,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>템플릿이 실패했습니다</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>현재 논리적 카메라 라이선스가 만료되어 장치 목록을 새로 고칠 수 없습니다. 현재 카메라 서비스에 바인딩된 물리적 카메라를 삭제한 후 다시 시도하시겠습니까?</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>현재 논리적 카메라가 오프라인 상태이므로 장치 목록을 새로 고칠 수 없습니다. 현재 카메라 서비스에 바인딩된 물리적 카메라를 삭제한 후 다시 시도하시겠습니까?</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>현재 기기 카메라 정보</value>
   </data>
@@ -2244,9 +2223,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>선택한 항목 삭제</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(이름을 바꾸려면 두 번 클릭하세요. 현재는 메모리에만 저장됩니다.)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>처리 클래스</value>
   </data>
@@ -2397,18 +2373,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>기본 저장 경로</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVL 카메라 처리</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVL 배치에서 카메라 데이터만 처리하고 내보냅니다.</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>IVL 스펙트럼 처리</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVL 배치에서 스펙트럼 데이터만 처리하고 내보냅니다.</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>LED 스트립</value>
   </data>
@@ -2477,12 +2441,6 @@
   </data>
   <data name="IsFront" xml:space="preserve">
     <value>전면 패널 활성화</value>
-  </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>IV 스캔 처리</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>SMU 스캔 데이터를 처리하고 CSV로 저장하고 IV 곡선을 그립니다.</value>
   </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>장치 관리자 열기</value>

@@ -286,15 +286,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 类型 的本地化字符串。
-        /// </summary>
-        public static string AlgorithmView_类型 {
-            get {
-                return ResourceManager.GetString("AlgorithmView_类型", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 算法视图配置 的本地化字符串。
         /// </summary>
         public static string AlgorithmViewConfig {
@@ -412,7 +403,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 应用参数 的本地化字符串。
+        ///   查找类似 应用设置 的本地化字符串。
         /// </summary>
         public static string ApplySettings {
             get {
@@ -1096,7 +1087,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 调整NDPort 的本地化字符串。
+        ///   查找类似 更改NDPort 的本地化字符串。
         /// </summary>
         public static string ChangeNDPort {
             get {
@@ -1204,7 +1195,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 清空关注点 的本地化字符串。
+        ///   查找类似 清空POI 的本地化字符串。
         /// </summary>
         public static string ClearPOI {
             get {
@@ -1384,7 +1375,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 需要配置关注点 的本地化字符串。
+        ///   查找类似 需要配置POI 的本地化字符串。
         /// </summary>
         public static string ConfigePOINeed {
             get {
@@ -1672,7 +1663,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 创建到POI 的本地化字符串。
+        ///   查找类似 创建为POI 的本地化字符串。
         /// </summary>
         public static string CreateToPOI {
             get {
@@ -1902,15 +1893,6 @@ namespace ColorVision.Engine.Properties {
         public static string DataDirectory {
             get {
                 return ResourceManager.GetString("DataDirectory", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 数据目录服务配置 的本地化字符串。
-        /// </summary>
-        public static string DataDirectoryServiceConfig {
-            get {
-                return ResourceManager.GetString("DataDirectoryServiceConfig", resourceCulture);
             }
         }
         
@@ -2248,15 +2230,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 CIE图像数据区 的本地化字符串。
-        /// </summary>
-        public static string DisplayAlgorithmControl_CIE图像数据区 {
-            get {
-                return ResourceManager.GetString("DisplayAlgorithmControl_CIE图像数据区", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 畸变 的本地化字符串。
         /// </summary>
         public static string Distortion {
@@ -2298,15 +2271,6 @@ namespace ColorVision.Engine.Properties {
         public static string DistortionEvaluationTemplateManagement {
             get {
                 return ResourceManager.GetString("DistortionEvaluationTemplateManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 双击可重命名, 当前仅内存保存) 的本地化字符串。
-        /// </summary>
-        public static string DoubleClickToRename_CurrentlySavedInMemoryOnly {
-            get {
-                return ResourceManager.GetString("DoubleClickToRename_CurrentlySavedInMemoryOnly", resourceCulture);
             }
         }
         
@@ -2887,7 +2851,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 充满 的本地化字符串。
+        ///   查找类似 填充区域 的本地化字符串。
         /// </summary>
         public static string FillArea {
             get {
@@ -2941,7 +2905,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 寻找AA区 的本地化字符串。
+        ///   查找类似 AA区域检测 的本地化字符串。
         /// </summary>
         public static string FindAARegion {
             get {
@@ -2950,7 +2914,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 寻找AA区模板管理 的本地化字符串。
+        ///   查找类似 AA区域检测模板管理 的本地化字符串。
         /// </summary>
         public static string FindAaRegionTemplateManagement {
             get {
@@ -2959,7 +2923,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 寻找发光区 的本地化字符串。
+        ///   查找类似 检测发光区 的本地化字符串。
         /// </summary>
         public static string FindActiveArea {
             get {
@@ -3769,33 +3733,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 IVL相机处理 的本地化字符串。
-        /// </summary>
-        public static string IvlCameraProcessing {
-            get {
-                return ResourceManager.GetString("IvlCameraProcessing", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 IVL光谱处理 的本地化字符串。
-        /// </summary>
-        public static string IvlSpectralProcessing {
-            get {
-                return ResourceManager.GetString("IvlSpectralProcessing", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 IV扫描处理 的本地化字符串。
-        /// </summary>
-        public static string IVScanProcessing {
-            get {
-                return ResourceManager.GetString("IVScanProcessing", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 JND模板管理 的本地化字符串。
         /// </summary>
         public static string JNDTemplateManagement {
@@ -3967,7 +3904,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 原值 的本地化字符串。
+        ///   查找类似 起始值 的本地化字符串。
         /// </summary>
         public static string LimitStart {
             get {
@@ -4044,24 +3981,6 @@ namespace ColorVision.Engine.Properties {
         public static string Lock {
             get {
                 return ResourceManager.GetString("Lock", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试 的本地化字符串。
-        /// </summary>
-        public static string LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt {
-            get {
-                return ResourceManager.GetString("LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前逻辑相机离线，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试 的本地化字符串。
-        /// </summary>
-        public static string LogicalCameraOffline_ClearBindingsAndRetryPromp {
-            get {
-                return ResourceManager.GetString("LogicalCameraOffline_ClearBindingsAndRetryPromp", resourceCulture);
             }
         }
         
@@ -4399,7 +4318,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关注点模板设置(_P) 的本地化字符串。
+        ///   查找类似 POI模板设置(_P) 的本地化字符串。
         /// </summary>
         public static string MenuPoi {
             get {
@@ -5245,7 +5164,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Poi修正标定参数模板设置 的本地化字符串。
+        ///   查找类似 POI修正标定参数模板设置 的本地化字符串。
         /// </summary>
         public static string POICalibrationCorrectionTemplateSettings {
             get {
@@ -5254,7 +5173,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Poi修正模板设置 的本地化字符串。
+        ///   查找类似 POI修正模板设置 的本地化字符串。
         /// </summary>
         public static string POICorrectionTemplateSettings {
             get {
@@ -5263,7 +5182,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关注点编辑 的本地化字符串。
+        ///   查找类似 POI编辑 的本地化字符串。
         /// </summary>
         public static string POIEdit {
             get {
@@ -5281,7 +5200,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Poi文件输出模板设置 的本地化字符串。
+        ///   查找类似 POI文件输出模板设置 的本地化字符串。
         /// </summary>
         public static string PoiFileOutputTemplateSetting {
             get {
@@ -5290,7 +5209,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Poi文件输出模板设置 的本地化字符串。
+        ///   查找类似 POI文件输出模板设置 的本地化字符串。
         /// </summary>
         public static string POIFileOutputTemplateSettings {
             get {
@@ -5326,7 +5245,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 布点区域显示 的本地化字符串。
+        ///   查找类似 显示布点区域 的本地化字符串。
         /// </summary>
         public static string PointLayoutAreaDisplay {
             get {
@@ -5335,16 +5254,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关注点相关算法模板设置 的本地化字符串。
-        /// </summary>
-        public static string PointOfInterestAlgorithmTemplateSettings {
-            get {
-                return ResourceManager.GetString("PointOfInterestAlgorithmTemplateSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 关注点模板 的本地化字符串。
+        ///   查找类似 POI模板 的本地化字符串。
         /// </summary>
         public static string PointOfInterestTemplete {
             get {
@@ -5353,7 +5263,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Poi布点模板设置 的本地化字符串。
+        ///   查找类似 POI布点模板设置 的本地化字符串。
         /// </summary>
         public static string POIPlacementTemplateSettings {
             get {
@@ -5362,7 +5272,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关注点设置 的本地化字符串。
+        ///   查找类似 POI设置 的本地化字符串。
         /// </summary>
         public static string POISetting {
             get {
@@ -5371,7 +5281,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关注点相关算法模版设置 的本地化字符串。
+        ///   查找类似 POI模板设置 的本地化字符串。
         /// </summary>
         public static string POITemplateSettings {
             get {
@@ -5461,24 +5371,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 仅处理IVL批次中的Camera数据并导出 的本地化字符串。
-        /// </summary>
-        public static string ProcessAndExportCameraDataFromIvlBatchOnly {
-            get {
-                return ResourceManager.GetString("ProcessAndExportCameraDataFromIvlBatchOnly", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 仅处理IVL批次中的Spectrum数据并导出 的本地化字符串。
-        /// </summary>
-        public static string ProcessAndExportSpectrumDataFromIvlBatchOnly {
-            get {
-                return ResourceManager.GetString("ProcessAndExportSpectrumDataFromIvlBatchOnly", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 流程处理配置 的本地化字符串。
         /// </summary>
         public static string ProcessHandlingConfig {
@@ -5493,15 +5385,6 @@ namespace ColorVision.Engine.Properties {
         public static string Processing {
             get {
                 return ResourceManager.GetString("Processing", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 处理SMU扫描数据，保存到CSV并绘制IV曲线 的本地化字符串。
-        /// </summary>
-        public static string ProcessIVScanDataAndExportToCSV {
-            get {
-                return ResourceManager.GetString("ProcessIVScanDataAndExportToCSV", resourceCulture);
             }
         }
         
@@ -6001,7 +5884,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 保存关注点 的本地化字符串。
+        ///   查找类似 保存POI 的本地化字符串。
         /// </summary>
         public static string SavePOI {
             get {
@@ -6073,7 +5956,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 查询结果 的本地化字符串。
+        ///   查找类似 搜索结果 的本地化字符串。
         /// </summary>
         public static string SearchResults {
             get {
@@ -6397,7 +6280,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 设置到全局缓存 的本地化字符串。
+        ///   查找类似 设为全局缓存 的本地化字符串。
         /// </summary>
         public static string SetToGlobalCache {
             get {
@@ -7509,15 +7392,6 @@ namespace ColorVision.Engine.Properties {
         public static string Video {
             get {
                 return ResourceManager.GetString("Video", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 图像数据文件 的本地化字符串。
-        /// </summary>
-        public static string ViewCamera_图像数据文件 {
-            get {
-                return ResourceManager.GetString("ViewCamera_图像数据文件", resourceCulture);
             }
         }
         

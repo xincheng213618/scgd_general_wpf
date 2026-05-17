@@ -362,7 +362,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private void ApplyCalibrationTemplate(GetFrameParam param, IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+        private static void ApplyCalibrationTemplate(GetFrameParam param, IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
         {
             if (calibrationFiles.Count == 0)
             {

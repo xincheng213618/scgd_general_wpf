@@ -229,9 +229,6 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>Общие настройки</value>
   </data>
-  <data name="General" xml:space="preserve">
-    <value>Универсальный</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>название плагина</value>
   </data>
@@ -310,29 +307,8 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>Подтвердить удаление плагина {0}?</value>
   </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>Включить CUDA</value>
-  </data>
   <data name="CheckingCUDASupport" xml:space="preserve">
     <value>Проверка поддержки CUDA</value>
-  </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>Параметры конфигурации</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>Включить запланированное резервное копирование</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>Максимальное количество резервных копий</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>Автоматически очищать старые резервные копии при превышении</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>Ошибка файла конфигурации, сброшен</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>Файл конфигурации восстановлен из недавней резервной копии</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
     <value>Не удалось восстановить файл конфигурации</value>

@@ -46,10 +46,10 @@ namespace ColorVision.Engine.ToolPlugins
             try
             {
                 Mat mat = null;
-                string ext = Path.GetExtension(filePath).ToLower();
+                string ext = Path.GetExtension(filePath);
 
                 // 2. 根据文件扩展名采取不同的读取策略
-                if (ext == ".cvraw" || ext == ".cvcie")
+                if (ext.Equals(".cvraw", StringComparison.OrdinalIgnoreCase) || ext.Equals(".cvcie", StringComparison.OrdinalIgnoreCase))
                 {
                     using CVCIEFile cvcieFile = CVFileUtil.OpenLocalCVFile(filePath);
                     if (cvcieFile == null)
@@ -124,7 +124,7 @@ namespace ColorVision.Engine.ToolPlugins
         /// <summary>
         /// 提取 Mat 像素数组并转存为 CSV
         /// </summary>
-        private void SaveMatToCsv(Mat mat, string filePath)
+        private static void SaveMatToCsv(Mat mat, string filePath)
         {
             // 对于较大图像避免大量 string 相加，使用 StreamWriter 高效逐行写入
             using StreamWriter sw = new StreamWriter(filePath);
@@ -165,7 +165,7 @@ namespace ColorVision.Engine.ToolPlugins
         /// <summary>
         /// 将泛型一维数组以 CSV 格式写出
         /// </summary>
-        private void WriteCsv<T>(StreamWriter sw, T[] data, int rows, int cols)
+        private static void WriteCsv<T>(StreamWriter sw, T[] data, int rows, int cols)
         {
             for (int i = 0; i < rows; i++)
             {

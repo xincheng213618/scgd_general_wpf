@@ -229,9 +229,6 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>一般設定</value>
   </data>
-  <data name="General" xml:space="preserve">
-    <value>ユニバーサル</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>プラグイン名</value>
   </data>
@@ -310,29 +307,8 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>プラグイン{0}を削除しますか？</value>
   </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>CUDAを有効にする</value>
-  </data>
   <data name="CheckingCUDASupport" xml:space="preserve">
     <value>CUDAサポートを確認中</value>
-  </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>構成パラメータ</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>スケジュールバックアップを有効にする</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>最大バックアップ数</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>超過時に古いバックアップを自動的にクリーンアップ</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>構成ファイルエラー、リセットされました</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>最近のバックアップから構成ファイルを復元しました</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
     <value>構成ファイルの復元に失敗しました</value>

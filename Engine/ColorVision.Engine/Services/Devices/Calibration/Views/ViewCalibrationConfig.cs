@@ -7,7 +7,7 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
-    [DisplayName("CalibrationViewSettings")]
+    [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "CalibrationViewSettings")]
     public class ViewCalibrationConfig : ViewConfigBase, IConfig
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
@@ -23,10 +23,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
 
-        [DisplayName("ShowList"), Category("View")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowList"), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
-        [DisplayName("ListHeight"), Category("View")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ListHeight"), Category("View")]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 

@@ -112,7 +112,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             ShowSelectedCameraDetails();
         }
 
-        private void ApplyOnlineSorting()
+        private static void ApplyOnlineSorting()
         {
             var view = CollectionViewSource.GetDefaultView(PhyCameraManager.GetInstance().PhyCameras);
             if (view is ListCollectionView listView)

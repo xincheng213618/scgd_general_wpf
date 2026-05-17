@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>受け入れデータの表示</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>画像データファイル</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>ビデオモード</value>
   </data>
@@ -570,9 +567,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>ダウンロードがキャンセルされました</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE画像データ領域</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>装置名</value>
   </data>
@@ -689,9 +683,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>エイリアス</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>タイプ</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>高度な検索</value>
@@ -854,9 +845,6 @@
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>POIテンプレート</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>POIアルゴリズムテンプレート設定</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>サービス</value>
@@ -1139,9 +1127,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>サービスは停止されました。</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>データディレクトリサービスの構成</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>サービスキャッシュ</value>
@@ -1953,12 +1938,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>テンプレートが失敗しました</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>現在の論理カメラライセンスの有効期限が切れているため、デバイスリストを更新できません。現在カメラサービスにバインドされている物理カメラをクリアしてから、もう一度お試しください。</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>現在の論理カメラはオフラインのため、デバイスリストを更新できません。現在のカメラサービスにバインドされている物理カメラをクリアしてから再試行しますか？</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>現在のデバイスのカメラ情報</value>
   </data>
@@ -2244,9 +2223,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>選択した項目を削除</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(名前を変更するにはダブルクリックします。現在はメモリにのみ保存されます)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>処理クラス</value>
   </data>
@@ -2397,18 +2373,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>デフォルトの保存パス</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVLカメラ処理</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVL バッチからのカメラ データのみを処理してエクスポートします。</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>IVLスペクトル処理</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVLバッチからスペクトルデータのみを処理してエクスポートする</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>LEDストリップ</value>
   </data>
@@ -2477,12 +2441,6 @@
   </data>
   <data name="IsFront" xml:space="preserve">
     <value>フロントパネルを有効にする</value>
-  </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>IVスキャン処理</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>SMUスキャンデータを処理し、CSVに保存してIV曲線をプロットする</value>
   </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>デバイスマネージャーを開く</value>

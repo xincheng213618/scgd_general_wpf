@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Batch
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this).ShowDialog());
         }
 
-        [DisplayName("DefaultSavePath"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DefaultSavePath"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Batch"); 
     }

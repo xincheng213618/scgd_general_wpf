@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>View acceptance data</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>Image data file</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>Video Mode</value>
   </data>
@@ -573,9 +570,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>Download canceled</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE Image Data Area</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>Device Name</value>
   </data>
@@ -692,9 +686,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>Aliases</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>Type</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Advanced Search</value>
@@ -857,9 +848,6 @@
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>POI Template</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>POI Algorithm Template Settings</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>Service</value>
@@ -1142,9 +1130,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>The service has been shut down.</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>Data directory service configuration</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>Service caching</value>
@@ -1953,12 +1938,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Template Failed</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>The current logical camera license has expired, and the device list cannot be refreshed. Do you want to clear the physical cameras currently bound to the camera service and then try again?</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>The current logical camera is offline and the device list cannot be refreshed. Do you want to clear the physical cameras bound to the current camera service and then retry?</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>Current device camera information</value>
   </data>
@@ -2244,9 +2223,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>Delete selected</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(Double-click to rename; currently only saved in memory)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>ProcessingClass</value>
   </data>
@@ -2397,18 +2373,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>Default Save Path</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVL Camera Processing</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Process only Camera data from IVL batches and export it.</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>IVL spectral processing</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Process only Spectrum data from IVL batches and export</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>Light Bar</value>
   </data>
@@ -2477,12 +2441,6 @@
   </data>
   <data name="IsFront" xml:space="preserve">
     <value>Enable Front Panel</value>
-  </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>IV Scan Processing</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>Process SMU scan data, save to CSV and draw IV curve</value>
   </data>
   <data name="BrightnessLvCdM2" xml:space="preserve">
     <value>Luminance (cd/m2)</value>

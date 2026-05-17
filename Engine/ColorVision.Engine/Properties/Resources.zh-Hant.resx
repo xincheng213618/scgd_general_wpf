@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>查看接受數據</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>影像資料檔案</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>視訊模式</value>
   </data>
@@ -573,9 +570,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>下載已取消</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE影像資料區</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>設備名稱</value>
   </data>
@@ -692,9 +686,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>別名</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>類型</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>進階查詢</value>
@@ -857,9 +848,6 @@
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>POI模板</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>POI演算法模板設定</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>服務</value>
@@ -1142,9 +1130,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>服務已關閉</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>資料目錄服務配置</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>服務快取</value>
@@ -1956,12 +1941,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>模板失敗</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>當前邏輯相機許可證過期，無法刷新設備列表，是否清空當前相機服務綁定的實體相機，然後在重試</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>目前邏輯相機離線，無法刷新裝置列表，是否清空目前相機服務綁定的實體相機，然後在重試</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>當前設備相機訊息</value>
   </data>
@@ -2247,9 +2226,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>刪除選取</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(雙擊可重新命名, 目前僅記憶體保存)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>處理類別</value>
   </data>
@@ -2400,18 +2376,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>預設儲存路徑</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVL相機處理</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>僅處理IVL批次中的Camera資料並匯出</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>IVL光譜處理</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>僅處理IVL批次中的Spectrum資料並匯出</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>燈條</value>
   </data>
@@ -2480,12 +2444,6 @@
   </data>
   <data name="IsFront" xml:space="preserve">
     <value>啟用前面板</value>
-  </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>IV掃描處理</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>處理SMU掃描數據，保存到CSV並繪製IV曲線</value>
   </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>開啟裝置管理員</value>

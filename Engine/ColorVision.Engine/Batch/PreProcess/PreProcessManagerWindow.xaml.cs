@@ -221,7 +221,7 @@ namespace ColorVision.Engine.Batch
             PropertyPanel.Children.Add(border);
         }
 
-        private void AddLabeledText(StackPanel parent, string label, string value)
+        private static void AddLabeledText(StackPanel parent, string label, string value)
         {
             var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
             dock.Children.Add(new TextBlock 
