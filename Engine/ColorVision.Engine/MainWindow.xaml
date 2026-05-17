@@ -51,9 +51,11 @@
                                                    ContentId="AcquirePanel">
                                 <ScrollViewer x:Name="ScrollViewerDisplay"
                                               Background="{DynamicResource GlobalBorderBrush1}"
-                                              HorizontalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled"
                                               VerticalScrollBarVisibility="Auto">
-                                    <StackPanel x:Name="StackPanelSPD" Margin="-2,5,0,0" />
+                                    <StackPanel x:Name="StackPanelSPD"
+                                                Width="{Binding ViewportWidth, ElementName=ScrollViewerDisplay}"
+                                                Margin="-2,5,0,0" />
                                 </ScrollViewer>
                             </xcad:LayoutAnchorable>
                         </xcad:LayoutAnchorablePane>

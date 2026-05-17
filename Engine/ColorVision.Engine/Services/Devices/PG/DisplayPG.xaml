@@ -19,7 +19,7 @@
         </Style>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
-    <StackPanel Margin="0,3">
+    <StackPanel>
         <DockPanel Margin="3,0,8,0" ToolTip="{Binding DService.DeviceStatus}">
             <Grid DockPanel.Dock="Right"  >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
