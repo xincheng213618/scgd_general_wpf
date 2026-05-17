@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
@@ -77,6 +78,7 @@ public abstract class STNode
 
 	protected STNodeControl m_ctrl_down;
 
+	[Browsable(false)]
 	public STNodeEditor Owner
 	{
 		get
@@ -111,8 +113,8 @@ public abstract class STNode
 			OnOwnerChanged();
 		}
 	}
-
-	public bool IsSelected
+    [Browsable(false)]
+    public bool IsSelected
 	{
 		get
 		{
@@ -132,8 +134,8 @@ public abstract class STNode
 			}
 		}
 	}
-
-	public bool IsActive
+    [Browsable(false)]
+    public bool IsActive
 	{
 		get
 		{
@@ -240,8 +242,8 @@ public abstract class STNode
 	}
 
 	public string[] MarkLines => _MarkLines;
-
-	public int Left
+    [Browsable(false)]
+    public int Left
 	{
 		get
 		{
@@ -263,8 +265,8 @@ public abstract class STNode
 			}
 		}
 	}
-
-	public int Top
+    [Browsable(false)]
+    public int Top
 	{
 		get
 		{
@@ -457,7 +459,8 @@ public abstract class STNode
 		}
 	}
 
-	public bool LockOption
+    [Browsable(false)]
+    public bool LockOption
 	{
 		get
 		{
@@ -469,8 +472,8 @@ public abstract class STNode
 			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
 		}
 	}
-
-	public bool LockLocation
+    [Browsable(false)]
+    public bool LockLocation
 	{
 		get
 		{

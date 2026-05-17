@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -18,12 +19,7 @@ public class CVBaseServerNode : CVCommonNode
 	private static readonly ILog logger = LogManager.GetLogger(typeof(CVBaseServerNode));
 
 	protected string _Token;
-
-	protected int _MinTime;
-
 	protected int _MaxTime;
-
-	protected bool _IsPublishStatus;
 
 	protected STNodeOption m_op_svr_out_act;
 
@@ -68,18 +64,6 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-	[STNodeProperty("最小超时", "最小超时", false, true)]
-	public int MinTime
-	{
-		get
-		{
-			return _MinTime;
-		}
-		set
-		{
-			_MinTime = value;
-		}
-	}
 
 	[STNodeProperty("最大超时", "最大超时", false, false)]
 	public int MaxTime
@@ -93,19 +77,6 @@ public class CVBaseServerNode : CVCommonNode
 			_MaxTime = value;
 		}
 	}
-
-	[STNodeProperty("状态触发", "状态触发", false, true)]
-	public bool IsPublishStatus
-	{
-		get
-		{
-			return _IsPublishStatus;
-		}
-		set
-		{
-			_IsPublishStatus = value;
-		}
-    }
 
     [STNodeProperty("Subtitle", "Subtitle", false, true)]
     public string Subtitle { get => _Subtitle; set { _Subtitle = value; } }
@@ -134,10 +105,8 @@ public class CVBaseServerNode : CVCommonNode
 		operatorCode = "Finish";
 		m_has_svr_item = false;
 		m_is_out_release = true;
-		_MinTime = -1;
 		_TempId = -1;
 		_MaxTime = 5000;
-		_IsPublishStatus = false;
 		_TempName = "";
 		base.AutoSize = false;
 		base.Width = 150;
@@ -668,15 +637,9 @@ public class CVBaseServerNode : CVCommonNode
 			trans.NodeFailed(cmd.resp.Message, base.DeviceCode);
 			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
 		}
-		if (_IsPublishStatus)
-		{
-			trans.DoPublishStatus(GetServiceName(), GetDeviceCode(), GetFullNodeName(), resp, base.ZIndex);
-		}
-		else
-		{
-			trans.AddTTL();
-		}
-		TimeSpan timeSpan = DateTime.Now - trans.startTime;
+
+        trans.AddTTL();
+        TimeSpan timeSpan = DateTime.Now - trans.startTime;
 		if (logger.IsInfoEnabled)
 		{
 			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
@@ -797,10 +760,6 @@ public class CVBaseServerNode : CVCommonNode
 	private async void DoNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
 	{
 		CVServerResponse resp = cmd.resp;
-		if (_MinTime > 0 && resp.Status == ActionStatusEnum.Finish)
-		{
-			await Task.Delay(_MinTime);
-		}
 		DoTransNodeEndOut(trans, cmd);
 		if (m_op_svr_out_act != null)
 		{
