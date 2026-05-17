@@ -915,4 +915,130 @@
   <data name="源表[CSV]" xml:space="preserve">
     <value>Tableau source - CSV</value>
   </data>
+  <data name="等待时间" xml:space="preserve">
+    <value>Temps d'attente</value>
+  </data>
+  <data name="指令延时" xml:space="preserve">
+    <value>Délai de commande</value>
+  </data>
+  <data name="指令超时" xml:space="preserve">
+    <value>Timeout de commande</value>
+  </data>
+  <data name="指令重试" xml:space="preserve">
+    <value>Réessai commande</value>
+  </data>
+  <data name="提取模板" xml:space="preserve">
+    <value>Modèle d'extraction</value>
+  </data>
+  <data name="源表扫描" xml:space="preserve">
+    <value>Balayage source</value>
+  </data>
+  <data name="源表结果" xml:space="preserve">
+    <value>Résultat source</value>
+  </data>
+  <data name="图像转换" xml:space="preserve">
+    <value>Conversion d'image</value>
+  </data>
+  <data name="图像格式" xml:space="preserve">
+    <value>Format d'image</value>
+  </data>
+  <data name="图像名称" xml:space="preserve">
+    <value>Nom d'image</value>
+  </data>
+  <data name="定位模板" xml:space="preserve">
+    <value>Modèle de positionnement</value>
+  </data>
+  <data name="修正系数" xml:space="preserve">
+    <value>Coefficient de correction</value>
+  </data>
+  <data name="03_3 校正" xml:space="preserve">
+    <value>03_3 Correction</value>
+  </data>
+  <data name="保存CIE文件" xml:space="preserve">
+    <value>Enregistrer le fichier CIE</value>
+  </data>
+  <data name="EndV5Node" xml:space="preserve">
+    <value>EndV5Node</value>
+  </data>
+  <data name="电压" xml:space="preserve">
+    <value>Tension</value>
+  </data>
+  <data name="电流" xml:space="preserve">
+    <value>Courant</value>
+  </data>
+  <data name="类型" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="源值" xml:space="preserve">
+    <value>Valeur source</value>
+  </data>
+  <data name="SelfCheck" xml:space="preserve">
+    <value>Gris 255</value>
+  </data>
+  <data name="限量程" xml:space="preserve">
+    <value>Plage limite</value>
+  </data>
+  <data name="EQE" xml:space="preserve">
+    <value>Spectre&amp;EQE</value>
+  </data>
+  <data name="ALL" xml:space="preserve">
+    <value>Tous</value>
+  </data>
+  <data name="CSV" xml:space="preserve">
+    <value>CSV</value>
+  </data>
+  <data name="TIF" xml:space="preserve">
+    <value>TIF</value>
+  </data>
+  <data name="源量程" xml:space="preserve">
+    <value>Plage source</value>
+  </data>
+  <data name="校正2" xml:space="preserve">
+    <value>Correction+POI temps réel</value>
+  </data>
+  <data name="Bit16" xml:space="preserve">
+    <value>Bit16</value>
+  </data>
+  <data name="Black" xml:space="preserve">
+    <value>Écran noir</value>
+  </data>
+  <data name="CV2LVChannel" xml:space="preserve">
+    <value>CV2LVChannel</value>
+  </data>
+  <data name="关注点分析_SMU" xml:space="preserve">
+    <value>Analyse POI-IVL</value>
+  </data>
+  <data name="自定义电压/流" xml:space="preserve">
+    <value>V/I personnalisé</value>
+  </data>
+  <data name="自动量程" xml:space="preserve">
+    <value>Plage auto</value>
+  </data>
+  <data name="03_3 Image" xml:space="preserve">
+    <value>03_3 Image</value>
+  </data>
+  <data name="色差校正" xml:space="preserve">
+    <value>Correction ColorDiff</value>
+  </data>
+  <data name="灰尘检测及修补" xml:space="preserve">
+    <value>Détection/réparation de poussière OLED</value>
+  </data>
+  <data name="通用传感器-指令" xml:space="preserve">
+    <value>Capteur générique-Commande</value>
+  </data>
+  <data name="通用传感器-模板" xml:space="preserve">
+    <value>Capteur générique-Modèle</value>
+  </data>
+  <data name="源表扫描-模板" xml:space="preserve">
+    <value>Balayage source-Modèle</value>
+  </data>
+  <data name="12 第三方算法" xml:space="preserve">
+    <value>12 Algorithme tiers</value>
+  </data>
+  <data name="StartV5_MQTT" xml:space="preserve">
+    <value>StartV5_MQTT</value>
+  </data>
+  <data name="Bit8" xml:space="preserve">
+    <value>Bit8</value>
+  </data>
 </root>

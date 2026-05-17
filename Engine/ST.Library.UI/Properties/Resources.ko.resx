@@ -915,4 +915,130 @@
   <data name="源表[CSV]" xml:space="preserve">
     <value>원본 테이블 - CSV</value>
   </data>
+  <data name="等待时间" xml:space="preserve">
+    <value>대기 시간</value>
+  </data>
+  <data name="指令延时" xml:space="preserve">
+    <value>명령 지연</value>
+  </data>
+  <data name="指令超时" xml:space="preserve">
+    <value>명령 시간 초과</value>
+  </data>
+  <data name="指令重试" xml:space="preserve">
+    <value>명령 재시도</value>
+  </data>
+  <data name="提取模板" xml:space="preserve">
+    <value>추출 템플릿</value>
+  </data>
+  <data name="源表扫描" xml:space="preserve">
+    <value>소스 테이블 스캔</value>
+  </data>
+  <data name="源表结果" xml:space="preserve">
+    <value>소스 테이블 결과</value>
+  </data>
+  <data name="图像转换" xml:space="preserve">
+    <value>이미지 변환</value>
+  </data>
+  <data name="图像格式" xml:space="preserve">
+    <value>이미지 형식</value>
+  </data>
+  <data name="图像名称" xml:space="preserve">
+    <value>이미지 이름</value>
+  </data>
+  <data name="定位模板" xml:space="preserve">
+    <value>위치 템플릿</value>
+  </data>
+  <data name="修正系数" xml:space="preserve">
+    <value>보정 계수</value>
+  </data>
+  <data name="03_3 校正" xml:space="preserve">
+    <value>03_3 보정</value>
+  </data>
+  <data name="保存CIE文件" xml:space="preserve">
+    <value>CIE 파일 저장</value>
+  </data>
+  <data name="EndV5Node" xml:space="preserve">
+    <value>EndV5Node</value>
+  </data>
+  <data name="电压" xml:space="preserve">
+    <value>전압</value>
+  </data>
+  <data name="电流" xml:space="preserve">
+    <value>전류</value>
+  </data>
+  <data name="类型" xml:space="preserve">
+    <value>유형</value>
+  </data>
+  <data name="源值" xml:space="preserve">
+    <value>소스 값</value>
+  </data>
+  <data name="SelfCheck" xml:space="preserve">
+    <value>그레이255</value>
+  </data>
+  <data name="限量程" xml:space="preserve">
+    <value>제한 범위</value>
+  </data>
+  <data name="EQE" xml:space="preserve">
+    <value>스펙트럼&amp;EQE</value>
+  </data>
+  <data name="ALL" xml:space="preserve">
+    <value>모두</value>
+  </data>
+  <data name="CSV" xml:space="preserve">
+    <value>CSV</value>
+  </data>
+  <data name="TIF" xml:space="preserve">
+    <value>TIF</value>
+  </data>
+  <data name="源量程" xml:space="preserve">
+    <value>소스 범위</value>
+  </data>
+  <data name="校正2" xml:space="preserve">
+    <value>보정+실시간 POI</value>
+  </data>
+  <data name="Bit16" xml:space="preserve">
+    <value>Bit16</value>
+  </data>
+  <data name="Black" xml:space="preserve">
+    <value>흑화면</value>
+  </data>
+  <data name="CV2LVChannel" xml:space="preserve">
+    <value>CV2LVChannel</value>
+  </data>
+  <data name="关注点分析_SMU" xml:space="preserve">
+    <value>POI 분석-IVL</value>
+  </data>
+  <data name="自定义电压/流" xml:space="preserve">
+    <value>사용자 V/I</value>
+  </data>
+  <data name="自动量程" xml:space="preserve">
+    <value>자동 범위</value>
+  </data>
+  <data name="03_3 Image" xml:space="preserve">
+    <value>03_3 이미지</value>
+  </data>
+  <data name="色差校正" xml:space="preserve">
+    <value>ColorDiff 보정</value>
+  </data>
+  <data name="灰尘检测及修补" xml:space="preserve">
+    <value>OLED 먼지 검출/보정</value>
+  </data>
+  <data name="通用传感器-指令" xml:space="preserve">
+    <value>범용 센서-명령</value>
+  </data>
+  <data name="通用传感器-模板" xml:space="preserve">
+    <value>범용 센서-템플릿</value>
+  </data>
+  <data name="源表扫描-模板" xml:space="preserve">
+    <value>소스 테이블 스캔-템플릿</value>
+  </data>
+  <data name="12 第三方算法" xml:space="preserve">
+    <value>12 제3자 알고리즘</value>
+  </data>
+  <data name="StartV5_MQTT" xml:space="preserve">
+    <value>StartV5_MQTT</value>
+  </data>
+  <data name="Bit8" xml:space="preserve">
+    <value>Bit8</value>
+  </data>
 </root>

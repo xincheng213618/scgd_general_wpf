@@ -316,7 +316,7 @@
     <value>Открыть</value>
   </data>
   <data name="OK" xml:space="preserve">
-    <value>Конечно</value>
+    <value>ОК</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>Похожие товары не найдены</value>
@@ -460,16 +460,16 @@
     <value>Алгоритм(А)</value>
   </data>
   <data name="Manager" xml:space="preserve">
-    <value>управлять</value>
+    <value>Управление</value>
   </data>
   <data name="Male" xml:space="preserve">
     <value>Мужчина</value>
   </data>
   <data name="Local" xml:space="preserve">
-    <value>местный</value>
+    <value>Локальный</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>нагрузка</value>
+    <value>Загрузка</value>
   </data>
   <data name="LicenseManagement" xml:space="preserve">
     <value>Управление лицензиями</value>
@@ -490,7 +490,7 @@
     <value>информация</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
-    <value>Лицензия на импорт</value>
+    <value>Импорт лицензии</value>
   </data>
   <data name="Import" xml:space="preserve">
     <value>Импортировать</value>
@@ -505,7 +505,7 @@
     <value>Файлы изображений</value>
   </data>
   <data name="Host" xml:space="preserve">
-    <value>Хозяин</value>
+    <value>Хост</value>
   </data>
   <data name="HistoryCache" xml:space="preserve">
     <value>кэш истории</value>
@@ -526,7 +526,7 @@
     <value>фильтр</value>
   </data>
   <data name="File" xml:space="preserve">
-    <value>документ</value>
+    <value>Файл</value>
   </data>
   <data name="Female" xml:space="preserve">
     <value>женский</value>
@@ -622,7 +622,7 @@
     <value>Создать устройство</value>
   </data>
   <data name="Create" xml:space="preserve">
-    <value>создавать</value>
+    <value>Создать</value>
   </data>
   <data name="CopySerialNumber" xml:space="preserve">
     <value>Скопировать серийный номер</value>
@@ -649,7 +649,7 @@
     <value>Код</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>закрытие</value>
+    <value>Закрыть</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>Очистить данные</value>
@@ -658,7 +658,7 @@
     <value>очистить кэш</value>
   </data>
   <data name="Clear" xml:space="preserve">
-    <value>Прозрачный</value>
+    <value>Очистить</value>
   </data>
   <data name="Chart" xml:space="preserve">
     <value>диаграмма</value>
@@ -862,7 +862,7 @@
     <value>Настройки шаблона алгоритма, связанные с фокусом</value>
   </data>
   <data name="Service" xml:space="preserve">
-    <value>Служить</value>
+    <value>Сервис</value>
   </data>
   <data name="RefreshDeviceList" xml:space="preserve">
     <value>Обновить список устройств</value>
@@ -883,7 +883,7 @@
     <value>Среднее количество раз</value>
   </data>
   <data name="Flip" xml:space="preserve">
-    <value>Подбросить</value>
+    <value>Отразить</value>
   </data>
   <data name="UseHDR" xml:space="preserve">
     <value>Включить HDR</value>
@@ -961,7 +961,7 @@
     <value>Управление анализом</value>
   </data>
   <data name="Parsing" xml:space="preserve">
-    <value>Анализ</value>
+    <value>Парсинг</value>
   </data>
   <data name="Camera" xml:space="preserve">
     <value>камера</value>
@@ -1180,7 +1180,7 @@
     <value>Выключить питание</value>
   </data>
   <data name="Up" xml:space="preserve">
-    <value>начальство</value>
+    <value>Вверх</value>
   </data>
   <data name="Down" xml:space="preserve">
     <value>Вниз</value>
@@ -1270,7 +1270,7 @@
     <value>Конфигурация файла</value>
   </data>
   <data name="CalibrationFile" xml:space="preserve">
-    <value>Корректирующие документы</value>
+    <value>Файл калибровки</value>
   </data>
   <data name="CameraType" xml:space="preserve">
     <value>Модель камеры</value>
@@ -1399,13 +1399,13 @@
     <value>Удалить группу</value>
   </data>
   <data name="ExportCalibration" xml:space="preserve">
-    <value>Экспортная коррекция</value>
+    <value>Экспорт калибровки</value>
   </data>
   <data name="CreateCalibration" xml:space="preserve">
-    <value>Создать исправление</value>
+    <value>Создать калибровку</value>
   </data>
   <data name="ExpTime" xml:space="preserve">
-    <value>контакт</value>
+    <value>Время экспозиции</value>
   </data>
   <data name="Focus" xml:space="preserve">
     <value>фокусное расстояние</value>
@@ -1417,7 +1417,7 @@
     <value>Выбранный</value>
   </data>
   <data name="DarkNoise" xml:space="preserve">
-    <value>темный шум</value>
+    <value>Темновой шум</value>
   </data>
   <data name="DefectPoint" xml:space="preserve">
     <value>Дефекты</value>
@@ -1429,10 +1429,10 @@
     <value>искажение</value>
   </data>
   <data name="Uniformity" xml:space="preserve">
-    <value>Равномерное поле</value>
+    <value>Равномерность</value>
   </data>
   <data name="ColorDiff" xml:space="preserve">
-    <value>ColorDiff</value>
+    <value>Цветовая разница</value>
   </data>
   <data name="Brightness" xml:space="preserve">
     <value>яркость</value>
@@ -1447,10 +1447,10 @@
     <value>Многоцветный</value>
   </data>
   <data name="CalibrationFileManagement" xml:space="preserve">
-    <value>Управление файлами исправлений</value>
+    <value>Управление файлами калибровки</value>
   </data>
   <data name="UploadCalibrationGroup" xml:space="preserve">
-    <value>Загрузить группу исправлений</value>
+    <value>Загрузить группу калибровки</value>
   </data>
   <data name="CalibrationGroupManagement" xml:space="preserve">
     <value>Управление калибровочной группой</value>
@@ -1462,13 +1462,13 @@
     <value>Настройки параметров калибровки</value>
   </data>
   <data name="EditCalibration" xml:space="preserve">
-    <value>Редактировать файл исправлений</value>
+    <value>Редактировать файл калибровки</value>
   </data>
   <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
     <value>Перед использованием калибровки настройте соответствующую физическую камеру.</value>
   </data>
   <data name="CalibrationViewSettings" xml:space="preserve">
-    <value>Правильная конфигурация представления</value>
+    <value>Настройки вида калибровки</value>
   </data>
   <data name="ShowList" xml:space="preserve">
     <value>Показать список</value>
@@ -1660,10 +1660,10 @@
     <value>Ломаная линия</value>
   </data>
   <data name="Value" xml:space="preserve">
-    <value>ценить</value>
+    <value>Значение</value>
   </data>
   <data name="Circle" xml:space="preserve">
-    <value>круглый</value>
+    <value>Круг</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
     <value>Редактор фокуса</value>
@@ -1864,7 +1864,7 @@
     <value>Отображение столбцов данных</value>
   </data>
   <data name="Operation" xml:space="preserve">
-    <value>работать</value>
+    <value>Операция</value>
   </data>
   <data name="OpenFailed" xml:space="preserve">
     <value>Не удалось открыть</value>
