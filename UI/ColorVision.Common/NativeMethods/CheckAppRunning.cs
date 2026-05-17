@@ -59,7 +59,7 @@ namespace ColorVision.Common.NativeMethods
             SetForegroundWindow(hwnd);
             FLASHWINFO fLASHWINFO = new()
             {
-                cbSize = Convert.ToUInt32(Marshal.SizeOf(typeof(FLASHWINFO))),
+                cbSize = Convert.ToUInt32(Marshal.SizeOf<FLASHWINFO>()),
                 dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG,
                 hwnd = hwnd,
                 uCount = UInt32.MaxValue,
@@ -106,7 +106,7 @@ namespace ColorVision.Common.NativeMethods
                         SetForegroundWindow(hwnd);
                         FLASHWINFO fLASHWINFO = new()
                         {
-                            cbSize = Convert.ToUInt32(Marshal.SizeOf(typeof(FLASHWINFO))),
+                            cbSize = Convert.ToUInt32(Marshal.SizeOf<FLASHWINFO>()),
                             dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG,
                             hwnd = hwnd,
                             uCount = UInt32.MaxValue,

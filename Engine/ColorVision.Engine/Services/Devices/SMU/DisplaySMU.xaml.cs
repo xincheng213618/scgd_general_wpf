@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             ComboxVITemplate.ItemsSource = TemplateSMUParam.Params;
             ComboxVITemplate.SelectedIndex = 0;
 
-            CbChannel.ItemsSource = Enum.GetValues(typeof(SMUChannelType));
+            CbChannel.ItemsSource = Enum.GetValues<SMUChannelType>();
             this.AddViewConfig(View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }

@@ -41,7 +41,7 @@ namespace ColorVision.Themes
                 Style = PropertyEditorHelper.ComboBoxSmallStyle,
                 DisplayMemberPath = "Value",
                 SelectedValuePath = "Key",
-                ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
+                ItemsSource = from e1 in Enum.GetValues<Theme>().Cast<Theme>()
                               select new KeyValuePair<Theme, string>(e1, Resources.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture) ?? "")
             };
 

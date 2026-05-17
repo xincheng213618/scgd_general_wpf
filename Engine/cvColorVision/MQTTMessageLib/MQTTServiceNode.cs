@@ -36,7 +36,7 @@ public class MQTTServiceNode
 	public MQTTServiceNode(MQTTNodeServiceRegist reg, NodeToken token)
 	{
 		NodeName = reg.NodeName;
-		ServiceType = (CVServiceType)Enum.Parse(typeof(CVServiceType), reg.ServiceType, ignoreCase: true);
+		ServiceType = Enum.Parse<CVServiceType>(reg.ServiceType, ignoreCase: true);
 		NodeAppId = reg.NodeAppId;
 		NodeKey = reg.NodeKey;
 		NodeTopic = reg.NodeTopic;
@@ -51,7 +51,7 @@ public class MQTTServiceNode
 	public MQTTServiceNode(string RCNodeName, string nodeName, string serviceType, string nodeAppId, string nodeKey, int heartbeatTime, bool NHBIsDebugOut)
 	{
 		NodeName = MQTTRCServiceTypeConst.BuildNodeName(serviceType, nodeName);
-		ServiceType = (CVServiceType)Enum.Parse(typeof(CVServiceType), serviceType, ignoreCase: true);
+		ServiceType = Enum.Parse<CVServiceType>(serviceType, ignoreCase: true);
 		NodeAppId = nodeAppId;
 		NodeKey = nodeKey;
 		NodeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName, RCNodeName);

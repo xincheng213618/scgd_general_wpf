@@ -136,7 +136,7 @@ namespace Spectrum
             StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum");
 
             InitializeCieDiagramViews();
-            ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
+            ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues<SpectrometerType>().Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
 
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);

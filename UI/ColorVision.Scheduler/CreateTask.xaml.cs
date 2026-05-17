@@ -21,7 +21,7 @@ namespace ColorVision.Scheduler
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ComboBoxMode.ItemsSource = from e1 in Enum.GetValues(typeof(JobExecutionMode)).Cast<JobExecutionMode>()
+            ComboBoxMode.ItemsSource = from e1 in Enum.GetValues<JobExecutionMode>().Cast<JobExecutionMode>()
                                        select new KeyValuePair<JobExecutionMode, string>(e1, e1.ToString());
 
             TaskComboBox.ItemsSource = QuartzSchedulerManager.GetInstance().Jobs;
@@ -111,7 +111,7 @@ namespace ColorVision.Scheduler
         {
             if (sender is ComboBox comboBox)
             {
-                comboBox.ItemsSource = from e1 in Enum.GetValues(typeof(JobRepeatMode)).Cast<JobRepeatMode>()
+                comboBox.ItemsSource = from e1 in Enum.GetValues<JobRepeatMode>().Cast<JobRepeatMode>()
                                        select new KeyValuePair<string,JobRepeatMode>(e1.ToDescription(), e1);
             }
         }

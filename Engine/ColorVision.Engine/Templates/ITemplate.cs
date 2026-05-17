@@ -23,11 +23,8 @@ namespace ColorVision.Engine.Templates
     {
         public ITemplate()
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                Name = Name?? Code ?? this.GetType().ToString();
-                TemplateControl.AddITemplateInstance(Name, this);
-            });
+            Name = Name ?? Code ?? this.GetType().ToString();
+            TemplateControl.AddITemplateInstance(Name, this);
         }
 
         public int TemplateDicId { get; set; } = -1;

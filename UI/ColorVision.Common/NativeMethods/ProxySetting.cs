@@ -75,7 +75,7 @@ namespace ColorVision.Common.NativeMethods
 
         static InternetConnectionOption()
         {
-            Size = Marshal.SizeOf(typeof(InternetConnectionOption));
+            Size = Marshal.SizeOf<InternetConnectionOption>();
         }
 
         // Nested Types
@@ -209,7 +209,7 @@ namespace ColorVision.Common.NativeMethods
             list.dwOptionCount = options.Length;
             list.dwOptionError = 0;
 
-            int optSize = Marshal.SizeOf(typeof(InternetConnectionOption));
+            int optSize = Marshal.SizeOf<InternetConnectionOption>();
             // make a pointer out of all that ...
             IntPtr optionsPtr = Marshal.AllocCoTaskMem(optSize * options.Length); // !! remember to deallocate memory 4
             // copy the array over into that spot in memory ...
@@ -280,17 +280,17 @@ namespace ColorVision.Common.NativeMethods
             int entries = 0;
             // attempt to query with 1 entry buffer
             RASENTRYNAME[] rasEntryNames = new RASENTRYNAME[1];
-            int bufferSize = Marshal.SizeOf(typeof(RASENTRYNAME));
-            rasEntryNames[0].dwSize = Marshal.SizeOf(typeof(RASENTRYNAME));
+            int bufferSize = Marshal.SizeOf<RASENTRYNAME>();
+            rasEntryNames[0].dwSize = Marshal.SizeOf<RASENTRYNAME>();
 
             uint result = NativeMethods.RasEnumEntries(null, null, rasEntryNames, ref bufferSize, ref entries);
             // increase buffer if the buffer is not large enough
             if (result == (uint)ErrorCode.ERROR_BUFFER_TOO_SMALL)
             {
-                rasEntryNames = new RASENTRYNAME[bufferSize / Marshal.SizeOf(typeof(RASENTRYNAME))];
+                rasEntryNames = new RASENTRYNAME[bufferSize / Marshal.SizeOf<RASENTRYNAME>()];
                 for (int i = 0; i < rasEntryNames.Length; i++)
                 {
-                    rasEntryNames[i].dwSize = Marshal.SizeOf(typeof(RASENTRYNAME));
+                    rasEntryNames[i].dwSize = Marshal.SizeOf<RASENTRYNAME>();
                 }
 
                 result = NativeMethods.RasEnumEntries(null, null, rasEntryNames, ref bufferSize, ref entries);

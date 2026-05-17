@@ -329,7 +329,7 @@ namespace ColorVision.Common.NativeMethods
                     while (true)
                     {
                         SP_DEVINFO_DATA deviceInfoData = new SP_DEVINFO_DATA();
-                        deviceInfoData.cbSize = (uint)Marshal.SizeOf(typeof(SP_DEVINFO_DATA));
+                        deviceInfoData.cbSize = (uint)Marshal.SizeOf<SP_DEVINFO_DATA>();
                         bool success = SetupDiEnumDeviceInfo(hDeviceInfoSet, iMemberIndex, ref deviceInfoData);
                         if (!success)
                         {

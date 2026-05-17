@@ -59,14 +59,14 @@ public class FormSpectumParam : Form, ILoopFormProperty
 	private void FormSpectumParam_Load(object sender, EventArgs e)
 	{
 		dialog.Load(JsonValue);
-		comboBox_cmd.DataSource = Enum.GetNames(typeof(SPCommCmdType));
+		comboBox_cmd.DataSource = Enum.GetNames<SPCommCmdType>();
 		comboBox_cmd.SelectedIndex = 0;
 	}
 
 	private void button_add_Click(object sender, EventArgs e)
 	{
 		SpectrumNodeProperty spectrumNodeProperty = new SpectrumNodeProperty();
-		spectrumNodeProperty.Cmd = (SPCommCmdType)Enum.Parse(typeof(SPCommCmdType), comboBox_cmd.Text);
+		spectrumNodeProperty.Cmd = Enum.Parse<SPCommCmdType>(comboBox_cmd.Text);
 		if (comboBox_cmd.SelectedIndex == 0)
 		{
 			spectrumNodeProperty.Data = new SpectrumParamData();
@@ -115,7 +115,7 @@ public class FormSpectumParam : Form, ILoopFormProperty
 	private void button_insert_Click(object sender, EventArgs e)
 	{
 		SpectrumNodeProperty spectrumNodeProperty = new SpectrumNodeProperty();
-		spectrumNodeProperty.Cmd = (SPCommCmdType)Enum.Parse(typeof(SPCommCmdType), comboBox_cmd.Text);
+		spectrumNodeProperty.Cmd = Enum.Parse<SPCommCmdType>(comboBox_cmd.Text);
 		if (comboBox_cmd.SelectedIndex == 0)
 		{
 			spectrumNodeProperty.Data = new SpectrumParamData();

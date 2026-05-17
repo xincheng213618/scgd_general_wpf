@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.Ghost
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateGhost.Params;
             ComboxTemplate.SelectedIndex = 0;
-            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues<CVOLEDCOLOR>().Cast<CVOLEDCOLOR>()
                                             select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
             ComboxCVOLEDCOLOR.SelectedIndex = 0;
 

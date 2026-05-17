@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             Device.DService.ReLoadCategoryLib();
 
-            CH341_Stream_SpeedComboBox.ItemsSource = Enum.GetValues(typeof(CH341_Stream_Speed));
+            CH341_Stream_SpeedComboBox.ItemsSource = Enum.GetValues<CH341_Stream_Speed>();
 
             pgCategory.SelectionChanged += (s, e) =>
             {

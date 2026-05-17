@@ -70,7 +70,7 @@ namespace Conoscope.MVS
             ImageDisplayHost.Children.Add(imgDisplay);
             imgDisplay.ImageShow.AddOverlayVisual(gratingOverlay);
             imgDisplay.Zoombox1.ContentMatrixChanged += ImageDisplay_ContentMatrixChanged;
-            cbPixelType.ItemsSource = Enum.GetValues(typeof(PixelType));
+            cbPixelType.ItemsSource = Enum.GetValues<PixelType>();
             SelectGratingDiameter(MVSViewManager.Config.SelectedGratingDiameterMillimeters);
             UpdateGratingOverlay();
 
@@ -293,7 +293,7 @@ namespace Conoscope.MVS
             // ch:在窗体列表中显示设备名 | en:Display device name in the form list
             for (int i = 0; i < m_stDeviceList.nDeviceNum; i++)
             {
-                MyCamera.MV_CC_DEVICE_INFO device = (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(m_stDeviceList.pDeviceInfo[i], typeof(MyCamera.MV_CC_DEVICE_INFO));
+                MyCamera.MV_CC_DEVICE_INFO device = Marshal.PtrToStructure<MV_CC_DEVICE_INFO>(m_stDeviceList.pDeviceInfo[i]);
                 string strUserDefinedName = "";
 
                 if (device.nTLayerType == MyCamera.MV_GIGE_DEVICE)
@@ -363,8 +363,7 @@ namespace Conoscope.MVS
 
             // ch:获取选择的设备信息 | en:Get selected device information
             MyCamera.MV_CC_DEVICE_INFO device =
-                (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(m_stDeviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
-                                                              typeof(MyCamera.MV_CC_DEVICE_INFO));
+                Marshal.PtrToStructure<MV_CC_DEVICE_INFO>(m_stDeviceList.pDeviceInfo[cbDeviceList.SelectedIndex]);
 
             // ch:打开设备 | en:Open device
             if (null == m_MyCamera)

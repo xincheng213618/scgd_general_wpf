@@ -268,7 +268,7 @@ namespace ColorVision.Engine.Services.RC
                         if (devNew == null) continue;
                         MQTTServiceBase mQTTServiceBase = baseChannel.GetMQTTService();
                         if (mQTTServiceBase == null) continue;
-                        mQTTServiceBase.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
+                        mQTTServiceBase.DeviceStatus = Enum.Parse<DeviceStatusType>(devNew.Status);
                         mQTTServiceBase.LastAliveTime = lastLive;
                     }
                 }

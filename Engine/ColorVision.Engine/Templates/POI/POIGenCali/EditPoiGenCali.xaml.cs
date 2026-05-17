@@ -26,46 +26,46 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
             // X Configuration
-            CobXGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>()
+            CobXGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>()
                                       select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobXGenType.SelectedIndex = 0;
 
             // Y Configuration
-            CobYGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>()
+            CobYGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>()
                                       select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobYGenType.SelectedIndex = 0;
 
             // Z Configuration
-            CobZGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>()
+            CobZGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>()
                                       select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobZGenType.SelectedIndex = 0;
 
             // x Configuration
-            CobxGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>()
+            CobxGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>()
                                       select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobxGenType.SelectedIndex = 0;
 
             // y Configuration
-            CobyGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>()
+            CobyGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>()
                                       select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobyGenType.SelectedIndex = 0;
 
             // u Configuration
-            CobuGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>()
+            CobuGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>()
                                       select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobuGenType.SelectedIndex = 0;
 
             // v Configuration
-            CobvGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>()
+            CobvGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>()
                                       select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobvGenType.SelectedIndex = 0;
 
 
-            CobLabGenType.ItemsSource = from e1 in Enum.GetValues(typeof(GenType)).Cast<GenType>() 
+            CobLabGenType.ItemsSource = from e1 in Enum.GetValues<GenType>().Cast<GenType>() 
                                         select new KeyValuePair<GenType, string>(e1, e1.ToDescription());
             CobLabGenType.SelectedIndex = 0;
 
-            CobGenCalibrationType.ItemsSource = from e1 in Enum.GetValues(typeof(GenCalibrationType)).Cast<GenCalibrationType>()
+            CobGenCalibrationType.ItemsSource = from e1 in Enum.GetValues<GenCalibrationType>().Cast<GenCalibrationType>()
                                                 select new KeyValuePair<GenCalibrationType, string>(e1, e1.ToDescription());
             CobGenCalibrationType.SelectedIndex = 0;
         }

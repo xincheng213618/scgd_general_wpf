@@ -42,7 +42,7 @@ namespace ColorVision.Common.NativeMethods
         {
             SHELLEXECUTEINFO info = new SHELLEXECUTEINFO
             {
-                cbSize = Marshal.SizeOf(typeof(SHELLEXECUTEINFO)),
+                cbSize = Marshal.SizeOf<SHELLEXECUTEINFO>(),
                 fMask = SEE_MASK_INVOKEIDLIST,
                 hwnd = IntPtr.Zero,
                 lpVerb = "properties",

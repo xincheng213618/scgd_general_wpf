@@ -30,11 +30,11 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             ComboxTemplate.ItemsSource = TemplateLedCheck2.Params;
             ComboxTemplate.SelectedIndex = 0;
 
-            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues<CVOLEDCOLOR>().Cast<CVOLEDCOLOR>()
                                             select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
             ComboxCVOLEDCOLOR.SelectedIndex = 0;
 
-            ComboxFDAType.ItemsSource = from e1 in Enum.GetValues(typeof(FlowEngineLib.Algorithm.CVOLED_FDAType)).Cast<FlowEngineLib.Algorithm.CVOLED_FDAType>()
+            ComboxFDAType.ItemsSource = from e1 in Enum.GetValues<FlowEngineLib.Algorithm.CVOLED_FDAType>().Cast<FlowEngineLib.Algorithm.CVOLED_FDAType>()
                                         select new KeyValuePair<string, FlowEngineLib.Algorithm.CVOLED_FDAType>(e1.ToString(), e1);
             ComboxFDAType.SelectedIndex = 0;
 
