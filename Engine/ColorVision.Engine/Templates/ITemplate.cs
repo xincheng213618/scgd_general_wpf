@@ -18,6 +18,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates
 {
+
     public class ITemplate
     {
         public ITemplate()
