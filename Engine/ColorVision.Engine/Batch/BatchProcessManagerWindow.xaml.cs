@@ -160,7 +160,7 @@ namespace ColorVision.Engine.Batch
             }
         }
 
-        private void SelectedMeta_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void SelectedMeta_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             // Refresh when BatchProcess changes (which may change the config)
             if (e.PropertyName == nameof(BatchProcessMeta.BatchProcess))
