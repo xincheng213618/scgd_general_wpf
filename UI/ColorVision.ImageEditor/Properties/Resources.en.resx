@@ -121,10 +121,10 @@
     <value>Zoom</value>
   </data>
   <data name="ZoomIn" xml:space="preserve">
-    <value>ZoomIn</value>
+    <value>Zoom In</value>
   </data>
   <data name="ZoomOut" xml:space="preserve">
-    <value>ZoomOut</value>
+    <value>Zoom Out</value>
   </data>
   <data name="ZoomNone" xml:space="preserve">
     <value>Original</value>
@@ -151,19 +151,19 @@
     <value>Rotate Right</value>
   </data>
   <data name="FlipHorizontal" xml:space="preserve">
-    <value>Flip_Horizontal</value>
+    <value>Flip Horizontal</value>
   </data>
   <data name="FlipVertical" xml:space="preserve">
-    <value>Flip_Vertical</value>
+    <value>Flip Vertical</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
-    <value>Fullscreen</value>
+    <value>Full Screen</value>
   </data>
   <data name="Print" xml:space="preserve">
     <value>Print</value>
   </data>
   <data name="SaveAsImage" xml:space="preserve">
-    <value>screenshot</value>
+    <value>Save as Image</value>
   </data>
   <data name="BitmapScalingMode" xml:space="preserve">
     <value>Bitmap Scaling Mode</value>

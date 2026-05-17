@@ -1747,7 +1747,7 @@
     <value>측정 속성</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>원래 값</value>
+    <value>시작 값</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>전류 곡선</value>

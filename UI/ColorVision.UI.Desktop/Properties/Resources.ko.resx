@@ -304,7 +304,7 @@
     <value>옵션</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>오픈로그폴더</value>
+    <value>로그 폴더 열기</value>
   </data>
   <data name="OpenContainingFolder" xml:space="preserve">
     <value>포함 폴더 열기</value>

@@ -1747,7 +1747,7 @@
     <value>測定属性</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>元の値</value>
+    <value>開始値</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>電流曲線</value>

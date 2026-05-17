@@ -592,7 +592,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 滤轮 的本地化字符串。
+        ///   查找类似 滤色轮 的本地化字符串。
         /// </summary>
         public static string FilterWheel {
             get {
@@ -610,7 +610,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 FixedLEDToFile 的本地化字符串。
+        ///   查找类似 固定LED到文件 的本地化字符串。
         /// </summary>
         public static string FixedLEDToFile {
             get {
@@ -781,7 +781,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 LoopNextNode 的本地化字符串。
+        ///   查找类似 循环下一节点 的本地化字符串。
         /// </summary>
         public static string LoopNextNode {
             get {
@@ -790,7 +790,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 LoopNode 的本地化字符串。
+        ///   查找类似 循环节点 的本地化字符串。
         /// </summary>
         public static string LoopNode {
             get {
@@ -1249,7 +1249,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Start_MQTT 的本地化字符串。
+        ///   查找类似 启动 MQTT 的本地化字符串。
         /// </summary>
         public static string Start_MQTT {
             get {

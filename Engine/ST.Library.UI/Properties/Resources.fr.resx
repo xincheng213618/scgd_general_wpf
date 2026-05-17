@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="LoopNode" xml:space="preserve">
-    <value>LoopNode</value>
+    <value>Nœud de boucle</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
     <value>Tension (V) / Courant (mA)</value>
@@ -301,7 +301,7 @@
     <value>033 Algorithmes tiers</value>
   </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>StartMQTT</value>
+    <value>Démarrer MQTT</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>Algorithme d'attention en temps réel</value>
@@ -691,7 +691,7 @@
     <value>Modèle de paramètres de caméra</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>BoucleNextNode</value>
+    <value>Nœud suivant de boucle</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>extrait</value>

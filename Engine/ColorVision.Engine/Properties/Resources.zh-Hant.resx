@@ -1750,7 +1750,7 @@
     <value>測量屬性</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>原值</value>
+    <value>起始值</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>電流曲線</value>

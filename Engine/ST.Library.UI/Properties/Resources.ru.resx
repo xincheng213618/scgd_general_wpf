@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="LoopNode" xml:space="preserve">
-    <value>LoopNode</value>
+    <value>Узел цикла</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
     <value>Напряжение (В) / Ток (мА)</value>
@@ -301,7 +301,7 @@
     <value>033 Сторонние алгоритмы</value>
   </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>StartMQTT</value>
+    <value>Запуск MQTT</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>Алгоритм внимания в реальном времени</value>
@@ -523,7 +523,7 @@
     <value>Значение отображения HUB</value>
   </data>
   <data name="FixedLEDToFile" xml:space="preserve">
-    <value>FixedLEDToFile</value>
+    <value>Фиксированный LED в файл</value>
   </data>
   <data name="逻辑与" xml:space="preserve">
     <value>Логическое И</value>
@@ -691,7 +691,7 @@
     <value>Шаблон параметров камеры</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>LoopNextNode</value>
+    <value>Следующий узел цикла</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>извлекать</value>

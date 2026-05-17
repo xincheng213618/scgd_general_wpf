@@ -691,7 +691,7 @@
     <value>カメラパラメータテンプレート</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>ループネクストノード</value>
+    <value>次のループノード</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>抽出する</value>

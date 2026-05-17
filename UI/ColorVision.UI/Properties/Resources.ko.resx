@@ -149,7 +149,7 @@
     <value>오픈 구성 폴더</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>오픈로그폴더</value>
+    <value>로그 폴더 열기</value>
   </data>
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>자동으로 아래쪽으로 스크롤</value>

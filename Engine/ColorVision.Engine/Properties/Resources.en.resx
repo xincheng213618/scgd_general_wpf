@@ -1750,7 +1750,7 @@
     <value>Measurement Type</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>LimitStart</value>
+    <value>Start Value</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>Current Curve</value>

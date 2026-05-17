@@ -304,7 +304,7 @@
     <value>Параметры</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>OpenLogFolder</value>
+    <value>Открыть папку журнала</value>
   </data>
   <data name="OpenContainingFolder" xml:space="preserve">
     <value>Открыть содержащую папку</value>

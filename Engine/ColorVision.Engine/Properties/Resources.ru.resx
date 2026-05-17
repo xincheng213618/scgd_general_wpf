@@ -1747,7 +1747,7 @@
     <value>Атрибуты измерения</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>Первоначальная стоимость</value>
+    <value>Начальное значение</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>Кривая тока</value>

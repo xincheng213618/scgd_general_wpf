@@ -149,7 +149,7 @@
     <value>Ouvrir le dossier de configuration</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>Dossier OpenLog</value>
+    <value>Ouvrir le dossier des journaux</value>
   </data>
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Faire défiler automatiquement vers le bas</value>

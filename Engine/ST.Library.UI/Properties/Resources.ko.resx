@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="LoopNode" xml:space="preserve">
-    <value>루프노드</value>
+    <value>루프 노드</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
     <value>전압(V) / 전류(mA)</value>
@@ -523,7 +523,7 @@
     <value>가치 표시 허브</value>
   </data>
   <data name="FixedLEDToFile" xml:space="preserve">
-    <value>FixedLEDToFile</value>
+    <value>고정 LED를 파일로</value>
   </data>
   <data name="逻辑与" xml:space="preserve">
     <value>논리와</value>
@@ -691,7 +691,7 @@
     <value>카메라 매개변수 템플릿</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>루프넥스트노드</value>
+    <value>다음 루프 노드</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>발췌</value>

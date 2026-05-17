@@ -43,7 +43,7 @@
     <value>LoopName</value>
   </data>
   <data name="LoopNode" xml:space="preserve">
-    <value>LoopNode</value>
+    <value>Loop Node</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
     <value>Voltage(V)/Current(mA)</value>
@@ -142,7 +142,7 @@
     <value>ImageFile</value>
   </data>
   <data name="图像拼接" xml:space="preserve">
-    <value>ImageCompound</value>
+    <value>Image Stitching</value>
   </data>
   <data name="图像翻转" xml:space="preserve">
     <value>ImageFlip</value>
@@ -226,7 +226,7 @@
     <value>03_3 TPAlgorithm</value>
   </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>Start_MQTT</value>
+    <value>Start MQTT</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>Real-POI</value>
@@ -262,7 +262,7 @@
     <value>OLED-AOI</value>
   </data>
   <data name="通用传感器" xml:space="preserve">
-    <value>GeneralSensor</value>
+    <value>General Sensor</value>
   </data>
   <data name="03_4 KB" xml:space="preserve">
     <value>03_4 KB</value>
@@ -448,7 +448,7 @@
     <value>DisplayHUB</value>
   </data>
   <data name="FixedLEDToFile" xml:space="preserve">
-    <value>FixedLEDToFile</value>
+    <value>Fixed LED to File</value>
   </data>
   <data name="逻辑与" xml:space="preserve">
     <value>LogicalAND</value>
@@ -526,7 +526,7 @@
     <value>EndValue</value>
   </data>
   <data name="滤色轮" xml:space="preserve">
-    <value>FilterWheel</value>
+    <value>Filter Wheel</value>
   </data>
   <data name="光谱仪" xml:space="preserve">
     <value>Spectrometer</value>
@@ -616,7 +616,7 @@
     <value>Camera Parameters Template</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>LoopNextNode</value>
+    <value>Loop Next Node</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>Extract</value>
@@ -691,7 +691,7 @@
     <value>OutPOITemp</value>
   </data>
   <data name="MessageText" xml:space="preserve">
-    <value>MessageText</value>
+    <value>Message Text</value>
   </data>
   <data name="OutFile" xml:space="preserve">
     <value>OutFile</value>
@@ -703,7 +703,7 @@
     <value>SMU-Template</value>
   </data>
   <data name="ImageCompound" xml:space="preserve">
-    <value>ImageCompound</value>
+    <value>Image Stitching</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
     <value>Camera+ND</value>
@@ -727,7 +727,7 @@
     <value>FixedLED</value>
   </data>
   <data name="GeneralSensor" xml:space="preserve">
-    <value>GeneralSensor</value>
+    <value>General Sensor</value>
   </data>
   <data name="自动对焦模板" xml:space="preserve">
     <value>AF-Temp</value>
@@ -754,7 +754,7 @@
     <value>Green channel exposure time (ms)</value>
   </data>
   <data name="FilterWheel" xml:space="preserve">
-    <value>FilterWheel</value>
+    <value>Filter Wheel</value>
   </data>
   <data name="KB输出" xml:space="preserve">
     <value>KB-Output</value>
@@ -946,10 +946,10 @@
     <value>OLED Dust Detection&amp;Repair</value>
   </data>
   <data name="通用传感器-指令" xml:space="preserve">
-    <value>GeneralSensor-Command</value>
+    <value>General Sensor - Command</value>
   </data>
   <data name="通用传感器-模板" xml:space="preserve">
-    <value>GeneralSensor-Temp</value>
+    <value>General Sensor - Template</value>
   </data>
   <data name="源表扫描-模板" xml:space="preserve">
     <value>SMU-Scan-Temp</value>

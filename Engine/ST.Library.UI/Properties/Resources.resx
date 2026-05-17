@@ -43,7 +43,7 @@
     <value>LoopName</value>
   </data>
   <data name="LoopNode" xml:space="preserve">
-    <value>LoopNode</value>
+    <value>循环节点</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
     <value>电压(V)/电流(mA)</value>
@@ -265,7 +265,7 @@
     <value>圆</value>
   </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>Start_MQTT</value>
+    <value>启动 MQTT</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>实时关注点算法</value>
@@ -526,7 +526,7 @@
     <value>值显示HUB</value>
   </data>
   <data name="FixedLEDToFile" xml:space="preserve">
-    <value>FixedLEDToFile</value>
+    <value>固定LED到文件</value>
   </data>
   <data name="限量程" xml:space="preserve">
     <value>限量程</value>
@@ -721,7 +721,7 @@
     <value>相机参数模板</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>LoopNextNode</value>
+    <value>循环下一节点</value>
   </data>
   <data name="CsvFileName" xml:space="preserve">
     <value>Csv文件名</value>
@@ -913,7 +913,7 @@
     <value>源表-CSV</value>
   </data>
   <data name="FilterWheel" xml:space="preserve">
-    <value>滤轮</value>
+    <value>滤色轮</value>
   </data>
   <data name="KB输出" xml:space="preserve">
     <value>KB输出</value>
