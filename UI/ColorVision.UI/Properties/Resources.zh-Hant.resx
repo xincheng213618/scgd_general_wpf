@@ -92,7 +92,7 @@
     <value>繁體中文</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
-    <value>跟随系统</value>
+    <value>跟隨系統</value>
   </data>
   <data name="LanguageResartSign" xml:space="preserve">
     <value>您必須重新啟動才能使用新的語言設定</value>
@@ -218,7 +218,7 @@
     <value>關閉(_C)</value>
   </data>
   <data name="IsAutoSelect" xml:space="preserve">
-    <value>自動選擇嗎</value>
+    <value>自動選擇</value>
   </data>
   <data name="MenuRedo" xml:space="preserve">
     <value>重新執行(_R)</value>
@@ -467,7 +467,7 @@
     <value>Socket管理視窗</value>
   </data>
   <data name="SortDefault" xml:space="preserve">
-    <value>SortDefault</value>
+    <value>預設排序</value>
   </data>
   <data name="SortByName" xml:space="preserve">
     <value>按名稱排序</value>

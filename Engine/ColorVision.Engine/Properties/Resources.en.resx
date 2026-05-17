@@ -238,7 +238,7 @@
     <value>Serial Number</value>
   </data>
   <data name="Sended" xml:space="preserve">
-    <value>Sended</value>
+    <value>Sent</value>
   </data>
   <data name="Send" xml:space="preserve">
     <value>Send</value>
@@ -496,13 +496,13 @@
     <value>Import</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
-    <value>ImageSource</value>
+    <value>Image Source</value>
   </data>
   <data name="ImageInfo" xml:space="preserve">
-    <value>ImageInfo</value>
+    <value>Image Info</value>
   </data>
   <data name="ImageFile" xml:space="preserve">
-    <value>ImageFile</value>
+    <value>Image File</value>
   </data>
   <data name="Host" xml:space="preserve">
     <value>Host</value>
@@ -787,7 +787,7 @@
     <value>Create Date</value>
   </data>
   <data name="IsEnable" xml:space="preserve">
-    <value>IsEnable</value>
+    <value>Enabled</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>E_ngine</value>
@@ -1174,10 +1174,10 @@
     <value>Serial communication</value>
   </data>
   <data name="PowerOn" xml:space="preserve">
-    <value>PowerOn</value>
+    <value>Power On</value>
   </data>
   <data name="PowerOff" xml:space="preserve">
-    <value>PowerOff</value>
+    <value>Power Off</value>
   </data>
   <data name="Up" xml:space="preserve">
     <value>Up</value>
@@ -1210,7 +1210,7 @@
     <value>Sensor configuration information</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
-    <value>IPAddress</value>
+    <value>IP Address</value>
   </data>
   <data name="Serial" xml:space="preserve">
     <value>Serial</value>
@@ -1417,13 +1417,13 @@
     <value>Selected</value>
   </data>
   <data name="DarkNoise" xml:space="preserve">
-    <value>DarkNoise</value>
+    <value>Dark Noise</value>
   </data>
   <data name="DefectPoint" xml:space="preserve">
-    <value>DefectPoint</value>
+    <value>Defect Point</value>
   </data>
   <data name="ColorShift" xml:space="preserve">
-    <value>ColorShift</value>
+    <value>Color Shift</value>
   </data>
   <data name="Distortion" xml:space="preserve">
     <value>Distortion</value>
@@ -1432,16 +1432,16 @@
     <value>Uniformity</value>
   </data>
   <data name="ColorDiff" xml:space="preserve">
-    <value>ColorDiff</value>
+    <value>Color Difference</value>
   </data>
   <data name="Brightness" xml:space="preserve">
     <value>Brightness</value>
   </data>
   <data name="OneColor" xml:space="preserve">
-    <value>OneColor</value>
+    <value>Single Color</value>
   </data>
   <data name="FourColor" xml:space="preserve">
-    <value>FourColor</value>
+    <value>Four Color</value>
   </data>
   <data name="MultiColor" xml:space="preserve">
     <value>Multicolor</value>
@@ -1477,10 +1477,10 @@
     <value>Temperature data not obtained</value>
   </data>
   <data name="ListHeight" xml:space="preserve">
-    <value>ListHeight</value>
+    <value>List Height</value>
   </data>
   <data name="MaxNumber" xml:space="preserve">
-    <value>MaxNumber</value>
+    <value>Maximum Number</value>
   </data>
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>Do you want to save the current exposure configuration?</value>
@@ -1492,7 +1492,7 @@
     <value>An error occurred while querying temperature data.</value>
   </data>
   <data name="SzComName" xml:space="preserve">
-    <value>SzComName</value>
+    <value>COM Port</value>
   </data>
   <data name="RetryCount" xml:space="preserve">
     <value>Retry Count</value>
@@ -1510,7 +1510,7 @@
     <value>Sensor Dictionary Editing</value>
   </data>
   <data name="SMUView" xml:space="preserve">
-    <value>SMUView</value>
+    <value>SMU View</value>
   </data>
   <data name="UploadLic" xml:space="preserve">
     <value>Upload License</value>
@@ -1534,10 +1534,10 @@
     <value>Third-party algorithm view</value>
   </data>
   <data name="CaliTemplateManagerment" xml:space="preserve">
-    <value>CaliTemplateManagerment</value>
+    <value>Calibration Template Management</value>
   </data>
   <data name="CaliTemplateSet" xml:space="preserve">
-    <value>CaliTemplateSet</value>
+    <value>Calibration Template Settings</value>
   </data>
   <data name="DownLicOnline" xml:space="preserve">
     <value>Download License Online</value>
@@ -1555,7 +1555,7 @@
     <value>Default Canvas</value>
   </data>
   <data name="ImageImport" xml:space="preserve">
-    <value>ImageImport</value>
+    <value>Image Import</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
     <value>Import Latest Images</value>
@@ -1870,7 +1870,7 @@
     <value>Failed to open</value>
   </data>
   <data name="ImageFlip" xml:space="preserve">
-    <value>ImageFlip</value>
+    <value>Image Flip</value>
   </data>
   <data name="ParameterTemplate" xml:space="preserve">
     <value>Parameter template</value>
@@ -1882,7 +1882,7 @@
     <value>Storage Type</value>
   </data>
   <data name="POIFile" xml:space="preserve">
-    <value>POIFile</value>
+    <value>POI File</value>
   </data>
   <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
     <value>Calculate color temperature wavelength</value>
@@ -2023,7 +2023,7 @@
     <value>JND Template Management</value>
   </data>
   <data name="ImageEdit" xml:space="preserve">
-    <value>ImageEdit</value>
+    <value>Image Edit</value>
   </data>
   <data name="VerifyJson" xml:space="preserve">
     <value>Verify JSON</value>
@@ -2107,10 +2107,10 @@
     <value>Luminance (cd/m2)</value>
   </data>
   <data name="MsgLogWin" xml:space="preserve">
-    <value>MsgLogWin</value>
+    <value>Message Log Window</value>
   </data>
   <data name="PhySpectrum" xml:space="preserve">
-    <value>PhySpectrum</value>
+    <value>Physical Spectrometer</value>
   </data>
   <data name="ComplyPoint" xml:space="preserve">
     <value>Point</value>
@@ -2203,7 +2203,7 @@
     <value>First step</value>
   </data>
   <data name="StopStepSize" xml:space="preserve">
-    <value>StopStepSize</value>
+    <value>Stop Step Size</value>
   </data>
   <data name="Deprecated" xml:space="preserve">
     <value>Deprecated</value>
@@ -2383,7 +2383,7 @@
     <value>Database configuration</value>
   </data>
   <data name="RESTAddress" xml:space="preserve">
-    <value>RESTAddress</value>
+    <value>REST Address</value>
   </data>
   <data name="ServerMonitorConfig" xml:space="preserve">
     <value>Service monitoring configuration</value>
@@ -2398,7 +2398,7 @@
     <value>Default Save Path</value>
   </data>
   <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IvlCameraProcessing</value>
+    <value>IVL Camera Processing</value>
   </data>
   <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
     <value>Process only Camera data from IVL batches and export it.</value>
@@ -2410,7 +2410,7 @@
     <value>Process only Spectrum data from IVL batches and export</value>
   </data>
   <data name="LightBar" xml:space="preserve">
-    <value>LightBar</value>
+    <value>Light Bar</value>
   </data>
   <data name="Spectrometer" xml:space="preserve">
     <value>Spectrometer</value>
@@ -2443,7 +2443,7 @@
     <value>`true` indicates a voltage source, `false` indicates a current source.</value>
   </data>
   <data name="MeasureType" xml:space="preserve">
-    <value>MeasureType</value>
+    <value>Measurement Type</value>
   </data>
   <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
     <value>Voltage source, current source selection</value>
@@ -2473,10 +2473,10 @@
     <value>Processing...</value>
   </data>
   <data name="Is4Wire" xml:space="preserve">
-    <value>Is4Wire</value>
+    <value>Enable 4-Wire Mode</value>
   </data>
   <data name="IsFront" xml:space="preserve">
-    <value>IsFront</value>
+    <value>Enable Front Panel</value>
   </data>
   <data name="IVScanProcessing" xml:space="preserve">
     <value>IV Scan Processing</value>
@@ -2533,13 +2533,13 @@
     <value>Online</value>
   </data>
   <data name="Syncfreq" xml:space="preserve">
-    <value>Syncfreq</value>
+    <value>Sync Frequency</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>Syncfreq</value>
+    <value>Sync Frequency Factor</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>FilterBW</value>
+    <value>Filter Bandwidth</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
     <value>Enable Sync Frequency</value>
@@ -2572,7 +2572,7 @@
     <value>Current (mA)</value>
   </data>
   <data name="ImageCrop" xml:space="preserve">
-    <value>ImageCrop</value>
+    <value>Image Crop</value>
   </data>
   <data name="FindCross" xml:space="preserve">
     <value>Cross positioning</value>

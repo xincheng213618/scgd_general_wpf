@@ -220,7 +220,7 @@
     <value>Модуль инициализации</value>
   </data>
   <data name="ForceUpdate" xml:space="preserve">
-    <value>ForceUpdate</value>
+    <value>Принудительное обновление</value>
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>Загрузить файлы</value>
@@ -229,7 +229,7 @@
     <value>Версия</value>
   </data>
   <data name="BuildDate" xml:space="preserve">
-    <value>ДатаСборки</value>
+    <value>Дата сборки</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>поиск</value>
@@ -298,7 +298,7 @@
     <value>Чтобы откатить программное обеспечение, вам необходимо сначала удалить его, а затем переустановить, или переустановить пакет после установки.</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
-    <value>полноэкранный</value>
+    <value>Полный экран</value>
   </data>
   <data name="TerminateUnresponsiveProcess" xml:space="preserve">
     <value>Завершить процессы, не отвечающие на запросы.</value>

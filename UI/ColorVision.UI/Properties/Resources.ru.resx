@@ -71,10 +71,10 @@
     <value>помощь</value>
   </data>
   <data name="GlobalMode" xml:space="preserve">
-    <value>общая ситуация</value>
+    <value>Глобальный режим</value>
   </data>
   <data name="HotkeyNormal" xml:space="preserve">
-    <value>нормальный</value>
+    <value>Обычный</value>
   </data>
   <data name="HotkeyConflict" xml:space="preserve">
     <value>конфликт</value>
@@ -92,7 +92,7 @@
     <value>繁體中文 (Традиционный китайский)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
-    <value>Следуйте системе</value>
+    <value>Следовать системе</value>
   </data>
   <data name="LanguageResartSign" xml:space="preserve">
     <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
@@ -128,7 +128,7 @@
     <value>Автоматически переключать выбранные представления</value>
   </data>
   <data name="HotKeys" xml:space="preserve">
-    <value>быстрая клавиша</value>
+    <value>Горячие клавиши</value>
   </data>
   <data name="WindowHidden" xml:space="preserve">
     <value>скрывать</value>
@@ -143,13 +143,13 @@
     <value>Бревно</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>OpenConfigFile</value>
+    <value>Открыть файл конфигурации</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
-    <value>ОткрытьКонфигурациюПапка</value>
+    <value>Открыть папку конфигурации</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>OpenLogFolder</value>
+    <value>Открыть папку журнала</value>
   </data>
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Автоматически прокручивать вниз</value>
@@ -218,13 +218,13 @@
     <value>Закрыть(_C)</value>
   </data>
   <data name="IsAutoSelect" xml:space="preserve">
-    <value>АвтоВыбор</value>
+    <value>Автовыбор</value>
   </data>
   <data name="MenuRedo" xml:space="preserve">
     <value>Повторить</value>
   </data>
   <data name="SocketBufferSize" xml:space="preserve">
-    <value>размер буфера</value>
+    <value>Размер буфера сокета</value>
   </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>Общие настройки</value>
@@ -482,7 +482,7 @@
     <value>Отмена</value>
   </data>
   <data name="PropertyEditorWindow" xml:space="preserve">
-    <value>PropertyEditorWindow</value>
+    <value>Окно редактора свойств</value>
   </data>
   <data name="Edit" xml:space="preserve">
     <value>редактировать</value>

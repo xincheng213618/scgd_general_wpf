@@ -2536,13 +2536,13 @@
     <value>同步頻率</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>同步頻率</value>
+    <value>同步頻率係數</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>FilterBW</value>
+    <value>濾波寬度</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
-    <value>IsSyncFrequencyEnabled</value>
+    <value>啟用同步頻率</value>
   </data>
   <data name="GetSpectrSerialNumber" xml:space="preserve">
     <value>取得光譜序號</value>

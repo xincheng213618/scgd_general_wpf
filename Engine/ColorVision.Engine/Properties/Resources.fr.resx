@@ -787,7 +787,7 @@
     <value>Date de création</value>
   </data>
   <data name="IsEnable" xml:space="preserve">
-    <value>Est-ce qu'il est activé</value>
+    <value>Activé</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>Moteur (_N)</value>
@@ -2536,13 +2536,13 @@
     <value>Fréquence de synchronisation</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>Fréquence de synchronisation</value>
+    <value>Coefficient de fréquence de synchronisation</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>FiltreBW</value>
+    <value>Largeur du filtre</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
-    <value>IsSyncFrequencyEnabled</value>
+    <value>Activer la fréquence de synchronisation</value>
   </data>
   <data name="GetSpectrSerialNumber" xml:space="preserve">
     <value>GetSpectrSerialNuméro</value>

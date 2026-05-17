@@ -2533,10 +2533,10 @@
     <value>同期周波数</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>同期周波数</value>
+    <value>同期周波数係数</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>フィルターBW</value>
+    <value>フィルター幅</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
     <value>同期頻度が有効</value>

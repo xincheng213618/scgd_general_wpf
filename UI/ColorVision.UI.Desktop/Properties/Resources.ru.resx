@@ -127,7 +127,7 @@
     <value>Сохранить конфигурацию</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
-    <value>ОткрытьКонфигурациюПапка</value>
+    <value>Открыть папку конфигурации</value>
   </data>
   <data name="SetupWizard" xml:space="preserve">
     <value>Мастер настройки</value>
@@ -151,28 +151,28 @@
     <value>Экспорт настроек</value>
   </data>
   <data name="ImportExportSettings" xml:space="preserve">
-    <value>ImportExportSettings</value>
+    <value>Настройки импорта/экспорта</value>
   </data>
   <data name="ImportSettings" xml:space="preserve">
-    <value>ImportSettings</value>
+    <value>Настройки импорта</value>
   </data>
   <data name="OpenStore" xml:space="preserve">
-    <value>OpenStore</value>
+    <value>Открыть магазин</value>
   </data>
   <data name="InstallPackage" xml:space="preserve">
-    <value>InstallPackage</value>
+    <value>Установить пакет</value>
   </data>
   <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>OpenViewDllViersion</value>
+    <value>Версия OpenViewDll</value>
   </data>
   <data name="Restart" xml:space="preserve">
     <value>Перезапуск</value>
   </data>
   <data name="UpdateAll" xml:space="preserve">
-    <value>ОбновитьВсе</value>
+    <value>Обновить все</value>
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
-    <value>ОкноМенеджераПлагинов</value>
+    <value>Окно менеджера плагинов</value>
   </data>
   <data name="SelectExtractFolder" xml:space="preserve">
     <value>Выберите целевую папку, из которой вы хотите извлечь плагин.</value>
@@ -223,7 +223,7 @@
     <value>Версия</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
-    <value>Следуйте системе</value>
+    <value>Следовать системе</value>
   </data>
   <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>Обновление уровня журнала Log4Net</value>
@@ -253,7 +253,7 @@
     <value>Окно управления сокетами</value>
   </data>
   <data name="SocketBufferSize" xml:space="preserve">
-    <value>размер буфера</value>
+    <value>Размер буфера сокета</value>
   </data>
   <data name="SmartSortDescending" xml:space="preserve">
     <value>Умная сортировка (по убыванию)</value>
@@ -310,7 +310,7 @@
     <value>Открыть содержащую папку</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>OpenConfigFile</value>
+    <value>Открыть файл конфигурации</value>
   </data>
   <data name="OnlineCronGenerator" xml:space="preserve">
     <value>Онлайн-генератор выражений Cron</value>
@@ -334,7 +334,7 @@
     <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
   </data>
   <data name="IsAutoSelect" xml:space="preserve">
-    <value>АвтоВыбор</value>
+    <value>Автовыбор</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>Найден проект {0}, {1}, скачать?</value>

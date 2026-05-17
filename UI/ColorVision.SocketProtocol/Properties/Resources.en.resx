@@ -121,13 +121,13 @@
     <value>Protocol</value>
   </data>
   <data name="IsServerEnabled" xml:space="preserve">
-    <value>IsServerEnabled</value>
+    <value>Enable Server</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
-    <value>IPAddress</value>
+    <value>IP Address</value>
   </data>
   <data name="ServerPort" xml:space="preserve">
-    <value>ServerPort</value>
+    <value>Server Port</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket Connection Manager</value>
@@ -136,13 +136,13 @@
     <value>Query</value>
   </data>
   <data name="AdvancedQuery" xml:space="preserve">
-    <value>AdvancedQuery</value>
+    <value>Advanced Query</value>
   </data>
   <data name="OpenDb" xml:space="preserve">
     <value>Open</value>
   </data>
   <data name="ClearMessages" xml:space="preserve">
-    <value>ClearMessages</value>
+    <value>Clear Messages</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
@@ -151,16 +151,16 @@
     <value>Connecting clients</value>
   </data>
   <data name="LocalEndPoint" xml:space="preserve">
-    <value>LocalEndPoint</value>
+    <value>Local Endpoint</value>
   </data>
   <data name="RemoteEndPoint" xml:space="preserve">
-    <value>RemoteEndPoint</value>
+    <value>Remote Endpoint</value>
   </data>
   <data name="ConnectionStatus" xml:space="preserve">
-    <value>ConnectionStatus</value>
+    <value>Connection Status</value>
   </data>
   <data name="MessageLog" xml:space="preserve">
-    <value>MessageLog</value>
+    <value>Message Log</value>
   </data>
   <data name="Time" xml:space="preserve">
     <value>Time</value>

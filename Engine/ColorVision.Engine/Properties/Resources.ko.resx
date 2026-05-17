@@ -2530,13 +2530,13 @@
     <value>온라인</value>
   </data>
   <data name="Syncfreq" xml:space="preserve">
-    <value>싱크프리크</value>
+    <value>동기 주파수</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>싱크프리크</value>
+    <value>동기 주파수 계수</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>필터BW</value>
+    <value>필터 폭</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
     <value>동기화 주파수 활성화됨</value>

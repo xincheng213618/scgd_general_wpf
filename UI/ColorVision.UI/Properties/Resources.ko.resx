@@ -143,7 +143,7 @@
     <value>통나무</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>OpenConfigFile</value>
+    <value>구성 파일 열기</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>오픈 구성 폴더</value>

@@ -784,7 +784,7 @@
     <value>Дата создания</value>
   </data>
   <data name="IsEnable" xml:space="preserve">
-    <value>IsEnable</value>
+    <value>Включено</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>Двигатель (Н)</value>
@@ -2533,13 +2533,13 @@
     <value>Синхронная частота</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>Синхронная частота</value>
+    <value>Коэффициент синхронной частоты</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>FilterBW</value>
+    <value>Ширина фильтра</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
-    <value>IsSyncFrequencyEnabled</value>
+    <value>Включить синхронную частоту</value>
   </data>
   <data name="GetSpectrSerialNumber" xml:space="preserve">
     <value>GetSpectrSerialNumber</value>

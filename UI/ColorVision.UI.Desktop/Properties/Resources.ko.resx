@@ -310,7 +310,7 @@
     <value>포함 폴더 열기</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>OpenConfigFile</value>
+    <value>구성 파일 열기</value>
   </data>
   <data name="OnlineCronGenerator" xml:space="preserve">
     <value>온라인 Cron 표현식 생성기</value>

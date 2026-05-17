@@ -142,7 +142,7 @@
     <value>Открыть</value>
   </data>
   <data name="ClearMessages" xml:space="preserve">
-    <value>Чёткое сообщение</value>
+    <value>Очистить сообщения</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>настраивать</value>
