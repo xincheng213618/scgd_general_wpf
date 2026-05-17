@@ -394,7 +394,7 @@
     <value>Переименовать(_М)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>Настройки шаблона заботы (P)</value>
+    <value>Настройки шаблона POI (P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>Физическое управление камерой(_P)</value>
@@ -654,9 +654,6 @@
   <data name="ClearData" xml:space="preserve">
     <value>Очистить данные</value>
   </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>очистить кэш</value>
-  </data>
   <data name="Clear" xml:space="preserve">
     <value>Очистить</value>
   </data>
@@ -856,10 +853,10 @@
     <value>Устройство отключено</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>Шаблон сообщения о проблемах</value>
+    <value>Шаблон POI</value>
   </data>
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>Настройки шаблона алгоритма, связанные с фокусом</value>
+    <value>Настройки шаблона алгоритма POI</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>Сервис</value>
@@ -895,13 +892,13 @@
     <value>Точка восстановления успешно создана</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>Настройте NDPort</value>
+    <value>Изменить NDPort</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>Автофокус</value>
   </data>
   <data name="Move" xml:space="preserve">
-    <value>двигаться</value>
+    <value>Перемещение</value>
   </data>
   <data name="AbsolutePosition" xml:space="preserve">
     <value>Абсолютное положение</value>
@@ -934,7 +931,7 @@
     <value>Автоматическое подключение устройства</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>Параметры приложения</value>
+    <value>Применить настройки</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>Файловый кэш:</value>
@@ -952,7 +949,7 @@
     <value>Шаблон процесса</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>Результаты запроса</value>
+    <value>Результаты поиска</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Управление результатами процесса</value>
@@ -976,31 +973,31 @@
     <value>Шаблон автофокуса</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>Настройки шаблона алгоритма, связанные с фокусом</value>
+    <value>Настройки шаблона POI</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
     <value>Настройки шаблона фильтра POI</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>Настройки шаблона модификации Poi</value>
+    <value>Настройки шаблона коррекции POI</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>Шаблон свойств приложения</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Настройки шаблона макета Poi</value>
+    <value>Настройки шаблона размещения POI</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>Анализ POI</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>Ищу район АА</value>
+    <value>Поиск области AA</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
     <value>Настройки шаблона вывода файла POI</value>
   </data>
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
-    <value>Настройки шаблона параметров калибровки коррекции Poi</value>
+    <value>Настройки шаблона параметров калибровочной коррекции POI</value>
   </data>
   <data name="TemplateMatching" xml:space="preserve">
     <value>Сопоставление шаблонов</value>
@@ -1204,7 +1201,7 @@
     <value>Отправить команду</value>
   </data>
   <data name="RevCmd" xml:space="preserve">
-    <value>Инструкция по возврату</value>
+    <value>Полученная команда</value>
   </data>
   <data name="SensorCfgInfo" xml:space="preserve">
     <value>Информация о конфигурации датчика</value>
@@ -1381,10 +1378,10 @@
     <value>Максимальный прирост</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>Вывести значения по умолчанию</value>
+    <value>Экспозиция по умолчанию</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
-    <value>Минимальная экспозиция</value>
+    <value>Минимальное время экспозиции</value>
   </data>
   <data name="MaxExpTime" xml:space="preserve">
     <value>Максимальная экспозиция</value>
@@ -1561,10 +1558,10 @@
     <value>Импортируйте последние изображения</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>Сохранить внимание</value>
+    <value>Сохранить POI</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>Четкий фокус</value>
+    <value>Очистить POI</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>Повторный рендеринг</value>
@@ -1597,37 +1594,37 @@
     <value>Установить глобальный кэш</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>Кэширование приложений</value>
+    <value>Применить кэш</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
     <value>Включить четыре угловые точки светящейся области</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>Отображение зоны распространения</value>
+    <value>Отображение области разметки</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>центральная точка</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>Настроить зону развертывания</value>
+    <value>Настроить область разметки</value>
   </data>
   <data name="Count" xml:space="preserve">
-    <value>количество</value>
+    <value>Количество</value>
   </data>
   <data name="Angle" xml:space="preserve">
     <value>угол</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>Найдите светящуюся область</value>
+    <value>Найти светящуюся область</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>полный</value>
+    <value>Заливка области</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>ширина</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>высокий</value>
+    <value>Высота</value>
   </data>
   <data name="RowCount" xml:space="preserve">
     <value>Количество строк</value>
@@ -1642,10 +1639,10 @@
     <value>Левый</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>верно</value>
+    <value>Правый</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>показывать</value>
+    <value>Отображение</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
     <value>Установить сегментацию</value>
@@ -1666,16 +1663,16 @@
     <value>Круг</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>Редактор фокуса</value>
+    <value>Редактор POI</value>
   </data>
   <data name="Rect" xml:space="preserve">
-    <value>прямоугольник</value>
+    <value>Прямоугольник</value>
   </data>
   <data name="Draw" xml:space="preserve">
     <value>рисовать</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>Настройки фокуса</value>
+    <value>Настройки POI</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>Настройки PGParam</value>
@@ -1699,7 +1696,7 @@
     <value>абсолютный</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>относительно</value>
+    <value>Относительный</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>длина волны</value>
@@ -1711,7 +1708,7 @@
     <value>Абсолютный Спектр</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>Текущий(mA)</value>
+    <value>Ток (mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>Напряжение(_V)</value>
@@ -1735,10 +1732,10 @@
     <value>Начинать</value>
   </data>
   <data name="End" xml:space="preserve">
-    <value>Заканчивать</value>
+    <value>Конец</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>Очки</value>
+    <value>Количество точек</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>сеть</value>
@@ -1819,7 +1816,7 @@
     <value>Открытие</value>
   </data>
   <data name="Closing" xml:space="preserve">
-    <value>Закрыто</value>
+    <value>Закрытие</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
     <value>Количество запросов</value>
@@ -1828,7 +1825,7 @@
     <value>Сортировать по типу</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>Создать в точке интереса</value>
+    <value>Создать как POI</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>Выберите файл в папке</value>
@@ -1882,7 +1879,7 @@
     <value>Тип хранилища</value>
   </data>
   <data name="POIFile" xml:space="preserve">
-    <value>Фокусный документ</value>
+    <value>Файл POI</value>
   </data>
   <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
     <value>Рассчитать длину волны цветовой температуры</value>

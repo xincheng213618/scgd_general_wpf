@@ -192,9 +192,6 @@
   <data name="SubscribedTopic" xml:space="preserve">
     <value>購読済みのトピック</value>
   </data>
-  <data name="Subscribe" xml:space="preserve">
-    <value>サブスクリプション</value>
-  </data>
   <data name="Submit" xml:space="preserve">
     <value>提出する</value>
   </data>
@@ -394,7 +391,7 @@
     <value>名前を変更(_M)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>懸念テンプレートの設定（P）</value>
+    <value>POIテンプレート設定(P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>物理カメラ管理(_P)</value>
@@ -856,10 +853,10 @@
     <value>デバイスがオフラインです</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>懸念事項テンプレート</value>
+    <value>POIテンプレート</value>
   </data>
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>フォーカス関連のアルゴリズムテンプレート設定</value>
+    <value>POIアルゴリズムテンプレート設定</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>サービス</value>
@@ -895,13 +892,13 @@
     <value>復元ポイントが正常に作成されました</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>NDPortを調整する</value>
+    <value>NDPortを変更</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>オートフォーカス</value>
   </data>
   <data name="Move" xml:space="preserve">
-    <value>動く</value>
+    <value>移動</value>
   </data>
   <data name="AbsolutePosition" xml:space="preserve">
     <value>絶対位置</value>
@@ -916,7 +913,7 @@
     <value>原点回帰</value>
   </data>
   <data name="CurrentPosition" xml:space="preserve">
-    <value>現在の場所:</value>
+    <value>現在位置:</value>
   </data>
   <data name="AcquirePosition" xml:space="preserve">
     <value>位置情報を取得</value>
@@ -934,7 +931,7 @@
     <value>自動デバイス接続</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>アプリケーションパラメータ</value>
+    <value>設定を適用</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>ファイルキャッシュ:</value>
@@ -952,7 +949,7 @@
     <value>プロセステンプレート</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>クエリ結果</value>
+    <value>検索結果</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>プロセス結果管理</value>
@@ -976,31 +973,31 @@
     <value>オートフォーカステンプレート</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>フォーカス関連のアルゴリズムテンプレート設定</value>
+    <value>POIテンプレート設定</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
     <value>POIフィルターテンプレートの設定</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi変更テンプレート設定</value>
+    <value>POI補正テンプレート設定</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>アプリケーションプロパティテンプレート</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Poiレイアウトテンプレートの設定</value>
+    <value>POIレイアウトテンプレート設定</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>POI分析</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>エリアAAを探しています</value>
+    <value>AA領域検出</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
     <value>POIファイル出力テンプレート設定</value>
   </data>
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi補正キャリブレーションパラメータテンプレート設定</value>
+    <value>POI補正キャリブレーションパラメータテンプレート設定</value>
   </data>
   <data name="TemplateMatching" xml:space="preserve">
     <value>テンプレートマッチング</value>
@@ -1060,7 +1057,7 @@
     <value>色温度波長</value>
   </data>
   <data name="DataDirectory" xml:space="preserve">
-    <value>データカタログ</value>
+    <value>データディレクトリ</value>
   </data>
   <data name="PortAddress" xml:space="preserve">
     <value>ポートアドレス</value>
@@ -1204,7 +1201,7 @@
     <value>コマンドを送信</value>
   </data>
   <data name="RevCmd" xml:space="preserve">
-    <value>返品指示</value>
+    <value>受信コマンド</value>
   </data>
   <data name="SensorCfgInfo" xml:space="preserve">
     <value>センサー構成情報</value>
@@ -1381,10 +1378,10 @@
     <value>最大ゲイン</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>デフォルト値を公開する</value>
+    <value>デフォルト露光時間</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
-    <value>最小限の露出</value>
+    <value>最小露光時間</value>
   </data>
   <data name="MaxExpTime" xml:space="preserve">
     <value>最大露出</value>
@@ -1561,10 +1558,10 @@
     <value>最新の画像をインポートする</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>注意を節約する</value>
+    <value>POIを保存</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>明確な焦点</value>
+    <value>POIをクリア</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>再レンダリング</value>
@@ -1597,37 +1594,37 @@
     <value>グローバルキャッシュに設定</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>アプリケーションキャッシュ</value>
+    <value>キャッシュを適用</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
     <value>発光領域の4つのコーナーポイントを有効にする</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>配信エリアの表示</value>
+    <value>レイアウト領域を表示</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>中心点</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>展開エリアの設定</value>
+    <value>レイアウト領域を設定</value>
   </data>
   <data name="Count" xml:space="preserve">
-    <value>量</value>
+    <value>数</value>
   </data>
   <data name="Angle" xml:space="preserve">
     <value>角度</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>光っている部分を見つける</value>
+    <value>発光領域を検出</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>満杯</value>
+    <value>塗りつぶし</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>幅</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>高い</value>
+    <value>高さ</value>
   </data>
   <data name="RowCount" xml:space="preserve">
     <value>行数</value>
@@ -1645,7 +1642,7 @@
     <value>右</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>見せる</value>
+    <value>表示</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
     <value>セグメンテーションを設定する</value>
@@ -1666,7 +1663,7 @@
     <value>円</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>フォーカスエディター</value>
+    <value>POIエディター</value>
   </data>
   <data name="Rect" xml:space="preserve">
     <value>矩形</value>
@@ -1675,7 +1672,7 @@
     <value>描く</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>フォーカス設定</value>
+    <value>POI設定</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam設定</value>
@@ -1699,7 +1696,7 @@
     <value>絶対</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>比較的</value>
+    <value>相対</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>波長</value>
@@ -1711,7 +1708,7 @@
     <value>絶対スペクトル</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>現在(mA)</value>
+    <value>電流(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>電圧(_V)</value>
@@ -1735,10 +1732,10 @@
     <value>始める</value>
   </data>
   <data name="End" xml:space="preserve">
-    <value>仕上げる</value>
+    <value>終了</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>ポイント</value>
+    <value>ポイント数</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>ネットワーク</value>
@@ -1753,7 +1750,7 @@
     <value>元の値</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
-    <value>現在の曲線</value>
+    <value>電流曲線</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
     <value>電流（mA）</value>
@@ -1816,10 +1813,10 @@
     <value>実行に失敗しました</value>
   </data>
   <data name="Opening" xml:space="preserve">
-    <value>オープニング</value>
+    <value>オープン中</value>
   </data>
   <data name="Closing" xml:space="preserve">
-    <value>閉鎖</value>
+    <value>クローズ中</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
     <value>クエリ数</value>
@@ -1828,7 +1825,7 @@
     <value>種類別に並べ替え</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>POIに作成</value>
+    <value>POIとして作成</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>フォルダ内のファイルを選択</value>
@@ -1882,7 +1879,7 @@
     <value>ストレージタイプ</value>
   </data>
   <data name="POIFile" xml:space="preserve">
-    <value>フォーカスドキュメント</value>
+    <value>POIファイル</value>
   </data>
   <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
     <value>色温度波長を計算する</value>

@@ -174,9 +174,6 @@
   <data name="TesConnection" xml:space="preserve">
     <value>연결 테스트</value>
   </data>
-  <data name="TemplateName" xml:space="preserve">
-    <value>템플릿 이름</value>
-  </data>
   <data name="TemplateManagementWindow" xml:space="preserve">
     <value>템플릿 관리 창</value>
   </data>
@@ -394,7 +391,7 @@
     <value>이름 바꾸기(_M)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>우려사항 템플릿 설정(P)</value>
+    <value>POI 템플릿 설정(P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>물리적 카메라 관리(_P)</value>
@@ -856,10 +853,10 @@
     <value>기기 오프라인</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>우려 사항 템플릿</value>
+    <value>POI 템플릿</value>
   </data>
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>포커스 관련 알고리즘 템플릿 설정</value>
+    <value>POI 알고리즘 템플릿 설정</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>서비스</value>
@@ -895,13 +892,13 @@
     <value>복원 지점이 성공적으로 생성되었습니다.</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>NDPort 조정</value>
+    <value>NDPort 변경</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>자동 초점</value>
   </data>
   <data name="Move" xml:space="preserve">
-    <value>이동하다</value>
+    <value>이동</value>
   </data>
   <data name="AbsolutePosition" xml:space="preserve">
     <value>절대 위치</value>
@@ -934,7 +931,7 @@
     <value>자동 장치 연결</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>응용 프로그램 매개 변수</value>
+    <value>설정 적용</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>파일 캐시:</value>
@@ -952,7 +949,7 @@
     <value>프로세스 템플릿</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>쿼리 결과</value>
+    <value>검색 결과</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>프로세스 결과 관리</value>
@@ -976,25 +973,25 @@
     <value>자동 초점 템플릿</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>포커스 관련 알고리즘 템플릿 설정</value>
+    <value>POI 템플릿 설정</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
     <value>POI 필터 템플릿 설정</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>POI 수정 템플릿 설정</value>
+    <value>POI 보정 템플릿 설정</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>애플리케이션 속성 템플릿</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Poi 레이아웃 템플릿 설정</value>
+    <value>POI 레이아웃 템플릿 설정</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>POI 분석</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>AA 지역을 찾고 있습니다</value>
+    <value>AA 영역 검출</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
     <value>POI 파일 출력 템플릿 설정</value>
@@ -1060,7 +1057,7 @@
     <value>색온도 파장</value>
   </data>
   <data name="DataDirectory" xml:space="preserve">
-    <value>데이터 카탈로그</value>
+    <value>데이터 디렉터리</value>
   </data>
   <data name="PortAddress" xml:space="preserve">
     <value>포트 주소</value>
@@ -1204,7 +1201,7 @@
     <value>명령 보내기</value>
   </data>
   <data name="RevCmd" xml:space="preserve">
-    <value>반환 지침</value>
+    <value>수신 명령</value>
   </data>
   <data name="SensorCfgInfo" xml:space="preserve">
     <value>센서 구성 정보</value>
@@ -1381,10 +1378,10 @@
     <value>최대 이득</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>기본값 노출</value>
+    <value>기본 노출 시간</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
-    <value>최소 노출</value>
+    <value>최소 노출 시간</value>
   </data>
   <data name="MaxExpTime" xml:space="preserve">
     <value>최대 노출</value>
@@ -1561,10 +1558,10 @@
     <value>최신 이미지를 가져옵니다</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>주의를 기울이다</value>
+    <value>POI 저장</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>명확한 초점</value>
+    <value>POI 지우기</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>다시 렌더링</value>
@@ -1597,19 +1594,19 @@
     <value>글로벌 캐시로 설정</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>애플리케이션 캐싱</value>
+    <value>캐시 적용</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
     <value>빛나는 영역의 네 모서리 점을 활성화합니다.</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>유통지역 표시</value>
+    <value>레이아웃 영역 표시</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>중심점</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>유통 구역 설정</value>
+    <value>레이아웃 영역 설정</value>
   </data>
   <data name="Count" xml:space="preserve">
     <value>수량</value>
@@ -1618,16 +1615,16 @@
     <value>각도</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>빛나는 영역을 찾으세요</value>
+    <value>발광 영역 검출</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>가득한</value>
+    <value>영역 채우기</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>너비</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>높은</value>
+    <value>높이</value>
   </data>
   <data name="RowCount" xml:space="preserve">
     <value>줄의 수</value>
@@ -1645,7 +1642,7 @@
     <value>오른쪽</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>보여주다</value>
+    <value>표시</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
     <value>세분화 설정</value>
@@ -1666,16 +1663,16 @@
     <value>원</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>포커스 편집기</value>
+    <value>POI 편집기</value>
   </data>
   <data name="Rect" xml:space="preserve">
-    <value>구형</value>
+    <value>사각형</value>
   </data>
   <data name="Draw" xml:space="preserve">
     <value>그리다</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>초점 설정</value>
+    <value>POI 설정</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam 설정</value>
@@ -1696,10 +1693,10 @@
     <value>3채널</value>
   </data>
   <data name="Absolute" xml:space="preserve">
-    <value>순수한</value>
+    <value>절대</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>비교적</value>
+    <value>상대</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>파장</value>
@@ -1711,7 +1708,7 @@
     <value>절대 스펙트럼</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>현재의(mA)</value>
+    <value>전류(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>전압(_V)</value>
@@ -1735,10 +1732,10 @@
     <value>시작</value>
   </data>
   <data name="End" xml:space="preserve">
-    <value>마치다</value>
+    <value>종료</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>전철기</value>
+    <value>포인트 수</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>회로망</value>
@@ -1816,10 +1813,10 @@
     <value>실행에 실패했습니다</value>
   </data>
   <data name="Opening" xml:space="preserve">
-    <value>열기</value>
+    <value>열리는 중</value>
   </data>
   <data name="Closing" xml:space="preserve">
-    <value>닫은</value>
+    <value>닫히는 중</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
     <value>쿼리 수</value>
@@ -1828,7 +1825,7 @@
     <value>유형별로 정렬</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>POI에 생성</value>
+    <value>POI로 생성</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>폴더에서 파일을 선택하세요</value>
@@ -1882,7 +1879,7 @@
     <value>저장 유형</value>
   </data>
   <data name="POIFile" xml:space="preserve">
-    <value>문서에 초점 맞추기</value>
+    <value>POI 파일</value>
   </data>
   <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
     <value>색온도 파장 계산</value>
