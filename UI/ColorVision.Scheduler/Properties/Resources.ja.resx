@@ -121,7 +121,7 @@
     <value>作成する</value>
   </data>
   <data name="TaskViewerWindow" xml:space="preserve">
-    <value>タスクビューアウィンドウ</value>
+    <value>タスクスケジューラ</value>
   </data>
   <data name="CreateTask" xml:space="preserve">
     <value>タスクの作成</value>
@@ -130,16 +130,16 @@
     <value>開始</value>
   </data>
   <data name="PauseAll" xml:space="preserve">
-    <value>一時停止すべて</value>
+    <value>すべて一時停止</value>
   </data>
   <data name="ResumeAll" xml:space="preserve">
-    <value>再開すべて</value>
+    <value>すべて再開</value>
   </data>
   <data name="Shutdown" xml:space="preserve">
     <value>シャットダウン</value>
   </data>
   <data name="CronExpression" xml:space="preserve">
-    <value>CronExpression（クロンクロノ式）</value>
+    <value>Cron 式</value>
   </data>
   <data name="GroupName" xml:space="preserve">
     <value>グループ名</value>
@@ -154,10 +154,10 @@
     <value>実行回数</value>
   </data>
   <data name="NextFireTime" xml:space="preserve">
-    <value>次回の発火時間</value>
+    <value>次回実行時刻</value>
   </data>
   <data name="PreviousFireTime" xml:space="preserve">
-    <value>前回の発火時間</value>
+    <value>前回実行時刻</value>
   </data>
   <data name="Stop" xml:space="preserve">
     <value>停止</value>

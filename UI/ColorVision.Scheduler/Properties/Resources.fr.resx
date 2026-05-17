@@ -121,7 +121,7 @@
     <value>créer</value>
   </data>
   <data name="TaskViewerWindow" xml:space="preserve">
-    <value>Fenêtre de visualisation des tâches</value>
+    <value>Planificateur de taches</value>
   </data>
   <data name="CreateTask" xml:space="preserve">
     <value>Créer des tâches</value>
@@ -130,34 +130,34 @@
     <value>Commencer</value>
   </data>
   <data name="PauseAll" xml:space="preserve">
-    <value>PauseTout</value>
+    <value>Tout suspendre</value>
   </data>
   <data name="ResumeAll" xml:space="preserve">
-    <value>ReprendreTout</value>
+    <value>Tout reprendre</value>
   </data>
   <data name="Shutdown" xml:space="preserve">
     <value>Arrêt</value>
   </data>
   <data name="CronExpression" xml:space="preserve">
-    <value>ExpressionCron</value>
+    <value>Expression Cron</value>
   </data>
   <data name="GroupName" xml:space="preserve">
-    <value>NomDuGroupe</value>
+    <value>Nom du groupe</value>
   </data>
   <data name="JobName" xml:space="preserve">
-    <value>NomDuPoste</value>
+    <value>Nom de la tache</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>Statut</value>
   </data>
   <data name="RunCount" xml:space="preserve">
-    <value>CompteurDeCourses</value>
+    <value>Nombre d'executions</value>
   </data>
   <data name="NextFireTime" xml:space="preserve">
-    <value>ProchaineHeureDeDéclenchement</value>
+    <value>Heure du prochain declenchement</value>
   </data>
   <data name="PreviousFireTime" xml:space="preserve">
-    <value>HeureDuDernierDéclenchement</value>
+    <value>Heure du dernier declenchement</value>
   </data>
   <data name="Stop" xml:space="preserve">
     <value>Arrêtez</value>

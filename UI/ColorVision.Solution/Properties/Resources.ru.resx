@@ -220,7 +220,7 @@
     <value>Откройте папку в файловом менеджере (X)</value>
   </data>
   <data name="NewFolder" xml:space="preserve">
-    <value>НоваяПапка</value>
+    <value>Новая папка</value>
   </data>
   <data name="FolderDeleteSign" xml:space="preserve">
     <value>и все его содержимое будет удалено навсегда.</value>

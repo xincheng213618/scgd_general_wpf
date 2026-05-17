@@ -121,7 +121,7 @@
     <value>создавать</value>
   </data>
   <data name="TaskViewerWindow" xml:space="preserve">
-    <value>TaskViewerWindow</value>
+    <value>Планировщик задач</value>
   </data>
   <data name="CreateTask" xml:space="preserve">
     <value>Создание задач</value>
@@ -130,34 +130,34 @@
     <value>Начать</value>
   </data>
   <data name="PauseAll" xml:space="preserve">
-    <value>ПаузаВсе</value>
+    <value>Приостановить все</value>
   </data>
   <data name="ResumeAll" xml:space="preserve">
-    <value>ПродолжитьВсе</value>
+    <value>Возобновить все</value>
   </data>
   <data name="Shutdown" xml:space="preserve">
     <value>Выключение</value>
   </data>
   <data name="CronExpression" xml:space="preserve">
-    <value>КронВыражение</value>
+    <value>Выражение Cron</value>
   </data>
   <data name="GroupName" xml:space="preserve">
-    <value>НазваниеГруппы</value>
+    <value>Имя группы</value>
   </data>
   <data name="JobName" xml:space="preserve">
-    <value>НазваниеРаботы</value>
+    <value>Имя задания</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>Статус</value>
   </data>
   <data name="RunCount" xml:space="preserve">
-    <value>КоличествоЗапусков</value>
+    <value>Количество запусков</value>
   </data>
   <data name="NextFireTime" xml:space="preserve">
-    <value>СледующееВремяЗапуска</value>
+    <value>Следующее время запуска</value>
   </data>
   <data name="PreviousFireTime" xml:space="preserve">
-    <value>ПредыдущееВремяСрабатывания</value>
+    <value>Предыдущее время запуска</value>
   </data>
   <data name="Stop" xml:space="preserve">
     <value>остановка</value>

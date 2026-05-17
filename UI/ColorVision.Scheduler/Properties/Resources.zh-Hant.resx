@@ -139,7 +139,7 @@
     <value>關閉</value>
   </data>
   <data name="CronExpression" xml:space="preserve">
-    <value>CronExpression（排程表達式）</value>
+    <value>Cron 表達式</value>
   </data>
   <data name="GroupName" xml:space="preserve">
     <value>群組名稱</value>

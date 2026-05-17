@@ -220,7 +220,7 @@
     <value>Open the folder in the file manager (X)</value>
   </data>
   <data name="NewFolder" xml:space="preserve">
-    <value>NewFolder</value>
+    <value>New Folder</value>
   </data>
   <data name="FolderDeleteSign" xml:space="preserve">
     <value>and all its contents will be permanently deleted.</value>
