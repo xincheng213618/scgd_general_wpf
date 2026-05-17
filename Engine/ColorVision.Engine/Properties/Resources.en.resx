@@ -142,28 +142,28 @@
     <value>Video Mode</value>
   </data>
   <data name="UserPwd" xml:space="preserve">
-    <value>UserPwd</value>
+    <value>Password</value>
   </data>
   <data name="UserName" xml:space="preserve">
-    <value>UserName</value>
+    <value>Username</value>
   </data>
   <data name="Upload" xml:space="preserve">
-    <value>Upload</value>
+    <value>Point Count</value>
   </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Unsubscribe</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
-    <value>In development</value>
+    <value>File Export</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
-    <value>Transparent window</value>
+    <value>Storage Type</value>
   </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>Send Channel</value>
   </data>
   <data name="Topic" xml:space="preserve">
-    <value>Topic</value>
+    <value>Connection Type</value>
   </data>
   <data name="Timeout" xml:space="preserve">
     <value>Timeout(ms)</value>
@@ -394,7 +394,7 @@
     <value>Rena_me</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>_POI</value>
+    <value>POI Template Settings (_P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>_Physical Camera Management</value>
@@ -427,7 +427,7 @@
     <value>Focus _Point</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
-    <value>F_low</value>
+    <value>Flow (_L)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>_Edit</value>
@@ -613,7 +613,7 @@
     <value>Current Speed:</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
-    <value>CreateTime</value>
+    <value>Create Time</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>Create new configuration file</value>
@@ -631,7 +631,7 @@
     <value>Copy configuration file</value>
   </data>
   <data name="ConnectionName" xml:space="preserve">
-    <value>ConnectionName</value>
+    <value>Connection Name</value>
   </data>
   <data name="ConfirmUpdate" xml:space="preserve">
     <value>Update or not</value>
@@ -679,7 +679,7 @@
     <value>Calculate</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
-    <value>BatchNumber</value>
+    <value>Batch Number</value>
   </data>
   <data name="BasicInformation" xml:space="preserve">
     <value>Basic Information</value>
@@ -718,10 +718,10 @@
     <value>Choice</value>
   </data>
   <data name="IsDefaultOpenService" xml:space="preserve">
-    <value>IsDefaultOpenService</value>
+    <value>Open Service on Startup</value>
   </data>
   <data name="IsRetorePlayControls" xml:space="preserve">
-    <value>IsRetorePlayControls</value>
+    <value>Restore Capture Window on Startup</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
@@ -763,10 +763,10 @@
     <value>Loading</value>
   </data>
   <data name="OpenFile" xml:space="preserve">
-    <value>OpenFile</value>
+    <value>Open File</value>
   </data>
   <data name="OpenFolder" xml:space="preserve">
-    <value>OpenFolder</value>
+    <value>Open Folder</value>
   </data>
   <data name="ProductBrochure" xml:space="preserve">
     <value>Product Brochure</value>
@@ -775,16 +775,16 @@
     <value>Unknown Status</value>
   </data>
   <data name="DefaultValue" xml:space="preserve">
-    <value>DefaultValue</value>
+    <value>Default Value</value>
   </data>
   <data name="Symbol" xml:space="preserve">
     <value>Symbol</value>
   </data>
   <data name="AddressCode" xml:space="preserve">
-    <value>AddressCode</value>
+    <value>Address Code</value>
   </data>
   <data name="CreateDate" xml:space="preserve">
-    <value>CreateDate</value>
+    <value>Create Date</value>
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>IsEnable</value>
@@ -793,19 +793,19 @@
     <value>E_ngine</value>
   </data>
   <data name="SearchLimit" xml:space="preserve">
-    <value>SearchLimit</value>
+    <value>Search Result Limit</value>
   </data>
   <data name="InsertAtBeginning" xml:space="preserve">
-    <value>InsertAtBeginning</value>
+    <value>Insert at Beginning</value>
   </data>
   <data name="AutoRefreshView" xml:space="preserve">
-    <value>AutoRefreshView</value>
+    <value>Auto-refresh View</value>
   </data>
   <data name="IsShowListView" xml:space="preserve">
-    <value>IsShowListView</value>
+    <value>Show List View</value>
   </data>
   <data name="ViewImageReadDelay" xml:space="preserve">
-    <value>ViewImageReadDelay</value>
+    <value>Image Read Delay</value>
   </data>
   <data name="Threshold" xml:space="preserve">
     <value>Threshold</value>
@@ -817,7 +817,7 @@
     <value>locked</value>
   </data>
   <data name="ConfirmDelete" xml:space="preserve">
-    <value>ConfirmDelete</value>
+    <value>Confirm Deletion</value>
   </data>
   <data name="CalibrationCorrection" xml:space="preserve">
     <value>Correction tools</value>
@@ -832,13 +832,13 @@
     <value>Open in CalibTools</value>
   </data>
   <data name="ProjectManagerWindow" xml:space="preserve">
-    <value>ProjectManagerWindow</value>
+    <value>Project Manager Window</value>
   </data>
   <data name="ReleaseDate" xml:space="preserve">
     <value>Release Date</value>
   </data>
   <data name="BuildDate" xml:space="preserve">
-    <value>BuildDate</value>
+    <value>Build Date</value>
   </data>
   <data name="Version" xml:space="preserve">
     <value>Version</value>
@@ -856,10 +856,10 @@
     <value>Offline</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>Point Of Interest Templete</value>
+    <value>POI Template</value>
   </data>
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>Point Of Interst Algorithm template settings</value>
+    <value>POI Algorithm Template Settings</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>Service</value>
@@ -880,7 +880,7 @@
     <value>Save current exposure and other parameters</value>
   </data>
   <data name="AverageTimes" xml:space="preserve">
-    <value>AverageTimes</value>
+    <value>Average Count</value>
   </data>
   <data name="Flip" xml:space="preserve">
     <value>Flip</value>
@@ -931,7 +931,7 @@
     <value>Heartbeat Time(ms)</value>
   </data>
   <data name="DeviceAutoConnect" xml:space="preserve">
-    <value>DeviceAutoConnect</value>
+    <value>Auto-connect Device</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
     <value>Apply Settings</value>
@@ -952,13 +952,13 @@
     <value>Process Template</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>Query results</value>
+    <value>Search Results</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Process Result Management</value>
   </data>
   <data name="ParsingManagement" xml:space="preserve">
-    <value>ParsingManagement</value>
+    <value>Parsing Management</value>
   </data>
   <data name="Parsing" xml:space="preserve">
     <value>Parsing</value>
@@ -967,70 +967,70 @@
     <value>Camera</value>
   </data>
   <data name="HdrTemplate" xml:space="preserve">
-    <value>HdrTemplate</value>
+    <value>HDR Template</value>
   </data>
   <data name="CameraParameterTemplate" xml:space="preserve">
-    <value>CameraParameterTemplate</value>
+    <value>Camera Parameter Template</value>
   </data>
   <data name="AutoFocusTemplate" xml:space="preserve">
-    <value>AutoFocusTemplate</value>
+    <value>Autofocus Template</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>POITemplateSettings</value>
+    <value>POI Template Settings</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
-    <value>PoiFilterTemplateSettings</value>
+    <value>POI Filter Template Settings</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>POICorrectionTemplateSettings</value>
+    <value>POI Correction Template Settings</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
-    <value>ApplicationPropertyTemplate</value>
+    <value>Application Property Template</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Poi layout template settings</value>
+    <value>POI Point Layout Template Settings</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
-    <value>POIAnalysis</value>
+    <value>POI Analysis</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>FindAARegion</value>
+    <value>AA Region Detection</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
-    <value>POIFileOutputTemplateSettings</value>
+    <value>POI File Output Template Settings</value>
   </data>
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
-    <value>PoiCalibrationCorrectionTemplateSettings</value>
+    <value>POI Calibration Correction Parameter Template Settings</value>
   </data>
   <data name="TemplateMatching" xml:space="preserve">
-    <value>TemplateMatching</value>
+    <value>Template Matching</value>
   </data>
   <data name="LightBarDetectionV2" xml:space="preserve">
-    <value>LightBarDetectionV2</value>
+    <value>Light Bar Detection V2</value>
   </data>
   <data name="GhostingDetection2_0" xml:space="preserve">
-    <value>GhostingDetection2_0</value>
+    <value>Ghosting Detection 2.0</value>
   </data>
   <data name="CrossCalculation" xml:space="preserve">
-    <value>CrossCalculation</value>
+    <value>Cross Calculation</value>
   </data>
   <data name="DistortionDetection2_0" xml:space="preserve">
-    <value>DistortionDetection2_0</value>
+    <value>Distortion Detection 2.0</value>
   </data>
   <data name="ImageStitching" xml:space="preserve">
-    <value>ImageStitching</value>
+    <value>Image Stitching</value>
   </data>
   <data name="AAPointFilling" xml:space="preserve">
-    <value>AAPointFilling</value>
+    <value>AA Point Filling</value>
   </data>
   <data name="AACropTemplateManagement" xml:space="preserve">
-    <value>AACropTemplateManagement</value>
+    <value>AA Crop Template Management</value>
   </data>
   <data name="EditDefaultSensorDictionary" xml:space="preserve">
-    <value>EditDefaultSensorDictionary</value>
+    <value>Edit Default Sensor Dictionary</value>
   </data>
   <data name="CacheManagement" xml:space="preserve">
-    <value>CacheManagement</value>
+    <value>Cache Management</value>
   </data>
   <data name="Archive" xml:space="preserve">
     <value>Archive</value>
@@ -1063,10 +1063,10 @@
     <value>Data Catalog</value>
   </data>
   <data name="PortAddress" xml:space="preserve">
-    <value>PortAddress</value>
+    <value>Port Address</value>
   </data>
   <data name="PortRange" xml:space="preserve">
-    <value>PortRange</value>
+    <value>Port Range</value>
   </data>
   <data name="RetentionDays" xml:space="preserve">
     <value>Storage days</value>
@@ -1138,7 +1138,7 @@
     <value>Stop</value>
   </data>
   <data name="CaptureImage" xml:space="preserve">
-    <value>CaptureImage</value>
+    <value>Capture Image</value>
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>The service has been shut down.</value>
@@ -1216,7 +1216,7 @@
     <value>Serial</value>
   </data>
   <data name="BaudRate" xml:space="preserve">
-    <value>BaudRate</value>
+    <value>Baud Rate</value>
   </data>
   <data name="DeviceType" xml:space="preserve">
     <value>Equipment type</value>
@@ -1411,7 +1411,7 @@
     <value>Focus</value>
   </data>
   <data name="FocusDistance" xml:space="preserve">
-    <value>FocusDistance</value>
+    <value>Focus Distance</value>
   </data>
   <data name="Selected" xml:space="preserve">
     <value>Selected</value>
@@ -1471,7 +1471,7 @@
     <value>Calibration View Settings</value>
   </data>
   <data name="ShowList" xml:space="preserve">
-    <value>ShowList</value>
+    <value>Show List</value>
   </data>
   <data name="TemperatureDataNotFound" xml:space="preserve">
     <value>Temperature data not obtained</value>
@@ -1486,7 +1486,7 @@
     <value>Do you want to save the current exposure configuration?</value>
   </data>
   <data name="FileSavePath" xml:space="preserve">
-    <value>FileSavePath</value>
+    <value>File Save Path</value>
   </data>
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>An error occurred while querying temperature data.</value>
@@ -1495,7 +1495,7 @@
     <value>SzComName</value>
   </data>
   <data name="RetryCount" xml:space="preserve">
-    <value>RetryCount</value>
+    <value>Retry Count</value>
   </data>
   <data name="FilterWheelCount" xml:space="preserve">
     <value>Number of color filters (6, 12)</value>
@@ -1540,31 +1540,31 @@
     <value>CaliTemplateSet</value>
   </data>
   <data name="DownLicOnline" xml:space="preserve">
-    <value>DownLicOnline</value>
+    <value>Download License Online</value>
   </data>
   <data name="CreateRestorePoint" xml:space="preserve">
     <value>Create a restore point</value>
   </data>
   <data name="LoadRestorePoint" xml:space="preserve">
-    <value>LoadRestorePoint</value>
+    <value>Load Restore Point</value>
   </data>
   <data name="StartRC" xml:space="preserve">
     <value>Enable RC</value>
   </data>
   <data name="DefaultCanvas" xml:space="preserve">
-    <value>DefaultCanvas</value>
+    <value>Default Canvas</value>
   </data>
   <data name="ImageImport" xml:space="preserve">
     <value>ImageImport</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
-    <value>ImportLatestImages</value>
+    <value>Import Latest Images</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>SavePOI</value>
+    <value>Save POI</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>ClearPOI</value>
+    <value>Clear POI</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>Re-render</value>
@@ -1573,19 +1573,19 @@
     <value>Once</value>
   </data>
   <data name="SaveToFile" xml:space="preserve">
-    <value>SaveToFile</value>
+    <value>Save to File</value>
   </data>
   <data name="Radius" xml:space="preserve">
     <value>Radius</value>
   </data>
   <data name="DataCorrectionFilePath" xml:space="preserve">
-    <value>DataCorrectionFilePath</value>
+    <value>Data Correction File Path</value>
   </data>
   <data name="TopRight" xml:space="preserve">
-    <value>TopRight</value>
+    <value>Top Right</value>
   </data>
   <data name="TopLeft" xml:space="preserve">
-    <value>TopLeft</value>
+    <value>Top Left</value>
   </data>
   <data name="DownLeft" xml:space="preserve">
     <value>BottomLeft</value>
@@ -1594,22 +1594,22 @@
     <value>BottomRight</value>
   </data>
   <data name="SetToGlobalCache" xml:space="preserve">
-    <value>SetToGlobalCache</value>
+    <value>Set as Global Cache</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>ApplyCache</value>
+    <value>Apply Cache</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
-    <value>EnableActiveAreaFourCorners</value>
+    <value>Enable Four Corner Points of the Active Area</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>PointLayoutAreaDisplay</value>
+    <value>Show Point Layout Area</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
-    <value>CentralPoint</value>
+    <value>Center Point</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>SetPointLayoutArea</value>
+    <value>Set Point Layout Area</value>
   </data>
   <data name="Count" xml:space="preserve">
     <value>Count</value>
@@ -1618,40 +1618,40 @@
     <value>Angle</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>FindActiveArea</value>
+    <value>Find Active Area</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>FillArea</value>
+    <value>Fill Area</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>Width</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>height</value>
+    <value>Height</value>
   </data>
   <data name="RowCount" xml:space="preserve">
-    <value>ColumCount</value>
+    <value>Row Count</value>
   </data>
   <data name="ColumCount" xml:space="preserve">
-    <value>Number of columns</value>
+    <value>Column Count</value>
   </data>
   <data name="FindLuminousAreaCorners" xml:space="preserve">
-    <value>FindLuminousAreaCorners</value>
+    <value>Find Corners of the Luminous Area</value>
   </data>
   <data name="Left" xml:space="preserve">
     <value>Left</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>right</value>
+    <value>Right</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>Dispaly</value>
+    <value>Display</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
-    <value>SetSegmentation</value>
+    <value>Set Segmentation</value>
   </data>
   <data name="UseNodePrompt" xml:space="preserve">
-    <value>UseNodePrompt</value>
+    <value>Use Nodes</value>
   </data>
   <data name="Quadrilateral" xml:space="preserve">
     <value>Quadrilateral</value>
@@ -1666,7 +1666,7 @@
     <value>Circle</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>POIEdit</value>
+    <value>POI Editor</value>
   </data>
   <data name="Rect" xml:space="preserve">
     <value>Rect</value>
@@ -1675,31 +1675,31 @@
     <value>Draw</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>POISetting</value>
+    <value>POI Settings</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
-    <value>PGParamConfig</value>
+    <value>PGParam Settings</value>
   </data>
   <data name="CameraView" xml:space="preserve">
-    <value>CameraView</value>
+    <value>Camera View</value>
   </data>
   <data name="ClearServiceCache" xml:space="preserve">
-    <value>ClearServiceCache</value>
+    <value>Clear Service Cache</value>
   </data>
   <data name="DataBasicPath" xml:space="preserve">
-    <value>DataBasicPath</value>
+    <value>Base Data Path</value>
   </data>
   <data name="singleChannel" xml:space="preserve">
-    <value>SingleChannel</value>
+    <value>Single Channel</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
-    <value>ThreeChannels</value>
+    <value>Three Channels</value>
   </data>
   <data name="Absolute" xml:space="preserve">
     <value>Absolute</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>Relatively</value>
+    <value>Relative</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>Wavelength</value>
@@ -1711,7 +1711,7 @@
     <value>Absolute Spectrum</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>Current(mA)</value>
+    <value>Current (mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>Voltage(_V)</value>
@@ -1738,7 +1738,7 @@
     <value>End</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>PointCount</value>
+    <value>Point Count</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>Network</value>
@@ -1747,13 +1747,13 @@
     <value>Cleanup</value>
   </data>
   <data name="MeasurementType" xml:space="preserve">
-    <value>MeasurementType</value>
+    <value>Measurement Type</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
     <value>LimitStart</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
-    <value>CurrentCurve</value>
+    <value>Current Curve</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
     <value>Current (mA)</value>
@@ -1762,13 +1762,13 @@
     <value>Voltage (V)</value>
   </data>
   <data name="VoltageCurve" xml:space="preserve">
-    <value>voltage curve</value>
+    <value>Voltage Curve</value>
   </data>
   <data name="RelativeSpectrumCurve" xml:space="preserve">
-    <value>RelativeSpectrumCurve</value>
+    <value>Relative Spectrum Curve</value>
   </data>
   <data name="AbsoluteSpectrumCurve" xml:space="preserve">
-    <value>AbsoluteSpectrumCurve</value>
+    <value>Absolute Spectrum Curve</value>
   </data>
   <data name="WavelengthNm" xml:space="preserve">
     <value>Wavelength (nm)</value>
@@ -1807,13 +1807,13 @@
     <value>Color rendering index Ra</value>
   </data>
   <data name="CancelAutoTest" xml:space="preserve">
-    <value>CancelAutoTest</value>
+    <value>Cancel Auto Test</value>
   </data>
   <data name="ExecutionComplete" xml:space="preserve">
-    <value>ExecutionComplete</value>
+    <value>Execution Complete</value>
   </data>
   <data name="ExecutionFailed" xml:space="preserve">
-    <value>ExecutionFailed</value>
+    <value>Execution Failed</value>
   </data>
   <data name="Opening" xml:space="preserve">
     <value>Opening</value>
@@ -1822,16 +1822,16 @@
     <value>Closing</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
-    <value>QueryCount</value>
+    <value>Query Count</value>
   </data>
   <data name="SortByType" xml:space="preserve">
-    <value>SortByType</value>
+    <value>Sort by Type</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>CreateToPOI</value>
+    <value>Create as POI</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
-    <value>Select the file in the folder</value>
+    <value>Select File in Folder</value>
   </data>
   <data name="CreatePoiAsBaseImage" xml:space="preserve">
     <value>Create POI as the base map</value>
@@ -1876,10 +1876,10 @@
     <value>Parameter template</value>
   </data>
   <data name="FileExport" xml:space="preserve">
-    <value>FileExport</value>
+    <value>File Export</value>
   </data>
   <data name="StorageType" xml:space="preserve">
-    <value>StorageType</value>
+    <value>Storage Type</value>
   </data>
   <data name="POIFile" xml:space="preserve">
     <value>POIFile</value>
@@ -1915,7 +1915,7 @@
     <value>Enable ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
-    <value>ConnectType</value>
+    <value>Connection Type</value>
   </data>
   <data name="Saturation" xml:space="preserve">
     <value>Saturation</value>
@@ -2053,13 +2053,13 @@
     <value>This template already exists. Please change the template name.</value>
   </data>
   <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
-    <value>POI file output template settings</value>
+    <value>POI File Output Template Settings</value>
   </data>
   <data name="POIFilterTemplateSetting" xml:space="preserve">
-    <value>POI filter template settings</value>
+    <value>POI Filter Template Settings</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>"Light Strip Testing Template Management"</value>
+    <value>Light Bar Detection Template Management</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR Edge Finding Template Management</value>
@@ -2095,7 +2095,7 @@
     <value>Image stitching template management</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>Looking for AA area template management</value>
+    <value>AA Region Detection Template Management</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>BlackMura Template Management</value>
@@ -2287,7 +2287,7 @@
     <value>Enumerate</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>Need to configure attention points</value>
+    <value>POI needs to be configured</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>ExportAs</value>
@@ -2335,7 +2335,7 @@
     <value>Debug</value>
   </data>
   <data name="ToggleList" xml:space="preserve">
-    <value>ToggleList</value>
+    <value>Toggle List</value>
   </data>
   <data name="CmdSendAlready" xml:space="preserve">
     <value>Command has been sent</value>
@@ -2344,19 +2344,19 @@
     <value>License</value>
   </data>
   <data name="ModifyLicense" xml:space="preserve">
-    <value>ModifyLicense</value>
+    <value>Modify License</value>
   </data>
   <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
     <value>Before using the calibration, please configure the corresponding physical camera.</value>
   </data>
   <data name="CacheSize" xml:space="preserve">
-    <value>CacheSize</value>
+    <value>Cache Size</value>
   </data>
   <data name="IntegrationStartTime" xml:space="preserve">
-    <value>IntegrationStartTime</value>
+    <value>Integration Start Time</value>
   </data>
   <data name="IntervalTime" xml:space="preserve">
-    <value>IntervalTime</value>
+    <value>Interval Time</value>
   </data>
   <data name="Step" xml:space="preserve">
     <value>Step</value>
@@ -2368,16 +2368,16 @@
     <value>Select the export file location</value>
   </data>
   <data name="DataRetentionDays" xml:space="preserve">
-    <value>DataRetentionDays</value>
+    <value>Data Retention Days</value>
   </data>
   <data name="DataRetentionHours" xml:space="preserve">
-    <value>DataRetentionHours</value>
+    <value>Data Retention Hours</value>
   </data>
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>Clear the database only</value>
   </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
-    <value>DeleteLocalFiles</value>
+    <value>Delete Local Files</value>
   </data>
   <data name="DataBaseConfig" xml:space="preserve">
     <value>Database configuration</value>
@@ -2392,10 +2392,10 @@
     <value>MQTT Configuration ID</value>
   </data>
   <data name="TenantId" xml:space="preserve">
-    <value>TenantId</value>
+    <value>Tenant ID</value>
   </data>
   <data name="DefaultSavePath" xml:space="preserve">
-    <value>DefaultSavePath</value>
+    <value>Default Save Path</value>
   </data>
   <data name="IvlCameraProcessing" xml:space="preserve">
     <value>IvlCameraProcessing</value>
@@ -2416,10 +2416,10 @@
     <value>Spectrometer</value>
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
-    <value>EditFilterWheelConfig</value>
+    <value>Edit Filter Wheel Configuration</value>
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
-    <value>ContinuousMeasurement</value>
+    <value>Continuous Measurement</value>
   </data>
   <data name="StartMeasurementValue_V_mA" xml:space="preserve">
     <value>Initial measurement value (V/mA)</value>
@@ -2449,10 +2449,10 @@
     <value>Voltage source, current source selection</value>
   </data>
   <data name="EnableExposure" xml:space="preserve">
-    <value>EnableExposure</value>
+    <value>Enable Exposure</value>
   </data>
   <data name="EnableFocus" xml:space="preserve">
-    <value>EnableFocus</value>
+    <value>Enable Focus</value>
   </data>
   <data name="RegistryCenterNotConnected" xml:space="preserve">
     <value>The registration center is not connected.</value>
@@ -2542,13 +2542,13 @@
     <value>FilterBW</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
-    <value>IsSyncFrequencyEnabled</value>
+    <value>Enable Sync Frequency</value>
   </data>
   <data name="GetSpectrSerialNumber" xml:space="preserve">
-    <value>GetSpectrSerialNumber</value>
+    <value>Get Spectrometer Serial Number</value>
   </data>
   <data name="EditDisplayConfig" xml:space="preserve">
-    <value>EditDisplayConfig</value>
+    <value>Edit Display Configuration</value>
   </data>
   <data name="OpenEditTool" xml:space="preserve">
     <value>Editing Tools</value>
@@ -2560,10 +2560,10 @@
     <value>Attribute Editing</value>
   </data>
   <data name="TextEdit" xml:space="preserve">
-    <value>TextEdit</value>
+    <value>Text Edit</value>
   </data>
   <data name="PreprocessManager" xml:space="preserve">
-    <value>PreprocessManager</value>
+    <value>Preprocess Manager</value>
   </data>
   <data name="CurrentVoltageV" xml:space="preserve">
     <value>Voltage (V)</value>

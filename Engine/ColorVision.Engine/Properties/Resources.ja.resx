@@ -2059,7 +2059,7 @@
     <value>POIフィルターテンプレートの設定</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>「ライトストリップテストテンプレート管理」</value>
+    <value>ライトバー検出テンプレート管理</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR エッジ検索テンプレート管理</value>
@@ -2095,7 +2095,7 @@
     <value>画像ステッチテンプレートの管理</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>AAエリアテンプレート管理を探しています</value>
+    <value>AA領域検出テンプレート管理</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>BlackMuraテンプレート管理</value>
@@ -2287,7 +2287,7 @@
     <value>列挙する</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>注意ポイントを設定する必要があります</value>
+    <value>POIを設定する必要があります</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>エクスポート形式</value>

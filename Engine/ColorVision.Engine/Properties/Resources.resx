@@ -394,7 +394,7 @@
     <value>重命名(_M)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>关注点模板设置(_P)</value>
+    <value>POI模板设置(_P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>物理相机管理(_P)</value>
@@ -856,10 +856,10 @@
     <value>设备离线</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>关注点模板</value>
+    <value>POI模板</value>
   </data>
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>关注点相关算法模板设置</value>
+    <value>POI算法模板设置</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>服务</value>
@@ -895,7 +895,7 @@
     <value>还原点创建成功</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>调整NDPort</value>
+    <value>更改NDPort</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>自动聚焦</value>
@@ -934,7 +934,7 @@
     <value>设备自动连接</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>应用参数</value>
+    <value>应用设置</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>文件缓存:</value>
@@ -952,7 +952,7 @@
     <value>流程模板</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>查询结果</value>
+    <value>搜索结果</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>流程结果管理</value>
@@ -976,31 +976,31 @@
     <value>自动聚焦模板</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>关注点相关算法模版设置</value>
+    <value>POI模板设置</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
     <value>POI过滤模板设置</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi修正模板设置</value>
+    <value>POI修正模板设置</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>应用属性模板</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Poi布点模板设置</value>
+    <value>POI布点模板设置</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>POI分析</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>寻找AA区</value>
+    <value>AA区域检测</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
-    <value>Poi文件输出模板设置</value>
+    <value>POI文件输出模板设置</value>
   </data>
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi修正标定参数模板设置</value>
+    <value>POI修正标定参数模板设置</value>
   </data>
   <data name="TemplateMatching" xml:space="preserve">
     <value>模板匹配</value>
@@ -1561,10 +1561,10 @@
     <value>导入最新的图像</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>保存关注点</value>
+    <value>保存POI</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>清空关注点</value>
+    <value>清空POI</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>重渲染</value>
@@ -1594,7 +1594,7 @@
     <value>右下</value>
   </data>
   <data name="SetToGlobalCache" xml:space="preserve">
-    <value>设置到全局缓存</value>
+    <value>设为全局缓存</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
     <value>应用缓存</value>
@@ -1603,7 +1603,7 @@
     <value>启用发光区4个角点</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>布点区域显示</value>
+    <value>显示布点区域</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>中心点</value>
@@ -1618,10 +1618,10 @@
     <value>角度</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>寻找发光区</value>
+    <value>检测发光区</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>充满</value>
+    <value>填充区域</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>宽度</value>
@@ -1666,7 +1666,7 @@
     <value>圆形</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>关注点编辑</value>
+    <value>POI编辑</value>
   </data>
   <data name="Rect" xml:space="preserve">
     <value>矩形</value>
@@ -1675,7 +1675,7 @@
     <value>绘制</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>关注点设置</value>
+    <value>POI设置</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam设置</value>
@@ -1828,7 +1828,7 @@
     <value>按类型排序</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>创建到POI</value>
+    <value>创建为POI</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>在文件夹中选中文件</value>
@@ -2056,7 +2056,7 @@
     <value>已经存在改模板，请修改模板名称</value>
   </data>
   <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
-    <value>Poi文件输出模板设置</value>
+    <value>POI文件输出模板设置</value>
   </data>
   <data name="POIFilterTemplateSetting" xml:space="preserve">
     <value>POI过滤模板设置</value>
@@ -2098,7 +2098,7 @@
     <value>图像拼接模板管理</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>寻找AA区模板管理</value>
+    <value>AA区域检测模板管理</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>BlackMura模板管理</value>
@@ -2290,7 +2290,7 @@
     <value>枚举</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>需要配置关注点</value>
+    <value>需要配置POI</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>导出为</value>

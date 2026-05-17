@@ -2059,7 +2059,7 @@
     <value>Настройки шаблона фильтра POI</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>«Управление шаблонами тестирования светодиодных полос»</value>
+    <value>Управление шаблонами обнаружения световых полос</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>Управление шаблонами поиска кромок SFR</value>
@@ -2095,7 +2095,7 @@
     <value>Управление шаблонами сшивания изображений</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>Ищу менеджера по шаблонам AA-зон</value>
+    <value>Управление шаблонами обнаружения области AA</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>Управление шаблонами BlackMura</value>
@@ -2287,7 +2287,7 @@
     <value>перечислить</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>Необходимо настроить точки внимания</value>
+    <value>Необходимо настроить POI</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>Экспортировать как</value>

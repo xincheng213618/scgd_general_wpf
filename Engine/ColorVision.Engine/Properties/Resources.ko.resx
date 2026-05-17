@@ -2059,7 +2059,7 @@
     <value>POI 필터 템플릿 설정</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>"라이트 스트립 테스트 템플릿 관리"</value>
+    <value>라이트 바 검출 템플릿 관리</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR Edge 찾기 템플릿 관리</value>
@@ -2095,7 +2095,7 @@
     <value>이미지 스티칭 템플릿 관리</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>AA 지역 템플릿 관리를 찾고 있습니다</value>
+    <value>AA 영역 검출 템플릿 관리</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>BlackMura 템플릿 관리</value>
@@ -2287,7 +2287,7 @@
     <value>낱낱이 세다</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>주의점을 구성해야 합니다.</value>
+    <value>POI를 설정해야 합니다.</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>내보내기로</value>
