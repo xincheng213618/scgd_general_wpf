@@ -96,7 +96,7 @@
                         </ToolBarTray>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                             <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
-                                <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                                <Image Width="16" Height="16" Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                             </Button>
                             <Button  Click="Button_Click_Clear" Command="{Binding ViewResultManager.ViewReslutsClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                                 <Button.Triggers>
@@ -323,7 +323,7 @@
 
                         </StackPanel>
                         <DockPanel>
-                            <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" Width="200" />
+                            <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" FontWeight="Bold"  Foreground="Black" Click="TestClick" Width="200" />
                             <StackPanel Orientation="Horizontal">
                                 <TextBox x:Name="SNtextBox" IsEnabled="{Binding SNlocked,Converter={StaticResource Boolean2BooleanReConverter}}" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
                                 <Button Content="上传" Click="UploadSN_Click" Visibility="{Binding SummaryManager.Summary.UseMes,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>

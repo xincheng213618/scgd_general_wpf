@@ -49,6 +49,7 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
+        private const int OutputLabelWidth = 34;
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
@@ -776,14 +777,17 @@ namespace ProjectKB
             outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
+            KBRecipeConfig recipe = GetRecipeConfig(kmitemmaster);
+            Brush normalTextBrush = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+
             string outtext = string.Empty;
-            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
-            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
-            outtext += $"Poiints of Interest: " + Environment.NewLine;
-            outtext += $"{kmitemmaster.CreateTime:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+            outtext += BuildMetricLine("机种 (Model)", kmitemmaster.Model) + Environment.NewLine;
+            outtext += BuildMetricLine("SN", kmitemmaster.SN) + Environment.NewLine;
+            outtext += $"按键明细 (Points of Interest): " + Environment.NewLine;
+            outtext += $"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}" + Environment.NewLine;
 
             Run run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = normalTextBrush;
             run.FontSize += 1;
 
             var paragraph = new Paragraph();
@@ -794,51 +798,139 @@ namespace ProjectKB
 
             paragraph = new Paragraph();
 
-            string title1 = "PT";
-            string title2 = "Lv";
-
-            string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
-            run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-
-            paragraph.Inlines.Add(run);
-            outtext = string.Empty;
+            AppendOutputLine(paragraph, $"{"按键 (PT)",-20} {"亮度 (Lv)",-12} {"局部对比度 (LC)",12}", normalTextBrush);
 
             foreach (var item in kmitemmaster.Items)
             {
                 string formattedString = $"[{item.Name}]";
+                bool isFailureLine = IsKeyFailure(item, recipe) || !item.Result;
+                string resultText = isFailureLine ? "Fail" : string.Empty;
 
-                outtext += $"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc * 100,10:F2}%  {(item.Result ? "" : "Fail")}" + Environment.NewLine;
-                run = new Run(outtext);
-                run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-                run.FontSize += 1;
-                paragraph.Inlines.Add(run);
-                outtext = string.Empty;
+                string line = $"{formattedString,-20} {item.Lv,-12:F2} {item.Lc * 100,12:F2}%  {resultText}";
+                AppendOutputLine(paragraph, line, normalTextBrush, isFailureLine);
             }
             outputText.Document.Blocks.Add(paragraph);
 
-            outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
-            outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
-            outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
-            outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
+            paragraph = new Paragraph();
+            bool minLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MinLv < recipe.MinKeyLv;
+            bool maxLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MaxLv > recipe.MaxKeyLv;
+            AppendOutputLine(paragraph, BuildMetricLine("最小亮度 (Min Lv)", $"{kmitemmaster.MinLv:F2} cd/m2", minLvFailure), normalTextBrush, minLvFailure);
+            AppendOutputLine(paragraph, BuildMetricLine("最大亮度 (Max Lv)", $"{kmitemmaster.MaxLv:F2} cd/m2", maxLvFailure), normalTextBrush, maxLvFailure);
+            AppendOutputLine(paragraph, BuildMetricLine("最暗按键 (Darkest Key)", $"[{kmitemmaster.DrakestKey}]"), normalTextBrush);
+            AppendOutputLine(paragraph, BuildMetricLine("最亮按键 (Brightest Key)", $"[{kmitemmaster.BrightestKey}]"), normalTextBrush);
 
-            outtext += Environment.NewLine;
-            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-            outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
-            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
-
-            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-
-            run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-            paragraph = new Paragraph(run);
-            outtext = string.Empty;
+            AppendOutputLine(paragraph, string.Empty, normalTextBrush);
+            AppendOutputLine(paragraph, "合格/不合格标准 (Pass/Fail Criteria):", normalTextBrush);
+            AppendOutputLine(paragraph, BuildMetricLine("不合格点数 (Nbr Failed Points)", kmitemmaster.NbrFailPoints.ToString(), kmitemmaster.NbrFailPoints > 0), normalTextBrush, kmitemmaster.NbrFailPoints > 0);
+            bool avgLvFailure = recipe.EnableAvgLvLimit && (kmitemmaster.AvgLv < recipe.MinAvgLv || kmitemmaster.AvgLv > recipe.MaxAvgLv);
+            AppendOutputLine(paragraph, BuildMetricLine("平均亮度 (Avg Lv)", $"{kmitemmaster.AvgLv:F2} cd/m2", avgLvFailure), normalTextBrush, avgLvFailure);
+            bool uniformityFailure = recipe.EnableUniformityLimit && kmitemmaster.LvUniformity < recipe.MinUniformity / 100;
+            AppendOutputLine(paragraph, BuildMetricLine("亮度均匀性 (Lv Uniformity)", $"{kmitemmaster.LvUniformity * 100:F2}%", uniformityFailure), normalTextBrush, uniformityFailure);
+            AppendLocalContrastSummary(paragraph, kmitemmaster, recipe, normalTextBrush);
             outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
+        }
+
+        private static KBRecipeConfig GetRecipeConfig(KBItemMaster kmitemmaster)
+        {
+            RecipeManager recipeManager = RecipeManager.GetInstance();
+            return recipeManager.RecipeConfigs.TryGetValue(kmitemmaster.Model, out KBRecipeConfig? matchedRecipe)
+                ? matchedRecipe
+                : RecipeConfig;
+        }
+
+        private static void AppendOutputLine(Paragraph paragraph, string line, Brush normalTextBrush, bool highlightFailure = false)
+        {
+            const string failText = "Fail";
+
+            if (highlightFailure && line.EndsWith(failText, StringComparison.Ordinal))
+            {
+                string prefix = line[..^failText.Length];
+                Run normalRun = new Run(prefix)
+                {
+                    Foreground = normalTextBrush
+                };
+                normalRun.FontSize += 1;
+                paragraph.Inlines.Add(normalRun);
+
+                Run failRun = new Run(failText + Environment.NewLine)
+                {
+                    Foreground = Brushes.Yellow,
+                    FontWeight = FontWeights.Bold
+                };
+                failRun.FontSize += 1;
+                paragraph.Inlines.Add(failRun);
+                return;
+            }
+
+            Run run = new Run(line + Environment.NewLine)
+            {
+                Foreground = normalTextBrush
+            };
+            run.FontSize += 1;
+            paragraph.Inlines.Add(run);
+        }
+
+        private static bool IsKeyFailure(KBItem item, KBRecipeConfig recipe)
+        {
+            if (recipe.EnableKeyLvLimit)
+            {
+                if (item.Lv < recipe.MinKeyLv || item.Lv > recipe.MaxKeyLv)
+                {
+                    return true;
+                }
+            }
+
+            if (recipe.EnableKeyLcLimit)
+            {
+                double lcPercent = item.Lc * 100;
+                if (lcPercent < recipe.MinKeyLc || lcPercent > recipe.MaxKeyLc)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string BuildFailSuffix(bool failed)
+        {
+            return failed ? "  Fail" : string.Empty;
+        }
+
+        private static string BuildMetricLine(string label, string value, bool failed = false)
+        {
+            return $"{PadDisplayWidth(label, OutputLabelWidth)}= {value}{BuildFailSuffix(failed)}";
+        }
+
+        private static string PadDisplayWidth(string text, int targetWidth)
+        {
+            int displayWidth = 0;
+            foreach (char c in text)
+            {
+                displayWidth += c <= 0x7f ? 1 : 2;
+            }
+
+            int padding = Math.Max(0, targetWidth - displayWidth);
+            return text + new string(' ', padding);
+        }
+
+        private static void AppendLocalContrastSummary(Paragraph paragraph, KBItemMaster kmitemmaster, KBRecipeConfig recipe, Brush normalTextBrush)
+        {
+            if (!kmitemmaster.Items.Any())
+            {
+                return;
+            }
+
+            KBItem minLcItem = kmitemmaster.Items.OrderBy(item => item.Lc).First();
+            KBItem maxLcItem = kmitemmaster.Items.OrderByDescending(item => item.Lc).First();
+            double minLcPercent = minLcItem.Lc * 100;
+            double maxLcPercent = maxLcItem.Lc * 100;
+            bool minLcFailure = recipe.EnableKeyLcLimit && minLcPercent < recipe.MinKeyLc;
+            bool maxLcFailure = recipe.EnableKeyLcLimit && maxLcPercent > recipe.MaxKeyLc;
+
+            AppendOutputLine(paragraph, BuildMetricLine("最小局部对比度 (Min LC)", $"{minLcPercent:F2}% [{minLcItem.Name}]", minLcFailure), normalTextBrush, minLcFailure);
+            AppendOutputLine(paragraph, BuildMetricLine("最大局部对比度 (Max LC)", $"{maxLcPercent:F2}% [{maxLcItem.Name}]", maxLcFailure), normalTextBrush, maxLcFailure);
         }
 
 
