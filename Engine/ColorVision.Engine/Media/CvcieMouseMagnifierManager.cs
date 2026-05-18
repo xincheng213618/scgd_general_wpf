@@ -129,24 +129,24 @@ namespace ColorVision.Engine.Media
                     if (exp.Length == 1)
                     {
                         _ = ConvertXYZ.CM_GetYCircle(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dYVal, radius);
-                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F1}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
+                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F4}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     else
                     {
                         _ = ConvertXYZ.CM_GetXYZxyuvCircle(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, radius);
-                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
+                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F4},y:{dy:F4},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     return true;
                 case MagnigifierType.Rect:
                     if (exp.Length == 1)
                     {
                         _ = ConvertXYZ.CM_GetYRect(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dYVal, rectWidth, rectHeight);
-                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F1}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
+                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F4}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     else
                     {
                         _ = ConvertXYZ.CM_GetXYZxyuvRect(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rectWidth, rectHeight);
-                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
+                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F4},y:{dy:F4},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
                     }
                     return true;
                 default:
