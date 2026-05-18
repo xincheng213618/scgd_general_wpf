@@ -255,7 +255,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <hc:ComboBox x:Name="FlowTemplate"  Width="200" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}"  SelectedValuePath="Value" DisplayMemberPath="Key" HorizontalAlignment="Left"  IsEditable="True"  hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*"  />
                             <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
                                 <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
                             </Grid>
                             <Grid Width="30" >
