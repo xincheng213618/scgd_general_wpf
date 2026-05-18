@@ -30,6 +30,12 @@ DEFAULT_PROJECT_NAME = "ColorVision"
 
 
 DEFAULT_READ_TIMEOUT = max(DEFAULT_READ_TIMEOUT, 1800)
+DEFAULT_MSBUILD_CANDIDATES = (
+    Path(r"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\MSBuild.exe"),
+)
 
 
 @dataclass(frozen=True)
@@ -308,6 +314,18 @@ def env_flag(name: str, default: bool) -> bool:
     return value.strip().lower() not in {"0", "false", "no", "off"}
 
 
+def resolve_msbuild_path() -> Path:
+    configured_path = os.environ.get("COLORVISION_MSBUILD_PATH")
+    if configured_path:
+        return Path(configured_path)
+
+    for candidate in DEFAULT_MSBUILD_CANDIDATES:
+        if candidate.exists():
+            return candidate
+
+    return DEFAULT_MSBUILD_CANDIDATES[0]
+
+
 def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
     user_home = Path(os.environ.get("USERPROFILE") or os.path.expanduser("~"))
     documents_dir = user_home / "Documents"
@@ -316,7 +334,7 @@ def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
     return {
         "ColorVision": ProjectConfig(
             name="ColorVision",
-            msbuild_path=Path(r"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe"),
+            msbuild_path=resolve_msbuild_path(),
             solution_path=base_path / "build.sln",
             advanced_installer_path=base_path.parent / "AdvancedInstaller v19.7.1" / "App" / "ProgramFiles" / "bin" / "x86" / "AdvancedInstaller.com",
             aip_path=ai_project_dir / "ColorVision.aip",

@@ -35,7 +35,10 @@ namespace ColorVision.Database
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = MySqlLocalServicesManager.GetInstance();
+            var manager = MySqlLocalServicesManager.GetInstance();
+            this.DataContext = manager;
+            _ = manager.RefreshCleanupTablesAsync();
+
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => 
             {
                 var selectedFilePath = MySqlLocalServicesManager.GetInstance().Backups[listView1.SelectedIndex].FilePath;
