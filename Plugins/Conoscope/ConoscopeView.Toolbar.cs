@@ -64,7 +64,7 @@ namespace Conoscope
         {
             if (!HasXyzData() || currentBitmapSource == null || coordinateAxisController == null)
             {
-                MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -190,7 +190,7 @@ namespace Conoscope
         {
             if (!HasXyzData() || currentBitmapSource == null)
             {
-                MessageBox.Show("当前图像尚未准备好 3D 视图", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.Msg3DViewNotReady, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -206,7 +206,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error("打开 Conoscope 3D 视图失败", ex);
-                MessageBox.Show($"打开 3D 视图失败: {ex.Message}", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(string.Format(Properties.Resources.Msg3DViewOpenFailed, ex.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

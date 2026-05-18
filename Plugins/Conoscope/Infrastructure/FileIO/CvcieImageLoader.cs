@@ -14,26 +14,26 @@ namespace Conoscope.Infrastructure.FileIO
         {
             if (!CVFileUtil.IsCVCIEFile(filename))
             {
-                throw new NotSupportedException("当前视图仅支持 CVCIE XYZ 图像文件");
+                throw new NotSupportedException(Properties.Resources.OnlyCVCIESupported);
             }
 
             if (!CVFileUtil.Read(filename, out CVCIEFile fileInfo))
             {
-                throw new InvalidDataException("读取 CVCIE 文件失败");
+                throw new InvalidDataException(Properties.Resources.ReadCVCIEFailed);
             }
 
             using (fileInfo)
             {
                 if (fileInfo.Channels < 3)
                 {
-                    throw new NotSupportedException($"CVCIE 文件通道数不足: {fileInfo.Channels}");
+                    throw new NotSupportedException(string.Format(Properties.Resources.CVCIEChannelInsufficientLoader, fileInfo.Channels));
                 }
 
                 int bytesPerPixel = fileInfo.Bpp / 8;
                 int channelSize = fileInfo.Cols * fileInfo.Rows * bytesPerPixel;
                 if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
                 {
-                    throw new InvalidDataException("CVCIE 文件数据长度不足，无法拆分 XYZ 通道");
+                    throw new InvalidDataException(Properties.Resources.CVCIEDataLengthInsufficientLoader);
                 }
 
                 MatType singleChannelType = GetSingleChannelMatType(fileInfo.Bpp);

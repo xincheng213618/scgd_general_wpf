@@ -50,18 +50,18 @@ namespace Conoscope
         {
             string filterSummary = NormalizeFilterType(PreprocessConfig.FilterType) switch
             {
-                ImageFilterType.None => "不过滤",
-                ImageFilterType.LowPass => $"低通 核 {PreprocessConfig.FilterKernelSize}",
-                ImageFilterType.MovingAverage => $"均值 核 {PreprocessConfig.FilterKernelSize}",
-                ImageFilterType.Gaussian => $"高斯 核 {PreprocessConfig.FilterKernelSize}  σ {PreprocessConfig.FilterSigma:F1}",
-                ImageFilterType.Median => $"中值 核 {PreprocessConfig.FilterKernelSize}",
-                ImageFilterType.Bilateral => $"双边 d {PreprocessConfig.FilterD}  σC {PreprocessConfig.FilterSigmaColor:F0}  σS {PreprocessConfig.FilterSigmaSpace:F0}",
-                _ => "使用默认参数"
+                ImageFilterType.None => Properties.Resources.FilterNone,
+                ImageFilterType.LowPass => $"{Properties.Resources.FilterLowPass} 核 {PreprocessConfig.FilterKernelSize}",
+                ImageFilterType.MovingAverage => $"{Properties.Resources.FilterMean} 核 {PreprocessConfig.FilterKernelSize}",
+                ImageFilterType.Gaussian => $"{Properties.Resources.FilterGaussian} 核 {PreprocessConfig.FilterKernelSize}  σ {PreprocessConfig.FilterSigma:F1}",
+                ImageFilterType.Median => $"{Properties.Resources.FilterMedian} 核 {PreprocessConfig.FilterKernelSize}",
+                ImageFilterType.Bilateral => $"{Properties.Resources.FilterBilateral} d {PreprocessConfig.FilterD}  σC {PreprocessConfig.FilterSigmaColor:F0}  σS {PreprocessConfig.FilterSigmaSpace:F0}",
+                _ => Properties.Resources.FilterDefaultParams
             };
 
             string dustSummary = PreprocessConfig.DustRemovalEnabled
-                ? $"灰尘 {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)} {PreprocessConfig.DustThresholdPercent:F1}%"
-                : "灰尘关闭";
+                ? $"{Properties.Resources.DustLabel} {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)} {PreprocessConfig.DustThresholdPercent:F1}%"
+                : Properties.Resources.DustOff;
 
             return $"{filterSummary} | {dustSummary}";
         }
@@ -69,18 +69,18 @@ namespace Conoscope
         private string BuildWindowFilterConfigToolTip()
         {
             string dustSummary = PreprocessConfig.DustRemovalEnabled
-                ? $"灰尘滤除: {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)}，阈值 {PreprocessConfig.DustThresholdPercent:F1}% ，面积 {PreprocessConfig.DustMinArea}-{PreprocessConfig.DustMaxArea}px，修复半径 {PreprocessConfig.DustRepairRadius}px"
-                : "灰尘滤除: 关闭";
+                ? $"{Properties.Resources.HeaderDustRemoval}: {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)}，阈值 {PreprocessConfig.DustThresholdPercent:F1}% ，面积 {PreprocessConfig.DustMinArea}-{PreprocessConfig.DustMaxArea}px，修复半径 {PreprocessConfig.DustRepairRadius}px"
+                : $"{Properties.Resources.HeaderDustRemoval}: {Properties.Resources.DustOff}";
 
             return NormalizeFilterType(PreprocessConfig.FilterType) switch
             {
-                ImageFilterType.None => $"滤波: 无。{dustSummary}",
-                ImageFilterType.LowPass => $"滤波: 低通，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
-                ImageFilterType.MovingAverage => $"滤波: 均值，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
-                ImageFilterType.Gaussian => $"滤波: 高斯，核大小 {PreprocessConfig.FilterKernelSize}，Sigma {PreprocessConfig.FilterSigma:F1}。{dustSummary}",
-                ImageFilterType.Median => $"滤波: 中值，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
-                ImageFilterType.Bilateral => $"滤波: 双边，d {PreprocessConfig.FilterD}，SigmaColor {PreprocessConfig.FilterSigmaColor:F0}，SigmaSpace {PreprocessConfig.FilterSigmaSpace:F0}。{dustSummary}",
-                _ => $"滤波: 使用默认参数。{dustSummary}"
+                ImageFilterType.None => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterNone}。{dustSummary}",
+                ImageFilterType.LowPass => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterLowPass}，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
+                ImageFilterType.MovingAverage => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterMean}，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
+                ImageFilterType.Gaussian => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterGaussian}，核大小 {PreprocessConfig.FilterKernelSize}，Sigma {PreprocessConfig.FilterSigma:F1}。{dustSummary}",
+                ImageFilterType.Median => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterMedian}，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
+                ImageFilterType.Bilateral => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterBilateral}，d {PreprocessConfig.FilterD}，SigmaColor {PreprocessConfig.FilterSigmaColor:F0}，SigmaSpace {PreprocessConfig.FilterSigmaSpace:F0}。{dustSummary}",
+                _ => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterDefaultParams}。{dustSummary}"
             };
         }
 
@@ -88,9 +88,9 @@ namespace Conoscope
         {
             return mode switch
             {
-                DustRemovalMode.DarkSpot => "暗斑",
-                DustRemovalMode.BrightSpot => "亮斑",
-                DustRemovalMode.Both => "暗斑+亮斑",
+                DustRemovalMode.DarkSpot => Properties.Resources.DustDarkSpot,
+                DustRemovalMode.BrightSpot => Properties.Resources.DustBrightSpot,
+                DustRemovalMode.Both => Properties.Resources.DustBoth,
                 _ => mode.ToString()
             };
         }

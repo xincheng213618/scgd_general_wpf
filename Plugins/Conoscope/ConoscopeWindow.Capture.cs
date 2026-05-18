@@ -149,7 +149,7 @@ namespace Conoscope
             {
                 if (reportStatus)
                 {
-                    SetOperationStatus($"ND {ndPort} 未绑定校正", Brushes.Gray);
+                    SetOperationStatus(string.Format(Properties.Resources.MsgNdNotBoundCalibration, ndPort), Brushes.Gray);
                 }
 
                 return false;
@@ -158,7 +158,7 @@ namespace Conoscope
             cbCalibrationTemplate.SelectedItem = matched;
             if (reportStatus)
             {
-                SetOperationStatus($"ND {ndPort} 已匹配校正: {matched.Key}", Brushes.LimeGreen);
+                SetOperationStatus(string.Format(Properties.Resources.MsgNdMatchedCalibration, ndPort, matched.Key), Brushes.LimeGreen);
             }
 
             return true;
@@ -193,10 +193,10 @@ namespace Conoscope
                     new TimedButtonOperationOptions
                     {
                         OperationKey = BuildTimedOperationKey(FlowRunOperationActionKey),
-                        RunningText = "执行中",
+                        RunningText = Properties.Resources.StatusExecuting,
                         ProgressForeground = Brushes.DodgerBlue,
                         ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(FlowRunOperationActionKey, DefaultFlowExpectedDurationMs),
-                        ContentFactory = _ => originalContent ?? "执行",
+                        ContentFactory = _ => originalContent ?? Properties.Resources.BtnExecute,
                         ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip("执行当前流程并打开结果图像", stats),
                         MinimumExpectedDurationMs = 2000
                     });
@@ -210,10 +210,10 @@ namespace Conoscope
                     new TimedButtonOperationOptions
                     {
                         OperationKey = BuildTimedOperationKey(CameraCaptureOperationActionKey),
-                        RunningText = "拍照中",
+                        RunningText = Properties.Resources.StatusCapturing,
                         ProgressForeground = Brushes.DodgerBlue,
                         ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(CameraCaptureOperationActionKey, DefaultCameraCaptureExpectedDurationMs),
-                        ContentFactory = _ => originalContent ?? "拍照",
+                        ContentFactory = _ => originalContent ?? Properties.Resources.BtnCapturePhoto,
                         ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip("执行相机拍照并打开结果图像", stats),
                         MinimumExpectedDurationMs = 2000
                     });
@@ -305,7 +305,7 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera?.PhyCamera == null)
             {
-                MessageBox.Show("请选择相机设备", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -325,13 +325,13 @@ namespace Conoscope
             TemplateModel<CalibrationParam>? calibrationTemplate = GetSelectedCalibrationTemplate();
             if (camera == null || calibrationTemplate == null || calibrationTemplate.Id < 0)
             {
-                MessageBox.Show("请选择相机设备和有效的校正模板", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCameraAndCalibration, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!TryGetNdPort(out int ndPort))
             {
-                MessageBox.Show("请输入有效的 ND 端口", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -348,7 +348,7 @@ namespace Conoscope
             binding.CalibrationTemplateId = calibrationTemplate.Id;
             binding.CalibrationTemplateName = calibrationTemplate.Key;
             ConfigService.Instance.Save<ConoscopeConfig>();
-            SetOperationStatus($"已绑定 ND {ndPort} -> {calibrationTemplate.Key}", Brushes.LimeGreen);
+            SetOperationStatus(string.Format(Properties.Resources.MsgNdBound, ndPort, calibrationTemplate.Key), Brushes.LimeGreen);
         }
 
         private void btnClearNdCalibrationBinding_Click(object sender, RoutedEventArgs e)
@@ -356,20 +356,20 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null || !TryGetNdPort(out int ndPort))
             {
-                MessageBox.Show("请选择相机并输入有效的 ND 端口", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCameraAndNd, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             ConoscopeNdCalibrationBinding? binding = FindNdCalibrationBinding(camera, ndPort);
             if (binding == null)
             {
-                SetOperationStatus($"ND {ndPort} 没有绑定校正", Brushes.Gray);
+                SetOperationStatus(string.Format(Properties.Resources.MsgNdNotBound, ndPort), Brushes.Gray);
                 return;
             }
 
             CaptureConfig.NdCalibrationBindings.Remove(binding);
             ConfigService.Instance.Save<ConoscopeConfig>();
-            SetOperationStatus($"已解除 ND {ndPort} 的校正绑定", Brushes.LimeGreen);
+            SetOperationStatus(string.Format(Properties.Resources.MsgNdUnbound, ndPort), Brushes.LimeGreen);
         }
 
         private async void btnRunFlow_Click(object sender, RoutedEventArgs e)
@@ -377,7 +377,7 @@ namespace Conoscope
             TemplateModel<FlowParam>? flowTemplate = GetSelectedFlowTemplate();
             if (flowTemplate == null)
             {
-                MessageBox.Show("请选择流程", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectFlow, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -388,19 +388,19 @@ namespace Conoscope
             {
                 operationScope = BeginTrackedOperation(btnRunFlow, FlowRunOperationActionKey, "执行流程", DefaultFlowExpectedDurationMs);
                 SetOperationBusy(true);
-                SetOperationStatus($"正在执行流程: {flowTemplate.Key}", Brushes.DodgerBlue);
+                SetOperationStatus(string.Format(Properties.Resources.MsgFlowExecuting, flowTemplate.Key), Brushes.DodgerBlue);
 
                 ConoscopeFlowCaptureResult result = await ConoscopeCaptureWorkflow.RunFlowAsync(flowTemplate);
                 if (!result.Started)
                 {
-                    SetOperationStatus("流程未启动", Brushes.OrangeRed);
+                    SetOperationStatus(Properties.Resources.MsgFlowNotStarted, Brushes.OrangeRed);
                     return;
                 }
 
                 if (!result.Completed)
                 {
-                    SetOperationStatus($"流程结束: {result.FlowResult!.FlowStatus}", Brushes.OrangeRed);
-                    MessageBox.Show($"流程执行未完成: {result.FlowResult.FlowStatus}\n{result.FlowResult.Params}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(string.Format(Properties.Resources.MsgFlowIncomplete, result.FlowResult!.FlowStatus), Brushes.OrangeRed);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, result.FlowResult.FlowStatus, result.FlowResult.Params), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -408,18 +408,18 @@ namespace Conoscope
                 {
                     OpenConoscope(result.FilePath!, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     operationSucceeded = true;
-                    SetOperationStatus($"已打开 {System.IO.Path.GetFileName(result.FilePath)}", Brushes.LimeGreen);
+                    SetOperationStatus(string.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
                 }
                 else
                 {
-                    SetOperationStatus("流程结果未找到 CVCIE", Brushes.OrangeRed);
-                    MessageBox.Show("流程执行完成，但结果中没有找到 .cvcie 文件", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                    SetOperationStatus(Properties.Resources.MsgFlowCvcieNotFound, Brushes.OrangeRed);
+                    MessageBox.Show(Properties.Resources.MsgFlowCvcieNotFoundDetail, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                SetOperationStatus("流程执行失败", Brushes.OrangeRed);
-                MessageBox.Show($"流程执行失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                SetOperationStatus(Properties.Resources.MsgFlowFailed, Brushes.OrangeRed);
+                MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -434,7 +434,7 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null)
             {
-                MessageBox.Show("请选择相机设备", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -445,13 +445,13 @@ namespace Conoscope
             {
                 operationScope = BeginTrackedOperation(btnCaptureCamera, CameraCaptureOperationActionKey, "相机拍照", DefaultCameraCaptureExpectedDurationMs);
                 SetOperationBusy(true);
-                SetOperationStatus($"正在拍照: {camera.Config.Name}", Brushes.DodgerBlue);
+                SetOperationStatus(string.Format(Properties.Resources.MsgCapturingPhoto, camera.Config.Name), Brushes.DodgerBlue);
 
                 ConoscopeCameraCaptureResult result = await ConoscopeCaptureWorkflow.CaptureCameraAsync(camera, GetSelectedCalibrationParam());
                 if (!result.Succeeded)
                 {
-                    SetOperationStatus($"拍照失败: {result.State}", Brushes.OrangeRed);
-                    MessageBox.Show($"拍照失败: {result.State}\n{result.MessageRecord.MsgReturn?.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(string.Format(Properties.Resources.MsgCaptureFailed, result.State), Brushes.OrangeRed);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, result.State, result.MessageRecord.MsgReturn?.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -459,18 +459,18 @@ namespace Conoscope
                 {
                     OpenConoscope(result.FilePath!, result.ExposureSummary, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     operationSucceeded = true;
-                    SetOperationStatus($"已打开 {System.IO.Path.GetFileName(result.FilePath)}", Brushes.LimeGreen);
+                    SetOperationStatus(string.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
                 }
                 else
                 {
-                    SetOperationStatus("拍照结果未找到 CVCIE", Brushes.OrangeRed);
-                    MessageBox.Show("拍照完成，但结果中没有找到 .cvcie 文件", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                    SetOperationStatus(Properties.Resources.MsgCaptureCvcieNotFound, Brushes.OrangeRed);
+                    MessageBox.Show(Properties.Resources.MsgCaptureCvcieNotFoundDetail, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                SetOperationStatus("拍照失败", Brushes.OrangeRed);
-                MessageBox.Show($"拍照失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                SetOperationStatus(Properties.Resources.MsgCaptureFailedTitle, Brushes.OrangeRed);
+                MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -485,20 +485,20 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null)
             {
-                MessageBox.Show("请选择相机设备", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!int.TryParse(txtNDPort.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int port))
             {
-                MessageBox.Show("请输入有效的 ND 端口", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             try
             {
                 SetOperationBusy(true);
-                SetOperationStatus($"正在切换 ND: {port}", Brushes.DodgerBlue);
+                SetOperationStatus(string.Format(Properties.Resources.MsgSwitchingNd, port), Brushes.DodgerBlue);
                 camera.Config.NDPort = port;
                 MsgRecord msgRecord = camera.DService.SetNDPort();
                 MsgRecordState state = await ConoscopeCaptureWorkflow.WaitForMsgRecordAsync(msgRecord);
@@ -506,19 +506,19 @@ namespace Conoscope
                 {
                     if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))
                     {
-                        SetOperationStatus($"ND 已切换到 {port}", Brushes.LimeGreen);
+                        SetOperationStatus(string.Format(Properties.Resources.MsgNdSwitched, port), Brushes.LimeGreen);
                     }
                 }
                 else
                 {
-                    SetOperationStatus($"ND 切换失败: {state}", Brushes.OrangeRed);
-                    MessageBox.Show($"ND 切换失败: {state}\n{msgRecord.MsgReturn?.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(string.Format(Properties.Resources.MsgNdSwitchFailed, state), Brushes.OrangeRed);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, state, msgRecord.MsgReturn?.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
-                SetOperationStatus("ND 切换失败", Brushes.OrangeRed);
-                MessageBox.Show($"ND 切换失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                SetOperationStatus(Properties.Resources.MsgNdSwitchFailed, Brushes.OrangeRed);
+                MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -531,14 +531,14 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null)
             {
-                MessageBox.Show("请选择相机设备", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             try
             {
                 SetOperationBusy(true);
-                SetOperationStatus("正在读取 ND", Brushes.DodgerBlue);
+                SetOperationStatus(Properties.Resources.MsgReadingNd, Brushes.DodgerBlue);
                 MsgRecord msgRecord = camera.DService.GetPort();
                 MsgRecordState state = await ConoscopeCaptureWorkflow.WaitForMsgRecordAsync(msgRecord);
                 if (state == MsgRecordState.Success)
@@ -548,19 +548,19 @@ namespace Conoscope
                     txtNDPort.Text = port.ToString(CultureInfo.InvariantCulture);
                     if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))
                     {
-                        SetOperationStatus($"当前 ND: {port}", Brushes.LimeGreen);
+                        SetOperationStatus(string.Format(Properties.Resources.MsgCurrentNd, port), Brushes.LimeGreen);
                     }
                 }
                 else
                 {
-                    SetOperationStatus($"ND 读取失败: {state}", Brushes.OrangeRed);
-                    MessageBox.Show($"ND 读取失败: {state}\n{msgRecord.MsgReturn?.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(string.Format(Properties.Resources.MsgNdReadFailed, state), Brushes.OrangeRed);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, state, msgRecord.MsgReturn?.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
-                SetOperationStatus("ND 读取失败", Brushes.OrangeRed);
-                MessageBox.Show($"ND 读取失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                SetOperationStatus(Properties.Resources.MsgNdReadFailed, Brushes.OrangeRed);
+                MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

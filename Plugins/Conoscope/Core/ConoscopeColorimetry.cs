@@ -47,7 +47,7 @@ namespace Conoscope.Core
         {
             if (channel == ExportChannel.ColorDifference)
             {
-                throw new InvalidOperationException("色差通道需要指定 uv 基准");
+                throw new InvalidOperationException(Properties.Resources.ColorDiffNeedsUVRef);
             }
 
             if (channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV)
@@ -119,7 +119,7 @@ namespace Conoscope.Core
 
         private static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat uMat, OpenCvSharp.Mat vMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
         {
-            EnsureSameSize(uMat, referenceUMat, "u 基准图");
+            EnsureSameSize(uMat, referenceUMat, Properties.Resources.UReferenceImage);
             EnsureSameSize(vMat, referenceVMat, "v 基准图");
 
             using OpenCvSharp.Mat referenceU = EnsureType(referenceUMat, uMat.Type());
@@ -144,7 +144,7 @@ namespace Conoscope.Core
         {
             if (source.Width != reference.Width || source.Height != reference.Height)
             {
-                throw new InvalidOperationException($"{referenceName}尺寸与当前图像不一致");
+                throw new InvalidOperationException(string.Format(Properties.Resources.SizeMismatchFormat, referenceName));
             }
         }
 

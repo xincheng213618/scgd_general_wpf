@@ -13,12 +13,12 @@ namespace Conoscope.Analysis
         public ContrastTestWindow()
         {
             InitializeComponent();
-            StatusText.Text = "请选择白图和黑图后计算对比度";
+            StatusText.Text = Properties.Resources.PleaseSelectWhiteBlackImages;
         }
 
         private void SelectWhite_Click(object sender, RoutedEventArgs e)
         {
-            SelectImage("选择白图", measurement =>
+            SelectImage(Properties.Resources.SelectWhiteImage, measurement =>
             {
                 whiteMeasurement = measurement;
                 WhiteFileTextBox.Text = measurement.FilePath;
@@ -28,7 +28,7 @@ namespace Conoscope.Analysis
 
         private void SelectBlack_Click(object sender, RoutedEventArgs e)
         {
-            SelectImage("选择黑图", measurement =>
+            SelectImage(Properties.Resources.SelectBlackImage, measurement =>
             {
                 blackMeasurement = measurement;
                 BlackFileTextBox.Text = measurement.FilePath;
@@ -38,7 +38,7 @@ namespace Conoscope.Analysis
 
         private void CaptureWhiteFocusPoint_Click(object sender, RoutedEventArgs e)
         {
-            CaptureFocusPoint("白点", measurement =>
+            CaptureFocusPoint(Properties.Resources.WhitePoint, measurement =>
             {
                 whiteMeasurement = measurement;
                 WhiteFileTextBox.Text = measurement.FilePath;
@@ -48,7 +48,7 @@ namespace Conoscope.Analysis
 
         private void CaptureBlackFocusPoint_Click(object sender, RoutedEventArgs e)
         {
-            CaptureFocusPoint("黑点", measurement =>
+            CaptureFocusPoint(Properties.Resources.BlackPoint, measurement =>
             {
                 blackMeasurement = measurement;
                 BlackFileTextBox.Text = measurement.FilePath;
@@ -61,7 +61,7 @@ namespace Conoscope.Analysis
             OpenFileDialog openFileDialog = new()
             {
                 Title = title,
-                Filter = "CVCIE 文件|*.cvcie|所有文件|*.*",
+                Filter = Properties.Resources.CVCIEFileFilter,
                 RestoreDirectory = true
             };
 
@@ -74,13 +74,13 @@ namespace Conoscope.Analysis
             {
                 ImageMeasurement measurement = ImageMeasurementProviderRegistry.Read(openFileDialog.FileName);
                 applyMeasurement(measurement);
-                StatusText.Text = $"已读取 {measurement.FileName}";
+                StatusText.Text = string.Format(Properties.Resources.FileRead, measurement.FileName);
                 ContrastText.Text = string.Empty;
                 UpdateChromaticityText();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, Properties.Resources.ContrastTestTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -89,18 +89,18 @@ namespace Conoscope.Analysis
             global::Conoscope.ConoscopeView? activeView = GetActiveView();
             if (activeView == null)
             {
-                MessageBox.Show(this, "当前没有活动的 Conoscope 视图。", "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, Properties.Resources.NoActiveConoscopeView, Properties.Resources.ContrastTestTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!activeView.TryGetLatestFocusPointMeasurement(out ImageMeasurement measurement, out string? errorMessage))
             {
-                MessageBox.Show(this, errorMessage ?? "当前关注点不可用。", "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, errorMessage ?? Properties.Resources.CurrentFocusPointUnavailable, Properties.Resources.ContrastTestTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             applyMeasurement(measurement);
-            StatusText.Text = $"已记录 {slotName}: {measurement.FileName}";
+            StatusText.Text = string.Format(Properties.Resources.SlotRecorded, slotName, measurement.FileName);
             ContrastText.Text = string.Empty;
             UpdateChromaticityText();
         }
@@ -114,7 +114,7 @@ namespace Conoscope.Analysis
         {
             if (whiteMeasurement == null || blackMeasurement == null)
             {
-                MessageBox.Show(this, "请先选择白图和黑图", "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, Properties.Resources.PleaseSelectWhiteBlackFirst, Properties.Resources.ContrastTestTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -122,11 +122,11 @@ namespace Conoscope.Analysis
             {
                 ContrastResult result = contrastCalculator.Calculate(blackMeasurement, whiteMeasurement);
                 ContrastText.Text = result.RatioText;
-                StatusText.Text = $"白亮度 / 黑亮度 = {whiteMeasurement.Luminance:F4} / {blackMeasurement.Luminance:F4}";
+                StatusText.Text = string.Format(Properties.Resources.WhiteBlackLuminanceFormat, whiteMeasurement.Luminance.ToString("F4"), blackMeasurement.Luminance.ToString("F4"));
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "对比度测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, Properties.Resources.ContrastTestTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -140,19 +140,23 @@ namespace Conoscope.Analysis
             BlackLuminanceText.Text = string.Empty;
             ContrastText.Text = string.Empty;
             ChromaticityText.Text = string.Empty;
-            StatusText.Text = "请选择白图和黑图后计算对比度";
+            StatusText.Text = Properties.Resources.PleaseSelectWhiteBlackImages;
         }
 
         private void UpdateChromaticityText()
         {
-            string whiteText = whiteMeasurement == null ? "白图: 未选择" : $"白图: x={whiteMeasurement.Chromaticity.x:F6}, y={whiteMeasurement.Chromaticity.y:F6}";
-            string blackText = blackMeasurement == null ? "黑图: 未选择" : $"黑图: x={blackMeasurement.Chromaticity.x:F6}, y={blackMeasurement.Chromaticity.y:F6}";
+            string whiteText = whiteMeasurement == null
+                ? Properties.Resources.WhiteImageNotSelected
+                : string.Format(Properties.Resources.WhiteImageFormat, whiteMeasurement.Chromaticity.x.ToString("F6"), whiteMeasurement.Chromaticity.y.ToString("F6"));
+            string blackText = blackMeasurement == null
+                ? Properties.Resources.BlackImageNotSelected
+                : string.Format(Properties.Resources.BlackImageFormat, blackMeasurement.Chromaticity.x.ToString("F6"), blackMeasurement.Chromaticity.y.ToString("F6"));
             ChromaticityText.Text = $"{whiteText}\n{blackText}";
         }
 
         private static string FormatLuminance(ImageMeasurement measurement)
         {
-            return $"Y={measurement.Luminance:F4}  ({measurement.FileName})";
+            return string.Format(Properties.Resources.LuminanceFileNameFormat, measurement.Luminance.ToString("F4"), measurement.FileName);
         }
     }
 }

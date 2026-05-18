@@ -122,7 +122,7 @@ namespace Conoscope
                 catch (Exception ex)
                 {
                     log.Error($"刷新显示通道失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(ex.Message, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
         }
@@ -138,12 +138,12 @@ namespace Conoscope
             try
             {
                 ConfigService.Instance.Save<ConoscopeConfig>();
-                MessageBox.Show("配置已保存", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgConfigSaved, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 log.Error($"保存 Conoscope 配置失败: {ex.Message}", ex);
-                MessageBox.Show($"保存配置失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgSaveConfigFailedDetail, ex.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

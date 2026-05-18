@@ -11,7 +11,7 @@ namespace Conoscope.Analysis
         {
             InitializeComponent();
             ResultGrid.ItemsSource = result.Points.Select(item => new ContrastRowViewModel(item)).ToList();
-            tbSummary.Text = $"共 {result.Points.Count} 个关注点，平均对比度 {result.AverageRatio:F3}:1，最小 {result.MinimumRatio:F3}:1，最大 {result.MaximumRatio:F3}:1";
+            tbSummary.Text = string.Format(Properties.Resources.FocusPointCountAndAverageContrast, result.Points.Count, result.AverageRatio.ToString("F3"), result.MinimumRatio.ToString("F3"), result.MaximumRatio.ToString("F3"));
         }
 
         private sealed class ContrastRowViewModel
@@ -40,7 +40,7 @@ namespace Conoscope.Analysis
 
             private static string FormatChromaticity(ImageMeasurement measurement)
             {
-                return $"x={measurement.Chromaticity.x:F4}, y={measurement.Chromaticity.y:F4}";
+                return string.Format(Properties.Resources.ChromaticityFormat, measurement.Chromaticity.x.ToString("F4"), measurement.Chromaticity.y.ToString("F4"));
             }
         }
     }

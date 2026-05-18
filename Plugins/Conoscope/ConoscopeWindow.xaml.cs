@@ -2,12 +2,15 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Languages;
 using ColorVision.UI.Menus;
 using Conoscope.Core;
 using Conoscope.MVS;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -75,6 +78,7 @@ namespace Conoscope
             this.ApplyCaption();
             ConoscopeWindowConfig.Instance.SetWindow(this);
             InitializeTheme();
+            InitializeLanguageAndThemeSelectors();
             InitializeModelSelector();
             InitializeOperationControls();
             InitializeAnalysisRibbonControls();
@@ -136,7 +140,7 @@ namespace Conoscope
             }
             else
             {
-                tbExposureStatus.Text = "未记录";
+                tbExposureStatus.Text = Properties.Resources.StatusNotRecorded;
                 tbExposureStatus.Foreground = Brushes.Gray;
             }
         }
@@ -163,6 +167,48 @@ namespace Conoscope
             themeChangedHandler = ThemeChange;
             ThemeChange(ThemeManager.Current.CurrentUITheme);
             ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
+        }
+
+        private void InitializeLanguageAndThemeSelectors()
+        {
+            // Language selector
+            cbLanguage.Items.Clear();
+            var languages = LanguageManager.Current.Languages;
+            foreach (var lang in languages)
+            {
+                string displayName = LanguageManager.keyValuePairs.TryGetValue(lang, out string value) ? value : lang;
+                cbLanguage.Items.Add(new ComboBoxItem { Content = displayName, Tag = lang });
+                if (lang == Thread.CurrentThread.CurrentUICulture.Name)
+                    cbLanguage.SelectedIndex = cbLanguage.Items.Count - 1;
+            }
+
+            // Theme selector
+            cbTheme.Items.Clear();
+            var themeNames = new[] { Theme.UseSystem, Theme.Light, Theme.Dark, Theme.Pink, Theme.Cyan };
+            var themeDisplayNames = new[] { Properties.Resources.GroupConfig + ": System", "Light", "Dark", "Pink", "Cyan" };
+            for (int i = 0; i < themeNames.Length; i++)
+            {
+                cbTheme.Items.Add(new ComboBoxItem { Content = themeDisplayNames[i], Tag = themeNames[i] });
+                if (themeNames[i] == ThemeConfig.Instance.Theme)
+                    cbTheme.SelectedIndex = i;
+            }
+        }
+
+        private void cbLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cbLanguage.SelectedItem is ComboBoxItem item && item.Tag is string lang)
+            {
+                LanguageManager.Current.LanguageChange(lang);
+            }
+        }
+
+        private void cbTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cbTheme.SelectedItem is ComboBoxItem item && item.Tag is Theme theme)
+            {
+                ThemeConfig.Instance.Theme = theme;
+                Application.Current.ApplyTheme(theme);
+            }
         }
 
         private void InitializeModelSelector()
@@ -228,7 +274,7 @@ namespace Conoscope
                 : Math.Min(99, elapsedMilliseconds / operationExpectedDurationMs * 100);
 
             pbOperationProgress.Value = progressValue;
-            tbOperationProgressText.Text = $"{operationProgressLabel} {TimedButtonOperationTextFormatter.FormatDuration(elapsedMilliseconds)} / 预计 {TimedButtonOperationTextFormatter.FormatDuration(operationExpectedDurationMs)}";
+            tbOperationProgressText.Text = $"{operationProgressLabel} {TimedButtonOperationTextFormatter.FormatDuration(elapsedMilliseconds)} / {Properties.Resources.Estimated} {TimedButtonOperationTextFormatter.FormatDuration(operationExpectedDurationMs)}";
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
@@ -264,13 +310,13 @@ namespace Conoscope
                 ConfigService.Instance.Save<ConoscopeConfig>();
                 ConfigService.Instance.Save<ConoscopeWindowConfig>();
                 ConfigService.Instance.Save<FlowEngineConfig>();
-                SetOperationStatus("配置已保存", Brushes.LimeGreen);
-                MessageBox.Show("配置已保存", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                SetOperationStatus(Properties.Resources.MsgConfigSaved, Brushes.LimeGreen);
+                MessageBox.Show(Properties.Resources.MsgConfigSaved, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                SetOperationStatus("配置保存失败", Brushes.OrangeRed);
-                MessageBox.Show($"配置保存失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                SetOperationStatus(Properties.Resources.MsgConfigSaveFailed, Brushes.OrangeRed);
+                MessageBox.Show($"{Properties.Resources.MsgConfigSaveFailed}: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -294,13 +340,13 @@ namespace Conoscope
         private void btnNewView_Click(object sender, RoutedEventArgs e)
         {
             AddConoscopeView(null, activate: true);
-            SetOperationStatus("已新建视图", Brushes.LimeGreen);
+            SetOperationStatus(Properties.Resources.MsgNewViewCreated, Brushes.LimeGreen);
         }
 
         private void btnRefreshCameraDevices_Click(object sender, RoutedEventArgs e)
         {
             RefreshCameraDevices();
-            SetOperationStatus("相机列表已刷新", Brushes.LimeGreen);
+            SetOperationStatus(Properties.Resources.MsgCameraListRefreshed, Brushes.LimeGreen);
         }
 
         private void btnApplyPreprocessToActiveView_Click(object sender, RoutedEventArgs e)
@@ -308,12 +354,12 @@ namespace Conoscope
             ConoscopeView? activeView = ActiveView;
             if (activeView == null)
             {
-                MessageBox.Show("请先打开或新建一个 Conoscope 视图", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgNoActiveView, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             activeView.ApplyPreprocessFromCurrentSettings();
-            SetOperationStatus("已应用当前预处理预设", Brushes.LimeGreen);
+            SetOperationStatus(Properties.Resources.MsgPreprocessApplied, Brushes.LimeGreen);
         }
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -341,7 +387,7 @@ namespace Conoscope
                 tbObservationCameraStatus.Text = Properties.Resources.NotOpened;
                 tbObservationCameraStatus.Foreground = Brushes.Gray;
             };
-            tbObservationCameraStatus.Text = "已打开";
+            tbObservationCameraStatus.Text = Properties.Resources.MsgOpened;
             tbObservationCameraStatus.Foreground = Brushes.LimeGreen;
             observationCameraWindow.Show();
         }

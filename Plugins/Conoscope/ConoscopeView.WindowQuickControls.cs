@@ -12,7 +12,7 @@ namespace Conoscope
         double ReferenceValue,
         double ReferenceMaximum)
     {
-        public string ReferenceLabel => ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "方位角(°)" : "极角(°)";
+        public string ReferenceLabel => ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.LabelAzimuthDegLabel : Properties.Resources.LabelPolarDegLabel;
     }
 
     public partial class ConoscopeView

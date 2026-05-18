@@ -51,7 +51,7 @@ namespace Conoscope
 
                 if (Settings.Channels.Count == 0)
                 {
-                    MessageBox.Show("请至少选择一个通道", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgSelectOneChannel, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -61,7 +61,7 @@ namespace Conoscope
 
                 if (!Settings.ExportAzimuth && !Settings.ExportPolar)
                 {
-                    MessageBox.Show("请至少选择一种导出模式", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgSelectOneExportMode, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -93,7 +93,7 @@ namespace Conoscope
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"设置错误: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgSettingsError, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -102,35 +102,35 @@ namespace Conoscope
             // Validate file prefix
             if (string.IsNullOrWhiteSpace(txtFilePrefix.Text))
             {
-                MessageBox.Show("请输入文件前缀", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgEnterFilePrefix, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
             // Validate azimuth step
             if (!double.TryParse(txtAzimuthStep.Text, out double azimuthStep) || azimuthStep < 0.01 || azimuthStep > 180)
             {
-                MessageBox.Show("方位角步进必须是0.01-180之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Properties.Resources.MsgInvalidAzimuthStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
             // Validate radial step
             if (!double.TryParse(txtRadialStep.Text, out double radialStep) || radialStep < 0.01 || radialStep > 80)
             {
-                MessageBox.Show("径向采样步进必须是0.01-80之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Properties.Resources.MsgInvalidRadialStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
             // Validate polar step
             if (!double.TryParse(txtPolarStep.Text, out double polarStep) || polarStep < 0.01 || polarStep > 80)
             {
-                MessageBox.Show("圆环步进必须是0.01-80之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Properties.Resources.MsgInvalidRingStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
             // Validate circumferential step
             if (!double.TryParse(txtCircumferentialStep.Text, out double circumStep) || circumStep < 0.01 || circumStep > 360)
             {
-                MessageBox.Show("圆周角步进必须是0.01-360之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Properties.Resources.MsgInvalidCircularStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
@@ -141,7 +141,7 @@ namespace Conoscope
                 {
                     if (!double.TryParse(txtCrossSectionAzimuthAngle.Text, out double angle) || angle < 0 || angle > 180)
                     {
-                        MessageBox.Show("方位角截面角度必须是0-180之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(Properties.Resources.MsgInvalidAzimuthSection, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                         return false;
                     }
                 }
@@ -149,7 +149,7 @@ namespace Conoscope
                 {
                     if (!double.TryParse(txtCrossSectionPolarAngle.Text, out double angle) || angle < 0 || angle > 80)
                     {
-                        MessageBox.Show("极角截面角度必须是0-80之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(Properties.Resources.MsgInvalidPolarSection, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                         return false;
                     }
                 }

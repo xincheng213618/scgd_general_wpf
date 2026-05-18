@@ -220,7 +220,7 @@ namespace Conoscope
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
             ConoscopeConfig_ModelTypeChanged(sender, ConoscopeConfig.CurrentModel);
-            InitializePlot(wpfPlotReference, "参考曲线 (Reference Distribution)");
+            InitializePlot(wpfPlotReference, Properties.Resources.ReferenceCurve);
             UpdateReferencePlotDisplayMode();
             UpdateReferencePlotHeader();
 

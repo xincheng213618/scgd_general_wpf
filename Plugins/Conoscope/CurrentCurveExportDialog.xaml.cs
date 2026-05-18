@@ -22,7 +22,7 @@ namespace Conoscope
         {
             if (!TryParseStepDegrees(txtStepDegrees.Text, out double stepDegrees))
             {
-                MessageBox.Show("采样间隔必须是 0.01 到 360 之间的数值", "当前曲线导出", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgInvalidSamplingInterval, Properties.Resources.TitleCurrentCurveExport, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

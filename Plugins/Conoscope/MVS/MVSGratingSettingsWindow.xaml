@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Conoscope.MVS"
+        xmlns:properties="clr-namespace:Conoscope.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MVSViewManager}"
-        Title="观察相机设置"
+        Title="{x:Static properties:Resources.TitleObservationCameraSettings}"
         Width="420"
         SizeToContent="Height"
         ResizeMode="NoResize">
@@ -17,10 +18,10 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Margin="0,0,0,8" Text="当前型号参数会直接作用到当前测试区域叠加。" TextWrapping="Wrap"/>
+        <TextBlock Grid.Row="0" Margin="0,0,0,8" Text="{x:Static properties:Resources.TipCurrentModelApplies}" TextWrapping="Wrap"/>
 
         <TabControl Grid.Row="1" Margin="0,0,0,8">
-            <TabItem Header="测试区域">
+            <TabItem Header="{x:Static properties:Resources.TabTestArea}">
                 <Grid Margin="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -33,7 +34,7 @@
 
                     <DockPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,8">
                         <TextBox x:Name="tbNewGratingDiameter" Width="120" Style="{StaticResource TextBox.Small}"/>
-                        <Button Content="添加尺寸" Margin="8,0,0,0" Padding="10,3" Click="AddGratingDiameter_Click"/>
+                        <Button Content="{x:Static properties:Resources.BtnAddSize}" Margin="8,0,0,0" Padding="10,3" Click="AddGratingDiameter_Click"/>
                     </DockPanel>
 
                     <ListBox x:Name="GratingDiameterList"
@@ -43,12 +44,12 @@
                              MinHeight="120"/>
 
                     <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,0">
-                        <Button Content="删除当前" Padding="10,3" Click="RemoveGratingDiameter_Click"/>
+                        <Button Content="{x:Static properties:Resources.BtnDeleteCurrent}" Padding="10,3" Click="RemoveGratingDiameter_Click"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="观察相机">
+            <TabItem Header="{x:Static properties:Resources.LabelObservationCamera}">
                 <Grid Margin="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -62,31 +63,31 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="当前型号"/>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCurrentModel}"/>
                     <TextBlock Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" VerticalAlignment="Center" Text="{Binding CurrentModelProfile.DisplayName}"/>
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Pixel 类型"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelPixelType}"/>
                     <ComboBox Grid.Row="1"
                               Grid.Column="1"
                               Margin="0,0,0,8"
                               ItemsSource="{Binding PixelTypes}"
                               SelectedItem="{Binding Config.PixelType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="尺寸系数(mm/px)"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelSizeCoeff}"/>
                     <TextBox Grid.Row="2"
                              Grid.Column="1"
                              Margin="0,0,0,8"
                              Style="{StaticResource TextBox.Small}"
                              Text="{Binding CurrentModelProfile.ObservationCameraScaleCoefficient, StringFormat=F4, UpdateSourceTrigger=LostFocus}"/>
 
-                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="中心 X(px)"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCenterXPx}"/>
                     <TextBox Grid.Row="3"
                              Grid.Column="1"
                              Margin="0,0,0,8"
                              Style="{StaticResource TextBox.Small}"
                              Text="{Binding CurrentModelProfile.ObservationCameraCenterX, StringFormat=F1, UpdateSourceTrigger=LostFocus}"/>
 
-                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="中心 Y(px)"/>
+                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCenterYPx}"/>
                     <TextBox Grid.Row="4"
                              Grid.Column="1"
                              Style="{StaticResource TextBox.Small}"
@@ -96,7 +97,7 @@
         </TabControl>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Width="80" IsDefault="True" Content="关闭" Click="Close_Click"/>
+            <Button Width="80" IsDefault="True" Content="{x:Static properties:Resources.BtnClose}" Click="Close_Click"/>
         </StackPanel>
     </Grid>
 </Window>

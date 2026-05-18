@@ -21,7 +21,7 @@ namespace Conoscope
             {
                 if (currentBitmapSource == null)
                 {
-                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -33,13 +33,13 @@ namespace Conoscope
                 }
 
                 ConoscopeExportService.ExportAngleModeToCsv(filePath, channel, CreateExportContext());
-                MessageBox.Show($"数据已成功导出到:\n{filePath}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 log.Info($"成功导出方位角模式CSV: {filePath}");
             }
             catch (Exception ex)
             {
                 log.Error($"方位角模式导出失败: {ex.Message}", ex);
-                MessageBox.Show($"方位角模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgAzimuthExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -54,7 +54,7 @@ namespace Conoscope
             {
                 if (currentBitmapSource == null)
                 {
-                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -66,13 +66,13 @@ namespace Conoscope
                 }
 
                 ConoscopeExportService.ExportCircleModeToCsv(filePath, channel, CreateExportContext());
-                MessageBox.Show($"数据已成功导出到:\n{filePath}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 log.Info($"成功导出极角模式CSV: {filePath}");
             }
             catch (Exception ex)
             {
                 log.Error($"极角模式导出失败: {ex.Message}", ex);
-                MessageBox.Show($"极角模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgPolarExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -85,7 +85,7 @@ namespace Conoscope
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
-                Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                Filter = Properties.Resources.LabelSaveFilterCsv,
                 DefaultExt = "csv",
                 FileName = defaultFileName,
                 RestoreDirectory = true
@@ -98,7 +98,7 @@ namespace Conoscope
         {
             if (YMat == null)
             {
-                throw new InvalidOperationException("XYZ 数据未加载");
+                throw new InvalidOperationException(Properties.Resources.XYZDataNotLoaded);
             }
 
             double pixelsPerDegree = currentPixelsPerDegree > 0
@@ -132,7 +132,7 @@ namespace Conoscope
             {
                 if (currentBitmapSource == null)
                 {
-                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -146,7 +146,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"高级导出失败: {ex.Message}", ex);
-                MessageBox.Show($"高级导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgAdvancedExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -158,7 +158,7 @@ namespace Conoscope
                 int filesExported = 0;
 
                 using System.Windows.Forms.FolderBrowserDialog folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-                folderDialog.Description = "选择导出文件夹";
+                folderDialog.Description = Properties.Resources.MsgSelectExportFolder;
                 folderDialog.ShowNewFolderButton = true;
 
                 if (folderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
@@ -171,7 +171,7 @@ namespace Conoscope
                 if (settings.EnableCrossSection)
                 {
                     ExportCrossSectionToFolder(settings, timestamp, outputFolder, ref filesExported);
-                    MessageBox.Show($"截面导出完成，共导出 {filesExported} 个文件到:\n{outputFolder}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgSectionExportDone, filesExported, outputFolder), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                     log.Info($"截面导出完成: {filesExported} 个文件");
                     return;
                 }
@@ -202,13 +202,13 @@ namespace Conoscope
                     }
                 }
 
-                MessageBox.Show($"导出完成，共导出 {filesExported} 个文件到:\n{outputFolder}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Format(Properties.Resources.MsgExportDone, filesExported, outputFolder), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 log.Info($"高级导出完成: {filesExported} 个文件");
             }
             catch (Exception ex)
             {
                 log.Error($"高级导出执行失败: {ex.Message}", ex);
-                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -288,7 +288,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"保存当前曲线导出配置失败: {ex.Message}", ex);
-                MessageBox.Show($"导出已完成，但保存当前曲线导出配置失败: {ex.Message}", "当前曲线导出", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(string.Format(Properties.Resources.MsgCurveExportConfigSaveFailed, ex.Message), Properties.Resources.TitleCurrentCurveExport, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -298,13 +298,13 @@ namespace Conoscope
             {
                 if (selectedPolarLine == null)
                 {
-                    MessageBox.Show("请先选择一个方位角", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgSelectAzimuthFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 if (YMat == null)
                 {
-                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -327,14 +327,14 @@ namespace Conoscope
                     CreateExportContext(),
                     selectedPolarLine.Angle,
                     exportOptions);
-                MessageBox.Show($"方位角 {selectedPolarLine.Angle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Format(Properties.Resources.MsgAzimuthExportSuccess, selectedPolarLine.Angle), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 SaveCurrentCurveExportOptions(exportOptions);
                 log.Info($"单个方位角导出成功: {filePath}");
             }
             catch (Exception ex)
             {
                 log.Error($"导出当前方位角失败: {ex.Message}", ex);
-                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -344,13 +344,13 @@ namespace Conoscope
             {
                 if (selectedCircleLine == null)
                 {
-                    MessageBox.Show("请先选择一个极角", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgSelectPolarFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 if (YMat == null)
                 {
-                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -373,14 +373,14 @@ namespace Conoscope
                     CreateExportContext(),
                     selectedCircleLine.RadiusAngle,
                     exportOptions);
-                MessageBox.Show($"极角 {selectedCircleLine.RadiusAngle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Format(Properties.Resources.MsgPolarExportSuccess, selectedCircleLine.RadiusAngle), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 SaveCurrentCurveExportOptions(exportOptions);
                 log.Info($"单个极角导出成功: {filePath}");
             }
             catch (Exception ex)
             {
                 log.Error($"导出当前极角失败: {ex.Message}", ex);
-                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

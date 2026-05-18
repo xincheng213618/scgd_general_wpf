@@ -71,19 +71,19 @@
             <local:ConoscopeImageHost x:Name="ImageView" />
             <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglPanMode" Style="{StaticResource OverlayToolToggleStyle}" Content="平移" ToolTip="开启后左键拖拽可平移图像；关闭后按住 Ctrl 再平移。" IsChecked="True" Checked="tglPanMode_Checked" Unchecked="tglPanMode_Unchecked" />
-                    <ToggleButton x:Name="tglReferenceInteraction" Style="{StaticResource OverlayToolToggleStyle}" Content="参考拖拽" ToolTip="允许在图上直接拖动参考方位线和极角圆；进入关注点模式时会临时关闭。" IsChecked="True" Checked="tglReferenceInteraction_Checked" Unchecked="tglReferenceInteraction_Unchecked" />
+                    <ToggleButton x:Name="tglPanMode" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbPan}" ToolTip="{x:Static properties:Resources.TbPanTip}" IsChecked="True" Checked="tglPanMode_Checked" Unchecked="tglPanMode_Unchecked" />
+                    <ToggleButton x:Name="tglReferenceInteraction" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbRefDrag}" ToolTip="{x:Static properties:Resources.TbRefDragTip}" IsChecked="True" Checked="tglReferenceInteraction_Checked" Unchecked="tglReferenceInteraction_Unchecked" />
                     <Separator/>
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="-" FontSize="16" FontWeight="Bold" ToolTip="缩小" Click="ToolbarZoomOut_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="放大" Click="ToolbarZoomIn_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="1:1" ToolTip="原始尺寸" Click="ToolbarZoomNone_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="适" ToolTip="适应窗口" Click="ToolbarZoomUniform_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="填" ToolTip="铺满窗口" Click="ToolbarZoomUniformToFill_Click" />
-                    <TextBox x:Name="txtToolbarZoomRatio" Width="54" Margin="4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Text="1.00" ToolTip="当前缩放倍率" PreviewKeyDown="txtToolbarZoomRatio_PreviewKeyDown" LostFocus="txtToolbarZoomRatio_LostFocus" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="全" ToolTip="切换图像全屏" Click="ToolbarFullScreen_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="-" FontSize="16" FontWeight="Bold" ToolTip="{x:Static properties:Resources.TbZoomOut}" Click="ToolbarZoomOut_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="{x:Static properties:Resources.TbZoomIn}" Click="ToolbarZoomIn_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="1:1" ToolTip="{x:Static properties:Resources.TbOriginalSize}" Click="ToolbarZoomNone_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFit}" ToolTip="{x:Static properties:Resources.TbFitTip}" Click="ToolbarZoomUniform_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFill}" ToolTip="{x:Static properties:Resources.TbFillTip}" Click="ToolbarZoomUniformToFill_Click" />
+                    <TextBox x:Name="txtToolbarZoomRatio" Width="54" Margin="4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Text="1.00" ToolTip="{x:Static properties:Resources.TbZoomRatioTip}" PreviewKeyDown="txtToolbarZoomRatio_PreviewKeyDown" LostFocus="txtToolbarZoomRatio_LostFocus" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFullscreen}" ToolTip="{x:Static properties:Resources.TbFullscreenTip}" Click="ToolbarFullScreen_Click" />
                     <Separator/>
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="3D" ToolTip="打开当前图像的 3D 视图" Click="ToolbarOpen3D_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="CIE" ToolTip="打开 CIE 色度图" Click="ToolbarOpenCie_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="3D" ToolTip="{x:Static properties:Resources.TipOpen3DView}" Click="ToolbarOpen3D_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="CIE" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}" Click="ToolbarOpenCie_Click" />
                 </ToolBar>
             </Border>
             <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Padding="8" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
@@ -101,13 +101,13 @@
             </Border>
             <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" Content="编辑关注点" ToolTip="开启后进入关注点工具模式；绘制、编辑、橡皮三种子工具互斥，并会临时关闭参考拖拽。" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" Content="圆" ToolTip="仅绘制新的关注点圆" IsChecked="True" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="编辑" ToolTip="选中并拖拽已有关注点圆" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" Content="橡皮" ToolTip="框选擦除关注点圆" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEditFocusPoint}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbCircle}" ToolTip="{x:Static properties:Resources.TbCircleTip}" IsChecked="True" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEdit}" ToolTip="{x:Static properties:Resources.TbEditTip}" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEraser}" ToolTip="{x:Static properties:Resources.TbEraserTip}" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
                     <Separator/>
-                    <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="算" ToolTip="计算全部关注点" Click="btnCalculateFocusCircles_Click" />
-                    <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="清" ToolTip="清空全部关注点" Click="btnClearFocusCircles_Click" />
+                    <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbCalc}" ToolTip="{x:Static properties:Resources.TbCalcTip}" Click="btnCalculateFocusCircles_Click" />
+                    <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbClearAll}" ToolTip="{x:Static properties:Resources.TbClearAllTip}" Click="btnClearFocusCircles_Click" />
                 </ToolBar>
             </Border>
         </Grid>
@@ -121,35 +121,35 @@
             </Grid.RowDefinitions>
 
             <TabControl Grid.Row="0" MaxHeight="220" MinHeight="112">
-                <TabItem Header="显示">
+                <TabItem Header="{x:Static properties:Resources.PanelDisplay}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
                             <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
                                 <WrapPanel Margin="0,0,0,2">
-                                    <Button Content="应用当前预设" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
-                                    <Button Content="预处理设置" Click="btnOpenPreprocessSettings_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+                                    <Button Content="{x:Static properties:Resources.BtnApplyPreset}" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                                    <Button Content="{x:Static properties:Resources.BtnPreprocessSettings}" Click="btnOpenPreprocessSettings_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
                                 </WrapPanel>
                             </Border>
 
                             <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
                                 <StackPanel>
-                                    <TextBlock Text="显示与参考" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{x:Static properties:Resources.LabelDisplayAndReference}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
                                     <WrapPanel Margin="0,4,0,2">
-                                        <TextBlock Text="显示通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBlock Text="{x:Static properties:Resources.LabelDisplayChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
-                                            <ComboBoxItem Content="X 通道" Tag="X"/>
-                                            <ComboBoxItem Content="Y 通道" Tag="Y"/>
-                                            <ComboBoxItem Content="Z 通道" Tag="Z"/>
-                                            <ComboBoxItem Content="x 色度" Tag="CieX"/>
-                                            <ComboBoxItem Content="y 色度" Tag="CieY"/>
-                                            <ComboBoxItem Content="u 色度" Tag="CieU"/>
-                                            <ComboBoxItem Content="v 色度" Tag="CieV"/>
-                                            <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
                                         </ComboBox>
-                                        <TextBlock Text="参考模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBlock Text="{x:Static properties:Resources.LabelRefMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
-                                            <ComboBoxItem Content="方位角直线" Tag="AzimuthLine"/>
-                                            <ComboBoxItem Content="极角圆" Tag="PolarCircle"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
                                         </ComboBox>
                                     </WrapPanel>
 
@@ -160,7 +160,7 @@
                                             <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="参考方位" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{x:Static properties:Resources.LabelRefAzimuth}" VerticalAlignment="Center"/>
                                         <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
                                         <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="3" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
                                     </Grid>
@@ -172,7 +172,7 @@
                                             <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="参考极角" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{x:Static properties:Resources.LabelRefPolar}" VerticalAlignment="Center"/>
                                         <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
                                         <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="3" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
                                     </Grid>
@@ -182,25 +182,25 @@
                     </ScrollViewer>
                 </TabItem>
 
-                <TabItem Header="色差">
+                <TabItem Header="{x:Static properties:Resources.PanelColorDiff}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
                             <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
                                 <StackPanel>
-                                    <TextBlock Text="色差计算" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{x:Static properties:Resources.LabelColorDiffCalc}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
                                     <WrapPanel Margin="0,4,0,4">
-                                        <TextBlock Text="基准:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBlock Text="{x:Static properties:Resources.LabelBaseRef}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
-                                            <ComboBoxItem Content="D65 光源" Tag="D65"/>
-                                            <ComboBoxItem Content="D50 光源" Tag="D50"/>
-                                            <ComboBoxItem Content="A 光源" Tag="A"/>
-                                            <ComboBoxItem Content="D75 光源" Tag="D75"/>
-                                            <ComboBoxItem Content="图像中心 50px" Tag="ImageCenter"/>
-                                            <ComboBoxItem Content="自定义坐标" Tag="Custom"/>
-                                            <ComboBoxItem Content="实测基准图" Tag="ReferenceImage"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="A"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="D75"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="ImageCenter"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="Custom"/>
+                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="ReferenceImage"/>
                                         </ComboBox>
-                                        <Button x:Name="btnSaveColorDifferenceReference" Content="保存色差基准图" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
-                                        <Button Content="计算色差" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
+                                        <Button x:Name="btnSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnSaveBaseImage}" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
+                                        <Button Content="{x:Static properties:Resources.BtnComputeColorDiff}" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
                                     </WrapPanel>
                                     <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
                                         <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
@@ -215,31 +215,31 @@
                     </ScrollViewer>
                 </TabItem>
 
-                <TabItem Header="导出">
+                <TabItem Header="{x:Static properties:Resources.PanelExport}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
                             <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,5">
                                 <StackPanel>
-                                    <TextBlock Text="导出设置" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{x:Static properties:Resources.LabelExportSettings}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
                                     <WrapPanel Margin="0,0,0,0">
-                                    <TextBlock Text="导出模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <TextBlock Text="{x:Static properties:Resources.LabelExportMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                     <ComboBox x:Name="cbExportMode" MinWidth="120" SelectedIndex="0" Margin="0,0,14,0">
-                                        <ComboBoxItem Content="按方位角导出" Tag="Angle"/>
-                                        <ComboBoxItem Content="按极角导出" Tag="Circle"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiAzimuthExport}" Tag="Angle"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiPolarExport}" Tag="Circle"/>
                                     </ComboBox>
-                                    <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <TextBlock Text="{x:Static properties:Resources.LabelExportChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                     <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
-                                        <ComboBoxItem Content="X通道" Tag="X"/>
-                                        <ComboBoxItem Content="Y通道" Tag="Y"/>
-                                        <ComboBoxItem Content="Z通道" Tag="Z"/>
-                                        <ComboBoxItem Content="x色度" Tag="CieX"/>
-                                        <ComboBoxItem Content="y色度" Tag="CieY"/>
-                                        <ComboBoxItem Content="u色度" Tag="CieU"/>
-                                        <ComboBoxItem Content="v色度" Tag="CieV"/>
-                                        <ComboBoxItem Content="色差Δuv" Tag="ColorDifference"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelXShort}" Tag="X"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelYShort}" Tag="Y"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelZShort}" Tag="Z"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieXShort}" Tag="CieX"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieYShort}" Tag="CieY"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
                                     </ComboBox>
-                                    <Button Content="方位角导出" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                                    <Button Content="极角导出" Click="btnExportCircleMode_Click" Padding="10,4"/>
+                                    <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
+                                    <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Padding="10,4"/>
                                     </WrapPanel>
                                 </StackPanel>
                             </Border>
@@ -247,10 +247,10 @@
                     </ScrollViewer>
                 </TabItem>
 
-                <TabItem Header="设置">
+                <TabItem Header="{x:Static properties:Resources.PanelSettings}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
-                            <Button Content="保存配置" Click="btnSaveConoscopeConfig_Click" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8"/>
+                            <Button Content="{x:Static properties:Resources.BtnSaveConfig}" Click="btnSaveConoscopeConfig_Click" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8"/>
                             <Grid x:Name="GridSetting" Margin="0,0,0,10" />
                         </StackPanel>
                     </ScrollViewer>
@@ -265,15 +265,15 @@
                     </Grid.RowDefinitions>
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,5">
                         <DockPanel LastChildFill="False">
-                            <TextBlock DockPanel.Dock="Left" Text="参考曲线" Style="{StaticResource PanelHeaderTextStyle}"/>
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.LabelRefCurve}" Style="{StaticResource PanelHeaderTextStyle}"/>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                <TextBlock Text="模式" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
+                                <TextBlock Text="{x:Static properties:Resources.LabelMode}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
                                 <TextBlock x:Name="tbReferenceMode" MinWidth="72" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                <TextBlock Text="当前值" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
+                                <TextBlock Text="{x:Static properties:Resources.LabelCurrentValue}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
                                 <TextBlock x:Name="tbReferenceValue" MinWidth="78" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                <TextBlock Text="图形" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
-                                <ToggleButton x:Name="tglReferencePolarMode" Content="极坐标" Style="{StaticResource PanelCompactToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,12,0"/>
-                                <Button Content="导出当前" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+                                <TextBlock Text="{x:Static properties:Resources.LabelGraph}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
+                                <ToggleButton x:Name="tglReferencePolarMode" Content="{x:Static properties:Resources.BtnPolarCoord}" Style="{StaticResource PanelCompactToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,12,0"/>
+                                <Button Content="{x:Static properties:Resources.BtnExportCurrent}" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>

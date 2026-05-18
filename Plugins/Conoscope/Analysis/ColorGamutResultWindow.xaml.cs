@@ -22,7 +22,7 @@ namespace Conoscope.Analysis
             rows = result.Points.Select(item => new ColorGamutRowViewModel(item)).ToList();
 
             tbStandardName.Text = result.Standard.Name;
-            tbSummary.Text = $"共 {rows.Count} 个关注点，平均色域值 {result.AverageCoveragePercent:F2}%";
+            tbSummary.Text = string.Format(Properties.Resources.FocusPointCountAndAverageGamut, rows.Count, result.AverageCoveragePercent.ToString("F2"));
 
             ResultGrid.ItemsSource = rows;
             cbDisplayScope.ItemsSource = CreateScopeOptions();
@@ -134,8 +134,7 @@ namespace Conoscope.Analysis
             SolidColorBrush stroke = new(accentColor);
             SolidColorBrush fill = new(Color.FromArgb(28, accentColor.R, accentColor.G, accentColor.B));
             return new CieGamut(
-                $"实测 {pointResult.PointName}",
-                new[]
+                string.Format(Properties.Resources.Measured, pointResult.PointName),                new[]
                 {
                     pointResult.RedChromaticity,
                     pointResult.GreenChromaticity,
@@ -191,7 +190,7 @@ namespace Conoscope.Analysis
 
             private static string FormatChromaticity(ImageMeasurement measurement)
             {
-                return $"x={measurement.Chromaticity.x:F4}, y={measurement.Chromaticity.y:F4}";
+                return string.Format(Properties.Resources.ChromaticityFormat, measurement.Chromaticity.x.ToString("F4"), measurement.Chromaticity.y.ToString("F4"));
             }
         }
     }

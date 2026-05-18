@@ -67,7 +67,7 @@ namespace Conoscope
         private void UpdateReferencePlotHeader()
         {
             ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
-            tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "方位角直线" : "极角圆";
+            tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.RefAzimuthLine : Properties.Resources.RefPolarCircle;
             tbReferenceValue.Text = GetReferenceValueText(axisParam.ReferenceMode, axisParam.ReferenceAngle, axisParam.ReferenceRadiusAngle);
         }
 
@@ -181,7 +181,7 @@ namespace Conoscope
             polarPlotReference.UpdatePlot(
                 points,
                 GetChannelPlotBrush(channel),
-                $"半径: {ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)}",
+                string.Format(Properties.Resources.RadiusFormat, ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)),
                 radialMaximum,
                 closePath);
         }

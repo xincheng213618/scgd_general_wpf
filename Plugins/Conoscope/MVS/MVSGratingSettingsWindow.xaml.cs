@@ -18,7 +18,7 @@ namespace Conoscope.MVS
         {
             if (!TryParseDoubleText(tbNewGratingDiameter.Text, out double diameterMillimeters) || diameterMillimeters <= 0)
             {
-                MessageBox.Show("请输入大于 0 的测试区域尺寸。", "观察相机设置", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.TestAreaSizeMustBePositive, Properties.Resources.ObservationCameraSettings, MessageBoxButton.OK, MessageBoxImage.Warning);
                 tbNewGratingDiameter.Focus();
                 tbNewGratingDiameter.SelectAll();
                 return;

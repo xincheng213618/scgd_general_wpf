@@ -209,7 +209,7 @@ namespace Conoscope.MVS
             if (imgDisplay.ImageShow.Source == null)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = $"测试区域: {diameterMillimeters:g} mm | 等待图像";
+                tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWaitingForImage, diameterMillimeters);
                 return;
             }
 
@@ -227,7 +227,7 @@ namespace Conoscope.MVS
                 imagePixelDiameter,
                 imgDisplay.Zoombox1.ContentMatrix.M11);
             imgDisplay.ImageShow.TopVisual(gratingOverlay);
-            tbGratingOverlayStatus.Text = $"测试区域: {diameterMillimeters:g} mm | 中心: ({currentModelProfile.ObservationCameraCenterX:F1}, {currentModelProfile.ObservationCameraCenterY:F1})";
+            tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWithCenter, diameterMillimeters, currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
         }
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)
@@ -274,7 +274,7 @@ namespace Conoscope.MVS
                 case MyCamera.MV_E_NETER: errorMsg += " Network error "; break;
             }
 
-            MessageBox.Show(errorMsg, "PROMPT");
+            MessageBox.Show(errorMsg, Properties.Resources.Prompt);
         }
 
         private void DeviceListAcq()

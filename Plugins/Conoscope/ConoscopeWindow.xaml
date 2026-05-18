@@ -154,7 +154,7 @@
                             Background="Transparent"
                             BorderThickness="0"
                             Padding="0">
-                    <TabItem Header="主页">
+                    <TabItem Header="{x:Static properties:Resources.TabHome}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -164,17 +164,17 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button Click="OpenFile_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="打开一个或多个 Conoscope 图像">
+                                            <Button Click="OpenFile_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenFile}">
                                                 <TextBlock Text="&#xE8E5;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button Click="btnNewView_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="创建一个空白 Conoscope 视图">
+                                            <Button Click="btnNewView_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipNewView}">
                                                 <TextBlock Text="&#xE710;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button Click="btnSaveWindowConfig_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="保存窗口与 Conoscope 配置">
+                                            <Button Click="btnSaveWindowConfig_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipSaveConfig}">
                                                 <TextBlock Text="&#xE74E;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="数据" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupData}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -185,16 +185,16 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="型号" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.Model}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbModelType" Width="132" SelectionChanged="cbModelType_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <Button x:Name="btnOpenObservationCamera" Click="btnOpenObservationCamera_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开观察相机窗口">
+                                            <Button x:Name="btnOpenObservationCamera" Click="btnOpenObservationCamera_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenObservationCamera}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE890;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="观察相机" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnObservationCamera}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="模型" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupModel}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -205,50 +205,50 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <WrapPanel>
-                                            <TextBlock Text="通道" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelChannel}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbHomeDisplayChannel" Width="112" SelectionChanged="cbHomeDisplayChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="X 通道" Tag="X"/>
-                                                <ComboBoxItem Content="Y 通道" Tag="Y"/>
-                                                <ComboBoxItem Content="Z 通道" Tag="Z"/>
-                                                <ComboBoxItem Content="x 色度" Tag="CieX"/>
-                                                <ComboBoxItem Content="y 色度" Tag="CieY"/>
-                                                <ComboBoxItem Content="u 色度" Tag="CieU"/>
-                                                <ComboBoxItem Content="v 色度" Tag="CieV"/>
-                                                <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
                                             </ComboBox>
-                                            <TextBlock Text="参考" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelReference}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbHomeReferenceMode" Width="118" SelectionChanged="cbHomeReferenceMode_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="方位角直线" Tag="AzimuthLine"/>
-                                                <ComboBoxItem Content="极角圆" Tag="PolarCircle"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
                                             </ComboBox>
-                                            <TextBlock x:Name="tbHomeReferenceValueLabel" Text="方位角(°)" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock x:Name="tbHomeReferenceValueLabel" Text="{x:Static properties:Resources.LabelAzimuthDeg}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <TextBox x:Name="txtHomeReferenceValue"
                                                      Width="76"
                                                      Style="{StaticResource RibbonTextBoxStyle}"
                                                      PreviewKeyDown="txtHomeReferenceValue_PreviewKeyDown"
                                                      LostFocus="txtHomeReferenceValue_LostFocus" />
-                                            <TextBlock Text="导出" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelExport}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbHomeExportChannel" Width="112" SelectionChanged="cbHomeExportChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="X 通道" Tag="X"/>
-                                                <ComboBoxItem Content="Y 通道" Tag="Y"/>
-                                                <ComboBoxItem Content="Z 通道" Tag="Z"/>
-                                                <ComboBoxItem Content="x 色度" Tag="CieX"/>
-                                                <ComboBoxItem Content="y 色度" Tag="CieY"/>
-                                                <ComboBoxItem Content="u 色度" Tag="CieU"/>
-                                                <ComboBoxItem Content="v 色度" Tag="CieV"/>
-                                                <ComboBoxItem Content="色差 Δuv" Tag="ColorDifference"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
                                             </ComboBox>
-                                            <Button x:Name="btnHomeExportAngle" Content="方位导出" Click="btnHomeExportAngle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="按当前活动 View 的导出通道执行方位角导出" />
-                                            <Button x:Name="btnHomeExportCircle" Content="极角导出" Click="btnHomeExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="按当前活动 View 的导出通道执行极角导出" />
+                                            <Button x:Name="btnHomeExportAngle" Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnHomeExportAngle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportAzimuthData}" />
+                                            <Button x:Name="btnHomeExportCircle" Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnHomeExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportPolarData}" />
                                         </WrapPanel>
-                                        <TextBlock Grid.Row="1" Text="当前视图" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupCurrentView}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="采集">
+                    <TabItem Header="{x:Static properties:Resources.TabCapture}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -259,18 +259,18 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="流程模板" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelFlowTemplate}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbFlowTemplate" Width="176" DisplayMemberPath="Key" SelectionChanged="cbFlowTemplate_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <Button x:Name="btnEditFlowTemplates" Click="btnEditFlowTemplates_Click" ToolTip="打开流程模板管理" Style="{StaticResource RibbonLargeButtonStyle}">
+                                            <Button x:Name="btnEditFlowTemplates" Click="btnEditFlowTemplates_Click" ToolTip="{x:Static properties:Resources.TipOpenFlowTemplateMgmt}" Style="{StaticResource RibbonLargeButtonStyle}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="设置" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnSettings}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
-                                            <Button x:Name="btnRunFlow" Click="btnRunFlow_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="执行当前流程并打开结果图像">
+                                            <Button x:Name="btnRunFlow" Click="btnRunFlow_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="{x:Static properties:Resources.TipExecuteFlow}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE768;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="执行" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnExecute}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
@@ -279,9 +279,9 @@
                                                   Margin="0,8,0,0"
                                                   VerticalAlignment="Center"
                                                   IsChecked="True"
-                                                  Content="流程/拍图结果复用当前视图"
-                                                  ToolTip="勾选后，流程结果和相机拍图结果都会直接刷新当前活动 View，减少额外内存占用" />
-                                        <TextBlock Grid.Row="2" Text="流程采集" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                                  Content="{x:Static properties:Resources.ChkReuseActiveView}"
+                                                  ToolTip="{x:Static properties:Resources.TipReuseActiveView}" />
+                                        <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.GroupFlowCapture}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -292,13 +292,13 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="相机" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelCamera}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbCameraDevice"
                                                       Width="176"
                                                       DisplayMemberPath="Config.Name"
                                                       SelectionChanged="cbCameraDevice_SelectionChanged"
                                                       Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <TextBlock Text="校正" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.Calibration}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbCalibrationTemplate"
                                                       Width="140"
                                                       DisplayMemberPath="Key"
@@ -306,33 +306,33 @@
                                                       Style="{StaticResource RibbonComboBoxStyle}" />
                                             <Button x:Name="btnEditCalibrationTemplates"
                                                     Click="btnEditCalibrationTemplates_Click"
-                                                    ToolTip="打开当前相机的校正模板管理"
+                                                    ToolTip="{x:Static properties:Resources.TipOpenCalibrationMgmt}"
                                                     Style="{StaticResource RibbonLargeButtonStyle}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="校正" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.Calibration}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                             <Button x:Name="btnRefreshCameraDevices"
                                                     Click="btnRefreshCameraDevices_Click"
-                                                    ToolTip="刷新相机与校正模板列表"
+                                                    ToolTip="{x:Static properties:Resources.TipRefreshCameraList}"
                                                     Style="{StaticResource RibbonButtonStyle}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE72C;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="刷新" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnRefresh}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                             <Button x:Name="btnCaptureCamera"
                                                     Click="btnCaptureCamera_Click"
                                                     Style="{StaticResource RibbonPrimaryButtonStyle}"
-                                                    ToolTip="使用当前相机与校正模板拍照">
+                                                    ToolTip="{x:Static properties:Resources.TipCapturePhoto}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE722;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="拍照" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnCapturePhoto}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="测量相机" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupMeasurementCamera}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -343,32 +343,32 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="ND 端口" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelNdPort}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <TextBox x:Name="txtNDPort" Width="60" Style="{StaticResource RibbonTextBoxStyle}" />
-                                            <Button x:Name="btnSetNDPort" Click="btnSetNDPort_Click" ToolTip="切换到输入的 ND 端口" Style="{StaticResource RibbonButtonStyle}">
+                                            <Button x:Name="btnSetNDPort" Click="btnSetNDPort_Click" ToolTip="{x:Static properties:Resources.TipSwitchNdPort}" Style="{StaticResource RibbonButtonStyle}">
                                                 <TextBlock Text="&#xE8AB;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button x:Name="btnGetNDPort" Click="btnGetNDPort_Click" ToolTip="读取当前 ND 端口" Style="{StaticResource RibbonButtonStyle}">
+                                            <Button x:Name="btnGetNDPort" Click="btnGetNDPort_Click" ToolTip="{x:Static properties:Resources.TipReadNdPort}" Style="{StaticResource RibbonButtonStyle}">
                                                 <TextBlock Text="&#xE72C;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
                                             <Button x:Name="btnBindNdCalibration"
                                                     Click="btnBindNdCalibration_Click"
-                                                    ToolTip="将当前 ND 端口绑定到当前校正模板"
+                                                    ToolTip="{x:Static properties:Resources.TipBindNdCalibration}"
                                                     Style="{StaticResource RibbonButtonStyle}">
                                                 <TextBlock Text="&#xE71B;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button x:Name="btnClearNdCalibrationBinding" Click="btnClearNdCalibrationBinding_Click" ToolTip="取消当前 ND 端口与校正模板的绑定" Style="{StaticResource RibbonSmallButtonStyle}">
+                                            <Button x:Name="btnClearNdCalibrationBinding" Click="btnClearNdCalibrationBinding_Click" ToolTip="{x:Static properties:Resources.TipClearNdCalibration}" Style="{StaticResource RibbonSmallButtonStyle}">
                                                 <TextBlock Text="&#xE74D;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="ND / 校正" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupNdCalibration}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="预处理">
+                    <TabItem Header="{x:Static properties:Resources.TabPreprocess}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -379,13 +379,13 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
                                             <CheckBox x:Name="chkWindowApplyFilterOnOpen"
-                                                      Content="启用预处理"
+                                                      Content="{x:Static properties:Resources.ChkEnablePreprocess}"
                                                       Checked="WindowPreprocess_Changed"
                                                       Unchecked="WindowPreprocess_Changed"
                                                       Margin="0,0,12,0"
                                                       VerticalAlignment="Center" />
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="启用" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupEnable}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -425,23 +425,23 @@
                                             <Button x:Name="btnOpenPreprocessSettings"
                                                     Click="btnOpenPreprocessSettings_Click"
                                                     Style="{StaticResource RibbonLargeButtonStyle}"
-                                                    ToolTip="打开完整滤波和灰尘滤除参数">
+                                                    ToolTip="{x:Static properties:Resources.TipOpenPreprocessSettings}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="设置" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnSettings}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                             <Button x:Name="btnApplyPreprocessToActiveView"
                                                     Click="btnApplyPreprocessToActiveView_Click"
                                                     Style="{StaticResource RibbonPrimaryButtonStyle}"
-                                                    ToolTip="按当前预处理预设处理激活视图">
+                                                    ToolTip="{x:Static properties:Resources.TipApplyPreprocess}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="执行" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnExecute}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="滤波" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupFilter}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -453,12 +453,12 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
                                             <CheckBox x:Name="chkWindowUsePseudoColor"
-                                                      Content="伪彩显示"
+                                                      Content="{x:Static properties:Resources.ChkPseudoColor}"
                                                       Margin="0,0,12,0"
                                                       Checked="WindowDisplay_Changed"
                                                       Unchecked="WindowDisplay_Changed"
                                                       VerticalAlignment="Center" />
-                                            <TextBlock Text="色带" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelColorMap}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbWindowPseudoColorMap"
                                                       Width="138"
                                                       SelectionChanged="cbWindowPseudoColorMap_SelectionChanged"
@@ -467,7 +467,7 @@
                                                 <Image x:Name="imgWindowPseudoColorMapPreview" Stretch="Fill" />
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="显示" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDisplay}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -475,7 +475,7 @@
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="分析">
+                    <TabItem Header="{x:Static properties:Resources.TabAnalysis}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -485,17 +485,17 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button Click="btnExportAngleMode_Click" ToolTip="导出方位模式数据" Style="{StaticResource RibbonButtonStyle}">
+                                            <Button Click="btnExportAngleMode_Click" ToolTip="{x:Static properties:Resources.TipExportAzimuthData}" Style="{StaticResource RibbonButtonStyle}">
                                                 <TextBlock Text="&#xE72D;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button Click="btnExportCircleMode_Click" ToolTip="导出极角模式数据" Style="{StaticResource RibbonButtonStyle}">
+                                            <Button Click="btnExportCircleMode_Click" ToolTip="{x:Static properties:Resources.TipExportPolarData}" Style="{StaticResource RibbonButtonStyle}">
                                                 <TextBlock Text="&#xE72D;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button Click="btnAdvancedExport_Click" ToolTip="打开高级导出" Style="{StaticResource RibbonButtonStyle}">
+                                            <Button Click="btnAdvancedExport_Click" ToolTip="{x:Static properties:Resources.TipAdvancedExport}" Style="{StaticResource RibbonButtonStyle}">
                                                 <TextBlock Text="&#xE72D;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="导出" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupExport}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -506,14 +506,14 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenActiveView3D" Click="btnOpenActiveView3D_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开当前图像的 3D 视图">
+                                            <Button x:Name="btnOpenActiveView3D" Click="btnOpenActiveView3D_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpen3DView}">
                                                 <TextBlock Text="&#xE9CE;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button x:Name="btnOpenActiveViewCie" Click="btnOpenActiveViewCie_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开当前图像的 CIE 色度图">
+                                            <Button x:Name="btnOpenActiveViewCie" Click="btnOpenActiveViewCie_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}">
                                                 <TextBlock Text="&#xE790;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="视图" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupViews}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -525,18 +525,18 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
                                             <WrapPanel Margin="0,0,0,4">
-                                                <TextBlock Text="标准" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <TextBlock Text="{x:Static properties:Resources.LabelStandard}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                                 <ComboBox x:Name="cbRibbonGamutStandard" Width="120" Style="{StaticResource RibbonComboBoxStyle}" />
-                                                <Button x:Name="btnComputeGamut" Click="btnComputeGamut_Click" Content="计算色域" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="对当前记录的 R/G/B 数据执行计算，并弹出结果窗口" />
-                                                <Button x:Name="btnClearGamut" Click="btnClearGamut_Click" Content="清空" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="清空当前色域记录" />
+                                                <Button x:Name="btnComputeGamut" Click="btnComputeGamut_Click" Content="{x:Static properties:Resources.BtnComputeGamut}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipComputeGamut}" />
+                                                <Button x:Name="btnClearGamut" Click="btnClearGamut_Click" Content="{x:Static properties:Resources.BtnClear}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipClearGamut}" />
                                             </WrapPanel>
                                             <WrapPanel>
-                                                <Button x:Name="btnRecordGamutRed" Click="btnRecordGamutRed_Click" Content="记录 R" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录 R 数据" />
-                                                <Button x:Name="btnRecordGamutGreen" Click="btnRecordGamutGreen_Click" Content="记录 G" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录 G 数据" />
-                                                <Button x:Name="btnRecordGamutBlue" Click="btnRecordGamutBlue_Click" Content="记录 B" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录 B 数据" />
+                                                <Button x:Name="btnRecordGamutRed" Click="btnRecordGamutRed_Click" Content="{x:Static properties:Resources.BtnRecordR}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordRData}" />
+                                                <Button x:Name="btnRecordGamutGreen" Click="btnRecordGamutGreen_Click" Content="{x:Static properties:Resources.BtnRecordG}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordGData}" />
+                                                <Button x:Name="btnRecordGamutBlue" Click="btnRecordGamutBlue_Click" Content="{x:Static properties:Resources.BtnRecordB}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordBData}" />
                                             </WrapPanel>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="色域" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupGamut}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -548,22 +548,22 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel>
                                             <WrapPanel Margin="0,0,0,4">
-                                                <Button x:Name="btnRecordContrastWhite" Click="btnRecordContrastWhite_Click" Content="记录白" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录白场数据" />
-                                                <Button x:Name="btnRecordContrastBlack" Click="btnRecordContrastBlack_Click" Content="记录黑" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="从当前活动 View 的全部关注点记录黑场数据" />
+                                                <Button x:Name="btnRecordContrastWhite" Click="btnRecordContrastWhite_Click" Content="{x:Static properties:Resources.BtnRecordWhite}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordWhiteData}" />
+                                                <Button x:Name="btnRecordContrastBlack" Click="btnRecordContrastBlack_Click" Content="{x:Static properties:Resources.BtnRecordBlack}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordBlackData}" />
                                             </WrapPanel>
                                             <WrapPanel>
-                                                <Button x:Name="btnComputeContrast" Click="btnComputeContrast_Click" Content="计算对比度" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="对当前记录的白/黑数据执行计算，并弹出结果窗口" />
-                                                <Button x:Name="btnClearContrast" Click="btnClearContrast_Click" Content="清空" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="清空当前对比度记录" />
+                                                <Button x:Name="btnComputeContrast" Click="btnComputeContrast_Click" Content="{x:Static properties:Resources.BtnComputeContrast}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipComputeContrast}" />
+                                                <Button x:Name="btnClearContrast" Click="btnClearContrast_Click" Content="{x:Static properties:Resources.BtnClear}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipClearContrast}" />
                                             </WrapPanel>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="对比度" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupContrast}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="窗口">
+                    <TabItem Header="{x:Static properties:Resources.TabWindow}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -573,10 +573,10 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button Click="btnSaveWindowConfig_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="保存窗口配置">
+                                            <Button Click="btnSaveWindowConfig_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipSaveWindowConfig}">
                                                 <TextBlock Text="&#xE74E;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button Command="{Binding EditConoscopeConfigCommand}" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开 Conoscope 设置">
+                                            <Button Command="{Binding EditConoscopeConfigCommand}" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenConoscopeSettings}">
                                                 <Button.Triggers>
                                                     <EventTrigger RoutedEvent="Button.Click">
                                                         <BeginStoryboard>
@@ -593,7 +593,7 @@
                                                 </TextBlock>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="配置" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupConfig}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -604,20 +604,34 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenColorGamut" Click="btnOpenColorGamut_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开旧版 RGB 色域窗口">
+                                            <Button x:Name="btnOpenColorGamut" Click="btnOpenColorGamut_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenLegacyGamut}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE790;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="色域窗口" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnGamutWindow}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
-                                            <Button x:Name="btnOpenContrastTest" Click="btnOpenContrastTest_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="打开旧版黑白对比度窗口">
+                                            <Button x:Name="btnOpenContrastTest" Click="btnOpenContrastTest_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenLegacyContrast}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE9D2;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="对比度窗口" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnContrastWindow}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="分析窗口" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupAnalysisWindows}" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ComboBox x:Name="cbLanguage" Width="140" SelectionChanged="cbLanguage_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
+                                            <ComboBox x:Name="cbTheme" Width="120" SelectionChanged="cbTheme_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupConfig}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -625,7 +639,7 @@
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="帮助">
+                    <TabItem Header="{x:Static properties:Resources.TabHelp}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -638,14 +652,14 @@
                                             <Button x:Name="btnOpenHelpCenter"
                                                     Click="btnOpenConoscopeHelp_Click"
                                                     Style="{StaticResource RibbonLargeButtonStyle}"
-                                                    ToolTip="打开可搜索的 Conoscope 帮助中心，查看使用路径、算法原理和名词解析">
+                                                    ToolTip="{x:Static properties:Resources.TipHelpCenter}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE897;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="帮助中心" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnHelpCenter}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="打开" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupOpen}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -655,12 +669,12 @@
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Text="帮助中心窗口里已经集成快速开始、使用路径、算法原理和名词解析。直接打开一个窗口，在里面搜索或切换分类即可。"
+                                        <TextBlock Text="{x:Static properties:Resources.HelpDescription}"
                                                    TextWrapping="Wrap"
                                                    Width="320"
                                                    Foreground="Gray"
                                                    VerticalAlignment="Center" />
-                                        <TextBlock Grid.Row="1" Text="说明" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDescription}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
@@ -685,10 +699,10 @@
 
         <StatusBar Grid.Row="2" Height="26" Background="{DynamicResource GlobalBackground}">
             <StatusBarItem>
-                <TextBlock Text="状态" Margin="0,0,6,0" />
+                <TextBlock Text="{x:Static properties:Resources.LabelStatus}" Margin="0,0,6,0" />
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock x:Name="tbOperationStatus" Text="就绪" Foreground="Gray" />
+                <TextBlock x:Name="tbOperationStatus" Text="{x:Static properties:Resources.StatusReady}" Foreground="Gray" />
             </StatusBarItem>
             <StatusBarItem x:Name="operationProgressStatusItem" Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal">
@@ -711,8 +725,8 @@
             </StatusBarItem>
             <StatusBarItem>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Margin="12,0,5,0" Text="曝光" />
-                    <TextBlock x:Name="tbExposureStatus" Text="未记录" Foreground="Gray" FontWeight="SemiBold" />
+                    <TextBlock Margin="12,0,5,0" Text="{x:Static properties:Resources.LabelExposure}" />
+                    <TextBlock x:Name="tbExposureStatus" Text="{x:Static properties:Resources.StatusNotRecorded}" Foreground="Gray" FontWeight="SemiBold" />
                 </StackPanel>
             </StatusBarItem>
             <StatusBarItem>

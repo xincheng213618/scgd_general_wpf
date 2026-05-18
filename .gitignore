@@ -366,6 +366,8 @@ MigrationBackup/
 FodyWeavers.xsd
 /.bevel
 /.vscode
+/.workbuddy
+
 
 # Node.js / npm
 node_modules/
@@ -393,3 +395,4 @@ Backend/**/__pycache__/
 
 dist/
 build/
+

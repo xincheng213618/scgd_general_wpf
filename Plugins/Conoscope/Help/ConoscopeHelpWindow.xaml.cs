@@ -16,7 +16,7 @@ namespace Conoscope.Help
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 1;
-        public override string Header => "Conoscope 帮助中心";
+        public override string Header => Properties.Resources.HelpCenterTitle;
 
         public override void Execute()
         {
@@ -58,7 +58,7 @@ namespace Conoscope.Help
 
         private void ConoscopeHelpWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            tbTitle.Text = $"Conoscope 帮助  v{GetVersionText()}";
+            tbTitle.Text = string.Format(Properties.Resources.HelpTitleWithVersion, GetVersionText());
             HelpList.ItemsSource = filteredEntries;
 
             isInitializing = true;
@@ -71,7 +71,7 @@ namespace Conoscope.Help
 
         private static string GetVersionText()
         {
-            return typeof(ConoscopeHelpWindow).Assembly.GetName().Version?.ToString() ?? "未知版本";
+            return typeof(ConoscopeHelpWindow).Assembly.GetName().Version?.ToString() ?? Properties.Resources.UnknownVersion;
         }
 
         private static ConoscopeHelpCategory? ResolveInitialCategory(string? entryId, ConoscopeHelpCategory? category)
@@ -239,7 +239,7 @@ namespace Conoscope.Help
 
         private void UpdateItemCount()
         {
-            ItemCountText.Text = $"共 {filteredEntries.Count} / {allEntries.Count} 条";
+            ItemCountText.Text = string.Format(Properties.Resources.ItemCountFormat, filteredEntries.Count, allEntries.Count);
         }
 
         private void HelpList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -302,7 +302,7 @@ namespace Conoscope.Help
 
             if (document.Blocks.Count == 0)
             {
-                document.Blocks.Add(CreateBodyParagraph(mutedBrush, "没有可显示的内容。"));
+                document.Blocks.Add(CreateBodyParagraph(mutedBrush, Properties.Resources.NoContentToDisplay));
             }
 
             return document;

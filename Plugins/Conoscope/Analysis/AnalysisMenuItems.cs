@@ -1,4 +1,5 @@
 using ColorVision.UI.Menus;
+using Conoscope.Properties;
 using System.Windows;
 
 namespace Conoscope.Analysis
@@ -7,7 +8,7 @@ namespace Conoscope.Analysis
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 51;
-        public override string Header => "对比度测试";
+        public override string Header => Resources.MenuContrastTest;
 
         public override void Execute()
         {
@@ -24,7 +25,7 @@ namespace Conoscope.Analysis
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 52;
-        public override string Header => "色域计算";
+        public override string Header => Resources.MenuGamutCalculation;
 
         public override void Execute()
         {

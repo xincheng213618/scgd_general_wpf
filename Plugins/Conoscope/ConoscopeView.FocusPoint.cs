@@ -285,7 +285,7 @@ namespace Conoscope
             IReadOnlyList<DVCircleText> focusCircles = ImageView.FocusCircles;
             if (focusCircles.Count == 0)
             {
-                errorMessage = "请先在当前视图中绘制关注点圆。";
+                errorMessage = Properties.Resources.MsgDrawFocusPointsFirst;
                 return false;
             }
 
@@ -322,13 +322,13 @@ namespace Conoscope
         {
             if (!HasXyzData() || XMat == null || YMat == null || ZMat == null || currentBitmapSource == null)
             {
-                MessageBox.Show("当前图像尚未准备好关注点计算。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgFocusPointNotReady, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (circles.Count == 0)
             {
-                MessageBox.Show("请先绘制关注点圆。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -347,13 +347,13 @@ namespace Conoscope
                 }
 
                 results.Add(result);
-                circle.Attribute.Msg = $"Y:{result.Y:F3}  u:{result.u:F4}  v:{result.v:F4}";
+                circle.Attribute.Msg = string.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"));
                 circle.Render();
             }
 
             if (results.Count == 0)
             {
-                string message = failedCircles.Count > 0 ? string.Join(Environment.NewLine, failedCircles) : "没有可用于计算的关注点像素。";
+                string message = failedCircles.Count > 0 ? string.Join(Environment.NewLine, failedCircles) : Properties.Resources.MsgNoFocusPointPixelsCalc;
                 MessageBox.Show(message, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -418,7 +418,7 @@ namespace Conoscope
 
             if (!TryCalculateFocusPointAverage(circle.Attribute.Center, circle.Attribute.Radius, out double avgX, out double avgY, out double avgZ, out int _))
             {
-                errorMessage = $"{ResolveFocusCircleName(circle)} 没有可用像素。";
+                errorMessage = string.Format(Properties.Resources.MsgFocusPointNoPixels, ResolveFocusCircleName(circle));
                 return false;
             }
 
@@ -535,7 +535,7 @@ namespace Conoscope
         private string CreateFocusPointMeasurementLabel(DVCircleText circle)
         {
             string viewName = string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename);
-            return $"[关注点] {viewName} - {ResolveFocusCircleName(circle)}";
+            return $"[{Properties.Resources.FocusPointLabel}] {viewName} - {ResolveFocusCircleName(circle)}";
         }
 
         private string GetFocusPointCaptureSourceLabel()

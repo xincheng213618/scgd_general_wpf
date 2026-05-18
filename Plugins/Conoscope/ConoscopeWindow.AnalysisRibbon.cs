@@ -63,44 +63,43 @@ namespace Conoscope
             UpdateRecordButton(btnRecordGamutRed, gamutRedCapture, Color.FromRgb(214, 69, 65), "R");
             UpdateRecordButton(btnRecordGamutGreen, gamutGreenCapture, Color.FromRgb(66, 165, 79), "G");
             UpdateRecordButton(btnRecordGamutBlue, gamutBlueCapture, Color.FromRgb(52, 120, 246), "B");
-            UpdateRecordButton(btnRecordContrastWhite, contrastWhiteCapture, Color.FromRgb(160, 160, 160), "白");
-            UpdateRecordButton(btnRecordContrastBlack, contrastBlackCapture, Color.FromRgb(90, 90, 90), "黑");
+            UpdateRecordButton(btnRecordContrastWhite, contrastWhiteCapture, Color.FromRgb(160, 160, 160), Properties.Resources.SlotWhite);
+            UpdateRecordButton(btnRecordContrastBlack, contrastBlackCapture, Color.FromRgb(90, 90, 90), Properties.Resources.SlotBlack);
         }
 
         private static void UpdateRecordButton(Button button, MeasurementCapture? capture, Color accentColor, string slotName)
         {
             if (capture == null)
             {
-                button.Content = $"记录 {slotName}";
+                button.Content = string.Format(Properties.Resources.MsgRecordedSlot, slotName);
                 button.ClearValue(Control.BackgroundProperty);
                 button.ClearValue(Control.BorderBrushProperty);
                 button.ClearValue(Control.ForegroundProperty);
                 button.ClearValue(Control.FontWeightProperty);
-                button.ToolTip = $"从当前活动 View 的全部关注点记录 {slotName} 数据";
                 return;
             }
 
-            button.Content = $"已记录 {slotName}";
+            button.Content = string.Format(Properties.Resources.MsgRecordedSlot, slotName);
             button.Background = new SolidColorBrush(Color.FromArgb(64, accentColor.R, accentColor.G, accentColor.B));
             button.BorderBrush = new SolidColorBrush(accentColor);
             button.Foreground = Brushes.White;
             button.FontWeight = FontWeights.SemiBold;
-            button.ToolTip = $"{slotName} 已记录\n来源: {capture.SourceDisplayName}\n数量: {capture.PointCount}";
+            button.ToolTip = $"{slotName} {Properties.Resources.MsgRecordedSlot}\n{Properties.Resources.MsgSlotRecordedDetail}\n{capture.PointCount}";
         }
 
         private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("R", capture => gamutRedCapture = capture, "已记录 R 关注点数据");
+            RecordFocusCapture("R", capture => gamutRedCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "R"));
         }
 
         private void btnRecordGamutGreen_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("G", capture => gamutGreenCapture = capture, "已记录 G 关注点数据");
+            RecordFocusCapture("G", capture => gamutGreenCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "G"));
         }
 
         private void btnRecordGamutBlue_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("B", capture => gamutBlueCapture = capture, "已记录 B 关注点数据");
+            RecordFocusCapture("B", capture => gamutBlueCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "B"));
         }
 
         private void btnClearGamut_Click(object sender, RoutedEventArgs e)
@@ -109,20 +108,20 @@ namespace Conoscope
             gamutGreenCapture = null;
             gamutBlueCapture = null;
             RefreshAnalysisRibbonState(ActiveView);
-            SetOperationStatus("已清空色域记录", Brushes.Gray);
+            SetOperationStatus(Properties.Resources.MsgClearedGamut, Brushes.Gray);
         }
 
         private void btnComputeGamut_Click(object sender, RoutedEventArgs e)
         {
             if (gamutRedCapture == null || gamutGreenCapture == null || gamutBlueCapture == null)
             {
-                MessageBox.Show(this, "请先记录或导入 R/G/B 三组数据。", "色域计算", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, Properties.Resources.MsgNeedRGBData, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             if (cbRibbonGamutStandard.SelectedItem is not ColorGamutStandard standard)
             {
-                MessageBox.Show(this, "请选择色域标准。", "色域计算", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, Properties.Resources.MsgSelectGamutStandard, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -136,23 +135,23 @@ namespace Conoscope
                 };
                 window.Show();
                 window.Activate();
-                SetOperationStatus($"已完成 {standard.Name} 色域计算", Brushes.LimeGreen);
+                SetOperationStatus(string.Format(Properties.Resources.MsgGamutComputed, standard.Name), Brushes.LimeGreen);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus("色域计算失败", Brushes.OrangeRed);
+                MessageBox.Show(this, ex.Message, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                SetOperationStatus(Properties.Resources.MsgGamutFailed, Brushes.OrangeRed);
             }
         }
 
         private void btnRecordContrastWhite_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("白", capture => contrastWhiteCapture = capture, "已记录白场关注点数据");
+            RecordFocusCapture(Properties.Resources.SlotWhite, capture => contrastWhiteCapture = capture, Properties.Resources.MsgRecordedWhite);
         }
 
         private void btnRecordContrastBlack_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("黑", capture => contrastBlackCapture = capture, "已记录黑场关注点数据");
+            RecordFocusCapture(Properties.Resources.SlotBlack, capture => contrastBlackCapture = capture, Properties.Resources.MsgRecordedBlack);
         }
 
         private void btnClearContrast_Click(object sender, RoutedEventArgs e)
@@ -160,14 +159,14 @@ namespace Conoscope
             contrastWhiteCapture = null;
             contrastBlackCapture = null;
             RefreshAnalysisRibbonState(ActiveView);
-            SetOperationStatus("已清空对比度记录", Brushes.Gray);
+            SetOperationStatus(Properties.Resources.MsgClearedContrast, Brushes.Gray);
         }
 
         private void btnComputeContrast_Click(object sender, RoutedEventArgs e)
         {
             if (contrastWhiteCapture == null || contrastBlackCapture == null)
             {
-                MessageBox.Show(this, "请先记录白/黑两组数据。", "对比度计算", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, Properties.Resources.MsgNeedWhiteBlackData, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -181,12 +180,12 @@ namespace Conoscope
                 };
                 window.Show();
                 window.Activate();
-                SetOperationStatus("已完成对比度计算", Brushes.LimeGreen);
+                SetOperationStatus(Properties.Resources.MsgContrastComputed, Brushes.LimeGreen);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "对比度计算", MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus("对比度计算失败", Brushes.OrangeRed);
+                MessageBox.Show(this, ex.Message, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                SetOperationStatus(Properties.Resources.MsgContrastFailed, Brushes.OrangeRed);
             }
         }
 
@@ -195,13 +194,13 @@ namespace Conoscope
             ConoscopeView? activeView = ActiveView;
             if (activeView == null)
             {
-                MessageBox.Show(this, "当前没有活动的 Conoscope 视图。", "分析记录", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, Properties.Resources.MsgNoActiveView, Properties.Resources.TitleAnalysisRecord, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             if (!activeView.TryGetFocusPointMeasurementCapture(slotName, out MeasurementCapture capture, out string? errorMessage))
             {
-                MessageBox.Show(this, errorMessage ?? "当前关注点不可用。", "分析记录", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, errorMessage ?? Properties.Resources.MsgFocusPointsUnavailable, Properties.Resources.TitleAnalysisRecord, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
