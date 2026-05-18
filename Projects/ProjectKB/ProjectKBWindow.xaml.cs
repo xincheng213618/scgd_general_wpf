@@ -49,7 +49,6 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        private const int OutputLabelWidth = 34;
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
@@ -781,8 +780,8 @@ namespace ProjectKB
             Brush normalTextBrush = kmitemmaster.Result ? Brushes.Black : Brushes.White;
 
             string outtext = string.Empty;
-            outtext += BuildMetricLine("机种 (Model)", kmitemmaster.Model) + Environment.NewLine;
-            outtext += BuildMetricLine("SN", kmitemmaster.SN) + Environment.NewLine;
+            outtext += $"机种 (Model):{kmitemmaster.Model}" + Environment.NewLine;
+            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
             outtext += $"按键明细 (Points of Interest): " + Environment.NewLine;
             outtext += $"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}" + Environment.NewLine;
 
@@ -811,23 +810,32 @@ namespace ProjectKB
             }
             outputText.Document.Blocks.Add(paragraph);
 
-            paragraph = new Paragraph();
             bool minLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MinLv < recipe.MinKeyLv;
             bool maxLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MaxLv > recipe.MaxKeyLv;
-            AppendOutputLine(paragraph, BuildMetricLine("最小亮度 (Min Lv)", $"{kmitemmaster.MinLv:F2} cd/m2", minLvFailure), normalTextBrush, minLvFailure);
-            AppendOutputLine(paragraph, BuildMetricLine("最大亮度 (Max Lv)", $"{kmitemmaster.MaxLv:F2} cd/m2", maxLvFailure), normalTextBrush, maxLvFailure);
-            AppendOutputLine(paragraph, BuildMetricLine("最暗按键 (Darkest Key)", $"[{kmitemmaster.DrakestKey}]"), normalTextBrush);
-            AppendOutputLine(paragraph, BuildMetricLine("最亮按键 (Brightest Key)", $"[{kmitemmaster.BrightestKey}]"), normalTextBrush);
+            Table summaryTable = CreateMetricTable(250, 16, 125, 45);
+            TableRowGroup summaryRows = new();
+            summaryTable.RowGroups.Add(summaryRows);
+            AppendMetricRow(summaryRows, "最小亮度", "Min Lv", $"{kmitemmaster.MinLv:F2} cd/m2", minLvFailure, normalTextBrush);
+            AppendMetricRow(summaryRows, "最大亮度", "Max Lv", $"{kmitemmaster.MaxLv:F2} cd/m2", maxLvFailure, normalTextBrush);
+            AppendMetricRow(summaryRows, "最暗按键", "Darkest Key", $"[{kmitemmaster.DrakestKey}]", false, normalTextBrush);
+            AppendMetricRow(summaryRows, "最亮按键", "Brightest Key", $"[{kmitemmaster.BrightestKey}]", false, normalTextBrush);
+            outputText.Document.Blocks.Add(summaryTable);
 
+            paragraph = new Paragraph();
             AppendOutputLine(paragraph, string.Empty, normalTextBrush);
             AppendOutputLine(paragraph, "合格/不合格标准 (Pass/Fail Criteria):", normalTextBrush);
-            AppendOutputLine(paragraph, BuildMetricLine("不合格点数 (Nbr Failed Points)", kmitemmaster.NbrFailPoints.ToString(), kmitemmaster.NbrFailPoints > 0), normalTextBrush, kmitemmaster.NbrFailPoints > 0);
-            bool avgLvFailure = recipe.EnableAvgLvLimit && (kmitemmaster.AvgLv < recipe.MinAvgLv || kmitemmaster.AvgLv > recipe.MaxAvgLv);
-            AppendOutputLine(paragraph, BuildMetricLine("平均亮度 (Avg Lv)", $"{kmitemmaster.AvgLv:F2} cd/m2", avgLvFailure), normalTextBrush, avgLvFailure);
-            bool uniformityFailure = recipe.EnableUniformityLimit && kmitemmaster.LvUniformity < recipe.MinUniformity / 100;
-            AppendOutputLine(paragraph, BuildMetricLine("亮度均匀性 (Lv Uniformity)", $"{kmitemmaster.LvUniformity * 100:F2}%", uniformityFailure), normalTextBrush, uniformityFailure);
-            AppendLocalContrastSummary(paragraph, kmitemmaster, recipe, normalTextBrush);
             outputText.Document.Blocks.Add(paragraph);
+
+            Table criteriaTable = CreateCriteriaMetricTable(285, 16, 120, 90, 45);
+            TableRowGroup criteriaRows = new();
+            criteriaTable.RowGroups.Add(criteriaRows);
+            AppendCriteriaMetricRow(criteriaRows, "不合格点数", "Nbr Failed Points", kmitemmaster.NbrFailPoints.ToString(), string.Empty, kmitemmaster.NbrFailPoints > 0, normalTextBrush);
+            bool avgLvFailure = recipe.EnableAvgLvLimit && (kmitemmaster.AvgLv < recipe.MinAvgLv || kmitemmaster.AvgLv > recipe.MaxAvgLv);
+            AppendCriteriaMetricRow(criteriaRows, "平均亮度", "Avg Lv", $"{kmitemmaster.AvgLv:F2} cd/m2", string.Empty, avgLvFailure, normalTextBrush);
+            bool uniformityFailure = recipe.EnableUniformityLimit && kmitemmaster.LvUniformity < recipe.MinUniformity / 100;
+            AppendCriteriaMetricRow(criteriaRows, "亮度均匀性", "Lv Uniformity", $"{kmitemmaster.LvUniformity * 100:F2}%", string.Empty, uniformityFailure, normalTextBrush);
+            AppendLocalContrastSummary(criteriaRows, kmitemmaster, recipe, normalTextBrush);
+            outputText.Document.Blocks.Add(criteriaTable);
             SNtextBox.Focus();
         }
 
@@ -893,29 +901,83 @@ namespace ProjectKB
             return false;
         }
 
-        private static string BuildFailSuffix(bool failed)
+        private static Table CreateMetricTable(double labelWidth, double equalWidth, double valueWidth, double failWidth)
         {
-            return failed ? "  Fail" : string.Empty;
-        }
-
-        private static string BuildMetricLine(string label, string value, bool failed = false)
-        {
-            return $"{PadDisplayWidth(label, OutputLabelWidth)}= {value}{BuildFailSuffix(failed)}";
-        }
-
-        private static string PadDisplayWidth(string text, int targetWidth)
-        {
-            int displayWidth = 0;
-            foreach (char c in text)
+            Table table = new()
             {
-                displayWidth += c <= 0x7f ? 1 : 2;
-            }
-
-            int padding = Math.Max(0, targetWidth - displayWidth);
-            return text + new string(' ', padding);
+                CellSpacing = 0,
+                Margin = new Thickness(0)
+            };
+            table.Columns.Add(new TableColumn { Width = new GridLength(labelWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(equalWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(valueWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(failWidth) });
+            return table;
         }
 
-        private static void AppendLocalContrastSummary(Paragraph paragraph, KBItemMaster kmitemmaster, KBRecipeConfig recipe, Brush normalTextBrush)
+        private static Table CreateCriteriaMetricTable(double labelWidth, double equalWidth, double valueWidth, double pointWidth, double failWidth)
+        {
+            Table table = new()
+            {
+                CellSpacing = 0,
+                Margin = new Thickness(0)
+            };
+            table.Columns.Add(new TableColumn { Width = new GridLength(labelWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(equalWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(valueWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(pointWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(failWidth) });
+            return table;
+        }
+
+        private static void AppendMetricRow(TableRowGroup rowGroup, string chineseLabel, string englishLabel, string value, bool failed, Brush normalTextBrush)
+        {
+            TableRow row = new();
+            row.Cells.Add(CreateMetricCell($"{ExpandChineseLabel(chineseLabel)} ({englishLabel})", normalTextBrush));
+            row.Cells.Add(CreateMetricCell("=", normalTextBrush));
+            row.Cells.Add(CreateMetricCell(value, normalTextBrush));
+            row.Cells.Add(CreateMetricCell(failed ? "Fail" : string.Empty, failed ? Brushes.Yellow : normalTextBrush, failed));
+            rowGroup.Rows.Add(row);
+        }
+
+        private static void AppendCriteriaMetricRow(TableRowGroup rowGroup, string chineseLabel, string englishLabel, string value, string point, bool failed, Brush normalTextBrush)
+        {
+            TableRow row = new();
+            row.Cells.Add(CreateMetricCell($"{ExpandChineseLabel(chineseLabel)} ({englishLabel})", normalTextBrush));
+            row.Cells.Add(CreateMetricCell("=", normalTextBrush));
+            row.Cells.Add(CreateMetricCell(value, normalTextBrush));
+            row.Cells.Add(CreateMetricCell(point, normalTextBrush));
+            row.Cells.Add(CreateMetricCell(failed ? "Fail" : string.Empty, failed ? Brushes.Yellow : normalTextBrush, failed));
+            rowGroup.Rows.Add(row);
+        }
+
+        private static TableCell CreateMetricCell(string text, Brush foreground, bool bold = false)
+        {
+            Run run = new(text)
+            {
+                Foreground = foreground,
+                FontWeight = bold ? FontWeights.Bold : FontWeights.Normal
+            };
+            run.FontSize += 1;
+
+            Paragraph paragraph = new(run)
+            {
+                Margin = new Thickness(0),
+                Padding = new Thickness(0)
+            };
+
+            return new TableCell(paragraph)
+            {
+                Padding = new Thickness(0)
+            };
+        }
+
+        private static string ExpandChineseLabel(string text)
+        {
+            return string.Join(" ", text.Select(c => c.ToString()));
+        }
+
+        private static void AppendLocalContrastSummary(TableRowGroup rowGroup, KBItemMaster kmitemmaster, KBRecipeConfig recipe, Brush normalTextBrush)
         {
             if (!kmitemmaster.Items.Any())
             {
@@ -929,8 +991,8 @@ namespace ProjectKB
             bool minLcFailure = recipe.EnableKeyLcLimit && minLcPercent < recipe.MinKeyLc;
             bool maxLcFailure = recipe.EnableKeyLcLimit && maxLcPercent > recipe.MaxKeyLc;
 
-            AppendOutputLine(paragraph, BuildMetricLine("最小局部对比度 (Min LC)", $"{minLcPercent:F2}% [{minLcItem.Name}]", minLcFailure), normalTextBrush, minLcFailure);
-            AppendOutputLine(paragraph, BuildMetricLine("最大局部对比度 (Max LC)", $"{maxLcPercent:F2}% [{maxLcItem.Name}]", maxLcFailure), normalTextBrush, maxLcFailure);
+            AppendCriteriaMetricRow(rowGroup, "最小局部对比度", "Min LC", $"{minLcPercent:F2}%", $"[{minLcItem.Name}]", minLcFailure, normalTextBrush);
+            AppendCriteriaMetricRow(rowGroup, "最大局部对比度", "Max LC", $"{maxLcPercent:F2}%", $"[{maxLcItem.Name}]", maxLcFailure, normalTextBrush);
         }
 
 
@@ -969,11 +1031,11 @@ namespace ProjectKB
                         try
                         {
                             var fileInfo = new FileInfo(kBItem.ResultImagFile);
-                            log.Warn($"fileInfo.Length{fileInfo.Length}");
                             using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                             {
-                                log.Warn("文件可以读取，没有被占用。");
+
                             }
+   
                             if (fileInfo.Length > 0)
                             {
                                 _ = Application.Current.Dispatcher.BeginInvoke(() =>
