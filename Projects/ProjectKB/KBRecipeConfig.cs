@@ -38,7 +38,7 @@ namespace ProjectKB
         private bool _EnableUniformityLimit = true;
 
         [DisplayName("亮度均匀性下限(%) (MinUniformity)"), Category("均匀性")]
-        public double MinUniformity { get => _MinUniformity; set { if (value > 100) { _MinUniformity = 100;  return; } if (value < 0) { _MinUniformity = 0; return; } _MinUniformity = value; OnPropertyChanged(); } }
+        public double MinUniformity { get => _MinUniformity; set { _MinUniformity = value; OnPropertyChanged(); } }
         private double _MinUniformity;
 
         [DisplayName("启用局部对比度判定 (EnableKeyLcLimit)"), Category("局部对比度")]
@@ -46,11 +46,11 @@ namespace ProjectKB
         private bool _EnableKeyLcLimit = true;
 
         [DisplayName("局部对比度下限(%) (MinKeyLc)"), Category("局部对比度")]
-        public double MinKeyLc { get => _MinKeyLc; set { if (value > 100) { _MinKeyLc = 100; return; } if (value < -100){ _MinKeyLc = -100; return; } _MinKeyLc = value; OnPropertyChanged(); } }
+        public double MinKeyLc { get => _MinKeyLc; set { _MinKeyLc = value; OnPropertyChanged(); } }
         private double _MinKeyLc;
 
         [DisplayName("局部对比度上限(%) (MaxKeyLc)"), Category("局部对比度")]
-        public double MaxKeyLc { get => _MaxKeyLc; set { if (value > 100) { _MaxKeyLc = 100; return; } if (value < -100) { _MaxKeyLc = -100; return; } _MaxKeyLc = value; OnPropertyChanged(); } }
+        public double MaxKeyLc { get => _MaxKeyLc; set {  _MaxKeyLc = value; OnPropertyChanged(); } }
         private double _MaxKeyLc;
 
     }

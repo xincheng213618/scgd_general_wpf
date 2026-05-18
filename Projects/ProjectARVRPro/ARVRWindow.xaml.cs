@@ -278,12 +278,12 @@ namespace ProjectARVRPro
             if (_thunderbirdController.IsConnected)
             {
                 string port = string.IsNullOrWhiteSpace(_thunderbirdController.CurrentPortName) ? "未知串口" : _thunderbirdController.CurrentPortName;
-                ThunderbirdConnectionStatusText.Content = $"雷鸟: 已连接 {port}";
+                ThunderbirdConnectionStatusText.Content = $"切图: 已连接 {port}";
                 ThunderbirdConnectionStatusText.Foreground = Brushes.LimeGreen;
             }
             else
             {
-                ThunderbirdConnectionStatusText.Content = "雷鸟: 未连接";
+                ThunderbirdConnectionStatusText.Content = "切图: 未连接";
                 ThunderbirdConnectionStatusText.Foreground = Brushes.Gray;
             }
         }
