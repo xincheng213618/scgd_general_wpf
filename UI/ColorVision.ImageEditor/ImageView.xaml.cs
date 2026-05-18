@@ -895,6 +895,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
+            PseudoColorService?.Reset();
             InvalidatePseudoColorRender();
             FunctionImage = null;
             ViewBitmapSource = null;
