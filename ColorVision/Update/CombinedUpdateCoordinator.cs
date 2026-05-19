@@ -262,7 +262,7 @@ namespace ColorVision.Update
             {
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
                 string cachedPath = Path.Combine(downloadDir, packageFileName);
-                if (File.Exists(cachedPath))
+                if (AutoUpdater.IsIncrementalPackageFileReady(cachedPath))
                 {
                     applicationPackagePaths[version.ToString()] = cachedPath;
                     completedCount++;
@@ -342,7 +342,7 @@ namespace ColorVision.Update
                 {
                     lock (lockObj)
                     {
-                        if (task.Status == DownloadStatus.Completed)
+                        if (task.Status == DownloadStatus.Completed && AutoUpdater.IsIncrementalPackageFileReady(task.SavePath))
                         {
                             applicationPackagePaths[versionKey] = task.SavePath;
                         }
@@ -372,10 +372,10 @@ namespace ColorVision.Update
                     {
                         if (task.Status == DownloadStatus.Completed)
                         {
-                            if (!string.IsNullOrWhiteSpace(expectedHash) && !MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
+                            if (!MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
                             {
                                 hasFailure = true;
-                                log.Error($"Combined incremental plugin hash mismatch for {item.Plugin.PackageName} v{version}.");
+                                log.Error($"Combined incremental plugin package invalid or hash mismatch for {item.Plugin.PackageName} v{version}.");
                             }
                             else
                             {

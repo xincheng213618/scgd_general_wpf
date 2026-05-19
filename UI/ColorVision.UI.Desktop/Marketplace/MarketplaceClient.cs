@@ -256,9 +256,27 @@ namespace ColorVision.UI.Desktop.Marketplace
         /// </summary>
         public static bool VerifyFileHash(string filePath, string? expectedHash)
         {
+            if (!IsDownloadedFileUsable(filePath))
+                return false;
+
             if (string.IsNullOrEmpty(expectedHash)) return true;
             string actualHash = ComputeFileHash(filePath);
             return string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsDownloadedFileUsable(string? filePath)
+        {
+            try
+            {
+                return !string.IsNullOrWhiteSpace(filePath)
+                    && File.Exists(filePath)
+                    && !File.Exists(filePath + ".aria2")
+                    && new FileInfo(filePath).Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -269,7 +287,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             string expectedFileName = $"{pluginId}-{version}.cvxp";
             string filePath = Path.Combine(downloadDir, expectedFileName);
-            if (!File.Exists(filePath)) return null;
+            if (!IsDownloadedFileUsable(filePath)) return null;
             if (string.IsNullOrEmpty(expectedHash)) return filePath; // No hash to check, file exists
             return VerifyFileHash(filePath, expectedHash) ? filePath : null;
         }
