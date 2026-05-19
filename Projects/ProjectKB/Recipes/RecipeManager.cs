@@ -151,7 +151,8 @@ namespace ProjectKB
             return config.EnableKeyLvLimit
                 || config.EnableAvgLvLimit
                 || config.EnableUniformityLimit
-                || config.EnableKeyLcLimit;
+                || config.EnableKeyLcLimit
+                || config.EnableBacklightAutotune;
         }
 
         public void Save()

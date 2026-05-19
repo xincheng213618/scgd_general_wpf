@@ -41,6 +41,7 @@ namespace ProjectKB
         public double MinUniformity { get => _MinUniformity; set { _MinUniformity = value; OnPropertyChanged(); } }
         private double _MinUniformity;
 
+
         [DisplayName("启用局部对比度判定 (EnableKeyLcLimit)"), Category("局部对比度")]
         public bool EnableKeyLcLimit { get => _EnableKeyLcLimit; set { _EnableKeyLcLimit = value; OnPropertyChanged(); } }
         private bool _EnableKeyLcLimit = true;
@@ -50,8 +51,43 @@ namespace ProjectKB
         private double _MinKeyLc;
 
         [DisplayName("局部对比度上限(%) (MaxKeyLc)"), Category("局部对比度")]
-        public double MaxKeyLc { get => _MaxKeyLc; set {  _MaxKeyLc = value; OnPropertyChanged(); } }
+        public double MaxKeyLc { get => _MaxKeyLc; set { _MaxKeyLc = value; OnPropertyChanged(); } }
         private double _MaxKeyLc;
+
+
+        [DisplayName("启用背光自动修正 (EnableBacklightAutotune)"), Category("背光自动修正")]
+        public bool EnableBacklightAutotune { get => _EnableBacklightAutotune; set { _EnableBacklightAutotune = value; OnPropertyChanged(); } }
+        private bool _EnableBacklightAutotune;
+
+        [DisplayName("Sigmoid斜率 (AutotuneSteepness)"), Category("背光自动修正")]
+        public double BacklightAutotuneSteepness { get => _BacklightAutotuneSteepness; set { _BacklightAutotuneSteepness = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneSteepness = 5;
+
+        [DisplayName("平均亮度Q1 (AvgLvQ1)"), Category("背光自动修正")]
+        public double BacklightAutotuneAvgLvQ1 { get => _BacklightAutotuneAvgLvQ1; set { _BacklightAutotuneAvgLvQ1 = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneAvgLvQ1 = -1;
+
+        [DisplayName("平均亮度Q3 (AvgLvQ3)"), Category("背光自动修正")]
+        public double BacklightAutotuneAvgLvQ3 { get => _BacklightAutotuneAvgLvQ3; set { _BacklightAutotuneAvgLvQ3 = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneAvgLvQ3 = -1;
+
+        [DisplayName("最小亮度Q1 (MinLvQ1)"), Category("背光自动修正")]
+        public double BacklightAutotuneMinLvQ1 { get => _BacklightAutotuneMinLvQ1; set { _BacklightAutotuneMinLvQ1 = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneMinLvQ1 = -1;
+
+        [DisplayName("最小亮度Q3 (MinLvQ3)"), Category("背光自动修正")]
+        public double BacklightAutotuneMinLvQ3 { get => _BacklightAutotuneMinLvQ3; set { _BacklightAutotuneMinLvQ3 = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneMinLvQ3 = -1;
+
+        [DisplayName("均匀性Q1(%) (UniformityQ1)"), Category("背光自动修正")]
+        public double BacklightAutotuneUniformityQ1 { get => _BacklightAutotuneUniformityQ1; set { _BacklightAutotuneUniformityQ1 = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneUniformityQ1 = -1;
+
+        [DisplayName("均匀性Q3(%) (UniformityQ3)"), Category("背光自动修正")]
+        public double BacklightAutotuneUniformityQ3 { get => _BacklightAutotuneUniformityQ3; set { _BacklightAutotuneUniformityQ3 = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneUniformityQ3 = -1;
+
+
 
     }
 }

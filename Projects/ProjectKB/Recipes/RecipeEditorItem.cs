@@ -20,7 +20,7 @@ namespace ProjectKB
 
         public bool HasLimit => RecipeManager.HasAnyLimit(Config);
 
-        public string StatusText => HasLimit ? "已启用" : "未启用";
+        public string StatusText => HasLimit ? "已配置" : "未启用";
 
         public string CurrentText => IsCurrentTemplate ? "当前" : string.Empty;
 

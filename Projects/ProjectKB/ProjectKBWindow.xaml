@@ -188,6 +188,13 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="Autotune">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
+                                            <TextBlock Text="{Binding BacklightAutotuneSource}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="Avg Lv">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">

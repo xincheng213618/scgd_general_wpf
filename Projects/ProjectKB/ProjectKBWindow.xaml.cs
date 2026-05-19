@@ -23,6 +23,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -582,6 +583,7 @@ namespace ProjectKB
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
 
             KBItemMaster.LvUniformity = KBItemMaster.MaxLv == 0 ? 0 : KBItemMaster.MinLv / KBItemMaster.MaxLv;
+            BacklightAutotuneService.Apply(KBItemMaster, RecipeConfig);
             KBItemMaster.SN = SNtextBox.Text;
 
 
@@ -591,19 +593,20 @@ namespace ProjectKB
 
             if (RecipeConfig.EnableKeyLvLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MinLv >= RecipeConfig.MinKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalMinLv(KBItemMaster) >= RecipeConfig.MinKeyLv;
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= RecipeConfig.MaxKeyLv;
             }
 
             if (RecipeConfig.EnableAvgLvLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv >= RecipeConfig.MinAvgLv;
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv <= RecipeConfig.MaxAvgLv;
+                double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(KBItemMaster);
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv >= RecipeConfig.MinAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv <= RecipeConfig.MaxAvgLv;
             }
 
             if (RecipeConfig.EnableUniformityLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.LvUniformity >= RecipeConfig.MinUniformity / 100;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalLvUniformity(KBItemMaster) >= RecipeConfig.MinUniformity / 100;
             }
 
             if (RecipeConfig.EnableKeyLcLimit)
@@ -776,10 +779,26 @@ namespace ProjectKB
             sb.AppendLine($"Nbr Failed Points= {kmitemmaster.NbrFailPoints}");
             sb.AppendLine($"Avg Lv= {kmitemmaster.AvgLv:F2} cd/m2 ");
             sb.AppendLine($"Lv Uniformity= {kmitemmaster.LvUniformity * 100:F2} % ");
+            AppendBacklightAutotuneSummary(sb, kmitemmaster);
             sb.AppendLine($"Avg CCT= 0.0000");
             sb.AppendLine($"ColorDiff= 0.0000  ");
             sb.AppendLine(kmitemmaster.Result ? "PASS" : "FAIL");
             return sb.ToString();
+        }
+
+        private static void AppendBacklightAutotuneSummary(StringBuilder sb, KBItemMaster kmitemmaster)
+        {
+            if (!kmitemmaster.BacklightAutotuneEnabled)
+            {
+                return;
+            }
+
+            sb.AppendLine();
+            sb.AppendLine($"Backlight Autotune= {kmitemmaster.BacklightAutotuneSource} {(kmitemmaster.BacklightAutotuneApplied ? "Applied" : "Not Applied")}");
+            sb.AppendLine($"Autotune Steepness= {kmitemmaster.BacklightAutotuneSteepness:F2}");
+            sb.AppendLine($"Avg Lv Raw/Adjusted/Q1/Q3= {kmitemmaster.AvgLvRaw:F2}/{kmitemmaster.AvgLvAdjusted:F2}/{kmitemmaster.AvgLvQ1:F2}/{kmitemmaster.AvgLvQ3:F2}");
+            sb.AppendLine($"Min Lv Raw/Adjusted/Q1/Q3= {kmitemmaster.MinLvRaw:F2}/{kmitemmaster.MinLvAdjusted:F2}/{kmitemmaster.MinLvQ1:F2}/{kmitemmaster.MinLvQ3:F2}");
+            sb.AppendLine($"Lv Uniformity Raw/Adjusted/Q1/Q3= {kmitemmaster.LvUniformityRaw * 100:F2}%/{kmitemmaster.LvUniformityAdjusted * 100:F2}%/{kmitemmaster.UniformityQ1:F2}%/{kmitemmaster.UniformityQ3:F2}%");
         }
 
         public void GenoutputText(KBItemMaster kmitemmaster)
@@ -824,7 +843,7 @@ namespace ProjectKB
             }
             outputText.Document.Blocks.Add(paragraph);
 
-            bool minLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MinLv < recipe.MinKeyLv;
+            bool minLvFailure = recipe.EnableKeyLvLimit && BacklightAutotuneService.GetOriginalMinLv(kmitemmaster) < recipe.MinKeyLv;
             bool maxLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MaxLv > recipe.MaxKeyLv;
             Table summaryTable = CreateMetricTable(250, 16, 125, 45);
             TableRowGroup summaryRows = new();
@@ -844,13 +863,32 @@ namespace ProjectKB
             TableRowGroup criteriaRows = new();
             criteriaTable.RowGroups.Add(criteriaRows);
             AppendCriteriaMetricRow(criteriaRows, "不合格点数", "Nbr Failed Points", kmitemmaster.NbrFailPoints.ToString(), string.Empty, kmitemmaster.NbrFailPoints > 0, normalTextBrush);
-            bool avgLvFailure = recipe.EnableAvgLvLimit && (kmitemmaster.AvgLv < recipe.MinAvgLv || kmitemmaster.AvgLv > recipe.MaxAvgLv);
+            double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(kmitemmaster);
+            bool avgLvFailure = recipe.EnableAvgLvLimit && (originalAvgLv < recipe.MinAvgLv || originalAvgLv > recipe.MaxAvgLv);
             AppendCriteriaMetricRow(criteriaRows, "平均亮度", "Avg Lv", $"{kmitemmaster.AvgLv:F2} cd/m2", string.Empty, avgLvFailure, normalTextBrush);
-            bool uniformityFailure = recipe.EnableUniformityLimit && kmitemmaster.LvUniformity < recipe.MinUniformity / 100;
+            bool uniformityFailure = recipe.EnableUniformityLimit && BacklightAutotuneService.GetOriginalLvUniformity(kmitemmaster) < recipe.MinUniformity / 100;
             AppendCriteriaMetricRow(criteriaRows, "亮度均匀性", "Lv Uniformity", $"{kmitemmaster.LvUniformity * 100:F2}%", string.Empty, uniformityFailure, normalTextBrush);
             AppendLocalContrastSummary(criteriaRows, kmitemmaster, recipe, normalTextBrush);
             outputText.Document.Blocks.Add(criteriaTable);
+
+            AppendBacklightAutotuneOutput(kmitemmaster, normalTextBrush);
             SNtextBox.Focus();
+        }
+
+        private void AppendBacklightAutotuneOutput(KBItemMaster kmitemmaster, Brush normalTextBrush)
+        {
+            if (!kmitemmaster.BacklightAutotuneEnabled)
+            {
+                return;
+            }
+
+            Paragraph paragraph = new();
+            AppendOutputLine(paragraph, string.Empty, normalTextBrush);
+            AppendOutputLine(paragraph, $"背光自动修正 (Backlight Autotune): {kmitemmaster.BacklightAutotuneSource}, {(kmitemmaster.BacklightAutotuneApplied ? "Applied" : "Not Applied")}, Steepness={kmitemmaster.BacklightAutotuneSteepness:F2}", normalTextBrush);
+            AppendOutputLine(paragraph, $"Avg Lv Raw/Adjusted/Q1/Q3 = {kmitemmaster.AvgLvRaw:F2}/{kmitemmaster.AvgLvAdjusted:F2}/{kmitemmaster.AvgLvQ1:F2}/{kmitemmaster.AvgLvQ3:F2}", normalTextBrush);
+            AppendOutputLine(paragraph, $"Min Lv Raw/Adjusted/Q1/Q3 = {kmitemmaster.MinLvRaw:F2}/{kmitemmaster.MinLvAdjusted:F2}/{kmitemmaster.MinLvQ1:F2}/{kmitemmaster.MinLvQ3:F2}", normalTextBrush);
+            AppendOutputLine(paragraph, $"Uniformity Raw/Adjusted/Q1/Q3 = {kmitemmaster.LvUniformityRaw * 100:F2}%/{kmitemmaster.LvUniformityAdjusted * 100:F2}%/{kmitemmaster.UniformityQ1:F2}%/{kmitemmaster.UniformityQ3:F2}%", normalTextBrush);
+            outputText.Document.Blocks.Add(paragraph);
         }
 
         private static KBRecipeConfig GetRecipeConfig(KBItemMaster kmitemmaster)
