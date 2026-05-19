@@ -220,7 +220,7 @@
     <value>Ouvrez le dossier dans le gestionnaire de fichiers (X)</value>
   </data>
   <data name="NewFolder" xml:space="preserve">
-    <value>NouveauDossier</value>
+    <value>Nouveau dossier</value>
   </data>
   <data name="FolderDeleteSign" xml:space="preserve">
     <value>et tout son contenu sera définitivement supprimé.</value>

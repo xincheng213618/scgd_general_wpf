@@ -251,7 +251,7 @@ namespace ColorVision.Themes
         public static void SetWindowTitleBarColor(IntPtr hwnd, Theme theme)
         {
             uint attribute;
-            uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
+            uint attributeSize = (uint)Marshal.SizeOf<uint>();
 
             switch (theme)
             {
@@ -322,7 +322,7 @@ namespace ColorVision.Themes
         {
             ///DWMWA_COLOR_DEFAULT 
             uint attribute = 0xFFFFFFFF;
-            uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
+            uint attributeSize = (uint)Marshal.SizeOf<uint>();
             //Specifying DWMWA_COLOR_DEFAULT (value 0xFFFFFFFF) for the color will reset the window back to using the system's default behavior for the caption color.
             _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
             //Specifying DWMWA_COLOR_NONE (value 0xFFFFFFFE) for the color will suppress the drawing of the window border. This makes it possible to have a rounded window with no border.

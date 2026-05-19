@@ -52,6 +52,7 @@ namespace ColorVision.Engine.Batch.PreProcess
     public class FolderSizePreProcess : PreProcessBase<FolderSizePreProcessConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FolderSizePreProcess));
+        private static readonly char[] ExtensionSeparators = { ',', ';', ' ' };
         private const long OneMb = 1024L * 1024L;
 
         public override Task<bool> PreProcess(IPreProcessContext ctx)
@@ -198,18 +199,18 @@ namespace ColorVision.Engine.Batch.PreProcess
             return (triggerBytes, targetBytes);
         }
 
-        private HashSet<string> ParseExtensions(string extensionsStr)
+        private static HashSet<string> ParseExtensions(string extensionsStr)
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             
             if (string.IsNullOrWhiteSpace(extensionsStr))
                 return result;
 
-            var parts = extensionsStr.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = extensionsStr.Split(ExtensionSeparators, StringSplitOptions.RemoveEmptyEntries);
             foreach (var part in parts)
             {
                 var ext = part.Trim();
-                if (!ext.StartsWith("."))
+                if (!ext.StartsWith('.'))
                     ext = "." + ext;
                 result.Add(ext.ToLowerInvariant());
             }

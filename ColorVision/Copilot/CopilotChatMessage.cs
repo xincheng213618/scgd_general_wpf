@@ -719,12 +719,13 @@ namespace ColorVision.Copilot
             };
         }
 
-        public static CopilotAttachmentItem CreateContext(string text)
+        public static CopilotAttachmentItem CreateContext(string text, string? title = null, string? source = null)
         {
             return new CopilotAttachmentItem
             {
                 Type = CopilotAttachmentType.Context,
-                Title = BuildPreview(text, 18),
+                Title = string.IsNullOrWhiteSpace(title) ? BuildPreview(text, 18) : title,
+                Source = source ?? string.Empty,
                 Value = text,
                 CreatedAt = DateTime.Now,
             };

@@ -52,7 +52,7 @@ namespace Conoscope
                 ColorDifferenceReferenceMode.D50 => new ConoscopeUvReference(0.2009, 0.4707),
                 ColorDifferenceReferenceMode.A => new ConoscopeUvReference(0.2560, 0.5242),
                 ColorDifferenceReferenceMode.D75 => new ConoscopeUvReference(0.1952, 0.4670),
-                _ => throw new InvalidOperationException("当前色差基准不是固定光源")
+                _ => throw new InvalidOperationException(Properties.Resources.MsgNoFixedLightSource)
             };
         }
 
@@ -83,7 +83,7 @@ namespace Conoscope
             {
                 if (!TryParseCustomColorDifferenceReference(out ConoscopeUvReference customReference))
                 {
-                    throw new InvalidOperationException("请输入有效的自定义 u/v 基准坐标");
+                    throw new InvalidOperationException(Properties.Resources.MsgInvalidCustomUV);
                 }
 
                 return customReference;
@@ -94,14 +94,14 @@ namespace Conoscope
                 return CalculateImageCenterColorDifferenceReference();
             }
 
-            throw new InvalidOperationException("实测基准图需要保存基准图后逐点计算");
+            throw new InvalidOperationException(Properties.Resources.MsgMeasuredBaseNeedsSave);
         }
 
         private ConoscopeUvReference CalculateImageCenterColorDifferenceReference()
         {
             if (!HasXyzData() || XMat == null || YMat == null || ZMat == null)
             {
-                throw new InvalidOperationException("请先加载图像");
+                throw new InvalidOperationException(Properties.Resources.MsgLoadImageFirst);
             }
 
             int centerX = XMat.Width / 2;
@@ -137,7 +137,7 @@ namespace Conoscope
 
             if (count == 0)
             {
-                throw new InvalidOperationException("图像中心 50px 关注点内没有可用像素");
+                throw new InvalidOperationException(Properties.Resources.MsgNoPixelsInCenter);
             }
 
             return new ConoscopeUvReference(sumU / count, sumV / count);
@@ -156,13 +156,13 @@ namespace Conoscope
 
             if (colorDifferenceReferenceUMat != null && colorDifferenceReferenceVMat != null)
             {
-                btnSaveColorDifferenceReference.Content = "基准图已保存";
+                btnSaveColorDifferenceReference.Content = Properties.Resources.MsgBaseImageSaved;
                 btnSaveColorDifferenceReference.Background = Brushes.LightGreen;
                 btnSaveColorDifferenceReference.Foreground = Brushes.Black;
             }
             else
             {
-                btnSaveColorDifferenceReference.Content = "保存色差基准图";
+                btnSaveColorDifferenceReference.Content = Properties.Resources.MsgSaveBaseFirst;
                 btnSaveColorDifferenceReference.ClearValue(BackgroundProperty);
                 btnSaveColorDifferenceReference.ClearValue(ForegroundProperty);
             }
@@ -176,11 +176,11 @@ namespace Conoscope
                 ColorDifferenceReferenceMode.D50 => "D50: u=0.2009, v=0.4707",
                 ColorDifferenceReferenceMode.A => "A: u=0.2560, v=0.5242",
                 ColorDifferenceReferenceMode.D75 => "D75: u=0.1952, v=0.4670",
-                ColorDifferenceReferenceMode.ImageCenter => "基准: 当前图像中心直径 50px 关注点平均 uv",
+                ColorDifferenceReferenceMode.ImageCenter => Properties.Resources.MsgBaseCenter50px,
                 ColorDifferenceReferenceMode.Custom => $"自定义: u={ColorDifferenceConfig.CustomU:F4}, v={ColorDifferenceConfig.CustomV:F4}",
                 ColorDifferenceReferenceMode.ReferenceImage => colorDifferenceReferenceUMat == null
-                    ? "基准: 尚未保存实测基准图"
-                    : $"基准图: {Path.GetFileName(colorDifferenceReferenceFileName)}",
+                    ? Properties.Resources.MsgBaseNotSaved
+                    : $"{Properties.Resources.MsgBaseImageFile}: {Path.GetFileName(colorDifferenceReferenceFileName)}",
                 _ => string.Empty
             };
         }
@@ -189,7 +189,7 @@ namespace Conoscope
         {
             if (XMat == null || YMat == null || ZMat == null)
             {
-                throw new InvalidOperationException("XYZ 数据未加载");
+                throw new InvalidOperationException(Properties.Resources.MsgXyzNotLoaded);
             }
 
             ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
@@ -208,13 +208,13 @@ namespace Conoscope
             ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
             if (mode == ColorDifferenceReferenceMode.ReferenceImage && (colorDifferenceReferenceUMat == null || colorDifferenceReferenceVMat == null))
             {
-                throw new InvalidOperationException("请先点击“保存色差基准图”，再计算实测图色差");
+                throw new InvalidOperationException(Properties.Resources.MsgSaveBaseFirst);
             }
 
             if (mode == ColorDifferenceReferenceMode.ReferenceImage && XMat != null && colorDifferenceReferenceUMat != null
                 && (XMat.Width != colorDifferenceReferenceUMat.Width || XMat.Height != colorDifferenceReferenceUMat.Height))
             {
-                throw new InvalidOperationException("当前图像尺寸与色差基准图不一致，无法逐点计算");
+                throw new InvalidOperationException(Properties.Resources.MsgImageSizeMismatch);
             }
 
             if (mode == ColorDifferenceReferenceMode.Custom && !TryParseCustomColorDifferenceReference(out _))
@@ -242,7 +242,7 @@ namespace Conoscope
                 catch (Exception ex)
                 {
                     log.Error($"切换色差基准失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(ex.Message, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
         }
@@ -256,7 +256,7 @@ namespace Conoscope
 
             if (!TryParseCustomColorDifferenceReference(out _))
             {
-                MessageBox.Show("请输入有效的自定义 u/v 基准坐标", "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgInvalidCustomUV, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -275,7 +275,7 @@ namespace Conoscope
             {
                 if (!HasXyzData() || XMat == null || YMat == null || ZMat == null)
                 {
-                    MessageBox.Show("请先加载一张实测图", "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirstColorDiff, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -301,7 +301,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"保存色差基准图失败: {ex.Message}", ex);
-                MessageBox.Show($"保存色差基准图失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgSaveBaseImageFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -319,7 +319,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"计算色差失败: {ex.Message}", ex);
-                MessageBox.Show(ex.Message, "色差计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(ex.Message, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

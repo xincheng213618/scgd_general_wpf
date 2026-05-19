@@ -15,16 +15,16 @@
 
         <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
             <StackPanel>
-                <TextBlock Text="滤波" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <TextBlock Text="{x:Static properties:Resources.HeaderFilter}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                 <CheckBox x:Name="chkPreprocessEnabled"
-                          Content="启用预处理"
+                          Content="{x:Static properties:Resources.ChkEnablePreprocess}"
                           Margin="0,0,0,10"
-                          ToolTip="启用后，打开图像时会自动应用当前预处理预设。"
+                          ToolTip="{x:Static properties:Resources.TipEnablePreprocess}"
                           Checked="PreprocessSetting_Changed"
                           Unchecked="PreprocessSetting_Changed"/>
 
                 <DockPanel Margin="0,0,0,8">
-                    <TextBlock Text="滤波类型:" Width="92" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelFilterType}" Width="92" VerticalAlignment="Center"/>
                     <ComboBox x:Name="cbFilterType" Width="170" SelectedValuePath="Tag" SelectionChanged="cbFilterType_SelectionChanged">
                         <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="{x:Static core:ImageFilterType.None}"/>
                         <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="{x:Static core:ImageFilterType.LowPass}"/>
@@ -94,9 +94,9 @@
 
         <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10">
             <StackPanel>
-                <TextBlock Text="灰尘滤除" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <TextBlock Text="{x:Static properties:Resources.HeaderDustRemoval}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                 <CheckBox x:Name="chkDustRemovalEnabled"
-                          Content="启用灰尘滤除"
+                          Content="{x:Static properties:Resources.ChkEnableDustRemoval}"
                           Margin="0,0,0,10"
                           Checked="PreprocessSetting_Changed"
                           Unchecked="PreprocessSetting_Changed"/>
@@ -106,11 +106,11 @@
                         <ColumnDefinition Width="92"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="灰尘类型" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelDustType}" VerticalAlignment="Center"/>
                     <ComboBox x:Name="cbDustMode" Grid.Column="1" Width="170" HorizontalAlignment="Left" SelectionChanged="PreprocessSetting_Changed">
-                        <ComboBoxItem Content="暗斑" Tag="DarkSpot"/>
-                        <ComboBoxItem Content="亮斑" Tag="BrightSpot"/>
-                        <ComboBoxItem Content="暗斑 + 亮斑" Tag="Both"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.CbiDarkSpot}" Tag="DarkSpot"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.CbiBrightSpot}" Tag="BrightSpot"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.CbiBothSpots}" Tag="Both"/>
                     </ComboBox>
                 </Grid>
 
@@ -120,7 +120,7 @@
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="阈值%" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelThresholdPct}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustThreshold, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
                     <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="60" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
                 </Grid>
@@ -131,7 +131,7 @@
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="最小面积" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelMinArea}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMinArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
                     <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="1" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
                 </Grid>
@@ -142,7 +142,7 @@
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="最大面积" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelMaxArea}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMaxArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
                     <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="10" Maximum="5000" Value="500" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
                 </Grid>
@@ -153,7 +153,7 @@
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="修复半径" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelRepairRadius}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustRepairRadius, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
                     <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="3" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
                 </Grid>

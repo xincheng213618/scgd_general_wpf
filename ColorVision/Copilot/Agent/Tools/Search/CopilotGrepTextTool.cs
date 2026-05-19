@@ -48,8 +48,7 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat || request.SearchRootPaths.Count == 0)
                 return false;
 
-            var patterns = ExtractPatterns(request.UserText);
-            return patterns.Count > 0 && HasGrepIntent(request.UserText);
+            return true;
         }
 
         public Task<CopilotToolResult> ExecuteAsync(

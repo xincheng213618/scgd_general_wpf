@@ -1,3 +1,4 @@
+using Conoscope.Properties;
 using System.Collections.Generic;
 using System.Text;
 
@@ -63,11 +64,11 @@ namespace Conoscope.Help
 
         public string CategoryDisplay => Category switch
         {
-            ConoscopeHelpCategory.QuickStart => "快速开始",
-            ConoscopeHelpCategory.Workflow => "使用路径",
-            ConoscopeHelpCategory.Principle => "算法原理",
-            ConoscopeHelpCategory.Terminology => "名词解析",
-            _ => "帮助"
+            ConoscopeHelpCategory.QuickStart => Properties.Resources.RbQuickStart,
+            ConoscopeHelpCategory.Workflow => Properties.Resources.RbUsagePaths,
+            ConoscopeHelpCategory.Principle => Properties.Resources.RbAlgorithmPrinciples,
+            ConoscopeHelpCategory.Terminology => Properties.Resources.RbGlossary,
+            _ => Properties.Resources.RbQuickStart
         };
     }
 
@@ -78,8 +79,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.QuickStart,
                 ConoscopeHelpCategory.QuickStart,
-                "快速开始：从打开图像到得到结果",
-                "第一次使用 Conoscope 时，建议按主页 -> 关注点 -> 分析结果窗的顺序操作。",
+                Properties.Resources.HelpTitleQuickStart,
+                Properties.Resources.HelpSummaryQuickStart,
                 "快速开始,入门,主页,关注点,分析,色域,对比度,结果窗",
                 H("建议按这个顺序使用"),
                 Numbers(
@@ -109,8 +110,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.CaptureWorkflow,
                 ConoscopeHelpCategory.Workflow,
-                "采集与视图管理使用路径",
-                "采集页负责流程模板、测量相机、ND / 校正绑定，结果默认回到当前活动 View。",
+                Properties.Resources.HelpTitleCaptureWorkflow,
+                Properties.Resources.HelpSummaryCaptureWorkflow,
                 "采集,流程模板,测量相机,拍照,ND,校正,复用当前视图,活动View",
                 H("Ribbon 路径"),
                 Bullets(
@@ -137,8 +138,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.PreprocessWorkflow,
                 ConoscopeHelpCategory.Workflow,
-                "预处理与伪彩显示使用路径",
-                "预处理页把是否启用、滤波类型、伪彩显示、完整参数设置、应用到当前 View 集中在一页。",
+                Properties.Resources.HelpTitlePreprocessWorkflow,
+                Properties.Resources.HelpSummaryPreprocessWorkflow,
                 "预处理,滤波,伪彩,应用当前预设,灰尘滤除,高斯,中值,双边",
                 H("Ribbon 路径"),
                 Bullets(
@@ -167,8 +168,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.FocusReferenceWorkflow,
                 ConoscopeHelpCategory.Workflow,
-                "关注点圆、参考线与极角圆使用路径",
-                "关注点圆在图像上方工具条中创建；参考模式既能在主页调，也能在 View 右侧面板中精调。",
+                Properties.Resources.HelpTitleFocusReferenceWorkflow,
+                Properties.Resources.HelpSummaryFocusReferenceWorkflow,
                 "关注点圆,参考拖拽,参考线,极角圆,方位角,极坐标,当前视图,右键计算",
                 H("入口在哪里"),
                 Bullets(
@@ -198,8 +199,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.GamutWorkflow,
                 ConoscopeHelpCategory.Workflow,
-                "综合色域计算使用路径",
-                "综合色域现在由主 Ribbon 统一记录 R/G/B 关注点批次，再弹出独立结果窗口显示。",
+                Properties.Resources.HelpTitleGamutWorkflow,
+                Properties.Resources.HelpSummaryGamutWorkflow,
                 "色域,综合色域,RGB,记录R,记录G,记录B,标准色域,覆盖率,CIE",
                 H("Ribbon 路径"),
                 Bullets(
@@ -233,8 +234,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.ContrastWorkflow,
                 ConoscopeHelpCategory.Workflow,
-                "黑白对比度计算使用路径",
-                "黑白对比度和综合色域一样，先记录关注点批次，再在独立结果窗口中查看每个点的比值。",
+                Properties.Resources.HelpTitleContrastWorkflow,
+                Properties.Resources.HelpSummaryContrastWorkflow,
                 "对比度,黑白,记录白,记录黑,Y,亮度,结果窗口",
                 H("Ribbon 路径"),
                 Bullets(
@@ -267,7 +268,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.VisualizationWorkflow,
                 ConoscopeHelpCategory.Workflow,
-                "CIE、3D、曲线与导出使用路径",
+                Properties.Resources.HelpTitleVisualizationWorkflow,
                 "CIE 和 3D 是当前活动 View 的可视化工具；曲线和 CSV 导出既能走主分析区，也能走 View 侧导出面板。",
                 "CIE,3D,曲线,导出,方位角,极角,高级导出,当前视图",
                 H("3D 与 CIE"),
@@ -295,7 +296,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.FocusPrinciple,
                 ConoscopeHelpCategory.Principle,
-                "关注点采样原理",
+                Properties.Resources.HelpTitleFocusPrinciple,
                 "Conoscope 用圆形 ROI 在 XYZ 数据上做均值采样，不走 Engine 的过滤链路。",
                 "关注点原理,ROI,圆形采样,XYZ平均,本地计算,批次",
                 H("当前实现真正做了什么"),
@@ -319,7 +320,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.GamutPrinciple,
                 ConoscopeHelpCategory.Principle,
-                "综合色域计算原理",
+                Properties.Resources.HelpTitleGamutPrinciple,
                 "当前实现把每个关注点的 R/G/B 色度坐标转成三角形，再与标准色域三角形做面积比。",
                 "色域原理,xy,三角形面积,覆盖率,标准色域,sRGB,Display P3,Rec2020",
                 H("输入数据"),
@@ -351,8 +352,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.ContrastPrinciple,
                 ConoscopeHelpCategory.Principle,
-                "黑白对比度计算原理",
-                "当前实现直接使用白场 Y / 黑场 Y，黑场亮度必须大于 0。",
+                Properties.Resources.HelpTitleContrastPrinciple,
+                Properties.Resources.HelpSummaryContrastPrinciple,
                 "对比度原理,Y,亮度,白场,黑场,ratio",
                 H("输入数据"),
                 Bullets(
@@ -380,7 +381,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.CurvePrinciple,
                 ConoscopeHelpCategory.Principle,
-                "参考曲线与导出原理",
+                Properties.Resources.HelpTitleCurvePrinciple,
                 "方位角模式沿直径采样，极角模式沿固定半径圆周采样，导出通道由当前选择决定。",
                 "曲线原理,导出原理,方位角,极角,CSV,截面,高级导出",
                 H("方位角直线模式"),
@@ -417,7 +418,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.VisualizationPrinciple,
                 ConoscopeHelpCategory.Principle,
-                "CIE 与 3D 可视化原理",
+                Properties.Resources.HelpTitleVisualizationPrinciple,
                 "3D 使用当前显示通道生成高度图；CIE 有当前视图查看和结果窗叠图两种入口。",
                 "CIE原理,3D原理,高度图,显示通道,综合色度,结果窗",
                 H("3D 当前是怎么来的"),
@@ -445,7 +446,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.ActiveViewTerm,
                 ConoscopeHelpCategory.Terminology,
-                "活动 View",
+                Properties.Resources.HelpTitleActiveViewTerm,
                 "当前活动 View 就是当前被选中的图像标签页，主页和分析页的大多数按钮都对它生效。",
                 "活动View,当前视图,标签页,ActiveView",
                 H("定义"),
@@ -465,7 +466,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.FocusBatchTerm,
                 ConoscopeHelpCategory.Terminology,
-                "关注点与关注点批次",
+                Properties.Resources.HelpTitleFocusBatchTerm,
                 "一个关注点是一个圆形采样区；一个关注点批次是当前 View 上整组关注点的一次统一记录。",
                 "关注点,批次,FocusPoint,MeasurementCapture,ROI",
                 H("关注点"),
@@ -484,7 +485,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.CoordinateTerm,
                 ConoscopeHelpCategory.Terminology,
-                "方位角、极角与半径角",
+                Properties.Resources.HelpTitleCoordinateTerm,
                 "方位角决定方向，极角圆决定离中心多远，半径角描述关注点圆本身的角度尺度。",
                 "方位角,极角,半径角,参考线,参考圆",
                 H("方位角"),
@@ -506,7 +507,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.ChannelTerm,
                 ConoscopeHelpCategory.Terminology,
-                "显示通道与 CIE x/y/u/v",
+                Properties.Resources.HelpTitleChannelTerm,
                 "X/Y/Z 是基础三刺激值，x/y/u/v 是综合色度坐标；3D 和显示都会受当前通道选择影响。",
                 "显示通道,X,Y,Z,x,y,u,v,CIE,色差,Δuv",
                 H("X / Y / Z"),
@@ -529,8 +530,8 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.GamutCoverageTerm,
                 ConoscopeHelpCategory.Terminology,
-                "样本面积、标准面积与覆盖率",
-                "当前覆盖率是面积比，不是和标准色域求交集之后的面积比例。",
+                Properties.Resources.HelpTitleGamutCoverageTerm,
+                Properties.Resources.HelpSummaryGamutCoverageTerm,
                 "样本面积,标准面积,覆盖率,色域覆盖,面积比",
                 H("样本面积"),
                 Bullets(
@@ -550,7 +551,7 @@ namespace Conoscope.Help
             Entry(
                 ConoscopeHelpTopicIds.ContrastTerm,
                 ConoscopeHelpCategory.Terminology,
-                "白场、黑场与对比度",
+                Properties.Resources.HelpTitleContrastTerm,
                 "白场和黑场是同一位置在不同状态下的亮度比较，对比度直接取白 Y / 黑 Y。",
                 "白场,黑场,对比度,Y,亮度,ratio",
                 H("白场"),

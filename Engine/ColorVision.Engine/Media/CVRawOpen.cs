@@ -1,12 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using cvColorVision;
 using CVCommCore.CVAlgorithm;
@@ -92,6 +94,159 @@ namespace ColorVision.Engine.Media
                 Path.GetFileNameWithoutExtension(filePath) + ".cvraw");
 
             return File.Exists(siblingRawPath) ? siblingRawPath : null;
+        }
+
+        private string? GetCurrentFilePath()
+        {
+            return EditorContext.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath)
+                ?? EditorContext.Config.GetProperties<string>("FilePath")
+                ?? EditorContext.ImageView.Config.FilePath;
+        }
+
+        private bool CanCalculateCieForCurrentRaw()
+        {
+            if (EditorContext.Config.GetProperties<bool>("IsCVCIE"))
+            {
+                return false;
+            }
+
+            string? filePath = GetCurrentFilePath();
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                return false;
+            }
+
+            if (!string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return EditorContext.Config.GetProperties<int>(ImageViewPropertyKeys.Channel) == 3;
+        }
+
+        private static double ResolveDialogExposure(float[]? exposureValues, int index)
+        {
+            if (exposureValues != null)
+            {
+                if (index < exposureValues.Length && exposureValues[index] > 0)
+                {
+                    return exposureValues[index];
+                }
+
+                if (exposureValues.Length == 1 && exposureValues[0] > 0)
+                {
+                    return exposureValues[0];
+                }
+            }
+
+            return 0d;
+        }
+
+
+        private static CVRawManualCieConfig CreateManualCieConfig(string filePath, CVCIEFile rawFile)
+        {
+            CVRawManualCieConfig config = CVRawManualCieConfig.CreateFactoryDefaults();
+            CVRawManualCieConfig.Instance.CopyTo(config);
+
+            ApplySourceExposureDefaults(config, rawFile);
+            ApplySourceGainDefaults(config, filePath, rawFile);
+
+            return config;
+        }
+
+        private static void ApplySourceExposureDefaults(CVRawManualCieConfig config, CVCIEFile rawFile)
+        {
+            if (config.Texp_x <= 0)
+            {
+                config.Texp_x = ResolveDialogExposure(rawFile.Exp, 0);
+            }
+
+            if (config.Texp_y <= 0)
+            {
+                config.Texp_y = ResolveDialogExposure(rawFile.Exp, 1);
+            }
+
+            if (config.Texp_z <= 0)
+            {
+                config.Texp_z = ResolveDialogExposure(rawFile.Exp, 2);
+            }
+        }
+
+        private static void ApplySourceGainDefaults(CVRawManualCieConfig config, string filePath, CVCIEFile rawFile)
+        {
+            double fallbackGain = IsTifFile(filePath) ? 0d : (rawFile.Gain > 0 ? rawFile.Gain : 0d);
+            config.Gain_x = fallbackGain;
+            config.Gain_y = fallbackGain;
+            config.Gain_z = fallbackGain;
+        }
+
+        private static bool IsTifFile(string filePath)
+        {
+            string extension = Path.GetExtension(filePath);
+            return string.Equals(extension, ".tif", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".tiff", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ShowManualCieDialog()
+        {
+            string? filePath = GetCurrentFilePath();
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "当前没有可计算的 CVRAW 文件。", "ColorVision");
+                return;
+            }
+
+            if (CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile rawHeader) <= 0
+                || rawHeader.FileExtType != CVType.Raw
+                || rawHeader.Channels != 3)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "仅支持三通道 CVRAW 计算 CIE。", "ColorVision");
+                return;
+            }
+
+            rawHeader.FilePath = filePath;
+
+            CVRawManualCieConfig config = CreateManualCieConfig(filePath, rawHeader);
+            CVRawManualCieWindow propertyEditorWindow = new CVRawManualCieWindow(config)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+
+            propertyEditorWindow.Submited += async (_, _) =>
+            {
+                config.CopyTo(CVRawManualCieConfig.Instance);
+                ConfigService.Instance.SaveConfigs();
+                await CalculateCurrentRawCieAsync(filePath, config);
+            };
+            propertyEditorWindow.ShowDialog();
+        }
+
+        private async Task CalculateCurrentRawCieAsync(string filePath, CVRawManualCieConfig config)
+        {
+            try
+            {
+                CVRawManualCieCalculator.CalculationResult result = await Task.Run(() =>
+                {
+                    using CVCIEFile rawFile = CVFileUtil.OpenLocalCVFile(filePath);
+                    return CVRawManualCieCalculator.Calculate(rawFile, config);
+                });
+
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    EditorContext.Config.SetImageMetadata("srcFileName", Path.GetFileName(filePath), nameof(CVRawOpen), "手动 CIE 计算的源 CVRAW 文件名");
+                    AttachLiveCvcie(EditorContext.ImageView, (uint)result.Width, (uint)result.Height, 32, 3, result.XyzData, result.Exposure);
+                    log.Info($"Manual CIE calculated for {filePath}");
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error("Manual CIE calculation failed.", ex);
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"计算 CIE 失败: {ex.Message}", "ColorVision");
+                });
+            }
         }
 
         private void InitializeCvFileView(ImageView imageView, string filePath)
@@ -382,6 +537,17 @@ namespace ColorVision.Engine.Media
                     }
                 })
             });
+
+            if (CanCalculateCieForCurrentRaw())
+            {
+                menuItems.Add(new MenuItemMetadata()
+                {
+                    Header = "计算CIE",
+                    GuidId = "CVRawCalculateCIE",
+                    Order = 302,
+                    Command = new RelayCommand(_ => ShowManualCieDialog())
+                });
+            }
             
             if (EditorContext.Config.GetProperties<bool>("IsCVCIE"))
             {
@@ -389,7 +555,7 @@ namespace ColorVision.Engine.Media
                 {
                     Header = "POI",
                     GuidId = "POI",
-                    Order = 302,
+                    Order = 303,
                     Command = new RelayCommand(a =>
                     {
 
@@ -414,8 +580,8 @@ namespace ColorVision.Engine.Media
                         {
                             ObservableCollection<PoiResultCIEYData> PoiResultCIEYData = new ObservableCollection<PoiResultCIEYData>();
 
-                            bool Isshow = EditorContext.ImageView.DrawingVisualLists.Count < 1000;
-                            foreach (var item in EditorContext.ImageView.DrawingVisualLists)
+                            bool Isshow = EditorContext.DrawingVisualLists.Count < 1000;
+                            foreach (var item in EditorContext.DrawingVisualLists)
                             {
                                 BaseProperties drawAttributeBase = item.BaseAttribute;
                                 if (drawAttributeBase is CircleTextProperties circle)
@@ -459,8 +625,8 @@ namespace ColorVision.Engine.Media
                         {
                             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
 
-                            bool Isshow = EditorContext.ImageView.DrawingVisualLists.Count < 1000;
-                            foreach (var item in EditorContext.ImageView.DrawingVisualLists)
+                            bool Isshow = EditorContext.DrawingVisualLists.Count < 1000;
+                            foreach (var item in EditorContext.DrawingVisualLists)
                             {
                                 BaseProperties drawAttributeBase = item.BaseAttribute;
                                 if (drawAttributeBase is CircleTextProperties circle)

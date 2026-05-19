@@ -70,6 +70,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ResetCommand { get; set; }
         [CommandDisplay("ModifyConfiguration", Order = -99)]
         public RelayCommand EditCommand { get; set; }
+        [CommandDisplay("PropertyEditorWindow", Order = -98)]
+        public RelayCommand PropertyEditorEditCommand { get; set; }
         public RelayCommand CopyConfigCommand { get; set; }
         [CommandDisplay("OpenConfigFile")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
@@ -99,11 +101,16 @@ namespace ColorVision.Engine.Services.PhyCameras
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
             {
-                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submited += (s, e) => Save();
-                propertyEditorWindow.ShowDialog();
+                EditConfigPhyCamera window = new EditConfigPhyCamera(this);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                if (window.ShowDialog() == true)
+                {
+                    Save();
+                }
             });
 
+            PropertyEditorEditCommand = new RelayCommand(a => OpenPropertyEditor());
 
             CopyConfigCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
@@ -149,6 +156,26 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
 
         bool IsCreateRestore ;
+        private void OpenPropertyEditor()
+        {
+            var editConfig = Config.Clone();
+            editConfig.CFW = Config.CFW.CloneForEdit();
+            editConfig.CFW.EnsureChannelCfgsForEdit();
+
+            var propertyEditorWindow = new PropertyEditorWindow(editConfig)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            propertyEditorWindow.Submited += (s, e) =>
+            {
+                editConfig.CFW.NormalizeChannelCfgsForSave();
+                editConfig.CopyTo(Config);
+                Save();
+            };
+            propertyEditorWindow.ShowDialog();
+        }
+
         public async void CreateRestore()
         {
             if (IsCreateRestore)
@@ -1198,6 +1225,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "属性编辑器(备用)", Command = PropertyEditorEditCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuCopy, Command = CopyConfigCommand });
         }
@@ -1211,6 +1239,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 Config.CFW.ChannelCfgs.Clear();
                 Config.CFW.IsCOM = false;
+            }
+            else
+            {
+                Config.CFW.NormalizeChannelCfgsForSave();
             }
 
             if (Config.CFW.IsBingNDDevice)

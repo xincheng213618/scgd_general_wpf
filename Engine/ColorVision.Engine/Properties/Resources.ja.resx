@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>受け入れデータの表示</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>画像データファイル</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>ビデオモード</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="SubscribedTopic" xml:space="preserve">
     <value>購読済みのトピック</value>
-  </data>
-  <data name="Subscribe" xml:space="preserve">
-    <value>サブスクリプション</value>
   </data>
   <data name="Submit" xml:space="preserve">
     <value>提出する</value>
@@ -313,7 +307,7 @@
     <value>プロジェクトを開く</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>開ける</value>
+    <value>開く</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>
@@ -394,7 +388,7 @@
     <value>名前を変更(_M)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>懸念テンプレートの設定（P）</value>
+    <value>POIテンプレート設定(P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>物理カメラ管理(_P)</value>
@@ -466,10 +460,10 @@
     <value>男性</value>
   </data>
   <data name="Local" xml:space="preserve">
-    <value>地元</value>
+    <value>ローカル</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>負荷</value>
+    <value>読み込み中</value>
   </data>
   <data name="LicenseManagement" xml:space="preserve">
     <value>ライセンス管理</value>
@@ -490,10 +484,10 @@
     <value>情報</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
-    <value>輸入ライセンス</value>
+    <value>ライセンスのインポート</value>
   </data>
   <data name="Import" xml:space="preserve">
-    <value>輸入</value>
+    <value>インポート</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>画像ソース</value>
@@ -511,10 +505,10 @@
     <value>履歴キャッシュ</value>
   </data>
   <data name="GhostShadow" xml:space="preserve">
-    <value>おばけ</value>
+    <value>ゴースト</value>
   </data>
   <data name="Gain" xml:space="preserve">
-    <value>得</value>
+    <value>ゲイン</value>
   </data>
   <data name="FocusPoint" xml:space="preserve">
     <value>フォーカスポイント</value>
@@ -526,7 +520,7 @@
     <value>フィルター</value>
   </data>
   <data name="File" xml:space="preserve">
-    <value>書類</value>
+    <value>ファイル</value>
   </data>
   <data name="Female" xml:space="preserve">
     <value>女性</value>
@@ -547,7 +541,7 @@
     <value>露出</value>
   </data>
   <data name="Export" xml:space="preserve">
-    <value>輸出</value>
+    <value>エクスポート</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>実装プロセス</value>
@@ -572,9 +566,6 @@
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
     <value>ダウンロードがキャンセルされました</value>
-  </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE画像データ領域</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
     <value>装置名</value>
@@ -622,7 +613,7 @@
     <value>デバイスの作成</value>
   </data>
   <data name="Create" xml:space="preserve">
-    <value>作成する</value>
+    <value>作成</value>
   </data>
   <data name="CopySerialNumber" xml:space="preserve">
     <value>シリアル番号をコピーする</value>
@@ -649,7 +640,7 @@
     <value>コード</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>キャンセル</value>
+    <value>閉じる</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>データのクリア</value>
@@ -667,13 +658,13 @@
     <value>変更ログ</value>
   </data>
   <data name="Capture" xml:space="preserve">
-    <value>捕獲</value>
+    <value>キャプチャ</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>キャンセル</value>
   </data>
   <data name="Calibration" xml:space="preserve">
-    <value>較正</value>
+    <value>校正</value>
   </data>
   <data name="Calculate" xml:space="preserve">
     <value>計算する</value>
@@ -692,9 +683,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>エイリアス</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>タイプ</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>高度な検索</value>
@@ -856,13 +844,10 @@
     <value>デバイスがオフラインです</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>懸念事項テンプレート</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>フォーカス関連のアルゴリズムテンプレート設定</value>
+    <value>POIテンプレート</value>
   </data>
   <data name="Service" xml:space="preserve">
-    <value>仕える</value>
+    <value>サービス</value>
   </data>
   <data name="RefreshDeviceList" xml:space="preserve">
     <value>デバイスリストを更新</value>
@@ -895,13 +880,13 @@
     <value>復元ポイントが正常に作成されました</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>NDPortを調整する</value>
+    <value>NDPortを変更</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>オートフォーカス</value>
   </data>
   <data name="Move" xml:space="preserve">
-    <value>動く</value>
+    <value>移動</value>
   </data>
   <data name="AbsolutePosition" xml:space="preserve">
     <value>絶対位置</value>
@@ -916,7 +901,7 @@
     <value>原点回帰</value>
   </data>
   <data name="CurrentPosition" xml:space="preserve">
-    <value>現在の場所:</value>
+    <value>現在位置:</value>
   </data>
   <data name="AcquirePosition" xml:space="preserve">
     <value>位置情報を取得</value>
@@ -934,7 +919,7 @@
     <value>自動デバイス接続</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>アプリケーションパラメータ</value>
+    <value>設定を適用</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>ファイルキャッシュ:</value>
@@ -952,7 +937,7 @@
     <value>プロセステンプレート</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>クエリ結果</value>
+    <value>検索結果</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>プロセス結果管理</value>
@@ -961,7 +946,7 @@
     <value>解析管理</value>
   </data>
   <data name="Parsing" xml:space="preserve">
-    <value>分析</value>
+    <value>解析</value>
   </data>
   <data name="Camera" xml:space="preserve">
     <value>カメラ</value>
@@ -976,31 +961,31 @@
     <value>オートフォーカステンプレート</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>フォーカス関連のアルゴリズムテンプレート設定</value>
+    <value>POIテンプレート設定</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
     <value>POIフィルターテンプレートの設定</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi変更テンプレート設定</value>
+    <value>POI補正テンプレート設定</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>アプリケーションプロパティテンプレート</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Poiレイアウトテンプレートの設定</value>
+    <value>POIレイアウトテンプレート設定</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>POI分析</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>エリアAAを探しています</value>
+    <value>AA領域検出</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
     <value>POIファイル出力テンプレート設定</value>
   </data>
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi補正キャリブレーションパラメータテンプレート設定</value>
+    <value>POI補正キャリブレーションパラメータテンプレート設定</value>
   </data>
   <data name="TemplateMatching" xml:space="preserve">
     <value>テンプレートマッチング</value>
@@ -1060,7 +1045,7 @@
     <value>色温度波長</value>
   </data>
   <data name="DataDirectory" xml:space="preserve">
-    <value>データカタログ</value>
+    <value>データディレクトリ</value>
   </data>
   <data name="PortAddress" xml:space="preserve">
     <value>ポートアドレス</value>
@@ -1143,9 +1128,6 @@
   <data name="SeviceClosed" xml:space="preserve">
     <value>サービスは停止されました。</value>
   </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>データディレクトリサービスの構成</value>
-  </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>サービスキャッシュ</value>
   </data>
@@ -1180,7 +1162,7 @@
     <value>電源オフ</value>
   </data>
   <data name="Up" xml:space="preserve">
-    <value>優れた</value>
+    <value>上</value>
   </data>
   <data name="Down" xml:space="preserve">
     <value>下</value>
@@ -1204,7 +1186,7 @@
     <value>コマンドを送信</value>
   </data>
   <data name="RevCmd" xml:space="preserve">
-    <value>返品指示</value>
+    <value>受信コマンド</value>
   </data>
   <data name="SensorCfgInfo" xml:space="preserve">
     <value>センサー構成情報</value>
@@ -1270,7 +1252,7 @@
     <value>ファイル構成</value>
   </data>
   <data name="CalibrationFile" xml:space="preserve">
-    <value>訂正文書</value>
+    <value>校正ファイル</value>
   </data>
   <data name="CameraType" xml:space="preserve">
     <value>カメラモデル</value>
@@ -1381,10 +1363,10 @@
     <value>最大ゲイン</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>デフォルト値を公開する</value>
+    <value>デフォルト露光時間</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
-    <value>最小限の露出</value>
+    <value>最小露光時間</value>
   </data>
   <data name="MaxExpTime" xml:space="preserve">
     <value>最大露出</value>
@@ -1399,13 +1381,13 @@
     <value>グループを削除</value>
   </data>
   <data name="ExportCalibration" xml:space="preserve">
-    <value>輸出修正</value>
+    <value>校正をエクスポート</value>
   </data>
   <data name="CreateCalibration" xml:space="preserve">
-    <value>修正を作成</value>
+    <value>校正を作成</value>
   </data>
   <data name="ExpTime" xml:space="preserve">
-    <value>暴露</value>
+    <value>露光時間</value>
   </data>
   <data name="Focus" xml:space="preserve">
     <value>焦点距離</value>
@@ -1426,13 +1408,13 @@
     <value>色偏差</value>
   </data>
   <data name="Distortion" xml:space="preserve">
-    <value>ねじれ</value>
+    <value>歪み</value>
   </data>
   <data name="Uniformity" xml:space="preserve">
-    <value>均一フィールド</value>
+    <value>均一性</value>
   </data>
   <data name="ColorDiff" xml:space="preserve">
-    <value>カラーディフ</value>
+    <value>色差</value>
   </data>
   <data name="Brightness" xml:space="preserve">
     <value>輝度</value>
@@ -1447,10 +1429,10 @@
     <value>マルチカラー</value>
   </data>
   <data name="CalibrationFileManagement" xml:space="preserve">
-    <value>修正ファイル管理</value>
+    <value>校正ファイル管理</value>
   </data>
   <data name="UploadCalibrationGroup" xml:space="preserve">
-    <value>アップロード修正グループ</value>
+    <value>校正グループをアップロード</value>
   </data>
   <data name="CalibrationGroupManagement" xml:space="preserve">
     <value>校正グループ管理</value>
@@ -1462,13 +1444,13 @@
     <value>キャリブレーションパラメータ設定</value>
   </data>
   <data name="EditCalibration" xml:space="preserve">
-    <value>修正ファイルを編集する</value>
+    <value>校正ファイルを編集</value>
   </data>
   <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
     <value>キャリブレーションを使用する前に、対応する物理カメラを設定してください。</value>
   </data>
   <data name="CalibrationViewSettings" xml:space="preserve">
-    <value>正しいビュー構成</value>
+    <value>校正ビュー設定</value>
   </data>
   <data name="ShowList" xml:space="preserve">
     <value>リストを表示</value>
@@ -1561,10 +1543,10 @@
     <value>最新の画像をインポートする</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>注意を節約する</value>
+    <value>POIを保存</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>明確な焦点</value>
+    <value>POIをクリア</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>再レンダリング</value>
@@ -1597,37 +1579,37 @@
     <value>グローバルキャッシュに設定</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>アプリケーションキャッシュ</value>
+    <value>キャッシュを適用</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
     <value>発光領域の4つのコーナーポイントを有効にする</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>配信エリアの表示</value>
+    <value>レイアウト領域を表示</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>中心点</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>展開エリアの設定</value>
+    <value>レイアウト領域を設定</value>
   </data>
   <data name="Count" xml:space="preserve">
-    <value>量</value>
+    <value>数</value>
   </data>
   <data name="Angle" xml:space="preserve">
     <value>角度</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>光っている部分を見つける</value>
+    <value>発光領域を検出</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>満杯</value>
+    <value>塗りつぶし</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>幅</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>高い</value>
+    <value>高さ</value>
   </data>
   <data name="RowCount" xml:space="preserve">
     <value>行数</value>
@@ -1645,7 +1627,7 @@
     <value>右</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>見せる</value>
+    <value>表示</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
     <value>セグメンテーションを設定する</value>
@@ -1660,13 +1642,13 @@
     <value>破線</value>
   </data>
   <data name="Value" xml:space="preserve">
-    <value>価値</value>
+    <value>値</value>
   </data>
   <data name="Circle" xml:space="preserve">
-    <value>ラウンド</value>
+    <value>円</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>フォーカスエディター</value>
+    <value>POIエディター</value>
   </data>
   <data name="Rect" xml:space="preserve">
     <value>矩形</value>
@@ -1675,7 +1657,7 @@
     <value>描く</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>フォーカス設定</value>
+    <value>POI設定</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam設定</value>
@@ -1699,7 +1681,7 @@
     <value>絶対</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>比較的</value>
+    <value>相対</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>波長</value>
@@ -1711,7 +1693,7 @@
     <value>絶対スペクトル</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>現在(mA)</value>
+    <value>電流(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>電圧(_V)</value>
@@ -1735,10 +1717,10 @@
     <value>始める</value>
   </data>
   <data name="End" xml:space="preserve">
-    <value>仕上げる</value>
+    <value>終了</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>ポイント</value>
+    <value>ポイント数</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>ネットワーク</value>
@@ -1750,10 +1732,10 @@
     <value>測定属性</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>元の値</value>
+    <value>開始値</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
-    <value>現在の曲線</value>
+    <value>電流曲線</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
     <value>電流（mA）</value>
@@ -1816,10 +1798,10 @@
     <value>実行に失敗しました</value>
   </data>
   <data name="Opening" xml:space="preserve">
-    <value>オープニング</value>
+    <value>オープン中</value>
   </data>
   <data name="Closing" xml:space="preserve">
-    <value>閉鎖</value>
+    <value>クローズ中</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
     <value>クエリ数</value>
@@ -1828,7 +1810,7 @@
     <value>種類別に並べ替え</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>POIに作成</value>
+    <value>POIとして作成</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>フォルダ内のファイルを選択</value>
@@ -1864,7 +1846,7 @@
     <value>データ列を表示する</value>
   </data>
   <data name="Operation" xml:space="preserve">
-    <value>操作する</value>
+    <value>操作</value>
   </data>
   <data name="OpenFailed" xml:space="preserve">
     <value>開けませんでした</value>
@@ -1882,7 +1864,7 @@
     <value>ストレージタイプ</value>
   </data>
   <data name="POIFile" xml:space="preserve">
-    <value>フォーカスドキュメント</value>
+    <value>POIファイル</value>
   </data>
   <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
     <value>色温度波長を計算する</value>
@@ -1955,12 +1937,6 @@
   </data>
   <data name="TemplateFailed" xml:space="preserve">
     <value>テンプレートが失敗しました</value>
-  </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>現在の論理カメラライセンスの有効期限が切れているため、デバイスリストを更新できません。現在カメラサービスにバインドされている物理カメラをクリアしてから、もう一度お試しください。</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>現在の論理カメラはオフラインのため、デバイスリストを更新できません。現在のカメラサービスにバインドされている物理カメラをクリアしてから再試行しますか？</value>
   </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>現在のデバイスのカメラ情報</value>
@@ -2062,7 +2038,7 @@
     <value>POIフィルターテンプレートの設定</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>「ライトストリップテストテンプレート管理」</value>
+    <value>ライトバー検出テンプレート管理</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR エッジ検索テンプレート管理</value>
@@ -2098,7 +2074,7 @@
     <value>画像ステッチテンプレートの管理</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>AAエリアテンプレート管理を探しています</value>
+    <value>AA領域検出テンプレート管理</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>BlackMuraテンプレート管理</value>
@@ -2247,9 +2223,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>選択した項目を削除</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(名前を変更するにはダブルクリックします。現在はメモリにのみ保存されます)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>処理クラス</value>
   </data>
@@ -2290,7 +2263,7 @@
     <value>列挙する</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>注意ポイントを設定する必要があります</value>
+    <value>POIを設定する必要があります</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>エクスポート形式</value>
@@ -2400,18 +2373,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>デフォルトの保存パス</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVLカメラ処理</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVL バッチからのカメラ データのみを処理してエクスポートします。</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>IVLスペクトル処理</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVLバッチからスペクトルデータのみを処理してエクスポートする</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>LEDストリップ</value>
   </data>
@@ -2481,12 +2442,6 @@
   <data name="IsFront" xml:space="preserve">
     <value>フロントパネルを有効にする</value>
   </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>IVスキャン処理</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>SMUスキャンデータを処理し、CSVに保存してIV曲線をプロットする</value>
-  </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>デバイスマネージャーを開く</value>
   </data>
@@ -2536,10 +2491,10 @@
     <value>同期周波数</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>同期周波数</value>
+    <value>同期周波数係数</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>フィルターBW</value>
+    <value>フィルター幅</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
     <value>同期頻度が有効</value>

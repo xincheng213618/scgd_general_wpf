@@ -23,6 +23,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -114,10 +115,24 @@ namespace ProjectKB
             {
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
+                    if (ProjectKBConfig.Instance.IgnoreAutoRunWhenSnEmpty && string.IsNullOrWhiteSpace(SNtextBox.Text))
+                    {
+                        const string message = "PLC自动触发已忽略：SN为空，未执行流程。";
+                        log.Warn(message);
+                        logTextBox.Text = message;
+                        _ = ModbusControl.GetInstance().SetRegisterValue(0);
+                        return;
+                    }
+
                     log.Info("触发拍照，执行流程");
                     RunTemplate();
                 });
             }
+        }
+
+        private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
+        {
+            DatabaseCleanupWindow.OpenWindow();
         }
 
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
@@ -568,6 +583,7 @@ namespace ProjectKB
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
 
             KBItemMaster.LvUniformity = KBItemMaster.MaxLv == 0 ? 0 : KBItemMaster.MinLv / KBItemMaster.MaxLv;
+            BacklightAutotuneService.Apply(KBItemMaster, RecipeConfig);
             KBItemMaster.SN = SNtextBox.Text;
 
 
@@ -577,19 +593,20 @@ namespace ProjectKB
 
             if (RecipeConfig.EnableKeyLvLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MinLv >= RecipeConfig.MinKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalMinLv(KBItemMaster) >= RecipeConfig.MinKeyLv;
                 KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= RecipeConfig.MaxKeyLv;
             }
 
             if (RecipeConfig.EnableAvgLvLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv >= RecipeConfig.MinAvgLv;
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv <= RecipeConfig.MaxAvgLv;
+                double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(KBItemMaster);
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv >= RecipeConfig.MinAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv <= RecipeConfig.MaxAvgLv;
             }
 
             if (RecipeConfig.EnableUniformityLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.LvUniformity >= RecipeConfig.MinUniformity / 100;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalLvUniformity(KBItemMaster) >= RecipeConfig.MinUniformity / 100;
             }
 
             if (RecipeConfig.EnableKeyLcLimit)
@@ -762,10 +779,26 @@ namespace ProjectKB
             sb.AppendLine($"Nbr Failed Points= {kmitemmaster.NbrFailPoints}");
             sb.AppendLine($"Avg Lv= {kmitemmaster.AvgLv:F2} cd/m2 ");
             sb.AppendLine($"Lv Uniformity= {kmitemmaster.LvUniformity * 100:F2} % ");
+            AppendBacklightAutotuneSummary(sb, kmitemmaster);
             sb.AppendLine($"Avg CCT= 0.0000");
             sb.AppendLine($"ColorDiff= 0.0000  ");
             sb.AppendLine(kmitemmaster.Result ? "PASS" : "FAIL");
             return sb.ToString();
+        }
+
+        private static void AppendBacklightAutotuneSummary(StringBuilder sb, KBItemMaster kmitemmaster)
+        {
+            if (!kmitemmaster.BacklightAutotuneEnabled)
+            {
+                return;
+            }
+
+            sb.AppendLine();
+            sb.AppendLine($"Backlight Autotune= {kmitemmaster.BacklightAutotuneSource} {(kmitemmaster.BacklightAutotuneApplied ? "Applied" : "Not Applied")}");
+            sb.AppendLine($"Autotune Steepness= {kmitemmaster.BacklightAutotuneSteepness:F2}");
+            sb.AppendLine($"Avg Lv Raw/Adjusted/Q1/Q3= {kmitemmaster.AvgLvRaw:F2}/{kmitemmaster.AvgLvAdjusted:F2}/{kmitemmaster.AvgLvQ1:F2}/{kmitemmaster.AvgLvQ3:F2}");
+            sb.AppendLine($"Min Lv Raw/Adjusted/Q1/Q3= {kmitemmaster.MinLvRaw:F2}/{kmitemmaster.MinLvAdjusted:F2}/{kmitemmaster.MinLvQ1:F2}/{kmitemmaster.MinLvQ3:F2}");
+            sb.AppendLine($"Lv Uniformity Raw/Adjusted/Q1/Q3= {kmitemmaster.LvUniformityRaw * 100:F2}%/{kmitemmaster.LvUniformityAdjusted * 100:F2}%/{kmitemmaster.UniformityQ1:F2}%/{kmitemmaster.UniformityQ3:F2}%");
         }
 
         public void GenoutputText(KBItemMaster kmitemmaster)
@@ -776,14 +809,17 @@ namespace ProjectKB
             outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
+            KBRecipeConfig recipe = GetRecipeConfig(kmitemmaster);
+            Brush normalTextBrush = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+
             string outtext = string.Empty;
-            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
+            outtext += $"机种 (Model):{kmitemmaster.Model}" + Environment.NewLine;
             outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
-            outtext += $"Poiints of Interest: " + Environment.NewLine;
-            outtext += $"{kmitemmaster.CreateTime:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+            outtext += $"按键明细 (Points of Interest): " + Environment.NewLine;
+            outtext += $"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}" + Environment.NewLine;
 
             Run run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = normalTextBrush;
             run.FontSize += 1;
 
             var paragraph = new Paragraph();
@@ -794,51 +830,221 @@ namespace ProjectKB
 
             paragraph = new Paragraph();
 
-            string title1 = "PT";
-            string title2 = "Lv";
-
-            string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
-            run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-
-            paragraph.Inlines.Add(run);
-            outtext = string.Empty;
+            AppendOutputLine(paragraph, $"{"按键 (PT)",-20} {"亮度 (Lv)",-12} {"局部对比度 (LC)",12}", normalTextBrush);
 
             foreach (var item in kmitemmaster.Items)
             {
                 string formattedString = $"[{item.Name}]";
+                bool isFailureLine = IsKeyFailure(item, recipe) || !item.Result;
+                string resultText = isFailureLine ? "Fail" : string.Empty;
 
-                outtext += $"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc * 100,10:F2}%  {(item.Result ? "" : "Fail")}" + Environment.NewLine;
-                run = new Run(outtext);
-                run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-                run.FontSize += 1;
-                paragraph.Inlines.Add(run);
-                outtext = string.Empty;
+                string line = $"{formattedString,-20} {item.Lv,-12:F2} {item.Lc * 100,12:F2}%  {resultText}";
+                AppendOutputLine(paragraph, line, normalTextBrush, isFailureLine);
             }
             outputText.Document.Blocks.Add(paragraph);
 
-            outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
-            outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
-            outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
-            outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
+            bool minLvFailure = recipe.EnableKeyLvLimit && BacklightAutotuneService.GetOriginalMinLv(kmitemmaster) < recipe.MinKeyLv;
+            bool maxLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MaxLv > recipe.MaxKeyLv;
+            Table summaryTable = CreateMetricTable(250, 16, 125, 45);
+            TableRowGroup summaryRows = new();
+            summaryTable.RowGroups.Add(summaryRows);
+            AppendMetricRow(summaryRows, "最小亮度", "Min Lv", $"{kmitemmaster.MinLv:F2} cd/m2", minLvFailure, normalTextBrush);
+            AppendMetricRow(summaryRows, "最大亮度", "Max Lv", $"{kmitemmaster.MaxLv:F2} cd/m2", maxLvFailure, normalTextBrush);
+            AppendMetricRow(summaryRows, "最暗按键", "Darkest Key", $"[{kmitemmaster.DrakestKey}]", false, normalTextBrush);
+            AppendMetricRow(summaryRows, "最亮按键", "Brightest Key", $"[{kmitemmaster.BrightestKey}]", false, normalTextBrush);
+            outputText.Document.Blocks.Add(summaryTable);
 
-            outtext += Environment.NewLine;
-            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-            outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
-            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
-
-            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-
-            run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-            paragraph = new Paragraph(run);
-            outtext = string.Empty;
+            paragraph = new Paragraph();
+            AppendOutputLine(paragraph, string.Empty, normalTextBrush);
+            AppendOutputLine(paragraph, "合格/不合格标准 (Pass/Fail Criteria):", normalTextBrush);
             outputText.Document.Blocks.Add(paragraph);
+
+            Table criteriaTable = CreateCriteriaMetricTable(285, 16, 120, 90, 45);
+            TableRowGroup criteriaRows = new();
+            criteriaTable.RowGroups.Add(criteriaRows);
+            AppendCriteriaMetricRow(criteriaRows, "不合格点数", "Nbr Failed Points", kmitemmaster.NbrFailPoints.ToString(), string.Empty, kmitemmaster.NbrFailPoints > 0, normalTextBrush);
+            double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(kmitemmaster);
+            bool avgLvFailure = recipe.EnableAvgLvLimit && (originalAvgLv < recipe.MinAvgLv || originalAvgLv > recipe.MaxAvgLv);
+            AppendCriteriaMetricRow(criteriaRows, "平均亮度", "Avg Lv", $"{kmitemmaster.AvgLv:F2} cd/m2", string.Empty, avgLvFailure, normalTextBrush);
+            bool uniformityFailure = recipe.EnableUniformityLimit && BacklightAutotuneService.GetOriginalLvUniformity(kmitemmaster) < recipe.MinUniformity / 100;
+            AppendCriteriaMetricRow(criteriaRows, "亮度均匀性", "Lv Uniformity", $"{kmitemmaster.LvUniformity * 100:F2}%", string.Empty, uniformityFailure, normalTextBrush);
+            AppendLocalContrastSummary(criteriaRows, kmitemmaster, recipe, normalTextBrush);
+            outputText.Document.Blocks.Add(criteriaTable);
+
+            AppendBacklightAutotuneOutput(kmitemmaster, normalTextBrush);
             SNtextBox.Focus();
+        }
+
+        private void AppendBacklightAutotuneOutput(KBItemMaster kmitemmaster, Brush normalTextBrush)
+        {
+            if (!kmitemmaster.BacklightAutotuneEnabled)
+            {
+                return;
+            }
+
+            Paragraph paragraph = new();
+            AppendOutputLine(paragraph, string.Empty, normalTextBrush);
+            AppendOutputLine(paragraph, $"背光自动修正 (Backlight Autotune): {kmitemmaster.BacklightAutotuneSource}, {(kmitemmaster.BacklightAutotuneApplied ? "Applied" : "Not Applied")}, Steepness={kmitemmaster.BacklightAutotuneSteepness:F2}", normalTextBrush);
+            AppendOutputLine(paragraph, $"Avg Lv Raw/Adjusted/Q1/Q3 = {kmitemmaster.AvgLvRaw:F2}/{kmitemmaster.AvgLvAdjusted:F2}/{kmitemmaster.AvgLvQ1:F2}/{kmitemmaster.AvgLvQ3:F2}", normalTextBrush);
+            AppendOutputLine(paragraph, $"Min Lv Raw/Adjusted/Q1/Q3 = {kmitemmaster.MinLvRaw:F2}/{kmitemmaster.MinLvAdjusted:F2}/{kmitemmaster.MinLvQ1:F2}/{kmitemmaster.MinLvQ3:F2}", normalTextBrush);
+            AppendOutputLine(paragraph, $"Uniformity Raw/Adjusted/Q1/Q3 = {kmitemmaster.LvUniformityRaw * 100:F2}%/{kmitemmaster.LvUniformityAdjusted * 100:F2}%/{kmitemmaster.UniformityQ1:F2}%/{kmitemmaster.UniformityQ3:F2}%", normalTextBrush);
+            outputText.Document.Blocks.Add(paragraph);
+        }
+
+        private static KBRecipeConfig GetRecipeConfig(KBItemMaster kmitemmaster)
+        {
+            RecipeManager recipeManager = RecipeManager.GetInstance();
+            return recipeManager.RecipeConfigs.TryGetValue(kmitemmaster.Model, out KBRecipeConfig? matchedRecipe)
+                ? matchedRecipe
+                : RecipeConfig;
+        }
+
+        private static void AppendOutputLine(Paragraph paragraph, string line, Brush normalTextBrush, bool highlightFailure = false)
+        {
+            const string failText = "Fail";
+
+            if (highlightFailure && line.EndsWith(failText, StringComparison.Ordinal))
+            {
+                string prefix = line[..^failText.Length];
+                Run normalRun = new Run(prefix)
+                {
+                    Foreground = normalTextBrush
+                };
+                normalRun.FontSize += 1;
+                paragraph.Inlines.Add(normalRun);
+
+                Run failRun = new Run(failText + Environment.NewLine)
+                {
+                    Foreground = Brushes.Yellow,
+                    FontWeight = FontWeights.Bold
+                };
+                failRun.FontSize += 1;
+                paragraph.Inlines.Add(failRun);
+                return;
+            }
+
+            Run run = new Run(line + Environment.NewLine)
+            {
+                Foreground = normalTextBrush
+            };
+            run.FontSize += 1;
+            paragraph.Inlines.Add(run);
+        }
+
+        private static bool IsKeyFailure(KBItem item, KBRecipeConfig recipe)
+        {
+            if (recipe.EnableKeyLvLimit)
+            {
+                if (item.Lv < recipe.MinKeyLv || item.Lv > recipe.MaxKeyLv)
+                {
+                    return true;
+                }
+            }
+
+            if (recipe.EnableKeyLcLimit)
+            {
+                double lcPercent = item.Lc * 100;
+                if (lcPercent < recipe.MinKeyLc || lcPercent > recipe.MaxKeyLc)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static Table CreateMetricTable(double labelWidth, double equalWidth, double valueWidth, double failWidth)
+        {
+            Table table = new()
+            {
+                CellSpacing = 0,
+                Margin = new Thickness(0)
+            };
+            table.Columns.Add(new TableColumn { Width = new GridLength(labelWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(equalWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(valueWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(failWidth) });
+            return table;
+        }
+
+        private static Table CreateCriteriaMetricTable(double labelWidth, double equalWidth, double valueWidth, double pointWidth, double failWidth)
+        {
+            Table table = new()
+            {
+                CellSpacing = 0,
+                Margin = new Thickness(0)
+            };
+            table.Columns.Add(new TableColumn { Width = new GridLength(labelWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(equalWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(valueWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(pointWidth) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(failWidth) });
+            return table;
+        }
+
+        private static void AppendMetricRow(TableRowGroup rowGroup, string chineseLabel, string englishLabel, string value, bool failed, Brush normalTextBrush)
+        {
+            TableRow row = new();
+            row.Cells.Add(CreateMetricCell($"{ExpandChineseLabel(chineseLabel)} ({englishLabel})", normalTextBrush));
+            row.Cells.Add(CreateMetricCell("=", normalTextBrush));
+            row.Cells.Add(CreateMetricCell(value, normalTextBrush));
+            row.Cells.Add(CreateMetricCell(failed ? "Fail" : string.Empty, failed ? Brushes.Yellow : normalTextBrush, failed));
+            rowGroup.Rows.Add(row);
+        }
+
+        private static void AppendCriteriaMetricRow(TableRowGroup rowGroup, string chineseLabel, string englishLabel, string value, string point, bool failed, Brush normalTextBrush)
+        {
+            TableRow row = new();
+            row.Cells.Add(CreateMetricCell($"{ExpandChineseLabel(chineseLabel)} ({englishLabel})", normalTextBrush));
+            row.Cells.Add(CreateMetricCell("=", normalTextBrush));
+            row.Cells.Add(CreateMetricCell(value, normalTextBrush));
+            row.Cells.Add(CreateMetricCell(point, normalTextBrush));
+            row.Cells.Add(CreateMetricCell(failed ? "Fail" : string.Empty, failed ? Brushes.Yellow : normalTextBrush, failed));
+            rowGroup.Rows.Add(row);
+        }
+
+        private static TableCell CreateMetricCell(string text, Brush foreground, bool bold = false)
+        {
+            Run run = new(text)
+            {
+                Foreground = foreground,
+                FontWeight = bold ? FontWeights.Bold : FontWeights.Normal
+            };
+            run.FontSize += 1;
+
+            Paragraph paragraph = new(run)
+            {
+                Margin = new Thickness(0),
+                Padding = new Thickness(0)
+            };
+
+            return new TableCell(paragraph)
+            {
+                Padding = new Thickness(0)
+            };
+        }
+
+        private static string ExpandChineseLabel(string text)
+        {
+            return string.Join(" ", text.Select(c => c.ToString()));
+        }
+
+        private static void AppendLocalContrastSummary(TableRowGroup rowGroup, KBItemMaster kmitemmaster, KBRecipeConfig recipe, Brush normalTextBrush)
+        {
+            if (!kmitemmaster.Items.Any())
+            {
+                return;
+            }
+
+            KBItem minLcItem = kmitemmaster.Items.OrderBy(item => item.Lc).First();
+            KBItem maxLcItem = kmitemmaster.Items.OrderByDescending(item => item.Lc).First();
+            double minLcPercent = minLcItem.Lc * 100;
+            double maxLcPercent = maxLcItem.Lc * 100;
+            bool minLcFailure = recipe.EnableKeyLcLimit && minLcPercent < recipe.MinKeyLc;
+            bool maxLcFailure = recipe.EnableKeyLcLimit && maxLcPercent > recipe.MaxKeyLc;
+
+            AppendCriteriaMetricRow(rowGroup, "最小局部对比度", "Min LC", $"{minLcPercent:F2}%", $"[{minLcItem.Name}]", minLcFailure, normalTextBrush);
+            AppendCriteriaMetricRow(rowGroup, "最大局部对比度", "Max LC", $"{maxLcPercent:F2}%", $"[{maxLcItem.Name}]", maxLcFailure, normalTextBrush);
         }
 
 
@@ -877,11 +1083,11 @@ namespace ProjectKB
                         try
                         {
                             var fileInfo = new FileInfo(kBItem.ResultImagFile);
-                            log.Warn($"fileInfo.Length{fileInfo.Length}");
                             using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                             {
-                                log.Warn("文件可以读取，没有被占用。");
+
                             }
+   
                             if (fileInfo.Length > 0)
                             {
                                 _ = Application.Current.Dispatcher.BeginInvoke(() =>

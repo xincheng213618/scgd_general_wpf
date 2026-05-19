@@ -47,7 +47,7 @@ public class FormPGParam : Form, ILoopFormProperty
 
 	private void FormPGParam_Load(object sender, EventArgs e)
 	{
-		comboBox_cmd.DataSource = Enum.GetNames(typeof(PGCommCmdType));
+		comboBox_cmd.DataSource = Enum.GetNames<PGCommCmdType>();
 		comboBox_cmd.SelectedIndex = 0;
 		dialog.Load(JsonValue);
 	}
@@ -55,7 +55,7 @@ public class FormPGParam : Form, ILoopFormProperty
 	private void button_add_Click(object sender, EventArgs e)
 	{
 		PGNodeProperty pGNodeProperty = new PGNodeProperty();
-		pGNodeProperty.Cmd = (PGCommCmdType)Enum.Parse(typeof(PGCommCmdType), comboBox_cmd.Text);
+		pGNodeProperty.Cmd = Enum.Parse<PGCommCmdType>(comboBox_cmd.Text);
 		if (pGNodeProperty.Cmd == PGCommCmdType.指定)
 		{
 			pGNodeProperty.Data = new PGParamData();
@@ -78,7 +78,7 @@ public class FormPGParam : Form, ILoopFormProperty
 	private void button_insert_Click(object sender, EventArgs e)
 	{
 		PGNodeProperty pGNodeProperty = new PGNodeProperty();
-		pGNodeProperty.Cmd = (PGCommCmdType)Enum.Parse(typeof(PGCommCmdType), comboBox_cmd.Text);
+		pGNodeProperty.Cmd = Enum.Parse<PGCommCmdType>(comboBox_cmd.Text);
 		if (pGNodeProperty.Cmd == PGCommCmdType.指定)
 		{
 			pGNodeProperty.Data = new PGParamData();

@@ -2,14 +2,18 @@
 
 本文档说明 ColorVision 当前 Copilot Agent 的实际工作方式、它与 ReAct 风格 Agent 的差异，以及下一步如何演进到支持本地文件读取和更便宜的上下文检索。
 
+另见：Copilot Context Integration v1。该文档聚焦 Copilot 如何从独立聊天模块演进为软件上下文服务，与本文的 Agent/ReAct 路线互补。
+
 ## 一句话结论
 
 当前实现不是标准的 ReAct Agent，而是“静态候选筛选 + 最小模型 planner + 最多几轮工具执行 + 局部结构化文件读取参数 + 一次性压缩上下文 + 一次性调用大模型”的只读 Agent。
 
+最近一轮已经开始削弱“用户原话关键词门槛”这一层静态限制：工具注册表不再把 planner 可见工具硬截断到前 6 个，SearchFiles、GrepText、GetRecentLog 也已经改成以运行时能力为主的可见性判断，让 planner 在存在搜索根或最近日志时自己决定是否先做便宜检索。planner 解析失败时，也不再盲目执行注册表里的第一个工具，而是按当前模式和已知上下文做保守回退；如果没有合适候选，则直接结束工具阶段。
+
 它已经具备最小工具层和最小 planner-executor 雏形，但还没有以下能力：
 
 - 像代码代理那样继续做检索、修改、构建、看错误、再迭代
-- 让模型对更多诊断/环境工具也输出真正结构化的参数，而不只是目前对 ReadLocalFile、SearchFiles、GrepText、GetRecentLog 生效
+- 让模型对更多诊断/环境工具也输出真正结构化的参数，而不只是目前对 ReadLocalFile、SearchFiles、GrepText、GetRecentLog、FetchUrl 生效
 - 支持更强的多工具连续规划，而不是当前这种每轮偏单步的最小 planner
 
 ## 当前实际执行链路
@@ -44,7 +48,7 @@ flowchart TD
 当前默认只注册了七个只读工具：
 
 1. FetchUrl
-   作用：从用户文本里提取 URL，并抓取网页正文。
+   作用：优先抓取 planner 通过 query 指定的 URL；如果 planner 没给出 URL，再回退到用户文本里的 URL 并抓取网页正文。
 
 2. SearchFiles
    作用：按文件名或路径片段在当前解决方案搜索根里找候选文件。
@@ -62,7 +66,7 @@ flowchart TD
    作用：读取用户在当前消息中明确提到的本地文本文件。
 
 7. GetRecentLog
-   作用：按关键字或 Diagnose 模式读取最近日志。
+   作用：读取最近日志，并可按 planner 提供的 query 过滤结果。
 
 这说明当前 Agent 的文件读取能力有明确边界：
 
@@ -156,7 +160,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 1. 当前仍然不能让模型跳出允许列表，去读取任意新路径
 2. request 里已经有最小的统一工具参数对象，但接口层和权限策略对象还没有彻底独立出来
-3. 结构化参数目前已覆盖 ReadLocalFile 与 ListDirectory 的 path，以及 SearchFiles、GrepText、GetRecentLog 的 query；但更多诊断工具仍主要依赖请求级触发
+3. 结构化参数目前已覆盖 ReadLocalFile 与 ListDirectory 的 path，以及 SearchFiles、GrepText、GetRecentLog、FetchUrl 的 query；其中 SearchFiles、GrepText、GetRecentLog 的可见性也已开始从“用户原话关键词”放宽为“能力优先”，而 FetchUrl 虽然已支持结构化 query 执行，但工具可见性仍主要依赖请求级 URL 提取
 4. 服务层虽然已经能做最小 planner-executor 循环，但还不是更强的多工具规划闭环
 5. 当前文件读取虽然支持按行范围精读，但还没有更细的片段定位、symbol 级读取和 AST 级上下文
 
@@ -231,7 +235,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 目标：让 Agent 在调用大模型前，先自己收集候选上下文，而不是只靠附件和 URL。
 
-当前状态：阶段 2 已完成最小落地版本，SearchFiles 与 GrepText 已接入默认工具表，但还没有按 glob/正则/符号级别继续细化。
+当前状态：阶段 2 已完成最小落地版本，SearchFiles 与 GrepText 已接入默认工具表，GetRecentLog 也已纳入最小结构化 query 链路；同时工具注册表已去掉前 6 项硬截断，SearchFiles、GrepText、GetRecentLog 现在会优先按运行时能力暴露给 planner，但还没有按 glob/正则/符号级别继续细化。执行层对 FetchUrl 也已补齐结构化 query、重复检测和执行摘要，不再只把它当成“用户原句里附带 URL 的特例工具”。
 
 后续建议新增或增强的只读工具：
 
@@ -305,15 +309,12 @@ for step in 1..N:
 
 ### 1. CopilotAgentModels.cs
 
-当前问题：只有 request 和 result，没有“结构化动作”。
+当前状态：已经补上 `CopilotToolCall`、`CopilotToolObservation`、`CopilotAgentStepRecord` 这些最小轨迹模型，服务层也会把每轮工具执行记成 step record；但还没有独立的 runtime context、tool schema 和真正的 `tool call` 执行契约。
 
 建议新增：
 
 - CopilotAgentRuntimeContext
-- CopilotToolCall
 - CopilotToolArgument
-- CopilotToolObservation
-- CopilotAgentStepRecord
 
 目标：让工具调用从“整个 request 触发”变成“指定工具 + 参数调用”。
 
@@ -347,7 +348,7 @@ public interface ICopilotTool
 
 ### 4. CopilotAgentService.cs
 
-当前问题：虽然已经有最小模型驱动循环，但还不是完整的 planner-executor。
+当前状态：虽然已经有最小模型驱动循环，也已经会记录 step record 并把 observation 送入最终回答，但还不是完整的 planner-executor。
 
 建议拆成三段：
 
@@ -364,7 +365,7 @@ public interface ICopilotTool
 
 ### 5. CopilotAgentContextBuilder.cs
 
-当前问题：它只负责“最终回答提示词”，没有区分 planner 和 answerer。
+当前状态：它已经拆出 `BuildPlannerMessages`、`BuildAnswerMessages`、`BuildObservationSummary` 三个入口，不再只负责“最终回答提示词”；但 planner 和 answer 仍共享同一套 observation 序列化策略，还没有更细的 token 预算和摘要层级。
 
 建议拆成：
 

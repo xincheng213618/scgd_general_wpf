@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             InitializeComponent();
             this.ApplyCaption();
 
-            foreach (CameraModel cameraModel in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>())
+            foreach (CameraModel cameraModel in Enum.GetValues<CameraModel>().Cast<CameraModel>())
             {
                 CameraModels.Add(new CameraModelSelectionItem
                 {

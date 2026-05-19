@@ -77,20 +77,20 @@ namespace Conoscope.Analysis
         {
             if (!CanRead(filePath))
             {
-                throw new NotSupportedException("请选择 CVCIE XYZ 图像文件");
+                throw new NotSupportedException(Properties.Resources.PleaseSelectCVCIEFile);
             }
 
             CVFileUtil.Read(filePath, out CVCIEFile fileInfo);
             if (fileInfo.Channels < 3)
             {
-                throw new NotSupportedException($"CVCIE 文件通道数不足: {fileInfo.Channels}");
+                throw new NotSupportedException(string.Format(Properties.Resources.CVCIEChannelCountInsufficient, fileInfo.Channels));
             }
 
             int bytesPerPixel = fileInfo.Bpp / 8;
             int channelSize = fileInfo.Cols * fileInfo.Rows * bytesPerPixel;
             if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
             {
-                throw new InvalidDataException("CVCIE 文件数据长度不足，无法拆分 XYZ 通道");
+                throw new InvalidDataException(Properties.Resources.CVCIEDataLengthInsufficient);
             }
 
             using OpenCvSharp.Mat xMat = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, GetSingleChannelMatType(fileInfo.Bpp));
@@ -138,7 +138,7 @@ namespace Conoscope.Analysis
 
     public sealed record ContrastResult(ImageMeasurement Black, ImageMeasurement White, double Ratio)
     {
-        public string RatioText => double.IsFinite(Ratio) ? $"{Ratio:F3}:1" : "无效";
+        public string RatioText => double.IsFinite(Ratio) ? $"{Ratio:F3}:1" : Properties.Resources.Invalid;
     }
 
     public interface IContrastCalculator
@@ -152,7 +152,7 @@ namespace Conoscope.Analysis
         {
             if (black.Luminance <= 0)
             {
-                throw new InvalidOperationException("黑场亮度必须大于 0，才能计算对比度");
+                throw new InvalidOperationException(Properties.Resources.BlackLuminanceMustBePositive);
             }
 
             return new ContrastResult(black, white, white.Luminance / black.Luminance);
@@ -193,7 +193,7 @@ namespace Conoscope.Analysis
             double standardArea = TriangleArea(standard.Red, standard.Green, standard.Blue);
             if (standardArea <= 0)
             {
-                throw new InvalidOperationException($"{standard.Name} 标准色域面积无效");
+                throw new InvalidOperationException(string.Format(Properties.Resources.StandardGamutAreaInvalid, standard.Name));
             }
 
             return new ColorGamutResult(red, green, blue, standard, sampleArea, standardArea, sampleArea / standardArea * 100.0);
@@ -231,7 +231,7 @@ namespace Conoscope.Analysis
         {
             if (gamut.Vertices.Count < 3)
             {
-                throw new InvalidOperationException($"{gamut.Name} 色域至少需要三个顶点");
+                throw new InvalidOperationException(string.Format(Properties.Resources.GamutNeedsAtLeastThreeVertices, gamut.Name));
             }
 
             return new ColorGamutStandard(

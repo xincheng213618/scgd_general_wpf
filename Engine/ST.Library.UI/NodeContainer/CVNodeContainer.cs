@@ -15,8 +15,6 @@ public class CVNodeContainer
 
 	protected static readonly Type m_type_node = typeof(STNode);
 
-	private Dictionary<string, Type> m_dic_model_type = new Dictionary<string, Type>();
-
 	[Browsable(false)]
 	public CVNodeCollection Nodes => _Nodes;
 
@@ -29,6 +27,7 @@ public class CVNodeContainer
 	public CVNodeContainer()
 	{
 		_Nodes = new CVNodeCollection(this);
+		STNodeTypeRegistry.Initialize();
 	}
 
 	public bool LoadAssemblyFromBase64(string base64Assembly)
@@ -40,36 +39,17 @@ public class CVNodeContainer
 
 	public bool LoadAssembly(string strFile)
 	{
-		Assembly asm = Assembly.LoadFrom(strFile);
-		return LoadAssembly(asm);
+		return STNodeTypeRegistry.LoadAssembly(strFile);
 	}
 
 	public bool LoadAssembly(Assembly asm)
 	{
-		bool result = false;
-		if (asm == null)
-		{
-			return false;
-		}
-		Type[] types = asm.GetTypes();
-		foreach (Type type in types)
-		{
-			if (!type.IsAbstract && (type == m_type_node || type.IsSubclassOf(m_type_node)))
-			{
-				string modelByType = GetModelByType(type);
-				if (!m_dic_model_type.ContainsKey(modelByType))
-				{
-					m_dic_model_type.Add(modelByType, type);
-					result = true;
-				}
-			}
-		}
-		return result;
+		return STNodeTypeRegistry.LoadAssembly(asm);
 	}
 
-	private string GetModelByType(Type t)
+	public int LoadAssembly()
 	{
-		return $"{t.Module.Name}|{t.FullName}";
+		return STNodeTypeRegistry.LoadAssemblies(AppDomain.CurrentDomain.GetAssemblies());
 	}
 
 	public void LoadCanvas(string strFileName)
@@ -207,10 +187,7 @@ public class CVNodeContainer
 			dictionary.Add(key, array);
 		}
 		Type type = null;
-		if (m_dic_model_type.ContainsKey(text))
-		{
-			type = m_dic_model_type[text];
-		}
+		STNodeTypeRegistry.TryGetNodeType(text2, text, out type);
 		if (type == null)
 		{
 			throw new TypeLoadException("无法找到类型 {" + text.Split('|')[1] + "} 所在程序集 确保程序集 {" + text.Split('|')[0] + "} 已被编辑器正确加载 可通过调用LoadAssembly()加载程序集");

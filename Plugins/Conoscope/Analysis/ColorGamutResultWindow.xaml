@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie;assembly=ColorVision.ImageEditor"
-        Title="色域计算结果" Height="760" Width="1240" Background="{DynamicResource GlobalBackground}">
+        xmlns:properties="clr-namespace:Conoscope.Properties"
+        Title="{x:Static properties:Resources.TitleColorGamutResult}" Height="760" Width="1240" Background="{DynamicResource GlobalBackground}">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -12,9 +13,9 @@
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                    <TextBlock Text="标准:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelStandard}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBlock x:Name="tbStandardName" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,16,0"/>
-                    <TextBlock Text="显示:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.GroupDisplay}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <ComboBox x:Name="cbDisplayScope" Width="180" SelectionChanged="cbDisplayScope_SelectionChanged"/>
                 </StackPanel>
                 <TextBlock x:Name="tbSummary" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="Gray"/>
@@ -40,15 +41,15 @@
                           SelectionMode="Single"
                           SelectionChanged="ResultGrid_SelectionChanged">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="编号" Binding="{Binding Index}" Width="60"/>
-                        <DataGridTextColumn Header="关注点" Binding="{Binding PointName}" Width="110"/>
-                        <DataGridTextColumn Header="方位角(°)" Binding="{Binding AzimuthDisplay}" Width="85"/>
-                        <DataGridTextColumn Header="极角(°)" Binding="{Binding PolarDisplay}" Width="85"/>
-                        <DataGridTextColumn Header="半径(°)" Binding="{Binding RadiusDisplay}" Width="85"/>
-                        <DataGridTextColumn Header="R 色坐标" Binding="{Binding RedDisplay}" Width="130"/>
-                        <DataGridTextColumn Header="G 色坐标" Binding="{Binding GreenDisplay}" Width="130"/>
-                        <DataGridTextColumn Header="B 色坐标" Binding="{Binding BlueDisplay}" Width="130"/>
-                        <DataGridTextColumn Header="色域值(%)" Binding="{Binding CoverageDisplay}" Width="95"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColNumber}" Binding="{Binding Index}" Width="60"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColFocusPoint}" Binding="{Binding PointName}" Width="110"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColAzimuthDeg}" Binding="{Binding AzimuthDisplay}" Width="85"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColPolarDeg}" Binding="{Binding PolarDisplay}" Width="85"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColRadiusDeg}" Binding="{Binding RadiusDisplay}" Width="85"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColRChromaticity}" Binding="{Binding RedDisplay}" Width="130"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColGChromaticity}" Binding="{Binding GreenDisplay}" Width="130"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColBChromaticity}" Binding="{Binding BlueDisplay}" Width="130"/>
+                        <DataGridTextColumn Header="{x:Static properties:Resources.ColGamutValue}" Binding="{Binding CoverageDisplay}" Width="95"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

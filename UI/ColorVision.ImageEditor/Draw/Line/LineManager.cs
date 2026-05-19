@@ -8,7 +8,7 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class LineManager : MultiPointDrawingToolBase<DVLine>
     {
-        public LineManager(EditorContext context) : base(context)
+        public LineManager(DrawEditorContext context) : base(context)
         {
             Order = 7;
             Icon =  new TextBlock() { Text = "L"};

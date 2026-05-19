@@ -106,6 +106,24 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 03_3 图像 的本地化字符串。
+        /// </summary>
+        public static string _03_3_Image {
+            get {
+                return ResourceManager.GetString("03_3 Image", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 03_3 校正 的本地化字符串。
+        /// </summary>
+        public static string _03_3_校正 {
+            get {
+                return ResourceManager.GetString("03_3 校正", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 03_3 第三方算法 的本地化字符串。
         /// </summary>
         public static string _03_3_第三方算法 {
@@ -187,6 +205,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 12 第三方算法 的本地化字符串。
+        /// </summary>
+        public static string _12_第三方算法 {
+            get {
+                return ResourceManager.GetString("12 第三方算法", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 A 的本地化字符串。
         /// </summary>
         public static string A {
@@ -219,6 +246,15 @@ namespace ST.Library.UI.Properties {
         public static string AI算法2 {
             get {
                 return ResourceManager.GetString("AI算法2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 所有 的本地化字符串。
+        /// </summary>
+        public static string ALL {
+            get {
+                return ResourceManager.GetString("ALL", resourceCulture);
             }
         }
         
@@ -282,6 +318,33 @@ namespace ST.Library.UI.Properties {
         public static string BExpDesc {
             get {
                 return ResourceManager.GetString("BExpDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 16位 的本地化字符串。
+        /// </summary>
+        public static string Bit16 {
+            get {
+                return ResourceManager.GetString("Bit16", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 8位 的本地化字符串。
+        /// </summary>
+        public static string Bit8 {
+            get {
+                return ResourceManager.GetString("Bit8", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 黑画面 的本地化字符串。
+        /// </summary>
+        public static string Black {
+            get {
+                return ResourceManager.GetString("Black", resourceCulture);
             }
         }
         
@@ -412,6 +475,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 CSV 的本地化字符串。
+        /// </summary>
+        public static string CSV {
+            get {
+                return ResourceManager.GetString("CSV", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Csv文件名 的本地化字符串。
         /// </summary>
         public static string CsvFileName {
@@ -426,6 +498,15 @@ namespace ST.Library.UI.Properties {
         public static string Current_I {
             get {
                 return ResourceManager.GetString("Current_I", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CV2LV通道 的本地化字符串。
+        /// </summary>
+        public static string CV2LVChannel {
+            get {
+                return ResourceManager.GetString("CV2LVChannel", resourceCulture);
             }
         }
         
@@ -466,6 +547,24 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 EndV5Node 的本地化字符串。
+        /// </summary>
+        public static string EndV5Node {
+            get {
+                return ResourceManager.GetString("EndV5Node", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱&amp;EQE 的本地化字符串。
+        /// </summary>
+        public static string EQE {
+            get {
+                return ResourceManager.GetString("EQE", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 提取 的本地化字符串。
         /// </summary>
         public static string Extract {
@@ -475,7 +574,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 F/P 的本地化字符串。
+        ///   查找类似 POI F/P 的本地化字符串。
         /// </summary>
         public static string F_R {
             get {
@@ -493,7 +592,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 滤轮 的本地化字符串。
+        ///   查找类似 滤色轮 的本地化字符串。
         /// </summary>
         public static string FilterWheel {
             get {
@@ -511,7 +610,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 FixedLEDToFile 的本地化字符串。
+        ///   查找类似 固定LED到文件 的本地化字符串。
         /// </summary>
         public static string FixedLEDToFile {
             get {
@@ -655,7 +754,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 LED定位 的本地化字符串。
+        ///   查找类似 OLED/LED定位 的本地化字符串。
         /// </summary>
         public static string LED定位 {
             get {
@@ -682,7 +781,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 LoopNextNode 的本地化字符串。
+        ///   查找类似 循环下一节点 的本地化字符串。
         /// </summary>
         public static string LoopNextNode {
             get {
@@ -691,7 +790,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 LoopNode 的本地化字符串。
+        ///   查找类似 循环节点 的本地化字符串。
         /// </summary>
         public static string LoopNode {
             get {
@@ -1069,6 +1168,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 灰度255 的本地化字符串。
+        /// </summary>
+        public static string SelfCheck {
+            get {
+                return ResourceManager.GetString("SelfCheck", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务器 的本地化字符串。
         /// </summary>
         public static string Server {
@@ -1141,11 +1249,29 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Start_MQTT 的本地化字符串。
+        ///   查找类似 启动 MQTT 的本地化字符串。
         /// </summary>
         public static string Start_MQTT {
             get {
                 return ResourceManager.GetString("Start_MQTT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 StartV5_MQTT 的本地化字符串。
+        /// </summary>
+        public static string StartV5_MQTT {
+            get {
+                return ResourceManager.GetString("StartV5_MQTT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 TIF 的本地化字符串。
+        /// </summary>
+        public static string TIF {
+            get {
+                return ResourceManager.GetString("TIF", resourceCulture);
             }
         }
         
@@ -1303,6 +1429,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保存CIE文件 的本地化字符串。
+        /// </summary>
+        public static string 保存CIE文件 {
+            get {
+                return ResourceManager.GetString("保存CIE文件", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 保存原图 的本地化字符串。
         /// </summary>
         public static string 保存原图 {
@@ -1317,6 +1452,15 @@ namespace ST.Library.UI.Properties {
         public static string 修正模板 {
             get {
                 return ResourceManager.GetString("修正模板", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修正系数 的本地化字符串。
+        /// </summary>
+        public static string 修正系数 {
+            get {
+                return ResourceManager.GetString("修正系数", resourceCulture);
             }
         }
         
@@ -1380,6 +1524,15 @@ namespace ST.Library.UI.Properties {
         public static string 关注点分析 {
             get {
                 return ResourceManager.GetString("关注点分析", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关注点分析-IVL 的本地化字符串。
+        /// </summary>
+        public static string 关注点分析_SMU {
+            get {
+                return ResourceManager.GetString("关注点分析_SMU", resourceCulture);
             }
         }
         
@@ -1555,6 +1708,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图像名称 的本地化字符串。
+        /// </summary>
+        public static string 图像名称 {
+            get {
+                return ResourceManager.GetString("图像名称", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 图像拼接 的本地化字符串。
         /// </summary>
         public static string 图像拼接 {
@@ -1609,6 +1771,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图像格式 的本地化字符串。
+        /// </summary>
+        public static string 图像格式 {
+            get {
+                return ResourceManager.GetString("图像格式", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 图像水平翻转 的本地化字符串。
         /// </summary>
         public static string 图像水平翻转 {
@@ -1636,11 +1807,29 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图像转换 的本地化字符串。
+        /// </summary>
+        public static string 图像转换 {
+            get {
+                return ResourceManager.GetString("图像转换", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 增益 的本地化字符串。
         /// </summary>
         public static string 增益 {
             get {
                 return ResourceManager.GetString("增益", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 定位模板 的本地化字符串。
+        /// </summary>
+        public static string 定位模板 {
+            get {
+                return ResourceManager.GetString("定位模板", resourceCulture);
             }
         }
         
@@ -1717,11 +1906,38 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 指令延时 的本地化字符串。
+        /// </summary>
+        public static string 指令延时 {
+            get {
+                return ResourceManager.GetString("指令延时", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 指令类型 的本地化字符串。
         /// </summary>
         public static string 指令类型 {
             get {
                 return ResourceManager.GetString("指令类型", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 指令超时 的本地化字符串。
+        /// </summary>
+        public static string 指令超时 {
+            get {
+                return ResourceManager.GetString("指令超时", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 指令重试 的本地化字符串。
+        /// </summary>
+        public static string 指令重试 {
+            get {
+                return ResourceManager.GetString("指令重试", resourceCulture);
             }
         }
         
@@ -1758,6 +1974,15 @@ namespace ST.Library.UI.Properties {
         public static string 控制命令 {
             get {
                 return ResourceManager.GetString("控制命令", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提取模板 的本地化字符串。
+        /// </summary>
+        public static string 提取模板 {
+            get {
+                return ResourceManager.GetString("提取模板", resourceCulture);
             }
         }
         
@@ -1843,6 +2068,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 校正+实时POI 的本地化字符串。
+        /// </summary>
+        public static string 校正2 {
+            get {
+                return ResourceManager.GetString("校正2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 校正ROI 的本地化字符串。
         /// </summary>
         public static string 校正ROI {
@@ -1906,6 +2140,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 源值 的本地化字符串。
+        /// </summary>
+        public static string 源值 {
+            get {
+                return ResourceManager.GetString("源值", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 源表 的本地化字符串。
         /// </summary>
         public static string 源表 {
@@ -1933,6 +2176,42 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 源表扫描 的本地化字符串。
+        /// </summary>
+        public static string 源表扫描 {
+            get {
+                return ResourceManager.GetString("源表扫描", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源表扫描-模板 的本地化字符串。
+        /// </summary>
+        public static string 源表扫描_模板 {
+            get {
+                return ResourceManager.GetString("源表扫描-模板", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源表结果 的本地化字符串。
+        /// </summary>
+        public static string 源表结果 {
+            get {
+                return ResourceManager.GetString("源表结果", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源量程 的本地化字符串。
+        /// </summary>
+        public static string 源量程 {
+            get {
+                return ResourceManager.GetString("源量程", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 滤色轮 的本地化字符串。
         /// </summary>
         public static string 滤色轮 {
@@ -1956,6 +2235,15 @@ namespace ST.Library.UI.Properties {
         public static string 灯珠检测 {
             get {
                 return ResourceManager.GetString("灯珠检测", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 OLED灰尘检测及修补 的本地化字符串。
+        /// </summary>
+        public static string 灰尘检测及修补 {
+            get {
+                return ResourceManager.GetString("灰尘检测及修补", resourceCulture);
             }
         }
         
@@ -2032,11 +2320,29 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 电机[相机] 的本地化字符串。
+        ///   查找类似 电压 的本地化字符串。
+        /// </summary>
+        public static string 电压 {
+            get {
+                return ResourceManager.GetString("电压", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电机-相机 的本地化字符串。
         /// </summary>
         public static string 电机_相机_ {
             get {
                 return ResourceManager.GetString("电机[相机]", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电流 的本地化字符串。
+        /// </summary>
+        public static string 电流 {
+            get {
+                return ResourceManager.GetString("电流", resourceCulture);
             }
         }
         
@@ -2113,6 +2419,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 等待时间 的本地化字符串。
+        /// </summary>
+        public static string 等待时间 {
+            get {
+                return ResourceManager.GetString("等待时间", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 算子 的本地化字符串。
         /// </summary>
         public static string 算子 {
@@ -2136,6 +2451,15 @@ namespace ST.Library.UI.Properties {
         public static string 类别 {
             get {
                 return ResourceManager.GetString("类别", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类型 的本地化字符串。
+        /// </summary>
+        public static string 类型 {
+            get {
+                return ResourceManager.GetString("类型", resourceCulture);
             }
         }
         
@@ -2239,11 +2563,38 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动量程 的本地化字符串。
+        /// </summary>
+        public static string 自动量程 {
+            get {
+                return ResourceManager.GetString("自动量程", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自定义电压/流 的本地化字符串。
+        /// </summary>
+        public static string 自定义电压_流 {
+            get {
+                return ResourceManager.GetString("自定义电压/流", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自适应校零 的本地化字符串。
         /// </summary>
         public static string 自适应校零 {
             get {
                 return ResourceManager.GetString("自适应校零", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 色差校正 的本地化字符串。
+        /// </summary>
+        public static string 色差校正 {
+            get {
+                return ResourceManager.GetString("色差校正", resourceCulture);
             }
         }
         
@@ -2392,6 +2743,24 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 通用传感器-指令 的本地化字符串。
+        /// </summary>
+        public static string 通用传感器_指令 {
+            get {
+                return ResourceManager.GetString("通用传感器-指令", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 通用传感器-模板 的本地化字符串。
+        /// </summary>
+        public static string 通用传感器_模板 {
+            get {
+                return ResourceManager.GetString("通用传感器-模板", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 通用相机 的本地化字符串。
         /// </summary>
         public static string 通用相机 {
@@ -2433,6 +2802,15 @@ namespace ST.Library.UI.Properties {
         public static string 限值 {
             get {
                 return ResourceManager.GetString("限值", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 限量程 的本地化字符串。
+        /// </summary>
+        public static string 限量程 {
+            get {
+                return ResourceManager.GetString("限量程", resourceCulture);
             }
         }
         

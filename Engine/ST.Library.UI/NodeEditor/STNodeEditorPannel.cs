@@ -405,6 +405,12 @@ public class STNodeEditorPannel : Control
 		return m_tree.AddNode(stNodeType);
 	}
 
+	public int LoadAssembly()
+	{
+		m_editor.LoadAssembly();
+		return m_tree.LoadAssembly();
+	}
+
 	public int LoadAssembly(string strFileName)
 	{
 		m_editor.LoadAssembly(strFileName);

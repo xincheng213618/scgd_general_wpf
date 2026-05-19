@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -25,6 +26,11 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+
+    public sealed record LumFourColorCalibrationFileItem(string CameraCode, string RelativePath, string FilePath)
+    {
+        public string DisplayName => $"{CameraCode} / {RelativePath}";
+    }
 
     public class PhyCameraManagerConfig : ViewModelBase, IConfig
     {
@@ -181,6 +187,99 @@ namespace ColorVision.Engine.Services.PhyCameras
         private int _Count;
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
+
+        public IReadOnlyList<LumFourColorCalibrationFileItem> GetLumFourColorCalibrationFiles()
+        {
+            List<LumFourColorCalibrationFileItem> result = new();
+            HashSet<string> seenPaths = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (PhyCamera phyCamera in PhyCameras)
+            {
+                foreach (CalibrationResource calibrationResource in EnumerateLumFourColorResources(phyCamera))
+                {
+                    if (!TryResolveCalibrationFilePath(phyCamera, calibrationResource, out string filePath)
+                        || !seenPaths.Add(filePath))
+                    {
+                        continue;
+                    }
+
+                    string relativePath = calibrationResource.SysResourceModel.Value ?? Path.GetFileName(filePath);
+                    result.Add(new LumFourColorCalibrationFileItem(phyCamera.Code, relativePath, filePath));
+                }
+            }
+
+            return result;
+        }
+
+        public bool TryGetAnyLumFourColorCalibrationFilePath(out string filePath)
+        {
+            filePath = GetLumFourColorCalibrationFiles().FirstOrDefault()?.FilePath ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(filePath);
+        }
+
+        private static IEnumerable<CalibrationResource> EnumerateLumFourColorResources(PhyCamera phyCamera)
+        {
+            foreach (GroupResource groupResource in EnumerateGroupResources(phyCamera))
+            {
+                groupResource.SetCalibrationResource();
+                if (groupResource.LumFourColor?.IsValid ?? false)
+                {
+                    yield return groupResource.LumFourColor;
+                }
+            }
+
+            foreach (CalibrationResource resource in phyCamera.VisualChildren
+                .OfType<CalibrationResource>()
+                .Where(resource => resource.SysResourceModel.Type == (int)ServiceTypes.LumFourColor && resource.IsValid))
+            {
+                yield return resource;
+            }
+        }
+
+        private static IEnumerable<GroupResource> EnumerateGroupResources(PhyCamera phyCamera)
+        {
+            foreach (GroupResource groupResource in phyCamera.VisualChildren.OfType<GroupResource>())
+            {
+                yield return groupResource;
+
+                foreach (GroupResource childGroup in EnumerateGroupResources(groupResource))
+                {
+                    yield return childGroup;
+                }
+            }
+        }
+
+        private static IEnumerable<GroupResource> EnumerateGroupResources(GroupResource groupResource)
+        {
+            foreach (GroupResource childGroup in groupResource.VisualChildren.OfType<GroupResource>())
+            {
+                yield return childGroup;
+
+                foreach (GroupResource nestedGroup in EnumerateGroupResources(childGroup))
+                {
+                    yield return nestedGroup;
+                }
+            }
+        }
+
+        private static bool TryResolveCalibrationFilePath(PhyCamera phyCamera, CalibrationResource calibrationResource, out string filePath)
+        {
+            filePath = string.Empty;
+
+            if (!Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
+            {
+                return false;
+            }
+
+            string? relativePath = calibrationResource.SysResourceModel.Value;
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                return false;
+            }
+
+            filePath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", relativePath);
+            return File.Exists(filePath);
+        }
 
         private bool _isSearchingCameras;
 

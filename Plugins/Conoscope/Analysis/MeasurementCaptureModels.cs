@@ -99,7 +99,7 @@ namespace Conoscope.Analysis
         ImageMeasurement Black,
         double Ratio)
     {
-        public string RatioText => double.IsFinite(Ratio) ? $"{Ratio:F3}:1" : "无效";
+        public string RatioText => double.IsFinite(Ratio) ? $"{Ratio:F3}:1" : Properties.Resources.Invalid;
     }
 
     public sealed record ContrastComputationResult(IReadOnlyList<ContrastPointResult> Points)
@@ -241,7 +241,7 @@ namespace Conoscope.Analysis
                     .ToArray();
             }
 
-            throw new InvalidOperationException("多组关注点之间没有可对应的编号，请在同一套关注点下记录 R/G/B 或白/黑 数据。");
+            throw new InvalidOperationException(Properties.Resources.FocusPointMismatchError);
         }
 
         private static MeasurementPoint ResolveDisplayPoint(IReadOnlyList<MeasurementCapture> captures, string key)

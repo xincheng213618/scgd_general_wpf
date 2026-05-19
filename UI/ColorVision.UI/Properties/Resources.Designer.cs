@@ -97,15 +97,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 超过则自动清理旧备份 的本地化字符串。
-        /// </summary>
-        public static string AutoCleanOldBackups {
-            get {
-                return ResourceManager.GetString("AutoCleanOldBackups", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 自动刷新 的本地化字符串。
         /// </summary>
         public static string AutoRefresh {
@@ -219,33 +210,6 @@ namespace ColorVision.UI.Properties {
         public static string Close {
             get {
                 return ResourceManager.GetString("Close", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置文件异常,已经重置 的本地化字符串。
-        /// </summary>
-        public static string ConfigFileResetDueToError {
-            get {
-                return ResourceManager.GetString("ConfigFileResetDueToError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置文件已从最近备份恢复 的本地化字符串。
-        /// </summary>
-        public static string ConfigFileRestored {
-            get {
-                return ResourceManager.GetString("ConfigFileRestored", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置相关参数 的本地化字符串。
-        /// </summary>
-        public static string ConfigurationParameters {
-            get {
-                return ResourceManager.GetString("ConfigurationParameters", resourceCulture);
             }
         }
         
@@ -484,29 +448,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 是否启用CUDA 的本地化字符串。
-        /// </summary>
-        public static string EnableCUDA {
-            get {
-                return ResourceManager.GetString("EnableCUDA", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 启用Everything搜索 的本地化字符串。
         /// </summary>
         public static string EnableEverythingSearch {
             get {
                 return ResourceManager.GetString("EnableEverythingSearch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 是否启用定时备份 的本地化字符串。
-        /// </summary>
-        public static string EnableScheduledBackup {
-            get {
-                return ResourceManager.GetString("EnableScheduledBackup", resourceCulture);
             }
         }
         
@@ -570,15 +516,6 @@ namespace ColorVision.UI.Properties {
         public static string fr {
             get {
                 return ResourceManager.GetString("fr", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 通用 的本地化字符串。
-        /// </summary>
-        public static string General {
-            get {
-                return ResourceManager.GetString("General", resourceCulture);
             }
         }
         
@@ -732,15 +669,6 @@ namespace ColorVision.UI.Properties {
         public static string LogLevel {
             get {
                 return ResourceManager.GetString("LogLevel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最大备份数量 的本地化字符串。
-        /// </summary>
-        public static string MaxBackupCount {
-            get {
-                return ResourceManager.GetString("MaxBackupCount", resourceCulture);
             }
         }
         

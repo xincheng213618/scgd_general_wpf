@@ -159,13 +159,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboBoxHDRTemplate.SelectedIndex = 0;
             ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
-            CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+            CBFilp.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
-            CBFilp1.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+            CBFilp1.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                   select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
-            CBFilp2.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+            CBFilp2.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                   select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
@@ -935,7 +935,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return $"camera:{Device.Config.Code}:{actionKey}";
         }
 
-        private void SaveDisplayConfig()
+        private static void SaveDisplayConfig()
         {
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }

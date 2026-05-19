@@ -199,8 +199,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == System.Windows.Forms.Keys.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))

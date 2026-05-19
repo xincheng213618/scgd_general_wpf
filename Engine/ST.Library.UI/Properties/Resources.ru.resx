@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="LoopNode" xml:space="preserve">
-    <value>LoopNode</value>
+    <value>Узел цикла</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
     <value>Напряжение (В) / Ток (мА)</value>
@@ -301,7 +301,7 @@
     <value>033 Сторонние алгоритмы</value>
   </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>StartMQTT</value>
+    <value>Запуск MQTT</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>Алгоритм внимания в реальном времени</value>
@@ -523,7 +523,7 @@
     <value>Значение отображения HUB</value>
   </data>
   <data name="FixedLEDToFile" xml:space="preserve">
-    <value>FixedLEDToFile</value>
+    <value>Фиксированный LED в файл</value>
   </data>
   <data name="逻辑与" xml:space="preserve">
     <value>Логическое И</value>
@@ -691,7 +691,7 @@
     <value>Шаблон параметров камеры</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>LoopNextNode</value>
+    <value>Следующий узел цикла</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>извлекать</value>
@@ -914,5 +914,131 @@
   </data>
   <data name="源表[CSV]" xml:space="preserve">
     <value>Исходная таблица - CSV</value>
+  </data>
+  <data name="等待时间" xml:space="preserve">
+    <value>Время ожидания</value>
+  </data>
+  <data name="指令延时" xml:space="preserve">
+    <value>Задержка команды</value>
+  </data>
+  <data name="指令超时" xml:space="preserve">
+    <value>Тайм-аут команды</value>
+  </data>
+  <data name="指令重试" xml:space="preserve">
+    <value>Повтор команды</value>
+  </data>
+  <data name="提取模板" xml:space="preserve">
+    <value>Шаблон извлечения</value>
+  </data>
+  <data name="源表扫描" xml:space="preserve">
+    <value>Сканирование источника</value>
+  </data>
+  <data name="源表结果" xml:space="preserve">
+    <value>Результат источника</value>
+  </data>
+  <data name="图像转换" xml:space="preserve">
+    <value>Преобразование изображения</value>
+  </data>
+  <data name="图像格式" xml:space="preserve">
+    <value>Формат изображения</value>
+  </data>
+  <data name="图像名称" xml:space="preserve">
+    <value>Имя изображения</value>
+  </data>
+  <data name="定位模板" xml:space="preserve">
+    <value>Шаблон позиционирования</value>
+  </data>
+  <data name="修正系数" xml:space="preserve">
+    <value>Коэффициент коррекции</value>
+  </data>
+  <data name="03_3 校正" xml:space="preserve">
+    <value>03_3 Коррекция</value>
+  </data>
+  <data name="保存CIE文件" xml:space="preserve">
+    <value>Сохранить файл CIE</value>
+  </data>
+  <data name="EndV5Node" xml:space="preserve">
+    <value>EndV5Node</value>
+  </data>
+  <data name="电压" xml:space="preserve">
+    <value>Напряжение</value>
+  </data>
+  <data name="电流" xml:space="preserve">
+    <value>Ток</value>
+  </data>
+  <data name="类型" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="源值" xml:space="preserve">
+    <value>Исходное значение</value>
+  </data>
+  <data name="SelfCheck" xml:space="preserve">
+    <value>Серый 255</value>
+  </data>
+  <data name="限量程" xml:space="preserve">
+    <value>Предельный диапазон</value>
+  </data>
+  <data name="EQE" xml:space="preserve">
+    <value>Спектр&amp;EQE</value>
+  </data>
+  <data name="ALL" xml:space="preserve">
+    <value>Все</value>
+  </data>
+  <data name="CSV" xml:space="preserve">
+    <value>CSV</value>
+  </data>
+  <data name="TIF" xml:space="preserve">
+    <value>TIF</value>
+  </data>
+  <data name="源量程" xml:space="preserve">
+    <value>Диапазон источника</value>
+  </data>
+  <data name="校正2" xml:space="preserve">
+    <value>Коррекция+POI реального времени</value>
+  </data>
+  <data name="Bit16" xml:space="preserve">
+    <value>Bit16</value>
+  </data>
+  <data name="Black" xml:space="preserve">
+    <value>Черный экран</value>
+  </data>
+  <data name="CV2LVChannel" xml:space="preserve">
+    <value>CV2LVChannel</value>
+  </data>
+  <data name="关注点分析_SMU" xml:space="preserve">
+    <value>Анализ POI-IVL</value>
+  </data>
+  <data name="自定义电压/流" xml:space="preserve">
+    <value>Пользовательские V/I</value>
+  </data>
+  <data name="自动量程" xml:space="preserve">
+    <value>Автодиапазон</value>
+  </data>
+  <data name="03_3 Image" xml:space="preserve">
+    <value>03_3 Изображение</value>
+  </data>
+  <data name="色差校正" xml:space="preserve">
+    <value>Коррекция ColorDiff</value>
+  </data>
+  <data name="灰尘检测及修补" xml:space="preserve">
+    <value>Обнаружение/исправление пыли OLED</value>
+  </data>
+  <data name="通用传感器-指令" xml:space="preserve">
+    <value>Общий датчик-Команда</value>
+  </data>
+  <data name="通用传感器-模板" xml:space="preserve">
+    <value>Общий датчик-Шаблон</value>
+  </data>
+  <data name="源表扫描-模板" xml:space="preserve">
+    <value>Сканирование источника-Шаблон</value>
+  </data>
+  <data name="12 第三方算法" xml:space="preserve">
+    <value>12 Сторонний алгоритм</value>
+  </data>
+  <data name="StartV5_MQTT" xml:space="preserve">
+    <value>StartV5_MQTT</value>
+  </data>
+  <data name="Bit8" xml:space="preserve">
+    <value>Bit8</value>
   </data>
 </root>

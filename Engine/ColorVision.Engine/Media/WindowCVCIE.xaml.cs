@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Cie;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -8,10 +10,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Media
 {
@@ -37,8 +41,21 @@ namespace ColorVision.Engine.Media
     /// </summary>
     public partial class WindowCVCIE : Window
     {
+        private static readonly Color[] MarkerPalette =
+        {
+            Color.FromRgb(230, 74, 25),
+            Color.FromRgb(46, 125, 50),
+            Color.FromRgb(21, 101, 192),
+            Color.FromRgb(123, 31, 162),
+            Color.FromRgb(0, 131, 143),
+            Color.FromRgb(173, 20, 87),
+            Color.FromRgb(251, 140, 0),
+            Color.FromRgb(93, 64, 55),
+        };
+
         public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
         public CIExyuvStatistics CIExyuvStats { get; set; }
+        private WindowCIE? cieWindow;
 
         bool IsPoiResultCIExyuvDatas = true;
         public WindowCVCIE(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas)
@@ -63,6 +80,7 @@ namespace ColorVision.Engine.Media
                     gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
             }
             listViewSide.ItemsSource = PoiResultCIExyuvDatas;
+            ButtonShowOnCieDiagram.IsEnabled = true;
         }
         public ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas { get; set; }
         public CIEYStatistics CIEYStats { get; set; }
@@ -89,6 +107,8 @@ namespace ColorVision.Engine.Media
                     gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
             }
             listViewSide.ItemsSource = poiResultCIEYDatas;
+            ButtonShowOnCieDiagram.IsEnabled = false;
+            ButtonShowOnCieDiagram.ToolTip = "仅包含 xy 色坐标的结果可显示到 CIE 色度图";
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -174,7 +194,7 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private void AddStatisticItem(WrapPanel parent, string label, string value)
+        private static void AddStatisticItem(WrapPanel parent, string label, string value)
         {
             var border = new Border
             {
@@ -232,6 +252,115 @@ namespace ColorVision.Engine.Media
             {
                 PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, dialog.FileName);
             }
+        }
+
+        private void ButtonShowOnCieDiagram_Click(object sender, RoutedEventArgs e)
+        {
+            if (!IsPoiResultCIExyuvDatas)
+            {
+                MessageBox.Show(this, "当前结果只有 Y，没有色坐标，无法显示到 CIE 图。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            IReadOnlyList<CieMarker> markers = BuildCieMarkers();
+            if (markers.Count == 0)
+            {
+                MessageBox.Show(this, "当前没有可显示的 CIE 点。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            EnsureCieWindow();
+            cieWindow!.SetMarkers(markers);
+            cieWindow.SetSelectedMarker(null);
+            UpdateCieSelectionFromList();
+            cieWindow.FitDiagram();
+            cieWindow.Show();
+            cieWindow.Activate();
+        }
+
+        private void ListViewSide_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateCieSelectionFromList();
+        }
+
+        private void EnsureCieWindow()
+        {
+            if (cieWindow != null)
+            {
+                return;
+            }
+
+            cieWindow = new WindowCIE
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            cieWindow.Closed += (_, _) => cieWindow = null;
+        }
+
+        private void UpdateCieSelectionFromList()
+        {
+            if (cieWindow == null || !IsPoiResultCIExyuvDatas)
+            {
+                return;
+            }
+
+            if (listViewSide.SelectedItem is not PoiResultCIExyuvData selectedItem || !TryCreateMarker(selectedItem, GetMarkerColor(PoiResultCIExyuvDatas.IndexOf(selectedItem)), out CieMarker? marker))
+            {
+                cieWindow.SetSelectedMarker(null);
+                return;
+            }
+
+            cieWindow.SetSelectedMarker(new CieMarker(string.Empty, marker.Chromaticity, marker.Color));
+        }
+
+        private IReadOnlyList<CieMarker> BuildCieMarkers()
+        {
+            if (PoiResultCIExyuvDatas == null)
+            {
+                return Array.Empty<CieMarker>();
+            }
+
+            List<CieMarker> markers = new();
+            for (int index = 0; index < PoiResultCIExyuvDatas.Count; index++)
+            {
+                PoiResultCIExyuvData item = PoiResultCIExyuvDatas[index];
+                if (TryCreateMarker(item, GetMarkerColor(index), out CieMarker? marker))
+                {
+                    markers.Add(marker);
+                }
+            }
+
+            return markers;
+        }
+
+        private static bool TryCreateMarker(PoiResultCIExyuvData item, Color color, out CieMarker? marker)
+        {
+            marker = null;
+            if (item == null)
+            {
+                return false;
+            }
+
+            CieChromaticity chromaticity = new(item.x, item.y);
+            if (!chromaticity.IsFinite)
+            {
+                return false;
+            }
+
+            string name = string.IsNullOrWhiteSpace(item.Name) ? "Point" : item.Name;
+            marker = new CieMarker(name, chromaticity, color);
+            return true;
+        }
+
+        private static Color GetMarkerColor(int index)
+        {
+            if (index < 0)
+            {
+                index = 0;
+            }
+
+            return MarkerPalette[index % MarkerPalette.Length];
         }
 
 

@@ -1,7 +1,8 @@
 <Window x:Class="Conoscope.ConoscopePreprocessSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="预处理设置"
+        xmlns:properties="clr-namespace:Conoscope.Properties"
+        Title="{x:Static properties:Resources.TitlePreprocessSettings}"
         Width="520"
         Height="700"
         MinWidth="460"
@@ -15,14 +16,14 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="预处理设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
+        <TextBlock Text="{x:Static properties:Resources.TitlePreprocessSettings}" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <ContentControl x:Name="PreprocessSettingsHost"/>
         </ScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="关闭" Width="88" Height="30" IsDefault="True" Click="btnClose_Click"/>
+            <Button Content="{x:Static properties:Resources.BtnClose}" Width="88" Height="30" IsDefault="True" Click="btnClose_Click"/>
         </StackPanel>
     </Grid>
 </Window>

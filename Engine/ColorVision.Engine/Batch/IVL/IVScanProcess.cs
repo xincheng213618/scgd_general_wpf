@@ -122,7 +122,7 @@ namespace ColorVision.Engine.Batch.IVL
             }
         }
 
-        private void SaveIVScanToCsv(ObservableCollection<ViewResultSMU> viewResults, string Recipe,string csvFilePath)
+        private static void SaveIVScanToCsv(ObservableCollection<ViewResultSMU> viewResults, string Recipe,string csvFilePath)
         {
             var csvBuilder = new StringBuilder();
 

@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Templates
             CreateConfig.IsEnable = true;
             BorderEdit.DataContext  = CreateConfig;
 
-            ComboBoxValueType.ItemsSource = from e1 in Enum.GetValues(typeof(SValueType)).Cast<SValueType>()
+            ComboBoxValueType.ItemsSource = from e1 in Enum.GetValues<SValueType>().Cast<SValueType>()
                                             select new KeyValuePair<SValueType, string>(e1, e1.ToDescription());
 
             

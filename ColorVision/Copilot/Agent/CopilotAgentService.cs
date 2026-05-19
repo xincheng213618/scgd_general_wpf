@@ -20,9 +20,9 @@ namespace ColorVision.Copilot
             CopilotAgentContextBuilder contextBuilder)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
-            _planner = new CopilotAgentPlanner(_chatService);
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
+            _planner = new CopilotAgentPlanner(_chatService, _contextBuilder);
         }
 
         public async Task<CopilotAgentRunResult> RunAsync(
@@ -36,6 +36,7 @@ namespace ColorVision.Copilot
             onEvent(CopilotAgentEvent.Status("正在分析任务..."));
 
             var toolResults = new List<CopilotToolResult>();
+            var stepRecords = new List<CopilotAgentStepRecord>();
             var readableLocalFilePaths = new HashSet<string>(
                 (request.ReadableLocalFilePaths ?? Array.Empty<string>())
                     .Where(path => !string.IsNullOrWhiteSpace(path)),
@@ -67,7 +68,7 @@ namespace ColorVision.Copilot
                 var planResult = await _planner.PlanNextAsync(
                     roundRequest,
                     tools,
-                    toolResults,
+                    stepRecords,
                     readableLocalFilePaths,
                     cancellationToken);
                 totalUsage = totalUsage.Add(planResult.Usage);
@@ -118,6 +119,7 @@ namespace ColorVision.Copilot
                 }
 
                 toolResults.Add(result);
+                stepRecords.Add(CreateStepRecord(round, selectedTool.Name, plan, result));
                 onEvent(CopilotAgentEvent.FromToolResult(result));
 
                 var discoveredNewReadableFiles = TryMergeReadableLocalFilePaths(readableLocalFilePaths, result.SuggestedReadableLocalFilePaths);
@@ -126,7 +128,7 @@ namespace ColorVision.Copilot
             }
 
                     var finalRequest = CreateRoundRequest(request, readableLocalFilePaths);
-            var preparedPrompt = _contextBuilder.BuildMessages(finalRequest, toolResults);
+                    var preparedPrompt = _contextBuilder.BuildAnswerMessages(finalRequest, stepRecords);
             onEvent(CopilotAgentEvent.Status("正在生成回答..."));
 
             var finalUsage = await _chatService.StreamReplyAsync(
@@ -147,6 +149,7 @@ namespace ColorVision.Copilot
             return new CopilotAgentRunResult
             {
                 PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
+                StepRecords = stepRecords.ToArray(),
                 Usage = totalUsage,
             };
         }
@@ -161,6 +164,7 @@ namespace ColorVision.Copilot
                 Profile = request.Profile,
                 History = request.History,
                 Attachments = request.Attachments,
+                ContextItems = request.ContextItems,
                 SearchRootPaths = request.SearchRootPaths,
                 ActiveDocumentPath = request.ActiveDocumentPath,
                 ReadableLocalFilePaths = readableLocalFilePaths.ToArray(),
@@ -219,6 +223,20 @@ namespace ColorVision.Copilot
             return added;
         }
 
+        private static CopilotAgentStepRecord CreateStepRecord(
+            int round,
+            string toolName,
+            CopilotAgentPlan plan,
+            CopilotToolResult result)
+        {
+            return new CopilotAgentStepRecord
+            {
+                Round = round,
+                ToolCall = CopilotToolCall.FromPlan(plan, toolName),
+                Observation = CopilotToolObservation.FromResult(result),
+            };
+        }
+
         private static string BuildPlanDetail(CopilotAgentPlan plan)
         {
             if (string.Equals(plan.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
@@ -249,9 +267,16 @@ namespace ColorVision.Copilot
 
             if ((string.Equals(plan.ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "GrepText", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(plan.ToolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase))
+                    || string.Equals(plan.ToolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(plan.ToolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
                 && !string.IsNullOrWhiteSpace(plan.ToolQuery))
             {
+                if (string.Equals(plan.ToolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
+                {
+                    var url = CopilotWebPageToolSupport.ExtractHttpUrls(plan.ToolQuery).FirstOrDefault() ?? plan.ToolQuery;
+                    return $" 目标网页：{url}";
+                }
+
                 return $" 查询词：{plan.ToolQuery}";
             }
 
@@ -300,6 +325,19 @@ namespace ColorVision.Copilot
                 {
                     toolName,
                     toolInput?.Query ?? string.Empty,
+                });
+            }
+
+            if (string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
+            {
+                var query = toolInput?.Query ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(query))
+                    query = string.Join(";", CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Take(3));
+
+                return string.Join("|", new[]
+                {
+                    toolName,
+                    query,
                 });
             }
 

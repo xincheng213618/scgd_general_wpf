@@ -127,7 +127,7 @@
     <value>Save configuration</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
-    <value>OpenConfigFolder</value>
+    <value>Open Configuration Folder</value>
   </data>
   <data name="SetupWizard" xml:space="preserve">
     <value>Configuration wizard</value>
@@ -148,31 +148,31 @@
     <value>There are still some incomplete configurations. Do you want to skip them?</value>
   </data>
   <data name="ExportSettings" xml:space="preserve">
-    <value>ExportSettings</value>
+    <value>Export Settings</value>
   </data>
   <data name="ImportExportSettings" xml:space="preserve">
-    <value>ImportExportSettings</value>
+    <value>Import/Export Settings</value>
   </data>
   <data name="ImportSettings" xml:space="preserve">
-    <value>ImportSettings</value>
+    <value>Import Settings</value>
   </data>
   <data name="OpenStore" xml:space="preserve">
-    <value>OpenStore</value>
+    <value>Open Store</value>
   </data>
   <data name="InstallPackage" xml:space="preserve">
-    <value>InstallPackage</value>
+    <value>Install Package</value>
   </data>
   <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>OpenViewDllViersion</value>
+    <value>OpenViewDll Version</value>
   </data>
   <data name="Restart" xml:space="preserve">
     <value>Restart</value>
   </data>
   <data name="UpdateAll" xml:space="preserve">
-    <value>UpdateAll</value>
+    <value>Update All</value>
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
-    <value>PluginManagerWindow</value>
+    <value>Plugin Manager Window</value>
   </data>
   <data name="SelectExtractFolder" xml:space="preserve">
     <value>Select target folder to extract plugin</value>
@@ -223,7 +223,7 @@
     <value>Version</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
-    <value>UseSystem</value>
+    <value>Follow System</value>
   </data>
   <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>Updating Log4Net log level:</value>
@@ -241,19 +241,19 @@
     <value>Sort Options</value>
   </data>
   <data name="SortDefault" xml:space="preserve">
-    <value>SortDefault</value>
+    <value>Default Sort</value>
   </data>
   <data name="SortByName" xml:space="preserve">
-    <value>SortByName</value>
+    <value>Sort by Name</value>
   </data>
   <data name="SortByCategory" xml:space="preserve">
-    <value>SortByCategory</value>
+    <value>Sort by Category</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket Management Window</value>
   </data>
   <data name="SocketBufferSize" xml:space="preserve">
-    <value>SocketBufferSize</value>
+    <value>Socket Buffer Size</value>
   </data>
   <data name="SmartSortDescending" xml:space="preserve">
     <value>Smart Sort (Descending)</value>
@@ -304,7 +304,7 @@
     <value>Options</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>OpenLogFolder</value>
+    <value>Open Log Folder</value>
   </data>
   <data name="OpenFolder" xml:space="preserve">
     <value>Open Folder</value>
@@ -313,7 +313,7 @@
     <value>Open Containing Folder</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>OpenConfigFile</value>
+    <value>Open Configuration File</value>
   </data>
   <data name="OnlineCronGenerator" xml:space="preserve">
     <value>Online Cron Expression Generator</value>
@@ -340,7 +340,7 @@
     <value>You must restart to apply your new language settings</value>
   </data>
   <data name="IsAutoSelect" xml:space="preserve">
-    <value>IsAutoSelect</value>
+    <value>Auto Select</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>Found project {0}, {1}, download?</value>

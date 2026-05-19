@@ -27,12 +27,14 @@ namespace ColorVision.Copilot
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
         private readonly CopilotAgentService _agentService;
+        private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotConfig _config;
         private readonly CopilotChatStateStore _stateStore;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly IReadOnlyList<CopilotAgentModeOption> _agentModes = CopilotAgentModeOption.CreateDefaultOptions();
         private CancellationTokenSource? _currentRequestCts;
+        private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
@@ -49,11 +51,15 @@ namespace ColorVision.Copilot
             _chatService = chatService;
             _agentContextBuilder = new CopilotAgentContextBuilder();
             _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), _agentContextBuilder);
+            _contextRegistry = CopilotContextRegistry.CreateDefault();
             _config = CopilotConfig.Instance;
             _stateStore = CopilotChatStateStore.Instance;
+            _currentLiveContext = CopilotLiveContextRegistry.Current;
 
             WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
             WorkspaceManager.ContentIdSelected += WorkspaceManager_ContentIdSelected;
+            CopilotLiveContextRegistry.CurrentChanged -= CopilotLiveContextRegistry_CurrentChanged;
+            CopilotLiveContextRegistry.CurrentChanged += CopilotLiveContextRegistry_CurrentChanged;
 
             if (_config.EnsureInitialized())
                 PersistConfig();
@@ -80,6 +86,7 @@ namespace ColorVision.Copilot
             AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
             AddWebPageAttachmentCommand = new RelayCommand(_ => _ = AddWebPageAttachmentAsync(), _ => !IsBusy);
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
+            AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => HasCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => message != null);
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => _ = RetryMessageAsync(message, refreshWebContext: false), CanRegenerateMessage);
             RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => _ = RetryMessageAsync(message, refreshWebContext: true), CanRegenerateMessage);
@@ -119,6 +126,8 @@ namespace ColorVision.Copilot
 
         public ICommand PasteImageAttachmentCommand { get; }
 
+        public ICommand AttachCurrentLiveContextCommand { get; }
+
         public ICommand CopyMessageCommand { get; }
 
         public ICommand RetryMessageCommand { get; }
@@ -136,6 +145,20 @@ namespace ColorVision.Copilot
         public bool IsConversationEmpty => Messages.Count == 0;
 
         public bool HasAttachments => Attachments.Count > 0;
+
+        public bool HasCurrentLiveContext => _currentLiveContext != null;
+
+        public string CurrentLiveContextTitle => _currentLiveContext?.Title ?? string.Empty;
+
+        public string CurrentLiveContextSummary => _currentLiveContext?.Summary ?? string.Empty;
+
+        public bool CanAttachCurrentLiveContext => _currentLiveContext != null;
+
+        public bool IsCurrentLiveContextAttached => _currentLiveContext != null
+            && SelectedConversation?.Attachments.Any(item => item.Type == CopilotAttachmentType.Context
+                && string.Equals(item.Source, _currentLiveContext.SourceId, StringComparison.Ordinal)) == true;
+
+        public string CurrentLiveContextActionText => IsCurrentLiveContextAttached ? "更新快照" : "附加到提问";
 
         public string EmptyStateText => _config.IsConfigured
             ? "从右侧选择历史会话，或点击 + 新建会话。"
@@ -415,6 +438,19 @@ namespace ColorVision.Copilot
                 .Where(path => !IsExistingDirectoryPath(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+            var searchRootPaths = BuildSearchRootPaths(conversation, explicitLocalPaths);
+            IReadOnlyList<CopilotContextItem> contextItems = await _contextRegistry.CaptureAsync(
+                new CopilotContextRequest
+                {
+                    Scope = MapContextScope(userMessage.RequestMode),
+                    UserText = (userMessage.Content ?? string.Empty).Trim(),
+                    SolutionDirectoryPath = SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty,
+                    ActiveDocumentPath = _activeDocumentPath,
+                    SearchRootPaths = searchRootPaths,
+                },
+                cancellationToken);
+
+            contextItems = MergeCurrentLiveContextSummary(contextItems);
 
             var agentRequest = new CopilotAgentRequest
             {
@@ -422,7 +458,8 @@ namespace ColorVision.Copilot
                 Profile = requestProfile,
                 History = BuildVisibleConversationHistory(conversation, userMessage, 8),
                 Attachments = conversation.Attachments.ToArray(),
-                SearchRootPaths = BuildSearchRootPaths(conversation, explicitLocalPaths),
+                ContextItems = contextItems,
+                SearchRootPaths = searchRootPaths,
                 ActiveDocumentPath = _activeDocumentPath,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
@@ -442,6 +479,65 @@ namespace ColorVision.Copilot
         private void WorkspaceManager_ContentIdSelected(object? sender, string contentId)
         {
             _activeDocumentPath = contentId ?? string.Empty;
+        }
+
+        private void CopilotLiveContextRegistry_CurrentChanged(object? sender, EventArgs e)
+        {
+            if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => CopilotLiveContextRegistry_CurrentChanged(sender, e)));
+                return;
+            }
+
+            _currentLiveContext = CopilotLiveContextRegistry.Current;
+            OnCurrentLiveContextStateChanged();
+        }
+
+        private void OnCurrentLiveContextStateChanged()
+        {
+            OnPropertyChanged(nameof(HasCurrentLiveContext));
+            OnPropertyChanged(nameof(CurrentLiveContextTitle));
+            OnPropertyChanged(nameof(CurrentLiveContextSummary));
+            OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
+            OnPropertyChanged(nameof(IsCurrentLiveContextAttached));
+            OnPropertyChanged(nameof(CurrentLiveContextActionText));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private IReadOnlyList<CopilotContextItem> MergeCurrentLiveContextSummary(IReadOnlyList<CopilotContextItem> contextItems)
+        {
+            var liveContextItem = BuildCurrentLiveContextSummaryItem();
+            if (liveContextItem == null)
+                return contextItems;
+
+            var merged = new List<CopilotContextItem>((contextItems?.Count ?? 0) + 1)
+            {
+                liveContextItem,
+            };
+
+            if (contextItems != null)
+                merged.AddRange(contextItems);
+
+            return merged;
+        }
+
+        private CopilotContextItem? BuildCurrentLiveContextSummaryItem()
+        {
+            var liveContext = _currentLiveContext;
+            if (liveContext == null)
+                return null;
+
+            if (string.IsNullOrWhiteSpace(liveContext.Title) && string.IsNullOrWhiteSpace(liveContext.Summary))
+                return null;
+
+            return new CopilotContextItem
+            {
+                Id = string.IsNullOrWhiteSpace(liveContext.SourceId)
+                    ? "live-context"
+                    : $"{liveContext.SourceId}:summary",
+                Title = liveContext.Title,
+                Summary = liveContext.Summary,
+            };
         }
 
         private IReadOnlyList<string> BuildSearchRootPaths(
@@ -464,6 +560,15 @@ namespace ColorVision.Copilot
             }
 
             return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+        }
+
+        private static CopilotContextScope MapContextScope(CopilotAgentMode mode)
+        {
+            return mode == CopilotAgentMode.Diagnose
+                ? CopilotContextScope.Diagnose
+                : mode == CopilotAgentMode.Chat
+                    ? CopilotContextScope.Chat
+                    : CopilotContextScope.Agent;
         }
 
         private static void AddSearchCandidate(List<string> roots, string? path)
@@ -626,6 +731,50 @@ namespace ColorVision.Copilot
             _ = SendAsync();
         }
 
+        public CopilotPromptQueueResult QueueExternalPrompt(
+            string prompt,
+            bool startNewConversation = true,
+            bool sendNow = false,
+            CopilotAgentMode mode = CopilotAgentMode.Auto,
+            string? contextAttachmentTitle = null,
+            string? contextAttachmentSourceId = null,
+            IReadOnlyList<CopilotContextItem>? contextAttachmentItems = null)
+        {
+            var normalizedPrompt = (prompt ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedPrompt))
+                return new CopilotPromptQueueResult(false, false);
+
+            if (startNewConversation || SelectedConversation == null)
+            {
+                var newConversation = CreateConversation();
+                SelectConversation(newConversation, persist: false);
+                PersistState();
+            }
+            else
+            {
+                EnsureConversation();
+            }
+
+            var conversation = EnsureConversation();
+            if (contextAttachmentItems != null && contextAttachmentItems.Count > 0)
+            {
+                AttachExternalContextSnapshot(
+                    conversation,
+                    contextAttachmentTitle,
+                    contextAttachmentSourceId,
+                    contextAttachmentItems);
+            }
+
+            SelectedAgentMode = mode;
+            InputText = normalizedPrompt;
+
+            if (!sendNow || IsBusy)
+                return new CopilotPromptQueueResult(true, false);
+
+            _ = SendAsync();
+            return new CopilotPromptQueueResult(true, true);
+        }
+
         private void CancelCurrentReply()
         {
             if (!IsBusy)
@@ -724,6 +873,7 @@ namespace ColorVision.Copilot
         {
             InvalidateChatAttachmentTokenEstimate();
             RefreshComposerTokenEstimate();
+            OnCurrentLiveContextStateChanged();
         }
 
         private void SelectConversation(CopilotConversationRecord? conversation, bool persist, string? preferredProfileId = null)
@@ -762,7 +912,7 @@ namespace ColorVision.Copilot
             var profile = ResolveProfile(preferredProfileId)
                 ?? ResolveProfile(conversation?.ProfileId)
                 ?? ResolveProfile(_state.ActiveProfileId)
-                ?? Profiles.FirstOrDefault();
+                ?? _config.GetPreferredDefaultProfile();
 
             SelectProfile(profile, syncConversation: false, persist: false);
 
@@ -780,6 +930,7 @@ namespace ColorVision.Copilot
 
             InvalidateChatAttachmentTokenEstimate();
             RefreshComposerTokenEstimate();
+            OnCurrentLiveContextStateChanged();
 
             if (shouldPersist)
                 PersistState();
@@ -825,7 +976,7 @@ namespace ColorVision.Copilot
 
         private CopilotConversationRecord CreateConversation()
         {
-            var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? Profiles.FirstOrDefault();
+            var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
             var conversation = CopilotConversationRecord.CreateEmpty(profile?.Id ?? string.Empty, profile?.DisplayLabel ?? string.Empty);
             Conversations.Insert(GetUnpinnedInsertIndex(), conversation);
             return conversation;
@@ -1015,6 +1166,20 @@ namespace ColorVision.Copilot
 
             conversation.Attachments.Add(CopilotAttachmentItem.CreateContext(window.ResultText));
             UpdateAttachmentsState(conversation);
+        }
+
+        private void AttachCurrentLiveContext()
+        {
+            var liveContext = _currentLiveContext;
+            if (liveContext == null || liveContext.SnapshotItems == null || liveContext.SnapshotItems.Count == 0)
+                return;
+
+            var conversation = EnsureConversation();
+            AttachExternalContextSnapshot(
+                conversation,
+                string.IsNullOrWhiteSpace(liveContext.AttachmentTitle) ? liveContext.Title : liveContext.AttachmentTitle,
+                liveContext.SourceId,
+                liveContext.SnapshotItems);
         }
 
         private async Task AddWebPageAttachmentAsync()
@@ -1592,6 +1757,49 @@ namespace ColorVision.Copilot
             InvalidateChatAttachmentTokenEstimate();
             RefreshComposerTokenEstimate();
             PersistState();
+            OnCurrentLiveContextStateChanged();
+        }
+
+        private void AttachExternalContextSnapshot(
+            CopilotConversationRecord conversation,
+            string? attachmentTitle,
+            string? attachmentSourceId,
+            IReadOnlyList<CopilotContextItem> contextItems)
+        {
+            var content = BuildContextAttachmentContent(contextItems);
+            if (string.IsNullOrWhiteSpace(content))
+                return;
+
+            var normalizedTitle = string.IsNullOrWhiteSpace(attachmentTitle)
+                ? contextItems.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Title))?.Title ?? "附加上下文"
+                : attachmentTitle.Trim();
+
+            CopilotAttachmentItem? existingAttachment;
+            if (!string.IsNullOrWhiteSpace(attachmentSourceId))
+            {
+                existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.Context
+                    && string.Equals(item.Source, attachmentSourceId, StringComparison.Ordinal));
+            }
+            else
+            {
+                existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.Context
+                    && string.Equals(item.Title, normalizedTitle, StringComparison.Ordinal));
+            }
+
+            var attachment = CopilotAttachmentItem.CreateContext(content, normalizedTitle, attachmentSourceId);
+            if (existingAttachment != null)
+            {
+                existingAttachment.Title = attachment.Title;
+                existingAttachment.Value = attachment.Value;
+                existingAttachment.Source = attachment.Source;
+                existingAttachment.CreatedAt = attachment.CreatedAt;
+            }
+            else
+            {
+                conversation.Attachments.Add(attachment);
+            }
+
+            UpdateAttachmentsState(conversation);
         }
 
         private void MoveConversationToPreferredIndex(CopilotConversationRecord conversation)
@@ -1660,6 +1868,35 @@ namespace ColorVision.Copilot
             return builder.ToString().Trim();
         }
 
+        private static string BuildContextAttachmentContent(IReadOnlyList<CopilotContextItem> contextItems)
+        {
+            if (contextItems == null || contextItems.Count == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            builder.AppendLine("以下是用户显式附加的业务快照。它是在点击“问 Copilot”或手动附加时抓取的固定内容；回答时应优先基于这些快照分析。")
+                .AppendLine();
+
+            foreach (var item in contextItems)
+            {
+                if (item == null)
+                    continue;
+
+                var title = string.IsNullOrWhiteSpace(item.Title) ? "上下文" : item.Title.Trim();
+                builder.Append("## ").AppendLine(title);
+
+                if (!string.IsNullOrWhiteSpace(item.Summary))
+                    builder.Append("摘要：").AppendLine(item.Summary.Trim());
+
+                if (!string.IsNullOrWhiteSpace(item.Content))
+                    builder.AppendLine(item.Content.Trim());
+
+                builder.AppendLine();
+            }
+
+            return builder.ToString().Trim();
+        }
+
         private static string BuildFileAttachmentBlock(CopilotAttachmentItem attachment)
         {
             try
@@ -1711,11 +1948,18 @@ namespace ColorVision.Copilot
 
         private async Task<string> BuildUserRequestContentAsync(string prompt, CancellationToken cancellationToken)
         {
+            var builder = new StringBuilder();
+            AppendCurrentLiveContextSummaryBlock(builder);
+
+            if (builder.Length > 0)
+                builder.AppendLine();
+
+            builder.Append(prompt);
+
             var urls = ExtractHttpUrls(prompt);
             if (urls.Count == 0)
-                return prompt;
+                return builder.ToString().Trim();
 
-            var builder = new StringBuilder(prompt);
             builder.AppendLine();
             builder.AppendLine();
             builder.AppendLine("[本地网页上下文注入]");
@@ -1749,6 +1993,26 @@ namespace ColorVision.Copilot
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private void AppendCurrentLiveContextSummaryBlock(StringBuilder builder)
+        {
+            var liveContext = _currentLiveContext;
+            if (liveContext == null)
+                return;
+
+            if (string.IsNullOrWhiteSpace(liveContext.Title) && string.IsNullOrWhiteSpace(liveContext.Summary))
+                return;
+
+            builder.AppendLine("[当前窗口上下文]");
+
+            if (!string.IsNullOrWhiteSpace(liveContext.Title))
+                builder.Append("位置：").AppendLine(liveContext.Title.Trim());
+
+            if (!string.IsNullOrWhiteSpace(liveContext.Summary))
+                builder.Append("摘要：").AppendLine(liveContext.Summary.Trim());
+
+            builder.AppendLine("以上仅是当前业务窗口的轻量摘要；若当前会话同时挂载了显式快照，请优先结合该快照回答。");
         }
 
         private async Task<string> BuildWebPageContextBlockAsync(string url, CancellationToken cancellationToken)

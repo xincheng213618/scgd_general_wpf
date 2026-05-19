@@ -98,7 +98,7 @@ namespace ColorVision.ImageEditor.Draw
                 MenuItem menuIte2 = new MenuItem() { Header = "删除" };
                 menuIte2.Click += (s, e) =>
                 {
-                    context.ImageView.ImageShow.RemoveVisualCommand(visual);
+                    context.DrawCanvas.RemoveVisualCommand(visual);
                     context.SelectionVisual.ClearRender();
                 };
                 MenuItems.Add(menuIte2);
@@ -106,7 +106,7 @@ namespace ColorVision.ImageEditor.Draw
                 MenuItem menuIte3 = new MenuItem() { Header = "Top" };
                 menuIte3.Click += (s, e) =>
                 {
-                    context.ImageView.ImageShow.TopVisual(visual);
+                    context.DrawCanvas.TopVisual(visual);
                 };
                 MenuItems.Add(menuIte3);
 

@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Utilities
             }
             else
             {
-                T t = (T)Activator.CreateInstance(typeof(T));
+                T t = Activator.CreateInstance<T>();
                 return t;
             }
         }

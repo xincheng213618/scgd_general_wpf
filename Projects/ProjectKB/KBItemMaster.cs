@@ -103,6 +103,60 @@ namespace ProjectKB
         public double LvUniformity { get => _LvUniformity; set { _LvUniformity = value; OnPropertyChanged(); } }
         private double _LvUniformity;
 
+        public bool BacklightAutotuneEnabled { get => _BacklightAutotuneEnabled; set { _BacklightAutotuneEnabled = value; OnPropertyChanged(); } }
+        private bool _BacklightAutotuneEnabled;
+
+        public bool BacklightAutotuneApplied { get => _BacklightAutotuneApplied; set { _BacklightAutotuneApplied = value; OnPropertyChanged(); } }
+        private bool _BacklightAutotuneApplied;
+
+        public string BacklightAutotuneSource { get => _BacklightAutotuneSource; set { _BacklightAutotuneSource = value; OnPropertyChanged(); } }
+        private string _BacklightAutotuneSource = "None";
+
+        public double BacklightAutotuneSteepness { get => _BacklightAutotuneSteepness; set { _BacklightAutotuneSteepness = value; OnPropertyChanged(); } }
+        private double _BacklightAutotuneSteepness;
+
+        public double AvgLvRaw { get => _AvgLvRaw; set { _AvgLvRaw = value; OnPropertyChanged(); } }
+        private double _AvgLvRaw;
+
+        public double AvgLvQ1 { get => _AvgLvQ1; set { _AvgLvQ1 = value; OnPropertyChanged(); } }
+        private double _AvgLvQ1 = -1;
+
+        public double AvgLvQ3 { get => _AvgLvQ3; set { _AvgLvQ3 = value; OnPropertyChanged(); } }
+        private double _AvgLvQ3 = -1;
+
+        public double AvgLvAdjusted { get => _AvgLvAdjusted; set { _AvgLvAdjusted = value; OnPropertyChanged(); } }
+        private double _AvgLvAdjusted;
+
+        public double MinLvRaw { get => _MinLvRaw; set { _MinLvRaw = value; OnPropertyChanged(); } }
+        private double _MinLvRaw;
+
+        public double MinLvQ1 { get => _MinLvQ1; set { _MinLvQ1 = value; OnPropertyChanged(); } }
+        private double _MinLvQ1 = -1;
+
+        public double MinLvQ3 { get => _MinLvQ3; set { _MinLvQ3 = value; OnPropertyChanged(); } }
+        private double _MinLvQ3 = -1;
+
+        public double MinLvAdjusted { get => _MinLvAdjusted; set { _MinLvAdjusted = value; OnPropertyChanged(); } }
+        private double _MinLvAdjusted;
+
+        public double LvUniformityRaw { get => _LvUniformityRaw; set { _LvUniformityRaw = value; OnPropertyChanged(); } }
+        private double _LvUniformityRaw;
+
+        public double UniformityQ1 { get => _UniformityQ1; set { _UniformityQ1 = value; OnPropertyChanged(); } }
+        private double _UniformityQ1 = -1;
+
+        public double UniformityQ3 { get => _UniformityQ3; set { _UniformityQ3 = value; OnPropertyChanged(); } }
+        private double _UniformityQ3 = -1;
+
+        public double LvUniformityAdjusted { get => _LvUniformityAdjusted; set { _LvUniformityAdjusted = value; OnPropertyChanged(); } }
+        private double _LvUniformityAdjusted;
+
+        public string MesModel { get => _MesModel; set { _MesModel = value; OnPropertyChanged(); } }
+        private string _MesModel = string.Empty;
+
+        public string MesSpecGroup { get => _MesSpecGroup; set { _MesSpecGroup = value; OnPropertyChanged(); } }
+        private string _MesSpecGroup = string.Empty;
+
         public double ColorUniformity { get => _ColorUniformity; set { _ColorUniformity = value; OnPropertyChanged(); } }
         private double _ColorUniformity;
 

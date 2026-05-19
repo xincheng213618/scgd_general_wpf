@@ -1,9 +1,10 @@
 ﻿using ColorVision.UI.Menus;
+using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
 
 namespace ColorVision.ImageEditor.EditorTools.Zoom
 {
-    public record class ZoomEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
+    public record class ZoomEditorToolContextMenu(DrawEditorContext context) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {

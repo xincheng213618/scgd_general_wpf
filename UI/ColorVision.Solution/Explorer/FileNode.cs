@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Properties;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
@@ -14,6 +15,8 @@ namespace ColorVision.Solution.Explorer
     {
         public IFileMeta FileMeta { get; set; }
         public RelayCommand OpenContainingFolderCommand { get; set; }
+        public RelayCommand AskCopilotExplainFileCommand { get; set; }
+        public RelayCommand AskCopilotDiagnoseFileCommand { get; set; }
 
         public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
 
@@ -33,6 +36,8 @@ namespace ColorVision.Solution.Explorer
             base.Initialize();
             OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
             OpenMethodCommand = new RelayCommand(a => OpenMethod());
+            AskCopilotExplainFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Code, false), a => FileInfo.Exists);
+            AskCopilotDiagnoseFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Diagnose, true), a => FileInfo.Exists);
         }
 
         public void OpenMethod()
@@ -57,7 +62,37 @@ namespace ColorVision.Solution.Explorer
             MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotExplainFile", Order = 20, Header = "问 AI 解释此文件", Command = AskCopilotExplainFileCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotDiagnoseFile", Order = 21, Header = "问 AI 诊断此文件/日志", Command = AskCopilotDiagnoseFileCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
+        }
+
+        private void AskCopilotAboutFile(CopilotPromptMode mode, bool diagnose)
+        {
+            if (!FileInfo.Exists)
+                return;
+
+            var service = CopilotServiceRegistry.Current;
+            if (service == null || !service.Ask(new CopilotPromptRequest
+                {
+                    Mode = mode,
+                    Prompt = diagnose
+                        ? $"请诊断这个文件是否包含异常、失败线索或需要优先关注的问题。文件路径：{FileInfo.FullName}。如果它是日志，请提取关键错误；如果它是代码或配置，请指出主要风险和下一步排查建议。"
+                        : $"请解释这个文件在当前工作区中的作用、主要结构和建议优先阅读的部分。文件路径：{FileInfo.FullName}。如有必要，请直接读取该文件后再回答。",
+                    ContextItems = new[]
+                    {
+                        new CopilotContextItem
+                        {
+                            Id = "solution-file-node",
+                            Title = "解决方案树选中文件",
+                            Summary = FileInfo.Name,
+                            Content = $"路径：{FileInfo.FullName}{Environment.NewLine}扩展名：{FileInfo.Extension}{Environment.NewLine}大小：{FileInfo.Length} 字节",
+                        },
+                    },
+                }))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "Copilot 当前不可用。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         public override void ShowProperty()

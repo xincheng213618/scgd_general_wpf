@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ namespace ColorVision.ImageEditor.EditorTools
 {
 
 
-    public record class BitmapScalingEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
+    public record class BitmapScalingEditorToolContextMenu(DrawEditorContext context) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {

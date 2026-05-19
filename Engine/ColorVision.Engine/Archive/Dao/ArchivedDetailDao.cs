@@ -166,7 +166,7 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName = "guid",IsPrimaryKey = true)]
         [DisplayName("Guid")]
         public string Guid { get; set; }
-        [SugarColumn(ColumnName ="p_guid"),DisplayName("Name")]
+        [SugarColumn(ColumnName ="p_guid"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "Name")]
         public string PGuid { get; set; }
         [SugarColumn(ColumnName ="detail_type"), DisplayName("detail_type")]
         public string DetailType { get; set; }
@@ -174,12 +174,12 @@ namespace ColorVision.Engine.Archive.Dao
         public int? ZIndex { get; set; }
         [SugarColumn(ColumnName ="output_value"),DisplayName("Data")]
         public string OutputValue { get; set; }
-        [SugarColumn(ColumnName ="device_code"), DisplayName("DeviceName")]
+        [SugarColumn(ColumnName ="device_code"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DeviceName")]
         public string DeviceCode { get; set; }
         [SugarColumn(ColumnName ="device_cfg")]
         public string DeviceCfg { get; set; }
 
-        [SugarColumn(ColumnName ="input_cfg"),DisplayName("ParamInput")]
+        [SugarColumn(ColumnName ="input_cfg"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ParamInput")]
         public string InputCfg { get; set; }
 
     }

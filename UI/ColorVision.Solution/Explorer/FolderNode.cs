@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
@@ -23,6 +24,7 @@ namespace ColorVision.Solution.Explorer
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand OpenMethodCommand { get; set; }
+        public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
 
         public FolderNode(IFolderMeta folder) : base()
         {
@@ -102,6 +104,7 @@ namespace ColorVision.Solution.Explorer
             AddDirCommand = new RelayCommand(a => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
             OpenMethodCommand = new RelayCommand(a => OpenMethod());
+            AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
         }
 
         public void OpenMethod()
@@ -142,6 +145,7 @@ namespace ColorVision.Solution.Explorer
                 Command = OpenCommand
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotSummarizeFolder", Order = 20, Header = "问 AI 总结此文件夹", Command = AskCopilotSummarizeFolderCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddNewItem", Order = 1, Header = "新建项(_N)...", Command = new RelayCommand(_ => ShowAddNewItemDialog()) });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddExistingItem", Order = 2, Header = "现有项(_E)...", Command = new RelayCommand(_ => AddExistingItem()) });
@@ -151,6 +155,32 @@ namespace ColorVision.Solution.Explorer
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
+        }
+
+        private void AskCopilotAboutFolder()
+        {
+            if (!DirectoryInfo.Exists)
+                return;
+
+            var service = CopilotServiceRegistry.Current;
+            if (service == null || !service.Ask(new CopilotPromptRequest
+                {
+                    Mode = CopilotPromptMode.Code,
+                    Prompt = $"请总结这个文件夹的内容结构、主要用途，以及建议优先阅读的文件。文件夹路径：{DirectoryInfo.FullName}。如有必要，请先列出目录并读取关键文本文件。",
+                    ContextItems = new[]
+                    {
+                        new CopilotContextItem
+                        {
+                            Id = "solution-folder-node",
+                            Title = "解决方案树选中文件夹",
+                            Summary = DirectoryInfo.Name,
+                            Content = $"路径：{DirectoryInfo.FullName}",
+                        },
+                    },
+                }))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "Copilot 当前不可用。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void OpenFusionWithFolderImages()

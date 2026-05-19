@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>Afficher les données d'acceptation</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>fichier de données d'image</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>mode vidéo</value>
   </data>
@@ -394,7 +391,7 @@
     <value>Renommer(M)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>Paramètres du modèle de préoccupation (P)</value>
+    <value>Paramètres du modèle POI (_P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>Gestion des caméras physiques(_P)</value>
@@ -427,7 +424,7 @@
     <value>Paramètres du modèle de détection de zone lumineuse (F)</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
-    <value>F_low</value>
+    <value>Flux(_L)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>Modifier(E)</value>
@@ -573,9 +570,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>Téléchargement annulé</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>Zone de données d'image CIE</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>Nom de l'appareil</value>
   </data>
@@ -693,9 +687,6 @@
   <data name="Alias" xml:space="preserve">
     <value>Alias</value>
   </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>taper</value>
-  </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Recherche Avancée</value>
   </data>
@@ -787,7 +778,7 @@
     <value>Date de création</value>
   </data>
   <data name="IsEnable" xml:space="preserve">
-    <value>Est-ce qu'il est activé</value>
+    <value>Activé</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>Moteur (_N)</value>
@@ -856,13 +847,10 @@
     <value>Appareil hors ligne</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>Modèle de mise au point</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>Paramètres du modèle d'algorithme lié à la mise au point</value>
+    <value>Modèle POI</value>
   </data>
   <data name="Service" xml:space="preserve">
-    <value>Servir</value>
+    <value>Service</value>
   </data>
   <data name="RefreshDeviceList" xml:space="preserve">
     <value>Actualiser la liste des appareils</value>
@@ -895,16 +883,16 @@
     <value>Point de restauration créé avec succès</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>Ajuster NDPort</value>
+    <value>Modifier NDPort</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>Mise au point automatique</value>
   </data>
   <data name="Move" xml:space="preserve">
-    <value>se déplacer</value>
+    <value>Déplacer</value>
   </data>
   <data name="AbsolutePosition" xml:space="preserve">
-    <value>position absolue</value>
+    <value>Position absolue</value>
   </data>
   <data name="AdjustAperture" xml:space="preserve">
     <value>Régler l'ouverture</value>
@@ -934,7 +922,7 @@
     <value>Connexion automatique de l'appareil</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>Paramètres de l'application</value>
+    <value>Appliquer les paramètres</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>Cache de fichiers :</value>
@@ -952,7 +940,7 @@
     <value>Modèle de processus</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>Résultats de la requête</value>
+    <value>Résultats de recherche</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Gestion des résultats des processus</value>
@@ -976,31 +964,31 @@
     <value>Modèle de mise au point automatique</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>Paramètres du modèle d'algorithme liés à la mise au point</value>
+    <value>Paramètres du modèle POI</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
-    <value>paramètres du modèle de filtre POI</value>
+    <value>Paramètres du modèle de filtre POI</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>Paramètres du modèle de modification Poi</value>
+    <value>Paramètres du modèle de correction POI</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>Modèle de propriété d'application</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Paramètres du modèle de mise en page Poi</value>
+    <value>Paramètres du modèle de placement des POI</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
-    <value>Analyse des points d'intérêt</value>
+    <value>Analyse POI</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>Recherche de la zone AA</value>
+    <value>Détection de la zone AA</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
-    <value>paramètres du modèle de sortie de fichier POI</value>
+    <value>Paramètres du modèle de sortie de fichier POI</value>
   </data>
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
-    <value>Paramètres du modèle d'étalonnage de la correction POI</value>
+    <value>Paramètres du modèle de correction d'étalonnage POI</value>
   </data>
   <data name="TemplateMatching" xml:space="preserve">
     <value>Correspondance de modèles</value>
@@ -1142,9 +1130,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>Le service a été interrompu.</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>configuration du service d'annuaire de données</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>Mise en cache du service</value>
@@ -1561,10 +1546,10 @@
     <value>Importer les images les plus récentes</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>Attention</value>
+    <value>Enregistrer le POI</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>Concentration claire</value>
+    <value>Effacer le POI</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>Re-rendu</value>
@@ -1594,22 +1579,22 @@
     <value>En bas à droite</value>
   </data>
   <data name="SetToGlobalCache" xml:space="preserve">
-    <value>Définir sur le cache global</value>
+    <value>Définir comme cache global</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>Mise en cache de l'application</value>
+    <value>Appliquer le cache</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
     <value>Activez les quatre points d'angle de la zone lumineuse.</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>Affichage de la zone de distribution</value>
+    <value>Afficher la zone de placement des points</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>point central</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>Définir la zone de déploiement</value>
+    <value>Définir la zone de placement des points</value>
   </data>
   <data name="Count" xml:space="preserve">
     <value>quantité</value>
@@ -1618,16 +1603,16 @@
     <value>angle</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>Trouvez la zone lumineuse</value>
+    <value>Détecter la zone lumineuse</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>complet</value>
+    <value>Remplir la zone</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>largeur</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>haut</value>
+    <value>Hauteur</value>
   </data>
   <data name="RowCount" xml:space="preserve">
     <value>Nombre de lignes</value>
@@ -1642,16 +1627,16 @@
     <value>Gauche</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>droite</value>
+    <value>Droite</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>montrer</value>
+    <value>Afficher</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
-    <value>Segmentation de l'ensemble</value>
+    <value>Définir la segmentation</value>
   </data>
   <data name="UseNodePrompt" xml:space="preserve">
-    <value>Utiliser des nœuds</value>
+    <value>Utiliser les nœuds</value>
   </data>
   <data name="Quadrilateral" xml:space="preserve">
     <value>quadrilatère</value>
@@ -1666,7 +1651,7 @@
     <value>rond</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>Éditeur Focus</value>
+    <value>Éditeur POI</value>
   </data>
   <data name="Rect" xml:space="preserve">
     <value>rectangle</value>
@@ -1675,7 +1660,7 @@
     <value>dessiner</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>Paramètres de mise au point</value>
+    <value>Paramètres POI</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>Paramètres PGParam</value>
@@ -1699,7 +1684,7 @@
     <value>Absolu</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>Relativement</value>
+    <value>Relatif</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>longueur d'onde</value>
@@ -1711,7 +1696,7 @@
     <value>Spectre absolu</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>Actuel(mA)</value>
+    <value>Courant (mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>Tension(_V)</value>
@@ -1735,10 +1720,10 @@
     <value>Commencer</value>
   </data>
   <data name="End" xml:space="preserve">
-    <value>Finition</value>
+    <value>Fin</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>Points</value>
+    <value>Nombre de points</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>réseau</value>
@@ -1750,7 +1735,7 @@
     <value>attributs de mesure</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>Valeur d'origine</value>
+    <value>Valeur de début</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>Courbe de courant</value>
@@ -1819,7 +1804,7 @@
     <value>Ouverture</value>
   </data>
   <data name="Closing" xml:space="preserve">
-    <value>Fermé</value>
+    <value>Fermeture</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
     <value>Nombre de requêtes</value>
@@ -1828,7 +1813,7 @@
     <value>Trier par type</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>Créer un point d'intérêt</value>
+    <value>Créer comme POI</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>Sélectionnez le fichier dans le dossier</value>
@@ -1956,12 +1941,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Échec du modèle</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>La licence de la caméra logique actuelle a expiré et la liste des périphériques ne peut pas être actualisée. Voulez-vous supprimer les caméras physiques actuellement associées au service de caméra, puis réessayer ?</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>La caméra logique actuelle est hors ligne et la liste des périphériques ne peut pas être actualisée. Voulez-vous supprimer les caméras physiques associées au service de caméra actuel, puis réessayer ?</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>Informations actuelles sur la caméra de l'appareil</value>
   </data>
@@ -2056,13 +2035,13 @@
     <value>Ce modèle existe déjà. Veuillez modifier son nom.</value>
   </data>
   <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
-    <value>paramètres du modèle de sortie de fichier POI</value>
+    <value>Paramètres du modèle de sortie de fichier POI</value>
   </data>
   <data name="POIFilterTemplateSetting" xml:space="preserve">
-    <value>paramètres du modèle de filtre POI</value>
+    <value>Paramètres du modèle de filtre POI</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>« Gestion des modèles de test de bandes lumineuses »</value>
+    <value>Gestion des modèles de détection de bandes lumineuses</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>Gestion des modèles de détection de contours SFR</value>
@@ -2095,10 +2074,10 @@
     <value>Gestion des modèles Distortion 2.0</value>
   </data>
   <data name="ImageStitchingTemplateManagement" xml:space="preserve">
-    <value>gestion des modèles d'assemblage d'images</value>
+    <value>Gestion des modèles d'assemblage d'images</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>Recherche de modèles de gestion de zone AA</value>
+    <value>Gestion des modèles de détection de zone AA</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>Gestion des modèles BlackMura</value>
@@ -2247,9 +2226,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>Supprimer la sélection</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(Double-cliquez pour renommer ; actuellement enregistré uniquement en mémoire)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>Classe de traitement</value>
   </data>
@@ -2290,7 +2266,7 @@
     <value>énumérer</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>Il faut configurer les points d'attention</value>
+    <value>Le POI doit être configuré</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>Exporter comme</value>
@@ -2400,18 +2376,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>Chemin de sauvegarde par défaut</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>Traitement de la caméra IVL</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Traiter uniquement les données de la caméra issues des lots IVL et les exporter.</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>Traitement spectral IVL</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>Traiter uniquement les données Spectrum des lots IVL et les exporter</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>bande LED</value>
   </data>
@@ -2481,12 +2445,6 @@
   <data name="IsFront" xml:space="preserve">
     <value>Activer le panneau avant</value>
   </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>traitement par scanner IV</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>Traiter les données de numérisation SMU, les enregistrer au format CSV et tracer les courbes IV.</value>
-  </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>Ouvrir le Gestionnaire de périphériques</value>
   </data>
@@ -2536,13 +2494,13 @@
     <value>Fréquence de synchronisation</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>Fréquence de synchronisation</value>
+    <value>Coefficient de fréquence de synchronisation</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>FiltreBW</value>
+    <value>Largeur du filtre</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
-    <value>IsSyncFrequencyEnabled</value>
+    <value>Activer la fréquence de synchronisation</value>
   </data>
   <data name="GetSpectrSerialNumber" xml:space="preserve">
     <value>GetSpectrSerialNuméro</value>

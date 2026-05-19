@@ -149,7 +149,7 @@
     <value>Ouvrir le dossier de configuration</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>Dossier OpenLog</value>
+    <value>Ouvrir le dossier des journaux</value>
   </data>
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Faire défiler automatiquement vers le bas</value>
@@ -229,9 +229,6 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>Réglages généraux</value>
   </data>
-  <data name="General" xml:space="preserve">
-    <value>Universel</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>Nom du plugin</value>
   </data>
@@ -310,29 +307,8 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>Confirmer la suppression du plugin {0}?</value>
   </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>Activer CUDA</value>
-  </data>
   <data name="CheckingCUDASupport" xml:space="preserve">
     <value>Vérification du support CUDA</value>
-  </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>Paramètres de configuration</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>Activer la sauvegarde programmée</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>Nombre maximum de sauvegardes</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>Nettoyer automatiquement les anciennes sauvegardes si dépassé</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>Erreur du fichier de configuration, réinitialisé</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>Fichier de configuration restauré depuis la sauvegarde récente</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
     <value>Échec de la restauration du fichier de configuration</value>

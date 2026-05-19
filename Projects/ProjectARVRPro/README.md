@@ -43,8 +43,14 @@ ProjectARVRPro
 ├── PluginConfig/                   # 插件集成层
 │   ├── ProjectARVRPlugin.cs        #   IFeatureLauncherBase — 注册为 "ARVRPro" 功能
 │   ├── ProjectARVRMenu.cs          #   MenuItemBase — Tools 菜单 "模组检测"
-│   ├── SocketRelayMenu.cs          #   MenuItemBase — Tools 菜单 "Socket中转服务器"
 │   └── ProjectWindowInstance.cs    #   窗口单例持有
+│
+├── SocketRelay/                    # Socket 中转功能
+│   ├── SocketRelayWindow.xaml/.cs  #   中转服务器 UI
+│   ├── SocketRelayManager.cs       #   TCP 中转服务器（流程引擎 ↔ 外部客户端双向转发）
+│   ├── AOITestSwitchImageCompleteHandler.cs # 外部 Client 切图完成后回传给 Flow 的中转处理器
+│   ├── SocketRelayMenu.cs          #   MenuItemBase — Tools 菜单 "Socket中转服务器"
+│   └── SocketRelayInitializer.cs   #   IMainWindowInitialized — 主窗口初始化时按配置自动启动中转
 │
 ├── Process/                        # 测试流程框架（核心领域）
 │   ├── IProcess.cs                 #   核心接口：Execute / Render / GenText / GetRecipeConfig
@@ -62,10 +68,9 @@ ProjectARVRPro
 │
 ├── Services/                       # 通信服务层
 │   ├── SocketControl.cs            #   TCP Socket 命令分发器 (ISocketJsonHandler)
-│   ├── SocketRelayManager.cs       #   TCP 中转服务器（流程引擎 ↔ 外部客户端双向转发）
 │   ├── SwitchGroupSocket.cs        #   Socket 处理器：SwitchGroup 事件
 │   ├── RunAllSocket.cs             #   Socket 处理器：RunAll 一键执行
-│   └── AOITestSwitchImageHandler.cs #  Socket 处理器：AOI 图像切换完成
+│   └── [其他通用 Socket 处理器]     #   非中转专属的协议处理
 │
 ├── ThunderbirdSerialController.cs  # Thunderbird 设备串口控制器
 ├── SerialPortHelper.cs             # 串口通信辅助类
@@ -74,7 +79,6 @@ ProjectARVRPro
 ├── ViewResultManager.cs            # 结果查询与管理
 ├── Summary.cs                      # 生产摘要 (产线 / 工人 / 产能 / 良率)
 ├── TestResultViewWindow.xaml       # 测试结果查看器 (CSV/PDF 导出)
-├── SocketRelayWindow.xaml          # Socket 中转服务器 UI
 ├── ThunderbirdSerialDebugWindow.xaml # 串口调试 UI
 └── LegacyARVR/                     # 向后兼容：旧版扁平输出格式
 ```

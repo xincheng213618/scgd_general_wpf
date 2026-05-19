@@ -10,12 +10,12 @@ namespace ColorVision.ImageEditor.Draw.Special
 {
     public sealed class ImageMouseInfoProvider : IDisposable
     {
-        private readonly EditorContext _editorContext;
+        private readonly DrawEditorContext _editorContext;
         private EventHandler<ImagePixelSample>? _pixelSampleChanged;
 
         private DrawCanvas Image => _editorContext.DrawCanvas;
 
-        public ImageMouseInfoProvider(EditorContext editorContext)
+        public ImageMouseInfoProvider(DrawEditorContext editorContext)
         {
             _editorContext = editorContext;
         }

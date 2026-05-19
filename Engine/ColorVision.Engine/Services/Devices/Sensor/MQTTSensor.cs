@@ -60,13 +60,13 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             };
             PublishAsyncClient(msg);
         }
-        public void Close()
+        public MsgRecord Close()
         {
             MsgSend msg = new()
             {
                 EventName = "Close",
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
 

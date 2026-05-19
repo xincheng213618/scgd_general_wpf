@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             if (sender is ComboBox comboBox)
             {
-                comboBox.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
+                comboBox.ItemsSource = Enum.GetValues<SensorCmdType>();
 
             }
         }

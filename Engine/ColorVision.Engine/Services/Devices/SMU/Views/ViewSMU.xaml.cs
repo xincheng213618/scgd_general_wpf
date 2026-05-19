@@ -113,7 +113,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             ExportToCsv(viewResult, dialog.FileName);
 
         }
-        private void ExportToCsv(ViewResultSMU viewResult, string fileName)
+        private static void ExportToCsv(ViewResultSMU viewResult, string fileName)
         {
             using var writer = new StreamWriter(fileName, false, Encoding.UTF8);
 

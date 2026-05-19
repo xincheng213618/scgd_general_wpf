@@ -41,8 +41,9 @@ namespace ColorVision.ImageEditor.Draw
 
         private DrawingVisual SelectRect = new DrawingVisual();
 
-        public EditorContext EditorContext { get; set; }
-        public SelectEditorVisual(EditorContext editorContext)
+        public DrawEditorContext EditorContext { get; set; }
+
+        public SelectEditorVisual(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
             DrawCanvas = EditorContext.DrawCanvas;

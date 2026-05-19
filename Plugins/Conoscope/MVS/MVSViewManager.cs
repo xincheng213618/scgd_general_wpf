@@ -150,7 +150,7 @@ namespace Conoscope.MVS
         public RelayCommand EditMVSViewConfigCommand { get; set; }
         public bool IsOpen { get; set; }
         public Core.ConoscopeModelProfile CurrentModelProfile => Core.ConoscopeManager.GetInstance().Config.CurrentModelProfile;
-        public Array PixelTypes { get; } = Enum.GetValues(typeof(PixelType));
+        public Array PixelTypes { get; } = Enum.GetValues<PixelType>();
 
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;

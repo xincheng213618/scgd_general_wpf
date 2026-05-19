@@ -70,15 +70,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 采集 的本地化字符串。
-        /// </summary>
-        public static string Acquire {
-            get {
-                return ResourceManager.GetString("Acquire", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 程序关闭 的本地化字符串。
         /// </summary>
         public static string ApplicationExit {

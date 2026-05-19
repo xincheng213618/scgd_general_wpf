@@ -1,4 +1,6 @@
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using System;
@@ -19,6 +21,13 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public class IEditorToolFactory : IDisposable
     {
+        private static readonly Type[] SupportedContextTypes =
+        {
+            typeof(DrawEditorContext),
+            typeof(RealtimeEditorContext),
+            typeof(EditorContext),
+        };
+
         private readonly ImageView _imageView;
         private readonly EditorContext _context;
         private readonly EditorToolVisibilityConfig _visibilityConfig;
@@ -77,7 +86,7 @@ namespace ColorVision.ImageEditor
                 {
                     if (typeof(IIEditorToolContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {
-                        if (Activator.CreateInstance(type, context) is IIEditorToolContextMenu instance)
+                        if (CreateContextBoundInstance(type, context) is IIEditorToolContextMenu instance)
                         {
                             IIEditorToolContextMenus.Add(instance);
                         }
@@ -92,7 +101,7 @@ namespace ColorVision.ImageEditor
                 {
                     if (typeof(IEditorTool).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract && CanCreateGlobalEditorTool(type))
                     {
-                        if (Activator.CreateInstance(type, context) is IEditorTool instance)
+                        if (CreateEditorTool(type, context) is IEditorTool instance)
                         {
                             IEditorTools.Add(instance);
                             if (instance is IImageViewSettingProvider settingProvider)
@@ -265,7 +274,33 @@ namespace ColorVision.ImageEditor
 
         private static bool CanCreateGlobalEditorTool(Type type)
         {
-            return type.GetConstructor(new[] { typeof(EditorContext) }) != null;
+            return SupportedContextTypes.Any(contextType => type.GetConstructor(new[] { contextType }) != null);
+        }
+
+        private static object? CreateContextBoundInstance(Type type, EditorContext context)
+        {
+            foreach (Type contextType in SupportedContextTypes)
+            {
+                if (type.GetConstructor(new[] { contextType }) is not { } ctor)
+                {
+                    continue;
+                }
+
+                object argument = contextType == typeof(DrawEditorContext)
+                    ? context.DrawEditorContext
+                    : contextType == typeof(RealtimeEditorContext)
+                        ? context.RealtimeEditorContext
+                        : context;
+
+                return ctor.Invoke(new[] { argument });
+            }
+
+            return null;
+        }
+
+        private static object? CreateEditorTool(Type type, EditorContext context)
+        {
+            return CreateContextBoundInstance(type, context);
         }
 
         /// <summary>

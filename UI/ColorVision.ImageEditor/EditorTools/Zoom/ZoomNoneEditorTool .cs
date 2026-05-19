@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.Zoom
 {
-    public record class ZoomNoneEditorTool(EditorContext EditorContext) : IEditorTool
+    public record class ZoomNoneEditorTool(DrawEditorContext EditorContext) : IEditorTool
     {
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Top;
         public string? GuidId => "ZoomNone";

@@ -7,7 +7,8 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class BezierCurveManager : MultiPointDrawingToolBase<DVBezierCurve>
     {
-        public BezierCurveManager(EditorContext context) : base(context)
+
+        public BezierCurveManager(DrawEditorContext context) : base(context)
         {
             Order = 9;
             Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");

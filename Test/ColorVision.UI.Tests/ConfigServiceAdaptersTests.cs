@@ -31,7 +31,7 @@ namespace ColorVision.UI.Tests
         public void SelfManagedAdapter_ResolveExistingStaticInstance()
         {
             var adapter = new SelfManagedConfigServiceAdapter();
-            var config = adapter.GetRequiredService(typeof(SelfManagedConfig));
+            var config = adapter.GetRequiredService<SelfManagedConfig>();
 
             Assert.NotNull(config);
             Assert.IsType<SelfManagedConfig>(config);
@@ -52,8 +52,8 @@ namespace ColorVision.UI.Tests
         public void SelfManagedAdapter_MultipleCallsReturnSameInstance()
         {
             var adapter = new SelfManagedConfigServiceAdapter();
-            var config1 = adapter.GetRequiredService(typeof(SelfManagedConfig));
-            var config2 = adapter.GetRequiredService(typeof(SelfManagedConfig));
+            var config1 = adapter.GetRequiredService<SelfManagedConfig>();
+            var config2 = adapter.GetRequiredService<SelfManagedConfig>();
 
             Assert.Same(config1, config2);
         }
@@ -64,7 +64,7 @@ namespace ColorVision.UI.Tests
             var adapter = new SelfManagedConfigServiceAdapter();
 
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                adapter.GetRequiredService(typeof(InvalidConfig)));
+                adapter.GetRequiredService<InvalidConfig>());
 
             Assert.Contains("public static Instance property", ex.Message);
         }
@@ -148,7 +148,7 @@ namespace ColorVision.UI.Tests
             var mockProvider = new MockServiceProvider(typeof(SelfManagedConfig), config);
             var adapter = new AspNetCoreConfigServiceAdapter(mockProvider);
 
-            var resolved = adapter.GetRequiredService(typeof(SelfManagedConfig));
+            var resolved = adapter.GetRequiredService<SelfManagedConfig>();
 
             Assert.NotNull(resolved);
             Assert.Same(config, resolved);
@@ -173,7 +173,7 @@ namespace ColorVision.UI.Tests
             var adapter = new AspNetCoreConfigServiceAdapter(mockProvider);
 
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                adapter.GetRequiredService(typeof(SelfManagedConfig)));
+                adapter.GetRequiredService<SelfManagedConfig>());
 
             Assert.Contains("not found", ex.Message);
         }
@@ -199,7 +199,7 @@ namespace ColorVision.UI.Tests
         {
             var adapter = new SelfManagedConfigServiceAdapter();
             // ConfigSettingManager 仅需要调用：
-            var config = adapter.GetRequiredService(typeof(SelfManagedConfig));
+            var config = adapter.GetRequiredService<SelfManagedConfig>();
 
             Assert.NotNull(config);
         }
@@ -211,7 +211,7 @@ namespace ColorVision.UI.Tests
             var instance = new SelfManagedConfig();
             adapter.Register(instance);
 
-            var config = adapter.GetRequiredService(typeof(SelfManagedConfig));
+            var config = adapter.GetRequiredService<SelfManagedConfig>();
 
             Assert.Same(instance, config);
         }
@@ -223,7 +223,7 @@ namespace ColorVision.UI.Tests
             var mockProvider = new MockServiceProvider(typeof(SelfManagedConfig), config);
             var adapter = new AspNetCoreConfigServiceAdapter(mockProvider);
 
-            var resolved = adapter.GetRequiredService(typeof(SelfManagedConfig));
+            var resolved = adapter.GetRequiredService<SelfManagedConfig>();
 
             Assert.Same(config, resolved);
         }

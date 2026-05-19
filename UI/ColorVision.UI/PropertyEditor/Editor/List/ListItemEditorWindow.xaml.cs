@@ -41,7 +41,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             InitializeComponent();
             _elementType = elementType;
             _preferredEditorType = preferredEditorType;
-            _valueWrapper = new ValueWrapper { Value = initialValue };
+            _valueWrapper = new ValueWrapper { Value = initialValue ?? CreateEditableClassInstance(elementType) };
 
             InitializeEditorSelection();
             CreateEditor();
@@ -148,7 +148,15 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             // Special handling for class types (exclude string and other primitive-like types)
             else if (IsEditableClass(_elementType))
             {
-                EditorPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(_valueWrapper));
+                _valueWrapper.Value ??= CreateEditableClassInstance(_elementType);
+                if (_valueWrapper.Value != null)
+                {
+                    EditorPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(_valueWrapper.Value));
+                }
+                else
+                {
+                    CreateFallbackEditor();
+                }
                 return;
             }
 
@@ -265,6 +273,28 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                    type != typeof(string) && 
                    !IsGenericList(type) &&
                    !typeof(System.Collections.IDictionary).IsAssignableFrom(type);
+        }
+
+        private static object? CreateEditableClassInstance(Type type)
+        {
+            if (!IsEditableClass(type) || type.IsAbstract || type.IsInterface)
+            {
+                return null;
+            }
+
+            if (type.GetConstructor(Type.EmptyTypes) == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return Activator.CreateInstance(type);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private Type? DetermineEditorType(Type elementType)

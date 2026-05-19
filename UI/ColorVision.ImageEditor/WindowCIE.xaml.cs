@@ -77,6 +77,34 @@ namespace ColorVision.ImageEditor
             CieView.SetGamuts(gamuts);
         }
 
+        public void SetMarkers(IEnumerable<CieMarker> markers)
+        {
+            CieView.SetMarkers(markers);
+        }
+
+        public void ClearMarkers()
+        {
+            CieView.ClearMarkers();
+        }
+
+        public void SetSelectedMarker(CieMarker? marker)
+        {
+            if (marker == null)
+            {
+                _selectedXy = null;
+                CieView.ClearSelection();
+                UpdateSelectedReadout();
+                return;
+            }
+
+            SetSelectedXy(marker.Chromaticity, marker.Color, marker.Name);
+        }
+
+        public void FitDiagram()
+        {
+            CieView.ZoomUniform();
+        }
+
         public void AddGamut(CieGamut gamut)
         {
             CieView.AddGamut(gamut);

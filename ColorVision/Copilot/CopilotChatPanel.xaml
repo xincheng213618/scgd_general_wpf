@@ -286,9 +286,52 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="0,0,0,10"
+                    <Border Grid.Row="0"
+                            Margin="0,0,0,10"
+                            Padding="10,8"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Visibility="{Binding HasCurrentLiveContext, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           Opacity="0.58"
+                                           Text="当前窗口上下文" />
+                                <TextBlock Margin="0,2,0,0"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           Text="{Binding CurrentLiveContextTitle}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Margin="0,2,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           Opacity="0.74"
+                                           Text="{Binding CurrentLiveContextSummary}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <Button Grid.Column="1"
+                                    Margin="12,0,0,0"
+                                    Padding="10,5"
+                                    VerticalAlignment="Center"
+                                    Command="{Binding AttachCurrentLiveContextCommand}"
+                                    IsEnabled="{Binding CanAttachCurrentLiveContext}">
+                                <TextBlock Text="{Binding CurrentLiveContextActionText}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Row="1" Margin="0,0,0,10"
                                 Visibility="{Binding HasAttachments, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       MaxHeight="104"
@@ -415,7 +458,7 @@
                     </StackPanel>
 
                     <TextBox x:Name="PromptTextBox"
-                             Grid.Row="1"
+                             Grid.Row="2"
                              MinHeight="20"
                              MaxHeight="68"
                              Padding="0,4,0,4"
@@ -429,7 +472,7 @@
                              VerticalContentAlignment="Top"
                              VerticalScrollBarVisibility="Auto" />
 
-                    <DockPanel Grid.Row="2" Margin="0,2,0,0">
+                    <DockPanel Grid.Row="3" Margin="0,2,0,0">
                         <StackPanel DockPanel.Dock="Right"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">

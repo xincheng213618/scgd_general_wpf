@@ -107,7 +107,7 @@ namespace Conoscope
                 drawingContext.DrawEllipse(null, pen, center, radius, radius);
 
                 double value = radialMaximum * ringIndex / ringCount;
-                Point labelPoint = ToScreenPoint(center, radius, 0);
+                Point labelPoint = ToScreenPoint(center, radius, 90);
                 DrawText(drawingContext, FormatTickValue(value), new Point(labelPoint.X + 6, labelPoint.Y - 8), LabelBrush, 11, centered: false);
             }
 
@@ -178,10 +178,11 @@ namespace Conoscope
 
         private static Point ToScreenPoint(Point center, double radius, double angleDegrees)
         {
+            // Use a compass-style polar display: 0° at the top, increasing clockwise.
             double radians = angleDegrees * Math.PI / 180.0;
             return new Point(
-                center.X + radius * Math.Cos(radians),
-                center.Y - radius * Math.Sin(radians));
+                center.X + radius * Math.Sin(radians),
+                center.Y - radius * Math.Cos(radians));
         }
 
         private static double NormalizeAngle(double angleDegrees)

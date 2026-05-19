@@ -16,7 +16,7 @@ namespace Conoscope
         private string? captureExposureSummary;
 
         public bool HasCaptureExposureSummary => !string.IsNullOrWhiteSpace(captureExposureSummary);
-        public string CaptureExposureSummary => captureExposureSummary ?? "未记录";
+        public string CaptureExposureSummary => captureExposureSummary ?? Properties.Resources.StatusNotRecorded;
 
         public void OpenConoscope(string filename, string? exposureSummary = null)
         {
@@ -36,11 +36,12 @@ namespace Conoscope
 
                 RefreshDisplayedImage();
                 SyncCieWindowFromCurrentPointer();
+                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
                 log.Error($"打开Conoscope图像失败: {ex.Message}", ex);
-                MessageBox.Show($"打开图像失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgOpenImageFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -53,6 +54,7 @@ namespace Conoscope
             XMat = xMat;
             YMat = yMat;
             ZMat = zMat;
+            captureExposureSummary ??= data.ExposureSummary;
             ClampNonPositiveXyzValuesIfEnabled();
 
             log.Info($"已加载 CVCIE XYZ 数据: {data.Width}x{data.Height}, Bpp={data.BitsPerPixel}");

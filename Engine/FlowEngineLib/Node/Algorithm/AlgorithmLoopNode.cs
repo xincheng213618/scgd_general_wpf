@@ -66,7 +66,7 @@ public class AlgorithmLoopNode : CVBaseLoopServerNode<AlgorithmNodeProperty>
 	protected override object getBaseEventData(CVStartCFC start, AlgorithmNodeProperty property)
 	{
 		int masterId = -1;
-		AlgorithmType algorithmType = (AlgorithmType)Enum.Parse(typeof(AlgorithmType), property.AlgorithmType, ignoreCase: true);
+		AlgorithmType algorithmType = Enum.Parse<AlgorithmType>(property.AlgorithmType, ignoreCase: true);
 		setAlgorithmType(algorithmType);
 		AlgorithmParam obj = new AlgorithmParam
 		{

@@ -54,22 +54,7 @@ namespace ColorVision.Engine.Services
         {
             WindowServiceConfig = WindowServiceConfig.Instance;
             this.DataContext = this;
-            int i = WindowServiceConfig.Instance.ShowType2;
-            switch (i % 3)
-            {
-                case 0:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
-                    break;
-                case 1:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    break;
-                case 2:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    break;
-                default:
-                    break;
-            }
-            ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+            ApplyServiceListMode();
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -93,32 +78,39 @@ namespace ColorVision.Engine.Services
 
         }
 
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void ButtonToggleList_Click(object sender, RoutedEventArgs e)
         {
-            WindowServiceConfig.Instance.ShowType2 = (WindowServiceConfig.Instance.ShowType2 +1) % 3;
-            switch (WindowServiceConfig.Instance.ShowType2)
+            WindowServiceConfig.Instance.ShowType2 = (WindowServiceConfig.Instance.ShowType2 + 1) % 3;
+            ApplyServiceListMode();
+        }
+
+        private void ApplyServiceListMode()
+        {
+            int showType = ((WindowServiceConfig.Instance.ShowType2 % 3) + 3) % 3;
+            WindowServiceConfig.Instance.ShowType2 = showType;
+            StackPanelShow.Children.Clear();
+
+            switch (showType)
             {
                 case 0:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
-                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+                    ListModeText.Text = Properties.Resources.Type;
                     break;
                 case 1:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+                    ListModeText.Text = "终端";
                     break;
                 case 2:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+                    ListModeText.Text = "设备";
                     break;
                 default:
+                    TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
+                    ListModeText.Text = "设备";
                     break;
             }
-        }
 
-        private void ButtonLicenseManager_Click(object sender, RoutedEventArgs e)
-        {
-            new LicenseManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }
 
         private void ButtonPhyCameraManager_Click(object sender, RoutedEventArgs e)
@@ -141,11 +133,6 @@ namespace ColorVision.Engine.Services
             window.Content = frame;
             frame.Navigate(new Archive.Dao.ArchivePage(frame));
             window.ShowDialog();
-        }
-
-        private void ButtonFlowManager_Click(object sender, RoutedEventArgs e)
-        {
-            new FlowEngineToolWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void ButtonCacheSetting_Click(object sender, RoutedEventArgs e)

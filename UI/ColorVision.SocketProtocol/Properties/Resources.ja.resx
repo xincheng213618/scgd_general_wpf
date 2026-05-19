@@ -142,7 +142,7 @@
     <value>開ける</value>
   </data>
   <data name="ClearMessages" xml:space="preserve">
-    <value>明確なメッセージ</value>
+    <value>メッセージをクリア</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>設定</value>

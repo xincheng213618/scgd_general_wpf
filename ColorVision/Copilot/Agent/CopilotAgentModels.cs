@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
@@ -64,6 +65,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotAttachmentItem> Attachments { get; init; } = Array.Empty<CopilotAttachmentItem>();
 
+        public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
+
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
@@ -90,6 +93,64 @@ namespace ColorVision.Copilot
         public string ErrorMessage { get; init; } = string.Empty;
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+    }
+
+    public sealed class CopilotToolCall
+    {
+        public string ToolName { get; init; } = string.Empty;
+
+        public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
+
+        public string Reason { get; init; } = string.Empty;
+
+        public bool IsFallback { get; init; }
+
+        public static CopilotToolCall FromPlan(CopilotAgentPlan? plan, string? toolNameOverride = null)
+        {
+            return new CopilotToolCall
+            {
+                ToolName = string.IsNullOrWhiteSpace(toolNameOverride)
+                    ? plan?.ToolName ?? string.Empty
+                    : toolNameOverride,
+                ToolInput = plan?.ToolInput ?? CopilotAgentToolInput.Empty,
+                Reason = plan?.Reason ?? string.Empty,
+                IsFallback = plan?.IsFallback ?? false,
+            };
+        }
+    }
+
+    public sealed class CopilotToolObservation
+    {
+        public bool Success { get; init; }
+
+        public string Summary { get; init; } = string.Empty;
+
+        public string Content { get; init; } = string.Empty;
+
+        public string ErrorMessage { get; init; } = string.Empty;
+
+        public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public static CopilotToolObservation FromResult(CopilotToolResult? result)
+        {
+            return new CopilotToolObservation
+            {
+                Success = result?.Success ?? false,
+                Summary = result?.Summary ?? string.Empty,
+                Content = result?.Content ?? string.Empty,
+                ErrorMessage = result?.ErrorMessage ?? string.Empty,
+                SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
+            };
+        }
+    }
+
+    public sealed class CopilotAgentStepRecord
+    {
+        public int Round { get; init; }
+
+        public CopilotToolCall ToolCall { get; init; } = new();
+
+        public CopilotToolObservation Observation { get; init; } = new();
     }
 
     public enum CopilotAgentEventType
@@ -181,6 +242,8 @@ namespace ColorVision.Copilot
     public sealed class CopilotAgentRunResult
     {
         public string PreparedUserMessageContent { get; init; } = string.Empty;
+
+        public IReadOnlyList<CopilotAgentStepRecord> StepRecords { get; init; } = Array.Empty<CopilotAgentStepRecord>();
 
         public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
     }

@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:Conoscope.Properties"
         mc:Ignorable="d"
-        Title="Conoscope 设置" Height="640" Width="720"
+        Title="{x:Static properties:Resources.TitleConoscopeSettings}" Height="640" Width="720"
         MinHeight="520" MinWidth="620"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource GlobalBackground}">
@@ -21,7 +22,7 @@
                 <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="当前型号" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="{x:Static properties:Resources.LabelCurrentModel}" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <ComboBox x:Name="cbCurrentModel" Grid.Column="1" MinHeight="28" SelectionChanged="cbCurrentModel_SelectionChanged"/>
         </Grid>
 
@@ -39,20 +40,20 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <GroupBox Header="全局设置" Grid.Row="0">
+                <GroupBox Header="{x:Static properties:Resources.GroupBoxGlobalSettings}" Grid.Row="0">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <ContentControl x:Name="GlobalSettingsHost" Margin="8"/>
                     </ScrollViewer>
                 </GroupBox>
 
-                <GroupBox Header="预处理设置" Grid.Row="2">
+                <GroupBox Header="{x:Static properties:Resources.GroupBoxPreprocessSettings}" Grid.Row="2">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <ContentControl x:Name="PreprocessSettingsHost" Margin="8"/>
                     </ScrollViewer>
                 </GroupBox>
             </Grid>
 
-            <GroupBox Header="型号参数" Grid.Column="2">
+            <GroupBox Header="{x:Static properties:Resources.GroupBoxModelParams}" Grid.Column="2">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ContentControl x:Name="ModelProfileHost" Margin="8"/>
                 </ScrollViewer>
@@ -60,7 +61,7 @@
         </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="关闭" Width="88" Height="30" IsDefault="True" Click="btnClose_Click"/>
+            <Button Content="{x:Static properties:Resources.BtnClose}" Width="88" Height="30" IsDefault="True" Click="btnClose_Click"/>
         </StackPanel>
     </Grid>
 </Window>

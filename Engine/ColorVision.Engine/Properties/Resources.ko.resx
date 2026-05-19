@@ -135,9 +135,6 @@
   <data name="ViewReceivedData" xml:space="preserve">
     <value>승인 데이터 보기</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>이미지 데이터 파일</value>
-  </data>
   <data name="Video" xml:space="preserve">
     <value>비디오 모드</value>
   </data>
@@ -173,9 +170,6 @@
   </data>
   <data name="TesConnection" xml:space="preserve">
     <value>연결 테스트</value>
-  </data>
-  <data name="TemplateName" xml:space="preserve">
-    <value>템플릿 이름</value>
   </data>
   <data name="TemplateManagementWindow" xml:space="preserve">
     <value>템플릿 관리 창</value>
@@ -313,7 +307,7 @@
     <value>프로젝트 열기</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>열려 있는</value>
+    <value>열기</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>
@@ -394,7 +388,7 @@
     <value>이름 바꾸기(_M)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>우려사항 템플릿 설정(P)</value>
+    <value>POI 템플릿 설정(P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>물리적 카메라 관리(_P)</value>
@@ -460,16 +454,16 @@
     <value>알고리즘(A)</value>
   </data>
   <data name="Manager" xml:space="preserve">
-    <value>관리하다</value>
+    <value>관리</value>
   </data>
   <data name="Male" xml:space="preserve">
     <value>남성</value>
   </data>
   <data name="Local" xml:space="preserve">
-    <value>현지의</value>
+    <value>로컬</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>짐</value>
+    <value>로딩 중</value>
   </data>
   <data name="LicenseManagement" xml:space="preserve">
     <value>라이선스 관리</value>
@@ -490,10 +484,10 @@
     <value>정보</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
-    <value>수입 라이센스</value>
+    <value>라이선스 가져오기</value>
   </data>
   <data name="Import" xml:space="preserve">
-    <value>수입</value>
+    <value>가져오기</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>이미지 소스</value>
@@ -505,16 +499,16 @@
     <value>이미지 파일</value>
   </data>
   <data name="Host" xml:space="preserve">
-    <value>주인</value>
+    <value>호스트</value>
   </data>
   <data name="HistoryCache" xml:space="preserve">
     <value>히스토리 캐시</value>
   </data>
   <data name="GhostShadow" xml:space="preserve">
-    <value>귀신</value>
+    <value>고스트</value>
   </data>
   <data name="Gain" xml:space="preserve">
-    <value>얻다</value>
+    <value>게인</value>
   </data>
   <data name="FocusPoint" xml:space="preserve">
     <value>초점</value>
@@ -526,7 +520,7 @@
     <value>필터</value>
   </data>
   <data name="File" xml:space="preserve">
-    <value>문서</value>
+    <value>파일</value>
   </data>
   <data name="Female" xml:space="preserve">
     <value>여성</value>
@@ -572,9 +566,6 @@
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
     <value>다운로드가 취소되었습니다</value>
-  </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE 이미지 데이터 영역</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
     <value>장치 이름</value>
@@ -622,7 +613,7 @@
     <value>장치 만들기</value>
   </data>
   <data name="Create" xml:space="preserve">
-    <value>만들다</value>
+    <value>생성</value>
   </data>
   <data name="CopySerialNumber" xml:space="preserve">
     <value>일련번호 복사</value>
@@ -646,7 +637,7 @@
     <value>ColorVision 업데이터</value>
   </data>
   <data name="Code" xml:space="preserve">
-    <value>암호</value>
+    <value>코드</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>닫기</value>
@@ -658,7 +649,7 @@
     <value>캐시 지우기</value>
   </data>
   <data name="Clear" xml:space="preserve">
-    <value>분명한</value>
+    <value>지우기</value>
   </data>
   <data name="Chart" xml:space="preserve">
     <value>차트</value>
@@ -667,13 +658,13 @@
     <value>변경 로그</value>
   </data>
   <data name="Capture" xml:space="preserve">
-    <value>포착</value>
+    <value>캡처</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>취소</value>
   </data>
   <data name="Calibration" xml:space="preserve">
-    <value>구경 측정</value>
+    <value>교정</value>
   </data>
   <data name="Calculate" xml:space="preserve">
     <value>계산하다</value>
@@ -692,9 +683,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>별명</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>유형</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>고급 검색</value>
@@ -856,13 +844,10 @@
     <value>기기 오프라인</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>우려 사항 템플릿</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>포커스 관련 알고리즘 템플릿 설정</value>
+    <value>POI 템플릿</value>
   </data>
   <data name="Service" xml:space="preserve">
-    <value>제공하다</value>
+    <value>서비스</value>
   </data>
   <data name="RefreshDeviceList" xml:space="preserve">
     <value>장치 목록 새로 고침</value>
@@ -883,7 +868,7 @@
     <value>평균 횟수</value>
   </data>
   <data name="Flip" xml:space="preserve">
-    <value>튀기다</value>
+    <value>뒤집기</value>
   </data>
   <data name="UseHDR" xml:space="preserve">
     <value>HDR 활성화</value>
@@ -895,13 +880,13 @@
     <value>복원 지점이 성공적으로 생성되었습니다.</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>NDPort 조정</value>
+    <value>NDPort 변경</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>자동 초점</value>
   </data>
   <data name="Move" xml:space="preserve">
-    <value>이동하다</value>
+    <value>이동</value>
   </data>
   <data name="AbsolutePosition" xml:space="preserve">
     <value>절대 위치</value>
@@ -934,7 +919,7 @@
     <value>자동 장치 연결</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>응용 프로그램 매개 변수</value>
+    <value>설정 적용</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>파일 캐시:</value>
@@ -952,7 +937,7 @@
     <value>프로세스 템플릿</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>쿼리 결과</value>
+    <value>검색 결과</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>프로세스 결과 관리</value>
@@ -961,7 +946,7 @@
     <value>파싱 관리</value>
   </data>
   <data name="Parsing" xml:space="preserve">
-    <value>분석</value>
+    <value>파싱</value>
   </data>
   <data name="Camera" xml:space="preserve">
     <value>카메라</value>
@@ -976,25 +961,25 @@
     <value>자동 초점 템플릿</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>포커스 관련 알고리즘 템플릿 설정</value>
+    <value>POI 템플릿 설정</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
     <value>POI 필터 템플릿 설정</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>POI 수정 템플릿 설정</value>
+    <value>POI 보정 템플릿 설정</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>애플리케이션 속성 템플릿</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Poi 레이아웃 템플릿 설정</value>
+    <value>POI 레이아웃 템플릿 설정</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>POI 분석</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>AA 지역을 찾고 있습니다</value>
+    <value>AA 영역 검출</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
     <value>POI 파일 출력 템플릿 설정</value>
@@ -1060,7 +1045,7 @@
     <value>색온도 파장</value>
   </data>
   <data name="DataDirectory" xml:space="preserve">
-    <value>데이터 카탈로그</value>
+    <value>데이터 디렉터리</value>
   </data>
   <data name="PortAddress" xml:space="preserve">
     <value>포트 주소</value>
@@ -1143,9 +1128,6 @@
   <data name="SeviceClosed" xml:space="preserve">
     <value>서비스가 중단되었습니다.</value>
   </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>데이터 디렉토리 서비스 구성</value>
-  </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>서비스 캐싱</value>
   </data>
@@ -1180,10 +1162,10 @@
     <value>전원 끄기</value>
   </data>
   <data name="Up" xml:space="preserve">
-    <value>우수한</value>
+    <value>위</value>
   </data>
   <data name="Down" xml:space="preserve">
-    <value>아래에</value>
+    <value>아래</value>
   </data>
   <data name="Switch" xml:space="preserve">
     <value>스위치</value>
@@ -1204,7 +1186,7 @@
     <value>명령 보내기</value>
   </data>
   <data name="RevCmd" xml:space="preserve">
-    <value>반환 지침</value>
+    <value>수신 명령</value>
   </data>
   <data name="SensorCfgInfo" xml:space="preserve">
     <value>센서 구성 정보</value>
@@ -1270,7 +1252,7 @@
     <value>파일 구성</value>
   </data>
   <data name="CalibrationFile" xml:space="preserve">
-    <value>정정 문서</value>
+    <value>교정 파일</value>
   </data>
   <data name="CameraType" xml:space="preserve">
     <value>카메라 모델</value>
@@ -1381,10 +1363,10 @@
     <value>최대 이득</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>기본값 노출</value>
+    <value>기본 노출 시간</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
-    <value>최소 노출</value>
+    <value>최소 노출 시간</value>
   </data>
   <data name="MaxExpTime" xml:space="preserve">
     <value>최대 노출</value>
@@ -1399,13 +1381,13 @@
     <value>그룹 삭제</value>
   </data>
   <data name="ExportCalibration" xml:space="preserve">
-    <value>수출 정정</value>
+    <value>교정 내보내기</value>
   </data>
   <data name="CreateCalibration" xml:space="preserve">
-    <value>수정을 생성하세요</value>
+    <value>교정 생성</value>
   </data>
   <data name="ExpTime" xml:space="preserve">
-    <value>노출</value>
+    <value>노출 시간</value>
   </data>
   <data name="Focus" xml:space="preserve">
     <value>초점거리</value>
@@ -1417,7 +1399,7 @@
     <value>선택된</value>
   </data>
   <data name="DarkNoise" xml:space="preserve">
-    <value>어두운 소음</value>
+    <value>다크 노이즈</value>
   </data>
   <data name="DefectPoint" xml:space="preserve">
     <value>결함</value>
@@ -1429,28 +1411,28 @@
     <value>왜곡</value>
   </data>
   <data name="Uniformity" xml:space="preserve">
-    <value>균일한 필드</value>
+    <value>균일도</value>
   </data>
   <data name="ColorDiff" xml:space="preserve">
-    <value>색상 차이</value>
+    <value>색차</value>
   </data>
   <data name="Brightness" xml:space="preserve">
     <value>명도</value>
   </data>
   <data name="OneColor" xml:space="preserve">
-    <value>단색화</value>
+    <value>단색</value>
   </data>
   <data name="FourColor" xml:space="preserve">
-    <value>사색</value>
+    <value>4색</value>
   </data>
   <data name="MultiColor" xml:space="preserve">
     <value>다색</value>
   </data>
   <data name="CalibrationFileManagement" xml:space="preserve">
-    <value>수정 파일 관리</value>
+    <value>교정 파일 관리</value>
   </data>
   <data name="UploadCalibrationGroup" xml:space="preserve">
-    <value>수정 그룹 업로드</value>
+    <value>교정 그룹 업로드</value>
   </data>
   <data name="CalibrationGroupManagement" xml:space="preserve">
     <value>교정 그룹 관리</value>
@@ -1462,13 +1444,13 @@
     <value>교정 매개변수 설정</value>
   </data>
   <data name="EditCalibration" xml:space="preserve">
-    <value>수정 파일 편집</value>
+    <value>교정 파일 편집</value>
   </data>
   <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
     <value>보정을 사용하기 전에 해당 물리적 카메라를 구성하세요.</value>
   </data>
   <data name="CalibrationViewSettings" xml:space="preserve">
-    <value>올바른 뷰 구성</value>
+    <value>교정 뷰 설정</value>
   </data>
   <data name="ShowList" xml:space="preserve">
     <value>목록 보기</value>
@@ -1561,10 +1543,10 @@
     <value>최신 이미지를 가져옵니다</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>주의를 기울이다</value>
+    <value>POI 저장</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>명확한 초점</value>
+    <value>POI 지우기</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>다시 렌더링</value>
@@ -1597,19 +1579,19 @@
     <value>글로벌 캐시로 설정</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>애플리케이션 캐싱</value>
+    <value>캐시 적용</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
     <value>빛나는 영역의 네 모서리 점을 활성화합니다.</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>유통지역 표시</value>
+    <value>레이아웃 영역 표시</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>중심점</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>유통 구역 설정</value>
+    <value>레이아웃 영역 설정</value>
   </data>
   <data name="Count" xml:space="preserve">
     <value>수량</value>
@@ -1618,16 +1600,16 @@
     <value>각도</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>빛나는 영역을 찾으세요</value>
+    <value>발광 영역 검출</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>가득한</value>
+    <value>영역 채우기</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>너비</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>높은</value>
+    <value>높이</value>
   </data>
   <data name="RowCount" xml:space="preserve">
     <value>줄의 수</value>
@@ -1645,7 +1627,7 @@
     <value>오른쪽</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>보여주다</value>
+    <value>표시</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
     <value>세분화 설정</value>
@@ -1663,19 +1645,19 @@
     <value>값</value>
   </data>
   <data name="Circle" xml:space="preserve">
-    <value>둥근</value>
+    <value>원</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>포커스 편집기</value>
+    <value>POI 편집기</value>
   </data>
   <data name="Rect" xml:space="preserve">
-    <value>구형</value>
+    <value>사각형</value>
   </data>
   <data name="Draw" xml:space="preserve">
     <value>그리다</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>초점 설정</value>
+    <value>POI 설정</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam 설정</value>
@@ -1696,10 +1678,10 @@
     <value>3채널</value>
   </data>
   <data name="Absolute" xml:space="preserve">
-    <value>순수한</value>
+    <value>절대</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>비교적</value>
+    <value>상대</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>파장</value>
@@ -1711,7 +1693,7 @@
     <value>절대 스펙트럼</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>현재의(mA)</value>
+    <value>전류(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>전압(_V)</value>
@@ -1735,10 +1717,10 @@
     <value>시작</value>
   </data>
   <data name="End" xml:space="preserve">
-    <value>마치다</value>
+    <value>종료</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>전철기</value>
+    <value>포인트 수</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>회로망</value>
@@ -1750,7 +1732,7 @@
     <value>측정 속성</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>원래 값</value>
+    <value>시작 값</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>전류 곡선</value>
@@ -1816,10 +1798,10 @@
     <value>실행에 실패했습니다</value>
   </data>
   <data name="Opening" xml:space="preserve">
-    <value>열기</value>
+    <value>열리는 중</value>
   </data>
   <data name="Closing" xml:space="preserve">
-    <value>닫은</value>
+    <value>닫히는 중</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
     <value>쿼리 수</value>
@@ -1828,7 +1810,7 @@
     <value>유형별로 정렬</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>POI에 생성</value>
+    <value>POI로 생성</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>폴더에서 파일을 선택하세요</value>
@@ -1864,7 +1846,7 @@
     <value>데이터 열 표시</value>
   </data>
   <data name="Operation" xml:space="preserve">
-    <value>작동하다</value>
+    <value>작업</value>
   </data>
   <data name="OpenFailed" xml:space="preserve">
     <value>열 수 없습니다</value>
@@ -1882,7 +1864,7 @@
     <value>저장 유형</value>
   </data>
   <data name="POIFile" xml:space="preserve">
-    <value>문서에 초점 맞추기</value>
+    <value>POI 파일</value>
   </data>
   <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
     <value>색온도 파장 계산</value>
@@ -1955,12 +1937,6 @@
   </data>
   <data name="TemplateFailed" xml:space="preserve">
     <value>템플릿이 실패했습니다</value>
-  </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>현재 논리적 카메라 라이선스가 만료되어 장치 목록을 새로 고칠 수 없습니다. 현재 카메라 서비스에 바인딩된 물리적 카메라를 삭제한 후 다시 시도하시겠습니까?</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>현재 논리적 카메라가 오프라인 상태이므로 장치 목록을 새로 고칠 수 없습니다. 현재 카메라 서비스에 바인딩된 물리적 카메라를 삭제한 후 다시 시도하시겠습니까?</value>
   </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>현재 기기 카메라 정보</value>
@@ -2062,7 +2038,7 @@
     <value>POI 필터 템플릿 설정</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>"라이트 스트립 테스트 템플릿 관리"</value>
+    <value>라이트 바 검출 템플릿 관리</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR Edge 찾기 템플릿 관리</value>
@@ -2098,7 +2074,7 @@
     <value>이미지 스티칭 템플릿 관리</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>AA 지역 템플릿 관리를 찾고 있습니다</value>
+    <value>AA 영역 검출 템플릿 관리</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>BlackMura 템플릿 관리</value>
@@ -2247,9 +2223,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>선택한 항목 삭제</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>(이름을 바꾸려면 두 번 클릭하세요. 현재는 메모리에만 저장됩니다.)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>처리 클래스</value>
   </data>
@@ -2290,7 +2263,7 @@
     <value>낱낱이 세다</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>주의점을 구성해야 합니다.</value>
+    <value>POI를 설정해야 합니다.</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>내보내기로</value>
@@ -2400,18 +2373,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>기본 저장 경로</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVL 카메라 처리</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVL 배치에서 카메라 데이터만 처리하고 내보냅니다.</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>IVL 스펙트럼 처리</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>IVL 배치에서 스펙트럼 데이터만 처리하고 내보냅니다.</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>LED 스트립</value>
   </data>
@@ -2481,12 +2442,6 @@
   <data name="IsFront" xml:space="preserve">
     <value>전면 패널 활성화</value>
   </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>IV 스캔 처리</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>SMU 스캔 데이터를 처리하고 CSV로 저장하고 IV 곡선을 그립니다.</value>
-  </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>장치 관리자 열기</value>
   </data>
@@ -2533,13 +2488,13 @@
     <value>온라인</value>
   </data>
   <data name="Syncfreq" xml:space="preserve">
-    <value>싱크프리크</value>
+    <value>동기 주파수</value>
   </data>
   <data name="SyncfreqFactor" xml:space="preserve">
-    <value>싱크프리크</value>
+    <value>동기 주파수 계수</value>
   </data>
   <data name="FilterBW" xml:space="preserve">
-    <value>필터BW</value>
+    <value>필터 폭</value>
   </data>
   <data name="IsSyncFrequencyEnabled" xml:space="preserve">
     <value>동기화 주파수 활성화됨</value>

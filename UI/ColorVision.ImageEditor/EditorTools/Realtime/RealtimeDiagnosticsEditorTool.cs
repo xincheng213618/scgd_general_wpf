@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Realtime;
 using System.Windows;
 using System.Windows.Input;
 
@@ -6,10 +7,10 @@ namespace ColorVision.ImageEditor.EditorTools.Realtime
 {
     public sealed class RealtimeDiagnosticsEditorTool : IEditorTool
     {
-        private readonly EditorContext _editorContext;
+        private readonly RealtimeEditorContext _editorContext;
         private RealtimeDiagnosticsWindow? _window;
 
-        public RealtimeDiagnosticsEditorTool(EditorContext editorContext)
+        public RealtimeDiagnosticsEditorTool(RealtimeEditorContext editorContext)
         {
             _editorContext = editorContext;
             Command = new RelayCommand(_ => ShowDiagnostics());
@@ -33,9 +34,9 @@ namespace ColorVision.ImageEditor.EditorTools.Realtime
                 return;
             }
 
-            _window = new RealtimeDiagnosticsWindow(_editorContext.ImageView.Realtime)
+            _window = new RealtimeDiagnosticsWindow(_editorContext.Realtime)
             {
-                Owner = Window.GetWindow(_editorContext.ImageView) ?? Application.Current.MainWindow,
+                Owner = _editorContext.GetOwnerWindow(),
             };
             _window.Closed += (_, _) => _window = null;
             _window.Show();

@@ -1,12 +1,13 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor.Draw;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.EditorTools.Histogram
 {
-    public record class HistogramEditorTool(EditorContext EditorContext) : IEditorTool
+    public record class HistogramEditorTool(DrawEditorContext EditorContext) : IEditorTool
     {
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
         public string? GuidId => "Histogram";

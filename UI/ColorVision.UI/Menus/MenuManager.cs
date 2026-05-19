@@ -21,6 +21,8 @@ namespace ColorVision.UI.Menus
         // ---------------------- 核心变更：多窗口支持 ----------------------
         // 记录 TargetName 对应的 Menu 控件实例
         private readonly Dictionary<string, Menu> _windowMenus = new();
+        // 记录每个窗口的额外类型过滤器，用于精简独立宿主窗口的菜单来源
+        private readonly Dictionary<string, Func<Type, bool>?> _windowMenuTypeFilters = new();
         // 记录每个 Menu 控件最初在 XAML 中定义的原生菜单项备份
         private readonly Dictionary<Menu, List<MenuItem>> _menuBackups = new();
         // ----------------------------------------------------------------
@@ -61,10 +63,20 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public void LoadMenuForWindow(string targetName, Menu targetMenuControl)
         {
+            LoadMenuForWindow(targetName, targetMenuControl, null);
+        }
+
+        /// <summary>
+        /// 核心加载方法：为指定的窗口(TargetName)和具体的 Menu 控件加载菜单，
+        /// 并允许调用方按声明类型进一步过滤菜单来源。
+        /// </summary>
+        public void LoadMenuForWindow(string targetName, Menu targetMenuControl, Func<Type, bool>? typeFilter)
+        {
             EnsureTypeCaches();
 
             // 1. 注册该窗口的 Menu，并备份原生 XAML 菜单项（仅首次）
             _windowMenus[targetName] = targetMenuControl;
+            _windowMenuTypeFilters[targetName] = typeFilter;
             if (!_menuBackups.ContainsKey(targetMenuControl))
             {
                 var backups = targetMenuControl.Items.OfType<MenuItem>().ToList();
@@ -79,10 +91,7 @@ namespace ColorVision.UI.Menus
             targetMenuControl.Items.Clear();
 
             // 2. 获取所有菜单项，并根据 targetName 进行过滤
-            var allItems = GetIMenuItemsFiltered();
-            var windowSpecificItems = allItems.Where(mi =>
-                mi.TargetName == targetName ||
-                mi.TargetName == MenuItemConstants.GlobalTarget).ToList();
+            var windowSpecificItems = GetWindowSpecificItems(targetName, typeFilter);
             // 3. 构建一级菜单
             var rootMenuItems = windowSpecificItems
                 .Where(mi => GetEffectiveOwnerGuid(mi) == MenuItemConstants.Menu)
@@ -141,12 +150,11 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public void RefreshMenuItemsByGuid(string ownerGuid)
         {
-            var allItems = GetIMenuItemsFiltered();
-
             foreach (var kvp in _windowMenus)
             {
                 var targetName = kvp.Key;
                 var targetMenuControl = kvp.Value;
+                _windowMenuTypeFilters.TryGetValue(targetName, out var typeFilter);
 
                 var parentMenuItem = FindMenuItemByGuid(ownerGuid, targetMenuControl.Items);
                 if (parentMenuItem == null) continue; // 当前窗口没有这个菜单节点，跳过
@@ -154,9 +162,7 @@ namespace ColorVision.UI.Menus
                 parentMenuItem.Items.Clear();
 
                 // 仅筛选属于该窗口的菜单项
-                var windowSpecificItems = allItems.Where(mi =>
-                    mi.TargetName == targetName ||
-                    mi.TargetName == MenuItemConstants.GlobalTarget).ToList();
+                var windowSpecificItems = GetWindowSpecificItems(targetName, typeFilter);
 
                 var refreshedItems = windowSpecificItems
                     .Where(mi => GetEffectiveOwnerGuid(mi) == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
@@ -285,23 +291,34 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public List<IMenuItem> GetAllMenuItemsFiltered()
         {
-            return GetIMenuItemsFiltered();
+            return GetIMenuItemsFiltered(null);
         }
 
-        private List<IMenuItem> GetIMenuItemsFiltered()
+        private List<IMenuItem> GetWindowSpecificItems(string targetName, Func<Type, bool>? typeFilter)
         {
-            var allMenuItems = CreateAllMenuItems();
+            var allItems = GetIMenuItemsFiltered(typeFilter);
+            return allItems.Where(mi =>
+                mi.TargetName == targetName ||
+                mi.TargetName == MenuItemConstants.GlobalTarget).ToList();
+        }
+
+        private List<IMenuItem> GetIMenuItemsFiltered(Func<Type, bool>? typeFilter)
+        {
+            var allMenuItems = CreateAllMenuItems(typeFilter);
             var allFilteredGuids = GetAllFilteredGuids(allMenuItems, FilteredGuids);
             return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredGuids.Contains(mi.GuidId)).ToList();
         }
 
-        private List<IMenuItem> CreateAllMenuItems()
+        private List<IMenuItem> CreateAllMenuItems(Func<Type, bool>? typeFilter)
         {
             EnsureTypeCaches();
             var allMenuItems = new List<IMenuItem>(_menuItemTypeCache.Count + _menuItemProviderTypeCache.Count + _menuItemAttributeTypeCache.Count + 16);
 
             foreach (var t in _menuItemTypeCache)
             {
+                if (typeFilter != null && !typeFilter(t))
+                    continue;
+
                 try
                 {
                     if (Activator.CreateInstance(t) is IMenuItem item && item.Command != null)
@@ -315,6 +332,9 @@ namespace ColorVision.UI.Menus
 
             foreach (var t in _menuItemProviderTypeCache)
             {
+                if (typeFilter != null && !typeFilter(t))
+                    continue;
+
                 try
                 {
                     if (Activator.CreateInstance(t) is IMenuItemProvider provider)
@@ -338,6 +358,9 @@ namespace ColorVision.UI.Menus
 
             foreach (var t in _menuItemAttributeTypeCache)
             {
+                if (typeFilter != null && !typeFilter(t))
+                    continue;
+
                 var attr = t.GetCustomAttribute<MenuItemAttribute>(false);
                 if (attr?.Header != null)
                     allMenuItems.Add(new LazyMenuItemAdapter(attr, t));
@@ -372,7 +395,7 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public List<IMenuItem> GetAllMenuItems()
         {
-            return CreateAllMenuItems();
+            return CreateAllMenuItems(null);
         }
 
         /// <summary>

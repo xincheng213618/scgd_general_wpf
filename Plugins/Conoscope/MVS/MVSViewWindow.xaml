@@ -6,9 +6,10 @@
         xmlns:wfCtrl="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:local="clr-namespace:Conoscope.MVS"
         xmlns:wfHost="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+        xmlns:properties="clr-namespace:Conoscope.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MVSViewManager}"
-        Title="MVS相机视图" Height="600" Width="1024" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.TitleMvsCameraView}" Height="600" Width="1024" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -18,9 +19,9 @@
         
         <!-- Menu Bar -->
         <Menu Grid.Row="0">
-            <MenuItem Header="视图">
-                <MenuItem Header="显示功能栏" IsCheckable="True" IsChecked="True" Checked="MenuShowSidePanel_Checked" Unchecked="MenuShowSidePanel_Unchecked"/>
-                <MenuItem Header="显示状态栏" IsCheckable="True" IsChecked="True" Checked="MenuShowStatusBar_Checked" Unchecked="MenuShowStatusBar_Unchecked"/>
+            <MenuItem Header="{x:Static properties:Resources.MenuView}">
+                <MenuItem Header="{x:Static properties:Resources.MenuShowToolbar}" IsCheckable="True" IsChecked="True" Checked="MenuShowSidePanel_Checked" Unchecked="MenuShowSidePanel_Unchecked"/>
+                <MenuItem Header="{x:Static properties:Resources.MenuShowStatusBar}" IsCheckable="True" IsChecked="True" Checked="MenuShowStatusBar_Checked" Unchecked="MenuShowStatusBar_Unchecked"/>
             </MenuItem>
         </Menu>
         
@@ -49,28 +50,28 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-                    <Button x:Name="bnEnum"  Click="bnEnum_Click" Content="查找设备"/>
+                    <Button x:Name="bnEnum"  Click="bnEnum_Click" Content="{x:Static properties:Resources.BtnFindDevice}"/>
                 </DockPanel>
                 <ComboBox  Name="cbDeviceList" Margin="0,0,0,5"/>
 
                     <ComboBox x:Name="cbPixelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedItem="{Binding Config.PixelType}"  Margin="0,0,0,5" Visibility="Collapsed"/>
                 <UniformGrid Columns="2" Margin="0,0,0,5">
-                    <Button x:Name="bnOpen"  Click="bnOpen_Click" Content="打开设备" Margin="0,0,5,0" />
-                    <Button x:Name="bnClose"  Click="bnClose_Click" IsEnabled="False" Content="关闭设备" />
+                    <Button x:Name="bnOpen"  Click="bnOpen_Click" Content="{x:Static properties:Resources.BtnOpenDevice}" Margin="0,0,5,0" />
+                    <Button x:Name="bnClose"  Click="bnClose_Click" IsEnabled="False" Content="{x:Static properties:Resources.BtnCloseDevice}" />
                 </UniformGrid>
 
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
-                    <RadioButton x:Name="bnContinuesMode" Checked="bnContinuesMode_Checked" IsEnabled="False" Content="连续模式" Margin="0,0,5,0" />
-                    <RadioButton x:Name="bnTriggerMode" Checked="bnTriggerMode_Checked" IsEnabled="False" Content="触发模式" />
+                    <RadioButton x:Name="bnContinuesMode" Checked="bnContinuesMode_Checked" IsEnabled="False" Content="{x:Static properties:Resources.RbContinuousMode}" Margin="0,0,5,0" />
+                    <RadioButton x:Name="bnTriggerMode" Checked="bnTriggerMode_Checked" IsEnabled="False" Content="{x:Static properties:Resources.RbTriggerMode}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button x:Name="bnStartGrab" Click="bnStartGrab_Click" IsEnabled="False"  Content="开始采集" Margin="0,0,5,0"/>
-                    <Button x:Name="bnStopGrab" Click="bnStopGrab_Click" IsEnabled="False" Content="停止采集"/>
+                    <Button x:Name="bnStartGrab" Click="bnStartGrab_Click" IsEnabled="False"  Content="{x:Static properties:Resources.BtnStartCapture}" Margin="0,0,5,0"/>
+                    <Button x:Name="bnStopGrab" Click="bnStopGrab_Click" IsEnabled="False" Content="{x:Static properties:Resources.BtnStopCapture}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
-                    <CheckBox x:Name="cbSoftTrigger" Checked="cbSoftTrigger_Checked" IsEnabled="False" Content="软触发"   Margin="0,0,5,0"/>
-                    <Button x:Name="bnTriggerExec" Click="bnTriggerExec_Click" IsEnabled="False" Content="软触发一次" />
+                    <CheckBox x:Name="cbSoftTrigger" Checked="cbSoftTrigger_Checked" IsEnabled="False" Content="{x:Static properties:Resources.ChkSoftTrigger}"   Margin="0,0,5,0"/>
+                    <Button x:Name="bnTriggerExec" Click="bnTriggerExec_Click" IsEnabled="False" Content="{x:Static properties:Resources.BtnSoftTriggerOnce}" />
                 </StackPanel>
 
                     <DockPanel Margin="0,0,0,5">
@@ -81,7 +82,7 @@
                                  Text="{Binding Config.Exposure,StringFormat=F1}"
                                  LostFocus="ExposureTextBox_LostFocus"
                                  PreviewKeyDown="ParameterTextBox_PreviewKeyDown"/>
-                        <TextBlock x:Name="label1" Text="曝光(ms)" />
+                        <TextBlock x:Name="label1" Text="{x:Static properties:Resources.LabelExposureMs}" />
                     </DockPanel>
                 <DockPanel Margin="0,0,0,5">
                         <TextBox x:Name="tbGain"
@@ -90,14 +91,14 @@
                                  Style="{StaticResource TextBox.Small}"
                                  LostFocus="GainTextBox_LostFocus"
                                  PreviewKeyDown="ParameterTextBox_PreviewKeyDown" />
-                    <TextBlock x:Name="label2" Text="增益"/>
+                    <TextBlock x:Name="label2" Text="{x:Static properties:Resources.LabelGain}"/>
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5" Visibility="Collapsed">
                     <TextBox x:Name="tbFrameRate"  DockPanel.Dock="Right" Width="120"  Style="{StaticResource TextBox.Small}"/>
-                    <TextBlock x:Name="label3" Text="帧率"/>
+                    <TextBlock x:Name="label3" Text="{x:Static properties:Resources.LabelFrameRate}"/>
                 </DockPanel>
 
-                <GroupBox Header="测试区域" Margin="0,0,0,5">
+                <GroupBox Header="{x:Static properties:Resources.GroupBoxTestArea}" Margin="0,0,0,5">
                     <StackPanel Margin="4">
                         <DockPanel Margin="0,0,0,4">
                             <ComboBox x:Name="cbGratingDiameter"
@@ -107,15 +108,15 @@
                                       SelectedItem="{Binding Config.SelectedGratingDiameterMillimeters, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       ItemStringFormat="{}{0:g} mm"
                                       SelectionChanged="cbGratingDiameter_SelectionChanged"/>
-                            <TextBlock Text="选择区域" VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Static properties:Resources.LabelSelectArea}" VerticalAlignment="Center"/>
                         </DockPanel>
-                        <Button Content="打开观察相机设置" Command="{Binding EditMVSViewConfigCommand}" Margin="0,0,0,4"/>
+                        <Button Content="{x:Static properties:Resources.BtnOpenObservationSettings}" Command="{Binding EditMVSViewConfigCommand}" Margin="0,0,0,4"/>
                         <TextBlock x:Name="tbGratingOverlayStatus" Foreground="Gray" TextWrapping="Wrap"/>
                     </StackPanel>
                 </GroupBox>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
-                    <Button x:Name="bnGetParam"  Click="bnGetParam_Click" IsEnabled="False" Content="获取参数" Margin="0,0,5,0" />
-                    <Button x:Name="bnSetParam"  Click="bnSetParam_Click" IsEnabled="False" Content="设置参数"/>
+                    <Button x:Name="bnGetParam"  Click="bnGetParam_Click" IsEnabled="False" Content="{x:Static properties:Resources.BtnGetParams}" Margin="0,0,5,0" />
+                    <Button x:Name="bnSetParam"  Click="bnSetParam_Click" IsEnabled="False" Content="{x:Static properties:Resources.BtnSetParams}"/>
                 </StackPanel>
 
             </StackPanel>
@@ -136,7 +137,7 @@
         <StatusBar x:Name="StatusBarBottom" Grid.Row="2">
             <StatusBarItem>
                 <TextBlock>
-                    <Run Text="曝光: "/>
+                    <Run Text="{x:Static properties:Resources.StatusExposure}"/>
                     <Run x:Name="StatusExposureText" Text="{Binding Config.Exposure}"/>
                     <Run Text=" ms"/>
                 </TextBlock>
@@ -144,14 +145,14 @@
             <Separator/>
             <StatusBarItem>
                 <TextBlock>
-                    <Run Text="增益: "/>
+                    <Run Text="{x:Static properties:Resources.StatusGain}"/>
                     <Run x:Name="StatusGainText" Text="--"/>
                 </TextBlock>
             </StatusBarItem>
             <Separator/>
             <StatusBarItem>
                 <TextBlock>
-                    <Run Text="帧率: "/>
+                    <Run Text="{x:Static properties:Resources.StatusFrameRate}"/>
                     <Run x:Name="StatusFrameRateText" Text="--"/>
                     <Run Text=" FPS"/>
                 </TextBlock>
@@ -159,7 +160,7 @@
 
             <StatusBarItem>
                 <TextBlock>
-                    <Run Text="图像数: "/>
+                    <Run Text="{x:Static properties:Resources.StatusImageCount}"/>
                     <Run  Text="{Binding Count}"/>
                 </TextBlock>
             </StatusBarItem>

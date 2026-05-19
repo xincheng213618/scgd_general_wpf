@@ -35,12 +35,13 @@ namespace Conoscope
             try
             {
                 ComboBoxHelper.SelectItemByTag(cbHomeDisplayChannel, state.DisplayChannel.ToString());
+                ComboBoxHelper.SelectItemByTag(cbHomeExportChannel, state.ExportChannel.ToString());
                 ComboBoxHelper.SelectItemByTag(cbHomeReferenceMode, state.ReferenceMode.ToString());
                 tbHomeReferenceValueLabel.Text = state.ReferenceLabel;
                 txtHomeReferenceValue.Text = state.ReferenceValue.ToString("F2", CultureInfo.InvariantCulture);
                 txtHomeReferenceValue.ToolTip = state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                    ? "输入方位角并回车应用"
-                    : $"输入 0-{state.ReferenceMaximum:F2} 的极角并回车应用";
+                    ? Properties.Resources.TipEnterAzimuth
+                    : string.Format(Properties.Resources.TipEnterPolarAngle, state.ReferenceMaximum);
             }
             finally
             {
@@ -99,7 +100,7 @@ namespace Conoscope
 
             ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbHomeDisplayChannel, ExportChannel.Y);
             ActiveView.SetWindowQuickDisplayChannel(channel);
-            SetOperationStatus($"已切换显示通道: {channel}", Brushes.LimeGreen);
+            SetOperationStatus(string.Format(Properties.Resources.MsgChannelSwitched, channel), Brushes.LimeGreen);
         }
 
         private void cbHomeReferenceMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -111,7 +112,29 @@ namespace Conoscope
 
             ConoscopeCoordinateReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(cbHomeReferenceMode, ConoscopeCoordinateReferenceMode.AzimuthLine);
             ActiveView.SetWindowQuickReferenceMode(mode);
-            SetOperationStatus(mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "已切换到方位角直线" : "已切换到极角圆", Brushes.LimeGreen);
+            SetOperationStatus(mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.MsgRefModeSwitchedAzimuth : Properties.Resources.MsgRefModeSwitchedPolar, Brushes.LimeGreen);
+        }
+
+        private void cbHomeExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingHomeQuickControls || !IsInitialized || ActiveView == null)
+            {
+                return;
+            }
+
+            ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbHomeExportChannel, ExportChannel.Y);
+            ActiveView.SetWindowQuickExportChannel(channel);
+            SetOperationStatus(string.Format(Properties.Resources.MsgExportChannelSwitched, channel), Brushes.LimeGreen);
+        }
+
+        private void btnHomeExportAngle_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.ExportAngleMode();
+        }
+
+        private void btnHomeExportCircle_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.ExportCircleMode();
         }
 
         private void txtHomeReferenceValue_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -151,8 +174,8 @@ namespace Conoscope
 
             ActiveView.SetWindowQuickReferenceValue(value);
             SetOperationStatus(state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? $"已设置参考方位角: {value:F2}°"
-                : $"已设置参考极角: {value:F2}°", Brushes.LimeGreen);
+                ? string.Format(Properties.Resources.MsgRefAzimuthSet, value)
+                : string.Format(Properties.Resources.MsgRefPolarSet, value), Brushes.LimeGreen);
         }
     }
 }

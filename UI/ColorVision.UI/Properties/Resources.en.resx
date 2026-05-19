@@ -71,10 +71,10 @@
     <value>_Help</value>
   </data>
   <data name="GlobalMode" xml:space="preserve">
-    <value>GlobalMode</value>
+    <value>Global Mode</value>
   </data>
   <data name="HotkeyNormal" xml:space="preserve">
-    <value>HotkeyNormal</value>
+    <value>Normal</value>
   </data>
   <data name="HotkeyConflict" xml:space="preserve">
     <value>Hotkey Conflict</value>
@@ -92,7 +92,7 @@
     <value>繁體中文 (Traditional Chinese)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
-    <value>UseSystem</value>
+    <value>Follow System</value>
   </data>
   <data name="LanguageResartSign" xml:space="preserve">
     <value>You must restart to apply your new language settings</value>
@@ -128,7 +128,7 @@
     <value>Automatically switch selected views</value>
   </data>
   <data name="HotKeys" xml:space="preserve">
-    <value>HotKeys</value>
+    <value>Hotkeys</value>
   </data>
   <data name="WindowHidden" xml:space="preserve">
     <value>Hide</value>
@@ -143,13 +143,13 @@
     <value>_Log</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>OpenConfigFile</value>
+    <value>Open Configuration File</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
-    <value>OpenConfigFolder</value>
+    <value>Open Configuration Folder</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>OpenLogFolder</value>
+    <value>Open Log Folder</value>
   </data>
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Automatically scroll to the bottom</value>
@@ -218,19 +218,16 @@
     <value>_Close</value>
   </data>
   <data name="IsAutoSelect" xml:space="preserve">
-    <value>IsAutoSelect</value>
+    <value>Auto Select</value>
   </data>
   <data name="MenuRedo" xml:space="preserve">
     <value>_Redo</value>
   </data>
   <data name="SocketBufferSize" xml:space="preserve">
-    <value>SocketBufferSize</value>
+    <value>Socket Buffer Size</value>
   </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>General</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Universal</value>
   </data>
   <data name="PluginName" xml:space="preserve">
     <value>Name</value>
@@ -310,29 +307,8 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>Confirm delete plugin {0}?</value>
   </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>Enable CUDA</value>
-  </data>
   <data name="CheckingCUDASupport" xml:space="preserve">
     <value>Checking CUDA support</value>
-  </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>Configuration Parameters</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>Enable Scheduled Backup</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>Maximum Backup Count</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>Automatically clean old backups when exceeded</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>Configuration file error, has been reset</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>Configuration file restored from recent backup</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
     <value>Failed to restore configuration file</value>
@@ -467,13 +443,13 @@
     <value>Socket Management Window</value>
   </data>
   <data name="SortDefault" xml:space="preserve">
-    <value>SortDefault</value>
+    <value>Default Sort</value>
   </data>
   <data name="SortByName" xml:space="preserve">
-    <value>SortByName</value>
+    <value>Sort by Name</value>
   </data>
   <data name="SortByCategory" xml:space="preserve">
-    <value>SortByCategory</value>
+    <value>Sort by Category</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>
@@ -482,7 +458,7 @@
     <value>Cancel</value>
   </data>
   <data name="PropertyEditorWindow" xml:space="preserve">
-    <value>PropertyEditorWindow</value>
+    <value>Property Editor Window</value>
   </data>
   <data name="Edit" xml:space="preserve">
     <value>Edit</value>

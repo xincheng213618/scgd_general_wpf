@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
         /// <summary>
         /// Find MTF value at a given frequency using linear interpolation.
         /// </summary>
-        private double FindMtfAtFreq(double[] freqAxis, double[] sfrData, double targetFreq)
+        private static double FindMtfAtFreq(double[] freqAxis, double[] sfrData, double targetFreq)
         {
             if (freqAxis == null || sfrData == null || freqAxis.Length != sfrData.Length || sfrData.Length < 2)
                 return double.NaN;
@@ -160,7 +160,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
         /// Find frequency at a given MTF threshold.
         /// Implementation based on find_freq_at_threshold in slanted.cpp
         /// </summary>
-        private double FindFreqAtThreshold(double[] freqAxis, double[] sfrData, double threshold)
+        private static double FindFreqAtThreshold(double[] freqAxis, double[] sfrData, double threshold)
         {
             if (freqAxis == null || sfrData == null || freqAxis.Length != sfrData.Length || sfrData.Length == 0)
                 return 0.0;

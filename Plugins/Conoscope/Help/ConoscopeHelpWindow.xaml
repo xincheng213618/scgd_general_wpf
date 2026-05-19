@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:Conoscope.Properties"
         mc:Ignorable="d"
-        Title="Conoscope 帮助中心"
+        Title="{x:Static properties:Resources.TitleHelpCenter}"
         Height="760"
         Width="1180"
         MinHeight="560"
@@ -53,7 +54,7 @@
                        FontSize="22"
                        FontWeight="SemiBold"
                        Margin="0,0,0,4" />
-            <TextBlock Text="Conoscope 使用 Ribbon 窗口而不是传统菜单栏，因此帮助内容集中在这里。可直接搜索色域、对比度、CIE、3D、导出、预处理、采集等关键词。"
+            <TextBlock Text="{x:Static properties:Resources.HelpDescription}"
                        Style="{StaticResource MutedTextStyle}"
                        TextWrapping="Wrap" />
         </StackPanel>
@@ -83,14 +84,14 @@
                                      Grid.Column="0"
                                      Style="{StaticResource SearchTextBoxStyle}"
                                      TextChanged="SearchBox_TextChanged"
-                                     ToolTip="输入功能名、算法名或术语，例如：色域 / 对比度 / CIE / 关注点" />
+                                     ToolTip="{x:Static properties:Resources.TipSearchHelp}" />
                             <Button Grid.Column="1"
                                     Width="28"
                                     Height="28"
                                     Margin="6,0,6,0"
                                     Click="ClearSearch_Click"
                                     Content="✕"
-                                    ToolTip="清除搜索"
+                                    ToolTip="{x:Static properties:Resources.TipClearSearch}"
                                     Foreground="{DynamicResource GlobalTextBrush}"
                                     Background="{DynamicResource ButtonBackground}"
                                     BorderBrush="{DynamicResource ButtonBorderBrush}" />
@@ -98,11 +99,11 @@
                     </Border>
 
                     <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                        <RadioButton x:Name="FilterAll" Content="全部" Style="{StaticResource FilterButtonStyle}" IsChecked="True" Checked="Filter_Changed" />
-                        <RadioButton x:Name="FilterQuickStart" Content="快速开始" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
-                        <RadioButton x:Name="FilterWorkflow" Content="使用路径" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
-                        <RadioButton x:Name="FilterPrinciple" Content="算法原理" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
-                        <RadioButton x:Name="FilterTerminology" Content="名词解析" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
+                        <RadioButton x:Name="FilterAll" Content="{x:Static properties:Resources.RbAll}" Style="{StaticResource FilterButtonStyle}" IsChecked="True" Checked="Filter_Changed" />
+                        <RadioButton x:Name="FilterQuickStart" Content="{x:Static properties:Resources.RbQuickStart}" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
+                        <RadioButton x:Name="FilterWorkflow" Content="{x:Static properties:Resources.RbUsagePaths}" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
+                        <RadioButton x:Name="FilterPrinciple" Content="{x:Static properties:Resources.RbAlgorithmPrinciples}" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
+                        <RadioButton x:Name="FilterTerminology" Content="{x:Static properties:Resources.RbGlossary}" Style="{StaticResource FilterButtonStyle}" Checked="Filter_Changed" />
                     </WrapPanel>
 
                     <TextBlock x:Name="ItemCountText"
@@ -172,7 +173,7 @@
 
                     <Grid Grid.Row="1">
                         <TextBlock x:Name="PlaceholderText"
-                                   Text="← 请从左侧选择一个帮助主题"
+                                   Text="{x:Static properties:Resources.PlaceholderSelectTopic}"
                                    FontSize="14"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
@@ -204,12 +205,12 @@
             <TextBlock x:Name="tbFooterHint"
                        VerticalAlignment="Center"
                        Style="{StaticResource MutedTextStyle}"
-                       Text="提示：帮助内容现在使用原生 WPF 文档视图显示，颜色和窗口主题保持一致。" />
+                       Text="{x:Static properties:Resources.HintHelpNativeView}" />
             <Button DockPanel.Dock="Right"
                     Width="88"
                     Margin="12,0,0,0"
                     Click="btnClose_Click"
-                    Content="关闭"
+                    Content="{x:Static properties:Resources.BtnClose}"
                     Background="{DynamicResource ButtonBackground}"
                     BorderBrush="{DynamicResource ButtonBorderBrush}"
                     Foreground="{DynamicResource GlobalTextBrush}" />

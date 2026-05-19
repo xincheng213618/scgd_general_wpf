@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             }
             Device.ConfigChanged += (s, e) => Update();
             Update();
-            ComboBoxType.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
+            ComboBoxType.ItemsSource = Enum.GetValues<SensorCmdType>();
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
             DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);

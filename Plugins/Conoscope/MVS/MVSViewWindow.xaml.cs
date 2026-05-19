@@ -70,7 +70,7 @@ namespace Conoscope.MVS
             ImageDisplayHost.Children.Add(imgDisplay);
             imgDisplay.ImageShow.AddOverlayVisual(gratingOverlay);
             imgDisplay.Zoombox1.ContentMatrixChanged += ImageDisplay_ContentMatrixChanged;
-            cbPixelType.ItemsSource = Enum.GetValues(typeof(PixelType));
+            cbPixelType.ItemsSource = Enum.GetValues<PixelType>();
             SelectGratingDiameter(MVSViewManager.Config.SelectedGratingDiameterMillimeters);
             UpdateGratingOverlay();
 
@@ -209,7 +209,7 @@ namespace Conoscope.MVS
             if (imgDisplay.ImageShow.Source == null)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = $"测试区域: {diameterMillimeters:g} mm | 等待图像";
+                tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWaitingForImage, diameterMillimeters);
                 return;
             }
 
@@ -227,7 +227,7 @@ namespace Conoscope.MVS
                 imagePixelDiameter,
                 imgDisplay.Zoombox1.ContentMatrix.M11);
             imgDisplay.ImageShow.TopVisual(gratingOverlay);
-            tbGratingOverlayStatus.Text = $"测试区域: {diameterMillimeters:g} mm | 中心: ({currentModelProfile.ObservationCameraCenterX:F1}, {currentModelProfile.ObservationCameraCenterY:F1})";
+            tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWithCenter, diameterMillimeters, currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
         }
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)
@@ -274,7 +274,7 @@ namespace Conoscope.MVS
                 case MyCamera.MV_E_NETER: errorMsg += " Network error "; break;
             }
 
-            MessageBox.Show(errorMsg, "PROMPT");
+            MessageBox.Show(errorMsg, Properties.Resources.Prompt);
         }
 
         private void DeviceListAcq()
@@ -293,7 +293,7 @@ namespace Conoscope.MVS
             // ch:在窗体列表中显示设备名 | en:Display device name in the form list
             for (int i = 0; i < m_stDeviceList.nDeviceNum; i++)
             {
-                MyCamera.MV_CC_DEVICE_INFO device = (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(m_stDeviceList.pDeviceInfo[i], typeof(MyCamera.MV_CC_DEVICE_INFO));
+                MyCamera.MV_CC_DEVICE_INFO device = Marshal.PtrToStructure<MV_CC_DEVICE_INFO>(m_stDeviceList.pDeviceInfo[i]);
                 string strUserDefinedName = "";
 
                 if (device.nTLayerType == MyCamera.MV_GIGE_DEVICE)
@@ -363,8 +363,7 @@ namespace Conoscope.MVS
 
             // ch:获取选择的设备信息 | en:Get selected device information
             MyCamera.MV_CC_DEVICE_INFO device =
-                (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(m_stDeviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
-                                                              typeof(MyCamera.MV_CC_DEVICE_INFO));
+                Marshal.PtrToStructure<MV_CC_DEVICE_INFO>(m_stDeviceList.pDeviceInfo[cbDeviceList.SelectedIndex]);
 
             // ch:打开设备 | en:Open device
             if (null == m_MyCamera)

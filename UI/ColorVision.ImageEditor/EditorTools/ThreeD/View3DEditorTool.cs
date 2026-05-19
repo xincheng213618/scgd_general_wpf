@@ -1,11 +1,12 @@
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
 {
-    public record class View3DEditorTool(EditorContext EditorContext) : IEditorTool
+    public record class View3DEditorTool(DrawEditorContext EditorContext) : IEditorTool
     {
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
         public string? GuidId => "View3D";

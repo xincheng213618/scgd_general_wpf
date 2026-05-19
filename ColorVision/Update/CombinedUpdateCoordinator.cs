@@ -262,7 +262,7 @@ namespace ColorVision.Update
             {
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
                 string cachedPath = Path.Combine(downloadDir, packageFileName);
-                if (File.Exists(cachedPath))
+                if (AutoUpdater.IsIncrementalPackageFileReady(cachedPath))
                 {
                     applicationPackagePaths[version.ToString()] = cachedPath;
                     completedCount++;
@@ -342,7 +342,7 @@ namespace ColorVision.Update
                 {
                     lock (lockObj)
                     {
-                        if (task.Status == DownloadStatus.Completed)
+                        if (task.Status == DownloadStatus.Completed && AutoUpdater.IsIncrementalPackageFileReady(task.SavePath))
                         {
                             applicationPackagePaths[versionKey] = task.SavePath;
                         }
@@ -372,10 +372,10 @@ namespace ColorVision.Update
                     {
                         if (task.Status == DownloadStatus.Completed)
                         {
-                            if (!string.IsNullOrWhiteSpace(expectedHash) && !MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
+                            if (!MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
                             {
                                 hasFailure = true;
-                                log.Error($"Combined incremental plugin hash mismatch for {item.Plugin.PackageName} v{version}.");
+                                log.Error($"Combined incremental plugin package invalid or hash mismatch for {item.Plugin.PackageName} v{version}.");
                             }
                             else
                             {
@@ -426,36 +426,94 @@ namespace ColorVision.Update
 
             if (applicationPlan != null)
             {
-                context.Items.Add(new UpdatePreviewItem
+                UpdatePreviewItem previewItem = new()
                 {
                     Category = applicationPlan.IsIncremental ? "主体小版本" : "主体大版本",
                     Name = "ColorVision",
+                    SecondaryLabel = applicationPlan.IsIncremental
+                        ? $"{applicationPlan.VersionsToApply.Count} 个主体增量包"
+                        : "完整主体安装包",
                     VersionSummary = $"{applicationPlan.CurrentVersion} -> {applicationPlan.LatestVersion}",
                     Summary = applicationPlan.IsIncremental
                         ? $"将应用 {applicationPlan.VersionsToApply.Count} 个主体增量包"
                         : "将下载完整安装包并按原流程更新主体",
                     DetailText = await BuildApplicationDetailTextAsync(applicationPlan),
+                };
+
+                previewItem.Facts.Add(new UpdatePreviewFact
+                {
+                    Label = "当前版本",
+                    Value = applicationPlan.CurrentVersion.ToString(),
                 });
+                previewItem.Facts.Add(new UpdatePreviewFact
+                {
+                    Label = "目标版本",
+                    Value = applicationPlan.LatestVersion.ToString(),
+                });
+                previewItem.Facts.Add(new UpdatePreviewFact
+                {
+                    Label = "更新方式",
+                    Value = applicationPlan.IsIncremental ? "主体增量包" : "完整安装包",
+                });
+                previewItem.Facts.Add(new UpdatePreviewFact
+                {
+                    Label = applicationPlan.IsIncremental ? "更新包数" : "更新范围",
+                    Value = applicationPlan.IsIncremental
+                        ? applicationPlan.VersionsToApply.Count.ToString()
+                        : "主体完整更新",
+                });
+
+                context.Items.Add(previewItem);
             }
 
             if (pluginPlan?.HasUpdates == true)
             {
                 foreach (CombinedPluginUpdateItem item in pluginPlan.Updates)
                 {
-                    string pluginName = item.Plugin.Name ?? item.Plugin.PackageName ?? "Unknown";
+                    string pluginName = GetPluginDisplayName(item);
                     string currentVersion = item.Plugin.AssemblyVersion?.ToString() ?? "Unknown";
                     string requiresVersion = string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion)
                         ? string.Empty
                         : $"，要求主体 {item.VersionInfo.RequiresVersion}";
 
-                    context.Items.Add(new UpdatePreviewItem
+                    UpdatePreviewItem previewItem = new()
                     {
                         Category = "插件更新",
                         Name = pluginName,
+                        SecondaryLabel = string.IsNullOrWhiteSpace(item.Plugin.PackageName)
+                            ? (item.Plugin.AssemblyName ?? "插件更新包")
+                            : item.Plugin.PackageName,
                         VersionSummary = $"{currentVersion} -> {item.VersionInfo.Version}",
                         Summary = $"{item.Plugin.PackageName}{requiresVersion}",
                         DetailText = BuildPluginDetailText(item),
+                    };
+
+                    previewItem.Facts.Add(new UpdatePreviewFact
+                    {
+                        Label = "插件 ID",
+                        Value = item.Plugin.PackageName ?? "Unknown",
                     });
+                    previewItem.Facts.Add(new UpdatePreviewFact
+                    {
+                        Label = "当前版本",
+                        Value = currentVersion,
+                    });
+                    previewItem.Facts.Add(new UpdatePreviewFact
+                    {
+                        Label = "目标版本",
+                        Value = item.VersionInfo.Version,
+                    });
+
+                    if (!string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion))
+                    {
+                        previewItem.Facts.Add(new UpdatePreviewFact
+                        {
+                            Label = "宿主要求",
+                            Value = item.VersionInfo.RequiresVersion,
+                        });
+                    }
+
+                    context.Items.Add(previewItem);
                 }
             }
 
@@ -495,10 +553,11 @@ namespace ColorVision.Update
                     if (pluginCount > 0)
                     {
                         builder.Append($" 同时检测到 {pluginCount} 个插件更新，本次会一次性下载 {packageCount} 个更新包并一次性应用。");
+                        builder.Append($" 可更新插件：{BuildPluginNamesPreview(pluginPlan!.Updates)}。");
                     }
                     else
                     {
-                        builder.Append($" 本次会下载 {applicationPlan.VersionsToApply.Count} 个主体增量包并一次性应用。");
+                        builder.Append($" 本次会下载 {applicationPlan.VersionsToApply.Count} 个主体增量包并一次性应用，本次不包含插件更新。");
                     }
                 }
                 else
@@ -508,7 +567,8 @@ namespace ColorVision.Update
             }
             else if (pluginPlan?.HasUpdates == true)
             {
-                builder.Append($"检测到 {pluginPlan.Updates.Count} 个插件可更新，本次会一次性下载并批量更新。\n");
+                builder.Append($"检测到 {pluginPlan.Updates.Count} 个插件可更新，本次会一次性下载并批量更新。");
+                builder.Append($" 可更新插件：{BuildPluginNamesPreview(pluginPlan.Updates)}。");
             }
 
             if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
@@ -522,6 +582,29 @@ namespace ColorVision.Update
             }
 
             return builder.ToString();
+        }
+
+        private static string GetPluginDisplayName(CombinedPluginUpdateItem item)
+        {
+            return item.Plugin.Name
+                ?? item.Plugin.PluginInfo?.Name
+                ?? item.Plugin.PackageName
+                ?? item.Plugin.AssemblyName
+                ?? "未命名插件";
+        }
+
+        private static string BuildPluginNamesPreview(IEnumerable<CombinedPluginUpdateItem> items)
+        {
+            List<string> names = items
+                .Select(GetPluginDisplayName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (names.Count <= 4)
+                return string.Join("、", names);
+
+            return $"{string.Join("、", names.Take(4))} 等 {names.Count} 个插件";
         }
 
         private static async Task<string> BuildApplicationDetailTextAsync(AutoUpdatePlan applicationPlan)
@@ -621,7 +704,7 @@ namespace ColorVision.Update
         private static string BuildPluginDetailText(CombinedPluginUpdateItem item)
         {
             StringBuilder builder = new();
-            string pluginName = item.Plugin.Name ?? item.Plugin.PackageName ?? "Unknown";
+            string pluginName = GetPluginDisplayName(item);
 
             builder.AppendLine($"插件：{pluginName}");
             builder.AppendLine($"插件 ID：{item.Plugin.PackageName}");

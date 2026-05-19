@@ -434,6 +434,7 @@ public class STNodeTreeView : Control
 		AllowDrop = true;
 		_Editor = new STNodeEditor();
 		_PropertyGrid = new STNodePropertyGrid();
+		LoadAssembly();
 	}
 
 	private void m_tbx_TextChanged(object sender, EventArgs e)
@@ -542,20 +543,57 @@ public class STNodeTreeView : Control
 		return true;
 	}
 
-	private STNodeTreeCollection AddAssemblyPrivate(string strFile)
+	private int AddAssemblyPrivate(Assembly assembly)
 	{
-		strFile = Path.GetFullPath(strFile);
-		Assembly assembly = Assembly.LoadFrom(strFile);
-		STNodeTreeCollection sTNodeTreeCollection = new STNodeTreeCollection(Path.GetFileNameWithoutExtension(strFile));
-		Type[] types = assembly.GetTypes();
-		foreach (Type type in types)
+		string assemblyName = GetAssemblyName(assembly);
+		STNodeTreeCollection sTNodeTreeCollection = m_items_source[assemblyName];
+		bool isNewAssemblyRoot = sTNodeTreeCollection == null;
+		if (sTNodeTreeCollection == null)
+		{
+			sTNodeTreeCollection = new STNodeTreeCollection(assemblyName)
+			{
+				IsLibraryRoot = true
+			};
+		}
+
+		int count = sTNodeTreeCollection.STNodeCount;
+		foreach (Type type in STNodeTypeRegistry.GetTypes(assembly))
 		{
 			if (!type.IsAbstract && type.IsSubclassOf(m_type_node_base))
 			{
-				AddSTNode(type, sTNodeTreeCollection, sTNodeTreeCollection.Name, bShowException: false);
+				AddSTNode(type, sTNodeTreeCollection, assemblyName, bShowException: false);
 			}
 		}
-		return sTNodeTreeCollection;
+		int addedCount = sTNodeTreeCollection.STNodeCount - count;
+		if (isNewAssemblyRoot && addedCount > 0)
+		{
+			m_items_source[sTNodeTreeCollection.Name] = sTNodeTreeCollection;
+		}
+		return addedCount;
+	}
+
+	private string GetAssemblyName(Assembly assembly)
+	{
+		if (assembly == null)
+		{
+			return "Unknown";
+		}
+		string assemblyName = assembly.GetName().Name;
+		if (!string.IsNullOrEmpty(assemblyName))
+		{
+			return assemblyName;
+		}
+		try
+		{
+			if (!string.IsNullOrEmpty(assembly.Location))
+			{
+				return Path.GetFileNameWithoutExtension(assembly.Location);
+			}
+		}
+		catch
+		{
+		}
+		return "Unknown";
 	}
 
 	private STNodeAttribute GetNodeAttribute(Type stNodeType)
@@ -957,17 +995,30 @@ public class STNodeTreeView : Control
 		return AddSTNode(stNodeType, m_items_source, null, bShowException: true);
 	}
 
+	public int LoadAssembly()
+	{
+		int count = 0;
+		foreach (Assembly assembly in STNodeTypeRegistry.GetAssemblies())
+		{
+			count += AddAssemblyPrivate(assembly);
+		}
+		if (count > 0)
+		{
+			Invalidate();
+		}
+		return count;
+	}
+
 	public int LoadAssembly(string strFile)
 	{
-		strFile = Path.GetFullPath(strFile);
-		STNodeTreeCollection sTNodeTreeCollection = AddAssemblyPrivate(strFile);
-		if (sTNodeTreeCollection.STNodeCount == 0)
+		Assembly assembly = Assembly.LoadFrom(Path.GetFullPath(strFile));
+		STNodeTypeRegistry.LoadAssembly(assembly);
+		int count = AddAssemblyPrivate(assembly);
+		if (count > 0)
 		{
-			return 0;
+			Invalidate();
 		}
-		sTNodeTreeCollection.IsLibraryRoot = true;
-		m_items_source[sTNodeTreeCollection.Name] = sTNodeTreeCollection;
-		return sTNodeTreeCollection.STNodeCount;
+		return count;
 	}
 
 	public void Clear()

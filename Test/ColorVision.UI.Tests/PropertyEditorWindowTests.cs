@@ -86,11 +86,11 @@ public class PropertyEditorWindowTests
     public void PropertySortMode_Enum_HasExpectedValues()
     {
         // Assert that the PropertySortMode enum has all expected values
-        Assert.True(Enum.IsDefined(typeof(PropertySortMode), PropertySortMode.Default));
-        Assert.True(Enum.IsDefined(typeof(PropertySortMode), PropertySortMode.NameAscending));
-        Assert.True(Enum.IsDefined(typeof(PropertySortMode), PropertySortMode.NameDescending));
-        Assert.True(Enum.IsDefined(typeof(PropertySortMode), PropertySortMode.CategoryAscending));
-        Assert.True(Enum.IsDefined(typeof(PropertySortMode), PropertySortMode.CategoryDescending));
+        Assert.True(Enum.IsDefined(PropertySortMode.Default));
+        Assert.True(Enum.IsDefined(PropertySortMode.NameAscending));
+        Assert.True(Enum.IsDefined(PropertySortMode.NameDescending));
+        Assert.True(Enum.IsDefined(PropertySortMode.CategoryAscending));
+        Assert.True(Enum.IsDefined(PropertySortMode.CategoryDescending));
     }
 
 

@@ -8,7 +8,7 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-    [DisplayName("AlgorithmViewConfig")]
+    [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "AlgorithmViewConfig")]
     public class ViewAlgorithmConfig : ViewConfigBase, IConfig
     {
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
@@ -24,38 +24,38 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        [DisplayName("ShowList"), Category("View")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowList"), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
-        [DisplayName("ListHeight"), Category("View")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ListHeight"), Category("View")]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 
-        [DisplayName("ShowSidebar"), Category("Control")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowSidebar"), Category("Control")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 
-        [DisplayName("DataColumSavePath"),PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DataColumSavePath"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; OnPropertyChanged(); } }
         private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
-        [DisplayName("AutoSaveDataColum")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "AutoSaveDataColum")]
         public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; OnPropertyChanged(); } }
         private bool _AutoSaveSideData;
 
-        [DisplayName("AutoSaveRenderedImage")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "AutoSaveRenderedImage")]
         public bool AutoSaveRendering { get => _AutoSaveRendering; set { _AutoSaveRendering = value; OnPropertyChanged(); } }
         private bool _AutoSaveRendering;
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
-        [DisplayName("HistoricalDataQuery")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "HistoricalDataQuery")]
         public int HistoyDay { get => _HistoyDay; set { _HistoyDay = value; OnPropertyChanged(); } }
         private int _HistoyDay = 1;
 
 
-        [DisplayName("ShowSiteInfo")]
+        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowSiteInfo")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string ShowDateFilePath { get => _ShowDateFilePath; set { _ShowDateFilePath = value; OnPropertyChanged(); } }
         private string _ShowDateFilePath;

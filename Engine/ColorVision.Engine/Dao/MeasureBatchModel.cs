@@ -15,7 +15,7 @@ namespace ColorVision.Engine
     }
 
     [SugarTable("t_scgd_measure_batch")]
-    public class MeasureBatchModel : ViewEntity
+    public class MeasureBatchModel : ViewEntity, IInitTables
     {
 
         [SugarColumn(ColumnName = "t_id", IsNullable = true)]
@@ -58,6 +58,24 @@ namespace ColorVision.Engine
         {
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             return Db.Queryable<MeasureBatchModel>().Where(a => a.Code == code).First();
+        }
+
+        public MeasureBatchModel? GetByNameOrCode(string nameOrCode)
+        {
+            if (string.IsNullOrWhiteSpace(nameOrCode)) return null;
+
+            try
+            {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                return Db.Queryable<MeasureBatchModel>()
+                    .Where(a => a.Name == nameOrCode || a.Code == nameOrCode)
+                    .OrderBy(a => a.Id, OrderByType.Desc)
+                    .First();
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

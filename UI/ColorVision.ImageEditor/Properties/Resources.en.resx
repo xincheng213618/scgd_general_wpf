@@ -121,10 +121,10 @@
     <value>Zoom</value>
   </data>
   <data name="ZoomIn" xml:space="preserve">
-    <value>ZoomIn</value>
+    <value>Zoom In</value>
   </data>
   <data name="ZoomOut" xml:space="preserve">
-    <value>ZoomOut</value>
+    <value>Zoom Out</value>
   </data>
   <data name="ZoomNone" xml:space="preserve">
     <value>Original</value>
@@ -145,40 +145,40 @@
     <value>Rotate</value>
   </data>
   <data name="RotateLeft" xml:space="preserve">
-    <value>RotateLeft</value>
+    <value>Rotate Left</value>
   </data>
   <data name="RotateRight" xml:space="preserve">
-    <value>RotateRight</value>
+    <value>Rotate Right</value>
   </data>
   <data name="FlipHorizontal" xml:space="preserve">
-    <value>Flip_Horizontal</value>
+    <value>Flip Horizontal</value>
   </data>
   <data name="FlipVertical" xml:space="preserve">
-    <value>Flip_Vertical</value>
+    <value>Flip Vertical</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
-    <value>Fullscreen</value>
+    <value>Full Screen</value>
   </data>
   <data name="Print" xml:space="preserve">
     <value>Print</value>
   </data>
   <data name="SaveAsImage" xml:space="preserve">
-    <value>screenshot</value>
+    <value>Save as Image</value>
   </data>
   <data name="BitmapScalingMode" xml:space="preserve">
-    <value>BitmapScalingMode</value>
+    <value>Bitmap Scaling Mode</value>
   </data>
   <data name="Invert" xml:space="preserve">
     <value>Invert</value>
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
-    <value>SectionalDrawing</value>
+    <value>Sectional Drawing</value>
   </data>
   <data name="ImageAlgorithm" xml:space="preserve">
-    <value>ImageAlgorithm</value>
+    <value>Image Algorithm</value>
   </data>
   <data name="LineOn" xml:space="preserve">
-    <value>LineOn</value>
+    <value>On Line</value>
   </data>
   <data name="Internal" xml:space="preserve">
     <value>Internal</value>
@@ -193,10 +193,10 @@
     <value>Relative</value>
   </data>
   <data name="ColormapTypes" xml:space="preserve">
-    <value>ColormapTypes</value>
+    <value>Color Map Type</value>
   </data>
   <data name="IsShowText" xml:space="preserve">
-    <value>IsShowText</value>
+    <value>Show Text</value>
   </data>
   <data name="Apply" xml:space="preserve">
     <value>Apply</value>
@@ -205,7 +205,7 @@
     <value>Reload</value>
   </data>
   <data name="IsLayoutUpdated" xml:space="preserve">
-    <value>IsLayoutUpdated</value>
+    <value>Auto Refresh</value>
   </data>
   <data name="IsShowMsg" xml:space="preserve">
     <value>Display message</value>

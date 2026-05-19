@@ -160,7 +160,7 @@ namespace ColorVision.Engine.Batch
             }
         }
 
-        private void SelectedMeta_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void SelectedMeta_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             // Refresh when BatchProcess changes (which may change the config)
             if (e.PropertyName == nameof(BatchProcessMeta.BatchProcess))
@@ -254,7 +254,7 @@ namespace ColorVision.Engine.Batch
             PropertyPanel.Children.Add(border);
         }
 
-        private void AddLabeledText(StackPanel parent, string label, string value)
+        private static void AddLabeledText(StackPanel parent, string label, string value)
         {
             var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
             dock.Children.Add(new TextBlock 
@@ -272,7 +272,7 @@ namespace ColorVision.Engine.Batch
             parent.Children.Add(dock);
         }
 
-        private void AddLabeledTextBox(StackPanel parent, string label, string value, Action<string> onChanged)
+        private static void AddLabeledTextBox(StackPanel parent, string label, string value, Action<string> onChanged)
         {
             var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
             dock.Children.Add(new TextBlock 

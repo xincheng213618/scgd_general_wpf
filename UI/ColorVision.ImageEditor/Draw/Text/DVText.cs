@@ -60,7 +60,7 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         [Browsable(false)]
         public bool IsEditing { get => _IsEditing; set { _IsEditing = value; OnPropertyChanged(); } }
-        private bool _IsEditing = false;
+        private bool _IsEditing;
     }
 
     public class DVText : DrawingVisualBase<TextProperties>, IDrawingVisual, IEditableDrawingVisual, ILayoutScaleDrawingVisual, ICompactInspectorProvider
@@ -71,9 +71,9 @@ namespace ColorVision.ImageEditor.Draw
 
         private TextBox? _editTextBox;
         private Panel? _editHost;
-        private EditorContext? _editorContext;
+        private DrawEditorContext? _editorContext;
         private string _originalText = string.Empty;
-        private bool _isEditing = false;
+        private bool _isEditing;
 
         public DVText()
         {
@@ -341,6 +341,11 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         public void BeginEdit(EditorContext context)
         {
+            BeginEdit(context.DrawEditorContext);
+        }
+
+        public void BeginEdit(DrawEditorContext context)
+        {
             ArgumentNullException.ThrowIfNull(context);
 
             if (_isEditing)
@@ -423,6 +428,11 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         public bool HandleDoubleClick(EditorContext context, Point point)
         {
+            return HandleDoubleClick(context.DrawEditorContext, point);
+        }
+
+        public bool HandleDoubleClick(DrawEditorContext context, Point point)
+        {
             if (GetRect().Contains(point))
             {
                 BeginEdit(context);
@@ -452,7 +462,7 @@ namespace ColorVision.ImageEditor.Draw
         /// <summary>
         /// 开始编辑
         /// </summary>
-        void BeginEdit(EditorContext context);
+        void BeginEdit(DrawEditorContext context);
 
         /// <summary>
         /// 结束编辑
@@ -465,6 +475,6 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         /// <param name="point">点击位置</param>
         /// <returns>是否处理了事件</returns>
-        bool HandleDoubleClick(EditorContext context, Point point);
+        bool HandleDoubleClick(DrawEditorContext context, Point point);
     }
 }

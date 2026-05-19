@@ -6,17 +6,16 @@ using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public abstract class DragDrawingToolBase : IEditorToggleToolBase, ICompactInspectorProvider, IDisposable
+    public abstract class DragDrawingToolBase : DrawEditorToggleToolBase, ICompactInspectorProvider, IDisposable
     {
         private bool _isChecked;
-
-        protected DragDrawingToolBase(EditorContext editorContext)
+        protected DragDrawingToolBase(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
             ToolBarLocal = ToolBarLocal.Draw;
         }
 
-        protected EditorContext EditorContext { get; }
+        protected DrawEditorContext EditorContext { get; }
         protected DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
         protected Zoombox Zoombox => EditorContext.Zoombox;
 

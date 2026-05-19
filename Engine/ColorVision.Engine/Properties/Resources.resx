@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -134,9 +134,6 @@
   </data>
   <data name="ViewReceivedData" xml:space="preserve">
     <value>查看接受数据</value>
-  </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>图像数据文件</value>
   </data>
   <data name="Video" xml:space="preserve">
     <value>视频模式</value>
@@ -394,7 +391,7 @@
     <value>重命名(_M)</value>
   </data>
   <data name="MenuPoi" xml:space="preserve">
-    <value>关注点模板设置(_P)</value>
+    <value>POI模板设置(_P)</value>
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>物理相机管理(_P)</value>
@@ -573,9 +570,6 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>下载已取消</value>
   </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE图像数据区</value>
-  </data>
   <data name="DeviceName" xml:space="preserve">
     <value>设备名称</value>
   </data>
@@ -692,9 +686,6 @@
   </data>
   <data name="Alias" xml:space="preserve">
     <value>别名</value>
-  </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>类型</value>
   </data>
   <data name="AdvanceSearch" xml:space="preserve">
     <value>高级查询</value>
@@ -856,10 +847,7 @@
     <value>设备离线</value>
   </data>
   <data name="PointOfInterestTemplete" xml:space="preserve">
-    <value>关注点模板</value>
-  </data>
-  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>关注点相关算法模板设置</value>
+    <value>POI模板</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>服务</value>
@@ -895,7 +883,7 @@
     <value>还原点创建成功</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>调整NDPort</value>
+    <value>更改NDPort</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>自动聚焦</value>
@@ -934,7 +922,7 @@
     <value>设备自动连接</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
-    <value>应用参数</value>
+    <value>应用设置</value>
   </data>
   <data name="FileCache" xml:space="preserve">
     <value>文件缓存:</value>
@@ -952,7 +940,7 @@
     <value>流程模板</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
-    <value>查询结果</value>
+    <value>搜索结果</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>流程结果管理</value>
@@ -976,31 +964,31 @@
     <value>自动聚焦模板</value>
   </data>
   <data name="POITemplateSettings" xml:space="preserve">
-    <value>关注点相关算法模版设置</value>
+    <value>POI模板设置</value>
   </data>
   <data name="POIFilterTemplateSettings" xml:space="preserve">
     <value>POI过滤模板设置</value>
   </data>
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi修正模板设置</value>
+    <value>POI修正模板设置</value>
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>应用属性模板</value>
   </data>
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
-    <value>Poi布点模板设置</value>
+    <value>POI布点模板设置</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>POI分析</value>
   </data>
   <data name="FindAARegion" xml:space="preserve">
-    <value>寻找AA区</value>
+    <value>AA区域检测</value>
   </data>
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
-    <value>Poi文件输出模板设置</value>
+    <value>POI文件输出模板设置</value>
   </data>
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
-    <value>Poi修正标定参数模板设置</value>
+    <value>POI修正标定参数模板设置</value>
   </data>
   <data name="TemplateMatching" xml:space="preserve">
     <value>模板匹配</value>
@@ -1142,9 +1130,6 @@
   </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>服务已经关闭</value>
-  </data>
-  <data name="DataDirectoryServiceConfig" xml:space="preserve">
-    <value>数据目录服务配置</value>
   </data>
   <data name="ServiceCach" xml:space="preserve">
     <value>服务缓存</value>
@@ -1561,10 +1546,10 @@
     <value>导入最新的图像</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>保存关注点</value>
+    <value>保存POI</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>清空关注点</value>
+    <value>清空POI</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>重渲染</value>
@@ -1594,7 +1579,7 @@
     <value>右下</value>
   </data>
   <data name="SetToGlobalCache" xml:space="preserve">
-    <value>设置到全局缓存</value>
+    <value>设为全局缓存</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
     <value>应用缓存</value>
@@ -1603,7 +1588,7 @@
     <value>启用发光区4个角点</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>布点区域显示</value>
+    <value>显示布点区域</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
     <value>中心点</value>
@@ -1618,10 +1603,10 @@
     <value>角度</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>寻找发光区</value>
+    <value>检测发光区</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>充满</value>
+    <value>填充区域</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>宽度</value>
@@ -1666,7 +1651,7 @@
     <value>圆形</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>关注点编辑</value>
+    <value>POI编辑</value>
   </data>
   <data name="Rect" xml:space="preserve">
     <value>矩形</value>
@@ -1675,7 +1660,7 @@
     <value>绘制</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>关注点设置</value>
+    <value>POI设置</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam设置</value>
@@ -1750,7 +1735,7 @@
     <value>测量属性</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>原值</value>
+    <value>起始值</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
     <value>电流曲线</value>
@@ -1828,7 +1813,7 @@
     <value>按类型排序</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>创建到POI</value>
+    <value>创建为POI</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>在文件夹中选中文件</value>
@@ -1956,12 +1941,6 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>模板失败</value>
   </data>
-  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
-    <value>当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试</value>
-  </data>
-  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
-    <value>当前逻辑相机离线，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试</value>
-  </data>
   <data name="CurrentDeviceCameraInfo" xml:space="preserve">
     <value>当前设备相机信息</value>
   </data>
@@ -2056,7 +2035,7 @@
     <value>已经存在改模板，请修改模板名称</value>
   </data>
   <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
-    <value>Poi文件输出模板设置</value>
+    <value>POI文件输出模板设置</value>
   </data>
   <data name="POIFilterTemplateSetting" xml:space="preserve">
     <value>POI过滤模板设置</value>
@@ -2098,7 +2077,7 @@
     <value>图像拼接模板管理</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
-    <value>寻找AA区模板管理</value>
+    <value>AA区域检测模板管理</value>
   </data>
   <data name="BlackMuraTemplateManagement" xml:space="preserve">
     <value>BlackMura模板管理</value>
@@ -2247,9 +2226,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>删除选中</value>
   </data>
-  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>双击可重命名, 当前仅内存保存)</value>
-  </data>
   <data name="HandleClass" xml:space="preserve">
     <value>处理类</value>
   </data>
@@ -2290,7 +2266,7 @@
     <value>枚举</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
-    <value>需要配置关注点</value>
+    <value>需要配置POI</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
     <value>导出为</value>
@@ -2400,18 +2376,6 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>默认保存路径</value>
   </data>
-  <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVL相机处理</value>
-  </data>
-  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
-    <value>仅处理IVL批次中的Camera数据并导出</value>
-  </data>
-  <data name="IvlSpectralProcessing" xml:space="preserve">
-    <value>IVL光谱处理</value>
-  </data>
-  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
-    <value>仅处理IVL批次中的Spectrum数据并导出</value>
-  </data>
   <data name="LightBar" xml:space="preserve">
     <value>灯条</value>
   </data>
@@ -2480,12 +2444,6 @@
   </data>
   <data name="IsFront" xml:space="preserve">
     <value>启用前面板</value>
-  </data>
-  <data name="IVScanProcessing" xml:space="preserve">
-    <value>IV扫描处理</value>
-  </data>
-  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
-    <value>处理SMU扫描数据，保存到CSV并绘制IV曲线</value>
   </data>
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>打开设备管理器</value>

@@ -43,7 +43,7 @@
     <value>LoopName</value>
   </data>
   <data name="LoopNode" xml:space="preserve">
-    <value>LoopNode</value>
+    <value>循環節點</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
     <value>电压(V)/电流(mA)</value>
@@ -142,7 +142,7 @@
     <value>图像文件</value>
   </data>
   <data name="图像拼接" xml:space="preserve">
-    <value>图像拼接</value>
+    <value>圖像拼接</value>
   </data>
   <data name="图像翻转" xml:space="preserve">
     <value>图像翻转</value>
@@ -226,7 +226,7 @@
     <value>03_3 第三方算法</value>
   </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>Start_MQTT</value>
+    <value>啟動 MQTT</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>实时关注点算法</value>
@@ -262,7 +262,7 @@
     <value>OLED-AOI算法</value>
   </data>
   <data name="通用传感器" xml:space="preserve">
-    <value>通用传感器</value>
+    <value>通用感測器</value>
   </data>
   <data name="03_4 KB" xml:space="preserve">
     <value>03_4 KB</value>
@@ -448,7 +448,7 @@
     <value>值显示HUB</value>
   </data>
   <data name="FixedLEDToFile" xml:space="preserve">
-    <value>FixedLEDToFile</value>
+    <value>固定 LED 到檔案</value>
   </data>
   <data name="逻辑与" xml:space="preserve">
     <value>逻辑与</value>
@@ -526,7 +526,7 @@
     <value>结束值</value>
   </data>
   <data name="滤色轮" xml:space="preserve">
-    <value>滤色轮</value>
+    <value>濾色輪</value>
   </data>
   <data name="光谱仪" xml:space="preserve">
     <value>光谱仪</value>
@@ -616,7 +616,7 @@
     <value>相机参数模板</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
-    <value>LoopNextNode</value>
+    <value>循環下一節點</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>提取</value>
@@ -691,7 +691,7 @@
     <value>输出POI模板</value>
   </data>
   <data name="MessageText" xml:space="preserve">
-    <value>消息内容</value>
+    <value>訊息內容</value>
   </data>
   <data name="OutFile" xml:space="preserve">
     <value>OutFile</value>
@@ -703,7 +703,7 @@
     <value>源表-模板</value>
   </data>
   <data name="ImageCompound" xml:space="preserve">
-    <value>图像拼接</value>
+    <value>圖像拼接</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
     <value>相机+ND</value>
@@ -727,7 +727,7 @@
     <value>FixedLED</value>
   </data>
   <data name="GeneralSensor" xml:space="preserve">
-    <value>通用传感器</value>
+    <value>通用感測器</value>
   </data>
   <data name="自动对焦模板" xml:space="preserve">
     <value>自动对焦模板</value>
@@ -754,7 +754,7 @@
     <value>G 通道曝光时间(ms)</value>
   </data>
   <data name="FilterWheel" xml:space="preserve">
-    <value>滤轮</value>
+    <value>濾色輪</value>
   </data>
   <data name="KB输出" xml:space="preserve">
     <value>KB输出</value>
@@ -836,5 +836,131 @@
   </data>
   <data name="源表[CSV]" xml:space="preserve">
     <value>源表-CSV</value>
+  </data>
+  <data name="等待时间" xml:space="preserve">
+    <value>等待時間</value>
+  </data>
+  <data name="指令延时" xml:space="preserve">
+    <value>指令延遲</value>
+  </data>
+  <data name="指令超时" xml:space="preserve">
+    <value>指令逾時</value>
+  </data>
+  <data name="指令重试" xml:space="preserve">
+    <value>指令重試</value>
+  </data>
+  <data name="提取模板" xml:space="preserve">
+    <value>擷取模板</value>
+  </data>
+  <data name="源表扫描" xml:space="preserve">
+    <value>源表掃描</value>
+  </data>
+  <data name="源表结果" xml:space="preserve">
+    <value>源表結果</value>
+  </data>
+  <data name="图像转换" xml:space="preserve">
+    <value>影像轉換</value>
+  </data>
+  <data name="图像格式" xml:space="preserve">
+    <value>影像格式</value>
+  </data>
+  <data name="图像名称" xml:space="preserve">
+    <value>影像名稱</value>
+  </data>
+  <data name="定位模板" xml:space="preserve">
+    <value>定位模板</value>
+  </data>
+  <data name="修正系数" xml:space="preserve">
+    <value>修正係數</value>
+  </data>
+  <data name="03_3 校正" xml:space="preserve">
+    <value>03_3 校正</value>
+  </data>
+  <data name="保存CIE文件" xml:space="preserve">
+    <value>保存CIE檔案</value>
+  </data>
+  <data name="EndV5Node" xml:space="preserve">
+    <value>EndV5Node</value>
+  </data>
+  <data name="电压" xml:space="preserve">
+    <value>電壓</value>
+  </data>
+  <data name="电流" xml:space="preserve">
+    <value>電流</value>
+  </data>
+  <data name="类型" xml:space="preserve">
+    <value>類型</value>
+  </data>
+  <data name="源值" xml:space="preserve">
+    <value>源值</value>
+  </data>
+  <data name="SelfCheck" xml:space="preserve">
+    <value>灰階255</value>
+  </data>
+  <data name="限量程" xml:space="preserve">
+    <value>限量程</value>
+  </data>
+  <data name="EQE" xml:space="preserve">
+    <value>光譜&amp;EQE</value>
+  </data>
+  <data name="ALL" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="CSV" xml:space="preserve">
+    <value>CSV</value>
+  </data>
+  <data name="TIF" xml:space="preserve">
+    <value>TIF</value>
+  </data>
+  <data name="源量程" xml:space="preserve">
+    <value>源量程</value>
+  </data>
+  <data name="校正2" xml:space="preserve">
+    <value>校正+即時POI</value>
+  </data>
+  <data name="Bit16" xml:space="preserve">
+    <value>Bit16</value>
+  </data>
+  <data name="Black" xml:space="preserve">
+    <value>黑畫面</value>
+  </data>
+  <data name="CV2LVChannel" xml:space="preserve">
+    <value>CV2LV通道</value>
+  </data>
+  <data name="关注点分析_SMU" xml:space="preserve">
+    <value>關注點分析-IVL</value>
+  </data>
+  <data name="自定义电压/流" xml:space="preserve">
+    <value>自訂電壓/電流</value>
+  </data>
+  <data name="自动量程" xml:space="preserve">
+    <value>自動量程</value>
+  </data>
+  <data name="03_3 Image" xml:space="preserve">
+    <value>03_3 影像</value>
+  </data>
+  <data name="色差校正" xml:space="preserve">
+    <value>色差校正</value>
+  </data>
+  <data name="灰尘检测及修补" xml:space="preserve">
+    <value>OLED灰塵檢測及修補</value>
+  </data>
+  <data name="通用传感器-指令" xml:space="preserve">
+    <value>通用感測器-指令</value>
+  </data>
+  <data name="通用传感器-模板" xml:space="preserve">
+    <value>通用感測器-模板</value>
+  </data>
+  <data name="源表扫描-模板" xml:space="preserve">
+    <value>源表掃描-模板</value>
+  </data>
+  <data name="12 第三方算法" xml:space="preserve">
+    <value>12 第三方演算法</value>
+  </data>
+  <data name="StartV5_MQTT" xml:space="preserve">
+    <value>StartV5_MQTT</value>
+  </data>
+  <data name="Bit8" xml:space="preserve">
+    <value>Bit8</value>
   </data>
 </root>

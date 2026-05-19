@@ -7,6 +7,7 @@ using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Layers;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -45,7 +46,9 @@ namespace ColorVision.ImageEditor
         public bool EnableEditorImageServices { get; set; } = true;
         public ImageLayerDescriptor? SelectedLayer { get; private set; }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists => EditorContext.DrawingVisualLists;
+
+        private RealtimeImageViewService? _realtime;
+        public RealtimeImageViewService Realtime => _realtime ??= new RealtimeImageViewService(this);
 
         public event EventHandler ClearImageEventHandler;
         public event EventHandler StatusBarItemsChanged;
@@ -104,8 +107,8 @@ namespace ColorVision.ImageEditor
         {
             _defaultDisplayConfig.PropertyChanged += DefaultDisplayConfig_PropertyChanged;
 
-            EditorContext = new EditorContext(this, ImageShow, Zoombox1);
-            EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
+            EditorContext = new EditorContext(this, ImageShow, Zoombox1, TextEditorOverlay);
+            EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext.DrawEditorContext);
             EditorContext.IEditorToolFactory = new IEditorToolFactory(this, EditorContext);
             EditorContext.CompactInspectorPresenter = new CompactInspectorPresenter(EditorContext);
             EditorContext.CompactInspectorPresenter.Refresh();
@@ -116,7 +119,7 @@ namespace ColorVision.ImageEditor
             ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
             Zoombox1.ContextMenu = EditorContext.ContextMenu;
             Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
-            _crosshair = new Crosshair(EditorContext);
+            _crosshair = new Crosshair(EditorContext.DrawEditorContext);
 
             DataContext = this;
             this.Focusable = true;
@@ -133,7 +136,7 @@ namespace ColorVision.ImageEditor
             Drop += ImageView_Drop;
             Config.ShowTextChanged += (s, e) =>
             {
-                foreach (var drawingVisual in DrawingVisualLists)
+                foreach (var drawingVisual in EditorContext.DrawingVisualLists)
                 {
                     if (drawingVisual.BaseAttribute is ITextProperties textProperties)
                     {
@@ -172,7 +175,7 @@ namespace ColorVision.ImageEditor
             {
                 if (!e)
                 {
-                    foreach (var drawingVisual in DrawingVisualLists)
+                    foreach (var drawingVisual in EditorContext.DrawingVisualLists)
                     {
                         drawingVisual.BaseAttribute.Msg = string.Empty;
                     }
@@ -317,8 +320,11 @@ namespace ColorVision.ImageEditor
             if (ImageEditMode)
             {
                 Point mouseDownPoint = Mouse.GetPosition(ImageShow);
-                Visual mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
-                Type type = mouseVisual.GetType();
+                Visual? mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
+                if (mouseVisual == null)
+                {
+                    return;
+                }
 
                 if (mouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(mouseDownPoint) is ISelectVisual selectVisual)
                 {
@@ -350,7 +356,7 @@ namespace ColorVision.ImageEditor
                 {
                     foreach (var provider in IEditorToolFactory.ContextMenuProviders)
                     {
-                        if (provider.ContextType.IsAssignableFrom(type))
+                        if (provider.ContextType.IsAssignableFrom(mouseVisual.GetType()))
                         {
                             var items = provider.GetContextMenuItems(EditorContext, mouseVisual);
                             foreach (var item in items)
@@ -618,7 +624,7 @@ namespace ColorVision.ImageEditor
 
         public void ClearAnnotations()
         {
-            foreach (Visual visual in DrawingVisualLists.OfType<Visual>().ToList())
+            foreach (Visual visual in EditorContext.DrawingVisualLists.OfType<Visual>().ToList())
             {
                 ImageShow.RemoveVisual(visual);
             }
@@ -626,7 +632,7 @@ namespace ColorVision.ImageEditor
 
         public void ExportAnnotations()
         {
-            List<DrawingVisualBase> visuals = DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
+            List<DrawingVisualBase> visuals = EditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
             if (visuals.Count == 0)
             {
                 MessageBox.Show("当前没有可导出的标注。", "导出标注", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -687,9 +693,9 @@ namespace ColorVision.ImageEditor
 
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
         {
-            if (e.Visual is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && sender is Visual visual1)
+            if (e.Visual is IDrawingVisual visual && !EditorContext.DrawingVisualLists.Contains(visual) && sender is Visual visual1)
             {
-                DrawingVisualLists.Add(visual);
+                EditorContext.DrawingVisualLists.Add(visual);
             }
 
         }
@@ -697,7 +703,7 @@ namespace ColorVision.ImageEditor
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
         {
             if (e.Visual is IDrawingVisual visual)
-                DrawingVisualLists.Remove(visual);
+                EditorContext.DrawingVisualLists.Remove(visual);
         }
 
 
@@ -889,6 +895,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
+            PseudoColorService?.Reset();
             InvalidatePseudoColorRender();
             FunctionImage = null;
             ViewBitmapSource = null;
@@ -1185,7 +1192,7 @@ namespace ColorVision.ImageEditor
             IEditorToolFactory.Dispose();
             EditorContext.MouseInfoProvider.Dispose();
             EditorContext.CompactInspectorPresenter?.Dispose();
-            DrawingVisualLists?.Clear();
+            EditorContext.DrawingVisualLists?.Clear();
             Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             ImageShow.PreviewKeyDown -= HandleKeyDown;
             ImageShow.ContextMenuOpening -= HandleContextMenuOpening;

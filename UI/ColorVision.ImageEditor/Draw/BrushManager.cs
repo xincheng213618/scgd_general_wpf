@@ -356,7 +356,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public BrushManagerConfig Config { get; } = new BrushManagerConfig();
 
-        public BrushManager(EditorContext context) : base(context)
+        public BrushManager(DrawEditorContext context) : base(context)
         {
             Order = 9;
             Icon = new TextBlock { Text = "B" };

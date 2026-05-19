@@ -127,7 +127,7 @@
     <value>儲存配置</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
-    <value>打開設定資料夾</value>
+    <value>開啟設定資料夾</value>
   </data>
   <data name="SetupWizard" xml:space="preserve">
     <value>配置精靈</value>
@@ -151,19 +151,19 @@
     <value>匯出設定</value>
   </data>
   <data name="ImportExportSettings" xml:space="preserve">
-    <value>導入導出設定</value>
+    <value>匯入/匯出設定</value>
   </data>
   <data name="ImportSettings" xml:space="preserve">
-    <value>導入設定</value>
+    <value>匯入設定</value>
   </data>
   <data name="OpenStore" xml:space="preserve">
-    <value>開放商店</value>
+    <value>開啟商店</value>
   </data>
   <data name="InstallPackage" xml:space="preserve">
     <value>安裝包</value>
   </data>
   <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>OpenViewDll版本</value>
+    <value>OpenViewDll 版本</value>
   </data>
   <data name="Restart" xml:space="preserve">
     <value>重啟</value>
@@ -223,7 +223,7 @@
     <value>版本</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
-    <value>跟随系统</value>
+    <value>跟隨系統</value>
   </data>
   <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>更新Log4Net 日誌級別：</value>
@@ -241,7 +241,7 @@
     <value>排序選項</value>
   </data>
   <data name="SortDefault" xml:space="preserve">
-    <value>SortDefault</value>
+    <value>預設排序</value>
   </data>
   <data name="SortByName" xml:space="preserve">
     <value>按名稱排序</value>
@@ -334,7 +334,7 @@
     <value>您必須重新啟動才能使用新的語言設定</value>
   </data>
   <data name="IsAutoSelect" xml:space="preserve">
-    <value>自動選擇嗎</value>
+    <value>自動選擇</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>找到項目{0}，{1}，是否下載</value>

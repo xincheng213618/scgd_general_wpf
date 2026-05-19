@@ -87,7 +87,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
         }
         public UserControl UserControl { get; set; }
 
-        private string UpdateFilePath(string path1,string path2)
+        private static string UpdateFilePath(string path1,string path2)
         {
             
             string full1 = Path.GetFullPath(path1);

@@ -22,7 +22,7 @@ namespace  EventVWR.Dump
             List<MenuItemMetadata> menuItemMetas = new List<MenuItemMetadata>();
             DumpConfig DumpConfig = new DumpConfig();
 
-            foreach (var item in Enum.GetValues(typeof(DumpType)).Cast<DumpType>())
+            foreach (var item in Enum.GetValues<DumpType>().Cast<DumpType>())
             {
                 RelayCommand relayCommand = new RelayCommand(a =>
                 {

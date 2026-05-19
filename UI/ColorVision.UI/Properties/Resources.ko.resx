@@ -143,13 +143,13 @@
     <value>통나무</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>OpenConfigFile</value>
+    <value>구성 파일 열기</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>오픈 구성 폴더</value>
   </data>
   <data name="OpenLogFolder" xml:space="preserve">
-    <value>오픈로그폴더</value>
+    <value>로그 폴더 열기</value>
   </data>
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>자동으로 아래쪽으로 스크롤</value>
@@ -229,9 +229,6 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>일반 설정</value>
   </data>
-  <data name="General" xml:space="preserve">
-    <value>만능인</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>플러그인 이름</value>
   </data>
@@ -310,29 +307,8 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>플러그인 {0}을(를) 삭제하시겠습니까?</value>
   </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>CUDA 활성화</value>
-  </data>
   <data name="CheckingCUDASupport" xml:space="preserve">
     <value>CUDA 지원 확인 중</value>
-  </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>구성 매개변수</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>예약된 백업 활성화</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>최대 백업 수</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>초과 시 이전 백업 자동 정리</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>구성 파일 오류, 재설정되었습니다</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>최근 백업에서 구성 파일을 복원했습니다</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
     <value>구성 파일 복원 실패</value>

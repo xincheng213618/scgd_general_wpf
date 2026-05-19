@@ -1,3 +1,4 @@
+using ColorVision.UI;
 using ColorVision.SocketProtocol;
 using log4net;
 using ProjectARVRPro.Services;
@@ -9,10 +10,34 @@ namespace ProjectARVRPro
     public partial class SocketRelayWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SocketRelayWindow));
+        private static SocketRelayWindow? _window;
         private readonly SocketRelayManager _relayManager = SocketRelayManager.GetInstance();
+        private bool _isInitializing;
+
+        public static void OpenWindow(bool activate)
+        {
+            if (_window == null)
+            {
+                var owner = Application.Current.GetActiveWindow();
+                _window = new SocketRelayWindow
+                {
+                    Owner = owner,
+                    WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner
+                };
+                _window.Closed += (_, _) => _window = null;
+                _window.Show();
+                return;
+            }
+
+            if (activate)
+            {
+                _window.Activate();
+            }
+        }
 
         public SocketRelayWindow()
         {
+            _isInitializing = true;
             InitializeComponent();
             LoadConfig();
             MessageListView.ItemsSource = _relayManager.Messages;
@@ -21,6 +46,7 @@ namespace ProjectARVRPro
             _relayManager.MessageReceived += OnMessageReceived;
             _relayManager.PropertyChanged += OnRelayManagerPropertyChanged;
             SyncUI();
+            _isInitializing = false;
         }
 
         private void LoadConfig()
@@ -28,6 +54,20 @@ namespace ProjectARVRPro
             var config = _relayManager.Config;
             ListenIPTextBox.Text = config.ListenIP;
             ListenPortTextBox.Text = config.ListenPort.ToString();
+            AutoStartCheckBox.IsChecked = config.AutoStart;
+        }
+
+        private void AutoStartCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            bool autoStart = AutoStartCheckBox.IsChecked == true;
+            _relayManager.SetAutoStart(autoStart);
+            ConfigService.Instance.SaveConfigs();
+            UpdateStatus(autoStart ? "已启用自动启动" : "已关闭自动启动");
         }
 
         private void SyncUI()

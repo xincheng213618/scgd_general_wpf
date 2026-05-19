@@ -121,7 +121,7 @@
     <value>만들다</value>
   </data>
   <data name="TaskViewerWindow" xml:space="preserve">
-    <value>태스크뷰어윈도우</value>
+    <value>작업 스케줄러</value>
   </data>
   <data name="CreateTask" xml:space="preserve">
     <value>작업 만들기</value>
@@ -130,10 +130,10 @@
     <value>시작</value>
   </data>
   <data name="PauseAll" xml:space="preserve">
-    <value>일시정지 모두</value>
+    <value>모두 일시 중지</value>
   </data>
   <data name="ResumeAll" xml:space="preserve">
-    <value>이력서 전체보기</value>
+    <value>모두 재개</value>
   </data>
   <data name="Shutdown" xml:space="preserve">
     <value>종료</value>
@@ -157,7 +157,7 @@
     <value>다음 실행 시간</value>
   </data>
   <data name="PreviousFireTime" xml:space="preserve">
-    <value>이전발화시간</value>
+    <value>이전 실행 시간</value>
   </data>
   <data name="Stop" xml:space="preserve">
     <value>정지</value>

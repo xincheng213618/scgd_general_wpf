@@ -186,7 +186,7 @@ namespace ProjectKB
             RecipeDataGrid.Items.Refresh();
 
             SelectedTemplateTextBlock.Text = _selectedRecipeRow.TemplateName;
-            RecipeStatusTextBlock.Text = _selectedRecipeRow.HasLimit ? "当前模板已启用Recipe判定项" : "当前模板未启用任何Recipe判定项，运行时不会做Recipe限制";
+            RecipeStatusTextBlock.Text = _selectedRecipeRow.HasLimit ? "当前模板已配置Recipe判定或背光自动修正项" : "当前模板未配置任何Recipe判定或背光自动修正项";
             RecipeStatusTextBlock.Foreground = _selectedRecipeRow.HasLimit ? FindResource("GlobalTextBrush") as Brush : Brushes.OrangeRed;
         }
 

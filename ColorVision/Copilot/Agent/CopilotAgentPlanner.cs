@@ -50,16 +50,18 @@ namespace ColorVision.Copilot
         private const string PlannerSystemPrompt = "你是 ColorVision Copilot 的内部工具规划器。你的唯一任务是基于当前问题、已有工具观察和当前可用工具，决定下一步应该调用哪个工具，或者直接结束工具阶段。不要回答用户问题，不要输出 Markdown，不要解释额外内容。你必须只输出一个 JSON 对象。";
 
         private readonly CopilotChatService _chatService;
+        private readonly CopilotAgentContextBuilder _contextBuilder;
 
-        public CopilotAgentPlanner(CopilotChatService chatService)
+        public CopilotAgentPlanner(CopilotChatService chatService, CopilotAgentContextBuilder contextBuilder)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
+            _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
         }
 
         public async Task<CopilotAgentPlanResult> PlanNextAsync(
             CopilotAgentRequest request,
             IReadOnlyList<ICopilotTool> availableTools,
-            IReadOnlyList<CopilotToolResult> toolResults,
+            IReadOnlyList<CopilotAgentStepRecord> stepRecords,
             IReadOnlyCollection<string> readableLocalFilePaths,
             CancellationToken cancellationToken)
         {
@@ -84,10 +86,14 @@ namespace ColorVision.Copilot
             plannerProfile.Temperature = 0;
             plannerProfile.MaxTokens = Math.Min(256, Math.Max(128, request.Profile.MaxTokens));
 
-            var prompt = BuildPlannerPrompt(request, availableTools, toolResults, readableLocalFilePaths);
+            var plannerMessages = _contextBuilder.BuildPlannerMessages(
+                request,
+                availableTools,
+                stepRecords ?? Array.Empty<CopilotAgentStepRecord>(),
+                readableLocalFilePaths);
             var response = await _chatService.CompleteReplyAsync(
                 plannerProfile,
-                new[] { new CopilotRequestMessage("user", prompt) },
+                plannerMessages,
                 cancellationToken);
 
             var plannerText = !string.IsNullOrWhiteSpace(response.Content)
@@ -96,7 +102,7 @@ namespace ColorVision.Copilot
 
             return new CopilotAgentPlanResult
             {
-                Plan = ParsePlannerResponse(plannerText, availableTools),
+                Plan = ParsePlannerResponse(request, plannerText, availableTools),
                 Usage = response.Usage,
             };
         }
@@ -111,13 +117,13 @@ namespace ColorVision.Copilot
             builder.AppendLine("你现在要为 Agent 选择下一步动作。只返回 JSON。不要回答用户问题。");
             builder.AppendLine();
             builder.AppendLine("JSON 格式：");
-            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog 等工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
+            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog/FetchUrl 等工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
             builder.AppendLine();
             builder.AppendLine("决策规则：");
             builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
             builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
             builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText 或 GetRecentLog 时，尽量填写 input.query，使用更短、更聚焦的搜索词，而不是原样重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n7. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog 或 FetchUrl 时，尽量填写 input.query，使用更短、更聚焦的搜索词；当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n7. reason 保持一句话，20 到 60 字优先。");
             builder.AppendLine();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
@@ -192,11 +198,11 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
-        private static CopilotAgentPlan ParsePlannerResponse(string text, IReadOnlyList<ICopilotTool> availableTools)
+        private static CopilotAgentPlan ParsePlannerResponse(CopilotAgentRequest request, string text, IReadOnlyList<ICopilotTool> availableTools)
         {
             var json = ExtractJsonObject(text);
             if (string.IsNullOrWhiteSpace(json))
-                return BuildFallbackPlan(availableTools, "规划器没有返回可解析 JSON，回退到默认工具选择。", preferTool: true);
+            return BuildFallbackPlan(request, availableTools, "规划器没有返回可解析 JSON，回退到默认工具选择。", preferTool: true);
 
             try
             {
@@ -249,38 +255,125 @@ namespace ColorVision.Copilot
                         };
                     }
 
-                    return BuildFallbackPlan(availableTools, $"规划器选择了未知工具 {toolName}，回退到默认工具选择。", preferTool: true);
+                    return BuildFallbackPlan(request, availableTools, $"规划器选择了未知工具 {toolName}，回退到默认工具选择。", preferTool: true);
                 }
             }
             catch (JsonException)
             {
             }
 
-            return BuildFallbackPlan(availableTools, "规划器输出无法识别，回退到默认工具选择。", preferTool: true);
+            return BuildFallbackPlan(request, availableTools, "规划器输出无法识别，回退到默认工具选择。", preferTool: true);
         }
 
         private static CopilotAgentPlan BuildFallbackPlan(
+            CopilotAgentRequest request,
             IReadOnlyList<ICopilotTool> availableTools,
             string reason,
             bool preferTool)
         {
+            var normalizedReason = NormalizeReason(reason);
             if (preferTool && availableTools.Count > 0)
             {
-                return new CopilotAgentPlan
+                var selectedTool = SelectFallbackTool(request, availableTools);
+                if (selectedTool != null)
                 {
-                    Action = CopilotAgentPlanAction.Tool,
-                    ToolName = availableTools[0].Name,
-                    Reason = NormalizeReason(reason),
-                    IsFallback = true,
-                };
+                    return new CopilotAgentPlan
+                    {
+                        Action = CopilotAgentPlanAction.Tool,
+                        ToolName = selectedTool.Name,
+                        ToolInput = BuildFallbackToolInput(request, selectedTool.Name),
+                        Reason = normalizedReason,
+                        IsFallback = true,
+                    };
+                }
             }
 
             return new CopilotAgentPlan
             {
                 Action = CopilotAgentPlanAction.Finish,
-                Reason = NormalizeReason(reason),
+                Reason = normalizedReason,
                 IsFallback = true,
             };
+        }
+
+        private static ICopilotTool? SelectFallbackTool(CopilotAgentRequest request, IReadOnlyList<ICopilotTool> availableTools)
+        {
+            if (availableTools.Count == 0)
+                return null;
+
+            var preferredToolNames = request.Mode switch
+            {
+                CopilotAgentMode.Web => new[]
+                {
+                    "FetchUrl",
+                    "ReadAttachedFile",
+                    "ReadLocalFile",
+                    "SearchFiles",
+                    "GrepText",
+                },
+                CopilotAgentMode.Diagnose => new[]
+                {
+                    "GetRecentLog",
+                    "ReadLocalFile",
+                    "ReadAttachedFile",
+                    "ListDirectory",
+                    "SearchFiles",
+                    "GrepText",
+                    "FetchUrl",
+                },
+                _ => new[]
+                {
+                    "ReadLocalFile",
+                    "ReadAttachedFile",
+                    "ListDirectory",
+                    "SearchFiles",
+                    "GrepText",
+                    "GetRecentLog",
+                    "FetchUrl",
+                },
+            };
+
+            foreach (var toolName in preferredToolNames)
+            {
+                var match = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, toolName, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                    return match;
+            }
+
+            return availableTools.Count == 1 ? availableTools[0] : null;
+        }
+
+        private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)
+        {
+            if (string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Path = request.ReadableLocalFilePaths.Count == 1
+                        ? request.ReadableLocalFilePaths[0]
+                        : string.Empty,
+                };
+            }
+
+            if (string.Equals(toolName, "ListDirectory", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Path = request.ReadableLocalDirectoryPaths.Count == 1
+                        ? request.ReadableLocalDirectoryPaths[0]
+                        : string.Empty,
+                };
+            }
+
+            if (string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Query = CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).FirstOrDefault() ?? string.Empty,
+                };
+            }
+
+            return CopilotAgentToolInput.Empty;
         }
 
         private static string ExtractJsonObject(string text)
@@ -388,7 +481,8 @@ namespace ColorVision.Copilot
         {
             return string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string TruncateObservation(string text, int maxCharacters)

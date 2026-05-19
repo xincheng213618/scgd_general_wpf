@@ -159,8 +159,8 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         public void ResetForNewImage(PseudoColorDefaultConfig defaults)
         {
-            ApplyDefaults(defaults);
             IsEnabled = false;
+            ApplyDefaults(defaults);
             DataMin = 0;
             DataMax = 0;
             SliderMinimum = 0;

@@ -220,7 +220,7 @@
     <value>Initialization module</value>
   </data>
   <data name="ForceUpdate" xml:space="preserve">
-    <value>_ForceUpdate</value>
+    <value>Force Update</value>
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>Upload files</value>
@@ -229,7 +229,7 @@
     <value>Version</value>
   </data>
   <data name="BuildDate" xml:space="preserve">
-    <value>BuildDate</value>
+    <value>Build Date</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>Search</value>
@@ -283,7 +283,7 @@
     <value>Baidu Cloud Download</value>
   </data>
   <data name="MenuUpdateReInstall_重新安装当前版本" xml:space="preserve">
-    <value>ReinstallCurrentVersion</value>
+    <value>Reinstall Current Version</value>
   </data>
   <data name="ClearPackageCache" xml:space="preserve">
     <value>Clear installation package cache</value>
@@ -298,7 +298,7 @@
     <value>To roll back the software, you need to uninstall it first and then reinstall it, or reinstall the package after installation.</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
-    <value>FullScreen</value>
+    <value>Full Screen</value>
   </data>
   <data name="TerminateUnresponsiveProcess" xml:space="preserve">
     <value>Terminate unresponsive processes</value>

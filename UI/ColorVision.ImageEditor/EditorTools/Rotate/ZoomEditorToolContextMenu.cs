@@ -1,11 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Rotate;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 
 namespace ColorVision.ImageEditor.EditorTools
 {
-    public record class RotateEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
+    public record class RotateEditorToolContextMenu(DrawEditorContext context) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {

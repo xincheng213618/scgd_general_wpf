@@ -393,7 +393,7 @@ namespace ColorVision.Update
             {
                 string packageFileName = GetIncrementalPackageFileName(version);
                 string cachedPath = Path.Combine(downloadPath, packageFileName);
-                if (File.Exists(cachedPath))
+                if (IsIncrementalPackageFileReady(cachedPath))
                 {
                     downloadedPaths[version.ToString()] = cachedPath;
                     completedCount++;
@@ -454,7 +454,7 @@ namespace ColorVision.Update
                 {
                     lock (lockObj)
                     {
-                        if (task.Status == DownloadStatus.Completed)
+                        if (task.Status == DownloadStatus.Completed && IsIncrementalPackageFileReady(task.SavePath))
                         {
                             downloadedPaths[versionKey] = task.SavePath;
                         }
@@ -502,6 +502,21 @@ namespace ColorVision.Update
         }
 
         public static string GetIncrementalPackageFileName(Version version) => $"ColorVision-Update-[{version}].cvx";
+
+        public static bool IsIncrementalPackageFileReady(string? filePath)
+        {
+            try
+            {
+                return !string.IsNullOrWhiteSpace(filePath)
+                    && File.Exists(filePath)
+                    && !File.Exists(filePath + ".aria2")
+                    && new FileInfo(filePath).Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         private void UpdateApplication(string downloadPath, bool isIncrement)
         {

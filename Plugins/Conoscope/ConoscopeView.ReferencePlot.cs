@@ -67,7 +67,7 @@ namespace Conoscope
         private void UpdateReferencePlotHeader()
         {
             ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
-            tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? "方位角直线" : "极角圆";
+            tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.RefAzimuthLine : Properties.Resources.RefPolarCircle;
             tbReferenceValue.Text = GetReferenceValueText(axisParam.ReferenceMode, axisParam.ReferenceAngle, axisParam.ReferenceRadiusAngle);
         }
 
@@ -165,6 +165,11 @@ namespace Conoscope
             return normalized < 0 ? normalized + 360.0 : normalized;
         }
 
+        private static double ConvertCircleAngleToPolarDisplayAngle(double angleDegrees)
+        {
+            return NormalizePolarPlotAngle(90.0 - angleDegrees);
+        }
+
         private void UpdatePolarReferencePlot(IReadOnlyList<PolarPlotPoint> points, ExportChannel channel, bool closePath)
         {
             if (polarPlotReference == null)
@@ -176,7 +181,7 @@ namespace Conoscope
             polarPlotReference.UpdatePlot(
                 points,
                 GetChannelPlotBrush(channel),
-                $"半径: {ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)}",
+                string.Format(Properties.Resources.RadiusFormat, ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)),
                 radialMaximum,
                 closePath);
         }
@@ -361,7 +366,7 @@ namespace Conoscope
 
                     ExportChannel polarChannel = GetSelectedDisplayChannel();
                     PolarPlotPoint[] polarPoints = selectedCircleLine.RgbData
-                        .Select(sample => new PolarPlotPoint(NormalizePolarPlotAngle(sample.Position), GetChannelValue(sample, polarChannel)))
+                        .Select(sample => new PolarPlotPoint(ConvertCircleAngleToPolarDisplayAngle(sample.Position), GetChannelValue(sample, polarChannel)))
                         .ToArray();
                     UpdatePolarReferencePlot(polarPoints, polarChannel, closePath: true);
                     return;

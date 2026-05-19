@@ -35,7 +35,9 @@ namespace ColorVision.Database
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = MySqlLocalServicesManager.GetInstance();
+            var manager = MySqlLocalServicesManager.GetInstance();
+            this.DataContext = manager;
+
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => 
             {
                 var selectedFilePath = MySqlLocalServicesManager.GetInstance().Backups[listView1.SelectedIndex].FilePath;
@@ -51,6 +53,11 @@ namespace ColorVision.Database
                 MySqlLocalServicesManager.GetInstance().Backups.RemoveAt(listView1.SelectedIndex);
                 File.Delete(index.FilePath);
             }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
+        }
+
+        private void OpenCleanupWindow_Click(object sender, RoutedEventArgs e)
+        {
+            DatabaseCleanupWindow.OpenWindow();
         }
 
     }

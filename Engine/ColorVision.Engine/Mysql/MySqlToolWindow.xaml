@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Database"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MySqlLocalServicesManager}"
-        Title="MysqlToolWindow" Height="450" Width="800"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="MySQL工具" Height="620" Width="860" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -29,64 +29,67 @@
             </StackPanel>
         </StackPanel>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="420"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0" Margin="5">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Row="0">
-                    <Button Content="迁移数据库备份(只包含流程和资源)" Command="{Binding BackupResourcesCommand}" Margin="0,0,5,0"/>
-                    <Button Content="全盘备份" Command="{Binding BackupAllResourcesCommand}"   Margin="0,0,5,0"/>
-                    <Button Content="加载备份" Command="{Binding RestoreSelectCommand}" Background="Red" Foreground="White"/>
-                </StackPanel>
+        <Grid Grid.Row="1" Margin="5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-                <ListView Grid.Row="1" x:Name="listView1" Background="Transparent" Margin="0" Padding="0" BorderThickness="0" ItemsSource="{Binding Backups}">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.View>
-                        <GridView>
-                            <GridView.ColumnHeaderContainerStyle>
-                                <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                </Style>
-                            </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn Header="文件名">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Name}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="创建时间">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding CreationTimeDisplay}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="还原">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button Content="还原" Command="{Binding RestoreCommand}" Margin="0,0,5,0"/>
-                                            <Button Content="选中" Command="{Binding SelectCommand}"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-            </Grid>
+            <StackPanel Orientation="Horizontal" Grid.Row="0">
+                <Button Content="迁移数据库备份(只包含流程和资源)" Command="{Binding BackupResourcesCommand}" Margin="0,0,5,0"/>
+                <Button Content="全盘备份" Command="{Binding BackupAllResourcesCommand}" Margin="0,0,5,0"/>
+                <Button Content="加载备份" Command="{Binding RestoreSelectCommand}" Background="Red" Foreground="White" Margin="0,0,5,0"/>
+                <Button Content="数据清理" Click="OpenCleanupWindow_Click"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1"
+                       Margin="0,10,0,10"
+                       Opacity="0.8"
+                       Text="MySQL 结果表清理已移到独立窗口，支持固定 MySQL 结果表列表和插件侧 SQLite 清理源。"/>
+
+            <ListView Grid.Row="2" x:Name="listView1" Background="Transparent" Margin="0" Padding="0" BorderThickness="0" ItemsSource="{Binding Backups}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="文件名">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="创建时间">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CreationTimeDisplay}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="还原">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="还原" Command="{Binding RestoreCommand}" Margin="0,0,5,0"/>
+                                        <Button Content="选中" Command="{Binding SelectCommand}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
         </Grid>
 
     </Grid>

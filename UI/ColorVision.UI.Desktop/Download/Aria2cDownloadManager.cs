@@ -619,26 +619,30 @@ namespace ColorVision.UI.Desktop.Download
                         int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
                         string speedText = DownloadTask.FormatSpeed(downloadSpeed);
 
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
-                        {
-                            task.ProgressValue = progress;
-                            task.TotalBytes = totalLength;
-                            task.DownloadedBytes = completedLength;
-                            task.SpeedText = speedText;
-                        });
-
-                        if (rpcStatus == "complete")
+                        if (rpcStatus != "complete")
                         {
                             Application.Current?.Dispatcher.BeginInvoke(() =>
                             {
+                                task.ProgressValue = progress;
                                 task.TotalBytes = totalLength;
-                                task.Status = DownloadStatus.Completed;
-                                task.SpeedText = string.Empty;
+                                task.DownloadedBytes = completedLength;
+                                task.SpeedText = speedText;
                             });
-                            UpdateEntryCompleted(task);
+                        }
+
+                        if (rpcStatus == "complete")
+                        {
                             _activeTasks.TryRemove(task.Id, out _);
-                            task.OnCompletedCallback?.Invoke(task);
-                            DownloadCompleted?.Invoke(this, task);
+
+                            if (TryGetCompletedFileMetrics(task, totalLength, completedLength, out long finalTotalBytes, out long finalDownloadedBytes, out string? completeError))
+                            {
+                                CompleteTask(task, finalTotalBytes, finalDownloadedBytes);
+                            }
+                            else
+                            {
+                                FailTask(task, completeError);
+                                log.Error($"Download completed with invalid file: {task.SavePath}. {completeError}");
+                            }
                         }
                         else if (rpcStatus == "error")
                         {
@@ -655,16 +659,8 @@ namespace ColorVision.UI.Desktop.Download
                             }
                             else
                             {
-                                Application.Current?.Dispatcher.BeginInvoke(() =>
-                                {
-                                    task.Status = DownloadStatus.Failed;
-                                    task.ErrorMessage = errorMsg ?? "Unknown error";
-                                    task.SpeedText = string.Empty;
-                                });
-                                UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
                                 _activeTasks.TryRemove(task.Id, out _);
-                                task.OnCompletedCallback?.Invoke(task);
-                                DownloadCompleted?.Invoke(this, task);
+                                FailTask(task, errorMsg ?? "Unknown error");
                             }
                         }
                         else if (rpcStatus == "removed" || rpcStatus == "paused")
@@ -999,20 +995,14 @@ namespace ColorVision.UI.Desktop.Download
                 long completedBytes = new FileInfo(task.SavePath).Length;
                 long totalBytes = expectedBytes > 0 ? expectedBytes : completedBytes;
 
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    task.TotalBytes = totalBytes;
-                    task.DownloadedBytes = completedBytes;
-                    task.ProgressValue = totalBytes > 0 ? 100 : 0;
-                    task.Status = DownloadStatus.Completed;
-                    task.SpeedText = string.Empty;
-                    task.ErrorMessage = null;
-                });
+                if (completedBytes <= 0)
+                    throw new InvalidDataException("Downloaded file is empty.");
 
-                UpdateEntryCompleted(task);
+                if (totalBytes > 0 && completedBytes < totalBytes)
+                    throw new InvalidDataException($"Downloaded file is incomplete: {completedBytes}/{totalBytes} bytes.");
+
+                CompleteTask(task, Math.Max(totalBytes, completedBytes), completedBytes);
                 log.Info($"Reused completed download by streamed local copy. Source: {sourcePath}, Target: {task.SavePath}");
-                task.OnCompletedCallback?.Invoke(task);
-                DownloadCompleted?.Invoke(this, task);
             }
             catch (OperationCanceledException)
             {
@@ -1129,6 +1119,108 @@ namespace ColorVision.UI.Desktop.Download
                    (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
         }
 
+        private static bool TryGetCompletedFileMetrics(DownloadTask task, long rpcTotalLength, long rpcCompletedLength, out long totalBytes, out long downloadedBytes, out string? errorMessage)
+        {
+            totalBytes = rpcTotalLength;
+            downloadedBytes = rpcCompletedLength;
+            errorMessage = null;
+
+            bool isMagnet = task.Url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase);
+            if (!isMagnet)
+            {
+                if (string.IsNullOrWhiteSpace(task.SavePath) || !File.Exists(task.SavePath))
+                {
+                    errorMessage = "Downloaded file was not found.";
+                    return false;
+                }
+
+                if (File.Exists(task.SavePath + ".aria2"))
+                {
+                    errorMessage = "Downloaded file still has an aria2 cache file.";
+                    return false;
+                }
+
+                long fileLength;
+                try
+                {
+                    fileLength = new FileInfo(task.SavePath).Length;
+                }
+                catch (Exception ex)
+                {
+                    errorMessage = ex.Message;
+                    return false;
+                }
+
+                if (fileLength <= 0)
+                {
+                    errorMessage = "Downloaded file is empty.";
+                    return false;
+                }
+
+                downloadedBytes = fileLength;
+            }
+
+            if (downloadedBytes <= 0 && rpcCompletedLength > 0)
+                downloadedBytes = rpcCompletedLength;
+
+            if (totalBytes <= 0)
+                totalBytes = downloadedBytes;
+
+            if (downloadedBytes > totalBytes)
+                totalBytes = downloadedBytes;
+
+            if (totalBytes > 0 && downloadedBytes < totalBytes)
+            {
+                errorMessage = $"Downloaded file is incomplete: {downloadedBytes}/{totalBytes} bytes.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private void CompleteTask(DownloadTask task, long totalBytes, long downloadedBytes)
+        {
+            ApplyTaskUpdate(() =>
+            {
+                task.TotalBytes = totalBytes;
+                task.DownloadedBytes = downloadedBytes;
+                task.ProgressValue = totalBytes > 0 ? 100 : 0;
+                task.Status = DownloadStatus.Completed;
+                task.SpeedText = string.Empty;
+                task.ErrorMessage = null;
+            });
+
+            UpdateEntryCompleted(task);
+            task.OnCompletedCallback?.Invoke(task);
+            DownloadCompleted?.Invoke(this, task);
+        }
+
+        private void FailTask(DownloadTask task, string? errorMessage)
+        {
+            ApplyTaskUpdate(() =>
+            {
+                task.Status = DownloadStatus.Failed;
+                task.ErrorMessage = errorMessage ?? "Unknown error";
+                task.SpeedText = string.Empty;
+            });
+
+            UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMessage);
+            task.OnCompletedCallback?.Invoke(task);
+            DownloadCompleted?.Invoke(this, task);
+        }
+
+        private static void ApplyTaskUpdate(Action update)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(update);
+                return;
+            }
+
+            update();
+        }
+
         private void QueueRemoteDownload(DownloadTask task, string? authorization)
         {
             _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
@@ -1189,9 +1281,9 @@ namespace ColorVision.UI.Desktop.Download
 
                 long fileLength = new FileInfo(entry.SavePath).Length;
                 if (entry.TotalBytes > 0)
-                    return entry.DownloadedBytes >= entry.TotalBytes && fileLength == entry.TotalBytes;
+                    return fileLength > 0 && entry.DownloadedBytes >= entry.TotalBytes && fileLength == entry.TotalBytes;
 
-                return entry.CompleteTime != null;
+                return fileLength > 0 && entry.CompleteTime != null;
             }
             catch
             {
@@ -1293,15 +1385,8 @@ namespace ColorVision.UI.Desktop.Download
                 }
 
                 log.Error($"Download failed: {ex.Message}", ex);
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    task.Status = DownloadStatus.Failed;
-                    task.ErrorMessage = ex.Message;
-                    task.SpeedText = string.Empty;
-                });
-                UpdateEntryStatus(task.Id, DownloadStatus.Failed, ex.Message);
-                task.OnCompletedCallback?.Invoke(task);
-                DownloadCompleted?.Invoke(this, task);
+                _activeTasks.TryRemove(task.Id, out _);
+                FailTask(task, ex.Message);
             }
         }
 
@@ -1544,10 +1629,29 @@ namespace ColorVision.UI.Desktop.Download
                 foreach (var entry in entries)
                 {
                     var status = (DownloadStatus)entry.Status;
-                    if (status == DownloadStatus.Completed && !File.Exists(entry.SavePath))
+                    long totalBytes = entry.TotalBytes;
+                    long downloadedBytes = entry.DownloadedBytes;
+                    string? errorMessage = entry.ErrorMessage;
+
+                    if (status == DownloadStatus.Completed && TryGetUsableCompletedFileLength(entry.SavePath, out long fileLength))
+                    {
+                        if (totalBytes <= 0 || downloadedBytes <= 0)
+                        {
+                            totalBytes = fileLength;
+                            downloadedBytes = fileLength;
+                            UpdateEntryBytes(entry.Id, totalBytes, downloadedBytes);
+                        }
+                    }
+                    else if (status == DownloadStatus.Completed && !File.Exists(entry.SavePath))
                     {
                         status = DownloadStatus.FileDeleted;
                         UpdateEntryStatus(entry.Id, DownloadStatus.FileDeleted);
+                    }
+                    else if (status == DownloadStatus.Completed)
+                    {
+                        status = DownloadStatus.Failed;
+                        errorMessage = "Downloaded file is empty or incomplete.";
+                        UpdateEntryStatus(entry.Id, DownloadStatus.Failed, errorMessage);
                     }
 
                     // �������޸���������������ڻ�Ծ�ֵ��У�ֱ�����ø�ʵ�������� UI �� DataBinding ���ò��Ͽ�
@@ -1568,11 +1672,11 @@ namespace ColorVision.UI.Desktop.Download
                             FileName = entry.FileName,
                             SavePath = entry.SavePath,
                             Status = status,
-                            TotalBytes = entry.TotalBytes,
-                            DownloadedBytes = entry.DownloadedBytes,
-                            ProgressValue = entry.TotalBytes > 0 ? (int)(entry.DownloadedBytes * 100 / entry.TotalBytes) : 0,
+                            TotalBytes = totalBytes,
+                            DownloadedBytes = downloadedBytes,
+                            ProgressValue = totalBytes > 0 ? (int)(downloadedBytes * 100 / totalBytes) : 0,
                             CreateTime = entry.CreateTime,
-                            ErrorMessage = entry.ErrorMessage,
+                            ErrorMessage = errorMessage,
                             Authorization = DecodeAuth(entry.Authorization)
                         });
                     }
@@ -1601,6 +1705,16 @@ namespace ColorVision.UI.Desktop.Download
                 .ExecuteCommand();
         }
 
+        private void UpdateEntryBytes(int id, long totalBytes, long downloadedBytes)
+        {
+            using var db = CreateDbClient();
+            db.Updateable<DownloadEntry>()
+                .SetColumns(x => x.TotalBytes == totalBytes)
+                .SetColumns(x => x.DownloadedBytes == downloadedBytes)
+                .Where(x => x.Id == id)
+                .ExecuteCommand();
+        }
+
         private void UpdateEntryFileName(int id, string fileName)
         {
             using var db = CreateDbClient();
@@ -1620,6 +1734,25 @@ namespace ColorVision.UI.Desktop.Download
                 .SetColumns(x => x.CompleteTime == DateTime.Now)
                 .Where(x => x.Id == task.Id)
                 .ExecuteCommand();
+        }
+
+        private static bool TryGetUsableCompletedFileLength(string? filePath, out long fileLength)
+        {
+            fileLength = 0;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath) || File.Exists(filePath + ".aria2"))
+                    return false;
+
+                fileLength = new FileInfo(filePath).Length;
+                return fileLength > 0;
+            }
+            catch
+            {
+                fileLength = 0;
+                return false;
+            }
         }
 
         /// <summary>

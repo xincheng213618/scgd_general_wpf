@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Templates.Flow
                 if (_STNodeTreeView == null)
                 {
                     _STNodeTreeView = new STNodeTreeView();
-                    _STNodeTreeView.LoadAssembly("FlowEngineLib.dll");
                 }
                 return _STNodeTreeView;
             }
@@ -200,12 +199,12 @@ namespace ColorVision.Engine.Templates.Flow
             using var gz = new GZipStream(ms, CompressionMode.Decompress);
             byte[] buf = new byte[32];
 
-            gz.Read(buf, 0, 4);
+            gz.ReadExactly(buf, 0, 4);
             int nodeCount = BitConverter.ToInt32(buf, 0);
 
-            gz.Read(buf, 0, 4);
+            gz.ReadExactly(buf, 0, 4);
             int origMinLeft = BitConverter.ToInt32(buf, 0);
-            gz.Read(buf, 0, 4);
+            gz.ReadExactly(buf, 0, 4);
             int origMinTop = BitConverter.ToInt32(buf, 0);
 
             // Determine paste position: use mouse position in canvas if available, otherwise offset
@@ -237,10 +236,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             for (int i = 0; i < nodeCount; i++)
             {
-                gz.Read(buf, 0, 4);
+                gz.ReadExactly(buf, 0, 4);
                 int len = BitConverter.ToInt32(buf, 0);
                 byte[] nodeData = new byte[len];
-                gz.Read(nodeData, 0, len);
+                gz.ReadExactly(nodeData, 0, len);
 
                 STNode node = CreateNodeFromSaveData(nodeData);
                 if (node == null) continue;
@@ -272,12 +271,12 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             // Restore connections
-            gz.Read(buf, 0, 4);
+            gz.ReadExactly(buf, 0, 4);
             int connCount = BitConverter.ToInt32(buf, 0);
             byte[] connBuf = new byte[8];
             for (int i = 0; i < connCount; i++)
             {
-                gz.Read(connBuf, 0, 8);
+                gz.ReadExactly(connBuf, 0, 8);
                 long packed = BitConverter.ToInt64(connBuf, 0);
                 long outIdx = packed >> 32;
                 long inIdx = (int)packed;
@@ -375,10 +374,10 @@ namespace ColorVision.Engine.Templates.Flow
             byte[] buf = new byte[32];
 
             // Skip canvas offset and scale (3 floats = 12 bytes)
-            gz.Read(buf, 0, 12);
+            gz.ReadExactly(buf, 0, 12);
 
             // Read node count
-            gz.Read(buf, 0, 4);
+            gz.ReadExactly(buf, 0, 4);
             int nodeCount = BitConverter.ToInt32(buf, 0);
             if (nodeCount == 0) return;
 
@@ -410,10 +409,10 @@ namespace ColorVision.Engine.Templates.Flow
             var nodeDataList = new List<byte[]>();
             for (int i = 0; i < nodeCount; i++)
             {
-                gz.Read(buf, 0, 4);
+                gz.ReadExactly(buf, 0, 4);
                 int len = BitConverter.ToInt32(buf, 0);
                 byte[] nodeData = new byte[len];
-                gz.Read(nodeData, 0, len);
+                gz.ReadExactly(nodeData, 0, len);
                 nodeDataList.Add(nodeData);
             }
 
@@ -467,12 +466,12 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             // Read and restore connections
-            gz.Read(buf, 0, 4);
+            gz.ReadExactly(buf, 0, 4);
             int connCount = BitConverter.ToInt32(buf, 0);
             byte[] connBuf = new byte[8];
             for (int i = 0; i < connCount; i++)
             {
-                gz.Read(connBuf, 0, 8);
+                gz.ReadExactly(connBuf, 0, 8);
                 long packed = BitConverter.ToInt64(connBuf, 0);
                 long outIdx = packed >> 32;
                 long inIdx = (int)packed;

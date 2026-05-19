@@ -7,7 +7,7 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class EraseManager : RegionOperationToolBase
     {
-        public EraseManager(EditorContext context) : base(context)
+        public EraseManager(DrawEditorContext context) : base(context)
         {
             Order = 2;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageeraser");

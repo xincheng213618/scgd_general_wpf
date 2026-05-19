@@ -16,12 +16,12 @@ namespace Conoscope.Analysis
             InitializeComponent();
             StandardComboBox.ItemsSource = ColorGamutStandards.All;
             StandardComboBox.SelectedIndex = 0;
-            StatusText.Text = "请选择 R/G/B 三张图后计算色域";
+            StatusText.Text = Properties.Resources.PleaseSelectRGBImages;
         }
 
         private void SelectRed_Click(object sender, RoutedEventArgs e)
         {
-            SelectImage("选择 R 图", measurement =>
+            SelectImage(Properties.Resources.SelectRImage, measurement =>
             {
                 redMeasurement = measurement;
                 RedFileTextBox.Text = measurement.FilePath;
@@ -31,7 +31,7 @@ namespace Conoscope.Analysis
 
         private void SelectGreen_Click(object sender, RoutedEventArgs e)
         {
-            SelectImage("选择 G 图", measurement =>
+            SelectImage(Properties.Resources.SelectGImage, measurement =>
             {
                 greenMeasurement = measurement;
                 GreenFileTextBox.Text = measurement.FilePath;
@@ -41,7 +41,7 @@ namespace Conoscope.Analysis
 
         private void SelectBlue_Click(object sender, RoutedEventArgs e)
         {
-            SelectImage("选择 B 图", measurement =>
+            SelectImage(Properties.Resources.SelectBImage, measurement =>
             {
                 blueMeasurement = measurement;
                 BlueFileTextBox.Text = measurement.FilePath;
@@ -84,7 +84,7 @@ namespace Conoscope.Analysis
             OpenFileDialog openFileDialog = new()
             {
                 Title = title,
-                Filter = "CVCIE 文件|*.cvcie|所有文件|*.*",
+                Filter = Properties.Resources.CVCIEFileFilter,
                 RestoreDirectory = true
             };
 
@@ -99,11 +99,11 @@ namespace Conoscope.Analysis
                 applyMeasurement(measurement);
                 AreaText.Text = string.Empty;
                 CoverageText.Text = string.Empty;
-                StatusText.Text = $"已读取 {measurement.FileName}";
+                StatusText.Text = string.Format(Properties.Resources.FileRead, measurement.FileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, Properties.Resources.RGBColorGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -112,20 +112,20 @@ namespace Conoscope.Analysis
             global::Conoscope.ConoscopeView? activeView = GetActiveView();
             if (activeView == null)
             {
-                MessageBox.Show(this, "当前没有活动的 Conoscope 视图。", "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, Properties.Resources.NoActiveConoscopeView, Properties.Resources.RGBColorGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!activeView.TryGetLatestFocusPointMeasurement(out ImageMeasurement measurement, out string? errorMessage))
             {
-                MessageBox.Show(this, errorMessage ?? "当前关注点不可用。", "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, errorMessage ?? Properties.Resources.CurrentFocusPointUnavailable, Properties.Resources.RGBColorGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             applyMeasurement(measurement);
             AreaText.Text = string.Empty;
             CoverageText.Text = string.Empty;
-            StatusText.Text = $"已记录 {channelName} 关注点: {measurement.FileName}";
+            StatusText.Text = string.Format(Properties.Resources.FocusPointRecorded, channelName, measurement.FileName);
         }
 
         private static global::Conoscope.ConoscopeView? GetActiveView()
@@ -137,26 +137,26 @@ namespace Conoscope.Analysis
         {
             if (redMeasurement == null || greenMeasurement == null || blueMeasurement == null)
             {
-                MessageBox.Show(this, "请先选择 R/G/B 三张图", "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, Properties.Resources.PleaseSelectRGBFirst, Properties.Resources.RGBColorGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (StandardComboBox.SelectedItem is not ColorGamutStandard standard)
             {
-                MessageBox.Show(this, "请选择色域标准", "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, Properties.Resources.PleaseSelectGamutStandard, Properties.Resources.RGBColorGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             try
             {
                 ColorGamutResult result = colorGamutCalculator.Calculate(redMeasurement, greenMeasurement, blueMeasurement, standard);
-                AreaText.Text = $"样本面积={result.SampleArea:F6}，{result.Standard.Name} 标准面积={result.StandardArea:F6}";
+                AreaText.Text = string.Format(Properties.Resources.SampleAreaFormat, result.SampleArea.ToString("F6"), result.Standard.Name, result.StandardArea.ToString("F6"));
                 CoverageText.Text = $"{result.CoveragePercent:F2}% {result.Standard.Name}";
-                StatusText.Text = $"按 {result.Standard.Name} 标准计算完成";
+                StatusText.Text = string.Format(Properties.Resources.CalculationCompleteByStandard, result.Standard.Name);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "RGB 色域计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, Properties.Resources.RGBColorGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -173,12 +173,16 @@ namespace Conoscope.Analysis
             BlueChromaticityText.Text = string.Empty;
             AreaText.Text = string.Empty;
             CoverageText.Text = string.Empty;
-            StatusText.Text = "请选择 R/G/B 三张图后计算色域";
+            StatusText.Text = Properties.Resources.PleaseSelectRGBImages;
         }
 
         private static string FormatChromaticity(ImageMeasurement measurement)
         {
-            return $"x={measurement.Chromaticity.x:F6}, y={measurement.Chromaticity.y:F6}, Y={measurement.Luminance:F4}  ({measurement.FileName})";
+            return string.Format(Properties.Resources.ChromaticityLuminanceFormat,
+                measurement.Chromaticity.x.ToString("F6"),
+                measurement.Chromaticity.y.ToString("F6"),
+                measurement.Luminance.ToString("F4"),
+                measurement.FileName);
         }
     }
 }
