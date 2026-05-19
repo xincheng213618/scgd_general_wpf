@@ -120,6 +120,11 @@ namespace ProjectKB
             }
         }
 
+        private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
+        {
+            DatabaseCleanupWindow.OpenWindow();
+        }
+
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
 
         public static KBRecipeConfig RecipeConfig => RecipeManager.RecipeConfig;

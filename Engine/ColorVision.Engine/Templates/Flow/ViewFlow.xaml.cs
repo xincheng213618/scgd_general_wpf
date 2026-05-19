@@ -334,7 +334,7 @@ namespace ColorVision.Engine.Services.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
-            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            STNodeEditorMain.LoadAssembly();
             
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {

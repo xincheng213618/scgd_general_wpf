@@ -199,7 +199,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            STNodeEditorMain.LoadAssembly();
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {

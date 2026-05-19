@@ -230,6 +230,11 @@ namespace ProjectARVRPro
             TryAutoStartRelayServer();
         }
 
+        private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
+        {
+            DatabaseCleanupWindow.OpenWindow();
+        }
+
         private void ThunderbirdController_ConnectionStateChanged(object? sender, EventArgs e)
         {
             UpdateThunderbirdStatusIndicator();

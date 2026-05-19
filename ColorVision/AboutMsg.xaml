@@ -6,7 +6,7 @@
                  xmlns:graphics="clr-namespace:ColorVision.UI.Graphics;assembly=ColorVision.UI"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:properties="clr-namespace:ColorVision.Properties"
-                 mc:Ignorable="d" Width="510" Height="410" Background="Transparent" Initialized="Window_Initialized"
+                 mc:Ignorable="d" Width="550" Height="410" Background="Transparent" Initialized="Window_Initialized"
                  IsBlurEnabled="True" PreviewKeyDown="BaseWindow_PreviewKeyDown" ResizeMode="NoResize"
                  ShowInTaskbar="False">
     <base:BaseWindow.Resources>
@@ -83,6 +83,7 @@
             <StackPanel Grid.Row="1" Margin="5" VerticalAlignment="Bottom">
                 <TextBlock x:Name="TextBlockVision" HorizontalAlignment="Center" Text="ColorVision (64位) -  1.0.0.0" TextAlignment="Center" TextWrapping="Wrap" />
                 <TextBlock x:Name="TextCUDAVision" VerticalAlignment="Center" Text="CUDA" TextAlignment="Center" Visibility="Collapsed" />
+                <TextBox x:Name="TextBoxHardwareId" Margin="10,2,10,0" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0" IsReadOnly="True" Text="-" TextAlignment="Center" TextWrapping="Wrap" />
                 <TextBlock VerticalAlignment="Center" Text="CopyRight © 2024-2026 ColorVision All Rigths Reserved" TextAlignment="Center" />
             </StackPanel>
 

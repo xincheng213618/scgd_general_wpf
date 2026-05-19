@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Templates.Flow
                 if (_STNodeTreeView == null)
                 {
                     _STNodeTreeView = new STNodeTreeView();
-                    _STNodeTreeView.LoadAssembly("FlowEngineLib.dll");
                 }
                 return _STNodeTreeView;
             }

@@ -74,6 +74,7 @@ namespace ColorVision
             Icon = null;
             TextSharp1.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo.TrimEnd() + " " + SystemHelper.GetTotalPhysicalMemory();
+            TextBoxHardwareId.Text = SystemHelper.GetHardwareId();
 
             if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.DeviceCount >0)
             {
