@@ -333,9 +333,7 @@ namespace ColorVision.Engine.Services.Flow
         
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = this;
-            STNodeEditorMain.LoadAssembly();
-            
+            this.DataContext = this;            
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == WinForms.Keys.Delete)
