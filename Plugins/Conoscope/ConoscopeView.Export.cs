@@ -81,6 +81,11 @@ namespace Conoscope
             return ComboBoxHelper.GetSelectedEnumByTag(cbExportChannel, ExportChannel.Y);
         }
 
+        private ExportChannel GetSelectedCurrentCurveChannel()
+        {
+            return GetSelectedDisplayChannel();
+        }
+
         private string? TrySelectCsvSavePath(string defaultFileName)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog
@@ -308,7 +313,7 @@ namespace Conoscope
                     return;
                 }
 
-                ExportChannel channel = GetSelectedExportChannel();
+                ExportChannel channel = GetSelectedCurrentCurveChannel();
                 ConoscopeCrossSectionExportOptions? exportOptions = ShowCurrentCurveExportDialog();
                 if (exportOptions == null)
                 {
@@ -354,7 +359,7 @@ namespace Conoscope
                     return;
                 }
 
-                ExportChannel channel = GetSelectedExportChannel();
+                ExportChannel channel = GetSelectedCurrentCurveChannel();
                 ConoscopeCrossSectionExportOptions? exportOptions = ShowCurrentCurveExportDialog();
                 if (exportOptions == null)
                 {
