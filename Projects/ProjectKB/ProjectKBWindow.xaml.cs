@@ -114,6 +114,15 @@ namespace ProjectKB
             {
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
+                    if (ProjectKBConfig.Instance.IgnoreAutoRunWhenSnEmpty && string.IsNullOrWhiteSpace(SNtextBox.Text))
+                    {
+                        const string message = "PLC自动触发已忽略：SN为空，未执行流程。";
+                        log.Warn(message);
+                        logTextBox.Text = message;
+                        _ = ModbusControl.GetInstance().SetRegisterValue(0);
+                        return;
+                    }
+
                     log.Info("触发拍照，执行流程");
                     RunTemplate();
                 });

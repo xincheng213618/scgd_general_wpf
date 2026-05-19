@@ -61,6 +61,12 @@ namespace ProjectKB
         [DisplayName("允许测试失败")]
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
+
+        [DisplayName("自动触发时SN为空不检测"), Category("KB")]
+        [Description("开启后，PLC自动触发时如果SN为空，只记录日志并忽略本次指令；手动检测不受影响。")]
+        public bool IgnoreAutoRunWhenSnEmpty { get => _IgnoreAutoRunWhenSnEmpty; set { _IgnoreAutoRunWhenSnEmpty = value; OnPropertyChanged(); } }
+        private bool _IgnoreAutoRunWhenSnEmpty;
+
         public void EditConfig()
         {
             new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog();
