@@ -1,4 +1,7 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
 using log4net;
@@ -88,6 +91,10 @@ namespace ProjectARVRPro.Services
         /// </summary>
         private ManualResetEventSlim _responseWaiter = new(false);
         private SocketResponse _pendingResponse;
+        private bool _generalSensorResetPatchPending;
+
+        private const string DefaultGeneralSensorCode = "DEV.Sensor.Default";
+        private const string DefaultGeneralSensorCategory = "Sensor.Default";
 
         public bool IsListening { get => _IsListening; private set { _IsListening = value; OnPropertyChanged(); } }
         private bool _IsListening;
@@ -106,12 +113,24 @@ namespace ProjectARVRPro.Services
         {
             StopServer();
             _running = true;
+            _generalSensorResetPatchPending = true;
             Config.ListenIP = ip;
             Config.ListenPort = port;
             ConfigService.Instance.SaveConfigs();
 
             _listenThread = new Thread(ListenLoop) { IsBackground = true, Name = "RelayServerListener" };
             _listenThread.Start();
+        }
+
+        public void SetAutoStart(bool autoStart)
+        {
+            if (Config.AutoStart == autoStart)
+            {
+                return;
+            }
+
+            Config.AutoStart = autoStart;
+            ConfigService.Instance.SaveConfigs();
         }
 
         private void ListenLoop()
@@ -138,7 +157,7 @@ namespace ProjectARVRPro.Services
                     CloseFlowClient();
                     _flowClient = client;
                     _flowStream = client.GetStream();
-                    System.Windows.Application.Current?.Dispatcher?.Invoke(() => IsFlowConnected = true);
+                    SetFlowConnectionState(true);
 
                     string endpoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
                     log.Info($"Flow已连接: {endpoint}");
@@ -205,7 +224,7 @@ namespace ProjectARVRPro.Services
             }
             finally
             {
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() => IsFlowConnected = false);
+                SetFlowConnectionState(false);
             }
         }
 
@@ -373,6 +392,7 @@ namespace ProjectARVRPro.Services
         public void StopServer()
         {
             _running = false;
+            _generalSensorResetPatchPending = false;
             try
             {
                 CloseFlowClient();
@@ -385,8 +405,8 @@ namespace ProjectARVRPro.Services
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     IsListening = false;
-                    IsFlowConnected = false;
                 });
+                SetFlowConnectionState(false);
             }
         }
 
@@ -402,7 +422,171 @@ namespace ProjectARVRPro.Services
             {
                 _flowStream = null;
                 _flowClient = null;
+                SetFlowConnectionState(false);
             }
+        }
+
+        private void SetFlowConnectionState(bool isConnected)
+        {
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
+            {
+                bool wasConnected = IsFlowConnected;
+                IsFlowConnected = isConnected;
+
+                if (isConnected && !wasConnected)
+                {
+                    TryRunGeneralSensorResetPatch();
+                }
+            });
+        }
+
+        private void TryRunGeneralSensorResetPatch()
+        {
+            if (!_generalSensorResetPatchPending)
+            {
+                return;
+            }
+
+            _generalSensorResetPatchPending = false;
+            _ = ApplyGeneralSensorResetPatchAsync();
+        }
+
+        // TEMP PATCH: Flow 首次接入当前中转服务后，重置一次通用传感器。
+        // 后续后台修好连接状态判断后，可以连同本方法和相关 helper 一起删除。
+        private async Task ApplyGeneralSensorResetPatchAsync()
+        {
+            try
+            {
+                DeviceSensor? deviceSensor = await FindGeneralSensorAsync();
+                if (deviceSensor == null)
+                {
+                    log.Warn("Flow 接入中转后未找到通用传感器，无法执行自动重置");
+                    ShowSensorResetPrompt("未找到通用传感器，无法自动重置。请手动关闭后重新打开通用传感器。");
+                    return;
+                }
+
+                log.Info($"Flow 接入中转后开始重置通用传感器: {deviceSensor.Name} ({deviceSensor.Code})");
+                deviceSensor.DService.Close();
+                log.Info($"Flow 接入中转后已发送通用传感器关闭指令: {deviceSensor.Name} ({deviceSensor.Code})");
+
+                await Task.Delay(1000);
+
+                MsgRecord openRecord = deviceSensor.DService.Open();
+                MsgRecordState openState = await WaitForMsgRecordAsync(openRecord, TimeSpan.FromSeconds(5));
+
+                if (openState == MsgRecordState.Success)
+                {
+                    log.Info($"Flow 接入中转后重置通用传感器成功: {deviceSensor.Name} ({deviceSensor.Code})");
+                    return;
+                }
+
+                string failureMessage = BuildSensorResetFailureMessage(openRecord, openState);
+                log.Warn($"Flow 接入中转后重置通用传感器失败: {deviceSensor.Name} ({deviceSensor.Code}), {failureMessage}");
+                ShowSensorResetPrompt($"通用传感器自动重置失败：{failureMessage}\n请手动关闭后重新打开通用传感器。");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Flow 接入中转后重置通用传感器异常", ex);
+                ShowSensorResetPrompt($"通用传感器自动重置异常：{ex.Message}\n请手动关闭后重新打开通用传感器。");
+            }
+        }
+
+        private static async Task<MsgRecordState> WaitForMsgRecordAsync(MsgRecord msgRecord, TimeSpan timeout)
+        {
+            if (IsTerminalMsgRecordState(msgRecord.MsgRecordState))
+            {
+                return msgRecord.MsgRecordState;
+            }
+
+            TaskCompletionSource<MsgRecordState> taskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void Handler(object? sender, MsgRecordState state)
+            {
+                if (IsTerminalMsgRecordState(state))
+                {
+                    taskCompletionSource.TrySetResult(state);
+                }
+            }
+
+            msgRecord.MsgRecordStateChanged += Handler;
+            try
+            {
+                if (IsTerminalMsgRecordState(msgRecord.MsgRecordState))
+                {
+                    return msgRecord.MsgRecordState;
+                }
+
+                Task completedTask = await Task.WhenAny(taskCompletionSource.Task, Task.Delay(timeout));
+                if (completedTask == taskCompletionSource.Task)
+                {
+                    return await taskCompletionSource.Task;
+                }
+
+                return MsgRecordState.Timeout;
+            }
+            finally
+            {
+                msgRecord.MsgRecordStateChanged -= Handler;
+            }
+        }
+
+        private static async Task<DeviceSensor?> FindGeneralSensorAsync()
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                DeviceSensor? deviceSensor = ServiceManager.GetInstance().DeviceServices
+                    .OfType<DeviceSensor>()
+                    .FirstOrDefault(x => string.Equals(x.Code, DefaultGeneralSensorCode, StringComparison.OrdinalIgnoreCase))
+                    ?? ServiceManager.GetInstance().DeviceServices
+                        .OfType<DeviceSensor>()
+                        .FirstOrDefault(x => string.Equals(x.Config.Category, DefaultGeneralSensorCategory, StringComparison.OrdinalIgnoreCase));
+
+                if (deviceSensor != null)
+                {
+                    return deviceSensor;
+                }
+
+                await Task.Delay(250);
+            }
+
+            return null;
+        }
+
+        private static bool IsTerminalMsgRecordState(MsgRecordState state)
+        {
+            return state == MsgRecordState.Success || state == MsgRecordState.Fail || state == MsgRecordState.Timeout;
+        }
+
+        private static string BuildSensorResetFailureMessage(MsgRecord msgRecord, MsgRecordState state)
+        {
+            return state switch
+            {
+                MsgRecordState.Fail => string.IsNullOrWhiteSpace(msgRecord.MsgReturn?.Message) ? "后台返回失败" : msgRecord.MsgReturn.Message,
+                MsgRecordState.Timeout => "等待后台响应超时",
+                _ => $"未知状态: {state}"
+            };
+        }
+
+        private static void ShowSensorResetPrompt(string message)
+        {
+            var application = System.Windows.Application.Current;
+            application?.Dispatcher?.BeginInvoke(() =>
+            {
+                System.Windows.Window? owner = null;
+                foreach (System.Windows.Window window in application.Windows)
+                {
+                    if (!window.IsActive)
+                    {
+                        continue;
+                    }
+
+                    owner = window;
+                    break;
+                }
+
+                owner ??= application.MainWindow;
+                System.Windows.MessageBox.Show(owner, message, "ColorVision", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            });
         }
 
         private string TryGetEventName(string json)

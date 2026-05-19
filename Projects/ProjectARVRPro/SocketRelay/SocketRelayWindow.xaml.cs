@@ -5,7 +5,7 @@ using ProjectARVRPro.Services;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro
+namespace ProjectARVRPro.SocketRelay
 {
     public partial class SocketRelayWindow : Window
     {
@@ -14,7 +14,7 @@ namespace ProjectARVRPro
         private readonly SocketRelayManager _relayManager = SocketRelayManager.GetInstance();
         private bool _isInitializing;
 
-        public static void OpenWindow(bool activate)
+        public static void OpenWindow()
         {
             if (_window == null)
             {
@@ -27,11 +27,6 @@ namespace ProjectARVRPro
                 _window.Closed += (_, _) => _window = null;
                 _window.Show();
                 return;
-            }
-
-            if (activate)
-            {
-                _window.Activate();
             }
         }
 
