@@ -20,6 +20,7 @@ using ProjectKB.Modbus;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -63,7 +64,7 @@ namespace ProjectKB
             Config.SetWindow(this);
             this.Title += "-" + Assembly.GetAssembly(typeof(ProjectKBWindow))?.GetName().Version?.ToString() ?? "";
         }
-        public LogOutput logOutput { get; set; }
+        public LogOutput? logOutput { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -87,25 +88,70 @@ namespace ProjectKB
                 }
             });
 
-            if (ProjectKBConfig.Instance.LogControlVisibility)
-            {
-                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-                LogGrid.Children.Add(logOutput);
-            }
-            else
-            {
-                LogGrid.Visibility = Visibility.Collapsed;
-            }
+            ProjectKBConfig.Instance.PropertyChanged += ProjectKBConfig_PropertyChanged;
+            ApplyLogControlVisibility();
+            ApplyOutputTextVisibility();
 
             this.Closed += (s, e) =>
             {
                 ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
+                ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
 
                 SummaryManager.GetInstance().Save();
                 ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
                 this.Dispose();
             };
 
+        }
+
+        private void ProjectKBConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ProjectKBConfig.LogControlVisibility))
+            {
+                ApplyLogControlVisibility();
+            }
+
+            if (e.PropertyName == nameof(ProjectKBConfig.OutputTextVisibility))
+            {
+                ApplyOutputTextVisibility();
+            }
+        }
+
+        private void ApplyLogControlVisibility()
+        {
+            if (ProjectKBConfig.Instance.LogControlVisibility)
+            {
+                LogGrid.Visibility = Visibility.Visible;
+                if (logOutput == null)
+                {
+                    logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                    LogGrid.Children.Add(logOutput);
+                }
+                return;
+            }
+
+            LogGrid.Visibility = Visibility.Collapsed;
+            if (logOutput == null)
+            {
+                return;
+            }
+
+            LogGrid.Children.Remove(logOutput);
+            logOutput.Dispose();
+            logOutput = null;
+        }
+
+        private void ApplyOutputTextVisibility()
+        {
+            if (ProjectKBConfig.Instance.OutputTextVisibility)
+            {
+                outputText.Visibility = Visibility.Visible;
+                OutputTextRow.Height = new GridLength(1, GridUnitType.Star);
+                return;
+            }
+
+            outputText.Visibility = Visibility.Collapsed;
+            OutputTextRow.Height = new GridLength(0);
         }
 
 
@@ -1193,6 +1239,7 @@ namespace ProjectKB
         public void Dispose()
         {
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
+            ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
             ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
             if (flowControl != null)
             {
