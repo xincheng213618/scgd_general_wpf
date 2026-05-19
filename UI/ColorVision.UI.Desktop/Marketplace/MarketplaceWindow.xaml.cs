@@ -36,7 +36,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             this.DataContext = MarketplaceManager.GetInstance(); ;
-            DefalutSearchComboBox.ItemsSource = new List<string>() { "ImageProjector", "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin", "Spectrum" };
+            DefalutSearchComboBox.ItemsSource = new List<string>() {};
             ListViewPlugins.SelectedIndex = 0;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => MarketplaceManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
         }

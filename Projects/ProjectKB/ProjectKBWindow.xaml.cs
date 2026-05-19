@@ -90,7 +90,6 @@ namespace ProjectKB
 
             ProjectKBConfig.Instance.PropertyChanged += ProjectKBConfig_PropertyChanged;
             ApplyLogControlVisibility();
-            ApplyOutputTextVisibility();
 
             this.Closed += (s, e) =>
             {
@@ -111,10 +110,6 @@ namespace ProjectKB
                 ApplyLogControlVisibility();
             }
 
-            if (e.PropertyName == nameof(ProjectKBConfig.OutputTextVisibility))
-            {
-                ApplyOutputTextVisibility();
-            }
         }
 
         private void ApplyLogControlVisibility()
@@ -140,20 +135,6 @@ namespace ProjectKB
             logOutput.Dispose();
             logOutput = null;
         }
-
-        private void ApplyOutputTextVisibility()
-        {
-            if (ProjectKBConfig.Instance.OutputTextVisibility)
-            {
-                outputText.Visibility = Visibility.Visible;
-                OutputTextRow.Height = new GridLength(1, GridUnitType.Star);
-                return;
-            }
-
-            outputText.Visibility = Visibility.Collapsed;
-            OutputTextRow.Height = new GridLength(0);
-        }
-
 
         private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)
         {

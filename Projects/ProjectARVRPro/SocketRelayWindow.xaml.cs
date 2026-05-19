@@ -14,7 +14,7 @@ namespace ProjectARVRPro
         private readonly SocketRelayManager _relayManager = SocketRelayManager.GetInstance();
         private bool _isInitializing;
 
-        public static void OpenWindow(bool activate)
+        public static void OpenWindow()
         {
             if (_window == null)
             {
@@ -29,10 +29,7 @@ namespace ProjectARVRPro
                 return;
             }
 
-            if (activate)
-            {
-                _window.Activate();
-            }
+            _window.Activate();
         }
 
         public SocketRelayWindow()

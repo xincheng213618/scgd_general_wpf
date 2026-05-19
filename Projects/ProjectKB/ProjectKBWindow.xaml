@@ -254,7 +254,7 @@
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
-                    <RowDefinition Height="75"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -340,11 +340,11 @@
                         </DockPanel>
                     </StackPanel>
                 </Grid>
-                <Border Grid.Row="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
-                    <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+                <Border Grid.Row="1" Visibility="{Binding LogControlVisibility,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" Height="75" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
+                    <TextBox x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
                 </Border>
 
-                <RichTextBox x:Name="outputText" Grid.Row="2" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <RichTextBox x:Name="outputText" Grid.Row="2" Margin="5,0" Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <FlowDocument>  
                         <Paragraph>
 

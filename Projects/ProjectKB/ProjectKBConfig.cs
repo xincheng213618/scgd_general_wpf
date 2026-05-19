@@ -44,15 +44,10 @@ namespace ProjectKB
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
         }
 
-        [DisplayName("显示底部日志面板"), Category("KB")]
-        [Description("关闭后隐藏主界面底部实时日志面板；仍可通过状态栏“日志”按钮打开独立日志窗口。")]
+        [DisplayName("显示日志面板"), Category("KB")]
+        [Description("关闭后隐藏主界面运行日志和底部实时日志面板；仍可通过状态栏“日志”按钮打开独立日志窗口。")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
-
-        [DisplayName("显示结果详情面板"), Category("KB")]
-        [Description("关闭后隐藏主界面右侧详细文本结果，只保留图片、Summary、结果列表等核心信息。")]
-        public bool OutputTextVisibility { get => _OutputTextVisibility; set { _OutputTextVisibility = value; OnPropertyChanged(); } }
-        private bool _OutputTextVisibility = true;
 
         [DisplayName("重试次数")]
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }
