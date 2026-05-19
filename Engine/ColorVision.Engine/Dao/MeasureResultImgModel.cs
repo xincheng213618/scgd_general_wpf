@@ -5,13 +5,28 @@ using System;
 namespace ColorVision.Engine
 {
     [@SugarTable("t_scgd_measure_result_img")]
-    public class MeasureResultImgModel : EntityBase
+    public class MeasureResultImgModel : EntityBase, IInitTables
     {
         [SugarColumn(ColumnName ="batch_id")]
         public int BatchId { get; set; }
 
+        [SugarColumn(ColumnName = "z_index", IsNullable = true)]
+        public int? ZIndex { get; set; }
+
+        [SugarColumn(ColumnName = "nd_port", IsNullable = true)]
+        public int? NDPort { get; set; }
+
         [SugarColumn(ColumnName = "params" ,ColumnDataType ="json")]
         public string? Params { get; set; }
+
+        [SugarColumn(ColumnName = "smu_data_id", IsNullable = true)]
+        public int? SmuDataId { get; set; }
+
+        [SugarColumn(ColumnName = "i_result", IsNullable = true)]
+        public double? IResult { get; set; }
+
+        [SugarColumn(ColumnName = "v_result", IsNullable = true)]
+        public double? VResult { get; set; }
 
         [SugarColumn(ColumnName ="raw_file")]
         public string? RawFile { get; set; }
