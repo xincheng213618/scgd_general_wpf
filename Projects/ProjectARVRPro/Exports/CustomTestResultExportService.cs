@@ -7,10 +7,10 @@ namespace ProjectARVRPro.Exports
             new JinxingInspectionXlsxExporter(),
         ];
 
-        public static string Export(ObjectiveTestResultExportContext context, string profileName)
+        public static string Export(ObjectiveTestResultExportContext context, CustomTestResultOutputProfile profile)
         {
             ITestResultCustomExporter exporter = Exporters.FirstOrDefault(item =>
-                string.Equals(item.ProfileName, profileName, StringComparison.OrdinalIgnoreCase))
+                item.Profile == profile)
                 ?? Exporters[0];
 
             return exporter.Export(context);

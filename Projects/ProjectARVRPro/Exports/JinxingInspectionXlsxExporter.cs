@@ -8,12 +8,17 @@ namespace ProjectARVRPro.Exports
 {
     public sealed class JinxingInspectionXlsxExporter : ITestResultCustomExporter
     {
-        public const string ProfileNameValue = "Jinxing10Inspection";
-
         private const string ResultSheetName = "雷鸟光机测试结果表";
         private const string SpecSheetName = "Sheet1";
 
-        public string ProfileName => ProfileNameValue;
+        private static readonly string[] TemplateFileNames =
+        [
+            "金星1.0光机抽检规格（视彩成像色度计）(1).xlsx",
+            "金星1.0光机抽检规格（视彩成像色度计）.xlsx",
+            "Jinxing10Inspection.xlsx",
+        ];
+
+        public CustomTestResultOutputProfile Profile => CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
         public string FileSuffix => "JinxingInspection";
 
@@ -22,7 +27,7 @@ namespace ProjectARVRPro.Exports
             ArgumentNullException.ThrowIfNull(context);
             Directory.CreateDirectory(context.OutputDirectory);
 
-            using IWorkbook workbook = CreateWorkbook(context.TemplatePath);
+            using IWorkbook workbook = CreateWorkbook(context.TemplateDirectory);
             ISheet sheet = workbook.GetSheet(ResultSheetName)
                 ?? (workbook.NumberOfSheets > 0 ? workbook.GetSheetAt(0) : workbook.CreateSheet(ResultSheetName));
             int dataRowIndex = GetNextDataRowIndex(sheet);
@@ -37,8 +42,9 @@ namespace ProjectARVRPro.Exports
             return outputPath;
         }
 
-        private static IWorkbook CreateWorkbook(string? templatePath)
+        private static IWorkbook CreateWorkbook(string? templateDirectory)
         {
+            string? templatePath = ResolveTemplatePath(templateDirectory);
             if (!string.IsNullOrWhiteSpace(templatePath) && File.Exists(templatePath))
             {
                 using FileStream input = File.OpenRead(templatePath);
@@ -49,6 +55,27 @@ namespace ProjectARVRPro.Exports
             CreateBuiltInResultSheet(workbook);
             CreateBuiltInSpecSheet(workbook);
             return workbook;
+        }
+
+        private static string? ResolveTemplatePath(string? templateDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(templateDirectory))
+                return null;
+
+            if (File.Exists(templateDirectory))
+                return templateDirectory;
+
+            if (!Directory.Exists(templateDirectory))
+                return null;
+
+            foreach (string fileName in TemplateFileNames)
+            {
+                string candidate = Path.Combine(templateDirectory, fileName);
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+
+            return null;
         }
 
         private static void CreateBuiltInResultSheet(IWorkbook workbook)

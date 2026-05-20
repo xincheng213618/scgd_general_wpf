@@ -437,7 +437,7 @@
                                                     ToolTip="{x:Static properties:Resources.TipApplyPreprocess}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnExecute}" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnReapply}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>

@@ -819,10 +819,10 @@
     <value>When enabled, left-click drag to pan; otherwise hold Ctrl to pan.</value>
   </data>
   <data name="TbRefDrag" xml:space="preserve">
-    <value>Ref Drag</value>
+    <value>Section Marker</value>
   </data>
   <data name="TbRefDragTip" xml:space="preserve">
-    <value>Drag reference azimuth lines and polar circles directly on image.</value>
+    <value>Drag section markers, including azimuth lines and polar circles, directly on the image.</value>
   </data>
   <data name="TbZoomOut" xml:space="preserve">
     <value>Zoom Out</value>
@@ -1423,6 +1423,9 @@
   </data>
   <data name="MsgRecordedSlot" xml:space="preserve">
     <value>Recorded {0}</value>
+  </data>
+  <data name="MsgRecordSlot" xml:space="preserve">
+    <value>Record {0}</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} recorded

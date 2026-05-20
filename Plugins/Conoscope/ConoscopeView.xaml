@@ -82,19 +82,24 @@
                     <TextBox x:Name="txtToolbarZoomRatio" Width="54" Margin="4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Text="1.00" ToolTip="{x:Static properties:Resources.TbZoomRatioTip}" PreviewKeyDown="txtToolbarZoomRatio_PreviewKeyDown" LostFocus="txtToolbarZoomRatio_LostFocus" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFullscreen}" ToolTip="{x:Static properties:Resources.TbFullscreenTip}" Click="ToolbarFullScreen_Click" />
                     <Separator/>
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="3D" ToolTip="{x:Static properties:Resources.TipOpen3DView}" Click="ToolbarOpen3D_Click" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="CIE" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}" Click="ToolbarOpenCie_Click" />
                 </ToolBar>
             </Border>
-            <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Padding="8" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
-                <StackPanel>
-                    <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="SemiBold" Text="Y" HorizontalAlignment="Center" />
-                    <TextBlock x:Name="tbPseudoColorLegendMax" Margin="0,6,0,4" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
-                    <Border Width="18" Height="124" BorderBrush="#55FFFFFF" BorderThickness="1">
+            <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,48" Padding="8,6" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="SemiBold" Text="Y" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock x:Name="tbPseudoColorLegendMin" Grid.Column="1" Foreground="White" FontSize="11" VerticalAlignment="Center" Text="0" />
+                    <Border Grid.Column="2" Width="150" Height="18" Margin="6,0" BorderBrush="#55FFFFFF" BorderThickness="1">
                         <Image x:Name="imgPseudoColorLegend" Stretch="Fill" />
                     </Border>
-                    <TextBlock x:Name="tbPseudoColorLegendMin" Margin="0,4,0,0" Foreground="White" FontSize="11" HorizontalAlignment="Center" Text="0" />
-                </StackPanel>
+                    <TextBlock x:Name="tbPseudoColorLegendMax" Grid.Column="3" Foreground="White" FontSize="11" VerticalAlignment="Center" Text="0" />
+                </Grid>
             </Border>
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />

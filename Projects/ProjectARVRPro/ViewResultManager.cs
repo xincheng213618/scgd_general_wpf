@@ -71,14 +71,15 @@ namespace ProjectARVRPro
         private bool _IsSaveCustomXlsx;
 
         [DisplayName("客制化输出类型"), Category("客制化输出")]
-        [Description("当前支持 Jinxing10Inspection；后续新增客户格式时在导出器中注册新的Profile")]
-        public string CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
-        private string _CustomOutputProfile = JinxingInspectionXlsxExporter.ProfileNameValue;
+        [Description("选择需要追加输出的客户表格格式")]
+        public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
+        private CustomTestResultOutputProfile _CustomOutputProfile = CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
-        [DisplayName("客制化XLSX模板"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("客制化输出")]
-        [Description("可选。留空时使用内置金星1.0抽检表结构；填写后会以该XLSX为模板写入数据行")]
-        public string CustomXlsxTemplatePath { get => _CustomXlsxTemplatePath; set { _CustomXlsxTemplatePath = value; OnPropertyChanged(); } }
-        private string _CustomXlsxTemplatePath = string.Empty;
+        [DisplayName("客制化XLSX模板文件夹"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
+        [Description("可选。留空时使用内置金星1.0抽检表结构；填写后会按客制化输出类型在该文件夹中查找XLSX模板")]
+        public string CustomXlsxTemplateDirectory { get => _CustomXlsxTemplateDirectory; set { _CustomXlsxTemplateDirectory = value; OnPropertyChanged(); } }
+        private string _CustomXlsxTemplateDirectory = string.Empty;
+
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable

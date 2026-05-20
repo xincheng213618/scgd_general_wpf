@@ -71,11 +71,12 @@ namespace Conoscope
         {
             if (capture == null)
             {
-                button.Content = string.Format(Properties.Resources.MsgRecordedSlot, slotName);
+                button.Content = string.Format(Properties.Resources.MsgRecordSlot, slotName);
                 button.ClearValue(Control.BackgroundProperty);
                 button.ClearValue(Control.BorderBrushProperty);
                 button.ClearValue(Control.ForegroundProperty);
                 button.ClearValue(Control.FontWeightProperty);
+                button.ClearValue(FrameworkElement.ToolTipProperty);
                 return;
             }
 
@@ -84,7 +85,7 @@ namespace Conoscope
             button.BorderBrush = new SolidColorBrush(accentColor);
             button.Foreground = Brushes.White;
             button.FontWeight = FontWeights.SemiBold;
-            button.ToolTip = $"{slotName} {Properties.Resources.MsgRecordedSlot}\n{Properties.Resources.MsgSlotRecordedDetail}\n{capture.PointCount}";
+            button.ToolTip = string.Format(Properties.Resources.MsgSlotRecordedDetail, slotName, capture.SourceDisplayName, capture.PointCount);
         }
 
         private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e)
