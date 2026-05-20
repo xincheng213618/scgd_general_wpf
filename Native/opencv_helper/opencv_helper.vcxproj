@@ -190,7 +190,6 @@
     <ClInclude Include="..\include\common.h" />
     <ClInclude Include="..\include\custom_file.h" />
     <ClInclude Include="..\include\custom_structs.h" />
-    <ClInclude Include="..\include\opencv_export.h" />
     <ClInclude Include="..\include\opencv_media_export.h" />
     <ClInclude Include="..\include\video_export.h" />
     <ClInclude Include="algorithm\sfr\sfr_base.h" />
@@ -211,7 +210,6 @@
     <ClCompile Include="custom_file.cpp" />
     <ClCompile Include="exports\sfr_export.cpp" />
     <ClCompile Include="native_log.cpp" />
-    <ClCompile Include="opencv_export.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fusion.cpp" />
     <ClCompile Include="opencv_media_export.cpp" />

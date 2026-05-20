@@ -32,21 +32,28 @@ namespace Conoscope.Core
             ExportChannel channel,
             ColormapTypes colormap,
             Func<OpenCvSharp.Mat> createColorDifferenceMat,
-            bool usePseudoColor)
+            bool usePseudoColor,
+            OpenCvSharp.Mat? rangeMask = null,
+            OpenCvSharp.Mat? rangeOutsideMask = null)
         {
             using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat);
-            using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
             using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
+            OpenCvSharp.Mat? effectiveRangeMask = IsUsableMask(rangeMask, channelMat) ? rangeMask : null;
+            OpenCvSharp.Mat? effectiveOutsideMask = IsUsableMask(rangeOutsideMask, channelMat) ? rangeOutsideMask : null;
 
-            OpenCvSharp.Cv2.MinMaxLoc(channelMat, out double minValue, out double maxValue);
-            OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
-            normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
+            GetDisplayRange(channelMat, effectiveRangeMask, out double minValue, out double maxValue);
+            ConvertToGray8(channelMat, gray8, minValue, maxValue, effectiveOutsideMask);
 
             WriteableBitmap bitmap;
             if (usePseudoColor)
             {
                 using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
                 OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, ResolveOpenCvColormap(colormap));
+                if (effectiveOutsideMask != null)
+                {
+                    pseudoColor.SetTo(OpenCvSharp.Scalar.All(0), effectiveOutsideMask);
+                }
+
                 bitmap = pseudoColor.ToWriteableBitmap();
             }
             else
@@ -57,6 +64,37 @@ namespace Conoscope.Core
             bitmap.Freeze();
 
             return new ConoscopePseudoColorRenderResult(bitmap, channel, minValue, maxValue);
+        }
+
+        private static void GetDisplayRange(OpenCvSharp.Mat channelMat, OpenCvSharp.Mat? rangeMask, out double minValue, out double maxValue)
+        {
+            if (rangeMask == null)
+            {
+                OpenCvSharp.Cv2.MinMaxLoc(channelMat, out minValue, out maxValue);
+                return;
+            }
+
+            OpenCvSharp.Cv2.MinMaxLoc(channelMat, out minValue, out maxValue, out _, out _, rangeMask);
+        }
+
+        private static void ConvertToGray8(OpenCvSharp.Mat channelMat, OpenCvSharp.Mat gray8, double minValue, double maxValue, OpenCvSharp.Mat? rangeOutsideMask)
+        {
+            double range = maxValue - minValue;
+            if (!double.IsFinite(range) || range <= double.Epsilon)
+            {
+                gray8.Create(channelMat.Rows, channelMat.Cols, OpenCvSharp.MatType.CV_8UC1);
+                gray8.SetTo(OpenCvSharp.Scalar.All(0));
+            }
+            else
+            {
+                double scale = 255.0 / range;
+                channelMat.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1, scale, -minValue * scale);
+            }
+
+            if (rangeOutsideMask != null)
+            {
+                gray8.SetTo(OpenCvSharp.Scalar.All(0), rangeOutsideMask);
+            }
         }
 
         public static WriteableBitmap CreateHeightMapBitmap(
@@ -136,6 +174,15 @@ namespace Conoscope.Core
             return Enum.IsDefined(typeof(OpenCvSharp.ColormapTypes), value)
                 ? (OpenCvSharp.ColormapTypes)value
                 : OpenCvSharp.ColormapTypes.Jet;
+        }
+
+        private static bool IsUsableMask(OpenCvSharp.Mat? mask, OpenCvSharp.Mat source)
+        {
+            return mask != null
+                && !mask.Empty()
+                && mask.Width == source.Width
+                && mask.Height == source.Height
+                && mask.Type() == OpenCvSharp.MatType.CV_8UC1;
         }
     }
 }

@@ -58,6 +58,9 @@ namespace Conoscope
         private ConoscopeModelProfile? subscribedModelProfile;
         private const float MinPositiveXyzValue = 0.000001f;
         private const double Conoscope3DInitialHeightScale = 160.0;
+        private ConoscopeImageZoomMode imageZoomMode = ConoscopeImageZoomMode.Fit;
+        private bool applyCircleFitOnNextRefresh;
+        private bool isApplyingImageZoomMode;
 
         public event EventHandler StatusBarItemsChanged;
 
@@ -65,6 +68,15 @@ namespace Conoscope
         {
             Cartesian,
             Polar
+        }
+
+        private enum ConoscopeImageZoomMode
+        {
+            Fit,
+            Fill,
+            ActualSize,
+            CircleFit,
+            Custom
         }
 
         public double MaxAngle => ConoscopeConfig.CurrentModelProfile.MaxAngle;
@@ -235,6 +247,11 @@ namespace Conoscope
 
         private void Zoombox1_ContentMatrixChanged(object? sender, EventArgs e)
         {
+            if (!isApplyingImageZoomMode)
+            {
+                imageZoomMode = ConoscopeImageZoomMode.Custom;
+            }
+
             UpdateToolbarZoomRatio();
         }
 
@@ -327,6 +344,7 @@ namespace Conoscope
             colorDifferenceReferenceUMat = null;
             colorDifferenceReferenceVMat?.Dispose();
             colorDifferenceReferenceVMat = null;
+            DisposePseudoColorRangeMasks();
             DisposeCoordinateAxis();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);

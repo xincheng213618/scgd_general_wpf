@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace Conoscope
 {
@@ -108,32 +109,150 @@ namespace Conoscope
 
         private void ToolbarZoomIn_Click(object sender, RoutedEventArgs e)
         {
+            imageZoomMode = ConoscopeImageZoomMode.Custom;
             ImageView.Zoombox1.Zoom(1.25);
             UpdateToolbarZoomRatio();
         }
 
         private void ToolbarZoomOut_Click(object sender, RoutedEventArgs e)
         {
+            imageZoomMode = ConoscopeImageZoomMode.Custom;
             ImageView.Zoombox1.Zoom(0.8);
             UpdateToolbarZoomRatio();
         }
 
         private void ToolbarZoomNone_Click(object sender, RoutedEventArgs e)
         {
-            ImageView.Zoombox1.ZoomNone();
-            UpdateToolbarZoomRatio();
+            ApplyImageZoomMode(ConoscopeImageZoomMode.ActualSize, () => ImageView.Zoombox1.ZoomNone());
         }
 
         private void ToolbarZoomUniform_Click(object sender, RoutedEventArgs e)
         {
-            ImageView.Zoombox1.ZoomUniform();
-            UpdateToolbarZoomRatio();
+            ApplyImageZoomMode(ConoscopeImageZoomMode.Fit, () => ImageView.Zoombox1.ZoomUniform());
         }
 
         private void ToolbarZoomUniformToFill_Click(object sender, RoutedEventArgs e)
         {
-            ImageView.Zoombox1.ZoomUniformToFill();
+            ApplyImageZoomMode(ConoscopeImageZoomMode.Fill, () => ImageView.Zoombox1.ZoomUniformToFill());
+        }
+
+        private void ToolbarZoomCircleFit_Click(object sender, RoutedEventArgs e)
+        {
+            if (!HasXyzData())
+            {
+                MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            ApplyImageZoomMode(ConoscopeImageZoomMode.CircleFit, () =>
+            {
+                if (!TryApplyCircleFitZoom())
+                {
+                    ImageView.Zoombox1.ZoomUniform();
+                }
+            });
+        }
+
+        private void ApplyZoomAfterDisplayRefresh()
+        {
+            if (applyCircleFitOnNextRefresh)
+            {
+                applyCircleFitOnNextRefresh = false;
+                imageZoomMode = ConoscopeImageZoomMode.CircleFit;
+            }
+
+            switch (imageZoomMode)
+            {
+                case ConoscopeImageZoomMode.ActualSize:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.ActualSize, () => ImageView.Zoombox1.ZoomNone());
+                    break;
+                case ConoscopeImageZoomMode.Fill:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.Fill, () => ImageView.Zoombox1.ZoomUniformToFill());
+                    break;
+                case ConoscopeImageZoomMode.CircleFit:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.CircleFit, () =>
+                    {
+                        if (!TryApplyCircleFitZoom())
+                        {
+                            ImageView.Zoombox1.ZoomUniform();
+                        }
+                    });
+                    break;
+                case ConoscopeImageZoomMode.Custom:
+                    UpdateToolbarZoomRatio();
+                    break;
+                case ConoscopeImageZoomMode.Fit:
+                default:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.Fit, () => ImageView.UpdateZoomAndScale());
+                    break;
+            }
+        }
+
+        private void ApplyImageZoomMode(ConoscopeImageZoomMode zoomMode, Action zoomAction)
+        {
+            imageZoomMode = zoomMode;
+            isApplyingImageZoomMode = true;
+            try
+            {
+                zoomAction();
+            }
+            finally
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => isApplyingImageZoomMode = false));
+            }
+
             UpdateToolbarZoomRatio();
+        }
+
+        private bool TryApplyCircleFitZoom()
+        {
+            if (!TryGetCurrentCircleBounds(out Rect circleBounds))
+            {
+                return false;
+            }
+
+            ImageView.ZoomToImageRect(circleBounds);
+            return true;
+        }
+
+        private bool TryGetCurrentCircleBounds(out Rect circleBounds)
+        {
+            circleBounds = Rect.Empty;
+
+            int imageWidth = currentBitmapSource?.PixelWidth ?? XMat?.Width ?? 0;
+            int imageHeight = currentBitmapSource?.PixelHeight ?? XMat?.Height ?? 0;
+            if (imageWidth <= 0 || imageHeight <= 0)
+            {
+                return false;
+            }
+
+            Point center = currentImageCenter;
+            double radius = currentImageRadius;
+            if (!double.IsFinite(center.X) || !double.IsFinite(center.Y) || radius <= 0)
+            {
+                center = new Point(imageWidth / 2.0, imageHeight / 2.0);
+                double pixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(imageWidth, imageHeight);
+                radius = MaxAngle * pixelsPerDegree;
+            }
+
+            if (!double.IsFinite(radius) || radius <= 0)
+            {
+                return false;
+            }
+
+            double left = Math.Max(0, center.X - radius);
+            double top = Math.Max(0, center.Y - radius);
+            double right = Math.Min(imageWidth, center.X + radius);
+            double bottom = Math.Min(imageHeight, center.Y + radius);
+            double width = right - left;
+            double height = bottom - top;
+            if (width <= 0 || height <= 0)
+            {
+                return false;
+            }
+
+            circleBounds = new Rect(left, top, width, height);
+            return true;
         }
 
         private void txtToolbarZoomRatio_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -171,6 +290,7 @@ namespace Conoscope
                 currentZoom = 1;
             }
 
+            imageZoomMode = ConoscopeImageZoomMode.Custom;
             ImageView.Zoombox1.Zoom(zoomRatio / currentZoom);
             UpdateToolbarZoomRatio();
         }

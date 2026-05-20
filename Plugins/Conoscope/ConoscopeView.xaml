@@ -62,7 +62,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="*" />
             <ColumnDefinition Width="6"/>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
@@ -78,6 +78,7 @@
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="{x:Static properties:Resources.TbZoomIn}" Click="ToolbarZoomIn_Click" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="1:1" ToolTip="{x:Static properties:Resources.TbOriginalSize}" Click="ToolbarZoomNone_Click" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFit}" ToolTip="{x:Static properties:Resources.TbFitTip}" Click="ToolbarZoomUniform_Click" />
+                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="圆适" ToolTip="按有效圆区适应" Click="ToolbarZoomCircleFit_Click" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFill}" ToolTip="{x:Static properties:Resources.TbFillTip}" Click="ToolbarZoomUniformToFill_Click" />
                     <TextBox x:Name="txtToolbarZoomRatio" Width="54" Margin="4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Text="1.00" ToolTip="{x:Static properties:Resources.TbZoomRatioTip}" PreviewKeyDown="txtToolbarZoomRatio_PreviewKeyDown" LostFocus="txtToolbarZoomRatio_LostFocus" />
                     <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFullscreen}" ToolTip="{x:Static properties:Resources.TbFullscreenTip}" Click="ToolbarFullScreen_Click" />
@@ -108,11 +109,15 @@
                     <Separator/>
                     <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbCalc}" ToolTip="{x:Static properties:Resources.TbCalcTip}" Click="btnCalculateFocusCircles_Click" />
                     <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbClearAll}" ToolTip="{x:Static properties:Resources.TbClearAllTip}" Click="btnClearFocusCircles_Click" />
+                    <Separator/>
+                    <ComboBox x:Name="cbFocusPoiTemplate" Width="118" Height="28" DisplayMemberPath="Key" SelectedValuePath="Value" ToolTip="关注点 POI 模板" SelectionChanged="cbFocusPoiTemplate_SelectionChanged"/>
+                    <Button x:Name="btnSaveFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="存" ToolTip="保存当前关注点到 POI 模板" Click="btnSaveFocusPoiTemplate_Click" />
+                    <Button x:Name="btnManageFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="POI" ToolTip="管理 POI 模板" Click="btnManageFocusPoiTemplate_Click" />
                 </ToolBar>
             </Border>
         </Grid>
 
-        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
+        <GridSplitter Grid.Column="1" Width="2" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
 
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>

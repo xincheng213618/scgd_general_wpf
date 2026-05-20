@@ -28,6 +28,7 @@ namespace Conoscope
                 DisposeCoordinateAxis();
                 ImageView.Clear();
                 LoadConoscopeData(filename);
+                applyCircleFitOnNextRefresh = true;
 
                 if (PreprocessConfig.ApplyFilterOnOpen)
                 {

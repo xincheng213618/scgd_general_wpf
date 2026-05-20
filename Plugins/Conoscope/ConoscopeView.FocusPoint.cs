@@ -1,6 +1,10 @@
+using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Conoscope.Analysis;
 using Conoscope.Core;
@@ -10,7 +14,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 namespace Conoscope
 {
@@ -25,12 +32,221 @@ namespace Conoscope
 
         private bool isUpdatingFocusCircleToolSelection;
         private bool shouldRestoreReferenceInteractionAfterFocusMode;
+        private static int lastFocusPoiTemplateId = -1;
+        private int focusPoiTemplateLoadVersion;
+        private bool isUpdatingFocusPoiTemplateSelection;
 
         private void InitializeFocusPointTools()
         {
             SyncReferenceInteractionToggle();
             SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
             UpdateFocusCircleModeState();
+            LoadFocusPoiTemplatesAsync();
+        }
+
+        private void LoadFocusPoiTemplatesAsync(int preferredTemplateId = -1, bool applySelectedTemplate = true)
+        {
+            int version = ++focusPoiTemplateLoadVersion;
+            int templateId = preferredTemplateId > 0 ? preferredTemplateId : lastFocusPoiTemplateId;
+            SetFocusPoiTemplateControlsEnabled(false);
+
+            if (MySqlControl.GetInstance().IsConnect)
+            {
+                PopulateFocusPoiTemplates(version, templateId, applySelectedTemplate);
+                return;
+            }
+
+            PopulateFocusPoiTemplates(version, templateId, applySelectedTemplate);
+        }
+
+        private void PopulateFocusPoiTemplates(int version, int preferredTemplateId, bool applySelectedTemplate)
+        {
+            if (version != focusPoiTemplateLoadVersion || cbFocusPoiTemplate == null)
+            {
+                return;
+            }
+
+            if (!MySqlControl.GetInstance().IsConnect)
+            {
+                SetFocusPoiTemplateControlsEnabled(false);
+                return;
+            }
+
+            new TemplatePoi().Load();
+            ObservableCollection<TemplateModel<PoiParam>> templates = TemplatePoi.Params.CreateEmpty();
+
+            isUpdatingFocusPoiTemplateSelection = true;
+            try
+            {
+                cbFocusPoiTemplate.ItemsSource = templates;
+                int selectedIndex = 0;
+                if (preferredTemplateId > 0)
+                {
+                    int matchedIndex = templates.Select((item, index) => new { item, index })
+                        .FirstOrDefault(item => item.item.Value.Id == preferredTemplateId)?.index ?? -1;
+                    if (matchedIndex >= 0)
+                    {
+                        selectedIndex = matchedIndex;
+                    }
+                }
+
+                cbFocusPoiTemplate.SelectedIndex = selectedIndex;
+            }
+            finally
+            {
+                isUpdatingFocusPoiTemplateSelection = false;
+            }
+
+            SetFocusPoiTemplateControlsEnabled(true);
+            if (applySelectedTemplate && cbFocusPoiTemplate.SelectedValue is PoiParam poiParam && poiParam.Id != -1)
+            {
+                ApplyFocusPoiTemplate(poiParam);
+            }
+        }
+
+        private void SetFocusPoiTemplateControlsEnabled(bool isEnabled)
+        {
+            if (cbFocusPoiTemplate != null)
+            {
+                cbFocusPoiTemplate.IsEnabled = isEnabled;
+            }
+
+            if (btnSaveFocusPoiTemplate != null)
+            {
+                btnSaveFocusPoiTemplate.IsEnabled = isEnabled;
+            }
+
+            if (btnManageFocusPoiTemplate != null)
+            {
+                btnManageFocusPoiTemplate.IsEnabled = isEnabled;
+            }
+        }
+
+        private void cbFocusPoiTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingFocusPoiTemplateSelection || cbFocusPoiTemplate.SelectedValue is not PoiParam poiParam || poiParam.Id == -1)
+            {
+                return;
+            }
+
+            lastFocusPoiTemplateId = poiParam.Id;
+            ApplyFocusPoiTemplate(poiParam);
+        }
+
+        private void btnSaveFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetFocusPoiTemplateForSave(out PoiParam? poiParam) || poiParam == null)
+            {
+                return;
+            }
+
+            if (ImageView.FocusCircles.Count == 0)
+            {
+                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            SaveFocusPoiTemplate(poiParam);
+            lastFocusPoiTemplateId = poiParam.Id;
+            LoadFocusPoiTemplatesAsync(poiParam.Id, applySelectedTemplate: false);
+            MessageBox.Show($"已保存关注点到 POI 模板: {poiParam.Name}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void btnManageFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            int selectedIndex = cbFocusPoiTemplate.SelectedIndex > 0 ? cbFocusPoiTemplate.SelectedIndex - 1 : 0;
+            TemplateEditorWindow templateEditorWindow = new(new TemplatePoi(), selectedIndex)
+            {
+                Owner = Window.GetWindow(this),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            templateEditorWindow.ShowDialog();
+            LoadFocusPoiTemplatesAsync(lastFocusPoiTemplateId, applySelectedTemplate: false);
+        }
+
+        private bool TryGetFocusPoiTemplateForSave(out PoiParam? poiParam)
+        {
+            poiParam = null;
+            if (!MySqlControl.GetInstance().IsConnect)
+            {
+                MessageBox.Show("数据库未连接，无法保存 POI 模板。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            if (cbFocusPoiTemplate.SelectedValue is PoiParam selectedPoiParam && selectedPoiParam.Id != -1)
+            {
+                poiParam = selectedPoiParam;
+                return true;
+            }
+
+            string templateName = $"Conoscope关注点_{DateTime.Now:yyyyMMddHHmmss}";
+            TemplatePoi templatePoi = new();
+            templatePoi.Load();
+            templatePoi.Create(templateName);
+            templatePoi.Load();
+            poiParam = TemplatePoi.Params.LastOrDefault(item => string.Equals(item.Key, templateName, StringComparison.Ordinal))?.Value;
+            if (poiParam != null)
+            {
+                return true;
+            }
+
+            MessageBox.Show("创建 POI 模板失败。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        private void ApplyFocusPoiTemplate(PoiParam poiParam)
+        {
+            if (poiParam.Id == -1)
+            {
+                return;
+            }
+
+            lastFocusPoiTemplateId = poiParam.Id;
+            PoiParam.LoadPoiDetailFromDB(poiParam);
+            ImageView.ReplaceFocusCirclesFromPoiPoints(poiParam.PoiPoints);
+            UpdateFocusCircleToolbarState();
+        }
+
+        private void SaveFocusPoiTemplate(PoiParam poiParam)
+        {
+            UpdatePoiTemplateImageSize(poiParam);
+            poiParam.PoiPoints.Clear();
+            foreach (DVCircleText circle in ImageView.FocusCircles)
+            {
+                double radiusX = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+                double radiusY = Math.Max(circle.Attribute.RadiusY, ConoscopeImageHost.MinimumFocusCircleRadius);
+                poiParam.PoiPoints.Add(new PoiPoint
+                {
+                    Id = TryGetPoiDetailId(circle),
+                    Name = ResolveFocusCircleName(circle),
+                    PointType = GraphicTypes.Circle,
+                    PixX = circle.Attribute.Center.X,
+                    PixY = circle.Attribute.Center.Y,
+                    PixWidth = Math.Max(1, radiusX * 2),
+                    PixHeight = Math.Max(1, radiusY * 2)
+                });
+            }
+
+            poiParam.Save2DB();
+        }
+
+        private void UpdatePoiTemplateImageSize(PoiParam poiParam)
+        {
+            if (ImageView.ImageShow.Source is BitmapSource bitmapSource)
+            {
+                poiParam.Width = bitmapSource.PixelWidth;
+                poiParam.Height = bitmapSource.PixelHeight;
+            }
+            else if (ImageView.ImageShow.Source != null)
+            {
+                poiParam.Width = (int)Math.Round(ImageView.ImageShow.Source.Width);
+                poiParam.Height = (int)Math.Round(ImageView.ImageShow.Source.Height);
+            }
+        }
+
+        private static int TryGetPoiDetailId(DVCircleText circle)
+        {
+            return int.TryParse(circle.Attribute.Name, out int id) && id > 0 ? id : 0;
         }
 
         private void SyncReferenceInteractionToggle()

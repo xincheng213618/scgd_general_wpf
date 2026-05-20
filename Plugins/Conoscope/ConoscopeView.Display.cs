@@ -11,6 +11,14 @@ namespace Conoscope
 {
     public partial class ConoscopeView
     {
+        private OpenCvSharp.Mat? pseudoColorRangeMask;
+        private OpenCvSharp.Mat? pseudoColorRangeOutsideMask;
+        private int pseudoColorRangeMaskWidth;
+        private int pseudoColorRangeMaskHeight;
+        private int pseudoColorRangeMaskCenterX;
+        private int pseudoColorRangeMaskCenterY;
+        private int pseudoColorRangeMaskRadius;
+
         private void RefreshDisplayedImage()
         {
             if (!HasXyzData())
@@ -21,14 +29,17 @@ namespace Conoscope
             }
 
             ExportChannel displayChannel = GetSelectedDisplayChannel();
+            OpenCvSharp.Mat? rangeMask = GetPseudoColorRangeMask(XMat!.Width, XMat.Height);
             ConoscopePseudoColorRenderResult renderResult = ConoscopePseudoColorRenderer.Render(
-                XMat!,
+                XMat,
                 YMat!,
                 ZMat!,
                 displayChannel,
                 RenderingConfig.PseudoColorMap,
                 CreateColorDifferenceMat,
-                RenderingConfig.UsePseudoColor);
+                RenderingConfig.UsePseudoColor,
+                rangeMask,
+                rangeMask == null ? null : pseudoColorRangeOutsideMask);
 
             UpdateReferenceScale(renderResult.Channel, renderResult.MaxValue);
             if (RenderingConfig.UsePseudoColor)
@@ -43,9 +54,8 @@ namespace Conoscope
             DisposeCoordinateAxis();
             ImageView.Clear();
             ImageView.SetImageSource(renderResult.Bitmap);
-            ImageView.UpdateZoomAndScale();
-
             CreateAndAnalyzePolarLines();
+            ApplyZoomAfterDisplayRefresh();
             RaiseWindowQuickControlStateChanged();
         }
 
@@ -69,6 +79,70 @@ namespace Conoscope
         {
             currentReferenceScaleChannel = channel;
             currentReferenceScaleMaximum = maxValue;
+        }
+
+        private OpenCvSharp.Mat? GetPseudoColorRangeMask(int imageWidth, int imageHeight)
+        {
+            if (imageWidth <= 0 || imageHeight <= 0)
+            {
+                return null;
+            }
+
+            double pixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(imageWidth, imageHeight);
+            double radiusValue = MaxAngle * pixelsPerDegree;
+            if (!double.IsFinite(radiusValue) || radiusValue <= 0)
+            {
+                return null;
+            }
+
+            int centerX = (int)Math.Round(imageWidth / 2.0);
+            int centerY = (int)Math.Round(imageHeight / 2.0);
+            int radius = Math.Max(1, (int)Math.Round(radiusValue));
+
+            if (pseudoColorRangeMask != null
+                && pseudoColorRangeOutsideMask != null
+                && pseudoColorRangeMaskWidth == imageWidth
+                && pseudoColorRangeMaskHeight == imageHeight
+                && pseudoColorRangeMaskCenterX == centerX
+                && pseudoColorRangeMaskCenterY == centerY
+                && pseudoColorRangeMaskRadius == radius)
+            {
+                return pseudoColorRangeMask;
+            }
+
+            DisposePseudoColorRangeMasks();
+
+            pseudoColorRangeMaskWidth = imageWidth;
+            pseudoColorRangeMaskHeight = imageHeight;
+            pseudoColorRangeMaskCenterX = centerX;
+            pseudoColorRangeMaskCenterY = centerY;
+            pseudoColorRangeMaskRadius = radius;
+
+            pseudoColorRangeMask = new OpenCvSharp.Mat(imageHeight, imageWidth, OpenCvSharp.MatType.CV_8UC1, OpenCvSharp.Scalar.All(0));
+            OpenCvSharp.Cv2.Circle(
+                pseudoColorRangeMask,
+                new OpenCvSharp.Point(centerX, centerY),
+                radius,
+                OpenCvSharp.Scalar.All(255),
+                -1,
+                OpenCvSharp.LineTypes.Link8);
+
+            pseudoColorRangeOutsideMask = new OpenCvSharp.Mat();
+            OpenCvSharp.Cv2.BitwiseNot(pseudoColorRangeMask, pseudoColorRangeOutsideMask);
+            return pseudoColorRangeMask;
+        }
+
+        private void DisposePseudoColorRangeMasks()
+        {
+            pseudoColorRangeMask?.Dispose();
+            pseudoColorRangeMask = null;
+            pseudoColorRangeOutsideMask?.Dispose();
+            pseudoColorRangeOutsideMask = null;
+            pseudoColorRangeMaskWidth = 0;
+            pseudoColorRangeMaskHeight = 0;
+            pseudoColorRangeMaskCenterX = 0;
+            pseudoColorRangeMaskCenterY = 0;
+            pseudoColorRangeMaskRadius = 0;
         }
 
         private void UpdatePseudoColorMapPreview()
