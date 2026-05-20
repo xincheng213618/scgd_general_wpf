@@ -45,36 +45,43 @@ flowchart TD
 
 ## 当前工具层到底做了什么
 
-当前默认只注册了七个只读工具：
+当前默认注册了九个工具，其中七个只读工具加两个执行型应用控制工具：
 
-1. FetchUrl
+1. SetTheme
+   作用：按用户明确意图切换应用主题，例如浅色、深色、粉色、青色或跟随系统。
+
+2. SetLanguage
+   作用：按用户明确意图切换界面语言，并复用现有重启确认流程。
+
+3. FetchUrl
    作用：优先抓取 planner 通过 query 指定的 URL；如果 planner 没给出 URL，再回退到用户文本里的 URL 并抓取网页正文。
 
-2. SearchFiles
+4. SearchFiles
    作用：按文件名或路径片段在当前解决方案搜索根里找候选文件。
 
-3. GrepText
+5. GrepText
    作用：按关键字或标识符在当前解决方案文本文件里找命中行。
 
-4. ListDirectory
+6. ListDirectory
    作用：列出用户在当前消息中明确提到的本地文件夹内容，并产出后续可读文件候选。
 
-5. ReadAttachedFile
+7. ReadAttachedFile
    作用：读取“当前会话已经挂载的文件附件”。
 
-6. ReadLocalFile
+8. ReadLocalFile
    作用：读取用户在当前消息中明确提到的本地文本文件。
 
-7. GetRecentLog
+9. GetRecentLog
    作用：读取最近日志，并可按 planner 提供的 query 过滤结果。
 
-这说明当前 Agent 的文件读取能力有明确边界：
+这说明当前 Agent 仍然有明确的受控能力边界：
 
 - 它能读取已经挂到会话里的文件。
 - 它也能读取当前用户消息里显式出现的本地文本文件路径。
 - 它还能基于当前解决方案根目录、活动文档目录和附件所在目录，先做一轮轻量文件名/文本检索。
-- 它仍不能根据模型在对话里临时生成的新路径去读取任意本地文件。
-- 它没有“路径参数”这一层，也没有更细粒度的文件访问策略对象。
+- 它现在还能在显式用户意图下执行少量应用控制动作，例如切换主题和界面语言。
+- 它仍不能根据模型在对话里临时生成的新路径去读取任意本地文件，也不能执行任意副作用操作。
+- 它已经有最小结构化参数层，但参数面仍然比较窄。
 
 ## 它和 ReAct 的核心差异
 
@@ -86,7 +93,7 @@ ReAct 的典型模式是：
 4. 模型基于 Observation 继续决定下一步
 5. 多轮后再给出最终答案
 
-而当前实现不是这个模式，差异主要有四点：
+而当前实现和理想中的完整 coding agent 仍有差距，主要有四点：
 
 ### 1. 工具不是模型决定的，而是规则提前决定的
 
@@ -97,32 +104,33 @@ ReAct 的典型模式是：
 - 工具是否执行，取决于本地 C# 规则
 - 不是模型在上下文中动态决定“下一步该读哪个文件”
 
-### 2. 工具没有结构化参数
+### 2. 工具已有轻量结构化参数，但参数面仍有限
 
 当前 ICopilotTool 的签名是：
 
 ```csharp
 bool CanHandle(CopilotAgentRequest request);
-Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken);
+Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken);
 ```
 
-这意味着工具拿到的是整个 request，而不是一个结构化的 tool call，例如：
+这意味着工具除了拿到整个 request，也会拿到一个最小结构化输入对象，例如：
 
 ```json
 { "tool": "read_file", "path": "...", "startLine": 1, "endLine": 200 }
 ```
 
-所以它目前更像“请求级触发器”，不像“可被模型参数化调用的函数”。
+当前这层结构化输入主要覆盖 query、path、startLine、endLine 四个字段，已经足以支持搜索、文件读取，以及 SetTheme/SetLanguage 这类小型应用控制动作；但它仍不像完整函数调用那样有更细的 schema、权限模型和参数验证体系。
 
-### 3. 工具执行完就直接进入最终回答
+### 3. 服务层已经有最小 planner-executor 循环，但还不是完整闭环
 
 CopilotAgentService.RunAsync 的模式是：
 
-- 先把所有选中的工具都执行完
-- 再一次性把工具结果喂给模型
-- 模型直接输出最终回答
+- 每轮先让 planner 在当前可用工具里选择一个动作
+- 执行该工具并记录 observation
+- 在 MaxToolRounds 范围内继续下一轮，直到 planner finish 或工具阶段收敛
+- 最后再把累计工具观察喂给模型输出最终回答
 
-中间没有“工具执行一轮后，再决定下一轮动作”的闭环。
+所以它已经不是单轮“先全执行工具，再统一回答”的模式，但还没有演进到带编辑、测试、验证的完整 coding loop。
 
 ### 4. 没有针对代码代理的便宜检索层
 
@@ -145,8 +153,9 @@ CopilotAgentService.RunAsync 的模式是：
 
 ```text
 用户任务
--> 规则选工具
--> 执行只读工具
+-> 规则暴露工具
+-> planner 选下一步
+-> 执行受控工具
 -> 压缩结果
 -> 调大模型
 -> 结束

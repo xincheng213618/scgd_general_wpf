@@ -124,13 +124,13 @@ namespace ColorVision.Copilot
             builder.AppendLine("你现在要为 Agent 选择下一步动作。只返回 JSON。不要回答用户问题。");
             builder.AppendLine();
             builder.AppendLine("JSON 格式：");
-            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog/FetchUrl 等工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
+            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"搜索或应用控制类工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
             builder.AppendLine();
             builder.AppendLine("决策规则：");
             builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
             builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
             builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog 或 FetchUrl 时，尽量填写 input.query，使用更短、更聚焦的搜索词；当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n7. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog、FetchUrl、SetTheme 或 SetLanguage 时，尽量填写 input.query；搜索类工具使用更短、更聚焦的关键词，SetTheme/SetLanguage 则直接填写目标主题或目标语言。\n5. 当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n6. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n7. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n8. reason 保持一句话，20 到 60 字优先。");
             builder.AppendLine();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());

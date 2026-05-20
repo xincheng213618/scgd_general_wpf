@@ -301,6 +301,20 @@ namespace ColorVision.Copilot
             if (availableTools.Count == 0)
                 return null;
 
+            if (CopilotApplicationControlSupport.HasThemeIntent(request.UserText))
+            {
+                var themeTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SetTheme", StringComparison.OrdinalIgnoreCase));
+                if (themeTool != null)
+                    return themeTool;
+            }
+
+            if (CopilotApplicationControlSupport.HasLanguageIntent(request.UserText))
+            {
+                var languageTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SetLanguage", StringComparison.OrdinalIgnoreCase));
+                if (languageTool != null)
+                    return languageTool;
+            }
+
             var preferredToolNames = request.Mode switch
             {
                 CopilotAgentMode.Web => new[]
@@ -345,6 +359,15 @@ namespace ColorVision.Copilot
 
         private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)
         {
+            if (string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Query = request.UserText ?? string.Empty,
+                };
+            }
+
             if (string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotAgentToolInput
@@ -482,7 +505,9 @@ namespace ColorVision.Copilot
             return string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string TruncateObservation(string text, int maxCharacters)

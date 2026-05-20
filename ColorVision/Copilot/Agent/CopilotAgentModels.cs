@@ -36,7 +36,7 @@ namespace ColorVision.Copilot
                 {
                     Mode = CopilotAgentMode.Auto,
                     Label = "Agent",
-                    Description = "自动分析任务并调用只读工具。",
+                    Description = "自动分析任务并按需调用工具。",
                 },
             };
         }
