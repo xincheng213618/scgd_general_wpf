@@ -18,6 +18,8 @@ public class RealPOIData
 
 	public CVTemplateParam OutputTemplate { get; set; }
 
+	public CVTemplateParam SubPixelTemplate { get; set; }
+
 	public string POIReviseFileName { get; set; }
 
 	public bool IsResultAdd { get; set; }
@@ -28,7 +30,7 @@ public class RealPOIData
 
 	public SMUResultData SMUData { get; set; }
 
-	public RealPOIData(string imgFileName, string filterTempName, string reviseTempName, string reviseFileName, string outTempName, POITypeData poiData, int cie_mid, int cie_resultType, int poi_mid, bool isResultAdd, bool isSubPixel, bool isCCTWave)
+	public RealPOIData(string imgFileName, string filterTempName, string reviseTempName, string reviseFileName, string outTempName, string subPixelTempName, POITypeData poiData, int cie_mid, int cie_resultType, int poi_mid, bool isResultAdd, bool isSubPixel, bool isCCTWave)
 	{
 		ImgFileName = imgFileName;
 		POIReviseFileName = reviseFileName;
@@ -50,6 +52,11 @@ public class RealPOIData
 		{
 			ID = -1,
 			Name = outTempName
+		};
+		SubPixelTemplate = new CVTemplateParam
+		{
+			ID = -1,
+			Name = subPixelTempName
 		};
 		IsResultAdd = isResultAdd;
 		IsSubPixel = isSubPixel;

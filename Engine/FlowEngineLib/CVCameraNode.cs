@@ -45,8 +45,6 @@ public class CVCameraNode : CVBaseServerNode
 
 	private STNodeEditText<CV2LVChannelMode> m_ctrl_CV2LVChannel;
 
-	private STNodeText[] m_ctrl_Text;
-
 	private Channel _Channel;
 
 	private string[] szTypeCode = new string[3] { "R", "G", "B" };
@@ -271,31 +269,6 @@ public class CVCameraNode : CVBaseServerNode
 		m_ctrl_caliTemp = CreateStringControl(custom_item, "校正模板:", _CalibTempName);
 		custom_item.Y += 25;
 		m_ctrl_poitemplate = CreateStringControl(custom_item, "POI:", GetPOITempDisplay());
-	}
-
-	private string getChannelText(ChannelData chData)
-	{
-		return "[" + chData.FWPort + "]" + chData.TypeCode + "曝光(ms):" + chData.Temp;
-	}
-
-	private void setCtrlText()
-	{
-		int channelCount = _Channel.GetChannelCount();
-		for (int i = 0; i < channelCount; i++)
-		{
-			ChannelData channel = _Channel.GetChannel(i);
-			m_ctrl_Text[i].Text = getChannelText(channel);
-		}
-	}
-
-	private void setEditValue()
-	{
-		int channelCount = _Channel.GetChannelCount();
-		for (int i = 0; i < channelCount; i++)
-		{
-			ChannelData channel = _Channel.GetChannel(i);
-			m_ctrl_expTime[i].Value = channel.Temp;
-		}
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

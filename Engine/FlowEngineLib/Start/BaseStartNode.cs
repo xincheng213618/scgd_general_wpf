@@ -359,13 +359,26 @@ public abstract class BaseStartNode : CVCommonNode
 	public void FireFinished(CVStartCFC startAction)
 	{
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
-		string message = string.Empty;
-		if (flowStatus == StatusTypeEnum.Failed && startAction.Data.ContainsKey("Msg"))
+		string text = string.Empty;
+		if (flowStatus == StatusTypeEnum.Failed || flowStatus == StatusTypeEnum.OverTime)
 		{
-			message = startAction.Data["Msg"].ToString();
+			string text2 = string.Empty;
+			if (startAction.Data.ContainsKey("ErrorNodeName"))
+			{
+				text2 = startAction.Data["ErrorNodeName"].ToString();
+			}
+			if (startAction.Data.ContainsKey(text2))
+			{
+				string text3 = startAction.Data[text2].ToString();
+				text = text2 + ":" + text3;
+			}
+			if (string.IsNullOrEmpty(text) && startAction.Data.ContainsKey("Msg"))
+			{
+				text = startAction.Data["Msg"].ToString();
+			}
 		}
 		logger.InfoFormat("Fire Flow Finished Before");
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message));
+		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, text));
 		logger.InfoFormat("Fire Flow Finished End");
 	}
 }
