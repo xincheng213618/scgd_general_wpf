@@ -154,6 +154,25 @@ namespace ColorVision.Copilot
                 ?? theme.ToString();
         }
 
+        public static IReadOnlyList<string> GetThemeAliases(Theme theme)
+        {
+            var aliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                theme.ToString(),
+                GetThemeDisplayName(theme),
+            };
+
+            if (ThemeAliases.TryGetValue(theme, out var aliasValues))
+            {
+                foreach (var alias in aliasValues)
+                    aliases.Add(alias);
+            }
+
+            return aliases
+                .Where(ShouldKeepAlias)
+                .ToArray();
+        }
+
         public static string GetThemeOptionsText()
         {
             return string.Join("，", Enum.GetValues<Theme>().Select(theme => $"{GetThemeDisplayName(theme)}({theme})"));
@@ -184,6 +203,15 @@ namespace ColorVision.Copilot
         public static string GetLanguageOptionsText()
         {
             return string.Join("，", GetAvailableLanguages().Select(language => $"{GetLanguageDisplayName(language)}({language})"));
+        }
+
+        public static IReadOnlyList<string> GetLanguageAliases(string? cultureName)
+        {
+            var value = cultureName ?? string.Empty;
+            var aliasMap = GetLanguageAliasMap();
+            return aliasMap.TryGetValue(value, out var aliases)
+                ? aliases
+                : Array.Empty<string>();
         }
 
         private static IReadOnlyDictionary<string, IReadOnlyList<string>> GetLanguageAliasMap()

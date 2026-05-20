@@ -130,7 +130,7 @@ namespace ColorVision.Copilot
             builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
             builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
             builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog、FetchUrl、SetTheme 或 SetLanguage 时，尽量填写 input.query；搜索类工具使用更短、更聚焦的关键词，SetTheme/SetLanguage 则直接填写目标主题或目标语言。\n5. 当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n6. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n7. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n8. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog、FetchUrl、SetTheme、SetLanguage 或 ExecuteMenu 时，尽量填写 input.query；搜索类工具使用更短、更聚焦的关键词，SetTheme/SetLanguage/ExecuteMenu 则直接填写目标主题、目标语言或目标菜单。\n5. 当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n6. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n7. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n8. reason 保持一句话，20 到 60 字优先。");
             builder.AppendLine();
             builder.AppendLine("# 用户问题");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
@@ -362,6 +362,12 @@ namespace ColorVision.Copilot
             {
                 var url = CopilotWebPageToolSupport.ExtractHttpUrls(toolInput.Query).FirstOrDefault() ?? toolInput.Query;
                 return $"（目标网页：{url}）";
+            }
+
+            if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(toolInput.Query))
+            {
+                return $"（目标菜单：{toolInput.Query}）";
             }
 
             if (!string.IsNullOrWhiteSpace(toolInput.Query))

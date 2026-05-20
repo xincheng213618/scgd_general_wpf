@@ -301,6 +301,13 @@ namespace ColorVision.Copilot
             if (availableTools.Count == 0)
                 return null;
 
+            if (CopilotMenuToolSupport.HasMenuIntent(request.UserText))
+            {
+                var menuTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "ExecuteMenu", StringComparison.OrdinalIgnoreCase));
+                if (menuTool != null)
+                    return menuTool;
+            }
+
             if (CopilotApplicationControlSupport.HasThemeIntent(request.UserText))
             {
                 var themeTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SetTheme", StringComparison.OrdinalIgnoreCase));
@@ -359,7 +366,8 @@ namespace ColorVision.Copilot
 
         private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)
         {
-            if (string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotAgentToolInput
@@ -506,6 +514,7 @@ namespace ColorVision.Copilot
                 || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase);
         }
