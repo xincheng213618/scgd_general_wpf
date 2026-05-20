@@ -123,8 +123,6 @@ namespace Conoscope
         {
             ConoscopeView? activeView = ActiveView;
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
-            btnOpenActiveView3D.IsEnabled = activeView != null;
-            btnOpenActiveViewCie.IsEnabled = activeView != null;
             RefreshHomeQuickControlState(activeView);
             RefreshAnalysisRibbonState(activeView);
 

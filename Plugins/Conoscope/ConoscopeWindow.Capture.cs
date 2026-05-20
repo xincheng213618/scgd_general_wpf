@@ -277,8 +277,6 @@ namespace Conoscope
             btnCaptureCamera.IsEnabled = !busy && GetSelectedCamera() != null;
             btnRefreshCameraDevices.IsEnabled = !busy;
             btnApplyPreprocessToActiveView.IsEnabled = !busy && ActiveView != null;
-            btnOpenActiveView3D.IsEnabled = ActiveView != null;
-            btnOpenActiveViewCie.IsEnabled = ActiveView != null;
             RefreshNdControls();
         }
 
