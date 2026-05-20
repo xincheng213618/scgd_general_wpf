@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
+using ProjectARVRPro.Exports;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -63,6 +64,21 @@ namespace ProjectARVRPro
         [Description("启用后，CSV和Socket输出将使用旧版ProjectARVR扁平格式，保持对方系统兼容")]
         public bool UseLegacyARVROutput { get => _UseLegacyARVROutput; set { _UseLegacyARVROutput = value; OnPropertyChanged(); } }
         private bool _UseLegacyARVROutput;
+
+        [DisplayName("保存客制化XLSX"), Category("客制化输出")]
+        [Description("启用后，测试完成时会在标准CSV之外追加输出指定客户格式的XLSX")]
+        public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); } }
+        private bool _IsSaveCustomXlsx;
+
+        [DisplayName("客制化输出类型"), Category("客制化输出")]
+        [Description("当前支持 Jinxing10Inspection；后续新增客户格式时在导出器中注册新的Profile")]
+        public string CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
+        private string _CustomOutputProfile = JinxingInspectionXlsxExporter.ProfileNameValue;
+
+        [DisplayName("客制化XLSX模板"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("客制化输出")]
+        [Description("可选。留空时使用内置金星1.0抽检表结构；填写后会以该XLSX为模板写入数据行")]
+        public string CustomXlsxTemplatePath { get => _CustomXlsxTemplatePath; set { _CustomXlsxTemplatePath = value; OnPropertyChanged(); } }
+        private string _CustomXlsxTemplatePath = string.Empty;
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable

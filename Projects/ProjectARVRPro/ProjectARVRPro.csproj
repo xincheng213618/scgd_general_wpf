@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.6.2</VersionPrefix>
+		<VersionPrefix>1.1.6.3</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,6 +16,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+		<PackageReference Include="NPOI" Version="2.8.0" />
 		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\Engine\FlowEngineLib\FlowEngineLib.csproj')">
 			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
 			<Private>True</Private>
