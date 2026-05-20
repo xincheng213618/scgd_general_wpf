@@ -959,7 +959,7 @@ namespace ProjectARVRPro
                             OutputDirectory = linkPath,
                             BaseFileName = baseFileName,
                             ExportTime = exportTime,
-                            TemplatePath = outputConfig.CustomXlsxTemplatePath,
+                            TemplateDirectory = outputConfig.CustomXlsxTemplateDirectory,
                         },
                         outputConfig.CustomOutputProfile);
 

@@ -29,37 +29,37 @@ namespace ColorVision.Engine
 
         public override Task Initialize()
         {
-            SqlConfig sqlConfig = ConfigService.Instance.GetRequiredService<SqlConfig>();
-            if (sqlConfig.Version  < Version)
-            {
-                sqlConfig.Version = Version;
-                ConfigService.Instance.SaveConfigs();
-                log.Info($"SqlConfig 版本更新到 {Version}");
-                Thread thread = new Thread(() =>
-                {
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            //SqlConfig sqlConfig = ConfigService.Instance.GetRequiredService<SqlConfig>();
+            //if (sqlConfig.Version  < Version)
+            //{
+            //    sqlConfig.Version = Version;
+            //    ConfigService.Instance.SaveConfigs();
+            //    log.Info($"SqlConfig 版本更新到 {Version}");
+            //    Thread thread = new Thread(() =>
+            //    {
+            //        using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                    {
-                        foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
-                        {
-                            try
-                            {
-                                log.Info($"正在初始化表：{type.Name}");
-                                Db.CodeFirst.InitTables(type);
-                            }
-                            catch (Exception ex)
-                            {
-                                log.Error(ex);
-                            }
+            //        foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            //        {
+            //            foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
+            //            {
+            //                try
+            //                {
+            //                    log.Info($"正在初始化表：{type.Name}");
+            //                    Db.CodeFirst.InitTables(type);
+            //                }
+            //                catch (Exception ex)
+            //                {
+            //                    log.Error(ex);
+            //                }
 
-                        }
+            //            }
 
-                    }
-                    log.Info("SqlInitialized");
-                });
-                thread.Start();
-            }
+            //        }
+            //        log.Info("SqlInitialized");
+            //    });
+            //    thread.Start();
+            //}
             return Task.CompletedTask;
         }
     }

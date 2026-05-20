@@ -61,34 +61,42 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCurrentModel}"/>
                     <TextBlock Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" VerticalAlignment="Center" Text="{Binding CurrentModelProfile.DisplayName}"/>
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelPixelType}"/>
-                    <ComboBox Grid.Row="1"
+                    <CheckBox Grid.Row="1"
+                              Grid.ColumnSpan="2"
+                              Margin="0,0,0,8"
+                              Content="{x:Static properties:Resources.ChkOnlyShowCs200Devices}"
+                              IsChecked="{Binding Config.OnlyShowCs200Devices, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              ToolTip="{x:Static properties:Resources.TipOnlyShowCs200Devices}"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelPixelType}"/>
+                    <ComboBox Grid.Row="2"
                               Grid.Column="1"
                               Margin="0,0,0,8"
                               ItemsSource="{Binding PixelTypes}"
                               SelectedItem="{Binding Config.PixelType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelSizeCoeff}"/>
-                    <TextBox Grid.Row="2"
+                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelSizeCoeff}"/>
+                    <TextBox Grid.Row="3"
                              Grid.Column="1"
                              Margin="0,0,0,8"
                              Style="{StaticResource TextBox.Small}"
                              Text="{Binding CurrentModelProfile.ObservationCameraScaleCoefficient, StringFormat=F4, UpdateSourceTrigger=LostFocus}"/>
 
-                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCenterXPx}"/>
-                    <TextBox Grid.Row="3"
+                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCenterXPx}"/>
+                    <TextBox Grid.Row="4"
                              Grid.Column="1"
                              Margin="0,0,0,8"
                              Style="{StaticResource TextBox.Small}"
                              Text="{Binding CurrentModelProfile.ObservationCameraCenterX, StringFormat=F1, UpdateSourceTrigger=LostFocus}"/>
 
-                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCenterYPx}"/>
-                    <TextBox Grid.Row="4"
+                    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.LabelCenterYPx}"/>
+                    <TextBox Grid.Row="5"
                              Grid.Column="1"
                              Style="{StaticResource TextBox.Small}"
                              Text="{Binding CurrentModelProfile.ObservationCameraCenterY, StringFormat=F1, UpdateSourceTrigger=LostFocus}"/>

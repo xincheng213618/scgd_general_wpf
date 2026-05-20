@@ -298,6 +298,9 @@
   <data name="BtnExecute" xml:space="preserve">
     <value>执行</value>
   </data>
+  <data name="BtnReapply" xml:space="preserve">
+    <value>重新应用</value>
+  </data>
   <data name="BtnRefresh" xml:space="preserve">
     <value>刷新</value>
   </data>
@@ -460,6 +463,9 @@
   <data name="TipRefreshCameraList" xml:space="preserve">
     <value>刷新相机与校正模板列表</value>
   </data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve">
+    <value>启用后，观察相机列表只显示型号中包含 CS200 的设备。</value>
+  </data>
   <data name="TipCapturePhoto" xml:space="preserve">
     <value>使用当前相机与校正模板拍照</value>
   </data>
@@ -546,6 +552,9 @@
   </data>
   <data name="ChkReuseActiveView" xml:space="preserve">
     <value>流程/拍图结果复用当前视图</value>
+  </data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve">
+    <value>仅显示 CS200 设备</value>
   </data>
   <data name="ChkPseudoColor" xml:space="preserve">
     <value>伪彩显示</value>
@@ -819,10 +828,10 @@
     <value>开启后左键拖拽可平移图像；关闭后按住 Ctrl 再平移。</value>
   </data>
   <data name="TbRefDrag" xml:space="preserve">
-    <value>参考拖拽</value>
+    <value>截面标记</value>
   </data>
   <data name="TbRefDragTip" xml:space="preserve">
-    <value>允许在图上直接拖动参考方位线和极角圆；进入关注点模式时会临时关闭。</value>
+    <value>允许在图上直接拖动截面标记（方位线和极角圆）；进入关注点模式时会临时关闭。</value>
   </data>
   <data name="TbZoomOut" xml:space="preserve">
     <value>缩小</value>
@@ -1423,6 +1432,9 @@
   </data>
   <data name="MsgRecordedSlot" xml:space="preserve">
     <value>已记录 {0}</value>
+  </data>
+  <data name="MsgRecordSlot" xml:space="preserve">
+    <value>记录 {0}</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} 已记录

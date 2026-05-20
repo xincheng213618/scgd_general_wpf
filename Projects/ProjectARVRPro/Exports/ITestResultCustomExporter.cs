@@ -2,7 +2,7 @@ namespace ProjectARVRPro.Exports
 {
     public interface ITestResultCustomExporter
     {
-        string ProfileName { get; }
+        CustomTestResultOutputProfile Profile { get; }
 
         string FileSuffix { get; }
 

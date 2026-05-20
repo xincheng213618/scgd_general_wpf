@@ -49,6 +49,7 @@ namespace Conoscope
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
             focusCircleDrawTool = new ConoscopeFocusCircleDrawTool(EditorContext, this);
             focusCircleEraseTool = new EraseManager(EditorContext);
+            focusCircleEraseTool.CanEraseVisual = static visual => visual is DVCircleText;
             InitializeFocusCircleContextMenu();
             ZoomBox.ContentMatrixChanged += ZoomBox_ContentMatrixChanged;
             ImageCanvas.PreviewMouseRightButtonDown += ImageCanvas_PreviewMouseRightButtonDown;

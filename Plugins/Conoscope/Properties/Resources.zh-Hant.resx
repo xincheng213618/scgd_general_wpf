@@ -819,10 +819,10 @@
     <value>開啟後左鍵拖拽可平移影像；關閉後按住 Ctrl 再平移。</value>
   </data>
   <data name="TbRefDrag" xml:space="preserve">
-    <value>參考拖拽</value>
+    <value>截面標記</value>
   </data>
   <data name="TbRefDragTip" xml:space="preserve">
-    <value>允許在圖上直接拖動參考方位線和極角圓；進入關注點模式時會臨時關閉。</value>
+    <value>允許在圖上直接拖動截面標記（方位線和極角圓）；進入關注點模式時會臨時關閉。</value>
   </data>
   <data name="TbZoomOut" xml:space="preserve">
     <value>縮小</value>
@@ -1423,6 +1423,9 @@
   </data>
   <data name="MsgRecordedSlot" xml:space="preserve">
     <value>已記錄 {0}</value>
+  </data>
+  <data name="MsgRecordSlot" xml:space="preserve">
+    <value>記錄 {0}</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} 已記錄

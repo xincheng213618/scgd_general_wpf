@@ -437,7 +437,7 @@
                                                     ToolTip="{x:Static properties:Resources.TipApplyPreprocess}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnExecute}" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnReapply}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
@@ -499,23 +499,6 @@
                                     </Grid>
                                 </Border>
 
-                                <Border Style="{StaticResource RibbonGroupStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenActiveView3D" Click="btnOpenActiveView3D_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpen3DView}">
-                                                <TextBlock Text="&#xE9CE;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                            <Button x:Name="btnOpenActiveViewCie" Click="btnOpenActiveViewCie_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}">
-                                                <TextBlock Text="&#xE790;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                        </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupViews}" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
 
                                 <Border Style="{StaticResource RibbonGroupStyle}">
                                     <Grid>
@@ -546,7 +529,7 @@
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
                                             <WrapPanel Margin="0,0,0,4">
                                                 <Button x:Name="btnRecordContrastWhite" Click="btnRecordContrastWhite_Click" Content="{x:Static properties:Resources.BtnRecordWhite}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordWhiteData}" />
                                                 <Button x:Name="btnRecordContrastBlack" Click="btnRecordContrastBlack_Click" Content="{x:Static properties:Resources.BtnRecordBlack}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordBlackData}" />
