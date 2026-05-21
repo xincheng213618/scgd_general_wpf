@@ -12,6 +12,15 @@
         Background="{DynamicResource GlobalBackground}"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
+    <Window.Resources>
+        <Style x:Key="SettingsSurfaceBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -19,7 +28,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Margin="16,16,16,0" Padding="14,10" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+        <Border Grid.Row="0" Margin="16,16,16,0" Padding="14,10" Style="{StaticResource SettingsSurfaceBorderStyle}">
             <StackPanel>
                 <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="语言模型" />
                 <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="可同时保存多个模型配置；保存后，右侧 AI 面板会直接使用这里的模型列表。" TextWrapping="Wrap" />
@@ -33,7 +42,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+            <Border Grid.Column="0" Style="{StaticResource SettingsSurfaceBorderStyle}">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Margin="12,12,12,10">
                         <WrapPanel>
@@ -65,7 +74,7 @@
                 </DockPanel>
             </Border>
 
-            <Border Grid.Column="2" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+            <Border Grid.Column="2" Style="{StaticResource SettingsSurfaceBorderStyle}">
                 <Grid Margin="14" IsEnabled="{Binding CanEditSelectedProfile}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -149,7 +158,7 @@
             </Border>
         </Grid>
 
-        <Border Grid.Row="2" Margin="16,0,16,16" Padding="12,10" Background="#10151B" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10">
+        <Border Grid.Row="2" Margin="16,0,16,16" Padding="12,10" Style="{StaticResource SettingsSurfaceBorderStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

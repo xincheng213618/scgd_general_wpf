@@ -45,7 +45,7 @@ flowchart TD
 
 ## 当前工具层到底做了什么
 
-当前默认注册了十个工具，其中七个只读工具加三个受控执行工具：
+当前默认注册了十一个工具，其中八个只读工具加三个受控执行工具：
 
 1. ExecuteMenu
    作用：按菜单名称或路径执行主菜单命令，例如“选项”“VAM”“检查更新”，也能命中主题、语言这类菜单子项。
@@ -56,25 +56,28 @@ flowchart TD
 3. SetLanguage
    作用：按用户明确意图切换界面语言，并复用现有重启确认流程。
 
-4. FetchUrl
+4. SearchDocs
+   作用：查询发布后的 ColorVision 在线文档索引，按章节、页面和页面内标题返回最相关片段，适合软件使用、菜单、设备、插件、开发指南和架构说明问题。
+
+5. FetchUrl
    作用：优先抓取 planner 通过 query 指定的 URL；如果 planner 没给出 URL，再回退到用户文本里的 URL 并抓取网页正文。
 
-5. SearchFiles
+6. SearchFiles
    作用：按文件名或路径片段在当前解决方案搜索根里找候选文件。
 
-6. GrepText
+7. GrepText
    作用：按关键字或标识符在当前解决方案文本文件里找命中行。
 
-7. ListDirectory
+8. ListDirectory
    作用：列出用户在当前消息中明确提到的本地文件夹内容，并产出后续可读文件候选。
 
-8. ReadAttachedFile
+9. ReadAttachedFile
    作用：读取“当前会话已经挂载的文件附件”。
 
-9. ReadLocalFile
+10. ReadLocalFile
    作用：读取用户在当前消息中明确提到的本地文本文件。
 
-10. GetRecentLog
+11. GetRecentLog
    作用：读取最近日志，并可按 planner 提供的 query 过滤结果。
 
 这说明当前 Agent 仍然有明确的受控能力边界：
@@ -82,6 +85,7 @@ flowchart TD
 - 它能读取已经挂到会话里的文件。
 - 它也能读取当前用户消息里显式出现的本地文本文件路径。
 - 它还能基于当前解决方案根目录、活动文档目录和附件所在目录，先做一轮轻量文件名/文本检索。
+- 它现在还能访问发布后的 ColorVision 在线文档索引，用较小上下文回答软件使用和开发文档问题。
 - 它现在还能在显式用户意图下执行少量受控动作，例如执行主菜单命令、切换主题和界面语言。
 - 它仍不能根据模型在对话里临时生成的新路径去读取任意本地文件，也不能执行任意副作用操作。
 - 它已经有最小结构化参数层，但参数面仍然比较窄。
@@ -172,7 +176,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 1. 当前仍然不能让模型跳出允许列表，去读取任意新路径
 2. request 里已经有最小的统一工具参数对象，但接口层和权限策略对象还没有彻底独立出来
-3. 结构化参数目前已覆盖 ReadLocalFile 与 ListDirectory 的 path，以及 SearchFiles、GrepText、GetRecentLog、FetchUrl 的 query；其中 SearchFiles、GrepText、GetRecentLog 的可见性也已开始从“用户原话关键词”放宽为“能力优先”，而 FetchUrl 虽然已支持结构化 query 执行，但工具可见性仍主要依赖请求级 URL 提取
+3. 结构化参数目前已覆盖 ReadLocalFile 与 ListDirectory 的 path，以及 SearchFiles、GrepText、GetRecentLog、SearchDocs、FetchUrl 的 query；其中 SearchFiles、GrepText、GetRecentLog 的可见性也已开始从“用户原话关键词”放宽为“能力优先”，SearchDocs 则走发布后的稳定文档索引，FetchUrl 虽然已支持结构化 query 执行，但工具可见性仍主要依赖请求级 URL 提取
 4. 服务层虽然已经能做最小 planner-executor 循环，但还不是更强的多工具规划闭环
 5. 当前文件读取虽然支持按行范围精读，但还没有更细的片段定位、symbol 级读取和 AST 级上下文
 
@@ -247,7 +251,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 目标：让 Agent 在调用大模型前，先自己收集候选上下文，而不是只靠附件和 URL。
 
-当前状态：阶段 2 已完成最小落地版本，SearchFiles 与 GrepText 已接入默认工具表，GetRecentLog 也已纳入最小结构化 query 链路；同时工具注册表已去掉前 6 项硬截断，SearchFiles、GrepText、GetRecentLog 现在会优先按运行时能力暴露给 planner，但还没有按 glob/正则/符号级别继续细化。执行层对 FetchUrl 也已补齐结构化 query、重复检测和执行摘要，不再只把它当成“用户原句里附带 URL 的特例工具”。
+当前状态：阶段 2 已完成最小落地版本，SearchFiles、GrepText、GetRecentLog 与 SearchDocs 已接入默认工具表；其中 SearchDocs 通过发布后的 docs-search-index.json 查询 ColorVision 在线文档，不再要求用户先给出 URL。工具注册表也已去掉前 6 项硬截断，SearchFiles、GrepText、GetRecentLog 现在会优先按运行时能力暴露给 planner，但还没有按 glob/正则/符号级别继续细化。执行层对 FetchUrl 也已补齐结构化 query、重复检测和执行摘要，不再只把它当成“用户原句里附带 URL 的特例工具”。
 
 后续建议新增或增强的只读工具：
 

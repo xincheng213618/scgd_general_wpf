@@ -322,10 +322,18 @@ namespace ColorVision.Copilot
                     return languageTool;
             }
 
+            if (CopilotDocsToolSupport.HasDocumentationIntent(request.UserText))
+            {
+                var docsTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SearchDocs", StringComparison.OrdinalIgnoreCase));
+                if (docsTool != null)
+                    return docsTool;
+            }
+
             var preferredToolNames = request.Mode switch
             {
                 CopilotAgentMode.Web => new[]
                 {
+                    "SearchDocs",
                     "FetchUrl",
                     "ReadAttachedFile",
                     "ReadLocalFile",
@@ -344,6 +352,7 @@ namespace ColorVision.Copilot
                 },
                 _ => new[]
                 {
+                    "SearchDocs",
                     "ReadLocalFile",
                     "ReadAttachedFile",
                     "ListDirectory",
@@ -401,6 +410,14 @@ namespace ColorVision.Copilot
                 return new CopilotAgentToolInput
                 {
                     Query = CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).FirstOrDefault() ?? string.Empty,
+                };
+            }
+
+            if (string.Equals(toolName, "SearchDocs", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Query = request.UserText ?? string.Empty,
                 };
             }
 
@@ -513,6 +530,7 @@ namespace ColorVision.Copilot
             return string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SearchDocs", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)

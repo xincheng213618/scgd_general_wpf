@@ -715,9 +715,30 @@ namespace ColorVision.Copilot
         private void StartNewChat()
         {
             CancelCurrentReply();
-            var conversation = CreateConversation();
-            SelectConversation(conversation, persist: false);
-            PersistState();
+
+            if (IsReusableEmptyConversation(SelectedConversation))
+                return;
+
+            var conversation = ResolveNewConversationTarget();
+            if (!ReferenceEquals(conversation, SelectedConversation))
+            {
+                SelectConversation(conversation, persist: false);
+                PersistState();
+            }
+        }
+
+        private static bool IsReusableEmptyConversation(CopilotConversationRecord? conversation)
+        {
+            return conversation != null && conversation.Messages.Count == 0;
+        }
+
+        private CopilotConversationRecord ResolveNewConversationTarget()
+        {
+            if (IsReusableEmptyConversation(SelectedConversation))
+                return SelectedConversation!;
+
+            var reusableConversation = Conversations.FirstOrDefault(IsReusableEmptyConversation);
+            return reusableConversation ?? CreateConversation();
         }
 
         private void ExecutePrimaryAction()
@@ -746,8 +767,8 @@ namespace ColorVision.Copilot
 
             if (startNewConversation || SelectedConversation == null)
             {
-                var newConversation = CreateConversation();
-                SelectConversation(newConversation, persist: false);
+                var conversationTarget = ResolveNewConversationTarget();
+                SelectConversation(conversationTarget, persist: false);
                 PersistState();
             }
             else
