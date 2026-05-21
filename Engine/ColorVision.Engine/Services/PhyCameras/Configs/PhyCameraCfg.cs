@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
@@ -86,33 +87,48 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private int _Gain = 10;
 
+        [JsonIgnore]
+        [DisplayName("ROI"), Browsable(true)]
+        public Int32Rect ROI
+        {
+            get => new(PointX, PointY, Width, Height);
+            set
+            {
+                PointX = value.X;
+                PointY = value.Y;
+                Width = value.Width;
+                Height = value.Height;
+                OnPropertyChanged();
+            }
+        }
+
         /// <summary>
         /// FindLightArea X
         /// </summary>
         [JsonProperty("ex")]
-        [DisplayName("ROI X"),Browsable(true)]
-        public int PointX { get => _PointX; set { _PointX = value; OnPropertyChanged();  } }
+        [DisplayName("ROI X"), Browsable(false)]
+        public int PointX { get => _PointX; set { _PointX = value; OnPropertyChanged(); OnPropertyChanged(nameof(ROI)); } }
         private int _PointX;
         /// <summary>
         /// FindLightArea Y
         /// </summary>
         [JsonProperty("ey")]
-        [DisplayName("ROI Y"), Browsable(true)]
-        public int PointY { get => _PointY; set { _PointY = value; OnPropertyChanged();  } }
+        [DisplayName("ROI Y"), Browsable(false)]
+        public int PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); OnPropertyChanged(nameof(ROI)); } }
         private int _PointY;
         /// <summary>
         /// FindLightArea W
         /// </summary>
         [JsonProperty("ew")]
-        [DisplayName("ROI W"), Browsable(true)]
-        public int Width { get => _Width; set { _Width = value; OnPropertyChanged();  } }
+        [DisplayName("ROI W"), Browsable(false)]
+        public int Width { get => _Width; set { _Width = value; OnPropertyChanged(); OnPropertyChanged(nameof(ROI)); } }
         private int _Width;
         /// <summary>
         /// FindLightArea H
         /// </summary>
         [JsonProperty("eh")]
-        [DisplayName("ROI H"), Browsable(true)]
-        public int Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
+        [DisplayName("ROI H"), Browsable(false)]
+        public int Height { get => _Height; set { _Height = value; OnPropertyChanged(); OnPropertyChanged(nameof(ROI)); } }
         private int _Height;
 
 

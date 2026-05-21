@@ -74,6 +74,11 @@ namespace Conoscope.Analysis
             RenderDiagram();
         }
 
+        private void btnExportCsv_Click(object sender, RoutedEventArgs e)
+        {
+            AnalysisResultCsvExporter.ExportColorGamut(this, result);
+        }
+
         private void RenderDiagram()
         {
             IReadOnlyList<ColorGamutPointResult> pointsToRender = ResolvePointsToRender();

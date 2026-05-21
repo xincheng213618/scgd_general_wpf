@@ -14,10 +14,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using SqlSugar;
 
 namespace Conoscope
 {
@@ -146,7 +146,11 @@ namespace Conoscope
                 return;
             }
 
-            SaveFocusPoiTemplate(poiParam);
+            if (!SaveFocusPoiTemplate(poiParam))
+            {
+                return;
+            }
+
             lastFocusPoiTemplateId = poiParam.Id;
             LoadFocusPoiTemplatesAsync(poiParam.Id, applySelectedTemplate: false);
             MessageBox.Show($"已保存关注点到 POI 模板: {poiParam.Name}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -207,7 +211,7 @@ namespace Conoscope
             UpdateFocusCircleToolbarState();
         }
 
-        private void SaveFocusPoiTemplate(PoiParam poiParam)
+        private bool SaveFocusPoiTemplate(PoiParam poiParam)
         {
             UpdatePoiTemplateImageSize(poiParam);
             poiParam.PoiPoints.Clear();
@@ -217,7 +221,7 @@ namespace Conoscope
                 double radiusY = Math.Max(circle.Attribute.RadiusY, ConoscopeImageHost.MinimumFocusCircleRadius);
                 poiParam.PoiPoints.Add(new PoiPoint
                 {
-                    Id = TryGetPoiDetailId(circle),
+                    Id = 0,
                     Name = ResolveFocusCircleName(circle),
                     PointType = GraphicTypes.Circle,
                     PixX = circle.Attribute.Center.X,
@@ -226,8 +230,72 @@ namespace Conoscope
                     PixHeight = Math.Max(1, radiusY * 2)
                 });
             }
+            try
+            {
+                int ret = SaveFocusPoiTemplateToDb(poiParam);
+                if (ret == -1)
+                {
+                    MessageBox.Show("保存失败，具体报错信息请查看日志。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("保存 Conoscope 关注点 POI 模板失败", ex);
+                MessageBox.Show($"保存失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
 
-            poiParam.Save2DB();
+            return true;
+        }
+
+        private static int SaveFocusPoiTemplateToDb(PoiParam poiParam)
+        {
+            PoiMasterModel poiMasterModel = new(poiParam);
+            int ret = PoiMasterDao.Instance.Save(poiMasterModel);
+            if (ret == -1)
+            {
+                return ret;
+            }
+
+            if (poiParam.Id <= 0 && poiMasterModel.Id > 0)
+            {
+                poiParam.Id = poiMasterModel.Id;
+            }
+
+            List<PoiDetailModel> poiDetails = new();
+            foreach (PoiPoint point in poiParam.PoiPoints)
+            {
+                poiDetails.Add(new PoiDetailModel(poiParam.Id, point)
+                {
+                    Id = 0
+                });
+            }
+
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+
+            db.Ado.BeginTran();
+            try
+            {
+                db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
+                if (poiDetails.Count > 0)
+                {
+                    db.Insertable(poiDetails).ExecuteCommand();
+                }
+
+                db.Ado.CommitTran();
+                return 1;
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
         }
 
         private void UpdatePoiTemplateImageSize(PoiParam poiParam)
@@ -242,11 +310,6 @@ namespace Conoscope
                 poiParam.Width = (int)Math.Round(ImageView.ImageShow.Source.Width);
                 poiParam.Height = (int)Math.Round(ImageView.ImageShow.Source.Height);
             }
-        }
-
-        private static int TryGetPoiDetailId(DVCircleText circle)
-        {
-            return int.TryParse(circle.Attribute.Name, out int id) && id > 0 ? id : 0;
         }
 
         private void SyncReferenceInteractionToggle()

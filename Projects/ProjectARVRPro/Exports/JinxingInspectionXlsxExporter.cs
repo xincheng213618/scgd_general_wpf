@@ -11,23 +11,17 @@ namespace ProjectARVRPro.Exports
         private const string ResultSheetName = "雷鸟光机测试结果表";
         private const string SpecSheetName = "Sheet1";
 
-        private static readonly string[] TemplateFileNames =
-        [
-            "金星1.0光机抽检规格（视彩成像色度计）(1).xlsx",
-            "金星1.0光机抽检规格（视彩成像色度计）.xlsx",
-            "Jinxing10Inspection.xlsx",
-        ];
-
         public CustomTestResultOutputProfile Profile => CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
-        public string FileSuffix => "JinxingInspection";
+        public string FileSuffix => string.Empty;
 
         public string Export(ObjectiveTestResultExportContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
             Directory.CreateDirectory(context.OutputDirectory);
 
-            using IWorkbook workbook = CreateWorkbook(context.TemplateDirectory);
+            string outputPath = Path.Combine(context.OutputDirectory, GetOutputFileName(context));
+            using IWorkbook workbook = OpenOrCreateWorkbook(outputPath);
             ISheet sheet = workbook.GetSheet(ResultSheetName)
                 ?? (workbook.NumberOfSheets > 0 ? workbook.GetSheetAt(0) : workbook.CreateSheet(ResultSheetName));
             int dataRowIndex = GetNextDataRowIndex(sheet);
@@ -36,46 +30,35 @@ namespace ProjectARVRPro.Exports
             var styles = ExportStyles.Create(workbook);
             WriteDataRow(row, dataRowIndex - 1, context, styles);
 
-            string outputPath = Path.Combine(context.OutputDirectory, $"{context.BaseFileName}_{FileSuffix}.xlsx");
             using FileStream output = File.Create(outputPath);
             workbook.Write(output);
             return outputPath;
         }
 
-        private static IWorkbook CreateWorkbook(string? templateDirectory)
+        private string GetOutputFileName(ObjectiveTestResultExportContext context)
         {
-            string? templatePath = ResolveTemplatePath(templateDirectory);
-            if (!string.IsNullOrWhiteSpace(templatePath) && File.Exists(templatePath))
+            return string.IsNullOrWhiteSpace(FileSuffix)
+                ? $"{context.BaseFileName}.xlsx"
+                : $"{context.BaseFileName}_{FileSuffix}.xlsx";
+        }
+
+        private static IWorkbook OpenOrCreateWorkbook(string outputPath)
+        {
+            if (File.Exists(outputPath))
             {
-                using FileStream input = File.OpenRead(templatePath);
+                using FileStream input = File.Open(outputPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 return new XSSFWorkbook(input);
             }
 
+            return CreateWorkbook();
+        }
+
+        private static IWorkbook CreateWorkbook()
+        {
             var workbook = new XSSFWorkbook();
             CreateBuiltInResultSheet(workbook);
             CreateBuiltInSpecSheet(workbook);
             return workbook;
-        }
-
-        private static string? ResolveTemplatePath(string? templateDirectory)
-        {
-            if (string.IsNullOrWhiteSpace(templateDirectory))
-                return null;
-
-            if (File.Exists(templateDirectory))
-                return templateDirectory;
-
-            if (!Directory.Exists(templateDirectory))
-                return null;
-
-            foreach (string fileName in TemplateFileNames)
-            {
-                string candidate = Path.Combine(templateDirectory, fileName);
-                if (File.Exists(candidate))
-                    return candidate;
-            }
-
-            return null;
         }
 
         private static void CreateBuiltInResultSheet(IWorkbook workbook)
@@ -87,36 +70,37 @@ namespace ProjectARVRPro.Exports
             header.HeightInPoints = 36;
             subHeader.HeightInPoints = 24;
 
-            for (int column = 0; column < 40; column++)
+            for (int column = 0; column < 41; column++)
             {
                 (header.GetCell(column) ?? header.CreateCell(column)).CellStyle = styles.HeaderStyle;
                 (subHeader.GetCell(column) ?? subHeader.CreateCell(column)).CellStyle = styles.HeaderStyle;
             }
 
             SetString(header, 0, "序号", styles.HeaderStyle);
-            SetString(header, 1, "SN", styles.HeaderStyle);
-            SetString(header, 2, "HFOV（）", styles.HeaderStyle);
-            SetString(header, 3, "VFOV（）", styles.HeaderStyle);
-            SetString(header, 4, "DFOV（23.5±0.5°）", styles.HeaderStyle);
-            SetString(header, 5, "MTF@2001p/mm（≥0.15）（V）", styles.HeaderStyle);
-            SetString(header, 10, "MTF@2001p/mm（≥0.15）(H)", styles.HeaderStyle);
-            SetString(header, 15, "MTF@1001p/mm（≥0.35）(V)", styles.HeaderStyle);
-            SetString(header, 20, "MTF@1001p/mm（≥0.35）(H)", styles.HeaderStyle);
-            SetString(header, 25, "MTF@501p/mm（≥0.65）(V)", styles.HeaderStyle);
-            SetString(header, 30, "MTF@501p/mm（≥0.65）(H)", styles.HeaderStyle);
-            SetString(header, 35, "SMIA TV畸变（< 0.5%）", styles.HeaderStyle);
-            SetString(header, 37, "中心亮度（cd/m^2）", styles.HeaderStyle);
-            SetString(header, 38, "亮度均匀性（≥65%）", styles.HeaderStyle);
-            SetString(header, 39, "颜色均匀性", styles.HeaderStyle);
+            SetString(header, 1, "时间戳", styles.HeaderStyle);
+            SetString(header, 2, "SN", styles.HeaderStyle);
+            SetString(header, 3, "HFOV（）", styles.HeaderStyle);
+            SetString(header, 4, "VFOV（）", styles.HeaderStyle);
+            SetString(header, 5, "DFOV（23.5±0.5°）", styles.HeaderStyle);
+            SetString(header, 6, "MTF@2001p/mm（≥0.15）（V）", styles.HeaderStyle);
+            SetString(header, 11, "MTF@2001p/mm（≥0.15）(H)", styles.HeaderStyle);
+            SetString(header, 16, "MTF@1001p/mm（≥0.35）(V)", styles.HeaderStyle);
+            SetString(header, 21, "MTF@1001p/mm（≥0.35）(H)", styles.HeaderStyle);
+            SetString(header, 26, "MTF@501p/mm（≥0.65）(V)", styles.HeaderStyle);
+            SetString(header, 31, "MTF@501p/mm（≥0.65）(H)", styles.HeaderStyle);
+            SetString(header, 36, "SMIA TV畸变（< 0.5%）", styles.HeaderStyle);
+            SetString(header, 38, "中心亮度（cd/m^2）", styles.HeaderStyle);
+            SetString(header, 39, "亮度均匀性（≥65%）", styles.HeaderStyle);
+            SetString(header, 40, "颜色均匀性", styles.HeaderStyle);
 
-            WritePointHeaders(subHeader, 5, styles.HeaderStyle);
-            WritePointHeaders(subHeader, 10, styles.HeaderStyle);
-            WritePointHeaders(subHeader, 15, styles.HeaderStyle);
-            WritePointHeaders(subHeader, 20, styles.HeaderStyle);
-            WritePointHeaders(subHeader, 25, styles.HeaderStyle);
-            WritePointHeaders(subHeader, 30, styles.HeaderStyle);
-            SetString(subHeader, 35, "H", styles.HeaderStyle);
-            SetString(subHeader, 36, "V", styles.HeaderStyle);
+            WritePointHeaders(subHeader, 6, styles.HeaderStyle);
+            WritePointHeaders(subHeader, 11, styles.HeaderStyle);
+            WritePointHeaders(subHeader, 16, styles.HeaderStyle);
+            WritePointHeaders(subHeader, 21, styles.HeaderStyle);
+            WritePointHeaders(subHeader, 26, styles.HeaderStyle);
+            WritePointHeaders(subHeader, 31, styles.HeaderStyle);
+            SetString(subHeader, 36, "H", styles.HeaderStyle);
+            SetString(subHeader, 37, "V", styles.HeaderStyle);
 
             foreach (CellRangeAddress region in new[]
             {
@@ -125,16 +109,17 @@ namespace ProjectARVRPro.Exports
                 new CellRangeAddress(0, 1, 2, 2),
                 new CellRangeAddress(0, 1, 3, 3),
                 new CellRangeAddress(0, 1, 4, 4),
-                new CellRangeAddress(0, 0, 5, 9),
-                new CellRangeAddress(0, 0, 10, 14),
-                new CellRangeAddress(0, 0, 15, 19),
-                new CellRangeAddress(0, 0, 20, 24),
-                new CellRangeAddress(0, 0, 25, 29),
-                new CellRangeAddress(0, 0, 30, 34),
-                new CellRangeAddress(0, 0, 35, 36),
-                new CellRangeAddress(0, 1, 37, 37),
+                new CellRangeAddress(0, 1, 5, 5),
+                new CellRangeAddress(0, 0, 6, 10),
+                new CellRangeAddress(0, 0, 11, 15),
+                new CellRangeAddress(0, 0, 16, 20),
+                new CellRangeAddress(0, 0, 21, 25),
+                new CellRangeAddress(0, 0, 26, 30),
+                new CellRangeAddress(0, 0, 31, 35),
+                new CellRangeAddress(0, 0, 36, 37),
                 new CellRangeAddress(0, 1, 38, 38),
                 new CellRangeAddress(0, 1, 39, 39),
+                new CellRangeAddress(0, 1, 40, 40),
             })
             {
                 sheet.AddMergedRegion(region);
@@ -142,7 +127,7 @@ namespace ProjectARVRPro.Exports
 
             int[] widths =
             [
-                8, 22, 14, 14, 18,
+                8, 22, 22, 14, 14, 18,
                 12, 12, 12, 12, 12,
                 12, 12, 12, 12, 12,
                 12, 12, 12, 12, 12,
@@ -155,7 +140,7 @@ namespace ProjectARVRPro.Exports
             for (int i = 0; i < widths.Length; i++)
                 sheet.SetColumnWidth(i, widths[i] * 256);
 
-            sheet.CreateFreezePane(2, 2);
+            sheet.CreateFreezePane(3, 2);
         }
 
         private static void CreateBuiltInSpecSheet(IWorkbook workbook)
@@ -193,23 +178,24 @@ namespace ProjectARVRPro.Exports
             row.HeightInPoints = 22;
 
             SetNumber(row, 0, sequence, styles.DataStyle);
-            SetString(row, 1, context.SerialNumber, styles.DataStyle);
-            SetNumber(row, 2, resolver.Find("W51", "HorizontalFieldOfViewAngle")?.Value, styles.DataStyle);
-            SetNumber(row, 3, resolver.Find("W51", "VerticalFieldOfViewAngle")?.Value, styles.DataStyle);
-            SetNumber(row, 4, resolver.Find("W51", "DiagonalFieldOfViewAngle")?.Value, styles.DataStyle);
+            SetString(row, 1, context.ExportTime.ToString("yyyy-MM-dd HH:mm:ss.fff"), styles.DataStyle);
+            SetString(row, 2, context.SerialNumber, styles.DataStyle);
+            SetNumber(row, 3, resolver.Find("W51", "HorizontalFieldOfViewAngle")?.Value, styles.DataStyle);
+            SetNumber(row, 4, resolver.Find("W51", "VerticalFieldOfViewAngle")?.Value, styles.DataStyle);
+            SetNumber(row, 5, resolver.Find("W51", "DiagonalFieldOfViewAngle")?.Value, styles.DataStyle);
 
-            WriteMtfBlock(row, 5, resolver, "MTFV1", "V", "1", styles.DataStyle);
-            WriteMtfBlock(row, 10, resolver, "MTFH1", "H", "1", styles.DataStyle);
-            WriteMtfBlock(row, 15, resolver, "MTFV2", "V", "2", styles.DataStyle);
-            WriteMtfBlock(row, 20, resolver, "MTFH2", "H", "2", styles.DataStyle);
-            WriteMtfBlock(row, 25, resolver, "MTFV4", "V", "4", styles.DataStyle);
-            WriteMtfBlock(row, 30, resolver, "MTFH4", "H", "4", styles.DataStyle);
+            WriteMtfBlock(row, 6, resolver, "MTFV1", "V", "1", styles.DataStyle);
+            WriteMtfBlock(row, 11, resolver, "MTFH1", "H", "1", styles.DataStyle);
+            WriteMtfBlock(row, 16, resolver, "MTFV2", "V", "2", styles.DataStyle);
+            WriteMtfBlock(row, 21, resolver, "MTFH2", "H", "2", styles.DataStyle);
+            WriteMtfBlock(row, 26, resolver, "MTFV4", "V", "4", styles.DataStyle);
+            WriteMtfBlock(row, 31, resolver, "MTFH4", "H", "4", styles.DataStyle);
 
-            SetNumber(row, 35, resolver.Find("Distortion", "HorizontalTVDistortion")?.Value, styles.DataStyle);
-            SetNumber(row, 36, resolver.Find("Distortion", "VerticalTVDistortion")?.Value, styles.DataStyle);
-            SetNumber(row, 37, resolver.Find("W255", "CenterLunimance")?.Value, styles.DataStyle);
-            SetNumber(row, 38, resolver.Find("W255", "LuminanceUniformity")?.Value, styles.PercentStyle);
-            SetNumber(row, 39, resolver.Find("W255", "ColorUniformity")?.Value, styles.DataStyle);
+            SetNumber(row, 36, resolver.Find("Distortion", "HorizontalTVDistortion")?.Value, styles.DataStyle);
+            SetNumber(row, 37, resolver.Find("Distortion", "VerticalTVDistortion")?.Value, styles.DataStyle);
+            SetNumber(row, 38, resolver.Find("W255", "CenterLunimance")?.Value, styles.DataStyle);
+            SetNumber(row, 39, resolver.Find("W255", "LuminanceUniformity")?.Value, styles.PercentStyle);
+            SetNumber(row, 40, resolver.Find("W255", "ColorUniformity")?.Value, styles.DataStyle);
         }
 
         private static void WriteMtfBlock(IRow row, int startColumn, ObjectiveTestResultValueResolver resolver, string screen, string axis, string frequency, ICellStyle style)

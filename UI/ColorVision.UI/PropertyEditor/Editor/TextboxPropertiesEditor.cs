@@ -22,8 +22,7 @@ namespace System.ComponentModel
             typeof(byte),
             typeof(char),
             typeof(Guid),
-            typeof(string),
-            typeof(System.Windows.Rect)
+            typeof(string)
         };
 
         static TextboxPropertiesEditor()

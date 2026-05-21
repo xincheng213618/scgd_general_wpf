@@ -11,7 +11,5 @@ namespace ProjectARVRPro.Exports
         public required string BaseFileName { get; init; }
 
         public DateTime ExportTime { get; init; } = DateTime.Now;
-
-        public string? TemplateDirectory { get; init; }
     }
 }

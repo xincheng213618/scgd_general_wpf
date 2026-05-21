@@ -75,10 +75,28 @@ namespace ProjectARVRPro
         public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
         private CustomTestResultOutputProfile _CustomOutputProfile = CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
-        [DisplayName("客制化XLSX模板文件夹"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
-        [Description("可选。留空时使用内置金星1.0抽检表结构；填写后会按客制化输出类型在该文件夹中查找XLSX模板")]
-        public string CustomXlsxTemplateDirectory { get => _CustomXlsxTemplateDirectory; set { _CustomXlsxTemplateDirectory = value; OnPropertyChanged(); } }
-        private string _CustomXlsxTemplateDirectory = string.Empty;
+        [DisplayName("客制化项目名称"), Category("客制化输出")]
+        [Description("用于生成每天汇总XLSX文件名，例如 2026-5-21TestResults+ProjectARVRPro.xlsx")]
+        public string CustomXlsxProjectName { get => _CustomXlsxProjectName; set { _CustomXlsxProjectName = value; OnPropertyChanged(); } }
+        private string _CustomXlsxProjectName = "ProjectARVRPro";
+
+        [DisplayName("客制化XLSX保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
+        [Description("客制化XLSX的输出文件夹。留空时默认使用CSV保存路径")]
+        public string CustomXlsxSavePath { get => _CustomXlsxSavePath; set { _CustomXlsxSavePath = value; OnPropertyChanged(); } }
+        private string _CustomXlsxSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
+
+        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
+        public string CustomXlsxTemplateDirectory
+        {
+            get => CustomXlsxSavePath;
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    CustomXlsxSavePath = value;
+            }
+        }
+
+        public bool ShouldSerializeCustomXlsxTemplateDirectory() => false;
 
     }
 
@@ -146,6 +164,8 @@ namespace ProjectARVRPro
                 Directory.CreateDirectory(Config.TextSavePath);
             if (!Directory.Exists(Config.CsvSavePath))
                 Directory.CreateDirectory(Config.CsvSavePath);
+            if (!string.IsNullOrWhiteSpace(Config.CustomXlsxSavePath) && !Directory.Exists(Config.CustomXlsxSavePath))
+                Directory.CreateDirectory(Config.CustomXlsxSavePath);
         }
         public void SlectSqlLiteDb()
         {

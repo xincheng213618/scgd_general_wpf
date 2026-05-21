@@ -917,24 +917,33 @@ namespace ProjectARVRPro
             var outputConfig = ViewResultManager.Config;
             DateTime exportTime = DateTime.Now;
             string timeStr = exportTime.ToString("yyyyMMdd_HHmmss");
-            string linkPath = outputConfig.CsvSavePath;
+            string csvOutputDirectory = outputConfig.CsvSavePath;
+            string customXlsxOutputDirectory = string.IsNullOrWhiteSpace(outputConfig.CustomXlsxSavePath)
+                ? outputConfig.CsvSavePath
+                : outputConfig.CustomXlsxSavePath;
             if (outputConfig.SaveByDate)
             {
                 string dateFolder = exportTime.ToString("yyyy-MM-dd");
-                linkPath = Path.Combine(linkPath, dateFolder);
+                csvOutputDirectory = Path.Combine(csvOutputDirectory, dateFolder);
             }
 
-            if (outputConfig.IsSaveCsv || outputConfig.IsSaveCustomXlsx)
+            if (outputConfig.IsSaveCsv)
             {
-                if (!Directory.Exists(linkPath))
-                    Directory.CreateDirectory(linkPath);
+                if (!Directory.Exists(csvOutputDirectory))
+                    Directory.CreateDirectory(csvOutputDirectory);
+            }
+
+            if (outputConfig.IsSaveCustomXlsx)
+            {
+                if (!Directory.Exists(customXlsxOutputDirectory))
+                    Directory.CreateDirectory(customXlsxOutputDirectory);
             }
 
             string baseFileName = $"TestResults_{SNtextBox.Text}_{timeStr}";
 
             if (outputConfig.IsSaveCsv)
             {
-                string filePath = Path.Combine(linkPath, $"{baseFileName}_.csv");
+                string filePath = Path.Combine(csvOutputDirectory, $"{baseFileName}_.csv");
 
                 if (outputConfig.UseLegacyARVROutput)
                 {
@@ -951,15 +960,15 @@ namespace ProjectARVRPro
             {
                 try
                 {
+                    string customXlsxBaseFileName = BuildDailyCustomXlsxBaseFileName(exportTime, outputConfig.CustomXlsxProjectName);
                     string xlsxPath = CustomTestResultExportService.Export(
                         new ObjectiveTestResultExportContext
                         {
                             Result = ObjectiveTestResult,
                             SerialNumber = SNtextBox.Text,
-                            OutputDirectory = linkPath,
-                            BaseFileName = baseFileName,
+                            OutputDirectory = customXlsxOutputDirectory,
+                            BaseFileName = customXlsxBaseFileName,
                             ExportTime = exportTime,
-                            TemplateDirectory = outputConfig.CustomXlsxTemplateDirectory,
                         },
                         outputConfig.CustomOutputProfile);
 
@@ -1428,6 +1437,28 @@ namespace ProjectARVRPro
             {
                 _isRunAllRunning = false;
             }
+        }
+
+        private static string BuildDailyCustomXlsxBaseFileName(DateTime exportTime, string? projectName)
+        {
+            string safeProjectName = SanitizeFileName(string.IsNullOrWhiteSpace(projectName)
+                ? "ProjectARVRPro"
+                : projectName.Trim());
+
+            return $"{exportTime:yyyy-M-d}TestResults+{safeProjectName}";
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            var builder = new StringBuilder(fileName.Length);
+
+            foreach (char ch in fileName)
+            {
+                builder.Append(invalidChars.Contains(ch) ? '_' : ch);
+            }
+
+            return builder.Length == 0 ? "ProjectARVRPro" : builder.ToString();
         }
 
         private async Task<bool> ExecutePictureSwitchAsync(ProcessMeta? meta)

@@ -7,11 +7,19 @@ namespace Conoscope.Analysis
 {
     public partial class ContrastResultWindow : Window
     {
+        private readonly ContrastComputationResult result;
+
         public ContrastResultWindow(ContrastComputationResult result)
         {
             InitializeComponent();
+            this.result = result;
             ResultGrid.ItemsSource = result.Points.Select(item => new ContrastRowViewModel(item)).ToList();
             tbSummary.Text = string.Format(Properties.Resources.FocusPointCountAndAverageContrast, result.Points.Count, result.AverageRatio.ToString("F3"), result.MinimumRatio.ToString("F3"), result.MaximumRatio.ToString("F3"));
+        }
+
+        private void btnExportCsv_Click(object sender, RoutedEventArgs e)
+        {
+            AnalysisResultCsvExporter.ExportContrast(this, result);
         }
 
         private sealed class ContrastRowViewModel
