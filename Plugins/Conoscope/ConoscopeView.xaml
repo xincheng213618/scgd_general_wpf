@@ -110,6 +110,8 @@
                     <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbCalc}" ToolTip="{x:Static properties:Resources.TbCalcTip}" Click="btnCalculateFocusCircles_Click" />
                     <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbClearAll}" ToolTip="{x:Static properties:Resources.TbClearAllTip}" Click="btnClearFocusCircles_Click" />
                     <Separator/>
+                    <TextBlock x:Name="tbSelectedFocusPointInfo" Width="280" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Visibility="Collapsed" Foreground="{DynamicResource GlobalTextBrush}" ToolTip="当前选中关注点" />
+                    <Separator x:Name="sepSelectedFocusPointInfo" Visibility="Collapsed"/>
                     <ComboBox x:Name="cbFocusPoiTemplate" Width="118" Height="28" DisplayMemberPath="Key" SelectedValuePath="Value" ToolTip="关注点 POI 模板" SelectionChanged="cbFocusPoiTemplate_SelectionChanged"/>
                     <Button x:Name="btnSaveFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="存" ToolTip="保存当前关注点到 POI 模板" Click="btnSaveFocusPoiTemplate_Click" />
                     <Button x:Name="btnManageFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="POI" ToolTip="管理 POI 模板" Click="btnManageFocusPoiTemplate_Click" />

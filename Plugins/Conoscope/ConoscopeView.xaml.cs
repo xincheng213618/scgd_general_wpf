@@ -211,13 +211,21 @@ namespace Conoscope
         {
             InitializeComponent();
             ImageView.FocusCircleCalculationRequested += ImageView_FocusCircleCalculationRequested;
+            ImageView.FocusCircleEditRequested += ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged += ImageView_FocusCirclesChanged;
+            ImageView.FocusCircleSelectionChanged += ImageView_FocusCircleSelectionChanged;
             ConoscopeModuleService.Register(this);
         }
 
         private void ImageView_FocusCirclesChanged(object? sender, EventArgs e)
         {
             UpdateFocusCircleToolbarState();
+            UpdateSelectedFocusPointInfo();
+        }
+
+        private void ImageView_FocusCircleSelectionChanged(object? sender, EventArgs e)
+        {
+            UpdateSelectedFocusPointInfo();
         }
 
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
@@ -342,7 +350,9 @@ namespace Conoscope
             }
             ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             ImageView.FocusCircleCalculationRequested -= ImageView_FocusCircleCalculationRequested;
+            ImageView.FocusCircleEditRequested -= ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged -= ImageView_FocusCirclesChanged;
+            ImageView.FocusCircleSelectionChanged -= ImageView_FocusCircleSelectionChanged;
             cieWindow?.Close();
             cieWindow = null;
             XMat?.Dispose();

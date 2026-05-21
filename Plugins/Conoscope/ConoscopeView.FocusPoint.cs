@@ -1,3 +1,4 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -6,12 +7,14 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
 using Conoscope.Analysis;
 using Conoscope.Core;
 using CVCommCore.CVAlgorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -42,6 +45,7 @@ namespace Conoscope
             SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
             UpdateFocusCircleModeState();
             LoadFocusPoiTemplatesAsync();
+            UpdateSelectedFocusPointInfo();
         }
 
         private void LoadFocusPoiTemplatesAsync(int preferredTemplateId = -1, bool applySelectedTemplate = true)
@@ -556,6 +560,73 @@ namespace Conoscope
             CalculateFocusPoints(e.Circles);
         }
 
+        private void ImageView_FocusCircleEditRequested(object? sender, ConoscopeFocusCircleEditRequestedEventArgs e)
+        {
+            OpenFocusPointPolarEditor(e.Circle);
+        }
+
+        private void OpenFocusPointPolarEditor(DVCircleText circle)
+        {
+            FocusPointPolarEditModel editModel = new();
+            editModel.Initialize(this, circle);
+
+            PropertyEditorWindow editorWindow = new(editModel)
+            {
+                Owner = Window.GetWindow(this),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Title = "关注点极坐标编辑"
+            };
+            editorWindow.Submited += (_, _) =>
+            {
+                circle.Render();
+                ImageView.RefreshFocusCircleSelection();
+                UpdateSelectedFocusPointInfo();
+            };
+            editorWindow.ShowDialog();
+        }
+
+        private void UpdateSelectedFocusPointInfo()
+        {
+            if (tbSelectedFocusPointInfo == null || sepSelectedFocusPointInfo == null || ImageView == null)
+            {
+                return;
+            }
+
+            DVCircleText? circle = ImageView.SelectedFocusCircle;
+            if (circle == null)
+            {
+                tbSelectedFocusPointInfo.Text = string.Empty;
+                tbSelectedFocusPointInfo.ToolTip = "当前选中关注点";
+                tbSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
+                sepSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            string text = BuildSelectedFocusPointInfo(circle, includeMeasurement: true);
+            tbSelectedFocusPointInfo.Text = text;
+            tbSelectedFocusPointInfo.ToolTip = text;
+            tbSelectedFocusPointInfo.Visibility = Visibility.Visible;
+            sepSelectedFocusPointInfo.Visibility = Visibility.Visible;
+        }
+
+        private string BuildSelectedFocusPointInfo(DVCircleText circle, bool includeMeasurement)
+        {
+            Point center = circle.Attribute.Center;
+            double azimuthDegrees = GetFullAzimuthAngle(center);
+            double polarDegrees = GetPolarRadiusAngle(center);
+            double radiusPixels = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+            double radiusDegrees = GetFocusCircleRadiusAngle(radiusPixels);
+            string info = $"{ResolveFocusCircleName(circle)}  方位 {azimuthDegrees:F2}°  极角 {polarDegrees:F2}°  R {radiusPixels:F1}px/{radiusDegrees:F2}°";
+
+            if (includeMeasurement
+                && TryCalculateFocusPointAverage(circle.Attribute.Center, radiusPixels, out _, out double avgY, out _, out int sampleCount))
+            {
+                info += $"  N {sampleCount}  Y {avgY:F3}";
+            }
+
+            return info;
+        }
+
         public bool TryGetFocusPointMeasurementCapture(string slotName, out MeasurementCapture capture, out string? errorMessage)
         {
             capture = default!;
@@ -616,7 +687,7 @@ namespace Conoscope
 
             foreach (DVCircleText circle in circles.Where(static item => item != null).Distinct())
             {
-                if (!TryCreateFocusPointResult(circle, out PoiResultCIExyuvData? result, out string? errorMessage))
+                if (!TryCreateFocusPointResult(circle, out PoiResultCIExyuvData? result, out int sampleCount, out string? errorMessage))
                 {
                     if (!string.IsNullOrWhiteSpace(errorMessage))
                     {
@@ -626,7 +697,7 @@ namespace Conoscope
                 }
 
                 results.Add(result);
-                circle.Attribute.Msg = string.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"));
+                circle.Attribute.Msg = FormatFocusPointOverlayMessage(circle, result, sampleCount);
                 circle.Render();
             }
 
@@ -650,12 +721,20 @@ namespace Conoscope
             }
 
             UpdateFocusCircleToolbarState();
+            UpdateSelectedFocusPointInfo();
         }
 
-        private bool TryCreateFocusPointResult(DVCircleText circle, out PoiResultCIExyuvData result, out string? errorMessage)
+        private string FormatFocusPointOverlayMessage(DVCircleText circle, PoiResultCIExyuvData result, int sampleCount)
+        {
+            double radiusDegrees = GetFocusCircleRadiusAngle(Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius));
+            return $"{string.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"))}  R:{radiusDegrees:F2}°  N:{sampleCount}";
+        }
+
+        private bool TryCreateFocusPointResult(DVCircleText circle, out PoiResultCIExyuvData result, out int sampleCount, out string? errorMessage)
         {
             result = new PoiResultCIExyuvData();
-            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out errorMessage))
+            sampleCount = 0;
+            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out sampleCount, out errorMessage))
             {
                 return false;
             }
@@ -674,7 +753,7 @@ namespace Conoscope
                 PixelY = (int)Math.Round(circle.Attribute.Center.Y),
                 PointType = CVCommCore.CVAlgorithm.POIPointTypes.Circle,
                 Width = (int)Math.Round(circle.Attribute.Radius * 2),
-                Height = (int)Math.Round(circle.Attribute.Radius * 2)
+                Height = (int)Math.Round(circle.Attribute.RadiusY * 2)
             };
 
             result.Point = poiPoint;
@@ -692,10 +771,17 @@ namespace Conoscope
 
         private bool TryCreateFocusPointMeasurement(DVCircleText circle, out ImageMeasurement measurement, out string? errorMessage)
         {
+            return TryCreateFocusPointMeasurement(circle, out measurement, out _, out errorMessage);
+        }
+
+        private bool TryCreateFocusPointMeasurement(DVCircleText circle, out ImageMeasurement measurement, out int sampleCount, out string? errorMessage)
+        {
             measurement = default!;
             errorMessage = null;
+            sampleCount = 0;
 
-            if (!TryCalculateFocusPointAverage(circle.Attribute.Center, circle.Attribute.Radius, out double avgX, out double avgY, out double avgZ, out int _))
+            double radius = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+            if (!TryCalculateFocusPointAverage(circle.Attribute.Center, radius, out double avgX, out double avgY, out double avgZ, out sampleCount))
             {
                 errorMessage = string.Format(Properties.Resources.MsgFocusPointNoPixels, ResolveFocusCircleName(circle));
                 return false;
@@ -835,6 +921,289 @@ namespace Conoscope
             }
 
             return 0;
+        }
+
+        private double GetPolarDistancePixels(double polarDegrees)
+        {
+            double clampedPolar = Math.Max(0, Math.Min(polarDegrees, MaxAngle));
+            if (currentPixelsPerDegree > double.Epsilon)
+            {
+                return clampedPolar * currentPixelsPerDegree;
+            }
+
+            if (currentImageRadius > 0 && MaxAngle > double.Epsilon)
+            {
+                return clampedPolar / MaxAngle * currentImageRadius;
+            }
+
+            return 0;
+        }
+
+        private double GetPolarAngleFromDistancePixels(double distancePixels)
+        {
+            double distance = Math.Max(0, distancePixels);
+            if (currentPixelsPerDegree > double.Epsilon)
+            {
+                return Math.Max(0, Math.Min(distance / currentPixelsPerDegree, MaxAngle));
+            }
+
+            if (currentImageRadius > 0)
+            {
+                return Math.Max(0, Math.Min(distance / currentImageRadius * MaxAngle, MaxAngle));
+            }
+
+            return 0;
+        }
+
+        private double GetFocusCircleRadiusPixelsFromAngle(double radiusDegrees)
+        {
+            double angle = Math.Max(0, radiusDegrees);
+            if (currentPixelsPerDegree > double.Epsilon)
+            {
+                return Math.Max(ConoscopeImageHost.MinimumFocusCircleRadius, angle * currentPixelsPerDegree);
+            }
+
+            if (currentImageRadius > 0 && MaxAngle > double.Epsilon)
+            {
+                return Math.Max(ConoscopeImageHost.MinimumFocusCircleRadius, angle / MaxAngle * currentImageRadius);
+            }
+
+            return ConoscopeImageHost.MinimumFocusCircleRadius;
+        }
+
+        private Point CreatePointFromPolar(double azimuthDegrees, double distancePixels)
+        {
+            double radians = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(azimuthDegrees) * Math.PI / 180.0;
+            return new Point(
+                currentImageCenter.X + Math.Cos(radians) * distancePixels,
+                currentImageCenter.Y - Math.Sin(radians) * distancePixels);
+        }
+
+        public sealed class FocusPointPolarEditModel : ViewModelBase
+        {
+            private ConoscopeView? owner;
+            private DVCircleText? circle;
+            private bool isUpdating;
+            private string name = string.Empty;
+            private double azimuthDegrees;
+            private double polarDegrees;
+            private double distancePixels;
+            private double radiusPixels;
+            private double radiusDegrees;
+
+            public FocusPointPolarEditModel()
+            {
+            }
+
+            public void Initialize(ConoscopeView owner, DVCircleText circle)
+            {
+                this.owner = owner;
+                this.circle = circle;
+                SyncFromCircle();
+            }
+
+            [Category("关注点"), DisplayName("名称")]
+            public string Name
+            {
+                get => name;
+                set
+                {
+                    string newValue = value ?? string.Empty;
+                    if (name == newValue)
+                    {
+                        return;
+                    }
+
+                    name = newValue;
+                    if (circle != null)
+                    {
+                        circle.Attribute.Text = name;
+                        ApplyVisualUpdate();
+                    }
+
+                    OnPropertyChanged();
+                }
+            }
+
+            [Category("位置"), DisplayName("方位角(°)")]
+            public double AzimuthDegrees
+            {
+                get => azimuthDegrees;
+                set
+                {
+                    double normalized = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(value);
+                    if (AreClose(azimuthDegrees, normalized))
+                    {
+                        return;
+                    }
+
+                    azimuthDegrees = normalized;
+                    OnPropertyChanged();
+                    ApplyCenterFromPolar();
+                }
+            }
+
+            [Category("位置"), DisplayName("极角(°)")]
+            public double PolarDegrees
+            {
+                get => polarDegrees;
+                set
+                {
+                    double clamped = owner == null ? Math.Max(0, value) : Math.Max(0, Math.Min(value, owner.MaxAngle));
+                    if (AreClose(polarDegrees, clamped))
+                    {
+                        return;
+                    }
+
+                    polarDegrees = clamped;
+                    distancePixels = owner?.GetPolarDistancePixels(polarDegrees) ?? distancePixels;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DistancePixels));
+                    ApplyCenterFromPolar();
+                }
+            }
+
+            [Category("位置"), DisplayName("距离(px)")]
+            public double DistancePixels
+            {
+                get => distancePixels;
+                set
+                {
+                    double clamped = ClampDistancePixels(value);
+                    if (AreClose(distancePixels, clamped))
+                    {
+                        return;
+                    }
+
+                    distancePixels = clamped;
+                    polarDegrees = owner?.GetPolarAngleFromDistancePixels(distancePixels) ?? polarDegrees;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(PolarDegrees));
+                    ApplyCenterFromPolar();
+                }
+            }
+
+            [Category("大小"), DisplayName("半径(px)")]
+            public double RadiusPixels
+            {
+                get => radiusPixels;
+                set
+                {
+                    double clamped = Math.Max(value, ConoscopeImageHost.MinimumFocusCircleRadius);
+                    if (AreClose(radiusPixels, clamped))
+                    {
+                        return;
+                    }
+
+                    radiusPixels = clamped;
+                    radiusDegrees = owner?.GetFocusCircleRadiusAngle(radiusPixels) ?? radiusDegrees;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(RadiusDegrees));
+                    ApplyRadius();
+                }
+            }
+
+            [Category("大小"), DisplayName("半径(°)")]
+            public double RadiusDegrees
+            {
+                get => radiusDegrees;
+                set
+                {
+                    double clamped = owner == null ? Math.Max(0, value) : Math.Max(0, Math.Min(value, owner.MaxAngle));
+                    if (AreClose(radiusDegrees, clamped))
+                    {
+                        return;
+                    }
+
+                    radiusDegrees = clamped;
+                    radiusPixels = owner?.GetFocusCircleRadiusPixelsFromAngle(radiusDegrees) ?? radiusPixels;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(RadiusPixels));
+                    ApplyRadius();
+                }
+            }
+
+            private void SyncFromCircle()
+            {
+                if (owner == null || circle == null)
+                {
+                    return;
+                }
+
+                isUpdating = true;
+                try
+                {
+                    name = ResolveFocusCircleName(circle);
+                    Point center = circle.Attribute.Center;
+                    azimuthDegrees = owner.GetFullAzimuthAngle(center);
+                    polarDegrees = owner.GetPolarRadiusAngle(center);
+                    distancePixels = (center - owner.currentImageCenter).Length;
+                    radiusPixels = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+                    radiusDegrees = owner.GetFocusCircleRadiusAngle(radiusPixels);
+                }
+                finally
+                {
+                    isUpdating = false;
+                }
+
+                OnPropertyChanged(nameof(Name));
+                OnPropertyChanged(nameof(AzimuthDegrees));
+                OnPropertyChanged(nameof(PolarDegrees));
+                OnPropertyChanged(nameof(DistancePixels));
+                OnPropertyChanged(nameof(RadiusPixels));
+                OnPropertyChanged(nameof(RadiusDegrees));
+            }
+
+            private void ApplyCenterFromPolar()
+            {
+                if (isUpdating || owner == null || circle == null)
+                {
+                    return;
+                }
+
+                circle.Attribute.Center = owner.CreatePointFromPolar(azimuthDegrees, distancePixels);
+                ApplyVisualUpdate();
+            }
+
+            private void ApplyRadius()
+            {
+                if (isUpdating || owner == null || circle == null)
+                {
+                    return;
+                }
+
+                circle.Attribute.Radius = radiusPixels;
+                circle.Attribute.RadiusY = radiusPixels;
+                ApplyVisualUpdate();
+            }
+
+            private double ClampDistancePixels(double value)
+            {
+                double distance = Math.Max(0, value);
+                if (owner?.currentImageRadius > 0)
+                {
+                    distance = Math.Min(distance, owner.currentImageRadius);
+                }
+
+                return distance;
+            }
+
+            private void ApplyVisualUpdate()
+            {
+                if (owner == null || circle == null)
+                {
+                    return;
+                }
+
+                circle.Render();
+                owner.ImageView.RefreshFocusCircleSelection();
+                owner.UpdateSelectedFocusPointInfo();
+            }
+
+            private static bool AreClose(double left, double right)
+            {
+                return Math.Abs(left - right) < 0.000001;
+            }
         }
     }
 }

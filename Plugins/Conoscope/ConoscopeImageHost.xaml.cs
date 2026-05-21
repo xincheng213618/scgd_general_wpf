@@ -23,6 +23,16 @@ namespace Conoscope
         public IReadOnlyList<DVCircleText> Circles { get; }
     }
 
+    public sealed class ConoscopeFocusCircleEditRequestedEventArgs : EventArgs
+    {
+        public ConoscopeFocusCircleEditRequestedEventArgs(DVCircleText circle)
+        {
+            Circle = circle;
+        }
+
+        public DVCircleText Circle { get; }
+    }
+
     public partial class ConoscopeImageHost : UserControl, IDisposable
     {
         internal const double MinimumFocusCircleRadius = 4;
@@ -32,6 +42,7 @@ namespace Conoscope
         private readonly ContextMenu focusCircleContextMenu = new();
         private readonly EditorContext contextMenuEditorContext = new();
         private readonly DrawingVisualBaseDVContextMenu focusCirclePropertyContextMenu = new();
+        private readonly MenuItem editFocusCircleByPolarMenuItem = new();
         private readonly MenuItem calculateFocusCircleMenuItem = new();
         private readonly MenuItem clearFocusCircleMenuItem = new();
         private readonly HashSet<DVCircleText> trackedFocusCircles = new();
@@ -55,6 +66,7 @@ namespace Conoscope
             focusCircleEraseTool = new EraseManager(EditorContext);
             focusCircleEraseTool.CanEraseVisual = static visual => visual is DVCircleText;
             InitializeFocusCircleContextMenu();
+            EditorContext.SelectionVisual.SelectionChanged += SelectionVisual_SelectionChanged;
             ZoomBox.ContentMatrixChanged += ZoomBox_ContentMatrixChanged;
             ImageCanvas.PreviewMouseRightButtonDown += ImageCanvas_PreviewMouseRightButtonDown;
             ImageCanvas.ContextMenuOpening += ImageCanvas_ContextMenuOpening;
@@ -68,8 +80,12 @@ namespace Conoscope
 
         public IReadOnlyList<DVCircleText> FocusCircles => GetFocusCircles();
 
+        public DVCircleText? SelectedFocusCircle => EditorContext.SelectionVisual.PrimarySelectedVisual as DVCircleText;
+
         public event EventHandler<ConoscopeFocusCircleCalculationRequestedEventArgs>? FocusCircleCalculationRequested;
+        public event EventHandler<ConoscopeFocusCircleEditRequestedEventArgs>? FocusCircleEditRequested;
         public event EventHandler? FocusCirclesChanged;
+        public event EventHandler? FocusCircleSelectionChanged;
 
         public bool IsFocusCircleEditMode
         {
@@ -164,6 +180,7 @@ namespace Conoscope
         public void Dispose()
         {
             ZoomBox.ContentMatrixChanged -= ZoomBox_ContentMatrixChanged;
+            EditorContext.SelectionVisual.SelectionChanged -= SelectionVisual_SelectionChanged;
             ImageCanvas.PreviewMouseRightButtonDown -= ImageCanvas_PreviewMouseRightButtonDown;
             ImageCanvas.ContextMenuOpening -= ImageCanvas_ContextMenuOpening;
             ImageCanvas.VisualsAdd -= ImageCanvas_VisualsAdd;
@@ -171,6 +188,9 @@ namespace Conoscope
             ClearCore(preserveFocusCircles: false);
             UntrackAllFocusCircles();
             ImageCanvas.ContextMenu = null;
+            editFocusCircleByPolarMenuItem.Click -= EditFocusCircleByPolarMenuItem_Click;
+            calculateFocusCircleMenuItem.Click -= CalculateFocusCircleMenuItem_Click;
+            clearFocusCircleMenuItem.Click -= ClearFocusCircleMenuItem_Click;
             focusCircleDrawTool.Dispose();
             focusCircleEraseTool.Dispose();
             EditorContext.SelectionVisual.Dispose();
@@ -181,6 +201,8 @@ namespace Conoscope
 
         private void InitializeFocusCircleContextMenu()
         {
+            editFocusCircleByPolarMenuItem.Header = "按角度/长度编辑...";
+            editFocusCircleByPolarMenuItem.Click += EditFocusCircleByPolarMenuItem_Click;
             calculateFocusCircleMenuItem.Click += CalculateFocusCircleMenuItem_Click;
             clearFocusCircleMenuItem.Click += ClearFocusCircleMenuItem_Click;
 
@@ -189,6 +211,11 @@ namespace Conoscope
             contextMenuEditorContext.SelectionVisual = EditorContext.SelectionVisual;
             ImageCanvas.ContextMenu = focusCircleContextMenu;
             UpdateCanvasCursor();
+        }
+
+        private void SelectionVisual_SelectionChanged(object? sender, EventArgs e)
+        {
+            FocusCircleSelectionChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ZoomBox_ContentMatrixChanged(object? sender, EventArgs e)
@@ -341,6 +368,9 @@ namespace Conoscope
 
             if (contextMenuFocusCircle != null)
             {
+                focusCircleContextMenu.Items.Add(editFocusCircleByPolarMenuItem);
+                focusCircleContextMenu.Items.Add(new Separator());
+
                 foreach (MenuItem menuItem in focusCirclePropertyContextMenu.GetContextMenuItems(contextMenuEditorContext, contextMenuFocusCircle))
                 {
                     focusCircleContextMenu.Items.Add(menuItem);
@@ -363,6 +393,16 @@ namespace Conoscope
             }
 
             FocusCircleCalculationRequested?.Invoke(this, new ConoscopeFocusCircleCalculationRequestedEventArgs(circles));
+        }
+
+        private void EditFocusCircleByPolarMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (contextMenuFocusCircle == null)
+            {
+                return;
+            }
+
+            FocusCircleEditRequested?.Invoke(this, new ConoscopeFocusCircleEditRequestedEventArgs(contextMenuFocusCircle));
         }
 
         private void ClearFocusCircleMenuItem_Click(object sender, RoutedEventArgs e)
@@ -458,6 +498,11 @@ namespace Conoscope
         {
             EditorContext.SelectionVisual.SetRender(circle);
             ImageCanvas.TopVisual(circle);
+        }
+
+        internal void RefreshFocusCircleSelection()
+        {
+            EditorContext.SelectionVisual.Render();
         }
 
         internal void RemoveFocusCircle(DVCircleText circle)
