@@ -215,6 +215,7 @@
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                                                <ComboBoxItem Content="对比度" Tag="Contrast"/>
                                             </ComboBox>
                                             <TextBlock Text="{x:Static properties:Resources.LabelReference}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbHomeReferenceMode" Width="118" SelectionChanged="cbHomeReferenceMode_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
@@ -237,6 +238,7 @@
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                                                <ComboBoxItem Content="对比度" Tag="Contrast"/>
                                             </ComboBox>
                                             <Button x:Name="btnHomeExportAngle" Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnHomeExportAngle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportAzimuthData}" />
                                             <Button x:Name="btnHomeExportCircle" Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnHomeExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportPolarData}" />
@@ -459,14 +461,11 @@
                                                       Unchecked="WindowDisplay_Changed"
                                                       VerticalAlignment="Center" />
                                             <TextBlock Text="{x:Static properties:Resources.LabelColorMap}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                            <ComboBox x:Name="cbWindowPseudoColorMap"
+                                        <ComboBox x:Name="cbWindowPseudoColorMap"
                                                       Width="138"
                                                       SelectionChanged="cbWindowPseudoColorMap_SelectionChanged"
                                                       Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <Border Width="86" Height="22" Margin="0,2,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                                <Image x:Name="imgWindowPseudoColorMapPreview" Stretch="Fill" />
-                                            </Border>
-                                        </StackPanel>
+                                    </StackPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDisplay}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>

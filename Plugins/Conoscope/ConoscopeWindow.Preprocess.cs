@@ -36,7 +36,6 @@ namespace Conoscope
                 tbWindowFilterConfigSummary.ToolTip = BuildWindowFilterConfigToolTip();
                 chkWindowUsePseudoColor.IsChecked = RenderingConfig.UsePseudoColor;
                 SelectPseudoColorMap(RenderingConfig.PseudoColorMap);
-                imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(RenderingConfig.PseudoColorMap);
             }
             finally
             {
@@ -130,7 +129,6 @@ namespace Conoscope
             if (cbWindowPseudoColorMap.SelectedItem is PseudoColorMapOption selectedItem)
             {
                 RenderingConfig.PseudoColorMap = selectedItem.Value;
-                imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(selectedItem.Value);
                 SaveRenderingConfig();
             }
         }

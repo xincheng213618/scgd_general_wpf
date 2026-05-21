@@ -35,7 +35,14 @@ namespace Conoscope
                     ApplyPreprocessToCurrentMats();
                 }
 
+                if (GetSelectedDisplayChannel() == ExportChannel.Contrast && !CanRefreshContrastDisplay())
+                {
+                    RenderingConfig.DisplayChannel = ExportChannel.Y;
+                    RefreshDisplayControlsFromConfig();
+                }
+
                 RefreshDisplayedImage();
+                UpdateContrastReferenceUi();
                 SyncCieWindowFromCurrentPointer();
                 StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
             }

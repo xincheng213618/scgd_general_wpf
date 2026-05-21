@@ -338,6 +338,7 @@ namespace Conoscope
                 ZMat!,
                 GetSelectedDisplayChannel(),
                 CreateColorDifferenceMat,
+                CreateContrastMat,
                 currentImageCenter,
                 currentImageRadius);
         }

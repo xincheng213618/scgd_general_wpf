@@ -114,6 +114,7 @@ namespace Conoscope
                 ExportChannel.CieU => Brushes.DodgerBlue,
                 ExportChannel.CieV => Brushes.MediumPurple,
                 ExportChannel.ColorDifference => Brushes.Crimson,
+                ExportChannel.Contrast => Brushes.DeepSkyBlue,
                 _ => Brushes.LimeGreen
             };
         }
@@ -198,6 +199,7 @@ namespace Conoscope
                 ExportChannel.CieU => ScottPlot.Color.FromColor(System.Drawing.Color.DodgerBlue),
                 ExportChannel.CieV => ScottPlot.Color.FromColor(System.Drawing.Color.MediumPurple),
                 ExportChannel.ColorDifference => ScottPlot.Color.FromColor(System.Drawing.Color.Crimson),
+                ExportChannel.Contrast => ScottPlot.Color.FromColor(System.Drawing.Color.DeepSkyBlue),
                 _ => ScottPlot.Color.FromColor(System.Drawing.Color.LimeGreen)
             };
         }

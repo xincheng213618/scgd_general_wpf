@@ -32,11 +32,12 @@ namespace Conoscope.Core
             ExportChannel channel,
             ColormapTypes colormap,
             Func<OpenCvSharp.Mat> createColorDifferenceMat,
+            Func<OpenCvSharp.Mat> createContrastMat,
             bool usePseudoColor,
             OpenCvSharp.Mat? rangeMask = null,
             OpenCvSharp.Mat? rangeOutsideMask = null)
         {
-            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat);
+            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat, createContrastMat);
             using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
             OpenCvSharp.Mat? effectiveRangeMask = IsUsableMask(rangeMask, channelMat) ? rangeMask : null;
             OpenCvSharp.Mat? effectiveOutsideMask = IsUsableMask(rangeOutsideMask, channelMat) ? rangeOutsideMask : null;
@@ -103,10 +104,11 @@ namespace Conoscope.Core
             OpenCvSharp.Mat zMat,
             ExportChannel channel,
             Func<OpenCvSharp.Mat> createColorDifferenceMat,
+            Func<OpenCvSharp.Mat> createContrastMat,
             Point? maskCenter = null,
             double? maskRadius = null)
         {
-            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat);
+            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat, createContrastMat);
             using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
             using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
 
@@ -161,11 +163,15 @@ namespace Conoscope.Core
             OpenCvSharp.Mat yMat,
             OpenCvSharp.Mat zMat,
             ExportChannel channel,
-            Func<OpenCvSharp.Mat> createColorDifferenceMat)
+            Func<OpenCvSharp.Mat> createColorDifferenceMat,
+            Func<OpenCvSharp.Mat> createContrastMat)
         {
-            return channel == ExportChannel.ColorDifference
-                ? createColorDifferenceMat()
-                : ConoscopeColorimetry.CreateChannelMat(xMat, yMat, zMat, channel);
+            return channel switch
+            {
+                ExportChannel.ColorDifference => createColorDifferenceMat(),
+                ExportChannel.Contrast => createContrastMat(),
+                _ => ConoscopeColorimetry.CreateChannelMat(xMat, yMat, zMat, channel)
+            };
         }
 
         private static OpenCvSharp.ColormapTypes ResolveOpenCvColormap(ColormapTypes colormapType)

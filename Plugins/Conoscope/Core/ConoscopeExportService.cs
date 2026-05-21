@@ -25,6 +25,7 @@ namespace Conoscope.Core
         public required double PixelsPerDegree { get; init; }
         public required Func<int, int, ConoscopeXyzValue> ReadXyz { get; init; }
         public Func<int, int, double>? ReadColorDifference { get; init; }
+        public Func<int, int, double>? ReadContrast { get; init; }
     }
 
     public static class ConoscopeExportService
@@ -311,6 +312,16 @@ namespace Conoscope.Core
                 }
 
                 return context.ReadColorDifference(imageX, imageY);
+            }
+
+            if (channel == ExportChannel.Contrast)
+            {
+                if (context.ReadContrast == null)
+                {
+                    throw new InvalidOperationException("对比度通道需要先保存白场或黑场基准");
+                }
+
+                return context.ReadContrast(imageX, imageY);
             }
 
             return ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);

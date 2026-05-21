@@ -50,8 +50,11 @@ namespace Conoscope
         private OpenCvSharp.Mat? colorDifferenceReferenceUMat;
         private OpenCvSharp.Mat? colorDifferenceReferenceVMat;
         private string? colorDifferenceReferenceFileName;
+        private OpenCvSharp.Mat? contrastReferenceYMat;
+        private string? contrastReferenceFileName;
         private bool isUpdatingDisplayControls;
         private bool isUpdatingColorDifferenceControls;
+        private bool isUpdatingContrastControls;
         private ReferencePlotDisplayMode referencePlotDisplayMode;
         private WindowCIE? cieWindow;
         private ImageFullScreenMode? imageFullScreenMode;
@@ -131,6 +134,12 @@ namespace Conoscope
             UpdatePseudoColorMapPreview();
             if (HasXyzData())
             {
+                if (GetSelectedDisplayChannel() == ExportChannel.Contrast && !CanRefreshContrastDisplay())
+                {
+                    RenderingConfig.DisplayChannel = ExportChannel.Y;
+                    RefreshDisplayControlsFromConfig();
+                }
+
                 RefreshDisplayedImage();
             }
         }
@@ -215,6 +224,7 @@ namespace Conoscope
         private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
         private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
         private ConoscopeColorDifferenceSettings ColorDifferenceConfig => ConoscopeConfig.ColorDifference;
+        private ConoscopeContrastSettings ContrastConfig => ConoscopeConfig.Contrast;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -224,6 +234,7 @@ namespace Conoscope
             RefreshDisplayControlsFromConfig();
             RefreshQuickControlsFromAxisParam();
             InitializeColorDifferenceControls();
+            InitializeContrastControls();
             InitializePreprocessControls();
             UpdateReferenceControlVisibility();
             UpdateColorDifferencePanelVisibility();
@@ -344,6 +355,8 @@ namespace Conoscope
             colorDifferenceReferenceUMat = null;
             colorDifferenceReferenceVMat?.Dispose();
             colorDifferenceReferenceVMat = null;
+            contrastReferenceYMat?.Dispose();
+            contrastReferenceYMat = null;
             DisposePseudoColorRangeMasks();
             DisposeCoordinateAxis();
             ImageView?.Dispose();

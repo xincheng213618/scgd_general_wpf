@@ -48,6 +48,7 @@ namespace Conoscope
                 if (chkChannelCieU.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.CieU);
                 if (chkChannelCieV.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.CieV);
                 if (chkChannelColorDifference.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.ColorDifference);
+                if (chkChannelContrast.IsChecked == true) Settings.Channels.Add(Core.ExportChannel.Contrast);
 
                 if (Settings.Channels.Count == 0)
                 {

@@ -37,6 +37,7 @@ namespace Conoscope
                 displayChannel,
                 RenderingConfig.PseudoColorMap,
                 CreateColorDifferenceMat,
+                CreateContrastMat,
                 RenderingConfig.UsePseudoColor,
                 rangeMask,
                 rangeMask == null ? null : pseudoColorRangeOutsideMask);
@@ -188,6 +189,12 @@ namespace Conoscope
 
             if (HasXyzData())
             {
+                if (channel == ExportChannel.Contrast && !CanRefreshContrastDisplay())
+                {
+                    RaiseWindowQuickControlStateChanged();
+                    return;
+                }
+
                 try
                 {
                     RefreshDisplayedImage();
@@ -204,6 +211,7 @@ namespace Conoscope
         private void ExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateColorDifferencePanelVisibility();
+            UpdateContrastReferenceUi();
             RaiseWindowQuickControlStateChanged();
         }
 

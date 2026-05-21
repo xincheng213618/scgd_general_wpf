@@ -291,7 +291,7 @@ namespace Conoscope
             builder.AppendLine(string.Format(Properties.Resources.ReferenceFormat, GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)));
             builder.AppendLine(string.Format(Properties.Resources.PixelCoordFormat, sample.ImageX, sample.ImageY));
             builder.AppendLine(string.Format(Properties.Resources.PolarCoordFormat, azimuthAngle.ToString("F2"), polarAngle.ToString("F2")));
-            builder.AppendLine($"{ConoscopeChannelDisplayFormatter.GetLabel(displayChannel)}: {displayValue:F6}");
+            builder.AppendLine($"{ConoscopeChannelDisplayFormatter.GetLabel(displayChannel)}: {ConoscopeChannelDisplayFormatter.FormatValue(displayValue, displayChannel)}");
             builder.AppendLine($"XYZ: X={sample.X:F4}, Y={sample.Y:F4}, Z={sample.Z:F4}");
             builder.AppendLine($"xy: x={sample.Chromaticity.x:F6}, y={sample.Chromaticity.y:F6}");
             builder.Append($"uv: u={sample.Chromaticity.u:F6}, v={sample.Chromaticity.v:F6}, CCT={ConoscopeColorimetry.FormatCct(sample.Chromaticity.Cct)}");

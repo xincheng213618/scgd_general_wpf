@@ -127,6 +127,12 @@ namespace Conoscope
                 {
                     ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
                     return GetColorDifferenceValue(ix, iy, X, Y, Z);
+                },
+                ReadContrast = (ix, iy) =>
+                {
+                    EnsureContrastReferenceReady();
+                    ExtractXYZValues(ix, iy, out _, out double Y, out _);
+                    return GetContrastValue(ix, iy, Y);
                 }
             };
         }

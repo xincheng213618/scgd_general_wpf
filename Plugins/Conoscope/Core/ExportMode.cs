@@ -43,7 +43,12 @@ namespace Conoscope.Core
         /// <summary>
         /// CIE 1976 uv 色差
         /// </summary>
-        ColorDifference
+        ColorDifference,
+
+        /// <summary>
+        /// 白/黑对比度
+        /// </summary>
+        Contrast
     }
 
     public enum ColorDifferenceReferenceMode
@@ -55,5 +60,11 @@ namespace Conoscope.Core
         ImageCenter,
         Custom,
         ReferenceImage
+    }
+
+    public enum ContrastReferenceKind
+    {
+        Black,
+        White
     }
 }

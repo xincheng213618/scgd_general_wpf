@@ -335,6 +335,11 @@ namespace Conoscope
                 return GetColorDifferenceValue(ix, iy, X, Y, Z);
             }
 
+            if (channel == ExportChannel.Contrast)
+            {
+                return GetContrastValue(ix, iy, Y);
+            }
+
             return ConoscopeColorimetry.GetChannelValue(X, Y, Z, channel);
         }
 

@@ -45,9 +45,11 @@ namespace Conoscope.Core
 
         public static double GetChannelValue(double X, double Y, double Z, ExportChannel channel)
         {
-            if (channel == ExportChannel.ColorDifference)
+            if (channel is ExportChannel.ColorDifference or ExportChannel.Contrast)
             {
-                throw new InvalidOperationException(Properties.Resources.ColorDiffNeedsUVRef);
+                throw new InvalidOperationException(channel == ExportChannel.ColorDifference
+                    ? Properties.Resources.ColorDiffNeedsUVRef
+                    : "对比度通道需要先保存白场或黑场基准");
             }
 
             if (channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV)
@@ -84,6 +86,7 @@ namespace Conoscope.Core
                 ExportChannel.CieU => CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0),
                 ExportChannel.CieV => CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0),
                 ExportChannel.ColorDifference => throw new InvalidOperationException("色差通道需要指定 uv 基准"),
+                ExportChannel.Contrast => throw new InvalidOperationException("对比度通道需要先保存白场或黑场基准"),
                 _ => YMat.Clone()
             };
         }
@@ -115,6 +118,21 @@ namespace Conoscope.Core
             using OpenCvSharp.Mat uMat = CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0);
             using OpenCvSharp.Mat vMat = CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0);
             return CreateColorDifferenceMat(uMat, vMat, referenceUMat, referenceVMat);
+        }
+
+        public static OpenCvSharp.Mat CreateContrastMat(OpenCvSharp.Mat currentYMat, OpenCvSharp.Mat referenceYMat, ContrastReferenceKind referenceKind)
+        {
+            EnsureSameSize(currentYMat, referenceYMat, "对比度基准图");
+            return referenceKind == ContrastReferenceKind.Black
+                ? DivideWithZeroGuard(currentYMat, referenceYMat)
+                : DivideWithZeroGuard(referenceYMat, currentYMat);
+        }
+
+        public static double CalculateContrast(double currentY, double referenceY, ContrastReferenceKind referenceKind)
+        {
+            double numerator = referenceKind == ContrastReferenceKind.Black ? currentY : referenceY;
+            double denominator = referenceKind == ContrastReferenceKind.Black ? referenceY : currentY;
+            return denominator > double.Epsilon ? numerator / denominator : 0;
         }
 
         private static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat uMat, OpenCvSharp.Mat vMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
@@ -188,7 +206,7 @@ namespace Conoscope.Core
             using OpenCvSharp.Mat zeroMask = new OpenCvSharp.Mat();
             using OpenCvSharp.Mat safeDenominator = denominator.Clone();
 
-            OpenCvSharp.Cv2.Compare(safeDenominator, OpenCvSharp.Scalar.All(0), zeroMask, OpenCvSharp.CmpTypes.EQ);
+            OpenCvSharp.Cv2.Compare(safeDenominator, OpenCvSharp.Scalar.All(0), zeroMask, OpenCvSharp.CmpTypes.LE);
             safeDenominator.SetTo(OpenCvSharp.Scalar.All(1), zeroMask);
             OpenCvSharp.Cv2.Divide(numerator, safeDenominator, result);
             result.SetTo(OpenCvSharp.Scalar.All(0), zeroMask);
@@ -207,12 +225,23 @@ namespace Conoscope.Core
                 ExportChannel.CieU => "u",
                 ExportChannel.CieV => "v",
                 ExportChannel.ColorDifference => "Δuv",
+                ExportChannel.Contrast => "对比度",
                 _ => "Y"
             };
         }
 
         public static string FormatChannelValue(double value, ExportChannel channel)
         {
+            if (!double.IsFinite(value))
+            {
+                return "--";
+            }
+
+            if (channel == ExportChannel.Contrast)
+            {
+                return value.ToString("F3");
+            }
+
             return channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV or ExportChannel.ColorDifference
                 ? value.ToString("F6")
                 : value.ToString("F2");

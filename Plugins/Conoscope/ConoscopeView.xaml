@@ -150,6 +150,7 @@
                                             <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
                                             <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
                                             <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                                            <ComboBoxItem Content="对比度" Tag="Contrast"/>
                                         </ComboBox>
                                         <TextBlock Text="{x:Static properties:Resources.LabelRefMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
@@ -220,6 +221,28 @@
                     </ScrollViewer>
                 </TabItem>
 
+                <TabItem Header="对比度">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="5">
+                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <TextBlock Text="对比度计算" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                    <WrapPanel Margin="0,4,0,4">
+                                        <TextBlock Text="基准类型:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbContrastReferenceKind" MinWidth="100" SelectionChanged="ContrastReferenceKind_SelectionChanged">
+                                            <ComboBoxItem Content="黑场" Tag="Black"/>
+                                            <ComboBoxItem Content="白场" Tag="White"/>
+                                        </ComboBox>
+                                        <Button x:Name="btnSaveContrastReference" Content="保存基准图" Click="btnSaveContrastReference_Click" Padding="10,3" Margin="10,0,6,0"/>
+                                        <Button Content="计算对比度" Click="btnCalculateContrast_Click" Padding="10,3"/>
+                                    </WrapPanel>
+                                    <TextBlock x:Name="tbContrastReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
                 <TabItem Header="{x:Static properties:Resources.PanelExport}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="5">
@@ -242,6 +265,7 @@
                                         <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
                                         <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
                                         <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
+                                        <ComboBoxItem Content="对比度" Tag="Contrast"/>
                                     </ComboBox>
                                     <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
                                     <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Padding="10,4"/>

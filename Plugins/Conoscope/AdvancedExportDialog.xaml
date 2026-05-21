@@ -44,6 +44,7 @@
                         <CheckBox x:Name="chkChannelCieU" Content="{x:Static properties:Resources.ChannelCieU}" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelCieV" Content="{x:Static properties:Resources.ChannelCieV}" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelColorDifference" Content="{x:Static properties:Resources.ChannelDeltaUV}" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelContrast" Content="对比度" IsChecked="False" Margin="5"/>
                         <TextBlock Text="{x:Static properties:Resources.HintChannelPerFile}" 
                                    Margin="5" FontSize="11" Foreground="Gray"/>
                     </StackPanel>

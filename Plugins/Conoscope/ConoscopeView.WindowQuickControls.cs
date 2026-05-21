@@ -57,6 +57,12 @@ namespace Conoscope
                 return;
             }
 
+            if (channel == ExportChannel.Contrast && !CanRefreshContrastDisplay())
+            {
+                RaiseWindowQuickControlStateChanged();
+                return;
+            }
+
             try
             {
                 RefreshDisplayedImage();

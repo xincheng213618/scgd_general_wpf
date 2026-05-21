@@ -21,6 +21,9 @@ namespace Conoscope.Core
         public ConoscopeColorDifferenceSettings ColorDifference { get; }
 
         [JsonIgnore]
+        public ConoscopeContrastSettings Contrast { get; }
+
+        [JsonIgnore]
         public ConoscopeCaptureSettings Capture { get; }
 
         [JsonIgnore]
@@ -159,6 +162,9 @@ namespace Conoscope.Core
         public double ColorDifferenceCustomV { get => _ColorDifferenceCustomV; set { _ColorDifferenceCustomV = value; OnPropertyChanged(); } }
         private double _ColorDifferenceCustomV = 0.4684;
 
+        public ContrastReferenceKind ContrastReferenceKind { get => _ContrastReferenceKind; set { _ContrastReferenceKind = value; OnPropertyChanged(); } }
+        private ContrastReferenceKind _ContrastReferenceKind = ContrastReferenceKind.Black;
+
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ObservableCollection<ConoscopeNdCalibrationBinding> NdCalibrationBindings
         {
@@ -200,6 +206,7 @@ namespace Conoscope.Core
             Rendering = new ConoscopeRenderingSettings(this);
             Preprocess = new ConoscopePreprocessSettings(this);
             ColorDifference = new ConoscopeColorDifferenceSettings(this);
+            Contrast = new ConoscopeContrastSettings(this);
             Capture = new ConoscopeCaptureSettings(this);
             Export = new ConoscopeExportSettings(this);
             EnsureProfile(ConoscopeModelType.VA60);
@@ -360,6 +367,22 @@ namespace Conoscope.Core
         {
             get => config.ColorDifferenceCustomV;
             set => config.ColorDifferenceCustomV = value;
+        }
+    }
+
+    public sealed class ConoscopeContrastSettings
+    {
+        private readonly ConoscopeConfig config;
+
+        internal ConoscopeContrastSettings(ConoscopeConfig config)
+        {
+            this.config = config;
+        }
+
+        public ContrastReferenceKind ReferenceKind
+        {
+            get => config.ContrastReferenceKind;
+            set => config.ContrastReferenceKind = value;
         }
     }
 
