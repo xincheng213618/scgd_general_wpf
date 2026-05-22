@@ -212,6 +212,11 @@ namespace Conoscope
 
         private ExportChannel GetSelectedDisplayChannel()
         {
+            if (!IsLoaded || cbDisplayChannel == null)
+            {
+                return RenderingConfig.DisplayChannel;
+            }
+
             return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, RenderingConfig.DisplayChannel);
         }
 

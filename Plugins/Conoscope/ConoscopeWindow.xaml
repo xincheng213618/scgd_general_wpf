@@ -264,10 +264,10 @@
                                                     <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
                                                     <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
                                                     <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelContrast}" Tag="Contrast"/>
                                                 </ComboBox>
                                                 <TextBlock Text="{x:Static properties:Resources.LabelReference}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                                <RadioButton x:Name="rbHomeReferenceLine" GroupName="HomeReferenceMode" Checked="rbHomeReferenceLine_Checked" Style="{StaticResource ReferenceModeRadioStyle}" ToolTip="方位角直线">
+                                                <RadioButton x:Name="rbHomeReferenceLine" GroupName="HomeReferenceMode" Checked="rbHomeReferenceLine_Checked" Style="{StaticResource ReferenceModeRadioStyle}" ToolTip="{x:Static properties:Resources.RefAzimuthLine}">
                                                     <Viewbox Width="12" Height="12">
                                                         <Canvas Width="16" Height="16">
                                                             <Line X1="2" Y1="8" X2="14" Y2="8"
@@ -278,7 +278,7 @@
                                                         </Canvas>
                                                     </Viewbox>
                                                 </RadioButton>
-                                                <RadioButton x:Name="rbHomeReferenceCircle" GroupName="HomeReferenceMode" Checked="rbHomeReferenceCircle_Checked" Style="{StaticResource ReferenceModeRadioStyle}" ToolTip="极角圆">
+                                                <RadioButton x:Name="rbHomeReferenceCircle" GroupName="HomeReferenceMode" Checked="rbHomeReferenceCircle_Checked" Style="{StaticResource ReferenceModeRadioStyle}" ToolTip="{x:Static properties:Resources.RefPolarCircle}">
                                                     <Viewbox Width="12" Height="12">
                                                         <Canvas Width="16" Height="16">
                                                             <Ellipse Width="12" Height="12"
@@ -295,7 +295,7 @@
                                                          PreviewKeyDown="txtHomeReferenceValue_PreviewKeyDown"
                                                          LostFocus="txtHomeReferenceValue_LostFocus" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="当前通道" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupCurrentView}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
 
@@ -306,15 +306,15 @@
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
                                             <WrapPanel>
-                                                <TextBlock Text="当前图像" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <TextBlock Text="{x:Static properties:Resources.LabelCurrentImage}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                                 <ComboBox x:Name="cbHomeContrastImageKind" Width="84" SelectionChanged="cbHomeContrastImageKind_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                    <ComboBoxItem Content="暗图" Tag="Black"/>
-                                                    <ComboBoxItem Content="亮图" Tag="White"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageBlack}" Tag="Black"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageWhite}" Tag="White"/>
                                                 </ComboBox>
-                                                <Button x:Name="btnHomeSaveBlackContrastReference" Content="黑基准" Click="btnHomeSaveBlackContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="将当前视图保存为全局黑场基准" />
-                                                <Button x:Name="btnHomeSaveWhiteContrastReference" Content="白基准" Click="btnHomeSaveWhiteContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="将当前视图保存为全局白场基准" />
+                                                <Button x:Name="btnHomeSaveBlackContrastReference" Content="{x:Static properties:Resources.BtnBlackReference}" Click="btnHomeSaveBlackContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnBlackReference}" />
+                                                <Button x:Name="btnHomeSaveWhiteContrastReference" Content="{x:Static properties:Resources.BtnWhiteReference}" Click="btnHomeSaveWhiteContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnWhiteReference}" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="对比度" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupContrast}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
 
@@ -341,9 +341,9 @@
                                                     <TextBlock Text="v:" Style="{StaticResource RibbonFieldLabelStyle}" Margin="4,0,3,0" />
                                                     <TextBox x:Name="txtHomeColorDifferenceCustomV" Width="62" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtHomeColorDifferenceCustom_PreviewKeyDown" LostFocus="txtHomeColorDifferenceCustom_LostFocus" />
                                                 </StackPanel>
-                                                <Button x:Name="btnHomeSaveColorDifferenceReference" Content="色差基准" Click="btnHomeSaveColorDifferenceReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="将当前视图保存为全局色差基准图" />
+                                                <Button x:Name="btnHomeSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnColorDifferenceReference}" Click="btnHomeSaveColorDifferenceReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnColorDifferenceReference}" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="色差" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupColorDifference}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
                                 </StackPanel>
@@ -366,12 +366,12 @@
                                                     <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
                                                     <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
                                                     <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelContrast}" Tag="Contrast"/>
                                                 </ComboBox>
                                                 <Button x:Name="btnHomeExportAngle" Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnHomeExportAngle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportAzimuthData}" />
                                                 <Button x:Name="btnHomeExportCircle" Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnHomeExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportPolarData}" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="当前视图导出" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupExport}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
                                 </StackPanel>

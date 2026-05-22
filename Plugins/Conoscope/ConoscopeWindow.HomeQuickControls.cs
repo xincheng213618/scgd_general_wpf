@@ -118,26 +118,35 @@ namespace Conoscope
             UpdateHomeContrastReferenceState(
                 btnHomeSaveBlackContrastReference,
                 globalReferences.HasContrastReference(ContrastReferenceKind.Black),
-                "黑",
+                ContrastReferenceKind.Black,
                 globalReferences.GetContrastReferenceFileName(ContrastReferenceKind.Black));
             UpdateHomeContrastReferenceState(
                 btnHomeSaveWhiteContrastReference,
                 globalReferences.HasContrastReference(ContrastReferenceKind.White),
-                "白",
+                ContrastReferenceKind.White,
                 globalReferences.GetContrastReferenceFileName(ContrastReferenceKind.White));
+        }
+
+        private static string GetContrastReferenceLabel(ContrastReferenceKind referenceKind)
+        {
+            return referenceKind == ContrastReferenceKind.Black
+                ? Properties.Resources.ContrastReferenceBlackField
+                : Properties.Resources.ContrastReferenceWhiteField;
         }
 
         private static void UpdateHomeContrastReferenceState(
             Button? button,
             bool isSaved,
-            string label,
+            ContrastReferenceKind referenceKind,
             string? fileName)
         {
             if (button != null)
             {
+                string label = GetContrastReferenceLabel(referenceKind);
+                string savedName = Path.GetFileName(fileName) ?? Properties.Resources.StateSaved;
                 button.ToolTip = isSaved
-                    ? $"当前全局{label}基准: {Path.GetFileName(fileName) ?? "已保存"}，再次点击可清除"
-                    : $"将当前视图保存为全局{label}基准";
+                    ? string.Format(Properties.Resources.TipGlobalContrastReferenceSaved, label, savedName)
+                    : string.Format(Properties.Resources.TipSaveGlobalContrastReference, label);
 
                 if (isSaved)
                 {
@@ -159,9 +168,10 @@ namespace Conoscope
 
             if (btnHomeSaveColorDifferenceReference != null)
             {
+                string savedName = Path.GetFileName(globalReferences.ColorDifferenceReferenceFileName) ?? Properties.Resources.StateSaved;
                 btnHomeSaveColorDifferenceReference.ToolTip = hasReference
-                    ? $"当前全局色差基准图: {Path.GetFileName(globalReferences.ColorDifferenceReferenceFileName) ?? "已保存"}，再次点击可清除"
-                    : "将当前视图保存为全局色差基准图";
+                    ? string.Format(Properties.Resources.TipGlobalColorDifferenceReferenceSaved, savedName)
+                    : Properties.Resources.TipSaveGlobalColorDifferenceReference;
 
                 if (hasReference)
                 {
@@ -275,7 +285,10 @@ namespace Conoscope
 
             ContrastReferenceKind imageKind = ComboBoxHelper.GetSelectedEnumByTag(cbHomeContrastImageKind, ContrastReferenceKind.Black);
             ActiveView.SetWindowQuickContrastImageKind(imageKind);
-            SetOperationStatus($"当前图像已切换为{(imageKind == ContrastReferenceKind.Black ? "暗图" : "亮图")}", Brushes.LimeGreen);
+            string imageLabel = imageKind == ContrastReferenceKind.Black
+                ? Properties.Resources.ContrastImageBlack
+                : Properties.Resources.ContrastImageWhite;
+            SetOperationStatus(string.Format(Properties.Resources.MsgCurrentImageSwitched, imageLabel), Brushes.LimeGreen);
         }
 
         private void cbHomeColorDifferenceReference_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -288,7 +301,7 @@ namespace Conoscope
             ColorDifferenceReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(cbHomeColorDifferenceReference, ColorDifferenceReferenceMode.D65);
             UpdateHomeColorDifferenceCustomVisibility(mode);
             ActiveView.SetWindowQuickColorDifferenceReferenceMode(mode);
-            SetOperationStatus($"色差基准已切换为 {GetSelectedComboBoxText(cbHomeColorDifferenceReference)}", Brushes.LimeGreen);
+            SetOperationStatus(string.Format(Properties.Resources.MsgColorDifferenceReferenceSwitched, GetSelectedComboBoxText(cbHomeColorDifferenceReference)), Brushes.LimeGreen);
         }
 
         private static string GetSelectedComboBoxText(ComboBox? comboBox)
@@ -398,7 +411,7 @@ namespace Conoscope
             }
 
             ActiveView.SetWindowQuickColorDifferenceCustomReference(u, v);
-            SetOperationStatus($"色差自定义光源已更新为 u={u:F4}, v={v:F4}", Brushes.LimeGreen);
+            SetOperationStatus(string.Format(CultureInfo.CurrentCulture, Properties.Resources.MsgColorDifferenceCustomReferenceUpdated, u, v), Brushes.LimeGreen);
         }
 
         private void ToggleColorDifferenceReference()
@@ -408,7 +421,7 @@ namespace Conoscope
             {
                 globalReferences.ClearColorDifferenceReference();
                 ConoscopeModuleService.RefreshAllReferenceState();
-                SetOperationStatus("已清除全局色差基准图", Brushes.OrangeRed);
+                SetOperationStatus(Properties.Resources.MsgGlobalColorDifferenceReferenceCleared, Brushes.OrangeRed);
                 return;
             }
 
@@ -420,12 +433,12 @@ namespace Conoscope
             try
             {
                 ActiveView.SaveWindowQuickColorDifferenceReference();
-                SetOperationStatus("已保存全局色差基准图", Brushes.LimeGreen);
+                SetOperationStatus(Properties.Resources.MsgGlobalColorDifferenceReferenceSaved, Brushes.LimeGreen);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "色差基准", MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus("保存色差基准失败", Brushes.OrangeRed);
+                MessageBox.Show(this, ex.Message, Properties.Resources.GroupColorDifference, MessageBoxButton.OK, MessageBoxImage.Warning);
+                SetOperationStatus(Properties.Resources.MsgSaveGlobalColorDifferenceReferenceFailed, Brushes.OrangeRed);
             }
         }
 
@@ -436,7 +449,7 @@ namespace Conoscope
             {
                 globalReferences.ClearContrastReference(referenceKind);
                 ConoscopeModuleService.RefreshAllReferenceState();
-                SetOperationStatus($"已清除{(referenceKind == ContrastReferenceKind.Black ? "黑场" : "白场")}全局基准", Brushes.OrangeRed);
+                SetOperationStatus(string.Format(Properties.Resources.MsgGlobalContrastReferenceCleared, GetContrastReferenceLabel(referenceKind)), Brushes.OrangeRed);
                 return;
             }
 
@@ -448,12 +461,12 @@ namespace Conoscope
             try
             {
                 ActiveView.SaveCurrentAsGlobalContrastReference(referenceKind);
-                SetOperationStatus($"已保存{(referenceKind == ContrastReferenceKind.Black ? "黑场" : "白场")}全局基准", Brushes.LimeGreen);
+                SetOperationStatus(string.Format(Properties.Resources.MsgGlobalContrastReferenceSaved, GetContrastReferenceLabel(referenceKind)), Brushes.LimeGreen);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "对比度基准", MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus("保存对比度基准失败", Brushes.OrangeRed);
+                MessageBox.Show(this, ex.Message, Properties.Resources.GroupContrast, MessageBoxButton.OK, MessageBoxImage.Warning);
+                SetOperationStatus(Properties.Resources.MsgSaveGlobalContrastReferenceFailed, Brushes.OrangeRed);
             }
         }
     }

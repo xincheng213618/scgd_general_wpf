@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -58,26 +58,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>_Language</value>
-  </data>
-  <data name="Model" xml:space="preserve">
-    <value>Model</value>
-  </data>
-  <data name="OpenObservationCamera" xml:space="preserve">
-    <value>Open Observation Camera</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>Capture Image</value>
-  </data>
   <data name="Calibration" xml:space="preserve">
     <value>Calibration</value>
-  </data>
-  <data name="ImageFilter" xml:space="preserve">
-    <value>Image Filter</value>
-  </data>
-  <data name="FilterType" xml:space="preserve">
-    <value>Filter Type</value>
   </data>
   <data name="NoFilter" xml:space="preserve">
     <value>No Filter</value>
@@ -100,35 +82,14 @@
   <data name="KernelSize" xml:space="preserve">
     <value>Kernel Size</value>
   </data>
-  <data name="ApplyFilter" xml:space="preserve">
-    <value>Apply Filter</value>
-  </data>
-  <data name="StatusInformation" xml:space="preserve">
-    <value>Status Information</value>
-  </data>
   <data name="CurrentModel" xml:space="preserve">
     <value>Current Model</value>
   </data>
   <data name="ObservationCameraStatus" xml:space="preserve">
     <value>Observation Camera Status</value>
   </data>
-  <data name="MeasurementCameraStatus" xml:space="preserve">
-    <value>Measurement Camera Status</value>
-  </data>
-  <data name="CalibrationStatus" xml:space="preserve">
-    <value>Calibration Status</value>
-  </data>
   <data name="NotOpened" xml:space="preserve">
     <value>Not Opened</value>
-  </data>
-  <data name="NotCalibrated" xml:space="preserve">
-    <value>Not Calibrated</value>
-  </data>
-  <data name="Azimuth" xml:space="preserve">
-    <value>Azimuth</value>
-  </data>
-  <data name="PolarAngle" xml:space="preserve">
-    <value>Polar Angle</value>
   </data>
   <data name="TabHome" xml:space="preserve">
     <value>Home</value>
@@ -141,9 +102,6 @@
   </data>
   <data name="TabAnalysis" xml:space="preserve">
     <value>Analysis</value>
-  </data>
-  <data name="TabWindow" xml:space="preserve">
-    <value>Window</value>
   </data>
   <data name="TabHelp" xml:space="preserve">
     <value>Help</value>
@@ -178,20 +136,17 @@
   <data name="GroupExport" xml:space="preserve">
     <value>Export</value>
   </data>
-  <data name="GroupViews" xml:space="preserve">
-    <value>Views</value>
-  </data>
   <data name="GroupGamut" xml:space="preserve">
     <value>Gamut</value>
   </data>
   <data name="GroupContrast" xml:space="preserve">
     <value>Contrast</value>
   </data>
+  <data name="GroupColorDifference" xml:space="preserve">
+    <value>Color Diff</value>
+  </data>
   <data name="GroupConfig" xml:space="preserve">
     <value>Config</value>
-  </data>
-  <data name="GroupAnalysisWindows" xml:space="preserve">
-    <value>Analysis Windows</value>
   </data>
   <data name="GroupOpen" xml:space="preserve">
     <value>Open</value>
@@ -237,6 +192,9 @@
   </data>
   <data name="ChannelX" xml:space="preserve">
     <value>X Channel</value>
+  </data>
+  <data name="ChannelContrast" xml:space="preserve">
+    <value>Contrast</value>
   </data>
   <data name="ChannelY" xml:space="preserve">
     <value>Y Channel</value>
@@ -334,11 +292,14 @@
   <data name="BtnComputeContrast" xml:space="preserve">
     <value>Compute Contrast</value>
   </data>
-  <data name="BtnGamutWindow" xml:space="preserve">
-    <value>Gamut Window</value>
+  <data name="BtnBlackReference" xml:space="preserve">
+    <value>Black Ref</value>
   </data>
-  <data name="BtnContrastWindow" xml:space="preserve">
-    <value>Contrast Window</value>
+  <data name="BtnWhiteReference" xml:space="preserve">
+    <value>White Ref</value>
+  </data>
+  <data name="BtnColorDifferenceReference" xml:space="preserve">
+    <value>Color Diff Ref</value>
   </data>
   <data name="BtnHelpCenter" xml:space="preserve">
     <value>Help Center</value>
@@ -355,14 +316,11 @@
   <data name="BtnApplyPreset" xml:space="preserve">
     <value>Apply Preset</value>
   </data>
-  <data name="BtnPreprocessSettings" xml:space="preserve">
-    <value>Preprocess Settings</value>
-  </data>
-  <data name="BtnSaveConfig" xml:space="preserve">
-    <value>Save Config</value>
-  </data>
   <data name="BtnSaveBaseImage" xml:space="preserve">
     <value>Save Base Image</value>
+  </data>
+  <data name="BtnSaveShort" xml:space="preserve">
+    <value>Save</value>
   </data>
   <data name="BtnComputeColorDiff" xml:space="preserve">
     <value>Compute Color Diff</value>
@@ -406,44 +364,8 @@
   <data name="BtnDeleteCurrent" xml:space="preserve">
     <value>Delete Current</value>
   </data>
-  <data name="BtnSelectRImage" xml:space="preserve">
-    <value>Select R Image</value>
-  </data>
-  <data name="BtnRecordCurrentR" xml:space="preserve">
-    <value>Record Current R</value>
-  </data>
-  <data name="BtnSelectGImage" xml:space="preserve">
-    <value>Select G Image</value>
-  </data>
-  <data name="BtnRecordCurrentG" xml:space="preserve">
-    <value>Record Current G</value>
-  </data>
-  <data name="BtnSelectBImage" xml:space="preserve">
-    <value>Select B Image</value>
-  </data>
-  <data name="BtnRecordCurrentB" xml:space="preserve">
-    <value>Record Current B</value>
-  </data>
-  <data name="BtnSelectWhiteImage" xml:space="preserve">
-    <value>Select White Image</value>
-  </data>
-  <data name="BtnRecordCurrentWhite" xml:space="preserve">
-    <value>Record Current White</value>
-  </data>
-  <data name="BtnSelectBlackImage" xml:space="preserve">
-    <value>Select Black Image</value>
-  </data>
-  <data name="BtnRecordCurrentBlack" xml:space="preserve">
-    <value>Record Current Black</value>
-  </data>
   <data name="TipOpenFile" xml:space="preserve">
     <value>Open one or more Conoscope images</value>
-  </data>
-  <data name="TipNewView" xml:space="preserve">
-    <value>Create a blank Conoscope view</value>
-  </data>
-  <data name="TipSaveConfig" xml:space="preserve">
-    <value>Save window and Conoscope configuration</value>
   </data>
   <data name="TipOpenObservationCamera" xml:space="preserve">
     <value>Open observation camera window</value>
@@ -493,6 +415,36 @@
   <data name="TipAdvancedExport" xml:space="preserve">
     <value>Open advanced export</value>
   </data>
+  <data name="TipSelectedFocusPoint" xml:space="preserve">
+    <value>Currently selected focus point</value>
+  </data>
+  <data name="TipFocusPoiTemplate" xml:space="preserve">
+    <value>Focus point POI template</value>
+  </data>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve">
+    <value>Save current focus points to a POI template</value>
+  </data>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve">
+    <value>Manage POI templates</value>
+  </data>
+  <data name="TbCircleFit" xml:space="preserve">
+    <value>Fit Circle</value>
+  </data>
+  <data name="TbCircleFitTip" xml:space="preserve">
+    <value>Fit to the effective circular area</value>
+  </data>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve">
+    <value>Current global {0} reference: {1}. Click again to clear</value>
+  </data>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve">
+    <value>Save current view as global {0} reference</value>
+  </data>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve">
+    <value>Current global color diff reference: {0}. Click again to clear</value>
+  </data>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve">
+    <value>Save current view as global color diff reference</value>
+  </data>
   <data name="TipOpen3DView" xml:space="preserve">
     <value>Open 3D view of current image</value>
   </data>
@@ -532,12 +484,6 @@
   <data name="TipOpenConoscopeSettings" xml:space="preserve">
     <value>Open Conoscope settings</value>
   </data>
-  <data name="TipOpenLegacyGamut" xml:space="preserve">
-    <value>Open legacy RGB gamut window</value>
-  </data>
-  <data name="TipOpenLegacyContrast" xml:space="preserve">
-    <value>Open legacy black/white contrast window</value>
-  </data>
   <data name="TipHelpCenter" xml:space="preserve">
     <value>Open searchable Conoscope help center for usage paths, algorithms, and glossary</value>
   </data>
@@ -549,6 +495,9 @@
   </data>
   <data name="ChkPseudoColor" xml:space="preserve">
     <value>Pseudo Color Display</value>
+  </data>
+  <data name="ChkEnableFilter" xml:space="preserve">
+    <value>Enable Filter</value>
   </data>
   <data name="ChkEnableDustRemoval" xml:space="preserve">
     <value>Enable Dust Removal</value>
@@ -567,6 +516,9 @@
   </data>
   <data name="StatusExecuting" xml:space="preserve">
     <value>Executing</value>
+  </data>
+  <data name="StateSaved" xml:space="preserve">
+    <value>Saved</value>
   </data>
   <data name="StatusCapturing" xml:space="preserve">
     <value>Capturing</value>
@@ -622,9 +574,6 @@
   <data name="MsgFlowNotStarted" xml:space="preserve">
     <value>Flow not started</value>
   </data>
-  <data name="MsgFlowFinished" xml:space="preserve">
-    <value>Flow finished: {0}</value>
-  </data>
   <data name="MsgFlowIncomplete" xml:space="preserve">
     <value>Flow execution incomplete: {0}
 {1}</value>
@@ -676,9 +625,6 @@
     <value>ND switch failed: {0}
 {1}</value>
   </data>
-  <data name="MsgNdSwitchFailedTitle" xml:space="preserve">
-    <value>ND switch failed</value>
-  </data>
   <data name="MsgReadingNd" xml:space="preserve">
     <value>Reading ND</value>
   </data>
@@ -691,9 +637,6 @@
   <data name="MsgNdReadFailedDetail" xml:space="preserve">
     <value>ND read failed: {0}
 {1}</value>
-  </data>
-  <data name="MsgNdReadFailedTitle" xml:space="preserve">
-    <value>ND read failed</value>
   </data>
   <data name="MsgNdNotBoundCalibration" xml:space="preserve">
     <value>ND {0} not bound to calibration</value>
@@ -749,18 +692,6 @@
   <data name="MsgPolarExportSuccess" xml:space="preserve">
     <value>Polar angle {0}° exported successfully</value>
   </data>
-  <data name="MsgGetImageFirst" xml:space="preserve">
-    <value>Please get an image first</value>
-  </data>
-  <data name="MsgOriginalDataRestored" xml:space="preserve">
-    <value>Original data restored</value>
-  </data>
-  <data name="MsgPreprocessSuccess" xml:space="preserve">
-    <value>Preprocess applied successfully</value>
-  </data>
-  <data name="MsgFilterApplyFailed" xml:space="preserve">
-    <value>Filter apply failed: {0}</value>
-  </data>
   <data name="MsgNoFixedLightSource" xml:space="preserve">
     <value>Current color difference base is not a fixed light source</value>
   </data>
@@ -773,32 +704,17 @@
   <data name="MsgNoPixelsInCenter" xml:space="preserve">
     <value>No usable pixels in center 50px focus point</value>
   </data>
-  <data name="MsgBaseImageSaved" xml:space="preserve">
-    <value>Base image saved</value>
-  </data>
   <data name="MsgSaveBaseImageFailed" xml:space="preserve">
     <value>Save base image failed: {0}</value>
   </data>
-  <data name="MsgSaveColorDiffFailed" xml:space="preserve">
-    <value>Save color diff base image failed: {0}</value>
-  </data>
   <data name="MsgImageSizeMismatch" xml:space="preserve">
     <value>Current image size does not match color diff base image, cannot compute point-by-point</value>
-  </data>
-  <data name="MsgSaveBaseFirst" xml:space="preserve">
-    <value>Please save the base image first before computing measured color diff</value>
-  </data>
-  <data name="MsgNoFocusPoints" xml:space="preserve">
-    <value>Please draw focus point circles in the current view first.</value>
   </data>
   <data name="MsgFocusPointNotReady" xml:space="preserve">
     <value>Current image is not ready for focus point calculation.</value>
   </data>
   <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
     <value>Please draw focus point circles first.</value>
-  </data>
-  <data name="MsgNoFocusPointPixels" xml:space="preserve">
-    <value>No usable focus point pixels for calculation.</value>
   </data>
   <data name="MsgFocusPointNoPixels" xml:space="preserve">
     <value>{0} has no usable pixels.</value>
@@ -808,9 +724,6 @@
   </data>
   <data name="Msg3DViewOpenFailed" xml:space="preserve">
     <value>Failed to open 3D view: {0}</value>
-  </data>
-  <data name="MsgCieOpenFailed" xml:space="preserve">
-    <value>Failed to open CIE diagram</value>
   </data>
   <data name="TbPan" xml:space="preserve">
     <value>Pan</value>
@@ -890,44 +803,20 @@
   <data name="TbClearAllTip" xml:space="preserve">
     <value>Clear all focus points</value>
   </data>
-  <data name="PanelDisplay" xml:space="preserve">
-    <value>Display</value>
-  </data>
   <data name="PanelColorDiff" xml:space="preserve">
     <value>Color Diff</value>
   </data>
-  <data name="PanelExport" xml:space="preserve">
-    <value>Export</value>
-  </data>
-  <data name="PanelSettings" xml:space="preserve">
-    <value>Settings</value>
-  </data>
-  <data name="LabelDisplayChannel" xml:space="preserve">
-    <value>Display Channel:</value>
+  <data name="LabelCurrentImage" xml:space="preserve">
+    <value>Current Image</value>
   </data>
   <data name="LabelRefMode" xml:space="preserve">
     <value>Reference Mode:</value>
-  </data>
-  <data name="LabelRefAzimuth" xml:space="preserve">
-    <value>Ref Azimuth</value>
-  </data>
-  <data name="LabelRefPolar" xml:space="preserve">
-    <value>Ref Polar</value>
   </data>
   <data name="LabelColorDiffCalc" xml:space="preserve">
     <value>Color Diff Calculation</value>
   </data>
   <data name="LabelBaseRef" xml:space="preserve">
     <value>Base:</value>
-  </data>
-  <data name="LabelExportSettings" xml:space="preserve">
-    <value>Export Settings</value>
-  </data>
-  <data name="LabelExportMode" xml:space="preserve">
-    <value>Export Mode:</value>
-  </data>
-  <data name="LabelExportChannel" xml:space="preserve">
-    <value>Export Channel:</value>
   </data>
   <data name="LabelRefCurve" xml:space="preserve">
     <value>Reference Curve</value>
@@ -940,9 +829,6 @@
   </data>
   <data name="LabelGraph" xml:space="preserve">
     <value>Graph</value>
-  </data>
-  <data name="LabelDisplayAndReference" xml:space="preserve">
-    <value>Display &amp; Reference</value>
   </data>
   <data name="CbiD65" xml:space="preserve">
     <value>D65 Illuminant</value>
@@ -1013,6 +899,18 @@
   <data name="TitleAdvancedExport" xml:space="preserve">
     <value>Advanced Export Settings</value>
   </data>
+  <data name="ContrastImageBlack" xml:space="preserve">
+    <value>Dark Image</value>
+  </data>
+  <data name="ContrastImageWhite" xml:space="preserve">
+    <value>Bright Image</value>
+  </data>
+  <data name="ContrastReferenceBlackField" xml:space="preserve">
+    <value>Black Field</value>
+  </data>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve">
+    <value>White Field</value>
+  </data>
   <data name="TitleCurrentCurveExport" xml:space="preserve">
     <value>Current Curve Export Settings</value>
   </data>
@@ -1028,14 +926,8 @@
   <data name="TitleObservationCameraSettings" xml:space="preserve">
     <value>Observation Camera Settings</value>
   </data>
-  <data name="TitleColorGamutCalc" xml:space="preserve">
-    <value>RGB Gamut Calculation</value>
-  </data>
   <data name="TitleColorGamutResult" xml:space="preserve">
     <value>Gamut Calculation Result</value>
-  </data>
-  <data name="TitleContrastTest" xml:space="preserve">
-    <value>Contrast Test</value>
   </data>
   <data name="TitleContrastResult" xml:space="preserve">
     <value>Contrast Result</value>
@@ -1241,9 +1133,6 @@
   <data name="TabTestArea" xml:space="preserve">
     <value>Test Area</value>
   </data>
-  <data name="TabObservationCamera" xml:space="preserve">
-    <value>Observation Camera</value>
-  </data>
   <data name="TipCurrentModelApplies" xml:space="preserve">
     <value>Current model parameters apply directly to the current test area overlay.</value>
   </data>
@@ -1258,39 +1147,6 @@
   </data>
   <data name="LabelCenterYPx" xml:space="preserve">
     <value>Center Y (px)</value>
-  </data>
-  <data name="GroupBoxRgbImageSelection" xml:space="preserve">
-    <value>RGB Image Selection</value>
-  </data>
-  <data name="LabelRImage" xml:space="preserve">
-    <value>R Image</value>
-  </data>
-  <data name="LabelGImage" xml:space="preserve">
-    <value>G Image</value>
-  </data>
-  <data name="LabelBImage" xml:space="preserve">
-    <value>B Image</value>
-  </data>
-  <data name="GroupBoxGamutStandard" xml:space="preserve">
-    <value>Gamut Standard</value>
-  </data>
-  <data name="GroupBoxResults" xml:space="preserve">
-    <value>Results</value>
-  </data>
-  <data name="LabelRChromaticity" xml:space="preserve">
-    <value>R Chromaticity</value>
-  </data>
-  <data name="LabelGChromaticity" xml:space="preserve">
-    <value>G Chromaticity</value>
-  </data>
-  <data name="LabelBChromaticity" xml:space="preserve">
-    <value>B Chromaticity</value>
-  </data>
-  <data name="LabelGamutArea" xml:space="preserve">
-    <value>Gamut Area</value>
-  </data>
-  <data name="LabelCoverageRate" xml:space="preserve">
-    <value>Coverage Rate</value>
   </data>
   <data name="ColNumber" xml:space="preserve">
     <value>#</value>
@@ -1334,32 +1190,8 @@
   <data name="ColBlackChromaticity" xml:space="preserve">
     <value>Black Chrom.</value>
   </data>
-  <data name="GroupBoxImageSelection" xml:space="preserve">
-    <value>Image Selection</value>
-  </data>
-  <data name="LabelWhiteImage" xml:space="preserve">
-    <value>White Image</value>
-  </data>
-  <data name="LabelBlackImage" xml:space="preserve">
-    <value>Black Image</value>
-  </data>
-  <data name="LabelWhiteLuminance" xml:space="preserve">
-    <value>White Luminance</value>
-  </data>
-  <data name="LabelBlackLuminance" xml:space="preserve">
-    <value>Black Luminance</value>
-  </data>
-  <data name="LabelColorCoordinates" xml:space="preserve">
-    <value>Color Coordinates</value>
-  </data>
   <data name="MenuOpenWithConoscope" xml:space="preserve">
     <value>Open with Conoscope</value>
-  </data>
-  <data name="MenuContrastTest" xml:space="preserve">
-    <value>Contrast Test</value>
-  </data>
-  <data name="MenuGamutCalculation" xml:space="preserve">
-    <value>Gamut Calculation</value>
   </data>
   <data name="LabelCurrentModel" xml:space="preserve">
     <value>Current Model</value>
@@ -1369,27 +1201,6 @@
   </data>
   <data name="LabelSaveFilterCsv" xml:space="preserve">
     <value>CSV Files (*.csv)|*.csv|All Files (*.*)|*.*</value>
-  </data>
-  <data name="CatFieldOfView" xml:space="preserve">
-    <value>Field of View</value>
-  </data>
-  <data name="PropFovAngle" xml:space="preserve">
-    <value>FOV Angle (degrees)</value>
-  </data>
-  <data name="DescFovAngle" xml:space="preserve">
-    <value>Design FOV angle. Analysis radius = FOV angle * effective FOV coefficient.</value>
-  </data>
-  <data name="PropFullPixels" xml:space="preserve">
-    <value>Full Pixels (px)</value>
-  </data>
-  <data name="DescFullPixels" xml:space="preserve">
-    <value>Pixel radius corresponding to MaxAngle...</value>
-  </data>
-  <data name="PropConoscopeCoeff" xml:space="preserve">
-    <value>Conoscope Coefficient (°/px)</value>
-  </data>
-  <data name="DescConoscopeCoeff" xml:space="preserve">
-    <value>Can enter decimals like 60/3100 directly...</value>
   </data>
   <data name="TipEnterAzimuth" xml:space="preserve">
     <value>Enter azimuth and press Enter to apply</value>
@@ -1408,6 +1219,33 @@
   </data>
   <data name="MsgExportChannelSwitched" xml:space="preserve">
     <value>Export channel switched: {0}</value>
+  </data>
+  <data name="MsgCurrentImageSwitched" xml:space="preserve">
+    <value>Current image switched to {0}</value>
+  </data>
+  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
+    <value>Color diff reference switched to {0}</value>
+  </data>
+  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
+    <value>Custom color diff illuminant updated to u={0:F4}, v={1:F4}</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
+    <value>Cleared global color diff reference</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
+    <value>Saved global color diff reference</value>
+  </data>
+  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
+    <value>Saving global color diff reference failed</value>
+  </data>
+  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
+    <value>Cleared global {0} reference</value>
+  </data>
+  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
+    <value>Saved global {0} reference</value>
+  </data>
+  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
+    <value>Saving global contrast reference failed</value>
   </data>
   <data name="MsgRefAzimuthSet" xml:space="preserve">
     <value>Reference azimuth set: {0}°</value>
@@ -1471,44 +1309,8 @@ Count: {2}</value>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>Current focus points unavailable.</value>
   </data>
-  <data name="MsgLineTooShort" xml:space="preserve">
-    <value>Line too short ({0} pixels), cannot sample</value>
-  </data>
-  <data name="MsgAzimuthSamplingDone" xml:space="preserve">
-    <value>Sampling done: azimuth {0}°, {1} sample points</value>
-  </data>
-  <data name="MsgPolarSamplingDone" xml:space="preserve">
-    <value>Sampling done: polar radius {0}°, {1} sample points</value>
-  </data>
-  <data name="TitleAzimuthCurve" xml:space="preserve">
-    <value>Azimuth {0}° {1} distribution curve</value>
-  </data>
-  <data name="LabelAngleDeg" xml:space="preserve">
-    <value>Angle (°)</value>
-  </data>
-  <data name="TitlePolarCurve" xml:space="preserve">
-    <value>Polar {0}° {1} circular distribution curve</value>
-  </data>
-  <data name="LabelCircularAngleDeg" xml:space="preserve">
-    <value>Circular Angle (°)</value>
-  </data>
-  <data name="LabelRadius" xml:space="preserve">
-    <value>Radius: {0}</value>
-  </data>
   <data name="MsgBaseCenter50px" xml:space="preserve">
     <value>Base: current image center 50px focus point average uv</value>
-  </data>
-  <data name="MsgBaseNotSaved" xml:space="preserve">
-    <value>Base: measured base image not saved yet</value>
-  </data>
-  <data name="MsgBaseImageFile" xml:space="preserve">
-    <value>Base image: {0}</value>
-  </data>
-  <data name="MsgImageNotLoadedPolar" xml:space="preserve">
-    <value>Image not loaded, cannot create polar angle line</value>
-  </data>
-  <data name="MsgCannotGetImageSource" xml:space="preserve">
-    <value>Cannot get image source</value>
   </data>
   <data name="MsgPolarLineCreateFailed" xml:space="preserve">
     <value>Failed to create polar angle line: {0}</value>
@@ -1570,32 +1372,14 @@ Count: {2}</value>
   <data name="TitleHint" xml:space="preserve">
     <value>Hint</value>
   </data>
-  <data name="TitleWarning" xml:space="preserve">
-    <value>Warning</value>
-  </data>
   <data name="MsgOpenImageFailed" xml:space="preserve">
     <value>Failed to open Conoscope image: {0}</value>
-  </data>
-  <data name="MsgOpenImageFailedShort" xml:space="preserve">
-    <value>Failed to open image: {0}</value>
   </data>
   <data name="MsgSaveConfigFailedDetail" xml:space="preserve">
     <value>Failed to save Conoscope config: {0}</value>
   </data>
-  <data name="MsgSaveConfigFailed" xml:space="preserve">
-    <value>Failed to save config: {0}</value>
-  </data>
   <data name="MsgLoadImageFirstColorDiff" xml:space="preserve">
     <value>Please load a measured image first</value>
-  </data>
-  <data name="MsgComputeColorDiffFailed" xml:space="preserve">
-    <value>Save color diff base image failed: {0}</value>
-  </data>
-  <data name="MsgFocusPointNotReadyCalc" xml:space="preserve">
-    <value>Please draw focus point circles in the current view first.</value>
-  </data>
-  <data name="MsgFocusPointNotReady2" xml:space="preserve">
-    <value>Current image not ready for focus point calculation.</value>
   </data>
   <data name="MsgNoFocusPointPixelsCalc" xml:space="preserve">
     <value>No focus point pixels available for calculation.</value>
@@ -1636,101 +1420,8 @@ Count: {2}</value>
   <data name="ReferenceCurve" xml:space="preserve">
     <value>Reference Distribution</value>
   </data>
-  <data name="FieldOfView" xml:space="preserve">
-    <value>Field of View</value>
-  </data>
-  <data name="FOVAngleDegrees" xml:space="preserve">
-    <value>FOV Angle (degrees)</value>
-  </data>
-  <data name="FOVAngleDesc" xml:space="preserve">
-    <value>Designed FOV angle. Analysis radius = FOV angle * effective FOV coefficient.</value>
-  </data>
-  <data name="FullPixelCount" xml:space="preserve">
-    <value>Full Pixel Count (px)</value>
-  </data>
-  <data name="FullPixelCountDesc" xml:space="preserve">
-    <value>Pixel radius corresponding to MaxAngle. Enter 0 to use half of image short side. ConoscopeCoefficient = FOV angle / 3000 when entering 3000.</value>
-  </data>
-  <data name="ConoscopeCoeffDegPerPx" xml:space="preserve">
-    <value>ConoscopeCoefficient (deg/px)</value>
-  </data>
-  <data name="ConoscopeCoeffDesc" xml:space="preserve">
-    <value>Can enter decimals like 60/3100. Enter 0 for auto-calculation. Analysis radius = FOV angle / this coefficient.</value>
-  </data>
   <data name="XYZDataNotLoaded" xml:space="preserve">
     <value>XYZ data not loaded</value>
-  </data>
-  <data name="ConfigDisplay" xml:space="preserve">
-    <value>Display</value>
-  </data>
-  <data name="ConfigDisplayChannel" xml:space="preserve">
-    <value>Display Channel</value>
-  </data>
-  <data name="ConfigPseudoColorMapping" xml:space="preserve">
-    <value>Pseudo-color Mapping</value>
-  </data>
-  <data name="ConfigUsePseudoColor" xml:space="preserve">
-    <value>Use Pseudo-color</value>
-  </data>
-  <data name="ConfigExport" xml:space="preserve">
-    <value>Export</value>
-  </data>
-  <data name="ConfigSamplingIntervalDeg" xml:space="preserve">
-    <value>Current Curve Sampling Interval (degrees)</value>
-  </data>
-  <data name="ConfigSamplingIntervalDesc" xml:space="preserve">
-    <value>Default sampling interval for current curve CSV export.</value>
-  </data>
-  <data name="ConfigExportMetadata" xml:space="preserve">
-    <value>Current Curve Export Metadata</value>
-  </data>
-  <data name="ConfigExportMetadataDesc" xml:space="preserve">
-    <value>Whether to write title and metadata at the top of current curve CSV.</value>
-  </data>
-  <data name="PleaseSelectRGBImages" xml:space="preserve">
-    <value>Please select R/G/B images before calculating gamut</value>
-  </data>
-  <data name="SelectRImage" xml:space="preserve">
-    <value>Select R Image</value>
-  </data>
-  <data name="SelectGImage" xml:space="preserve">
-    <value>Select G Image</value>
-  </data>
-  <data name="SelectBImage" xml:space="preserve">
-    <value>Select B Image</value>
-  </data>
-  <data name="CVCIEFileFilter" xml:space="preserve">
-    <value>CVCIE Files|*.cvcie|All Files|*.*</value>
-  </data>
-  <data name="FileRead" xml:space="preserve">
-    <value>Loaded {0}</value>
-  </data>
-  <data name="RGBColorGamutCalc" xml:space="preserve">
-    <value>RGB Gamut Calculation</value>
-  </data>
-  <data name="NoActiveConoscopeView" xml:space="preserve">
-    <value>No active Conoscope view.</value>
-  </data>
-  <data name="CurrentFocusPointUnavailable" xml:space="preserve">
-    <value>Current focus point is unavailable.</value>
-  </data>
-  <data name="FocusPointRecorded" xml:space="preserve">
-    <value>Recorded {0} focus point: {1}</value>
-  </data>
-  <data name="PleaseSelectRGBFirst" xml:space="preserve">
-    <value>Please select R/G/B images first</value>
-  </data>
-  <data name="PleaseSelectGamutStandard" xml:space="preserve">
-    <value>Please select a gamut standard</value>
-  </data>
-  <data name="SampleAreaFormat" xml:space="preserve">
-    <value>Sample area={0}, {1} standard area={2}</value>
-  </data>
-  <data name="CalculationCompleteByStandard" xml:space="preserve">
-    <value>Calculation completed by {0} standard</value>
-  </data>
-  <data name="ChromaticityLuminanceFormat" xml:space="preserve">
-    <value>x={0}, y={1}, Y={2}  ({3})</value>
   </data>
   <data name="ChromaticityFormat" xml:space="preserve">
     <value>x={0}, y={1}</value>
@@ -1740,30 +1431,6 @@ Count: {2}</value>
   </data>
   <data name="Measured" xml:space="preserve">
     <value>Measured {0}</value>
-  </data>
-  <data name="ContrastTestTitle" xml:space="preserve">
-    <value>Contrast Test</value>
-  </data>
-  <data name="SlotRecorded" xml:space="preserve">
-    <value>Recorded {0}: {1}</value>
-  </data>
-  <data name="WhiteBlackLuminanceFormat" xml:space="preserve">
-    <value>White luminance / Black luminance = {0} / {1}</value>
-  </data>
-  <data name="WhiteImageNotSelected" xml:space="preserve">
-    <value>White image: Not selected</value>
-  </data>
-  <data name="BlackImageNotSelected" xml:space="preserve">
-    <value>Black image: Not selected</value>
-  </data>
-  <data name="WhiteImageFormat" xml:space="preserve">
-    <value>White image: x={0}, y={1}</value>
-  </data>
-  <data name="BlackImageFormat" xml:space="preserve">
-    <value>Black image: x={0}, y={1}</value>
-  </data>
-  <data name="LuminanceFileNameFormat" xml:space="preserve">
-    <value>Y={0}  ({1})</value>
   </data>
   <data name="FocusPointCountAndAverageContrast" xml:space="preserve">
     <value>{0} focus points, average contrast {1}:1, min {2}:1, max {3}:1</value>
@@ -1828,24 +1495,6 @@ Count: {2}</value>
   <data name="FocusPointYUV" xml:space="preserve">
     <value>Y:{0}  u:{1}  v:{2}</value>
   </data>
-  <data name="PleaseSelectWhiteBlackImages" xml:space="preserve">
-    <value>Please select white and black images before calculating contrast</value>
-  </data>
-  <data name="SelectWhiteImage" xml:space="preserve">
-    <value>Select White Image</value>
-  </data>
-  <data name="SelectBlackImage" xml:space="preserve">
-    <value>Select Black Image</value>
-  </data>
-  <data name="WhitePoint" xml:space="preserve">
-    <value>White Point</value>
-  </data>
-  <data name="BlackPoint" xml:space="preserve">
-    <value>Black Point</value>
-  </data>
-  <data name="PleaseSelectWhiteBlackFirst" xml:space="preserve">
-    <value>Please select white and black images first</value>
-  </data>
   <data name="HelpTitleQuickStart" xml:space="preserve">
     <value>Quick Start: From Opening Image to Getting Results</value>
   </data>
@@ -1885,20 +1534,11 @@ Count: {2}</value>
   <data name="HelpTitleVisualizationWorkflow" xml:space="preserve">
     <value>CIE, 3D, Curves and Export Workflow</value>
   </data>
-  <data name="HelpSummaryVisualizationWorkflow" xml:space="preserve">
-    <value>CIE and 3D are visualization tools for the current active View; curves and export can save data to CSV.</value>
-  </data>
   <data name="HelpTitleFocusPrinciple" xml:space="preserve">
     <value>Focus Point Sampling Principle</value>
   </data>
-  <data name="HelpSummaryFocusPrinciple" xml:space="preserve">
-    <value>Conoscope uses a circular ROI to calculate the mean on XYZ data to obtain the chromaticity coordinates of that point.</value>
-  </data>
   <data name="HelpTitleGamutPrinciple" xml:space="preserve">
     <value>Comprehensive Gamut Calculation Principle</value>
-  </data>
-  <data name="HelpSummaryGamutPrinciple" xml:space="preserve">
-    <value>The current implementation converts the R/G/B chromaticity coordinates of each focus point into triangles, and then calculates the intersection and union with the standard gamut.</value>
   </data>
   <data name="HelpTitleContrastPrinciple" xml:space="preserve">
     <value>Black-and-White Contrast Calculation Principle</value>
@@ -1909,38 +1549,20 @@ Count: {2}</value>
   <data name="HelpTitleCurvePrinciple" xml:space="preserve">
     <value>Reference Curves and Export Principle</value>
   </data>
-  <data name="HelpSummaryCurvePrinciple" xml:space="preserve">
-    <value>Azimuth mode samples along the diameter, polar mode samples along a fixed radius circumference, and the export channel is determined by user check.</value>
-  </data>
   <data name="HelpTitleVisualizationPrinciple" xml:space="preserve">
     <value>CIE and 3D Visualization Principle</value>
-  </data>
-  <data name="HelpSummaryVisualizationPrinciple" xml:space="preserve">
-    <value>3D uses the current display channel to generate a height map; CIE has two modes: current view viewing and result window summary.</value>
   </data>
   <data name="HelpTitleActiveViewTerm" xml:space="preserve">
     <value>Active View</value>
   </data>
-  <data name="HelpSummaryActiveViewTerm" xml:space="preserve">
-    <value>The current active View is the currently selected image tab; many buttons in the Home and Analysis tabs default to acting on it.</value>
-  </data>
   <data name="HelpTitleFocusBatchTerm" xml:space="preserve">
     <value>Focus Points and Focus Point Batch</value>
-  </data>
-  <data name="HelpSummaryFocusBatchTerm" xml:space="preserve">
-    <value>One focus point is a circular sampling area; one focus point batch is a snapshot record of all focus points on the current View.</value>
   </data>
   <data name="HelpTitleCoordinateTerm" xml:space="preserve">
     <value>Azimuth Angle, Polar Angle and Radius Angle</value>
   </data>
-  <data name="HelpSummaryCoordinateTerm" xml:space="preserve">
-    <value>Azimuth angle determines the direction, polar angle circle determines how far from the center, and radius angle describes the display size of the focus point circle itself.</value>
-  </data>
   <data name="HelpTitleChannelTerm" xml:space="preserve">
     <value>Display Channels and CIE x/y/u/v</value>
-  </data>
-  <data name="HelpSummaryChannelTerm" xml:space="preserve">
-    <value>X/Y/Z are the basic tristimulus values, x/y/u/v are the comprehensive chromaticity coordinates; pseudocolor and export can be selected by channel.</value>
   </data>
   <data name="HelpTitleGamutCoverageTerm" xml:space="preserve">
     <value>Sample Area, Standard Area and Coverage</value>
@@ -1950,8 +1572,5 @@ Count: {2}</value>
   </data>
   <data name="HelpTitleContrastTerm" xml:space="preserve">
     <value>White Field, Black Field and Contrast</value>
-  </data>
-  <data name="HelpSummaryContrastTerm" xml:space="preserve">
-    <value>White field and black field are comparisons of brightness in different states at the same position, and contrast directly takes white field Y divided by black field Y.</value>
   </data>
 </root>
