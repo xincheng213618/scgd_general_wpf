@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             }
         }
 
-        public void AddImagePath(Action<string> updateStorageAction, string filename, string tag = "图像") =>
+        public void AddImagePath(Action<string> updateStorageAction, string filename, string tag = null) =>
             Panels.AddImagePath(updateStorageAction, filename, tag);
 
         public void AddDevicePanel<T>(Action<string> updateStorageAction, string deviceCode, string signName, List<T> itemSource) where T : DeviceService =>

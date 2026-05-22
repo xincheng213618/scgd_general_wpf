@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
@@ -23,12 +24,12 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (FlowEngineLib.Node.Camera.CVAOICameraNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
-            context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, "相机模板", new TemplateCameraRunParam());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "曝光模板", new TemplateAutoExpTime());
+            context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
+            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ExposureTemplate, new TemplateAutoExpTime());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
-            context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, "亚像素灯珠检测", new TemplateLedCheck2());
+                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
+            context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
         }
     }
 
@@ -40,11 +41,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (AOILocatePixelsCameraNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
-            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, "曝光模板", new TemplateAutoExpTime());
+            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, Properties.Resources.ExposureTemplate, new TemplateAutoExpTime());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
-            context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, "亚像素灯珠检测", new TemplateLedCheck2());
+                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
+            context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
         }
     }
     [NodeConfigurator(typeof(FlowEngineLib.AOILocAndRegPixelsCameraNode))]
@@ -55,10 +56,10 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (AOILocAndRegPixelsCameraNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
-            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, "曝光模板", new TemplateAutoExpTime());
+            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, Properties.Resources.ExposureTemplate, new TemplateAutoExpTime());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
+                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
             context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, "AOI", new TemplateOLEDAOI());
         }
     }
@@ -72,11 +73,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (FlowEngineLib.Node.Camera.CVAOI2CameraNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
-            context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, "相机模板", new TemplateCameraRunParam());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "曝光模板", new TemplateAutoExpTime());
+            context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
+            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ExposureTemplate, new TemplateAutoExpTime());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
+                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
             context.AddTemplateJsonPanel(name => node.AlgTempName = name, node.AlgTempName, "AOI", new TemplateOLEDAOI());
         }
     }
@@ -88,7 +89,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.CamMotorNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
-            context.AddTemplatePanel(name => node.AutoFocusTemp = name, node.AutoFocusTemp, "相机模板", new TemplateAutoFocus());
+            context.AddTemplatePanel(name => node.AutoFocusTemp = name, node.AutoFocusTemp, Properties.Resources.CameraTemplate, new TemplateAutoFocus());
         }
     }
 
@@ -101,14 +102,14 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
-            context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, "相机模板", new TemplateCameraRunParam());
-            context.AddTemplateJsonPanel(name => node.CamTempName = name, node.CamTempName, "HDR模板", new TemplateHDR());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "曝光模板", new TemplateAutoExpTime());
+                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
+            context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
+            context.AddTemplateJsonPanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.HdrTemplate, new TemplateHDR());
+            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ExposureTemplate, new TemplateAutoExpTime());
 
-            context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI模板", new TemplatePoi());
-            context.AddTemplatePanel(name => node.POIFilterTempName = name, node.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
-            context.AddTemplatePanel(name => node.POIReviseTempName = name, node.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
+            context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, Properties.Resources.POITemplate, new TemplatePoi());
+            context.AddTemplatePanel(name => node.POIFilterTempName = name, node.POIFilterTempName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
+            context.AddTemplatePanel(name => node.POIReviseTempName = name, node.POIReviseTempName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
         }
     }
 
@@ -122,11 +123,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
+                context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
 
-            context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI模板", new TemplatePoi());
-            context.AddTemplatePanel(name => node.POIFilterTempName = name, node.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
-            context.AddTemplatePanel(name => node.POIReviseTempName = name, node.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
+            context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, Properties.Resources.POITemplate, new TemplatePoi());
+            context.AddTemplatePanel(name => node.POIFilterTempName = name, node.POIFilterTempName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
+            context.AddTemplatePanel(name => node.POIReviseTempName = name, node.POIReviseTempName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
         }
     }
 
@@ -139,11 +140,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
+                context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
 
-            context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI模板", new TemplatePoi());
-            context.AddTemplatePanel(name => node.POIFilterTempName = name, node.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
-            context.AddTemplatePanel(name => node.POIReviseTempName = name, node.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
+            context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, Properties.Resources.POITemplate, new TemplatePoi());
+            context.AddTemplatePanel(name => node.POIFilterTempName = name, node.POIFilterTempName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
+            context.AddTemplatePanel(name => node.POIReviseTempName = name, node.POIReviseTempName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
         }
     }
 }

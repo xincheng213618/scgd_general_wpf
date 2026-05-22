@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
@@ -19,7 +20,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.Node.POI.POIReviseNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplatePanel(name => node.TemplateName = name, node.TemplateName, "POI修正标定", new TemplatePoiGenCalParam());
+            context.AddTemplatePanel(name => node.TemplateName = name, node.TemplateName, Properties.Resources.POIReviseCalib, new TemplatePoiGenCalParam());
         }
     }
 
@@ -30,9 +31,9 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.Node.POI.RealPOINode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
-            context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, "POI修正", new TemplatePoiReviseParam());
-            context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
+            context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
+            context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
+            context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, Properties.Resources.FileOutputTemplate, new TemplatePoiOutputParam());
         }
     }
 
@@ -44,10 +45,10 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (FlowEngineLib.POINode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "POI模板", new TemplatePoi());
-            context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
-            context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, "POI修正", new TemplatePoiReviseParam());
-            context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
+            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.POITemplate, new TemplatePoi());
+            context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
+            context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
+            context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, Properties.Resources.FileOutputTemplate, new TemplatePoiOutputParam());
         }
     }
 
@@ -59,10 +60,10 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (FlowEngineLib.BuildPOINode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
-            context.AddTemplatePanel(name => node.TemplateName = name, node.TemplateName, "布点模板", new TemplateBuildPoi());
+            context.AddTemplatePanel(name => node.TemplateName = name, node.TemplateName, Properties.Resources.BuildTemplate, new TemplateBuildPoi());
             context.AddTemplateJsonPanel(name => node.TemplateName = name, node.TemplateName, "ABuildPOIAAA", new TemplateBuildPOIAA());
             context.AddTemplatePanel(name => node.RePOITemplateName = name, node.RePOITemplateName, "RePOI", new TemplatePoi());
-            context.AddTemplatePanel(name => node.LayoutROITemplate = name, node.LayoutROITemplate, "布点ROI", new TemplatePoi());
+            context.AddTemplatePanel(name => node.LayoutROITemplate = name, node.LayoutROITemplate, Properties.Resources.BuildROI, new TemplatePoi());
             context.AddTemplatePanel(name => node.SavePOITempName = name, node.SavePOITempName, "SavePOI", new TemplatePoi());
         }
     }

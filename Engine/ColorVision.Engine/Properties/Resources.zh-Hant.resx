@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -2621,5 +2621,98 @@
   </data>
   <data name="HideGroup" xml:space="preserve">
     <value>隱藏分組</value>
+  </data>
+  <data name="Image" xml:space="preserve">
+    <value>圖像</value>
+  </data>
+  <data name="ColorDifference" xml:space="preserve">
+    <value>色差</value>
+  </data>
+  <data name="FindAAArea" xml:space="preserve">
+    <value>尋找AA區</value>
+  </data>
+  <data name="LightAreaLocation" xml:space="preserve">
+    <value>發光區定位</value>
+  </data>
+<data name="SubPixelLedCheck" xml:space="preserve">
+    <value>亞像素燈珠偵測</value>
+  </data>
+  <data name="PixelLedCheck" xml:space="preserve">
+    <value>像素級燈珠偵測</value>
+  </data>
+  <data name="CameraTemplate" xml:space="preserve">
+    <value>相機範本</value>
+  </data>
+  <data name="ExposureTemplate" xml:space="preserve">
+    <value>曝光範本</value>
+  </data>
+<data name="POITemplate" xml:space="preserve">
+    <value>POI範本</value>
+  </data>
+  <data name="POIFilter" xml:space="preserve">
+    <value>POI過濾</value>
+  </data>
+  <data name="POIRevise" xml:space="preserve">
+    <value>POI修正</value>
+  </data>
+  <data name="POIReviseCalib" xml:space="preserve">
+    <value>POI修正校正</value>
+  </data>
+  <data name="FileOutputTemplate" xml:space="preserve">
+    <value>檔案輸出範本</value>
+  </data>
+  <data name="BuildTemplate" xml:space="preserve">
+    <value>佈點範本</value>
+  </data>
+  <data name="BuildROI" xml:space="preserve">
+    <value>佈點ROI</value>
+  </data>
+  <data name="ParamTemplate" xml:space="preserve">
+    <value>參數範本</value>
+  </data>
+  <data name="SMUParamSetting" xml:space="preserve">
+    <value>SMU參數設定</value>
+  </data>
+  <data name="SubPixel" xml:space="preserve">
+    <value>亞像素</value>
+  </data>
+  <data name="DefectCheckV2" xml:space="preserve">
+    <value>缺陷偵測V2</value>
+  </data>
+  <data name="BrightSpotCheck" xml:space="preserve">
+    <value>亮點偵測</value>
+  </data>
+  <data name="BlackScreenCheck" xml:space="preserve">
+    <value>黑畫面偵測</value>
+  </data>
+  <data name="FindLightArea" xml:space="preserve">
+    <value>發光區偵測</value>
+  </data>
+  <data name="FindLightAreaOLED" xml:space="preserve">
+    <value>發光區偵測OLED</value>
+  </data>
+  <data name="LedStripCheckV2" xml:space="preserve">
+    <value>燈帶偵測V2</value>
+  </data>
+  <data name="LedStripCheck" xml:space="preserve">
+    <value>燈帶偵測</value>
+  </data>
+  <data name="LedCheck" xml:space="preserve">
+    <value>燈珠偵測</value>
+  </data>
+  <data name="BinocularFusion" xml:space="preserve">
+    <value>雙眼融合</value>
+  </data>
+  <data name="CrossCalc" xml:space="preserve">
+    <value>十字計算</value>
+  </data>
+  <data name="AABuildPoints" xml:space="preserve">
+    <value>AA佈點</value>
+  </data>
+  <data name="PoiAnalysis" xml:space="preserve">
+    <value>PoiAnalysis</value>
+  </data>
+  <data name="NodeProperty" xml:space="preserve">
+    <value>節點屬性</value>
   </data>
 </root>

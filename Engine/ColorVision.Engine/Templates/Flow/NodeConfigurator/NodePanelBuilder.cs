@@ -1,3 +1,4 @@
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates.Jsons;
@@ -30,8 +31,9 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             AddDevicePanel(updateDeviceCode, getDeviceCode(), signName, ServiceManager.GetInstance().DeviceServices.OfType<TDevice>().ToList());
         }
 
-        public void AddImagePath(Action<string> updateStorageAction, string filename, string tag = "图像")
+        public void AddImagePath(Action<string> updateStorageAction, string filename, string tag = null)
         {
+            tag ??= Properties.Resources.Image;
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
             dockPanel.Children.Add(new TextBlock
             {

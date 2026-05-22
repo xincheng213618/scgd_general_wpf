@@ -7574,5 +7574,282 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
             }
         }
+        /// <summary>
+        ///   查找类似 图像 的本地化字符串。
+        /// </summary>
+        public static string Image {
+            get {
+                return ResourceManager.GetString("Image", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 色差 的本地化字符串。
+        /// </summary>
+        public static string ColorDifference {
+            get {
+                return ResourceManager.GetString("ColorDifference", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 寻找AA区 的本地化字符串。
+        /// </summary>
+        public static string FindAAArea {
+            get {
+                return ResourceManager.GetString("FindAAArea", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发光区定位 的本地化字符串。
+        /// </summary>
+        public static string LightAreaLocation {
+            get {
+                return ResourceManager.GetString("LightAreaLocation", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 亚像素灯珠检测 的本地化字符串。
+        /// </summary>
+        public static string SubPixelLedCheck {
+            get {
+                return ResourceManager.GetString("SubPixelLedCheck", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 像素级灯珠检测 的本地化字符串。
+        /// </summary>
+        public static string PixelLedCheck {
+            get {
+                return ResourceManager.GetString("PixelLedCheck", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 相机模板 的本地化字符串。
+        /// </summary>
+        public static string CameraTemplate {
+            get {
+                return ResourceManager.GetString("CameraTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 曝光模板 的本地化字符串。
+        /// </summary>
+        public static string ExposureTemplate {
+            get {
+                return ResourceManager.GetString("ExposureTemplate", resourceCulture);
+            }
+        }
+
+/// <summary>
+        ///   查找类似 POI模板 的本地化字符串。
+        /// </summary>
+        public static string POITemplate {
+            get {
+                return ResourceManager.GetString("POITemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 POI过滤 的本地化字符串。
+        /// </summary>
+        public static string POIFilter {
+            get {
+                return ResourceManager.GetString("POIFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 POI修正 的本地化字符串。
+        /// </summary>
+        public static string POIRevise {
+            get {
+                return ResourceManager.GetString("POIRevise", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 POI修正标定 的本地化字符串。
+        /// </summary>
+        public static string POIReviseCalib {
+            get {
+                return ResourceManager.GetString("POIReviseCalib", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 文件输出模板 的本地化字符串。
+        /// </summary>
+        public static string FileOutputTemplate {
+            get {
+                return ResourceManager.GetString("FileOutputTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 布点模板 的本地化字符串。
+        /// </summary>
+        public static string BuildTemplate {
+            get {
+                return ResourceManager.GetString("BuildTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 布点ROI 的本地化字符串。
+        /// </summary>
+        public static string BuildROI {
+            get {
+                return ResourceManager.GetString("BuildROI", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 参数模板 的本地化字符串。
+        /// </summary>
+        public static string ParamTemplate {
+            get {
+                return ResourceManager.GetString("ParamTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 SMUParam设置 的本地化字符串。
+        /// </summary>
+        public static string SMUParamSetting {
+            get {
+                return ResourceManager.GetString("SMUParamSetting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 亚像素 的本地化字符串。
+        /// </summary>
+        public static string SubPixel {
+            get {
+                return ResourceManager.GetString("SubPixel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 缺陷检测V2 的本地化字符串。
+        /// </summary>
+        public static string DefectCheckV2 {
+            get {
+                return ResourceManager.GetString("DefectCheckV2", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 亮点检测 的本地化字符串。
+        /// </summary>
+        public static string BrightSpotCheck {
+            get {
+                return ResourceManager.GetString("BrightSpotCheck", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 黑画面检测 的本地化字符串。
+        /// </summary>
+        public static string BlackScreenCheck {
+            get {
+                return ResourceManager.GetString("BlackScreenCheck", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发光区检测 的本地化字符串。
+        /// </summary>
+        public static string FindLightArea {
+            get {
+                return ResourceManager.GetString("FindLightArea", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发光区检测OLED 的本地化字符串。
+        /// </summary>
+        public static string FindLightAreaOLED {
+            get {
+                return ResourceManager.GetString("FindLightAreaOLED", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 灯带检测V2 的本地化字符串。
+        /// </summary>
+        public static string LedStripCheckV2 {
+            get {
+                return ResourceManager.GetString("LedStripCheckV2", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 灯带检测 的本地化字符串。
+        /// </summary>
+        public static string LedStripCheck {
+            get {
+                return ResourceManager.GetString("LedStripCheck", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 灯珠检测 的本地化字符串。
+        /// </summary>
+        public static string LedCheck {
+            get {
+                return ResourceManager.GetString("LedCheck", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 双目融合 的本地化字符串。
+        /// </summary>
+        public static string BinocularFusion {
+            get {
+                return ResourceManager.GetString("BinocularFusion", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 十字计算 的本地化字符串。
+        /// </summary>
+        public static string CrossCalc {
+            get {
+                return ResourceManager.GetString("CrossCalc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 AA布点 的本地化字符串。
+        /// </summary>
+        public static string AABuildPoints {
+            get {
+                return ResourceManager.GetString("AABuildPoints", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 PoiAnalysis 的本地化字符串。
+        /// </summary>
+        public static string PoiAnalysis {
+            get {
+                return ResourceManager.GetString("PoiAnalysis", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   查找类似 节点属性 的本地化字符串。
+        /// </summary>
+        public static string NodeProperty {
+            get {
+                return ResourceManager.GetString("NodeProperty", resourceCulture);
+            }
+        }
     }
 }

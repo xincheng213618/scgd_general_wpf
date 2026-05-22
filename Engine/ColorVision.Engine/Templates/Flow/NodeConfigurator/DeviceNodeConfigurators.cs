@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.PG;
@@ -36,7 +37,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.SMUModelNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
-            context.AddTemplatePanel(name => node.ModelName = name, node.ModelName, "SMUParam设置", new TemplateSMUParam());
+            context.AddTemplatePanel(name => node.ModelName = name, node.ModelName, Properties.Resources.SMUParamSetting, new TemplateSMUParam());
         }
     }
 
@@ -68,7 +69,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.CommonSensorNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
-            context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, "模板名称",
+            context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.TemplateName,
                 () => ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(x => x.Code == node.DeviceCode)?.Config?.Category);
         }
     }
@@ -80,7 +81,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.TempCommonSensorNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
-            context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, "模板名称");
+            context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.TemplateName);
         }
     }
 
@@ -95,7 +96,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
-                context.AddTemplatePanel(name => node.TempName = name, node.TempName, "校正", new TemplateCalibrationParam(result.PhyCamera));
+                context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
         }
     }
 }
