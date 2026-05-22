@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.POI
         public override void PreviewMouseDoubleClick(int index)
         {
             EditWindow = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
-            EditWindow.ShowDialog();
+            EditWindow.Show();
         }
 
         public override void Load()

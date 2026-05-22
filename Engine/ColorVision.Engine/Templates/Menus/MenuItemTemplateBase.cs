@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.Menus
 
         public virtual void ShowTemplateWindow()
         {
-            new TemplateEditorWindow(Template) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); 
+            new TemplateEditorWindow(Template) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); 
         }
     }
 }
