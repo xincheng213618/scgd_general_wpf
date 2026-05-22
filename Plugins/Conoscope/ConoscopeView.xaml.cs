@@ -47,14 +47,10 @@ namespace Conoscope
         private PolarAngleLine? coordinateAxisPolarLine;
         private ConcentricCircleLine? coordinateAxisCircleLine;
         private bool isUpdatingQuickControls;
-        private OpenCvSharp.Mat? colorDifferenceReferenceUMat;
-        private OpenCvSharp.Mat? colorDifferenceReferenceVMat;
-        private string? colorDifferenceReferenceFileName;
-        private OpenCvSharp.Mat? contrastReferenceYMat;
-        private string? contrastReferenceFileName;
         private bool isUpdatingDisplayControls;
         private bool isUpdatingColorDifferenceControls;
         private bool isUpdatingContrastControls;
+        private ContrastReferenceKind contrastImageKind = ContrastReferenceKind.Black;
         private ReferencePlotDisplayMode referencePlotDisplayMode;
         private WindowCIE? cieWindow;
         private ImageFullScreenMode? imageFullScreenMode;
@@ -134,18 +130,70 @@ namespace Conoscope
             UpdatePseudoColorMapPreview();
             if (HasXyzData())
             {
-                if (GetSelectedDisplayChannel() == ExportChannel.Contrast && !CanRefreshContrastDisplay())
-                {
-                    RenderingConfig.DisplayChannel = ExportChannel.Y;
-                    RefreshDisplayControlsFromConfig();
-                }
+                EnsureSelectedDisplayChannelAvailable();
 
                 RefreshDisplayedImage();
             }
         }
 
+        internal void RefreshGlobalReferenceState()
+        {
+            RefreshChannelAvailability();
+            UpdateColorDifferenceReferenceUi();
+            UpdateContrastReferenceUi();
+
+            if (!HasXyzData())
+            {
+                RaiseWindowQuickControlStateChanged();
+                return;
+            }
+
+            ExportChannel channel = GetSelectedDisplayChannel();
+            bool usesGlobalReference = channel == ExportChannel.Contrast
+                || (channel == ExportChannel.ColorDifference && GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.ReferenceImage);
+
+            if (!usesGlobalReference)
+            {
+                RaiseWindowQuickControlStateChanged();
+                return;
+            }
+
+            EnsureSelectedDisplayChannelAvailable();
+
+            try
+            {
+                RefreshDisplayedImage();
+                UpdateReferencePlot();
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"刷新全局基准图状态失败: {ex.Message}", ex);
+            }
+        }
+
+        private void EnsureSelectedDisplayChannelAvailable()
+        {
+            ExportChannel channel = GetSelectedDisplayChannel();
+            bool isAvailable = channel switch
+            {
+                ExportChannel.ColorDifference => CanRefreshColorDifferenceDisplay(),
+                ExportChannel.Contrast => CanRefreshContrastDisplay(),
+                _ => true
+            };
+
+            if (isAvailable)
+            {
+                return;
+            }
+
+            RenderingConfig.DisplayChannel = ExportChannel.Y;
+            RefreshDisplayControlsFromConfig();
+        }
+
         private void RefreshDisplayControlsFromConfig()
         {
+            RefreshChannelAvailability();
+
             isUpdatingDisplayControls = true;
             try
             {
@@ -229,6 +277,7 @@ namespace Conoscope
         }
 
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
+    private ConoscopeGlobalReferenceStore GlobalReferences => ConoscopeManager.GetInstance().GlobalReferences;
         private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
         private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
         private ConoscopeColorDifferenceSettings ColorDifferenceConfig => ConoscopeConfig.ColorDifference;
@@ -361,12 +410,6 @@ namespace Conoscope
             YMat = null;
             ZMat?.Dispose();
             ZMat = null;
-            colorDifferenceReferenceUMat?.Dispose();
-            colorDifferenceReferenceUMat = null;
-            colorDifferenceReferenceVMat?.Dispose();
-            colorDifferenceReferenceVMat = null;
-            contrastReferenceYMat?.Dispose();
-            contrastReferenceYMat = null;
             DisposePseudoColorRangeMasks();
             DisposeCoordinateAxis();
             ImageView?.Dispose();

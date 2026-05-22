@@ -162,8 +162,29 @@ namespace Conoscope.Core
         public double ColorDifferenceCustomV { get => _ColorDifferenceCustomV; set { _ColorDifferenceCustomV = value; OnPropertyChanged(); } }
         private double _ColorDifferenceCustomV = 0.4684;
 
+        public string ColorDifferenceReferenceUMatPath { get => _ColorDifferenceReferenceUMatPath; set { _ColorDifferenceReferenceUMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ColorDifferenceReferenceUMatPath = string.Empty;
+
+        public string ColorDifferenceReferenceVMatPath { get => _ColorDifferenceReferenceVMatPath; set { _ColorDifferenceReferenceVMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ColorDifferenceReferenceVMatPath = string.Empty;
+
+        public string ColorDifferenceReferenceDisplayName { get => _ColorDifferenceReferenceDisplayName; set { _ColorDifferenceReferenceDisplayName = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ColorDifferenceReferenceDisplayName = string.Empty;
+
         public ContrastReferenceKind ContrastReferenceKind { get => _ContrastReferenceKind; set { _ContrastReferenceKind = value; OnPropertyChanged(); } }
         private ContrastReferenceKind _ContrastReferenceKind = ContrastReferenceKind.Black;
+
+        public string ContrastBlackReferenceYMatPath { get => _ContrastBlackReferenceYMatPath; set { _ContrastBlackReferenceYMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastBlackReferenceYMatPath = string.Empty;
+
+        public string ContrastBlackReferenceDisplayName { get => _ContrastBlackReferenceDisplayName; set { _ContrastBlackReferenceDisplayName = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastBlackReferenceDisplayName = string.Empty;
+
+        public string ContrastWhiteReferenceYMatPath { get => _ContrastWhiteReferenceYMatPath; set { _ContrastWhiteReferenceYMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastWhiteReferenceYMatPath = string.Empty;
+
+        public string ContrastWhiteReferenceDisplayName { get => _ContrastWhiteReferenceDisplayName; set { _ContrastWhiteReferenceDisplayName = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastWhiteReferenceDisplayName = string.Empty;
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ObservableCollection<ConoscopeNdCalibrationBinding> NdCalibrationBindings

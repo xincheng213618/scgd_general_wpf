@@ -12,22 +12,30 @@ namespace Conoscope
     {
         private void InitializeContrastControls()
         {
-            isUpdatingContrastControls = true;
-            try
-            {
-                ComboBoxHelper.SelectItemByTag(cbContrastReferenceKind, ContrastConfig.ReferenceKind.ToString());
-            }
-            finally
-            {
-                isUpdatingContrastControls = false;
-            }
-
+            SyncContrastImageKindControl();
             UpdateContrastReferenceUi();
         }
 
-        private ContrastReferenceKind GetSelectedContrastReferenceKind()
+        public ContrastReferenceKind GetCurrentContrastImageKind()
         {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbContrastReferenceKind, ContrastConfig.ReferenceKind);
+            return contrastImageKind;
+        }
+
+        private ContrastReferenceKind GetSelectedContrastImageKind()
+        {
+            return ComboBoxHelper.GetSelectedEnumByTag(cbContrastReferenceKind, contrastImageKind);
+        }
+
+        private ContrastReferenceKind GetRequiredContrastReferenceKind()
+        {
+            return GetSelectedContrastImageKind() == ContrastReferenceKind.Black
+                ? ContrastReferenceKind.White
+                : ContrastReferenceKind.Black;
+        }
+
+        private static string GetContrastImageKindText(ContrastReferenceKind kind)
+        {
+            return kind == ContrastReferenceKind.Black ? "暗图" : "亮图";
         }
 
         private static string GetContrastReferenceKindText(ContrastReferenceKind kind)
@@ -35,67 +43,124 @@ namespace Conoscope
             return kind == ContrastReferenceKind.Black ? "黑场" : "白场";
         }
 
-        private void UpdateContrastReferenceUi()
+        private void SyncContrastImageKindControl()
         {
-            if (tbContrastReferenceStatus == null || btnSaveContrastReference == null)
+            if (cbContrastReferenceKind == null)
             {
                 return;
             }
 
-            ContrastReferenceKind kind = GetSelectedContrastReferenceKind();
-            tbContrastReferenceStatus.Text = GetContrastReferenceStatusText(kind);
-
-            if (contrastReferenceYMat != null)
+            isUpdatingContrastControls = true;
+            try
             {
-                btnSaveContrastReference.Content = $"已保存{GetContrastReferenceKindText(kind)}基准";
-                btnSaveContrastReference.Background = Brushes.LightGreen;
-                btnSaveContrastReference.Foreground = Brushes.Black;
+                ComboBoxHelper.SelectItemByTag(cbContrastReferenceKind, contrastImageKind.ToString());
             }
-            else
+            finally
             {
-                btnSaveContrastReference.Content = "保存基准图";
-                btnSaveContrastReference.ClearValue(BackgroundProperty);
-                btnSaveContrastReference.ClearValue(ForegroundProperty);
+                isUpdatingContrastControls = false;
             }
         }
 
-        private string GetContrastReferenceStatusText(ContrastReferenceKind kind)
+        private void ApplyContrastImageKind(ContrastReferenceKind kind, bool refreshDisplay)
         {
-            if (contrastReferenceYMat == null)
+            if (contrastImageKind == kind)
             {
-                return "未保存对比度基准图。先打开或采集一张白图/黑图，选择基准类型后保存。";
+                SyncContrastImageKindControl();
+                UpdateContrastReferenceUi();
+                RaiseWindowQuickControlStateChanged();
+                return;
             }
 
-            if (YMat != null && (YMat.Width != contrastReferenceYMat.Width || YMat.Height != contrastReferenceYMat.Height))
+            contrastImageKind = kind;
+            SyncContrastImageKindControl();
+            UpdateContrastReferenceUi();
+            RaiseWindowQuickControlStateChanged();
+
+            if (!refreshDisplay || GetSelectedDisplayChannel() != ExportChannel.Contrast || !HasXyzData())
             {
-                return "对比度基准图尺寸与当前图像不一致，请重新保存基准图。";
+                return;
             }
 
-            return $"已保存{GetContrastReferenceKindText(kind)}基准: {Path.GetFileName(contrastReferenceFileName)}";
+            if (!CanRefreshContrastDisplay())
+            {
+                return;
+            }
+
+            try
+            {
+                RefreshDisplayedImage();
+                UpdateReferencePlot();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"切换对比度图像类型失败: {ex.Message}", ex);
+                MessageBox.Show(ex.Message, "对比度", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void UpdateContrastReferenceUi()
+        {
+            if (tbContrastReferenceStatus == null)
+            {
+                return;
+            }
+
+            tbContrastReferenceStatus.Text = GetContrastReferenceStatusText();
+        }
+
+        private string GetContrastReferenceStatusText()
+        {
+            ContrastReferenceKind imageKind = GetSelectedContrastImageKind();
+            ContrastReferenceKind requiredReferenceKind = GetRequiredContrastReferenceKind();
+            OpenCvSharp.Mat? requiredReferenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
+
+            string requiredStatus = requiredReferenceYMat == null
+                ? $"当前{GetContrastImageKindText(imageKind)}缺少{GetContrastReferenceKindText(requiredReferenceKind)}基准。"
+                : YMat != null && (YMat.Width != requiredReferenceYMat.Width || YMat.Height != requiredReferenceYMat.Height)
+                    ? $"当前{GetContrastImageKindText(imageKind)}对应的{GetContrastReferenceKindText(requiredReferenceKind)}基准尺寸与当前图像不一致。"
+                    : $"当前{GetContrastImageKindText(imageKind)}将使用{GetContrastReferenceKindText(requiredReferenceKind)}基准。";
+
+            string blackStatus = GetSavedContrastReferenceSummary(ContrastReferenceKind.Black);
+            string whiteStatus = GetSavedContrastReferenceSummary(ContrastReferenceKind.White);
+            return $"{requiredStatus}{Environment.NewLine}黑场基准: {blackStatus}{Environment.NewLine}白场基准: {whiteStatus}";
+        }
+
+        private string GetSavedContrastReferenceSummary(ContrastReferenceKind referenceKind)
+        {
+            if (!GlobalReferences.HasContrastReference(referenceKind))
+            {
+                return "未保存";
+            }
+
+            return Path.GetFileName(GlobalReferences.GetContrastReferenceFileName(referenceKind)) ?? "已保存";
         }
 
         private void EnsureContrastReferenceReady()
         {
-            if (contrastReferenceYMat == null)
+            ContrastReferenceKind requiredReferenceKind = GetRequiredContrastReferenceKind();
+            OpenCvSharp.Mat? referenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
+            if (referenceYMat == null)
             {
-                throw new InvalidOperationException("请先保存对比度基准图");
+                throw new InvalidOperationException($"请先保存{GetContrastReferenceKindText(requiredReferenceKind)}基准图");
             }
 
-            if (YMat != null && (YMat.Width != contrastReferenceYMat.Width || YMat.Height != contrastReferenceYMat.Height))
+            if (YMat != null && (YMat.Width != referenceYMat.Width || YMat.Height != referenceYMat.Height))
             {
-                throw new InvalidOperationException("对比度基准图尺寸与当前图像不一致，请重新保存基准图");
+                throw new InvalidOperationException($"{GetContrastReferenceKindText(requiredReferenceKind)}基准图尺寸与当前图像不一致，请重新保存基准图");
             }
         }
 
         private bool CanRefreshContrastDisplay()
         {
-            if (contrastReferenceYMat == null)
+            ContrastReferenceKind requiredReferenceKind = GetRequiredContrastReferenceKind();
+            OpenCvSharp.Mat? referenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
+            if (referenceYMat == null)
             {
                 UpdateContrastReferenceUi();
                 return false;
             }
 
-            if (YMat != null && (YMat.Width != contrastReferenceYMat.Width || YMat.Height != contrastReferenceYMat.Height))
+            if (YMat != null && (YMat.Width != referenceYMat.Width || YMat.Height != referenceYMat.Height))
             {
                 UpdateContrastReferenceUi();
                 return false;
@@ -112,28 +177,31 @@ namespace Conoscope
             }
 
             EnsureContrastReferenceReady();
-            return ConoscopeColorimetry.CreateContrastMat(YMat, contrastReferenceYMat!, GetSelectedContrastReferenceKind());
+            ContrastReferenceKind referenceKind = GetRequiredContrastReferenceKind();
+            return ConoscopeColorimetry.CreateContrastMat(YMat, GlobalReferences.GetContrastReferenceYMat(referenceKind)!, referenceKind);
         }
 
         private double GetContrastValue(int ix, int iy, double currentY)
         {
-            if (contrastReferenceYMat == null || YMat == null)
+            ContrastReferenceKind referenceKind = GetRequiredContrastReferenceKind();
+            OpenCvSharp.Mat? referenceYMat = GlobalReferences.GetContrastReferenceYMat(referenceKind);
+            if (referenceYMat == null || YMat == null)
             {
                 return double.NaN;
             }
 
-            if (YMat.Width != contrastReferenceYMat.Width || YMat.Height != contrastReferenceYMat.Height)
+            if (YMat.Width != referenceYMat.Width || YMat.Height != referenceYMat.Height)
             {
                 return double.NaN;
             }
 
-            if (ix < 0 || iy < 0 || ix >= contrastReferenceYMat.Width || iy >= contrastReferenceYMat.Height)
+            if (ix < 0 || iy < 0 || ix >= referenceYMat.Width || iy >= referenceYMat.Height)
             {
                 return double.NaN;
             }
 
-            double referenceY = contrastReferenceYMat.At<float>(iy, ix);
-            return ConoscopeColorimetry.CalculateContrast(currentY, referenceY, GetSelectedContrastReferenceKind());
+            double referenceY = referenceYMat.At<float>(iy, ix);
+            return ConoscopeColorimetry.CalculateContrast(currentY, referenceY, referenceKind);
         }
 
         private void ContrastReferenceKind_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -143,45 +211,18 @@ namespace Conoscope
                 return;
             }
 
-            ContrastConfig.ReferenceKind = GetSelectedContrastReferenceKind();
-            UpdateContrastReferenceUi();
-
-            if (GetSelectedDisplayChannel() == ExportChannel.Contrast && HasXyzData() && CanRefreshContrastDisplay())
-            {
-                try
-                {
-                    RefreshDisplayedImage();
-                    UpdateReferencePlot();
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"切换对比度基准类型失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, "对比度", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
+            ApplyContrastImageKind(GetSelectedContrastImageKind(), refreshDisplay: true);
         }
 
-        private void btnSaveContrastReference_Click(object sender, RoutedEventArgs e)
+        public void SaveCurrentAsGlobalContrastReference(ContrastReferenceKind referenceKind)
         {
-            try
+            if (YMat == null)
             {
-                if (YMat == null)
-                {
-                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
+                throw new InvalidOperationException(Properties.Resources.MsgLoadImageFirst);
+            }
 
-                contrastReferenceYMat?.Dispose();
-                contrastReferenceYMat = YMat.Clone();
-                contrastReferenceFileName = Filename;
-                ContrastConfig.ReferenceKind = GetSelectedContrastReferenceKind();
-                UpdateContrastReferenceUi();
-            }
-            catch (Exception ex)
-            {
-                log.Error($"保存对比度基准图失败: {ex.Message}", ex);
-                MessageBox.Show($"保存对比度基准图失败: {ex.Message}", Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            GlobalReferences.SaveContrastReference(referenceKind, YMat, Filename);
+            ConoscopeModuleService.RefreshAllReferenceState();
         }
 
         private void btnCalculateContrast_Click(object sender, RoutedEventArgs e)

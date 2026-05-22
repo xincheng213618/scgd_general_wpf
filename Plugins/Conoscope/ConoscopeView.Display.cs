@@ -171,6 +171,46 @@ namespace Conoscope
             return XMat != null && YMat != null && ZMat != null;
         }
 
+        private bool CanOfferContrastChannel()
+        {
+            return GlobalReferences.HasContrastReference(ContrastReferenceKind.Black)
+                && GlobalReferences.HasContrastReference(ContrastReferenceKind.White);
+        }
+
+        private void RefreshChannelAvailability()
+        {
+            bool canOfferContrastChannel = CanOfferContrastChannel();
+            UpdateChannelOptionVisibility(cbDisplayChannel, ExportChannel.Contrast, canOfferContrastChannel);
+            UpdateChannelOptionVisibility(cbExportChannel, ExportChannel.Contrast, canOfferContrastChannel);
+
+            if (!canOfferContrastChannel && RenderingConfig.DisplayChannel == ExportChannel.Contrast)
+            {
+                RenderingConfig.DisplayChannel = ExportChannel.Y;
+            }
+
+            if (!canOfferContrastChannel && GetSelectedExportChannel() == ExportChannel.Contrast)
+            {
+                ComboBoxHelper.TrySelectItemByTag(cbExportChannel, ExportChannel.Y.ToString(), visibleOnly: true);
+            }
+        }
+
+        private static void UpdateChannelOptionVisibility(ComboBox? comboBox, ExportChannel channel, bool isVisible)
+        {
+            if (comboBox == null)
+            {
+                return;
+            }
+
+            string tag = channel.ToString();
+            ComboBoxHelper.SetItemVisibilityByTag(comboBox, tag, isVisible ? Visibility.Visible : Visibility.Collapsed);
+            if (!isVisible
+                && comboBox.SelectedItem is ComboBoxItem selectedItem
+                && string.Equals(selectedItem.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+            {
+                ComboBoxHelper.TrySelectItemByTag(comboBox, ExportChannel.Y.ToString(), visibleOnly: true);
+            }
+        }
+
         private ExportChannel GetSelectedDisplayChannel()
         {
             return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, RenderingConfig.DisplayChannel);
@@ -184,11 +224,24 @@ namespace Conoscope
             }
 
             ExportChannel channel = GetSelectedDisplayChannel();
+            if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
+            {
+                RefreshChannelAvailability();
+                RaiseWindowQuickControlStateChanged();
+                return;
+            }
+
             RenderingConfig.DisplayChannel = channel;
             UpdateColorDifferencePanelVisibility();
 
             if (HasXyzData())
             {
+                if (channel == ExportChannel.ColorDifference && !CanRefreshColorDifferenceDisplay())
+                {
+                    RaiseWindowQuickControlStateChanged();
+                    return;
+                }
+
                 if (channel == ExportChannel.Contrast && !CanRefreshContrastDisplay())
                 {
                     RaiseWindowQuickControlStateChanged();
@@ -210,6 +263,7 @@ namespace Conoscope
 
         private void ExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            RefreshChannelAvailability();
             UpdateColorDifferencePanelVisibility();
             UpdateContrastReferenceUi();
             RaiseWindowQuickControlStateChanged();

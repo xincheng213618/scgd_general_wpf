@@ -55,6 +55,15 @@ namespace Conoscope.Core
             }
         }
 
+        public static void RefreshAllReferenceState()
+        {
+            CleanupViews();
+            foreach (ConoscopeView view in Views.Select(item => item.TryGetTarget(out var target) ? target : null).Where(item => item != null)!)
+            {
+                view.RefreshGlobalReferenceState();
+            }
+        }
+
         public static void OpenModule(string? filePath = null)
         {
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath) && TryOpenInWorkspace(filePath))

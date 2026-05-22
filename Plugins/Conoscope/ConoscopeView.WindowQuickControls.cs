@@ -10,7 +10,12 @@ namespace Conoscope
         ExportChannel ExportChannel,
         ConoscopeCoordinateReferenceMode ReferenceMode,
         double ReferenceValue,
-        double ReferenceMaximum)
+        double ReferenceMaximum,
+        ContrastReferenceKind ContrastImageKind,
+        ColorDifferenceReferenceMode ColorDifferenceReferenceMode,
+        double ColorDifferenceCustomU,
+        double ColorDifferenceCustomV,
+        bool CanUseContrastChannel)
     {
         public string ReferenceLabel => ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.LabelAzimuthDegLabel : Properties.Resources.LabelPolarDegLabel;
     }
@@ -38,12 +43,22 @@ namespace Conoscope
                 GetSelectedExportChannel(),
                 axisParam.ReferenceMode,
                 referenceValue,
-                referenceMaximum);
+                referenceMaximum,
+                GetCurrentContrastImageKind(),
+                GetSelectedColorDifferenceReferenceMode(),
+                ColorDifferenceConfig.CustomU,
+                ColorDifferenceConfig.CustomV,
+                CanOfferContrastChannel());
             return true;
         }
 
         public void SetWindowQuickDisplayChannel(ExportChannel channel)
         {
+            if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
+            {
+                channel = ExportChannel.Y;
+            }
+
             if (RenderingConfig.DisplayChannel == channel)
             {
                 return;
@@ -90,6 +105,11 @@ namespace Conoscope
 
         public void SetWindowQuickExportChannel(ExportChannel channel)
         {
+            if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
+            {
+                channel = ExportChannel.Y;
+            }
+
             if (GetSelectedExportChannel() == channel)
             {
                 return;
@@ -97,6 +117,16 @@ namespace Conoscope
 
             ComboBoxHelper.SelectItemByTag(cbExportChannel, channel.ToString());
             RaiseWindowQuickControlStateChanged();
+        }
+
+        public void SetWindowQuickContrastImageKind(ContrastReferenceKind kind)
+        {
+            ApplyContrastImageKind(kind, refreshDisplay: true);
+        }
+
+        public void SaveWindowQuickColorDifferenceReference()
+        {
+            SaveCurrentAsGlobalColorDifferenceReference();
         }
 
         public void SetWindowQuickReferenceValue(double value)

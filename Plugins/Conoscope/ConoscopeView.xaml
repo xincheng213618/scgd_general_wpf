@@ -127,166 +127,139 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <TabControl Grid.Row="0" MaxHeight="220" MinHeight="112">
-                <TabItem Header="{x:Static properties:Resources.PanelDisplay}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <WrapPanel Margin="0,0,0,2">
-                                    <Button Content="{x:Static properties:Resources.BtnApplyPreset}" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
-                                    <Button Content="{x:Static properties:Resources.BtnPreprocessSettings}" Click="btnOpenPreprocessSettings_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+            <ScrollViewer Grid.Row="0"
+                          MaxHeight="220"
+                          MinHeight="112"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Focusable="False">
+                <StackPanel Margin="5">
+                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                        <WrapPanel Margin="0,0,0,2">
+                            <Button Content="{x:Static properties:Resources.BtnApplyPreset}" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="{x:Static properties:Resources.BtnPreprocessSettings}" Click="btnOpenPreprocessSettings_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+                        </WrapPanel>
+                    </Border>
+
+                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                        <StackPanel>
+                            <TextBlock Text="{x:Static properties:Resources.LabelExportSettings}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                            <WrapPanel>
+                                <TextBlock Text="{x:Static properties:Resources.LabelExportChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelXShort}" Tag="X"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelYShort}" Tag="Y"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZShort}" Tag="Z"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieXShort}" Tag="CieX"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieYShort}" Tag="CieY"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
+                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                                </ComboBox>
+                                <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
+                                <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
+                                <Button Content="高级导出" Click="btnAdvancedExport_Click" Padding="10,4" ToolTip="{x:Static properties:Resources.TipAdvancedExport}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                        <StackPanel>
+                            <TextBlock Text="{x:Static properties:Resources.LabelDisplayAndReference}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                            <WrapPanel Margin="0,4,0,2">
+                                <TextBlock Text="{x:Static properties:Resources.LabelDisplayChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                                </ComboBox>
+                                <TextBlock Text="{x:Static properties:Resources.LabelRefMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
+                                    <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
+                                </ComboBox>
+                            </WrapPanel>
+
+                            <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="58"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Static properties:Resources.LabelRefAzimuth}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
+                                <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="3" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
+                            </Grid>
+
+                            <Grid x:Name="rowReferenceRadius" Margin="5,4,5,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="58"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Static properties:Resources.LabelRefPolar}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
+                                <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="3" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Visibility="Collapsed">
+                        <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.LabelColorDiffCalc}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                <WrapPanel Margin="0,4,0,4">
+                                    <TextBlock Text="{x:Static properties:Resources.LabelBaseRef}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="A"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="D75"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="ImageCenter"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="Custom"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="ReferenceImage"/>
+                                    </ComboBox>
+                                    <Button x:Name="btnSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnSaveBaseImage}" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
+                                    <Button Content="{x:Static properties:Resources.BtnComputeColorDiff}" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
                                 </WrapPanel>
-                            </Border>
+                                <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
+                                    <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                    <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                                    <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <StackPanel>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelDisplayAndReference}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <WrapPanel Margin="0,4,0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.LabelDisplayChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                            <ComboBoxItem Content="对比度" Tag="Contrast"/>
-                                        </ComboBox>
-                                        <TextBlock Text="{x:Static properties:Resources.LabelRefMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
-                                        </ComboBox>
-                                    </WrapPanel>
-
-                                    <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="58"/>
-                                            <ColumnDefinition Width="8"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{x:Static properties:Resources.LabelRefAzimuth}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
-                                        <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="3" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
-                                    </Grid>
-
-                                    <Grid x:Name="rowReferenceRadius" Margin="5,4,5,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="58"/>
-                                            <ColumnDefinition Width="8"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{x:Static properties:Resources.LabelRefPolar}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
-                                        <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="3" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="{x:Static properties:Resources.PanelColorDiff}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <StackPanel>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelColorDiffCalc}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <WrapPanel Margin="0,4,0,4">
-                                        <TextBlock Text="{x:Static properties:Resources.LabelBaseRef}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="A"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="D75"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="ImageCenter"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="Custom"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="ReferenceImage"/>
-                                        </ComboBox>
-                                        <Button x:Name="btnSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnSaveBaseImage}" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
-                                        <Button Content="{x:Static properties:Resources.BtnComputeColorDiff}" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
-                                    </WrapPanel>
-                                    <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
-                                        <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
-                                        <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
-                                        <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
-                                    </WrapPanel>
-                                    <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="对比度">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <StackPanel>
-                                    <TextBlock Text="对比度计算" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <WrapPanel Margin="0,4,0,4">
-                                        <TextBlock Text="基准类型:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbContrastReferenceKind" MinWidth="100" SelectionChanged="ContrastReferenceKind_SelectionChanged">
-                                            <ComboBoxItem Content="黑场" Tag="Black"/>
-                                            <ComboBoxItem Content="白场" Tag="White"/>
-                                        </ComboBox>
-                                        <Button x:Name="btnSaveContrastReference" Content="保存基准图" Click="btnSaveContrastReference_Click" Padding="10,3" Margin="10,0,6,0"/>
-                                        <Button Content="计算对比度" Click="btnCalculateContrast_Click" Padding="10,3"/>
-                                    </WrapPanel>
-                                    <TextBlock x:Name="tbContrastReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="{x:Static properties:Resources.PanelExport}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,5">
-                                <StackPanel>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelExportSettings}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <WrapPanel Margin="0,0,0,0">
-                                    <TextBlock Text="{x:Static properties:Resources.LabelExportMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <ComboBox x:Name="cbExportMode" MinWidth="120" SelectedIndex="0" Margin="0,0,14,0">
-                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiAzimuthExport}" Tag="Angle"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiPolarExport}" Tag="Circle"/>
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                            <StackPanel>
+                                <TextBlock Text="对比度计算" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                <WrapPanel Margin="0,4,0,4">
+                                    <TextBlock Text="当前图像:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbContrastReferenceKind" MinWidth="100" SelectionChanged="ContrastReferenceKind_SelectionChanged">
+                                        <ComboBoxItem Content="暗图" Tag="Black"/>
+                                        <ComboBoxItem Content="亮图" Tag="White"/>
                                     </ComboBox>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelExportChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelXShort}" Tag="X"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelYShort}" Tag="Y"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelZShort}" Tag="Z"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieXShort}" Tag="CieX"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieYShort}" Tag="CieY"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
-                                        <ComboBoxItem Content="对比度" Tag="Contrast"/>
-                                    </ComboBox>
-                                    <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                                    <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Padding="10,4"/>
-                                    </WrapPanel>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
+                                    <Button Content="计算对比度" Click="btnCalculateContrast_Click" Padding="10,3" Margin="10,0,0,0"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="tbContrastReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
-                <TabItem Header="{x:Static properties:Resources.PanelSettings}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Button Content="{x:Static properties:Resources.BtnSaveConfig}" Click="btnSaveConoscopeConfig_Click" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8"/>
-                            <Grid x:Name="GridSetting" Margin="0,0,0,10" />
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
+                        <Grid x:Name="GridSetting" Margin="0,0,0,10" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
 
             <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,6,0,0">
                 <Grid>

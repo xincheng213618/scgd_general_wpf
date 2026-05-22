@@ -48,6 +48,11 @@ namespace Conoscope
             ExportCircleMode();
         }
 
+        private void btnAdvancedExport_Click(object sender, RoutedEventArgs e)
+        {
+            AdvancedExport();
+        }
+
         public void ExportCircleMode()
         {
             try

@@ -135,6 +135,62 @@
             <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
             <Setter Property="CornerRadius" Value="4" />
         </Style>
+
+        <Style x:Key="CompactRibbonGroupHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource RibbonGroupHeaderStyle}">
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="Margin" Value="0,3,0,0" />
+        </Style>
+
+        <Style x:Key="CompactStatusPillStyle" TargetType="Border" BasedOn="{StaticResource StatusPillStyle}">
+            <Setter Property="Padding" Value="5,1" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+
+        <Style x:Key="CompactStatusTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="Gray" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="ReferenceModeRadioStyle" TargetType="RadioButton">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="6,4"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource GlobalTextBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource GlobalTextBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -167,12 +223,6 @@
                                             <Button Click="OpenFile_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenFile}">
                                                 <TextBlock Text="&#xE8E5;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button Click="btnNewView_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipNewView}">
-                                                <TextBlock Text="&#xE710;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                            <Button Click="btnSaveWindowConfig_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipSaveConfig}">
-                                                <TextBlock Text="&#xE74E;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupData}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
@@ -185,7 +235,6 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{x:Static properties:Resources.Model}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbModelType" Width="132" SelectionChanged="cbModelType_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
                                             <Button x:Name="btnOpenObservationCamera" Click="btnOpenObservationCamera_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenObservationCamera}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
@@ -198,54 +247,134 @@
                                     </Grid>
                                 </Border>
 
-                                <Border x:Name="bdHomeQuickControls" Style="{StaticResource RibbonGroupStyle}" Visibility="Collapsed">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <WrapPanel>
-                                            <TextBlock Text="{x:Static properties:Resources.LabelChannel}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                            <ComboBox x:Name="cbHomeDisplayChannel" Width="112" SelectionChanged="cbHomeDisplayChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                                <ComboBoxItem Content="对比度" Tag="Contrast"/>
-                                            </ComboBox>
-                                            <TextBlock Text="{x:Static properties:Resources.LabelReference}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                            <ComboBox x:Name="cbHomeReferenceMode" Width="118" SelectionChanged="cbHomeReferenceMode_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
-                                            </ComboBox>
-                                            <TextBlock x:Name="tbHomeReferenceValueLabel" Text="{x:Static properties:Resources.LabelAzimuthDeg}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                            <TextBox x:Name="txtHomeReferenceValue"
-                                                     Width="76"
-                                                     Style="{StaticResource RibbonTextBoxStyle}"
-                                                     PreviewKeyDown="txtHomeReferenceValue_PreviewKeyDown"
-                                                     LostFocus="txtHomeReferenceValue_LostFocus" />
-                                            <TextBlock Text="{x:Static properties:Resources.LabelExport}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                            <ComboBox x:Name="cbHomeExportChannel" Width="112" SelectionChanged="cbHomeExportChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                                <ComboBoxItem Content="对比度" Tag="Contrast"/>
-                                            </ComboBox>
-                                            <Button x:Name="btnHomeExportAngle" Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnHomeExportAngle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportAzimuthData}" />
-                                            <Button x:Name="btnHomeExportCircle" Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnHomeExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportPolarData}" />
-                                        </WrapPanel>
-                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupCurrentView}" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
+                                <StackPanel x:Name="bdHomeQuickControls" Orientation="Horizontal" VerticalAlignment="Top" Visibility="Collapsed">
+                                    <Border Style="{StaticResource RibbonGroupStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <WrapPanel>
+                                                <ComboBox x:Name="cbHomeDisplayChannel" Width="112" SelectionChanged="cbHomeDisplayChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                                                </ComboBox>
+                                                <TextBlock Text="{x:Static properties:Resources.LabelReference}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <RadioButton x:Name="rbHomeReferenceLine" GroupName="HomeReferenceMode" Checked="rbHomeReferenceLine_Checked" Style="{StaticResource ReferenceModeRadioStyle}" ToolTip="方位角直线">
+                                                    <Viewbox Width="12" Height="12">
+                                                        <Canvas Width="16" Height="16">
+                                                            <Line X1="2" Y1="8" X2="14" Y2="8"
+                                                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                                                  StrokeThickness="2"
+                                                                  StrokeStartLineCap="Round"
+                                                                  StrokeEndLineCap="Round" />
+                                                        </Canvas>
+                                                    </Viewbox>
+                                                </RadioButton>
+                                                <RadioButton x:Name="rbHomeReferenceCircle" GroupName="HomeReferenceMode" Checked="rbHomeReferenceCircle_Checked" Style="{StaticResource ReferenceModeRadioStyle}" ToolTip="极角圆">
+                                                    <Viewbox Width="12" Height="12">
+                                                        <Canvas Width="16" Height="16">
+                                                            <Ellipse Width="12" Height="12"
+                                                                     Canvas.Left="2"
+                                                                     Canvas.Top="2"
+                                                                     Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                                                     StrokeThickness="2" />
+                                                        </Canvas>
+                                                    </Viewbox>
+                                                </RadioButton>
+                                                <TextBox x:Name="txtHomeReferenceValue"
+                                                         Width="68"
+                                                         Style="{StaticResource RibbonTextBoxStyle}"
+                                                         PreviewKeyDown="txtHomeReferenceValue_PreviewKeyDown"
+                                                         LostFocus="txtHomeReferenceValue_LostFocus" />
+                                            </WrapPanel>
+                                            <TextBlock Grid.Row="1" Text="当前通道" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Style="{StaticResource RibbonGroupStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <WrapPanel>
+                                                <TextBlock Text="当前图像" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <ComboBox x:Name="cbHomeContrastImageKind" Width="84" SelectionChanged="cbHomeContrastImageKind_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="暗图" Tag="Black"/>
+                                                    <ComboBoxItem Content="亮图" Tag="White"/>
+                                                </ComboBox>
+                                                <Button x:Name="btnHomeSaveBlackContrastReference" Content="黑基准" Click="btnHomeSaveBlackContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="将当前视图保存为全局黑场基准" />
+                                                <Button x:Name="btnHomeSaveWhiteContrastReference" Content="白基准" Click="btnHomeSaveWhiteContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="将当前视图保存为全局白场基准" />
+                                            </WrapPanel>
+                                            <TextBlock Grid.Row="1" Text="对比度" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Style="{StaticResource RibbonGroupStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <WrapPanel>
+                                                <TextBlock Text="{x:Static properties:Resources.LabelBaseRef}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <ComboBox x:Name="cbHomeColorDifferenceReference" Width="134" SelectionChanged="cbHomeColorDifferenceReference_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="A"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="D75"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="ImageCenter"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="Custom"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="ReferenceImage"/>
+                                                </ComboBox>
+                                                <StackPanel x:Name="panelHomeColorDifferenceCustomUv" Orientation="Horizontal" Visibility="Collapsed">
+                                                    <TextBlock Text="u:" Style="{StaticResource RibbonFieldLabelStyle}" Margin="0,0,3,0" />
+                                                    <TextBox x:Name="txtHomeColorDifferenceCustomU" Width="62" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtHomeColorDifferenceCustom_PreviewKeyDown" LostFocus="txtHomeColorDifferenceCustom_LostFocus" />
+                                                    <TextBlock Text="v:" Style="{StaticResource RibbonFieldLabelStyle}" Margin="4,0,3,0" />
+                                                    <TextBox x:Name="txtHomeColorDifferenceCustomV" Width="62" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtHomeColorDifferenceCustom_PreviewKeyDown" LostFocus="txtHomeColorDifferenceCustom_LostFocus" />
+                                                </StackPanel>
+                                                <Button x:Name="btnHomeSaveColorDifferenceReference" Content="色差基准" Click="btnHomeSaveColorDifferenceReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="将当前视图保存为全局色差基准图" />
+                                            </WrapPanel>
+                                            <TextBlock Grid.Row="1" Text="色差" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel x:Name="bdHomeExportControls" Orientation="Horizontal" VerticalAlignment="Top" Visibility="Collapsed">
+                                    <Border Style="{StaticResource RibbonGroupStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <WrapPanel>
+                                                <TextBlock Text="{x:Static properties:Resources.LabelExport}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <ComboBox x:Name="cbHomeExportChannel" Width="112" SelectionChanged="cbHomeExportChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                                                </ComboBox>
+                                                <Button x:Name="btnHomeExportAngle" Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnHomeExportAngle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportAzimuthData}" />
+                                                <Button x:Name="btnHomeExportCircle" Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnHomeExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportPolarData}" />
+                                            </WrapPanel>
+                                            <TextBlock Grid.Row="1" Text="当前视图导出" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
@@ -256,8 +385,7 @@
                                 <Border Style="{StaticResource RibbonGroupStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
@@ -484,28 +612,6 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button Click="btnExportAngleMode_Click" ToolTip="{x:Static properties:Resources.TipExportAzimuthData}" Style="{StaticResource RibbonButtonStyle}">
-                                                <TextBlock Text="&#xE72D;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                            <Button Click="btnExportCircleMode_Click" ToolTip="{x:Static properties:Resources.TipExportPolarData}" Style="{StaticResource RibbonButtonStyle}">
-                                                <TextBlock Text="&#xE72D;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                            <Button Click="btnAdvancedExport_Click" ToolTip="{x:Static properties:Resources.TipAdvancedExport}" Style="{StaticResource RibbonButtonStyle}">
-                                                <TextBlock Text="&#xE72D;" Style="{StaticResource RibbonIconTextStyle}" />
-                                            </Button>
-                                        </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupExport}" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
-
-
-                                <Border Style="{StaticResource RibbonGroupStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
                                             <WrapPanel Margin="0,0,0,4">
                                                 <TextBlock Text="{x:Static properties:Resources.LabelStandard}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                                 <ComboBox x:Name="cbRibbonGamutStandard" Width="120" Style="{StaticResource RibbonComboBoxStyle}" />
@@ -545,9 +651,30 @@
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="{x:Static properties:Resources.TabWindow}">
+                    <TabItem Header="{x:Static properties:Resources.TabHelp}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button x:Name="btnOpenHelpCenter"
+                                                    Click="btnOpenConoscopeHelp_Click"
+                                                    Style="{StaticResource RibbonLargeButtonStyle}"
+                                                    ToolTip="{x:Static properties:Resources.TipHelpCenter}">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE897;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnHelpCenter}" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupOpen}" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
                                 <Border Style="{StaticResource RibbonGroupStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -586,62 +713,10 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenColorGamut" Click="btnOpenColorGamut_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenLegacyGamut}">
-                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
-                                                    <TextBlock Text="&#xE790;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnGamutWindow}" Style="{StaticResource RibbonButtonCaptionStyle}" />
-                                                </StackPanel>
-                                            </Button>
-                                            <Button x:Name="btnOpenContrastTest" Click="btnOpenContrastTest_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenLegacyContrast}">
-                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
-                                                    <TextBlock Text="&#xE9D2;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnContrastWindow}" Style="{StaticResource RibbonButtonCaptionStyle}" />
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupAnalysisWindows}" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
-
-                                <Border Style="{StaticResource RibbonGroupStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
                                             <ComboBox x:Name="cbLanguage" Width="140" SelectionChanged="cbLanguage_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
                                             <ComboBox x:Name="cbTheme" Width="120" SelectionChanged="cbTheme_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupConfig}" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
-
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-
-                    <TabItem Header="{x:Static properties:Resources.TabHelp}">
-                        <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
-                            <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
-                                <Border Style="{StaticResource RibbonGroupStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenHelpCenter"
-                                                    Click="btnOpenConoscopeHelp_Click"
-                                                    Style="{StaticResource RibbonLargeButtonStyle}"
-                                                    ToolTip="{x:Static properties:Resources.TipHelpCenter}">
-                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
-                                                    <TextBlock Text="&#xE897;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnHelpCenter}" Style="{StaticResource RibbonButtonCaptionStyle}" />
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupOpen}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
