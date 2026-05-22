@@ -1,6 +1,7 @@
 ﻿using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.UI;
+using ColorVision.Core;
 using log4net;
 using Microsoft.Win32;
 using Conoscope.Core;
@@ -27,6 +28,38 @@ namespace Conoscope
     public partial class ConoscopeView : UserControl, IDisposable, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeView));
+
+        private sealed class ViewRenderingState
+        {
+            public ExportChannel DisplayChannel { get; set; } = ExportChannel.Y;
+            public ColormapTypes PseudoColorMap { get; set; } = ColormapTypes.COLORMAP_JET;
+            public bool UsePseudoColor { get; set; } = true;
+        }
+
+        private sealed class ViewPreprocessState
+        {
+            public bool ApplyFilterOnOpen { get; set; } = true;
+            public bool ClampNonPositiveXyzOnLoad { get; set; } = true;
+            public ImageFilterType FilterType { get; set; } = ImageFilterType.Gaussian;
+            public int FilterKernelSize { get; set; } = 55;
+            public double FilterSigma { get; set; } = 1.0;
+            public int FilterD { get; set; } = 5;
+            public double FilterSigmaColor { get; set; } = 75;
+            public double FilterSigmaSpace { get; set; } = 75;
+            public bool DustRemovalEnabled { get; set; }
+            public DustRemovalMode DustRemovalMode { get; set; } = DustRemovalMode.DarkSpot;
+            public double DustThresholdPercent { get; set; } = 12;
+            public int DustMinArea { get; set; } = 1;
+            public int DustMaxArea { get; set; } = 500;
+            public int DustRepairRadius { get; set; } = 3;
+        }
+
+        private sealed class ViewColorDifferenceState
+        {
+            public ColorDifferenceReferenceMode ReferenceMode { get; set; } = ColorDifferenceReferenceMode.D65;
+            public double CustomU { get; set; } = 0.1978;
+            public double CustomV { get; set; } = 0.4684;
+        }
 
         // Polar angle line management
         private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
@@ -60,6 +93,10 @@ namespace Conoscope
         private ConoscopeImageZoomMode imageZoomMode = ConoscopeImageZoomMode.Fit;
         private bool applyCircleFitOnNextRefresh;
         private bool isApplyingImageZoomMode;
+        private readonly ViewRenderingState viewRenderingConfig = new();
+        private readonly ViewPreprocessState viewPreprocessConfig = new();
+        private readonly ViewColorDifferenceState viewColorDifferenceConfig = new();
+        private readonly ConoscopeCoordinateAxisParam viewCoordinateAxisConfig = new();
 
         public event EventHandler StatusBarItemsChanged;
 
@@ -98,7 +135,7 @@ namespace Conoscope
             GridSetting.Children.Add(fieldOfViewEditorHost);
             Grid.SetRow(fieldOfViewEditorHost, 0);
 
-            UIElement coordinateAxisEditor = PropertyEditorHelper.GenPropertyEditorControl(CurrentModelProfile.CoordinateAxisParam);
+            UIElement coordinateAxisEditor = PropertyEditorHelper.GenPropertyEditorControl(CoordinateAxisConfig);
             GridSetting.Children.Add(coordinateAxisEditor);
             Grid.SetRow(coordinateAxisEditor, 1);
         }
@@ -114,6 +151,8 @@ namespace Conoscope
         internal void RefreshConoscopeConfiguration()
         {
             RefreshModelDependentUi();
+            InitializeColorDifferenceControls();
+            InitializeContrastControls();
             RefreshRenderingFromConfig();
             UpdateReferencePlotHeader();
         }
@@ -258,6 +297,7 @@ namespace Conoscope
         public ConoscopeView()
         {
             InitializeComponent();
+            InitializeLocalViewStateFromDefaults();
             ImageView.FocusCircleCalculationRequested += ImageView_FocusCircleCalculationRequested;
             ImageView.FocusCircleEditRequested += ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged += ImageView_FocusCirclesChanged;
@@ -277,11 +317,70 @@ namespace Conoscope
         }
 
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
-    private ConoscopeGlobalReferenceStore GlobalReferences => ConoscopeManager.GetInstance().GlobalReferences;
-        private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
-        private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
-        private ConoscopeColorDifferenceSettings ColorDifferenceConfig => ConoscopeConfig.ColorDifference;
-        private ConoscopeContrastSettings ContrastConfig => ConoscopeConfig.Contrast;
+        private ConoscopeGlobalReferenceStore GlobalReferences => ConoscopeManager.GetInstance().GlobalReferences;
+        private ViewRenderingState RenderingConfig => viewRenderingConfig;
+        private ViewPreprocessState PreprocessConfig => viewPreprocessConfig;
+        private ViewColorDifferenceState ColorDifferenceConfig => viewColorDifferenceConfig;
+        private ConoscopeCoordinateAxisParam CoordinateAxisConfig => viewCoordinateAxisConfig;
+
+        private void InitializeLocalViewStateFromDefaults()
+        {
+            viewRenderingConfig.DisplayChannel = ConoscopeConfig.DisplayChannel;
+            viewRenderingConfig.PseudoColorMap = ConoscopeConfig.PseudoColorMap;
+            viewRenderingConfig.UsePseudoColor = ConoscopeConfig.UsePseudoColor;
+
+            viewPreprocessConfig.ApplyFilterOnOpen = ConoscopeConfig.ApplyFilterOnOpen;
+            viewPreprocessConfig.ClampNonPositiveXyzOnLoad = ConoscopeConfig.ClampNonPositiveXyzOnLoad;
+            viewPreprocessConfig.FilterType = ConoscopeConfig.FilterType;
+            viewPreprocessConfig.FilterKernelSize = ConoscopeConfig.FilterKernelSize;
+            viewPreprocessConfig.FilterSigma = ConoscopeConfig.FilterSigma;
+            viewPreprocessConfig.FilterD = ConoscopeConfig.FilterD;
+            viewPreprocessConfig.FilterSigmaColor = ConoscopeConfig.FilterSigmaColor;
+            viewPreprocessConfig.FilterSigmaSpace = ConoscopeConfig.FilterSigmaSpace;
+            viewPreprocessConfig.DustRemovalEnabled = ConoscopeConfig.DustRemovalEnabled;
+            viewPreprocessConfig.DustRemovalMode = ConoscopeConfig.DustRemovalMode;
+            viewPreprocessConfig.DustThresholdPercent = ConoscopeConfig.DustThresholdPercent;
+            viewPreprocessConfig.DustMinArea = ConoscopeConfig.DustMinArea;
+            viewPreprocessConfig.DustMaxArea = ConoscopeConfig.DustMaxArea;
+            viewPreprocessConfig.DustRepairRadius = ConoscopeConfig.DustRepairRadius;
+
+            ImageFilterType filterType = NormalizeFilterType(viewPreprocessConfig.FilterType);
+            lastEnabledFilterType = filterType == ImageFilterType.None ? ImageFilterType.LowPass : filterType;
+            InitializeLocalCoordinateAxisState(preserveReferenceState: false);
+        }
+
+        private void InitializeLocalCoordinateAxisState(bool preserveReferenceState)
+        {
+            ConoscopeCoordinateAxisParam source = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateReferenceMode referenceMode = CoordinateAxisConfig.ReferenceMode;
+            double referenceAngle = CoordinateAxisConfig.ReferenceAngle;
+            double referenceRadiusAngle = CoordinateAxisConfig.ReferenceRadiusAngle;
+            bool isInteractionEnabled = CoordinateAxisConfig.IsInteractionEnabled;
+
+            CoordinateAxisConfig.IsInteractionEnabled = preserveReferenceState ? isInteractionEnabled : source.IsInteractionEnabled;
+            CoordinateAxisConfig.MaxAngle = source.MaxAngle;
+            CoordinateAxisConfig.ConoscopeCoefficient = source.ConoscopeCoefficient;
+            CoordinateAxisConfig.CenterX = source.CenterX;
+            CoordinateAxisConfig.CenterY = source.CenterY;
+            CoordinateAxisConfig.AxisRadius = source.AxisRadius;
+            CoordinateAxisConfig.AzimuthStep = source.AzimuthStep;
+            CoordinateAxisConfig.PolarStep = source.PolarStep;
+            CoordinateAxisConfig.LineWidth = source.LineWidth;
+            CoordinateAxisConfig.AxisBrush = source.AxisBrush;
+            CoordinateAxisConfig.ReferenceMode = preserveReferenceState ? referenceMode : source.ReferenceMode;
+            CoordinateAxisConfig.ReferenceAngle = preserveReferenceState ? referenceAngle : source.ReferenceAngle;
+            CoordinateAxisConfig.ReferenceRadiusAngle = preserveReferenceState
+                ? Math.Max(0, Math.Min(referenceRadiusAngle, source.MaxAngle))
+                : Math.Max(0, Math.Min(source.ReferenceRadiusAngle, source.MaxAngle));
+            CoordinateAxisConfig.ReferenceLineWidth = source.ReferenceLineWidth;
+            CoordinateAxisConfig.ReferenceBrush = source.ReferenceBrush;
+            CoordinateAxisConfig.IsMaskVisible = source.IsMaskVisible;
+            CoordinateAxisConfig.MaskOpacity = source.MaskOpacity;
+            CoordinateAxisConfig.MaskColor = source.MaskColor;
+            CoordinateAxisConfig.IsTextVisible = source.IsTextVisible;
+            CoordinateAxisConfig.FontSize = source.FontSize;
+            CoordinateAxisConfig.TextBrush = source.TextBrush;
+        }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -326,6 +425,7 @@ namespace Conoscope
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
         {
             AttachCurrentModelProfile();
+            InitializeLocalCoordinateAxisState(preserveReferenceState: true);
             RefreshModelDependentUi();
             if (HasXyzData())
             {
@@ -359,8 +459,7 @@ namespace Conoscope
                 return;
             }
 
-            CurrentModelProfile.CoordinateAxisParam.MaxAngle = MaxAngle;
-            CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle, MaxAngle));
+            InitializeLocalCoordinateAxisState(preserveReferenceState: true);
             RefreshQuickControlsFromAxisParam();
             SetReferencePlotLimits();
             UpdateReferencePlotHeader();

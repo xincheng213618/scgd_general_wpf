@@ -28,7 +28,7 @@ namespace Conoscope
 
         private ContrastReferenceKind GetRequiredContrastReferenceKind()
         {
-            return GetSelectedContrastImageKind() == ContrastReferenceKind.Black
+            return contrastImageKind == ContrastReferenceKind.Black
                 ? ContrastReferenceKind.White
                 : ContrastReferenceKind.Black;
         }
@@ -110,7 +110,7 @@ namespace Conoscope
 
         private string GetContrastReferenceStatusText()
         {
-            ContrastReferenceKind imageKind = GetSelectedContrastImageKind();
+            ContrastReferenceKind imageKind = contrastImageKind;
             ContrastReferenceKind requiredReferenceKind = GetRequiredContrastReferenceKind();
             OpenCvSharp.Mat? requiredReferenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
 

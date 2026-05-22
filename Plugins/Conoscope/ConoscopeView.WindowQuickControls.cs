@@ -32,7 +32,7 @@ namespace Conoscope
                 return false;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             double referenceValue = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
                 ? axisParam.ReferenceAngle
                 : axisParam.ReferenceRadiusAngle;
@@ -92,7 +92,7 @@ namespace Conoscope
 
         public void SetWindowQuickReferenceMode(ConoscopeCoordinateReferenceMode mode)
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             if (axisParam.ReferenceMode == mode)
             {
                 return;
@@ -131,7 +131,7 @@ namespace Conoscope
 
         public void SetWindowQuickReferenceValue(double value)
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 axisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(value);

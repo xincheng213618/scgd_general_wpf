@@ -17,7 +17,8 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
         <Style x:Key="PanelMutedTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Opacity" Value="0.72"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style x:Key="PanelCompactButtonStyle" TargetType="Button">
@@ -26,6 +27,91 @@
         </Style>
         <Style x:Key="PanelPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
             <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="PanelInlineCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+        <Style x:Key="PanelSurfaceButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PanelSurfacePrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelSurfaceButtonStyle}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="PanelSurfaceToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="MinWidth" Value="68"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="PanelCompactToggleStyle" TargetType="ToggleButton">
             <Setter Property="Padding" Value="9,3"/>
@@ -48,11 +134,8 @@
         <DrawingBrush x:Key="TransparentGridBrush" Opacity="0.1" TileMode="Tile" Viewport="0 0 20 20" ViewportUnits="Absolute">
             <DrawingBrush.Drawing>
                 <DrawingGroup>
-                    <!--  Gray square  -->
                     <GeometryDrawing Brush="Gray" Geometry="M0,0 L0,10 10,10 10,0 Z" />
-                    <!--  Transparent square  -->
                     <GeometryDrawing Brush="Transparent" Geometry="M10,0 L10,10 20,10 20,0 Z" />
-                    <!--  Another row  -->
                     <GeometryDrawing Brush="Transparent" Geometry="M0,10 L0,20 10,20 10,10 Z" />
                     <GeometryDrawing Brush="Gray" Geometry="M10,10 L10,20 20,20 20,10 Z" />
                 </DrawingGroup>
@@ -134,84 +217,95 @@
                           HorizontalScrollBarVisibility="Disabled"
                           Focusable="False">
                 <StackPanel Margin="5">
-                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                        <WrapPanel Margin="0,0,0,2">
-                            <Button Content="{x:Static properties:Resources.BtnApplyPreset}" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
-                            <Button Content="{x:Static properties:Resources.BtnPreprocessSettings}" Click="btnOpenPreprocessSettings_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
-                        </WrapPanel>
-                    </Border>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="132"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="132"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="68"/>
+                        </Grid.ColumnDefinitions>
 
-                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                        <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resources.LabelExportSettings}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                            <WrapPanel>
-                                <TextBlock Text="{x:Static properties:Resources.LabelExportChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelXShort}" Tag="X"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelYShort}" Tag="Y"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZShort}" Tag="Z"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieXShort}" Tag="CieX"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieYShort}" Tag="CieY"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
-                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
-                                </ComboBox>
-                                <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                                <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                                <Button Content="高级导出" Click="btnAdvancedExport_Click" Padding="10,4" ToolTip="{x:Static properties:Resources.TipAdvancedExport}"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </Border>
+                        <TextBlock Text="通道" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="cbDisplayChannel" Grid.Column="1" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,12,0">
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                            <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                        </ComboBox>
 
-                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                        <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resources.LabelDisplayAndReference}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                            <WrapPanel Margin="0,4,0,2">
-                                <TextBlock Text="{x:Static properties:Resources.LabelDisplayChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                    <ComboBoxItem Content="对比度" Tag="Contrast"/>
-                                </ComboBox>
-                                <TextBlock Text="{x:Static properties:Resources.LabelRefMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
-                                    <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
-                                    <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
-                                </ComboBox>
-                            </WrapPanel>
+                        <TextBlock Grid.Column="2" Text="参考模式" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="cbQuickReferenceMode" Grid.Column="3" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged" Margin="0,0,12,0">
+                            <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
+                        </ComboBox>
 
-                            <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="58"/>
-                                    <ColumnDefinition Width="8"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Static properties:Resources.LabelRefAzimuth}" VerticalAlignment="Center"/>
-                                <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
-                                <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="3" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
-                            </Grid>
+                        <Grid x:Name="rowReferenceAngle" Grid.Column="5" Grid.ColumnSpan="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="68"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="sliderQuickReferenceAngle" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
+                            <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
+                        </Grid>
 
-                            <Grid x:Name="rowReferenceRadius" Margin="5,4,5,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="58"/>
-                                    <ColumnDefinition Width="8"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Static properties:Resources.LabelRefPolar}" VerticalAlignment="Center"/>
-                                <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
-                                <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="3" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
+                        <Grid x:Name="rowReferenceRadius" Grid.Column="5" Grid.ColumnSpan="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="68"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="sliderQuickReferenceRadius" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
+                            <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
+                        </Grid>
+                    </Grid>
+
+                    <WrapPanel Margin="0,0,0,8">
+                        <Button x:Name="btnApplyFilter" Content="预设" Click="btnApplyFilter_Click" Style="{StaticResource PanelSurfacePrimaryButtonStyle}" Margin="0,0,12,0"/>
+                        <CheckBox x:Name="chkViewUsePseudoColor" Content="彩色显示" Style="{StaticResource PanelInlineCheckBoxStyle}" Checked="ViewDisplayQuick_Changed" Unchecked="ViewDisplayQuick_Changed"/>
+                        <TextBlock Text="色带" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="cbViewPseudoColorMap" Width="130" Margin="0,0,12,0" SelectionChanged="cbViewPseudoColorMap_SelectionChanged"/>
+                        <CheckBox x:Name="chkViewDustRemoval" Content="灰尘" Style="{StaticResource PanelInlineCheckBoxStyle}" Checked="ViewPreprocessQuick_Changed" Unchecked="ViewPreprocessQuick_Changed"/>
+                        <CheckBox x:Name="chkViewEnableFilter" Content="启用滤波" Style="{StaticResource PanelInlineCheckBoxStyle}" Checked="chkViewEnableFilter_Changed" Unchecked="chkViewEnableFilter_Changed"/>
+                        <ComboBox x:Name="cbViewFilterType" Width="122" Margin="0,0,12,0" SelectedValuePath="Tag" SelectionChanged="cbViewFilterType_SelectionChanged">
+                            <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="{x:Static Conoscope:ImageFilterType.LowPass}"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="{x:Static Conoscope:ImageFilterType.MovingAverage}"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="{x:Static Conoscope:ImageFilterType.Gaussian}"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="{x:Static Conoscope:ImageFilterType.Median}"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="{x:Static Conoscope:ImageFilterType.Bilateral}"/>
+                        </ComboBox>
+                        <TextBlock Text="滤波属性" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
+                        <Border Padding="8,4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Background="{DynamicResource GlobalBorderBrush}">
+                            <TextBlock x:Name="tbViewFilterSummary" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                        </Border>
+                    </WrapPanel>
+
+                    <WrapPanel Margin="0,0,0,6">
+                        <TextBlock Text="导出" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelXShort}" Tag="X"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelYShort}" Tag="Y"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelZShort}" Tag="Z"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieXShort}" Tag="CieX"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieYShort}" Tag="CieY"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
+                            <ComboBoxItem Content="对比度" Tag="Contrast"/>
+                        </ComboBox>
+                        <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Style="{StaticResource PanelSurfaceButtonStyle}" Padding="10,4" Margin="0,0,6,0"/>
+                        <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Style="{StaticResource PanelSurfaceButtonStyle}" Padding="10,4" Margin="0,0,6,0"/>
+                        <Button Content="高级导出" Click="btnAdvancedExport_Click" Style="{StaticResource PanelSurfaceButtonStyle}" Padding="10,4" ToolTip="{x:Static properties:Resources.TipAdvancedExport}"/>
+                    </WrapPanel>
 
                     <StackPanel Visibility="Collapsed">
                         <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
@@ -276,8 +370,8 @@
                                 <TextBlock Text="{x:Static properties:Resources.LabelCurrentValue}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
                                 <TextBlock x:Name="tbReferenceValue" MinWidth="78" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                 <TextBlock Text="{x:Static properties:Resources.LabelGraph}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
-                                <ToggleButton x:Name="tglReferencePolarMode" Content="{x:Static properties:Resources.BtnPolarCoord}" Style="{StaticResource PanelCompactToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,12,0"/>
-                                <Button Content="{x:Static properties:Resources.BtnExportCurrent}" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+                                <ToggleButton x:Name="tglReferencePolarMode" Content="{x:Static properties:Resources.BtnPolarCoord}" Style="{StaticResource PanelSurfaceToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,12,0"/>
+                                <Button Content="{x:Static properties:Resources.BtnExportCurrent}" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelSurfaceButtonStyle}"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>

@@ -66,7 +66,7 @@ namespace Conoscope
 
         private void UpdateReferencePlotHeader()
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.RefAzimuthLine : Properties.Resources.RefPolarCircle;
             tbReferenceValue.Text = GetReferenceValueText(axisParam.ReferenceMode, axisParam.ReferenceAngle, axisParam.ReferenceRadiusAngle);
         }
@@ -80,7 +80,7 @@ namespace Conoscope
 
         private void SetReferencePlotLimits()
         {
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 wpfPlotReference.Plot.Axes.SetLimitsX(-MaxAngle, MaxAngle);
             }
@@ -92,7 +92,7 @@ namespace Conoscope
 
         private void UpdateReferencePlot()
         {
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 UpdatePlot();
             }

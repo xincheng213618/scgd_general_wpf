@@ -261,7 +261,7 @@ namespace Conoscope
 
         private void btnExportCurrentReference_Click(object sender, RoutedEventArgs e)
         {
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 btnExportCurrentAzimuth_Click(sender, e);
             }

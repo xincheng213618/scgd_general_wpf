@@ -173,8 +173,7 @@ namespace Conoscope
 
         private bool CanOfferContrastChannel()
         {
-            return GlobalReferences.HasContrastReference(ContrastReferenceKind.Black)
-                && GlobalReferences.HasContrastReference(ContrastReferenceKind.White);
+            return GlobalReferences.HasContrastReference(GetRequiredContrastReferenceKind());
         }
 
         private void RefreshChannelAvailability()

@@ -22,7 +22,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
 
             isUpdatingQuickControls = true;
             try
@@ -59,7 +59,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateReferenceMode mode = CurrentModelProfile.CoordinateAxisParam.ReferenceMode;
+            ConoscopeCoordinateReferenceMode mode = CoordinateAxisConfig.ReferenceMode;
             rowReferenceAngle.Visibility = mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Visibility.Visible : Visibility.Collapsed;
             rowReferenceRadius.Visibility = mode == ConoscopeCoordinateReferenceMode.PolarCircle ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -73,9 +73,9 @@ namespace Conoscope
 
             ConoscopeCoordinateReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(
                 cbQuickReferenceMode,
-                CurrentModelProfile.CoordinateAxisParam.ReferenceMode);
+                CoordinateAxisConfig.ReferenceMode);
 
-            CurrentModelProfile.CoordinateAxisParam.ReferenceMode = mode;
+            CoordinateAxisConfig.ReferenceMode = mode;
             UpdateReferenceControlVisibility();
             ApplyCoordinateAxisReference();
         }
@@ -87,7 +87,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             axisParam.ReferenceAngle = e.NewValue;
             if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
@@ -102,7 +102,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             axisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(e.NewValue, MaxAngle));
             if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
             {
@@ -152,9 +152,9 @@ namespace Conoscope
                 return;
             }
 
-            CurrentModelProfile.CoordinateAxisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
+            CoordinateAxisConfig.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
             RefreshQuickControlsFromAxisParam();
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 ApplyCoordinateAxisReference();
             }
@@ -173,9 +173,9 @@ namespace Conoscope
                 return;
             }
 
-            CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
+            CoordinateAxisConfig.ReferenceRadiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
             RefreshQuickControlsFromAxisParam();
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
             {
                 ApplyCoordinateAxisReference();
             }
@@ -183,7 +183,7 @@ namespace Conoscope
 
         private void InitializeCoordinateAxis(Point center, int radius)
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             axisParam.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
             axisParam.PropertyChanged += CoordinateAxisParam_PropertyChanged;
             axisParam.MaxAngle = MaxAngle;

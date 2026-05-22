@@ -323,7 +323,7 @@ namespace Conoscope
                 return;
             }
 
-            bool isInteractionEnabled = CurrentModelProfile.CoordinateAxisParam.IsInteractionEnabled;
+            bool isInteractionEnabled = CoordinateAxisConfig.IsInteractionEnabled;
             if (tglReferenceInteraction.IsChecked != isInteractionEnabled)
             {
                 tglReferenceInteraction.IsChecked = isInteractionEnabled;
@@ -546,7 +546,7 @@ namespace Conoscope
 
         private void SetReferenceInteractionEnabled(bool isEnabled)
         {
-            CurrentModelProfile.CoordinateAxisParam.IsInteractionEnabled = isEnabled;
+            CoordinateAxisConfig.IsInteractionEnabled = isEnabled;
             if (!isEnabled)
             {
                 HideCoordinateDragOverlay();
