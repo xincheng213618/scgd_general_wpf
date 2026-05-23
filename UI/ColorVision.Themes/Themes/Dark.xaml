@@ -10,6 +10,14 @@
     <Color x:Key="GlobalBackgroundColor">#262626</Color>
     <Color x:Key="GlobalBroderBrushColor">#282828</Color>
     <Color x:Key="GlobalTextColor">White</Color>
+    <Color x:Key="UpdateDialogBackgroundColor">#262626</Color>
+    <Color x:Key="UpdateDialogSurfaceColor">#1C1C1C</Color>
+    <Color x:Key="UpdateDialogSurfaceHoverColor">#282828</Color>
+    <Color x:Key="UpdateDialogBorderColor">#3F3F46</Color>
+    <Color x:Key="UpdateDialogTextPrimaryColor">White</Color>
+    <Color x:Key="UpdateDialogTextSecondaryColor">White</Color>
+    <Color x:Key="UpdateDialogAccentColor">#CA5100</Color>
+    <Color x:Key="UpdateDialogAccentHoverColor">#CA5100</Color>
 
     <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
     <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>

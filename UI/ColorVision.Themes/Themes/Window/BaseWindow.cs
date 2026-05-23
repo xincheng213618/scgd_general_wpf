@@ -24,67 +24,81 @@ namespace ColorVision.Themes.Controls
 
     public partial class BaseWindow : Window
     {
-        private static Style? GetDefautlStyle()
+        private static readonly Uri BaseWindowResourceUri = new("/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml", UriKind.Relative);
+
+        private HwndSource? _hwndSource;
+        private ThemeChangedHandler? _themeChangedHandler;
+        private WindowAccentCompositor? _windowAccentCompositor;
+
+        private static Style? GetDefaultStyle()
         {
             if (Application.Current.TryFindResource(typeof(BaseWindow)) is Style style)
             {
                 return style;
             }
-            else
+
+            if (Application.LoadComponent(BaseWindowResourceUri) is not ResourceDictionary dictionary)
             {
-                ResourceDictionary dictionary1 = Application.LoadComponent(new Uri("/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml", UriKind.Relative)) as ResourceDictionary;
-                Application.Current.Resources.MergedDictionaries.Add(dictionary1);
-                return Application.Current.FindResource(typeof(BaseWindow)) as Style ?? null;
+                return null;
             }
+
+            Application.Current.Resources.MergedDictionaries.Add(dictionary);
+            return Application.Current.FindResource(typeof(BaseWindow)) as Style;
         }
 
 
 
         static BaseWindow()
         {
-            StyleProperty.OverrideMetadata(typeof(BaseWindow), new FrameworkPropertyMetadata(GetDefautlStyle()));
+            StyleProperty.OverrideMetadata(typeof(BaseWindow), new FrameworkPropertyMetadata(GetDefaultStyle()));
         }
-        public WindowChrome WindowChrome { get; set; }
+
         public BaseWindow()
         {
             CommandInitialized();
 
             Closing += (sender, e) => Owner?.Activate();
-            WindowChrome = WindowChrome.GetWindowChrome(this);
+            Loaded += BaseWindow_Loaded;
+        }
 
-            Loaded += (s, e) =>
+        private void BaseWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= BaseWindow_Loaded;
+            InitializeBlur();
+        }
+
+        private void InitializeBlur()
+        {
+            if (!IsBlurEnabled || _windowAccentCompositor != null)
+                return;
+
+            // Win11 需要启用拖拽命中区，否则自定义边框窗口无法直接拖动。
+            IsDragMoveEnabled = true;
+            _windowAccentCompositor = new(this, false, color =>
             {
-                if (IsBlurEnabled)
-                {
-                    //Win11这里要开，要不拖不动
-                    IsDragMoveEnabled = true;
-                    wac = new(this, false, (c) =>
-                    {
-                        c.A = 255;
-                        Background = new SolidColorBrush(c);
-                    });
+                color.A = 255;
+                Background = new SolidColorBrush(color);
+            });
 
-                    if (IsWin10)
-                    {
-                        IsDragMoveEnabled = false;
-                        WindowStyle = WindowStyle.None;
-                    }
+            if (IsWin10)
+            {
+                IsDragMoveEnabled = false;
+                WindowStyle = WindowStyle.None;
+            }
 
-                    wac.Color = GetTransparentColor();
-                    wac.IsEnabled = true;
-                    ThemeChangedHandler themeChangedHandler = (s) =>
-                    {
+            ApplyBlurTheme();
 
-                        wac.Color = GetTransparentColor();
-                        wac.IsEnabled = true;
-                    };
-                    ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
-                    Closing += (s, e) =>
-                    {
-                        ThemeManager.Current.CurrentUIThemeChanged -= themeChangedHandler;
-                    };
-                }
-            };
+            _themeChangedHandler ??= _ => ApplyBlurTheme();
+            ThemeManager.Current.CurrentUIThemeChanged += _themeChangedHandler;
+        }
+
+        private void ApplyBlurTheme()
+        {
+            if (_windowAccentCompositor == null)
+                return;
+
+            _windowAccentCompositor.Color = GetTransparentColor();
+            _windowAccentCompositor.IsEnabled = true;
         }
 
         public static Color GetTransparentColor() => ThemeManager.Current.CurrentUITheme switch
@@ -207,8 +221,6 @@ namespace ColorVision.Themes.Controls
             CommandBindings.Add(new CommandBinding(SystemCommands.ShowSystemMenuCommand, ShowSystemMenu));
         }
 
-        WindowAccentCompositor wac;
-
         // https://www.cnblogs.com/dino623/p/problems_of_WindowChrome.html
         //解决WindowsChrome在设置SizeToContent的时候
         protected override void OnSourceInitialized(EventArgs e)
@@ -219,7 +231,26 @@ namespace ColorVision.Themes.Controls
                 InvalidateMeasure();
             }
             nint handle = new WindowInteropHelper(this).Handle;
-            HwndSource.FromHwnd(handle).AddHook(new HwndSourceHook(WndProc));
+            _hwndSource = HwndSource.FromHwnd(handle);
+            _hwndSource?.AddHook(WndProc);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (_themeChangedHandler != null)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged -= _themeChangedHandler;
+                _themeChangedHandler = null;
+            }
+
+            if (_hwndSource != null)
+            {
+                _hwndSource.RemoveHook(WndProc);
+                _hwndSource = null;
+            }
+
+            _windowAccentCompositor = null;
+            base.OnClosed(e);
         }
 
         nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)

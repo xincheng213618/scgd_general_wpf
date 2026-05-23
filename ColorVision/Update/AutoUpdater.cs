@@ -299,9 +299,17 @@ namespace ColorVision.Update
                 // First attempt to get the string without authentication
                 versionString = await _httpClient.GetStringAsync(url);
             }
+            catch (HttpRequestException ex)
+            {
+                log.Warn($"Failed to fetch changelog from {url}: {ex.GetBaseException().Message}");
+            }
+            catch (TaskCanceledException ex)
+            {
+                log.Warn($"Timed out fetching changelog from {url}: {ex.GetBaseException().Message}");
+            }
             catch (Exception ex)
             {
-                log.Error(ex);
+                log.Error($"Unexpected failure fetching changelog from {url}.", ex);
             }
             if (versionString == null)
             {
@@ -324,9 +332,19 @@ namespace ColorVision.Update
                 // First attempt to get the string without authentication
                 versionString = await _httpClient.GetStringAsync(url);
             }
-            catch(Exception ex)
+            catch (HttpRequestException ex)
             {
-                log.Error(ex);
+                log.Warn($"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
+                return new Version();
+            }
+            catch (TaskCanceledException ex)
+            {
+                log.Warn($"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
+                return new Version();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Unexpected failure checking update metadata from {url}.", ex);
                 return new Version();
             }
 
