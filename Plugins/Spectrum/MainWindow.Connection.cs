@@ -169,13 +169,13 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("SP100 参数设置成功");
-                MessageBox.Show("SP100 设置成功");
+                MessageBox.Show(LocalizedText.Get("SP100SetSuccess"));
             }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(ret);
                 log.Error($"SP100 参数设置失败: {errorMsg}");
-                MessageBox.Show($"SP100 设置失败: {errorMsg}");
+                MessageBox.Show(LocalizedText.Format("SP100SetFailed", errorMsg));
             }
         }
 
@@ -211,8 +211,8 @@ namespace Spectrum
 
                         var msgResult = MessageBox.Show(
                             Application.Current.GetActiveWindow(),
-                            $"连接失败: {errorMsg}\n\n检测到设备: {result.IDs[0]}\n连接失败可能是许可证问题。\n\n是否打开许可证管理器?",
-                            "连接失败 - 许可证检查",
+                            LocalizedText.Format("ConnectionFailedWithDeviceDetected", errorMsg, result.IDs[0]),
+                            LocalizedText.Get("ConnectionFailedLicenseCheckTitle"),
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Warning);
 
@@ -230,7 +230,7 @@ namespace Spectrum
             }
 
             // Default: just show the error message
-            MessageBox.Show(Application.Current.GetActiveWindow(), $"连接失败: {errorMsg}");
+            MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format("ConnectionFailedWithError", errorMsg));
         }
     }
 }

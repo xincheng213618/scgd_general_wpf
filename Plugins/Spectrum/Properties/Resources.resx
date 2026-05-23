@@ -298,4 +298,118 @@
   <data name="自动积分时间起始" xml:space="preserve">
     <value>自动积分时间起始</value>
   </data>
+  <data name="SpectrumWindowTitle" xml:space="preserve"><value>光谱仪软件</value></data>
+  <data name="ControlPanel" xml:space="preserve"><value>控制面板</value></data>
+  <data name="SpectrometerConnection" xml:space="preserve"><value>光谱仪连接</value></data>
+  <data name="GetDeviceList" xml:space="preserve"><value>获取设备列表</value></data>
+  <data name="SerialPortConnection" xml:space="preserve"><value>串口连接</value></data>
+  <data name="SerialPort" xml:space="preserve"><value>串口</value></data>
+  <data name="BaudRate" xml:space="preserve"><value>波特率</value></data>
+  <data name="CalibrationFiles" xml:space="preserve"><value>标定文件</value></data>
+  <data name="Manage" xml:space="preserve"><value>管理...</value></data>
+  <data name="LoadGroup" xml:space="preserve"><value>加载分组</value></data>
+  <data name="CurrentGroup" xml:space="preserve"><value>当前分组:</value></data>
+  <data name="Load" xml:space="preserve"><value>加载</value></data>
+  <data name="WavelengthCalibration" xml:space="preserve"><value>波长标定</value></data>
+  <data name="MagnitudeCalibration" xml:space="preserve"><value>幅值标定</value></data>
+  <data name="MeasurementParameters" xml:space="preserve"><value>测量参数</value></data>
+  <data name="IntegrationTimeMs" xml:space="preserve"><value>积分时间 (ms)</value></data>
+  <data name="TestSection" xml:space="preserve"><value>测试</value></data>
+  <data name="ZeroCalibration" xml:space="preserve"><value>校零</value></data>
+  <data name="IntervalMs" xml:space="preserve"><value>间隔 (ms)</value></data>
+  <data name="MeasurementCount" xml:space="preserve"><value>测试次数</value></data>
+  <data name="Progress" xml:space="preserve"><value>进度</value></data>
+  <data name="Elapsed" xml:space="preserve"><value>已用:</value></data>
+  <data name="Remaining" xml:space="preserve"><value>预计剩余:</value></data>
+  <data name="Shutter" xml:space="preserve"><value>快门</value></data>
+  <data name="Connect" xml:space="preserve"><value>连接</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>断开</value></data>
+  <data name="OpenShutter" xml:space="preserve"><value>打开快门</value></data>
+  <data name="CloseShutter" xml:space="preserve"><value>关闭快门</value></data>
+  <data name="FilterWheel" xml:space="preserve"><value>滤色轮</value></data>
+  <data name="CurrentPosition" xml:space="preserve"><value>当前位置:</value></data>
+  <data name="Query" xml:space="preserve"><value>查询</value></data>
+  <data name="SwitchPosition" xml:space="preserve"><value>切换位置:</value></data>
+  <data name="SpectrumChart" xml:space="preserve"><value>光谱图表</value></data>
+  <data name="AbsoluteSpectrum" xml:space="preserve"><value>绝对光谱</value></data>
+  <data name="GenericQuery" xml:space="preserve"><value>通用查询</value></data>
+  <data name="Reload" xml:space="preserve"><value>刷新</value></data>
+  <data name="ClearRecords" xml:space="preserve"><value>清空记录</value></data>
+  <data name="ResetDatabase" xml:space="preserve"><value>重置数据库</value></data>
+  <data name="LoadCount" xml:space="preserve"><value>加载条数:</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>总耗时(ms)</value></data>
+  <data name="ExcitationPurity" xml:space="preserve"><value>兴奋纯度(%)</value></data>
+  <data name="HalfWidth" xml:space="preserve"><value>半波宽</value></data>
+  <data name="Log" xml:space="preserve"><value>日志</value></data>
+  <data name="NativeSpectrumLog" xml:space="preserve"><value>光谱仪原生日志</value></data>
+  <data name="CieChromaticityDiagram" xml:space="preserve"><value>CIE色度图</value></data>
+  <data name="Wavelength" xml:space="preserve"><value>波长</value></data>
+  <data name="AutoZeroCalibration" xml:space="preserve"><value>自动校零</value></data>
+  <data name="OpenCalibrationGroupTooltip" xml:space="preserve"><value>打开标定分组管理窗口</value></data>
+  <data name="ApplyCalibrationGroupTooltip" xml:space="preserve"><value>加载当前选择分组的标定文件</value></data>
+  <data name="EqeParameterConfig" xml:space="preserve"><value>光通量参数配置</value></data>
+  <data name="VoltageLabel" xml:space="preserve"><value>电压 (V)</value></data>
+  <data name="CurrentMilliampLabel" xml:space="preserve"><value>电流 (mA)</value></data>
+  <data name="RecalculateEqe" xml:space="preserve"><value>EQE重新计算</value></data>
+  <data name="SmuSourceMeter" xml:space="preserve"><value>源表(SMU)</value></data>
+  <data name="SmuConnectionSettingsHint" xml:space="preserve"><value>连接参数需先断开后再修改</value></data>
+  <data name="VoltageSource" xml:space="preserve"><value>电压源</value></data>
+  <data name="ChannelA" xml:space="preserve"><value>通道A</value></data>
+  <data name="SmuMeasureOrSet" xml:space="preserve"><value>点亮/设置</value></data>
+  <data name="CloseOutput" xml:space="preserve"><value>关闭输出</value></data>
+  <data name="ToggleSpectrumTypeTooltip" xml:space="preserve"><value>切换相对/绝对光谱</value></data>
+  <data name="QueryDataTooltip" xml:space="preserve"><value>查询数据</value></data>
+  <data name="ReloadDataTooltip" xml:space="preserve"><value>从数据库重新加载数据</value></data>
+  <data name="DeleteAllRecordsTooltip" xml:space="preserve"><value>删除数据库中所有记录</value></data>
+  <data name="ResetDatabaseTooltip" xml:space="preserve"><value>删除数据库文件并重新创建</value></data>
+  <data name="LoadCountTooltip" xml:space="preserve"><value>默认加载数据条数 (-1为全部)</value></data>
+  <data name="LuminousFlux" xml:space="preserve"><value>光通量(lm)</value></data>
+  <data name="RadiantFlux" xml:space="preserve"><value>辐射通量(W)</value></data>
+  <data name="LuminousEfficacy" xml:space="preserve"><value>光效(lm/W)</value></data>
+  <data name="DataSource" xml:space="preserve"><value>数据来源</value></data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve"><value>绝对光谱曲线</value></data>
+  <data name="NativeLogPlaceholder" xml:space="preserve"><value>光谱仪原生日志文件尚未生成。连接光谱仪后日志将自动显示。</value></data>
+  <data name="SampleLabel" xml:space="preserve"><value>样品</value></data>
+  <data name="OperationInProgressPleaseWait" xml:space="preserve"><value>正在执行任务，请稍后</value></data>
+  <data name="ZeroCalibrationSuccess" xml:space="preserve"><value>校零成功</value></data>
+  <data name="ZeroCalibrationFailed" xml:space="preserve"><value>校零失败: {0}</value></data>
+  <data name="ZeroCalibrationException" xml:space="preserve"><value>校零异常: {0}</value></data>
+  <data name="PromptTitle" xml:space="preserve"><value>提示</value></data>
+  <data name="NoShutterAutoZero" xml:space="preserve"><value>未配备shutter，无法自动校零</value></data>
+  <data name="PleaseRunAdaptiveAutoDarkFirst" xml:space="preserve"><value>请先做一次自适应校零</value></data>
+  <data name="AdaptiveAutoDarkSuccess" xml:space="preserve"><value>自适应校零成功</value></data>
+  <data name="AdaptiveAutoDarkFailed" xml:space="preserve"><value>自适应校零失败: {0}</value></data>
+  <data name="ContinuousTestCompletedWithFailureCount" xml:space="preserve"><value>连续测试执行完毕，执行失败 {0} 次</value></data>
+  <data name="SP100SetSuccess" xml:space="preserve"><value>SP100 设置成功</value></data>
+  <data name="SP100SetFailed" xml:space="preserve"><value>SP100 设置失败: {0}</value></data>
+  <data name="ConnectionFailedWithDeviceDetected" xml:space="preserve"><value>连接失败: {0}&#xA;&#xA;检测到设备: {1}&#xA;连接失败可能是许可证问题。&#xA;&#xA;是否打开许可证管理器?</value></data>
+  <data name="ConnectionFailedLicenseCheckTitle" xml:space="preserve"><value>连接失败 - 许可证检查</value></data>
+  <data name="ConnectionFailedWithError" xml:space="preserve"><value>连接失败: {0}</value></data>
+  <data name="ConnectSourceMeter" xml:space="preserve"><value>连接源表</value></data>
+  <data name="DisconnectSourceMeter" xml:space="preserve"><value>断开源表</value></data>
+  <data name="MeasureAndReadSourceMeter" xml:space="preserve"><value>点亮并读取源表</value></data>
+  <data name="CloseSourceMeterOutput" xml:space="preserve"><value>关闭源表输出</value></data>
+  <data name="SelectDataToRecalculate" xml:space="preserve"><value>请先选择要重新计算的数据</value></data>
+  <data name="ConnectionFailedTitle" xml:space="preserve"><value>连接失败</value></data>
+  <data name="DisconnectionFailedTitle" xml:space="preserve"><value>断开失败</value></data>
+  <data name="ReadFailedTitle" xml:space="preserve"><value>读取失败</value></data>
+  <data name="SourceMeterConnectFailedCheckSettings" xml:space="preserve"><value>源表连接失败，请检查设备名称和连接方式</value></data>
+  <data name="SourceMeterReadFailed" xml:space="preserve"><value>源表读取失败</value></data>
+  <data name="CloseOutputFailedTitle" xml:space="preserve"><value>关闭输出失败</value></data>
+  <data name="SourceMeterCloseOutputFailed" xml:space="preserve"><value>关闭源表输出失败</value></data>
+  <data name="SourceValueVoltage" xml:space="preserve"><value>源值 (V)</value></data>
+  <data name="SourceValueCurrentMilliamp" xml:space="preserve"><value>源值 (mA)</value></data>
+  <data name="LimitMilliamp" xml:space="preserve"><value>限制 (mA)</value></data>
+  <data name="LimitVoltage" xml:space="preserve"><value>限制 (V)</value></data>
+  <data name="VoltageSourceModeHint" xml:space="preserve"><value>电压源模式: 测量值单位为 V，限制值单位为 mA</value></data>
+  <data name="CurrentSourceModeHint" xml:space="preserve"><value>电流源模式: 测量值单位为 mA，限制值单位为 V</value></data>
+  <data name="LuminousFluxMode" xml:space="preserve"><value>光通量模式</value></data>
+  <data name="BrightnessChromaticityMode" xml:space="preserve"><value>亮色度模式</value></data>
+  <data name="DeviceNameRequired" xml:space="preserve"><value>设备名称不能为空</value></data>
+  <data name="ConnectingSourceMeter" xml:space="preserve"><value>正在连接源表...</value></data>
+  <data name="ConnectedStatus" xml:space="preserve"><value>已连接</value></data>
+  <data name="DisconnectingSourceMeter" xml:space="preserve"><value>正在断开源表...</value></data>
+  <data name="MeasuringAndReading" xml:space="preserve"><value>正在点亮并读取...</value></data>
+  <data name="ReadCompletedAt" xml:space="preserve"><value>已读取 {0}</value></data>
+  <data name="OutputClosed" xml:space="preserve"><value>输出已关闭</value></data>
 </root>

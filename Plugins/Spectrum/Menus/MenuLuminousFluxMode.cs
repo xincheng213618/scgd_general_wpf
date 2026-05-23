@@ -9,7 +9,7 @@ namespace Spectrum.Menus
     public class MenuLuminousFluxMode : SpectrumMenuIBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "光通量模式";
+        public override string Header => Spectrum.LocalizedText.Get("LuminousFluxMode");
         public override int Order => 10;
 
         public override void Execute()

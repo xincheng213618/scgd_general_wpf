@@ -1,6 +1,8 @@
-﻿using ColorVision.UI;
+using ColorVision.UI;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 
 namespace ColorVision.Common.ThirdPartyApps
@@ -20,13 +22,15 @@ namespace ColorVision.Common.ThirdPartyApps
         public void LoadApps()
         {
             Apps.Clear();
+            var seenApps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var provider in AssemblyService.Instance.LoadImplementations<IThirdPartyAppProvider>())
             {
                 foreach (var app in provider.GetThirdPartyApps())
                 {
                     app.RefreshStatus();
-                    Apps.Add(app);
+                    if (seenApps.Add(GetAppIdentity(app)))
+                        Apps.Add(app);
                 }
             }
         }
@@ -45,6 +49,31 @@ namespace ColorVision.Common.ThirdPartyApps
                 .OrderBy(a => a.Order).ThenBy(a => a.Name)
                 .GroupBy(a => a.Group)
                 .OrderBy(g => g.Min(a => a.Order));
+        }
+
+        private static string GetAppIdentity(ThirdPartyAppInfo app)
+        {
+            string? path = app.InstalledExePath
+                           ?? app.PortableExePath
+                           ?? app.LaunchPath
+                           ?? app.InstallerPath;
+
+            if (!string.IsNullOrWhiteSpace(path))
+                return $"path:{NormalizePath(path)}|args:{app.LaunchArguments}";
+
+            return $"name:{app.Group}|{app.Name}";
+        }
+
+        private static string NormalizePath(string path)
+        {
+            try
+            {
+                return Path.GetFullPath(Environment.ExpandEnvironmentVariables(path.Trim().Trim('"')));
+            }
+            catch
+            {
+                return path;
+            }
         }
     }
 }

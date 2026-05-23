@@ -190,7 +190,7 @@ namespace Spectrum
         /// </summary>
         [JsonIgnore]
         public string MeasurementMode { get => _MeasurementMode; set { _MeasurementMode = value; OnPropertyChanged(); } }
-        private string _MeasurementMode = "亮色度模式";
+        private string _MeasurementMode = LocalizedText.Get("BrightnessChromaticityMode");
 
         /// <summary>
         /// The serial number of the currently connected spectrometer.
@@ -207,7 +207,7 @@ namespace Spectrum
         {
             get
             {
-                if (!IsConnected) return "未连接";
+                if (!IsConnected) return LocalizedText.Get("未连接");
                 return Config.IsComPort ? $"COM: {Config.SzComName}" : "USB";
             }
         }

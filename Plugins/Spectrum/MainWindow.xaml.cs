@@ -25,7 +25,7 @@ namespace Spectrum
     public class MenuSpectrumWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "光谱仪测试";
+        public override string Header => LocalizedText.Get("SpectrumWindowTitle");
         public override int Order => 1;
         public override void Execute()
         {
@@ -159,9 +159,9 @@ namespace Spectrum
             ComboBoxPort.ItemsSource = portNames;
             ComboBoxSerial.ItemsSource = BaudRates;
 
-            string title = "相对光谱曲线";
-            wpfplot1.Plot.XLabel("波长[nm]");
-            wpfplot1.Plot.YLabel("相对光谱");
+            string title = LocalizedText.Get("相对光谱曲线");
+            wpfplot1.Plot.XLabel(LocalizedText.Get("波长Nm"));
+            wpfplot1.Plot.YLabel(LocalizedText.Get("相对光谱"));
             wpfplot1.Plot.Axes.Title.Label.Text = title;
             wpfplot1.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             wpfplot1.Plot.Axes.Title.Label.Text = title;
@@ -178,9 +178,9 @@ namespace Spectrum
             // Add visible spectrum rainbow color bar below the plot
             AddSpectrumColorBar(wpfplot1);
 
-            string titleAbsolute = "绝对光谱曲线";
-            wpfplot2.Plot.XLabel("波长[nm]");
-            wpfplot2.Plot.YLabel("绝对光谱");
+            string titleAbsolute = LocalizedText.Get("AbsoluteSpectrumCurve");
+            wpfplot2.Plot.XLabel(LocalizedText.Get("波长Nm"));
+            wpfplot2.Plot.YLabel(LocalizedText.Get("AbsoluteSpectrum"));
             wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
             wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
@@ -275,7 +275,7 @@ namespace Spectrum
                 // Show a placeholder message when no log file is found yet
                 var placeholder = new TextBlock
                 {
-                    Text = "光谱仪原生日志文件尚未生成。连接光谱仪后日志将自动显示。",
+                    Text = LocalizedText.Get("NativeLogPlaceholder"),
                     HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                     VerticalAlignment = System.Windows.VerticalAlignment.Center,
                     Foreground = System.Windows.Media.Brushes.Gray

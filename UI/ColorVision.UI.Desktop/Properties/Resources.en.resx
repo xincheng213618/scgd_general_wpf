@@ -720,6 +720,9 @@
   <data name="ThirdPartyAppsGroups" xml:space="preserve">
     <value>Categories</value>
   </data>
+  <data name="ThirdPartyAppsLocalApps" xml:space="preserve">
+    <value>Local apps</value>
+  </data>
   <data name="Edit" xml:space="preserve">
     <value>Edit</value>
   </data>

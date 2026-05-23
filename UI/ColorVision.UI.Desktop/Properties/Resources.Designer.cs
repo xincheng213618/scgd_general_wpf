@@ -1681,6 +1681,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 本机应用 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsLocalApps {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsLocalApps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 剩余时间： 的本地化字符串。
         /// </summary>
         public static string TimeLeft {
