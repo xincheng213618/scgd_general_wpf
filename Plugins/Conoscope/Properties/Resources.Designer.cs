@@ -3686,6 +3686,24 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusImageCount", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 文件类型 的本地化字符串。
+        /// </summary>
+        public static string StatusFileType {
+            get {
+                return ResourceManager.GetString("StatusFileType", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 图像尺寸 的本地化字符串。
+        /// </summary>
+        public static string StatusImageSize {
+            get {
+                return ResourceManager.GetString("StatusImageSize", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 未记录 的本地化字符串。
@@ -4586,6 +4604,51 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleSuccess", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 青色 的本地化字符串。
+        /// </summary>
+        public static string ThemeCyan {
+            get {
+                return ResourceManager.GetString("ThemeCyan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 暗色 的本地化字符串。
+        /// </summary>
+        public static string ThemeDark {
+            get {
+                return ResourceManager.GetString("ThemeDark", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 亮色 的本地化字符串。
+        /// </summary>
+        public static string ThemeLight {
+            get {
+                return ResourceManager.GetString("ThemeLight", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 粉色 的本地化字符串。
+        /// </summary>
+        public static string ThemePink {
+            get {
+                return ResourceManager.GetString("ThemePink", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 系统 的本地化字符串。
+        /// </summary>
+        public static string ThemeSystem {
+            get {
+                return ResourceManager.GetString("ThemeSystem", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 未知版本 的本地化字符串。
@@ -4593,6 +4656,24 @@ namespace Conoscope.Properties {
         public static string UnknownVersion {
             get {
                 return ResourceManager.GetString("UnknownVersion", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Conoscope 的本地化字符串。
+        /// </summary>
+        public static string WindowTitleConoscope {
+            get {
+                return ResourceManager.GetString("WindowTitleConoscope", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Conoscope {0} 的本地化字符串。
+        /// </summary>
+        public static string WindowTitleConoscopeWithVersion {
+            get {
+                return ResourceManager.GetString("WindowTitleConoscopeWithVersion", resourceCulture);
             }
         }
         

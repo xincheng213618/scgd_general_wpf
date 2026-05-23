@@ -153,7 +153,7 @@ namespace Conoscope.Core
             LayoutDocument layoutDocument = new LayoutDocument
             {
                 ContentId = contentId,
-                Title = "Conoscope",
+                Title = Conoscope.Properties.Resources.WindowTitleConoscope,
                 Content = view,
                 CanClose = true,
                 CanFloat = true

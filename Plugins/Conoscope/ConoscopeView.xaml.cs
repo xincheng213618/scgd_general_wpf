@@ -254,7 +254,7 @@ namespace Conoscope
                 items.Add(new StatusBarMeta
                 {
                     Id = "ConoscopeImageDimensions",
-                    Name = "Image Size",
+                    Name = Properties.Resources.StatusImageSize,
                     Description = $"{XMat.Cols} x {XMat.Rows}",
                     Type = StatusBarType.Text,
                     Alignment = StatusBarAlignment.Right,
@@ -268,7 +268,7 @@ namespace Conoscope
                 items.Add(new StatusBarMeta
                 {
                     Id = "ConoscopeFileType",
-                    Name = "File Type",
+                    Name = Properties.Resources.StatusFileType,
                     Description = Path.GetExtension(Filename).ToUpperInvariant(),
                     Type = StatusBarType.Text,
                     Alignment = StatusBarAlignment.Right,
@@ -282,7 +282,7 @@ namespace Conoscope
                 items.Add(new StatusBarMeta
                 {
                     Id = "ConoscopeExposure",
-                    Name = "Exposure",
+                    Name = Properties.Resources.LabelExposure,
                     Description = CaptureExposureSummary,
                     Type = StatusBarType.Text,
                     Alignment = StatusBarAlignment.Right,

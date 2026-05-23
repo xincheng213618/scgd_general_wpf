@@ -73,7 +73,10 @@ namespace Conoscope
             StopOperationProgress();
 
             Instance = this;
-            Title = "Conoscope " + (Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? string.Empty);
+            string version = Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? string.Empty;
+            Title = string.IsNullOrWhiteSpace(version)
+                ? Properties.Resources.WindowTitleConoscope
+                : string.Format(Properties.Resources.WindowTitleConoscopeWithVersion, version);
             DataContext = ConoscopeManager.GetInstance();
             this.ApplyCaption();
             ConoscopeWindowConfig.Instance.SetWindow(this);
@@ -183,7 +186,14 @@ namespace Conoscope
             // Theme selector
             cbTheme.Items.Clear();
             var themeNames = new[] { Theme.UseSystem, Theme.Light, Theme.Dark, Theme.Pink, Theme.Cyan };
-            var themeDisplayNames = new[] { Properties.Resources.GroupConfig + ": System", "Light", "Dark", "Pink", "Cyan" };
+            var themeDisplayNames = new[]
+            {
+                $"{Properties.Resources.GroupConfig}: {Properties.Resources.ThemeSystem}",
+                Properties.Resources.ThemeLight,
+                Properties.Resources.ThemeDark,
+                Properties.Resources.ThemePink,
+                Properties.Resources.ThemeCyan
+            };
             for (int i = 0; i < themeNames.Length; i++)
             {
                 cbTheme.Items.Add(new ComboBoxItem { Content = themeDisplayNames[i], Tag = themeNames[i] });

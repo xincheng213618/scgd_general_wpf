@@ -8,7 +8,7 @@
         xmlns:properties="clr-namespace:Conoscope.Properties"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
-        Title="Conoscope"
+    Title="{x:Static properties:Resources.WindowTitleConoscope}"
         Height="760"
         Width="1520"
         MinHeight="640"

@@ -573,4 +573,13 @@
   <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve"><value>Не удалось сохранить: {0}</value></data>
   <data name="TitleFocusPointPolarEditor" xml:space="preserve"><value>Редактор полярных координат точки фокуса</value></data>
   <data name="MsgImageViewFilePathUnavailable" xml:space="preserve"><value>У текущего ImageView нет связанного пути к файлу.</value></data>
+  <data name="StatusImageSize" xml:space="preserve"><value>Размер изображения</value></data>
+  <data name="StatusFileType" xml:space="preserve"><value>Тип файла</value></data>
+  <data name="ThemeSystem" xml:space="preserve"><value>Системная</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Светлая</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Тёмная</value></data>
+  <data name="ThemePink" xml:space="preserve"><value>Розовая</value></data>
+  <data name="ThemeCyan" xml:space="preserve"><value>Бирюзовая</value></data>
+  <data name="WindowTitleConoscope" xml:space="preserve"><value>Conoscope</value></data>
+  <data name="WindowTitleConoscopeWithVersion" xml:space="preserve"><value>Conoscope {0}</value></data>
 </root>

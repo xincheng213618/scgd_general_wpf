@@ -1520,4 +1520,31 @@ Nombre : {2}</value>
   <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve"><value>Echec de l'enregistrement : {0}</value></data>
   <data name="TitleFocusPointPolarEditor" xml:space="preserve"><value>Editeur polaire du point de focus</value></data>
   <data name="MsgImageViewFilePathUnavailable" xml:space="preserve"><value>L'ImageView actuel n'a aucun chemin de fichier associe.</value></data>
+  <data name="StatusImageSize" xml:space="preserve">
+    <value>Taille de l'image</value>
+  </data>
+  <data name="StatusFileType" xml:space="preserve">
+    <value>Type de fichier</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>Système</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Clair</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Sombre</value>
+  </data>
+  <data name="ThemePink" xml:space="preserve">
+    <value>Rose</value>
+  </data>
+  <data name="ThemeCyan" xml:space="preserve">
+    <value>Cyan</value>
+  </data>
+  <data name="WindowTitleConoscope" xml:space="preserve">
+    <value>Conoscope</value>
+  </data>
+  <data name="WindowTitleConoscopeWithVersion" xml:space="preserve">
+    <value>Conoscope {0}</value>
+  </data>
 </root>
