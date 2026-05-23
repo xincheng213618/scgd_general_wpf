@@ -146,7 +146,7 @@ namespace Conoscope
 
             if (ImageView.FocusCircles.Count == 0)
             {
-                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -157,7 +157,7 @@ namespace Conoscope
 
             lastFocusPoiTemplateId = poiParam.Id;
             LoadFocusPoiTemplatesAsync(poiParam.Id, applySelectedTemplate: false);
-            MessageBox.Show($"已保存关注点到 POI 模板: {poiParam.Name}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(string.Format(Properties.Resources.MsgFocusPoiTemplateSaved, poiParam.Name), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void btnManageFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
@@ -177,7 +177,7 @@ namespace Conoscope
             poiParam = null;
             if (!MySqlControl.GetInstance().IsConnect)
             {
-                MessageBox.Show("数据库未连接，无法保存 POI 模板。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgFocusPoiTemplateSaveRequiresDatabase, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
@@ -198,7 +198,7 @@ namespace Conoscope
                 return true;
             }
 
-            MessageBox.Show("创建 POI 模板失败。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Properties.Resources.MsgFocusPoiTemplateCreateFailed, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
 
@@ -239,14 +239,14 @@ namespace Conoscope
                 int ret = SaveFocusPoiTemplateToDb(poiParam);
                 if (ret == -1)
                 {
-                    MessageBox.Show("保存失败，具体报错信息请查看日志。", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgFocusPoiTemplateSaveFailedCheckLog, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 log.Error("保存 Conoscope 关注点 POI 模板失败", ex);
-                MessageBox.Show($"保存失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgFocusPoiTemplateSaveFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
@@ -574,7 +574,7 @@ namespace Conoscope
             {
                 Owner = Window.GetWindow(this),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Title = "关注点极坐标编辑"
+                Title = Properties.Resources.TitleFocusPointPolarEditor
             };
             editorWindow.Submited += (_, _) =>
             {
@@ -596,7 +596,7 @@ namespace Conoscope
             if (circle == null)
             {
                 tbSelectedFocusPointInfo.Text = string.Empty;
-                tbSelectedFocusPointInfo.ToolTip = "当前选中关注点";
+                tbSelectedFocusPointInfo.ToolTip = Properties.Resources.TipSelectedFocusPoint;
                 tbSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
                 sepSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
                 return;
@@ -672,13 +672,13 @@ namespace Conoscope
         {
             if (!HasXyzData() || XMat == null || YMat == null || ZMat == null || currentBitmapSource == null)
             {
-                MessageBox.Show(Properties.Resources.MsgFocusPointNotReady, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgFocusPointNotReady, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (circles.Count == 0)
             {
-                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -704,7 +704,7 @@ namespace Conoscope
             if (results.Count == 0)
             {
                 string message = failedCircles.Count > 0 ? string.Join(Environment.NewLine, failedCircles) : Properties.Resources.MsgNoFocusPointPixelsCalc;
-                MessageBox.Show(message, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(message, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -717,7 +717,7 @@ namespace Conoscope
 
             if (failedCircles.Count > 0)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, failedCircles), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Join(Environment.NewLine, failedCircles), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             UpdateFocusCircleToolbarState();

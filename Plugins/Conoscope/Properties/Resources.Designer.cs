@@ -4613,5 +4613,95 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("XYZDataNotLoaded", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 创建 POI 模板失败。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateCreateFailed {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateCreateFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 保存失败，具体报错信息请查看日志。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveFailedCheckLog {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedCheckLog", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 保存失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveFailedDetail {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedDetail", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 数据库未连接，无法保存 POI 模板。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveRequiresDatabase {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveRequiresDatabase", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已保存关注点到 POI 模板: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaved {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 当前 ImageView 没有关联的文件路径 的本地化字符串。
+        /// </summary>
+        public static string MsgImageViewFilePathUnavailable {
+            get {
+                return ResourceManager.GetString("MsgImageViewFilePathUnavailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已恢复原始数据 的本地化字符串。
+        /// </summary>
+        public static string MsgOriginalDataRestored {
+            get {
+                return ResourceManager.GetString("MsgOriginalDataRestored", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 保存前处理配置失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgPreprocessConfigSaveFailedDetail {
+            get {
+                return ResourceManager.GetString("MsgPreprocessConfigSaveFailedDetail", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 应用前处理失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgPreprocessFailedDetail {
+            get {
+                return ResourceManager.GetString("MsgPreprocessFailedDetail", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 关注点极坐标编辑 的本地化字符串。
+        /// </summary>
+        public static string TitleFocusPointPolarEditor {
+            get {
+                return ResourceManager.GetString("TitleFocusPointPolarEditor", resourceCulture);
+            }
+        }
     }
 }

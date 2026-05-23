@@ -1510,4 +1510,14 @@ Nombre : {2}</value>
   <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>Reference globale {0} enregistree</value></data>
   <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>Echec de l'enregistrement de la reference de contraste</value></data>
   <data name="MsgRecordSlot" xml:space="preserve"><value>Enregistrer {0}</value></data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve"><value>Les donnees d'origine ont ete restaurees.</value></data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve"><value>Echec de l'application du pretraitement : {0}</value></data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve"><value>Echec de l'enregistrement des parametres de pretraitement : {0}</value></data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve"><value>Points de focus enregistres dans le modele POI : {0}</value></data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve"><value>La base de donnees n'est pas connectee. Impossible d'enregistrer le modele POI.</value></data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve"><value>Echec de la creation du modele POI.</value></data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve"><value>Echec de l'enregistrement. Consultez le journal pour plus de details.</value></data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve"><value>Echec de l'enregistrement : {0}</value></data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve"><value>Editeur polaire du point de focus</value></data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve"><value>L'ImageView actuel n'a aucun chemin de fichier associe.</value></data>
 </root>

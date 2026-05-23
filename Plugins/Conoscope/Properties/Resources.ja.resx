@@ -563,4 +563,14 @@
   <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>グローバル{0}基準を保存しました</value></data>
   <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>コントラスト基準の保存に失敗しました</value></data>
   <data name="MsgRecordSlot" xml:space="preserve"><value>{0} を記録</value></data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve"><value>元のデータを復元しました。</value></data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve"><value>前処理の適用に失敗しました: {0}</value></data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve"><value>前処理設定の保存に失敗しました: {0}</value></data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve"><value>フォーカスポイントを POI テンプレートに保存しました: {0}</value></data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve"><value>データベースに接続されていないため、POI テンプレートを保存できません。</value></data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve"><value>POI テンプレートの作成に失敗しました。</value></data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve"><value>保存に失敗しました。詳細はログを確認してください。</value></data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve"><value>保存に失敗しました: {0}</value></data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve"><value>フォーカスポイント極座標編集</value></data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve"><value>現在の ImageView に関連付けられたファイルパスがありません。</value></data>
 </root>

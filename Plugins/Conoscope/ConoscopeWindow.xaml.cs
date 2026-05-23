@@ -309,12 +309,12 @@ namespace Conoscope
                 ConfigService.Instance.Save<ConoscopeWindowConfig>();
                 ConfigService.Instance.Save<FlowEngineConfig>();
                 SetOperationStatus(Properties.Resources.MsgConfigSaved, Brushes.LimeGreen);
-                MessageBox.Show(Properties.Resources.MsgConfigSaved, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgConfigSaved, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgConfigSaveFailed, Brushes.OrangeRed);
-                MessageBox.Show($"{Properties.Resources.MsgConfigSaveFailed}: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"{Properties.Resources.MsgConfigSaveFailed}: {ex.Message}", Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -352,7 +352,7 @@ namespace Conoscope
             ConoscopeView? activeView = ActiveView;
             if (activeView == null)
             {
-                MessageBox.Show(Properties.Resources.MsgNoActiveView, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgNoActiveView, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 

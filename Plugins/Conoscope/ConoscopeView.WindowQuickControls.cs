@@ -86,7 +86,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"刷新显示通道失败: {ex.Message}", ex);
-                MessageBox.Show(ex.Message, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(ex.Message, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

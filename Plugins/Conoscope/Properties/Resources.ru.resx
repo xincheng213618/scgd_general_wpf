@@ -563,4 +563,14 @@
   <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>Глобальный эталон {0} сохранен</value></data>
   <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>Не удалось сохранить эталон контраста</value></data>
   <data name="MsgRecordSlot" xml:space="preserve"><value>Записать {0}</value></data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve"><value>Исходные данные восстановлены.</value></data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve"><value>Не удалось применить предобработку: {0}</value></data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve"><value>Не удалось сохранить настройки предобработки: {0}</value></data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve"><value>Точки фокуса сохранены в шаблон POI: {0}</value></data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve"><value>База данных не подключена. Невозможно сохранить шаблон POI.</value></data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve"><value>Не удалось создать шаблон POI.</value></data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve"><value>Сохранение не удалось. Подробности смотрите в журнале.</value></data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve"><value>Не удалось сохранить: {0}</value></data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve"><value>Редактор полярных координат точки фокуса</value></data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve"><value>У текущего ImageView нет связанного пути к файлу.</value></data>
 </root>

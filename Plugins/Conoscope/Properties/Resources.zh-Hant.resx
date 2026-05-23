@@ -1512,4 +1512,34 @@
   <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve"><value>已清除{0}全域基準</value></data>
   <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>已儲存{0}全域基準</value></data>
   <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>儲存對比度基準失敗</value></data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve">
+    <value>已還原原始資料</value>
+  </data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve">
+    <value>套用前處理失敗: {0}</value>
+  </data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve">
+    <value>儲存前處理設定失敗: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve">
+    <value>已將關注點儲存到 POI 模板: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve">
+    <value>資料庫未連線，無法儲存 POI 模板。</value>
+  </data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve">
+    <value>建立 POI 模板失敗。</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve">
+    <value>儲存失敗，請查看日誌取得詳細資訊。</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve">
+    <value>儲存失敗: {0}</value>
+  </data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve">
+    <value>關注點極座標編輯</value>
+  </data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve">
+    <value>目前的 ImageView 沒有關聯的檔案路徑</value>
+  </data>
 </root>

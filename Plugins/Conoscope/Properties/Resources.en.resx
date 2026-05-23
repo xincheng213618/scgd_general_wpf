@@ -1582,4 +1582,34 @@ Count: {2}</value>
   <data name="ChkOnlyShowCs200Devices" xml:space="preserve">
     <value>Only show CS200 devices</value>
   </data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve">
+    <value>Original data restored.</value>
+  </data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve">
+    <value>Failed to apply preprocess: {0}</value>
+  </data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve">
+    <value>Failed to save preprocess settings: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve">
+    <value>Saved focus points to POI template: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve">
+    <value>Database is not connected. Cannot save the POI template.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve">
+    <value>Failed to create the POI template.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve">
+    <value>Save failed. Check the log for details.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve">
+    <value>Failed to save: {0}</value>
+  </data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve">
+    <value>Focus Point Polar Editor</value>
+  </data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve">
+    <value>The current ImageView has no associated file path.</value>
+  </data>
 </root>

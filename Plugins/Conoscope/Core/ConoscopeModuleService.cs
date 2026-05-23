@@ -84,7 +84,7 @@ namespace Conoscope.Core
             string? filePath = context.Config.FilePath;
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
-                MessageBox.Show("当前 ImageView 没有关联的文件路径", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Conoscope.Properties.Resources.MsgImageViewFilePathUnavailable, Conoscope.Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 

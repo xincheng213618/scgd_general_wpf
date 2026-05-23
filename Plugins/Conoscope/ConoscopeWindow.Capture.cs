@@ -303,7 +303,7 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera?.PhyCamera == null)
             {
-                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -323,13 +323,13 @@ namespace Conoscope
             TemplateModel<CalibrationParam>? calibrationTemplate = GetSelectedCalibrationTemplate();
             if (camera == null || calibrationTemplate == null || calibrationTemplate.Id < 0)
             {
-                MessageBox.Show(Properties.Resources.MsgSelectCameraAndCalibration, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCameraAndCalibration, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!TryGetNdPort(out int ndPort))
             {
-                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -354,7 +354,7 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null || !TryGetNdPort(out int ndPort))
             {
-                MessageBox.Show(Properties.Resources.MsgSelectCameraAndNd, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCameraAndNd, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -375,7 +375,7 @@ namespace Conoscope
             TemplateModel<FlowParam>? flowTemplate = GetSelectedFlowTemplate();
             if (flowTemplate == null)
             {
-                MessageBox.Show(Properties.Resources.MsgSelectFlow, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectFlow, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -398,7 +398,7 @@ namespace Conoscope
                 if (!result.Completed)
                 {
                     SetOperationStatus(string.Format(Properties.Resources.MsgFlowIncomplete, result.FlowResult!.FlowStatus), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, result.FlowResult.FlowStatus, result.FlowResult.Params), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, result.FlowResult.FlowStatus, result.FlowResult.Params), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -411,13 +411,13 @@ namespace Conoscope
                 else
                 {
                     SetOperationStatus(Properties.Resources.MsgFlowCvcieNotFound, Brushes.OrangeRed);
-                    MessageBox.Show(Properties.Resources.MsgFlowCvcieNotFoundDetail, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Properties.Resources.MsgFlowCvcieNotFoundDetail, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgFlowFailed, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -432,7 +432,7 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null)
             {
-                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -449,7 +449,7 @@ namespace Conoscope
                 if (!result.Succeeded)
                 {
                     SetOperationStatus(string.Format(Properties.Resources.MsgCaptureFailed, result.State), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, result.State, result.MessageRecord.MsgReturn?.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, result.State, result.MessageRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -462,13 +462,13 @@ namespace Conoscope
                 else
                 {
                     SetOperationStatus(Properties.Resources.MsgCaptureCvcieNotFound, Brushes.OrangeRed);
-                    MessageBox.Show(Properties.Resources.MsgCaptureCvcieNotFoundDetail, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Properties.Resources.MsgCaptureCvcieNotFoundDetail, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgCaptureFailedTitle, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -483,13 +483,13 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null)
             {
-                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!int.TryParse(txtNDPort.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int port))
             {
-                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -510,13 +510,13 @@ namespace Conoscope
                 else
                 {
                     SetOperationStatus(string.Format(Properties.Resources.MsgNdSwitchFailed, state), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, state, msgRecord.MsgReturn?.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgNdSwitchFailed, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -529,7 +529,7 @@ namespace Conoscope
             DeviceCamera? camera = GetSelectedCamera();
             if (camera == null)
             {
-                MessageBox.Show(Properties.Resources.MsgSelectCamera, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgSelectCamera, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -552,13 +552,13 @@ namespace Conoscope
                 else
                 {
                     SetOperationStatus(string.Format(Properties.Resources.MsgNdReadFailed, state), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, state, msgRecord.MsgReturn?.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgNdReadFailed, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, ex.Message, string.Empty), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

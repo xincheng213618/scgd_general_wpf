@@ -88,6 +88,24 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 清除失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string CacheClearFailedDetail {
+            get {
+                return ResourceManager.GetString("CacheClearFailedDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清除成功，删除了 {0} 个文件 的本地化字符串。
+        /// </summary>
+        public static string CacheClearSucceededDetail {
+            get {
+                return ResourceManager.GetString("CacheClearSucceededDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 缓存大小 的本地化字符串。
         /// </summary>
         public static string CacheSize {
@@ -124,6 +142,15 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 CPU 的本地化字符串。
+        /// </summary>
+        public static string CPU {
+            get {
+                return ResourceManager.GetString("CPU", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 当前应用 的本地化字符串。
         /// </summary>
         public static string CurrentApp {
@@ -142,11 +169,38 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 .NET 的本地化字符串。
+        /// </summary>
+        public static string DotNet {
+            get {
+                return ResourceManager.GetString("DotNet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0}天 {1:00}:{2:00}:{3:00} 的本地化字符串。
+        /// </summary>
+        public static string DurationWithDaysFormat {
+            get {
+                return ResourceManager.GetString("DurationWithDaysFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 可用空间 的本地化字符串。
         /// </summary>
         public static string FreeSpace {
             get {
                 return ResourceManager.GetString("FreeSpace", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 GPU 的本地化字符串。
+        /// </summary>
+        public static string GPU {
+            get {
+                return ResourceManager.GetString("GPU", resourceCulture);
             }
         }
         
@@ -169,11 +223,29 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 IP 地址 的本地化字符串。
+        /// </summary>
+        public static string IPAddress {
+            get {
+                return ResourceManager.GetString("IPAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 本地磁盘 的本地化字符串。
         /// </summary>
         public static string LocalDisk {
             get {
                 return ResourceManager.GetString("LocalDisk", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 MAC 地址 的本地化字符串。
+        /// </summary>
+        public static string MacAddress {
+            get {
+                return ResourceManager.GetString("MacAddress", resourceCulture);
             }
         }
         
@@ -187,11 +259,29 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 ms 的本地化字符串。
+        /// </summary>
+        public static string MillisecondUnit {
+            get {
+                return ResourceManager.GetString("MillisecondUnit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 网络 的本地化字符串。
         /// </summary>
         public static string Network {
             get {
                 return ResourceManager.GetString("Network", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 N/A 的本地化字符串。
+        /// </summary>
+        public static string NotAvailable {
+            get {
+                return ResourceManager.GetString("NotAvailable", resourceCulture);
             }
         }
         
@@ -250,6 +340,15 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 PID 的本地化字符串。
+        /// </summary>
+        public static string PID {
+            get {
+                return ResourceManager.GetString("PID", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 进程监控 的本地化字符串。
         /// </summary>
         public static string ProcessMonitor {
@@ -264,6 +363,15 @@ namespace SystemMonitor.Properties {
         public static string ProcessName {
             get {
                 return ResourceManager.GetString("ProcessName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 RAM 的本地化字符串。
+        /// </summary>
+        public static string RAM {
+            get {
+                return ResourceManager.GetString("RAM", resourceCulture);
             }
         }
         
@@ -354,6 +462,15 @@ namespace SystemMonitor.Properties {
         public static string StatusBarSettings {
             get {
                 return ResourceManager.GetString("StatusBarSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} {1:F1}% 的本地化字符串。
+        /// </summary>
+        public static string StatusBarUsageFormat {
+            get {
+                return ResourceManager.GetString("StatusBarUsageFormat", resourceCulture);
             }
         }
         

@@ -1583,4 +1583,34 @@
   <data name="HelpTitleContrastTerm" xml:space="preserve">
     <value>白场、黑场与对比度</value>
   </data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve">
+    <value>已恢复原始数据</value>
+  </data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve">
+    <value>应用前处理失败: {0}</value>
+  </data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve">
+    <value>保存前处理配置失败: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve">
+    <value>已保存关注点到 POI 模板: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve">
+    <value>数据库未连接，无法保存 POI 模板。</value>
+  </data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve">
+    <value>创建 POI 模板失败。</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve">
+    <value>保存失败，具体报错信息请查看日志。</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve">
+    <value>保存失败: {0}</value>
+  </data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve">
+    <value>关注点极坐标编辑</value>
+  </data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve">
+    <value>当前 ImageView 没有关联的文件路径</value>
+  </data>
 </root>

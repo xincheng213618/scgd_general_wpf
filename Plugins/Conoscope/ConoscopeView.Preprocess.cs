@@ -115,7 +115,7 @@ namespace Conoscope
             {
                 if (!HasXyzData())
                 {
-                    MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -124,7 +124,7 @@ namespace Conoscope
                     RestoreOriginalMats();
                     RefreshDisplayedImage();
                     log.Info("已恢复原始数据");
-                    MessageBox.Show("已恢复原始数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Properties.Resources.MsgOriginalDataRestored, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -134,12 +134,12 @@ namespace Conoscope
                 RefreshDisplayedImage();
 
                 log.Info("预处理应用成功，数据已更新");
-                MessageBox.Show("预处理应用成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgPreprocessApplied, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 log.Error($"应用滤波失败: {ex.Message}", ex);
-                MessageBox.Show($"应用滤波失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgPreprocessFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

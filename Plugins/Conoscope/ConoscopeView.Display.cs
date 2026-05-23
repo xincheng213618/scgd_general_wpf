@@ -278,12 +278,12 @@ namespace Conoscope
             try
             {
                 ConfigService.Instance.Save<ConoscopeConfig>();
-                MessageBox.Show(Properties.Resources.MsgConfigSaved, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgConfigSaved, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 log.Error($"保存 Conoscope 配置失败: {ex.Message}", ex);
-                MessageBox.Show(string.Format(Properties.Resources.MsgSaveConfigFailedDetail, ex.Message), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.MsgSaveConfigFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

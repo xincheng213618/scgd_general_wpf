@@ -246,4 +246,43 @@
   <data name="AvailableMemory" xml:space="preserve">
     <value>Available Memory</value>
   </data>
+  <data name="CPU" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="RAM" xml:space="preserve">
+    <value>RAM</value>
+  </data>
+  <data name="GPU" xml:space="preserve">
+    <value>GPU</value>
+  </data>
+  <data name="PID" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="DotNet" xml:space="preserve">
+    <value>.NET</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IP Address</value>
+  </data>
+  <data name="MacAddress" xml:space="preserve">
+    <value>MAC Address</value>
+  </data>
+  <data name="MillisecondUnit" xml:space="preserve">
+    <value>ms</value>
+  </data>
+  <data name="NotAvailable" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="DurationWithDaysFormat" xml:space="preserve">
+    <value>{0}d {1:00}:{2:00}:{3:00}</value>
+  </data>
+  <data name="StatusBarUsageFormat" xml:space="preserve">
+    <value>{0} {1:F1}%</value>
+  </data>
+  <data name="CacheClearSucceededDetail" xml:space="preserve">
+    <value>Cache cleared, deleted {0} files</value>
+  </data>
+  <data name="CacheClearFailedDetail" xml:space="preserve">
+    <value>Failed to clear cache: {0}</value>
+  </data>
 </root>
