@@ -527,4 +527,40 @@
   <data name="HelpTitleGamutCoverageTerm" xml:space="preserve"><value>サンプル面積、標準面積、カバー率</value></data>
   <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve"><value>現在のカバー率は面積比であり、標準色域と交差させた後の面積比ではありません。</value></data>
   <data name="HelpTitleContrastTerm" xml:space="preserve"><value>White Field、Black Field、コントラスト</value></data>
+  <data name="GroupColorDifference" xml:space="preserve"><value>色差</value></data>
+  <data name="ChannelContrast" xml:space="preserve"><value>コントラスト</value></data>
+  <data name="BtnReapply" xml:space="preserve"><value>再適用</value></data>
+  <data name="BtnBlackReference" xml:space="preserve"><value>黒基準</value></data>
+  <data name="BtnWhiteReference" xml:space="preserve"><value>白基準</value></data>
+  <data name="BtnColorDifferenceReference" xml:space="preserve"><value>色差基準</value></data>
+  <data name="BtnSaveShort" xml:space="preserve"><value>保存</value></data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve"><value>有効にすると、観察カメラ一覧には型番に CS200 を含むデバイスのみ表示されます。</value></data>
+  <data name="TipSelectedFocusPoint" xml:space="preserve"><value>現在選択中のフォーカスポイント</value></data>
+  <data name="TipFocusPoiTemplate" xml:space="preserve"><value>フォーカスポイント POI テンプレート</value></data>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve"><value>現在のフォーカスポイントを POI テンプレートとして保存</value></data>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve"><value>POI テンプレートを管理</value></data>
+  <data name="TbCircleFit" xml:space="preserve"><value>円フィット</value></data>
+  <data name="TbCircleFitTip" xml:space="preserve"><value>有効円領域に合わせて表示</value></data>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve"><value>現在のグローバル{0}基準: {1}。もう一度クリックするとクリア</value></data>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve"><value>現在のビューをグローバル{0}基準として保存</value></data>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>現在のグローバル色差基準画像: {0}。もう一度クリックするとクリア</value></data>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve"><value>現在のビューをグローバル色差基準画像として保存</value></data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve"><value>CS200 デバイスのみ表示</value></data>
+  <data name="ChkEnableFilter" xml:space="preserve"><value>フィルターを有効化</value></data>
+  <data name="StateSaved" xml:space="preserve"><value>保存済み</value></data>
+  <data name="LabelCurrentImage" xml:space="preserve"><value>現在の画像</value></data>
+  <data name="ContrastImageBlack" xml:space="preserve"><value>暗画像</value></data>
+  <data name="ContrastImageWhite" xml:space="preserve"><value>明画像</value></data>
+  <data name="ContrastReferenceBlackField" xml:space="preserve"><value>黒場</value></data>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve"><value>白場</value></data>
+  <data name="MsgCurrentImageSwitched" xml:space="preserve"><value>現在の画像を {0} に切り替えました</value></data>
+  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve"><value>色差基準を {0} に切り替えました</value></data>
+  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve"><value>色差カスタム光源を u={0:F4}, v={1:F4} に更新しました</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve"><value>グローバル色差基準画像をクリアしました</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>グローバル色差基準画像を保存しました</value></data>
+  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve"><value>色差基準の保存に失敗しました</value></data>
+  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve"><value>グローバル{0}基準をクリアしました</value></data>
+  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>グローバル{0}基準を保存しました</value></data>
+  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>コントラスト基準の保存に失敗しました</value></data>
+  <data name="MsgRecordSlot" xml:space="preserve"><value>{0} を記録</value></data>
 </root>

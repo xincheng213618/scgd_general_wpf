@@ -1474,4 +1474,40 @@ Nombre : {2}</value>
   <data name="HelpTitleContrastTerm" xml:space="preserve">
     <value>Champ blanc, champ noir et contraste</value>
   </data>
+  <data name="GroupColorDifference" xml:space="preserve"><value>Ecart de couleur</value></data>
+  <data name="ChannelContrast" xml:space="preserve"><value>Contraste</value></data>
+  <data name="BtnReapply" xml:space="preserve"><value>Reappliquer</value></data>
+  <data name="BtnBlackReference" xml:space="preserve"><value>Ref. noire</value></data>
+  <data name="BtnWhiteReference" xml:space="preserve"><value>Ref. blanche</value></data>
+  <data name="BtnColorDifferenceReference" xml:space="preserve"><value>Ref. Δuv</value></data>
+  <data name="BtnSaveShort" xml:space="preserve"><value>Enr.</value></data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve"><value>Si active, la liste des cameras d'observation n'affiche que les appareils dont le modele contient CS200.</value></data>
+  <data name="TipSelectedFocusPoint" xml:space="preserve"><value>Point de focus actuellement selectionne</value></data>
+  <data name="TipFocusPoiTemplate" xml:space="preserve"><value>Modele POI du point de focus</value></data>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve"><value>Enregistrer les points de focus actuels dans un modele POI</value></data>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve"><value>Gerer les modeles POI</value></data>
+  <data name="TbCircleFit" xml:space="preserve"><value>Cercle</value></data>
+  <data name="TbCircleFitTip" xml:space="preserve"><value>Ajuster a la zone circulaire utile</value></data>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve"><value>Reference globale {0} actuelle : {1}. Cliquez de nouveau pour effacer</value></data>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve"><value>Enregistrer la vue actuelle comme reference globale {0}</value></data>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>Reference globale d'ecart de couleur actuelle : {0}. Cliquez de nouveau pour effacer</value></data>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve"><value>Enregistrer la vue actuelle comme reference globale d'ecart de couleur</value></data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve"><value>Afficher seulement les appareils CS200</value></data>
+  <data name="ChkEnableFilter" xml:space="preserve"><value>Activer le filtre</value></data>
+  <data name="StateSaved" xml:space="preserve"><value>Enregistre</value></data>
+  <data name="LabelCurrentImage" xml:space="preserve"><value>Image actuelle</value></data>
+  <data name="ContrastImageBlack" xml:space="preserve"><value>Image sombre</value></data>
+  <data name="ContrastImageWhite" xml:space="preserve"><value>Image claire</value></data>
+  <data name="ContrastReferenceBlackField" xml:space="preserve"><value>Champ noir</value></data>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve"><value>Champ blanc</value></data>
+  <data name="MsgCurrentImageSwitched" xml:space="preserve"><value>Image actuelle basculee sur {0}</value></data>
+  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve"><value>Reference d'ecart de couleur basculee sur {0}</value></data>
+  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve"><value>Illuminant personnalise d'ecart de couleur mis a jour en u={0:F4}, v={1:F4}</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve"><value>Reference globale d'ecart de couleur effacee</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>Reference globale d'ecart de couleur enregistree</value></data>
+  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve"><value>Echec de l'enregistrement de la reference d'ecart de couleur</value></data>
+  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve"><value>Reference globale {0} effacee</value></data>
+  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>Reference globale {0} enregistree</value></data>
+  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>Echec de l'enregistrement de la reference de contraste</value></data>
+  <data name="MsgRecordSlot" xml:space="preserve"><value>Enregistrer {0}</value></data>
 </root>

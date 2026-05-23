@@ -527,4 +527,40 @@
   <data name="HelpTitleGamutCoverageTerm" xml:space="preserve"><value>Площадь образца, площадь стандарта и покрытие</value></data>
   <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve"><value>Текущее покрытие - это отношение площадей, а не отношение площади после пересечения со стандартным охватом.</value></data>
   <data name="HelpTitleContrastTerm" xml:space="preserve"><value>Белое поле, черное поле и контраст</value></data>
+  <data name="GroupColorDifference" xml:space="preserve"><value>Цветовое различие</value></data>
+  <data name="ChannelContrast" xml:space="preserve"><value>Контраст</value></data>
+  <data name="BtnReapply" xml:space="preserve"><value>Применить снова</value></data>
+  <data name="BtnBlackReference" xml:space="preserve"><value>Черн. эталон</value></data>
+  <data name="BtnWhiteReference" xml:space="preserve"><value>Бел. эталон</value></data>
+  <data name="BtnColorDifferenceReference" xml:space="preserve"><value>Эталон Δuv</value></data>
+  <data name="BtnSaveShort" xml:space="preserve"><value>Сохр.</value></data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve"><value>Если включено, в списке камер наблюдения будут показаны только устройства, модель которых содержит CS200.</value></data>
+  <data name="TipSelectedFocusPoint" xml:space="preserve"><value>Текущая выбранная фокусная точка</value></data>
+  <data name="TipFocusPoiTemplate" xml:space="preserve"><value>Шаблон POI фокусных точек</value></data>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve"><value>Сохранить текущие фокусные точки в шаблон POI</value></data>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve"><value>Управление шаблонами POI</value></data>
+  <data name="TbCircleFit" xml:space="preserve"><value>Круг</value></data>
+  <data name="TbCircleFitTip" xml:space="preserve"><value>Подогнать к эффективной круглой области</value></data>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve"><value>Текущий глобальный эталон {0}: {1}. Нажмите еще раз, чтобы очистить</value></data>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve"><value>Сохранить текущий вид как глобальный эталон {0}</value></data>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>Текущее глобальное эталонное изображение цветового различия: {0}. Нажмите еще раз, чтобы очистить</value></data>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve"><value>Сохранить текущий вид как глобальное эталонное изображение цветового различия</value></data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve"><value>Показывать только устройства CS200</value></data>
+  <data name="ChkEnableFilter" xml:space="preserve"><value>Включить фильтр</value></data>
+  <data name="StateSaved" xml:space="preserve"><value>Сохранено</value></data>
+  <data name="LabelCurrentImage" xml:space="preserve"><value>Текущее изображение</value></data>
+  <data name="ContrastImageBlack" xml:space="preserve"><value>Темное изображение</value></data>
+  <data name="ContrastImageWhite" xml:space="preserve"><value>Светлое изображение</value></data>
+  <data name="ContrastReferenceBlackField" xml:space="preserve"><value>Черное поле</value></data>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve"><value>Белое поле</value></data>
+  <data name="MsgCurrentImageSwitched" xml:space="preserve"><value>Текущее изображение переключено на {0}</value></data>
+  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve"><value>Эталон цветового различия переключен на {0}</value></data>
+  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve"><value>Пользовательский источник света для цветового различия обновлен до u={0:F4}, v={1:F4}</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve"><value>Глобальное эталонное изображение цветового различия очищено</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>Глобальное эталонное изображение цветового различия сохранено</value></data>
+  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve"><value>Не удалось сохранить эталон цветового различия</value></data>
+  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve"><value>Глобальный эталон {0} очищен</value></data>
+  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>Глобальный эталон {0} сохранен</value></data>
+  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>Не удалось сохранить эталон контраста</value></data>
+  <data name="MsgRecordSlot" xml:space="preserve"><value>Записать {0}</value></data>
 </root>

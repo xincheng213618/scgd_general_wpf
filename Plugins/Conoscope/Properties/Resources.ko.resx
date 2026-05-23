@@ -528,4 +528,40 @@
   <data name="HelpTitleGamutCoverageTerm" xml:space="preserve"><value>샘플 면적, 표준 면적, 커버리지</value></data>
   <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve"><value>현재 커버리지는 표준 색역과의 교집합 후 면적 비율이 아니라 단순 면적 비율입니다.</value></data>
   <data name="HelpTitleContrastTerm" xml:space="preserve"><value>White Field, Black Field, 대비</value></data>
+  <data name="GroupColorDifference" xml:space="preserve"><value>색차</value></data>
+  <data name="ChannelContrast" xml:space="preserve"><value>콘트라스트</value></data>
+  <data name="BtnReapply" xml:space="preserve"><value>다시 적용</value></data>
+  <data name="BtnBlackReference" xml:space="preserve"><value>흑 기준</value></data>
+  <data name="BtnWhiteReference" xml:space="preserve"><value>백 기준</value></data>
+  <data name="BtnColorDifferenceReference" xml:space="preserve"><value>색차 기준</value></data>
+  <data name="BtnSaveShort" xml:space="preserve"><value>저장</value></data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve"><value>활성화하면 관찰 카메라 목록에 모델명에 CS200이 포함된 장치만 표시됩니다.</value></data>
+  <data name="TipSelectedFocusPoint" xml:space="preserve"><value>현재 선택된 포커스 포인트</value></data>
+  <data name="TipFocusPoiTemplate" xml:space="preserve"><value>포커스 포인트 POI 템플릿</value></data>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve"><value>현재 포커스 포인트를 POI 템플릿으로 저장</value></data>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve"><value>POI 템플릿 관리</value></data>
+  <data name="TbCircleFit" xml:space="preserve"><value>원 맞춤</value></data>
+  <data name="TbCircleFitTip" xml:space="preserve"><value>유효 원형 영역에 맞춤</value></data>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve"><value>현재 전역 {0} 기준: {1}. 다시 클릭하면 지워집니다</value></data>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve"><value>현재 뷰를 전역 {0} 기준으로 저장</value></data>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>현재 전역 색차 기준 이미지: {0}. 다시 클릭하면 지워집니다</value></data>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve"><value>현재 뷰를 전역 색차 기준 이미지로 저장</value></data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve"><value>CS200 장치만 표시</value></data>
+  <data name="ChkEnableFilter" xml:space="preserve"><value>필터 활성화</value></data>
+  <data name="StateSaved" xml:space="preserve"><value>저장됨</value></data>
+  <data name="LabelCurrentImage" xml:space="preserve"><value>현재 이미지</value></data>
+  <data name="ContrastImageBlack" xml:space="preserve"><value>어두운 이미지</value></data>
+  <data name="ContrastImageWhite" xml:space="preserve"><value>밝은 이미지</value></data>
+  <data name="ContrastReferenceBlackField" xml:space="preserve"><value>흑장</value></data>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve"><value>백장</value></data>
+  <data name="MsgCurrentImageSwitched" xml:space="preserve"><value>현재 이미지를 {0}(으)로 전환했습니다</value></data>
+  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve"><value>색차 기준을 {0}(으)로 전환했습니다</value></data>
+  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve"><value>색차 사용자 광원을 u={0:F4}, v={1:F4}로 업데이트했습니다</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve"><value>전역 색차 기준 이미지를 지웠습니다</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>전역 색차 기준 이미지를 저장했습니다</value></data>
+  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve"><value>색차 기준 저장에 실패했습니다</value></data>
+  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve"><value>전역 {0} 기준을 지웠습니다</value></data>
+  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>전역 {0} 기준을 저장했습니다</value></data>
+  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>콘트라스트 기준 저장에 실패했습니다</value></data>
+  <data name="MsgRecordSlot" xml:space="preserve"><value>{0} 기록</value></data>
 </root>

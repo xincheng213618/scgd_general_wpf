@@ -1573,4 +1573,13 @@ Count: {2}</value>
   <data name="HelpTitleContrastTerm" xml:space="preserve">
     <value>White Field, Black Field and Contrast</value>
   </data>
+  <data name="BtnReapply" xml:space="preserve">
+    <value>Reapply</value>
+  </data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve">
+    <value>When enabled, the observation camera list shows only devices whose model contains CS200.</value>
+  </data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve">
+    <value>Only show CS200 devices</value>
+  </data>
 </root>

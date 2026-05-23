@@ -1477,4 +1477,39 @@
   <data name="HelpTitleContrastTerm" xml:space="preserve">
     <value>白場、黑場與對比度</value>
   </data>
+  <data name="GroupColorDifference" xml:space="preserve"><value>色差</value></data>
+  <data name="ChannelContrast" xml:space="preserve"><value>對比度</value></data>
+  <data name="BtnReapply" xml:space="preserve"><value>重新套用</value></data>
+  <data name="BtnBlackReference" xml:space="preserve"><value>黑基準</value></data>
+  <data name="BtnWhiteReference" xml:space="preserve"><value>白基準</value></data>
+  <data name="BtnColorDifferenceReference" xml:space="preserve"><value>色差基準</value></data>
+  <data name="BtnSaveShort" xml:space="preserve"><value>存</value></data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve"><value>啟用後，觀察相機清單只顯示型號中包含 CS200 的裝置。</value></data>
+  <data name="TipSelectedFocusPoint" xml:space="preserve"><value>目前選取的關注點</value></data>
+  <data name="TipFocusPoiTemplate" xml:space="preserve"><value>關注點 POI 模板</value></data>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve"><value>將目前關注點儲存到 POI 模板</value></data>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve"><value>管理 POI 模板</value></data>
+  <data name="TbCircleFit" xml:space="preserve"><value>圓適</value></data>
+  <data name="TbCircleFitTip" xml:space="preserve"><value>依有效圓區適應</value></data>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve"><value>目前全域{0}基準: {1}，再次點擊可清除</value></data>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve"><value>將目前視圖儲存為全域{0}基準</value></data>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>目前全域色差基準圖: {0}，再次點擊可清除</value></data>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve"><value>將目前視圖儲存為全域色差基準圖</value></data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve"><value>僅顯示 CS200 裝置</value></data>
+  <data name="ChkEnableFilter" xml:space="preserve"><value>啟用濾波</value></data>
+  <data name="StateSaved" xml:space="preserve"><value>已儲存</value></data>
+  <data name="LabelCurrentImage" xml:space="preserve"><value>目前影像</value></data>
+  <data name="ContrastImageBlack" xml:space="preserve"><value>暗圖</value></data>
+  <data name="ContrastImageWhite" xml:space="preserve"><value>亮圖</value></data>
+  <data name="ContrastReferenceBlackField" xml:space="preserve"><value>黑場</value></data>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve"><value>白場</value></data>
+  <data name="MsgCurrentImageSwitched" xml:space="preserve"><value>目前影像已切換為 {0}</value></data>
+  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve"><value>色差基準已切換為 {0}</value></data>
+  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve"><value>色差自訂光源已更新為 u={0:F4}, v={1:F4}</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve"><value>已清除全域色差基準圖</value></data>
+  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>已儲存全域色差基準圖</value></data>
+  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve"><value>儲存色差基準失敗</value></data>
+  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve"><value>已清除{0}全域基準</value></data>
+  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>已儲存{0}全域基準</value></data>
+  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>儲存對比度基準失敗</value></data>
 </root>
