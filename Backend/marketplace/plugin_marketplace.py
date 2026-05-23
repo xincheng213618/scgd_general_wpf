@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
+_PACKAGE_HASH_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
 
 def is_safe_plugin_id(value: str) -> bool:
@@ -42,6 +43,39 @@ def _compute_file_hash(file_path: Path) -> str | None:
     return file_hash.hexdigest()
 
 
+def _package_hash_cache_key(relative_path: str) -> str:
+    return f"plugin_package_hash:v1:{relative_path}"
+
+
+def _get_cached_file_hash(
+    file_path: Path,
+    relative_path: str,
+    stat,
+    *,
+    get_cache_entry: Callable[..., dict[str, Any] | None] | None,
+    set_cache_entry: Callable[..., None] | None,
+) -> str | None:
+    if get_cache_entry is None or set_cache_entry is None:
+        return _compute_file_hash(file_path)
+
+    signature = f"{stat.st_mtime_ns}:{stat.st_size}"
+    cached = get_cache_entry(_package_hash_cache_key(relative_path), signature=signature)
+    if cached:
+        cached_value = cached.get("value")
+        if isinstance(cached_value, str) and cached_value:
+            return cached_value
+
+    file_hash = _compute_file_hash(file_path)
+    if file_hash:
+        set_cache_entry(
+            _package_hash_cache_key(relative_path),
+            file_hash,
+            ttl_seconds=_PACKAGE_HASH_CACHE_TTL_SECONDS,
+            signature=signature,
+        )
+    return file_hash
+
+
 def plugin_package_from_file(
     storage: Path,
     file_path: Path,
@@ -49,6 +83,8 @@ def plugin_package_from_file(
     source: str,
     *,
     include_hash: bool = False,
+    get_cache_entry: Callable[..., dict[str, Any] | None] | None = None,
+    set_cache_entry: Callable[..., None] | None = None,
 ) -> dict[str, Any] | None:
     if file_path.suffix.lower() != ".cvxp":
         return None
@@ -74,7 +110,13 @@ def plugin_package_from_file(
         "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
     }
     if include_hash:
-        file_hash = _compute_file_hash(file_path)
+        file_hash = _get_cached_file_hash(
+            file_path,
+            relative_path,
+            stat,
+            get_cache_entry=get_cache_entry,
+            set_cache_entry=set_cache_entry,
+        )
         if file_hash:
             package["fileHash"] = file_hash
     return package
@@ -85,6 +127,8 @@ def scan_plugin_package_sets(
     plugin_id: str,
     *,
     include_hash: bool = False,
+    get_cache_entry: Callable[..., dict[str, Any] | None] | None = None,
+    set_cache_entry: Callable[..., None] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     plugin_dir = storage / "Plugins" / plugin_id
     history_dir = plugin_history_dir(storage, plugin_id)
@@ -100,6 +144,8 @@ def scan_plugin_package_sets(
                 plugin_id,
                 "current",
                 include_hash=include_hash,
+                get_cache_entry=get_cache_entry,
+                set_cache_entry=set_cache_entry,
             )
             if package:
                 if latest_release and package["version"] != latest_release:
@@ -116,6 +162,8 @@ def scan_plugin_package_sets(
                 plugin_id,
                 "archive",
                 include_hash=include_hash,
+                get_cache_entry=get_cache_entry,
+                set_cache_entry=set_cache_entry,
             )
             if package:
                 historical_packages.append(package)
@@ -541,6 +589,8 @@ def get_plugin_detail(
         storage,
         plugin_id,
         include_hash=True,
+        get_cache_entry=get_cache_entry,
+        set_cache_entry=set_cache_entry,
     )
     archive_metadata = _get_archive_metadata_for_plugin(
         storage,

@@ -435,6 +435,31 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(payload["versions"][0]["source"], "current")
         self.assertEqual(payload["archivedVersions"][0]["source"], "archive")
 
+    def test_plugin_detail_reuses_cached_package_hashes_when_detail_cache_is_cleared(self):
+        self._create_plugin_archive_with_metadata(
+            "CachedHashPlugin",
+            "1.2.3",
+            manifest_text='{"id":"CachedHashPlugin","name":"Cached Hash Plugin","description":"hash cache"}',
+        )
+
+        history_dir = self.storage / "History" / "Plugins" / "CachedHashPlugin"
+        history_dir.mkdir(parents=True, exist_ok=True)
+        (history_dir / "CachedHashPlugin-1.0.0.cvxp").write_bytes(b"old-package")
+
+        first_response = self.client.get("/api/plugins/CachedHashPlugin")
+        self.assertEqual(first_response.status_code, 200)
+        first_payload = first_response.get_json()
+        self.assertTrue(first_payload["versions"][0]["fileHash"])
+
+        marketplace_app._invalidate_cache_prefix("plugin_detail:")
+
+        with patch("plugin_marketplace._compute_file_hash", side_effect=AssertionError("hash should come from cache")):
+            second_response = self.client.get("/api/plugins/CachedHashPlugin")
+
+        self.assertEqual(second_response.status_code, 200)
+        second_payload = second_response.get_json()
+        self.assertEqual(first_payload["versions"][0]["fileHash"], second_payload["versions"][0]["fileHash"])
+
     def test_plugin_query_filter_and_sort_are_consistent_between_html_and_api(self):
         alpha_dir = self._create_plugin("AlphaPlugin", "1.0.0")
         (alpha_dir / "manifest.json").write_text(
