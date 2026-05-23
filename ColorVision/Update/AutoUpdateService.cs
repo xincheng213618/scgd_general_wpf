@@ -5,6 +5,10 @@ namespace ColorVision.Update
 {
     public class AutoUpdateService : MainWindowInitializedBase
     {
-        public override Task Initialize() => CombinedUpdateCoordinator.CheckForUpdatesOnStartupAsync();
+        public override async Task Initialize()
+        {
+            await CombinedUpdateCoordinator.ResumeIfNeededAsync();
+            await CombinedUpdateCoordinator.CheckForUpdatesOnStartupAsync();
+        }
     }
 }

@@ -567,8 +567,18 @@ namespace ColorVision.Update
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
         {
             // 保存数据库配置
+            UpdateBackupPrepareResult? backupPrepareResult = null;
             try
             {
+                List<string> applicationPackagePaths = downloadPaths?
+                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList() ?? new List<string>();
+                List<string> pluginPackagePaths = pluginDownloadPaths?
+                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList() ?? new List<string>();
+
                 // 解压缩 ZIP 文件到临时目录
                 string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionUpdate");
                 if (Directory.Exists(tempDirectory))
@@ -577,25 +587,19 @@ namespace ColorVision.Update
                 }
 
                 bool hasAnyPackage = false;
-                foreach (string downloadPath in downloadPaths)
+                foreach (string downloadPath in applicationPackagePaths)
                 {
-                    if (string.IsNullOrWhiteSpace(downloadPath) || !File.Exists(downloadPath))
-                        continue;
-
                     ZipFile.ExtractToDirectory(downloadPath, tempDirectory, true);
                     hasAnyPackage = true;
                 }
 
-                if (pluginDownloadPaths != null)
+                if (pluginPackagePaths.Count > 0)
                 {
                     string pluginsDirectory = Path.Combine(tempDirectory, "Plugins");
                     Directory.CreateDirectory(pluginsDirectory);
 
-                    foreach (string pluginDownloadPath in pluginDownloadPaths)
+                    foreach (string pluginDownloadPath in pluginPackagePaths)
                     {
-                        if (string.IsNullOrWhiteSpace(pluginDownloadPath) || !File.Exists(pluginDownloadPath))
-                            continue;
-
                         ZipFile.ExtractToDirectory(pluginDownloadPath, pluginsDirectory, true);
                         hasAnyPackage = true;
                     }
@@ -608,8 +612,16 @@ namespace ColorVision.Update
                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
+                Version? targetVersion = TryGetTargetVersionFromPackagePaths(applicationPackagePaths);
+                backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
+                    tempDirectory,
+                    programDirectory,
+                    CurrentVersion,
+                    targetVersion,
+                    applicationPackagePaths,
+                    pluginPackagePaths);
 
-                string batchContent = CreateIncrementalUpdateBatch(tempDirectory, programDirectory, executableName);
+                string batchContent = CreateIncrementalUpdateBatch(tempDirectory, programDirectory, executableName, backupPrepareResult);
 
                 File.WriteAllText(batchFilePath, batchContent);
 
@@ -633,30 +645,43 @@ namespace ColorVision.Update
                 }
                 catch (Exception ex)
                 {
+                    UpdateRecoveryService.Instance.MarkFailed($"Failed to start update batch: {ex.Message}");
+                    log.Error("Failed to start incremental update batch.", ex);
                     MessageBox.Show(ex.Message);
                 }
             }
             catch (Exception ex)
             {
+                if (backupPrepareResult != null)
+                    UpdateRecoveryService.Instance.MarkFailed($"Failed to prepare update batch: {ex.Message}");
+
+                log.Error("Failed to prepare incremental update.", ex);
                 MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
             }
         }
 
-        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName)
+        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName, UpdateBackupPrepareResult backupPrepareResult)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
             StringBuilder sb = new();
             sb.AppendLine("@echo off");
             sb.AppendLine("setlocal enabledelayedexpansion");
             sb.AppendLine("title ColorVision Incremental Updater");
-            sb.AppendLine($"set \"STAGE={tempDirectory}\"");
-            sb.AppendLine($"set \"TARGET={programDirectory}\"");
-            sb.AppendLine($"set \"EXE={executableName}\"");
-            sb.AppendLine($"set \"EXEPATH={executablePath}\"");
+            sb.AppendLine($"set \"STAGE={EscapeForBatchValue(tempDirectory)}\"");
+            sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
+            sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
+            sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
+            sb.AppendLine($"set \"UPDATE_STATE_PATH={EscapeForBatchValue(backupPrepareResult.StateFilePath)}\"");
+            sb.AppendLine($"set \"STATE_APPLYING={EscapeForBatchValue(backupPrepareResult.ApplyingStatePath)}\"");
+            sb.AppendLine($"set \"STATE_APPLIED={EscapeForBatchValue(backupPrepareResult.AppliedStatePath)}\"");
+            sb.AppendLine($"set \"STATE_FAILED={EscapeForBatchValue(backupPrepareResult.FailedStatePath)}\"");
+            sb.AppendLine($"set \"BACKUP={EscapeForBatchValue(backupPrepareResult.BackupPath)}\"");
             sb.AppendLine("set \"NEED_RESTART_EXPLORER=0\"");
             sb.AppendLine();
             sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
             sb.AppendLine("timeout /t 2 /nobreak >nul");
+            sb.AppendLine("call :mark_state \"%STATE_APPLYING%\"");
+            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine();
             sb.AppendLine("dir /b /s \"%STAGE%\\ColorVision.ShellExtension*\" >nul 2>nul");
             sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
@@ -668,6 +693,13 @@ namespace ColorVision.Update
             sb.AppendLine("call :copy_application_files");
             sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine("goto success");
+            sb.AppendLine();
+            sb.AppendLine(":mark_state");
+            sb.AppendLine("if \"%UPDATE_STATE_PATH%\"==\"\" exit /b 0");
+            sb.AppendLine("if \"%~1\"==\"\" exit /b 1");
+            sb.AppendLine("if not exist \"%~1\" exit /b 1");
+            sb.AppendLine("copy /y \"%~1\" \"%UPDATE_STATE_PATH%\" >nul");
+            sb.AppendLine("exit /b !ERRORLEVEL!");
             sb.AppendLine();
             sb.AppendLine(":release_shell_hosts");
             sb.AppendLine("taskkill /f /im explorer.exe >nul 2>nul");
@@ -698,16 +730,61 @@ namespace ColorVision.Update
             sb.AppendLine("xcopy /y /e /i \"%STAGE%\\*\" \"%TARGET%\\\" >nul");
             sb.AppendLine("exit /b !ERRORLEVEL!");
             sb.AppendLine();
+            sb.AppendLine(":rollback");
+            sb.AppendLine("if \"%BACKUP%\"==\"\" exit /b 0");
+            sb.AppendLine("where robocopy >nul 2>nul");
+            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
+            sb.AppendLine("  if exist \"%BACKUP%\\App\" robocopy \"%BACKUP%\\App\" \"%TARGET%\" *.* /E /NFL /NDL /NP /NJH /NJS /R:2 /W:1 >nul");
+            sb.AppendLine("  if exist \"%BACKUP%\\Plugins\" robocopy \"%BACKUP%\\Plugins\" \"%TARGET%\\Plugins\" *.* /E /NFL /NDL /NP /NJH /NJS /R:2 /W:1 >nul");
+            sb.AppendLine("  exit /b 0");
+            sb.AppendLine(")");
+            sb.AppendLine("if exist \"%BACKUP%\\App\" xcopy /y /e /i \"%BACKUP%\\App\\*\" \"%TARGET%\\\" >nul");
+            sb.AppendLine("if exist \"%BACKUP%\\Plugins\" xcopy /y /e /i \"%BACKUP%\\Plugins\\*\" \"%TARGET%\\Plugins\\\" >nul");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine();
             sb.AppendLine(":success");
+            sb.AppendLine("call :mark_state \"%STATE_APPLIED%\"");
+            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
             sb.AppendLine("start \"\" \"%EXEPATH%\"");
             sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":fail");
+            sb.AppendLine("call :mark_state \"%STATE_FAILED%\"");
+            sb.AppendLine("call :rollback");
             sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
+            sb.AppendLine("start \"\" \"%EXEPATH%\"");
             sb.AppendLine("exit /b 1");
             return sb.ToString();
+        }
+
+        private static Version? TryGetTargetVersionFromPackagePaths(IEnumerable<string> packagePaths)
+        {
+            return packagePaths
+                .Select(TryParseIncrementalPackageVersion)
+                .Where(version => version != null)
+                .OrderBy(version => version)
+                .LastOrDefault();
+        }
+
+        private static Version? TryParseIncrementalPackageVersion(string packagePath)
+        {
+            string fileName = Path.GetFileName(packagePath);
+            Match match = Regex.Match(fileName, @"ColorVision-Update-\[(?<version>[^\]]+)\]\.(cvx|zip)$", RegexOptions.IgnoreCase);
+            return match.Success && Version.TryParse(match.Groups["version"].Value, out Version? version)
+                ? version
+                : null;
+        }
+
+        private static string EscapeForBatchValue(string value)
+        {
+            return value
+                .Replace("^", "^^")
+                .Replace("&", "^&")
+                .Replace("|", "^|")
+                .Replace("<", "^<")
+                .Replace(">", "^>");
         }
 
         public static void RestartApplication(string downloadPath)

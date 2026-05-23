@@ -8,6 +8,8 @@
                      Color="{DynamicResource UpdateDialogSurfaceHoverColor}" />
     <SolidColorBrush x:Key="UpdateDialog.SurfaceHover"
                      Color="{DynamicResource UpdateDialogSurfaceHoverColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.WindowBorder"
+                     Color="{DynamicResource UpdateDialogBorderColor}" />
     <SolidColorBrush x:Key="UpdateDialog.Border"
                      Color="{DynamicResource UpdateDialogBorderColor}" />
     <SolidColorBrush x:Key="UpdateDialog.WeakBorder"
@@ -32,15 +34,15 @@
         <Setter Property="Background" Value="{DynamicResource UpdateDialog.TagBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.WeakBorder}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="999" />
-        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,2" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
     </Style>
 
     <Style x:Key="UpdateDialogPrimaryButtonStyle"
            TargetType="{x:Type Button}">
-        <Setter Property="MinWidth" Value="120" />
-        <Setter Property="Padding" Value="18,10" />
+        <Setter Property="MinWidth" Value="116" />
+        <Setter Property="Padding" Value="16,9" />
         <Setter Property="Foreground" Value="White" />
         <Setter Property="Background" Value="{DynamicResource UpdateDialog.Accent}" />
         <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.Accent}" />
@@ -77,8 +79,8 @@
 
     <Style x:Key="UpdateDialogSecondaryButtonStyle"
            TargetType="{x:Type Button}">
-        <Setter Property="MinWidth" Value="100" />
-        <Setter Property="Padding" Value="18,10" />
+        <Setter Property="MinWidth" Value="96" />
+        <Setter Property="Padding" Value="16,9" />
         <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}" />
         <Setter Property="Background" Value="{DynamicResource UpdateDialog.Surface}" />
         <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.Border}" />
@@ -115,7 +117,7 @@
 
     <Style x:Key="UpdateDialogTextButtonStyle"
            TargetType="{x:Type Button}">
-        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Padding" Value="6,3" />
         <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.Accent}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
@@ -149,11 +151,11 @@
     <Style x:Key="UpdateDialogCardStyle"
            TargetType="{x:Type Border}">
         <Setter Property="Background" Value="{DynamicResource UpdateDialog.Surface}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.Border}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.WeakBorder}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="Padding" Value="14" />
-        <Setter Property="Margin" Value="0,0,0,10" />
+        <Setter Property="Padding" Value="18,16" />
+        <Setter Property="Margin" Value="0,0,0,12" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">

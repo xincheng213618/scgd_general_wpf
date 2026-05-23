@@ -160,14 +160,21 @@ namespace ColorVision.Update
             }
         }
 
-        public static Task ResumeIfNeededAsync()
+        public static async Task ResumeIfNeededAsync()
         {
             if (WorkflowConfig.IsActive)
             {
                 ClearWorkflowState();
             }
 
-            return Task.CompletedTask;
+            try
+            {
+                await UpdateRecoveryService.Instance.ResumeOrRollbackIfNeededAsync(Application.Current?.GetActiveWindow());
+            }
+            catch (Exception ex)
+            {
+                log.Error("Update recovery resume failed.", ex);
+            }
         }
 
         private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(bool includeApplicationUpdates, bool includePluginUpdates, bool respectSkippedVersion)
@@ -463,44 +470,52 @@ namespace ColorVision.Update
         {
             return new UpdatePreviewDialogContext
             {
-                WindowTitle = "插件更新",
-                Heading = "插件更新",
-                Summary = "正在检查可用更新，请稍候。",
-                CheckingTitle = "正在检查更新",
-                CheckingSummary = "正在获取主程序与插件的最新版本信息，请稍候。",
+                WindowTitle = "检查更新",
+                Heading = "正在检查更新",
+                Summary = "正在获取主程序、插件和主题的最新版本信息，请稍候。",
+                CheckingTitle = "正在扫描可用更新项",
+                CheckingSummary = "正在获取主程序、插件和主题的最新版本信息，请稍候。",
                 StateGlyph = "\uE895",
                 HostVersionText = $"主程序版本 {AutoUpdater.CurrentVersion}",
                 ConfirmButtonText = "立即更新",
                 CancelButtonText = "取消",
                 SecondaryButtonText = null,
+                WindowWidth = 780,
+                WindowHeight = 360,
+                WindowMinWidth = 760,
+                WindowMinHeight = 320,
+                WindowMaxHeight = 380,
+                WindowAutoSizeHeight = false,
                 IsChecking = true,
             };
         }
 
         private static UpdatePreviewDialogContext CreateNoUpdatesContext(CombinedPluginUpdatePlan? pluginPlan)
         {
-            string summary = pluginPlan?.SkippedIncompatiblePlugins.Count > 0
-                ? "当前没有符合兼容性要求的可用更新。"
-                : "当前已是最新版本。";
-
             string emptyMessage = pluginPlan?.SkippedIncompatiblePlugins.Count > 0
-                ? $"以下插件因兼容性要求被跳过：{string.Join("、", pluginPlan.SkippedIncompatiblePlugins)}"
-                : "当前主程序和插件都已经是最新版本，无需执行更新。";
+                ? $"以下更新因兼容性要求未显示：{string.Join("、", pluginPlan.SkippedIncompatiblePlugins)}"
+                : "当前未发现需要安装的更新项。";
 
             return new UpdatePreviewDialogContext
             {
-                WindowTitle = "插件更新",
-                Heading = "插件更新",
-                Summary = summary,
-                CheckingTitle = "正在检查更新",
-                CheckingSummary = "正在获取主程序与插件的最新版本信息，请稍候。",
-                EmptyStateTitle = "当前没有可用更新",
+                WindowTitle = "检查更新",
+                Heading = "已是最新版本",
+                Summary = "当前主程序、插件和主题均无需更新。",
+                CheckingTitle = "正在扫描可用更新项",
+                CheckingSummary = "正在获取主程序、插件和主题的最新版本信息，请稍候。",
+                EmptyStateTitle = "已是最新版本",
                 EmptyStateMessage = emptyMessage,
                 StateGlyph = "\uE73E",
                 HostVersionText = $"主程序版本 {AutoUpdater.CurrentVersion}",
                 ConfirmButtonText = "立即更新",
                 CancelButtonText = "关闭",
                 SecondaryButtonText = null,
+                WindowWidth = 780,
+                WindowHeight = 360,
+                WindowMinWidth = 760,
+                WindowMinHeight = 320,
+                WindowMaxHeight = 380,
+                WindowAutoSizeHeight = false,
                 IsChecking = false,
             };
         }
@@ -522,8 +537,8 @@ namespace ColorVision.Update
         {
             UpdatePreviewDialogContext context = new()
             {
-                WindowTitle = applicationPlan == null ? "插件更新" : "发现更新",
-                Heading = applicationPlan == null && pluginPlan?.HasUpdates == true ? "插件更新" : BuildPreviewHeading(applicationPlan, pluginPlan),
+                WindowTitle = "检查更新",
+                Heading = BuildPreviewHeading(applicationPlan, pluginPlan),
                 Summary = BuildDialogSummary(applicationPlan, pluginPlan),
                 HostVersionText = $"主程序版本 {applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion}",
                 ConfirmButtonText = "立即更新",
@@ -536,11 +551,11 @@ namespace ColorVision.Update
                 UpdatePreviewItem previewItem = new()
                 {
                     ItemId = "application",
-                    Category = applicationPlan.IsIncremental ? "主体小版本" : "主体大版本",
+                    Category = applicationPlan.IsIncremental ? "主程序增量" : "主程序更新",
                     Name = "ColorVision",
                     SecondaryLabel = applicationPlan.IsIncremental
-                        ? $"{applicationPlan.VersionsToApply.Count} 个主体增量包"
-                        : "完整主体安装包",
+                        ? $"{applicationPlan.VersionsToApply.Count} 个增量更新包"
+                        : "完整主程序安装包",
                     CurrentVersion = applicationPlan.CurrentVersion.ToString(),
                     TargetVersion = applicationPlan.LatestVersion.ToString(),
                     VersionSummary = $"{applicationPlan.CurrentVersion} -> {applicationPlan.LatestVersion}",
@@ -635,31 +650,36 @@ namespace ColorVision.Update
                 context.SelectedItem = context.Items[0];
             }
 
+            ApplyWindowMetrics(context);
+
             return context;
         }
 
         private static string BuildDialogSummary(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
-            if (applicationPlan == null && pluginPlan?.HasUpdates == true)
-            {
-                StringBuilder builder = new();
-                builder.Append($"发现 {pluginPlan.Updates.Count} 个插件更新，可按需选择后立即安装。");
+            int updateCount = (applicationPlan != null ? 1 : 0) + (pluginPlan?.Updates.Count ?? 0);
+            if (updateCount == 0)
+                return "当前主程序、插件和主题均无需更新。";
 
-                if (pluginPlan.SkippedIncompatiblePlugins.Count > 0)
-                {
-                    builder.Append($" 另有 {pluginPlan.SkippedIncompatiblePlugins.Count} 个插件因兼容性要求未显示。");
-                }
+            List<string> updateKinds = BuildUpdateKinds(applicationPlan, pluginPlan);
+            StringBuilder builder = new();
 
-                return builder.ToString();
-            }
+            if (updateKinds.Count > 1)
+                builder.Append($"发现 {updateCount} 个可用更新，包含{string.Join("、", updateKinds)}。"
+);
+            else
+                builder.Append($"发现 {updateCount} 个可用更新，可按需选择后立即安装。");
 
-            return BuildPreviewSummary(applicationPlan, pluginPlan);
+            if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
+                builder.Append($" 另有 {pluginPlan.SkippedIncompatiblePlugins.Count} 个更新因兼容性要求未显示。");
+
+            return builder.ToString();
         }
 
         private static string BuildApplicationCardSummary(AutoUpdatePlan applicationPlan)
         {
             if (applicationPlan.IsIncremental)
-                return $"将应用 {applicationPlan.VersionsToApply.Count} 个主体增量包，并与选中的插件一起完成本轮更新。";
+                return $"将应用 {applicationPlan.VersionsToApply.Count} 个主程序增量包，并与所选更新一起完成本轮更新。";
 
             return "将下载完整安装包并沿用当前主程序更新流程。";
         }
@@ -685,53 +705,42 @@ namespace ColorVision.Update
 
         private static string BuildPreviewHeading(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
-            if (applicationPlan != null && !applicationPlan.IsIncremental)
-                return "发现主体大版本更新";
-
-            if (applicationPlan != null && pluginPlan?.HasUpdates == true)
-                return "发现主体小版本和插件更新";
-
-            if (applicationPlan != null)
-                return "发现主体小版本更新";
-
-            return "发现插件更新";
+            return applicationPlan != null || pluginPlan?.HasUpdates == true
+                ? "发现更新"
+                : "检查更新";
         }
 
         private static string BuildPreviewSummary(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
-            StringBuilder builder = new();
+            return BuildDialogSummary(applicationPlan, pluginPlan);
+        }
+
+        private static List<string> BuildUpdateKinds(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
+        {
+            List<string> kinds = new();
 
             if (applicationPlan != null)
-            {
-                if (applicationPlan.IsIncremental)
-                {
-                    int pluginCount = pluginPlan?.Updates.Count ?? 0;
-                    builder.Append($"检测到主体版本 {applicationPlan.CurrentVersion} -> {applicationPlan.LatestVersion}。");
-                    if (pluginCount > 0)
-                    {
-                        builder.Append($" 同时发现 {pluginCount} 个插件更新，所选更新将统一下载并在完成后重启应用。");
-                    }
-                    else
-                    {
-                        builder.Append($" 本次将应用 {applicationPlan.VersionsToApply.Count} 个主体增量包，并在完成后重启应用。");
-                    }
-                }
-                else
-                {
-                    builder.Append($"检测到主体大版本更新 {applicationPlan.CurrentVersion} -> {applicationPlan.LatestVersion}。本次将按现有主体安装流程更新。");
-                }
-            }
-            else if (pluginPlan?.HasUpdates == true)
-            {
-                builder.Append($"检测到 {pluginPlan.Updates.Count} 个插件可更新，本次会批量下载并安装所选插件。");
-            }
+                kinds.Add("主程序");
 
-            if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
-            {
-                builder.Append($" 另有 {pluginPlan.SkippedIncompatiblePlugins.Count} 个插件因兼容性要求被跳过。");
-            }
+            if (pluginPlan?.HasUpdates == true)
+                kinds.Add("插件");
 
-            return builder.ToString();
+            return kinds;
+        }
+
+        private static void ApplyWindowMetrics(UpdatePreviewDialogContext context)
+        {
+            context.WindowWidth = 900;
+            context.WindowHeight = context.Items.Count switch
+            {
+                <= 1 => 520d,
+                <= 4 => 600d,
+                _ => 680d,
+            };
+            context.WindowMinWidth = 860;
+            context.WindowMinHeight = 460;
+            context.WindowMaxHeight = 720;
+            context.WindowAutoSizeHeight = true;
         }
 
         private static string BuildPluginSecondaryLabel(CombinedPluginUpdateItem item, string pluginName)

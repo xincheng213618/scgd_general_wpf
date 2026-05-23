@@ -89,13 +89,15 @@ namespace ColorVision.Update
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
-        public string VersionTransitionText => $"{FormatVersion(CurrentVersion)}  ->  {FormatVersion(TargetVersion)}";
+        public string VersionTransitionText => $"{FormatVersion(CurrentVersion)}  →  {FormatVersion(TargetVersion)}";
 
-        public string HostRequirementText => $"宿主要求：{(string.IsNullOrWhiteSpace(HostRequirement) ? "未指定" : HostRequirement)}";
+        public string HostRequirementText => HasMeaningfulHostRequirement(HostRequirement)
+            ? $"宿主要求：{HostRequirement.Trim()}"
+            : string.Empty;
 
-        public Visibility HostRequirementVisibility => string.IsNullOrWhiteSpace(HostRequirement)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        public Visibility HostRequirementVisibility => HasMeaningfulHostRequirement(HostRequirement)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
         public Visibility ProgressVisibility => IsUpdating
             ? Visibility.Visible
@@ -104,6 +106,17 @@ namespace ColorVision.Update
         private static string FormatVersion(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? "Unknown" : value.Trim();
+        }
+
+        private static bool HasMeaningfulHostRequirement(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            string normalized = value.Trim();
+            return !string.Equals(normalized, "未指定", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(normalized, "unknown", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(normalized, "未知", StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -115,6 +128,11 @@ namespace ColorVision.Update
 
     public class UpdatePreviewDialogContext : ViewModelBase
     {
+        public const double StandardWindowWidth = 920d;
+        public const double StandardWindowHeight = 580d;
+        public const double StandardWindowMinWidth = 860d;
+        public const double StandardWindowMinHeight = 520d;
+
         public UpdatePreviewDialogContext()
         {
             _itemsViewSource = new CollectionViewSource { Source = Items };
@@ -156,6 +174,10 @@ namespace ColorVision.Update
 
         private void RefreshItemsState()
         {
+            OnPropertyChanged(nameof(ApplicationUpdateCount));
+            OnPropertyChanged(nameof(PluginUpdateCount));
+            OnPropertyChanged(nameof(ThemeUpdateCount));
+            OnPropertyChanged(nameof(HeaderSummaryText));
             OnPropertyChanged(nameof(ItemsTitle));
             OnPropertyChanged(nameof(ItemsSummary));
             OnPropertyChanged(nameof(ItemsView));
@@ -177,30 +199,58 @@ namespace ColorVision.Update
             OnPropertyChanged(nameof(HasSelectableItems));
             OnPropertyChanged(nameof(HasAlwaysIncludedItems));
             OnPropertyChanged(nameof(HasApplicationUpdates));
+            OnPropertyChanged(nameof(AreAllSelectableItemsPlugins));
             OnPropertyChanged(nameof(CanConfirm));
             OnPropertyChanged(nameof(FooterInfoVisibility));
         }
 
         public string WindowTitle { get => _windowTitle; set { _windowTitle = value; OnPropertyChanged(); } }
-        private string _windowTitle = "更新预览";
+        private string _windowTitle = "检查更新";
+
+        public double WindowWidth { get => _windowWidth; set { _windowWidth = value; OnPropertyChanged(); } }
+        private double _windowWidth = StandardWindowWidth;
+
+        public double WindowHeight { get => _windowHeight; set { _windowHeight = value; OnPropertyChanged(); } }
+        private double _windowHeight = StandardWindowHeight;
+
+        public double WindowMinWidth { get => _windowMinWidth; set { _windowMinWidth = value; OnPropertyChanged(); } }
+        private double _windowMinWidth = StandardWindowMinWidth;
+
+        public double WindowMinHeight { get => _windowMinHeight; set { _windowMinHeight = value; OnPropertyChanged(); } }
+        private double _windowMinHeight = StandardWindowMinHeight;
+
+        public double WindowMaxHeight { get => _windowMaxHeight; set { _windowMaxHeight = value; OnPropertyChanged(); } }
+        private double _windowMaxHeight = StandardWindowHeight;
+
+        public bool WindowAutoSizeHeight { get => _windowAutoSizeHeight; set { _windowAutoSizeHeight = value; OnPropertyChanged(); } }
+        private bool _windowAutoSizeHeight;
 
         public string Heading { get => _heading; set { _heading = value; OnPropertyChanged(); } }
-        private string _heading = string.Empty;
+        private string _heading = "正在检查更新";
 
-        public string Summary { get => _summary; set { _summary = value; OnPropertyChanged(); } }
-        private string _summary = string.Empty;
+        public string Summary
+        {
+            get => _summary;
+            set
+            {
+                _summary = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HeaderSummaryText));
+            }
+        }
+        private string _summary = "正在获取主程序、插件和主题的最新版本信息，请稍候。";
 
         public string CheckingTitle { get => _checkingTitle; set { _checkingTitle = value; OnPropertyChanged(); } }
-        private string _checkingTitle = "正在检查更新";
+        private string _checkingTitle = "正在扫描可用更新项";
 
         public string CheckingSummary { get => _checkingSummary; set { _checkingSummary = value; OnPropertyChanged(); } }
-        private string _checkingSummary = "正在获取主程序与插件的最新版本信息，请稍候。";
+        private string _checkingSummary = "正在获取主程序、插件和主题的最新版本信息，请稍候。";
 
         public string EmptyStateTitle { get => _emptyStateTitle; set { _emptyStateTitle = value; OnPropertyChanged(); } }
-        private string _emptyStateTitle = "当前没有可展示的更新项";
+        private string _emptyStateTitle = "当前没有可用更新";
 
         public string EmptyStateMessage { get => _emptyStateMessage; set { _emptyStateMessage = value; OnPropertyChanged(); } }
-        private string _emptyStateMessage = "如果这里为空，通常表示本轮检查没有拿到可应用的主体或插件更新。";
+        private string _emptyStateMessage = "当前主程序、插件和主题均无需更新。";
 
         public string StateGlyph { get => _stateGlyph; set { _stateGlyph = value; OnPropertyChanged(); } }
         private string _stateGlyph = "\uE895";
@@ -219,6 +269,8 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(CanConfirm));
                 OnPropertyChanged(nameof(ConfirmButtonVisibility));
                 OnPropertyChanged(nameof(FooterInfoVisibility));
+                OnPropertyChanged(nameof(HeaderSummaryText));
+                OnPropertyChanged(nameof(SecondaryButtonVisibility));
             }
         }
         private bool _isChecking;
@@ -231,8 +283,49 @@ namespace ColorVision.Update
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        public string HostVersionText { get => _hostVersionText; set { _hostVersionText = value; OnPropertyChanged(); } }
+        public string HostVersionText
+        {
+            get => _hostVersionText;
+            set
+            {
+                _hostVersionText = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HostVersionLabelText));
+                OnPropertyChanged(nameof(HostVersionValueText));
+                OnPropertyChanged(nameof(HostVersionVisibility));
+            }
+        }
         private string _hostVersionText = string.Empty;
+
+        public Visibility HostVersionVisibility => !string.IsNullOrWhiteSpace(HostVersionText)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        public string HostVersionLabelText
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(HostVersionText))
+                    return string.Empty;
+
+                int splitIndex = HostVersionText.LastIndexOf(' ');
+                return splitIndex <= 0 ? HostVersionText : HostVersionText[..splitIndex];
+            }
+        }
+
+        public string HostVersionValueText
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(HostVersionText))
+                    return string.Empty;
+
+                int splitIndex = HostVersionText.LastIndexOf(' ');
+                return splitIndex <= 0 || splitIndex >= HostVersionText.Length - 1
+                    ? string.Empty
+                    : HostVersionText[(splitIndex + 1)..];
+            }
+        }
 
         public string ConfirmButtonText
         {
@@ -255,6 +348,7 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(ConfirmButtonText));
                 OnPropertyChanged(nameof(CanConfirm));
                 OnPropertyChanged(nameof(CanCancel));
+                OnPropertyChanged(nameof(SecondaryButtonVisibility));
             }
         }
         private bool _isUpdating;
@@ -274,7 +368,7 @@ namespace ColorVision.Update
         }
         private string? _secondaryButtonText;
 
-        public Visibility SecondaryButtonVisibility => string.IsNullOrWhiteSpace(SecondaryButtonText)
+        public Visibility SecondaryButtonVisibility => IsChecking || IsUpdating || string.IsNullOrWhiteSpace(SecondaryButtonText)
             ? Visibility.Collapsed
             : Visibility.Visible;
 
@@ -290,7 +384,45 @@ namespace ColorVision.Update
 
         public bool HasAlwaysIncludedItems => Items.Any(item => !item.IsSelectable);
 
-        public bool HasApplicationUpdates => Items.Any(item => item.Category.Contains("主体", StringComparison.OrdinalIgnoreCase));
+        public int ApplicationUpdateCount => Items.Count(IsApplicationUpdate);
+
+        public int PluginUpdateCount => Items.Count(item => item.Category.Contains("插件", StringComparison.OrdinalIgnoreCase));
+
+        public int ThemeUpdateCount => Items.Count(item => item.Category.Contains("主题", StringComparison.OrdinalIgnoreCase));
+
+        public bool HasApplicationUpdates => ApplicationUpdateCount > 0;
+
+        public bool AreAllSelectableItemsPlugins => !HasSelectableItems
+            || Items.Where(item => item.IsSelectable)
+                .All(item => item.Category.Contains("插件", StringComparison.OrdinalIgnoreCase));
+
+        public string HeaderSummaryText
+        {
+            get
+            {
+                if (IsChecking || Items.Count == 0)
+                    return Summary;
+
+                List<string> segments = new();
+
+                if (ApplicationUpdateCount > 0)
+                    segments.Add($"{ApplicationUpdateCount} 个主程序更新");
+
+                if (PluginUpdateCount > 0)
+                    segments.Add($"{PluginUpdateCount} 个插件更新");
+
+                if (ThemeUpdateCount > 0)
+                    segments.Add($"{ThemeUpdateCount} 个主题更新");
+
+                int otherCount = Items.Count - ApplicationUpdateCount - PluginUpdateCount - ThemeUpdateCount;
+                if (otherCount > 0)
+                    segments.Add($"{otherCount} 个其他更新");
+
+                return segments.Count == 0
+                    ? $"发现 {Items.Count} 个可用更新，可按需选择后立即安装。"
+                    : $"发现 {Items.Count} 个可用更新，其中 {string.Join("、", segments)}。";
+            }
+        }
 
         public string SelectionSummary
         {
@@ -299,20 +431,27 @@ namespace ColorVision.Update
                 if (IsChecking)
                     return string.Empty;
 
+                List<string> segments = new();
+
                 if (HasApplicationUpdates)
-                {
-                    return HasSelectableItems
-                        ? $"已选择 {SelectedSelectableItemCount} / {SelectableItemCount} 个插件 · 包含主体更新，更新完成后将重启应用"
-                        : "包含主体更新 · 更新完成后将重启应用并应用所选更新";
-                }
+                    segments.Add("包含主程序更新");
 
                 if (HasSelectableItems)
-                    return $"已选择 {SelectedSelectableItemCount} / {SelectableItemCount} 个插件 · 更新完成后可能需要重启应用";
+                {
+                    string unit = AreAllSelectableItemsPlugins ? "个插件" : "个可选更新";
+                    segments.Add($"已选择 {SelectedSelectableItemCount} / {SelectableItemCount} {unit}");
+                }
+                else if (HasAlwaysIncludedItems && !HasApplicationUpdates)
+                {
+                    segments.Add("包含必选更新");
+                }
 
-                if (HasAlwaysIncludedItems)
-                    return "包含必选更新 · 更新完成后可能需要重启应用";
+                if (HasApplicationUpdates)
+                    segments.Add("更新完成后将重启应用");
+                else if (HasSelectableItems || HasAlwaysIncludedItems)
+                    segments.Add("更新前会自动创建备份，完成后可能需要重启应用");
 
-                return string.Empty;
+                return string.Join(" · ", segments);
             }
         }
 
@@ -343,13 +482,13 @@ namespace ColorVision.Update
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        public double ItemsViewportMaxHeight => Items.Count > 4 ? 356d : double.PositiveInfinity;
+        public double ItemsViewportMaxHeight => Items.Count > 4 ? 360d : double.PositiveInfinity;
 
         public string ItemsSummary
         {
             get
             {
-                int hostCount = Items.Count(item => item.Category.Contains("主体"));
+                int hostCount = Items.Count(item => item.Category.Contains("主程序", StringComparison.OrdinalIgnoreCase));
                 int pluginCount = Items.Count(item => item.Category == "插件更新");
 
                 if (hostCount > 0 && pluginCount > 0)
@@ -412,6 +551,16 @@ namespace ColorVision.Update
         public string SelectedDetailText { get => _selectedDetailText; private set { _selectedDetailText = value; OnPropertyChanged(); } }
         private string _selectedDetailText = "请选择左侧更新项查看详细说明。";
 
+        public void ApplyStandardWindowMetrics()
+        {
+            WindowWidth = StandardWindowWidth;
+            WindowHeight = StandardWindowHeight;
+            WindowMinWidth = StandardWindowMinWidth;
+            WindowMinHeight = StandardWindowMinHeight;
+            WindowMaxHeight = StandardWindowHeight;
+            WindowAutoSizeHeight = false;
+        }
+
         public void CopyFrom(UpdatePreviewDialogContext source)
         {
             WindowTitle = source.WindowTitle;
@@ -435,7 +584,14 @@ namespace ColorVision.Update
                 Items.Add(item);
             }
 
+            ApplyStandardWindowMetrics();
             SelectedItem = source.SelectedItem ?? Items.FirstOrDefault();
+        }
+
+        private static bool IsApplicationUpdate(UpdatePreviewItem item)
+        {
+            return item.ItemId == "application"
+                || item.Category.Contains("主程序", StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -459,9 +615,11 @@ namespace ColorVision.Update
             InitializeComponent();
 
             Context = context;
+            Context.ApplyStandardWindowMetrics();
             DataContext = Context;
-            Title = Context.WindowTitle;
             _initializeAsync = initializeAsync;
+            Context.PropertyChanged += Context_PropertyChanged;
+            ApplyWindowPresentation();
 
             ContentRendered += UpdatePreviewWindow_ContentRendered;
             Closing += (_, _) =>
@@ -471,12 +629,37 @@ namespace ColorVision.Update
                     SuppressPostCheckMessage = true;
                 }
             };
-            Closed += (_, _) => IsClosed = true;
+            Closed += (_, _) =>
+            {
+                IsClosed = true;
+                Context.PropertyChanged -= Context_PropertyChanged;
+            };
 
             if (Context.SelectedItem == null && Context.Items.Count > 0)
             {
                 Context.SelectedItem = Context.Items[0];
             }
+        }
+
+        private void Context_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(UpdatePreviewDialogContext.WindowTitle))
+            {
+                ApplyWindowPresentation();
+            }
+        }
+
+        private void ApplyWindowPresentation()
+        {
+            Title = string.IsNullOrWhiteSpace(Context.WindowTitle) ? "检查更新" : Context.WindowTitle;
+            MinWidth = UpdatePreviewDialogContext.StandardWindowMinWidth;
+            MinHeight = UpdatePreviewDialogContext.StandardWindowMinHeight;
+            MaxWidth = UpdatePreviewDialogContext.StandardWindowWidth;
+            MaxHeight = UpdatePreviewDialogContext.StandardWindowHeight;
+            Width = UpdatePreviewDialogContext.StandardWindowWidth;
+            Height = UpdatePreviewDialogContext.StandardWindowHeight;
+            ResizeMode = ResizeMode.NoResize;
+            SizeToContent = SizeToContent.Manual;
         }
 
         private async void UpdatePreviewWindow_ContentRendered(object? sender, EventArgs e)
