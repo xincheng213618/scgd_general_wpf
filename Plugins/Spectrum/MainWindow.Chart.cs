@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor.Cie;
 using Spectrum.Data;
+using SpectrumResources = Spectrum.Properties.Resources;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System.Windows;
@@ -22,7 +23,7 @@ namespace Spectrum
 
                     if (IsUsableChromaticity(xy))
                     {
-                        string sampleLabel = LocalizedText.Get("SampleLabel");
+                        string sampleLabel = SpectrumResources.SampleLabel;
                         Cie1931View.SetSelectedXy(xy, System.Windows.Media.Colors.Red, sampleLabel);
                         Cie1976View.SetSelectedXy(xy, System.Windows.Media.Colors.Red, sampleLabel);
                     }
@@ -160,13 +161,13 @@ namespace Spectrum
             {
                 wpfplot1.Visibility = Visibility.Collapsed;
                 wpfplot2.Visibility = Visibility.Visible;
-                SpectrumTypeText.Text = LocalizedText.Get("AbsoluteSpectrum");
+                SpectrumTypeText.Text = SpectrumResources.AbsoluteSpectrum;
             }
             else
             {
                 wpfplot1.Visibility = Visibility.Visible;
                 wpfplot2.Visibility = Visibility.Collapsed;
-                SpectrumTypeText.Text = LocalizedText.Get("相对光谱");
+                SpectrumTypeText.Text = SpectrumResources.相对光谱;
             }
 
             ReDrawPlot();

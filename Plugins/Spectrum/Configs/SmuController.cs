@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
-using Spectrum;
+using SpectrumResources = Spectrum.Properties.Resources;
 using System.ComponentModel;
 using System.Text;
 
@@ -65,7 +65,7 @@ namespace Spectrum.Configs
         public bool CanEditDisplaySettings => !IsBusy;
 
         [JsonIgnore]
-        public string ConnectButtonText => IsOpen ? LocalizedText.Get("DisconnectSourceMeter") : LocalizedText.Get("ConnectSourceMeter");
+        public string ConnectButtonText => IsOpen ? SpectrumResources.DisconnectSourceMeter : SpectrumResources.ConnectSourceMeter;
 
         [JsonIgnore]
         public string Version
@@ -91,7 +91,7 @@ namespace Spectrum.Configs
                 OnPropertyChanged(nameof(StatusSummary));
             }
         }
-        private string _statusText = LocalizedText.Get("未连接");
+        private string _statusText = SpectrumResources.未连接;
 
         [JsonIgnore]
         public string StatusSummary => string.IsNullOrWhiteSpace(Version) ? StatusText : $"{StatusText} | {Version}";
@@ -101,13 +101,13 @@ namespace Spectrum.Configs
         private string _lastErrorMessage = string.Empty;
 
         [JsonIgnore]
-        public string MeasureValueLabel => DisplayConfig.IsSourceV ? LocalizedText.Get("SourceValueVoltage") : LocalizedText.Get("SourceValueCurrentMilliamp");
+        public string MeasureValueLabel => DisplayConfig.IsSourceV ? SpectrumResources.SourceValueVoltage : SpectrumResources.SourceValueCurrentMilliamp;
 
         [JsonIgnore]
-        public string LimitValueLabel => DisplayConfig.IsSourceV ? LocalizedText.Get("LimitMilliamp") : LocalizedText.Get("LimitVoltage");
+        public string LimitValueLabel => DisplayConfig.IsSourceV ? SpectrumResources.LimitMilliamp : SpectrumResources.LimitVoltage;
 
         [JsonIgnore]
-        public string ParameterHint => DisplayConfig.IsSourceV ? LocalizedText.Get("VoltageSourceModeHint") : LocalizedText.Get("CurrentSourceModeHint");
+        public string ParameterHint => DisplayConfig.IsSourceV ? SpectrumResources.VoltageSourceModeHint : SpectrumResources.CurrentSourceModeHint;
 
         [JsonIgnore]
         public double? V => DisplayConfig.V;
@@ -352,28 +352,28 @@ namespace Spectrum.Configs
             if (IsBusy) return false;
             if (string.IsNullOrWhiteSpace(Config.DevName))
             {
-                LastErrorMessage = LocalizedText.Get("DeviceNameRequired");
-                StatusText = LocalizedText.Get("未连接");
+                LastErrorMessage = SpectrumResources.DeviceNameRequired;
+                StatusText = SpectrumResources.未连接;
                 return false;
             }
 
             IsBusy = true;
-            StatusText = LocalizedText.Get("ConnectingSourceMeter");
+            StatusText = SpectrumResources.ConnectingSourceMeter;
             LastErrorMessage = string.Empty;
             string? version = await Task.Run(OpenCore);
             IsBusy = false;
             if (version is null)
             {
                 Version = string.Empty;
-                LastErrorMessage = LocalizedText.Get("SourceMeterConnectFailedCheckSettings");
-                StatusText = LocalizedText.Get("ConnectionFailedTitle");
+                LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
+                StatusText = SpectrumResources.ConnectionFailedTitle;
                 RefreshStateProperties();
                 return false;
             }
 
             Version = version;
             LastErrorMessage = string.Empty;
-            StatusText = LocalizedText.Get("ConnectedStatus");
+            StatusText = SpectrumResources.ConnectedStatus;
             RefreshStateProperties();
             log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
             return true;
@@ -387,15 +387,15 @@ namespace Spectrum.Configs
             string? version = OpenCore();
             if (version is null)
             {
-                LastErrorMessage = LocalizedText.Get("SourceMeterConnectFailedCheckSettings");
-                StatusText = LocalizedText.Get("ConnectionFailedTitle");
+                LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
+                StatusText = SpectrumResources.ConnectionFailedTitle;
                 RefreshStateProperties();
                 return false;
             }
 
             Version = version;
             LastErrorMessage = string.Empty;
-            StatusText = LocalizedText.Get("ConnectedStatus");
+            StatusText = SpectrumResources.ConnectedStatus;
             RefreshStateProperties();
             log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
             return true;
@@ -406,13 +406,13 @@ namespace Spectrum.Configs
             if (!IsOpen || IsBusy) return;
 
             IsBusy = true;
-            StatusText = LocalizedText.Get("DisconnectingSourceMeter");
+            StatusText = SpectrumResources.DisconnectingSourceMeter;
             await Task.Run(CloseCore);
             IsBusy = false;
             DisplayConfig.ClearOutput();
             Version = string.Empty;
             LastErrorMessage = string.Empty;
-            StatusText = LocalizedText.Get("未连接");
+            StatusText = SpectrumResources.未连接;
             RefreshStateProperties();
             log.Info("SMU closed");
         }
@@ -425,7 +425,7 @@ namespace Spectrum.Configs
             DisplayConfig.ClearOutput();
             Version = string.Empty;
             LastErrorMessage = string.Empty;
-            StatusText = LocalizedText.Get("未连接");
+            StatusText = SpectrumResources.未连接;
             RefreshStateProperties();
             log.Info("SMU closed");
         }
@@ -443,19 +443,19 @@ namespace Spectrum.Configs
             if (!IsOpen || IsBusy) return false;
 
             IsBusy = true;
-            StatusText = LocalizedText.Get("MeasuringAndReading");
+            StatusText = SpectrumResources.MeasuringAndReading;
             SmuMeasurementSnapshot? snapshot = await Task.Run(CaptureMeasurementCore);
             IsBusy = false;
             if (snapshot is null)
             {
-                LastErrorMessage = LocalizedText.Get("SourceMeterReadFailed");
-                StatusText = LocalizedText.Get("ReadFailedTitle");
+                LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
+                StatusText = SpectrumResources.ReadFailedTitle;
                 return false;
             }
 
             ApplyMeasurement(snapshot.Value);
             LastErrorMessage = string.Empty;
-            StatusText = LocalizedText.Format("ReadCompletedAt", DateTime.Now.ToString("HH:mm:ss"));
+            StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
             log.Info($"SMU MeasureData: V={V}, I={I} mA");
             return true;
         }
@@ -467,14 +467,14 @@ namespace Spectrum.Configs
             SmuMeasurementSnapshot? snapshot = CaptureMeasurementCore();
             if (snapshot is null)
             {
-                LastErrorMessage = LocalizedText.Get("SourceMeterReadFailed");
-                StatusText = LocalizedText.Get("ReadFailedTitle");
+                LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
+                StatusText = SpectrumResources.ReadFailedTitle;
                 return false;
             }
 
             ApplyMeasurement(snapshot.Value);
             LastErrorMessage = string.Empty;
-            StatusText = LocalizedText.Format("ReadCompletedAt", DateTime.Now.ToString("HH:mm:ss"));
+            StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
             log.Info($"SMU MeasureData: V={V}, I={I} mA");
             return true;
         }
@@ -489,14 +489,14 @@ namespace Spectrum.Configs
             if (closeOutputCode != 1)
             {
                 log.Warn(BuildPassSxError("关闭源表输出失败", closeOutputCode, $"DevID={_deviceId}"));
-                LastErrorMessage = LocalizedText.Get("SourceMeterCloseOutputFailed");
-                StatusText = LocalizedText.Get("CloseOutputFailedTitle");
+                LastErrorMessage = SpectrumResources.SourceMeterCloseOutputFailed;
+                StatusText = SpectrumResources.CloseOutputFailedTitle;
                 return false;
             }
 
             DisplayConfig.ClearOutput();
             LastErrorMessage = string.Empty;
-            StatusText = LocalizedText.Get("OutputClosed");
+            StatusText = SpectrumResources.OutputClosed;
             log.Info("SMU output closed");
             return true;
         }

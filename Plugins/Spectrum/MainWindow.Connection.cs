@@ -1,6 +1,7 @@
 using cvColorVision;
 using Newtonsoft.Json;
 using Spectrum.License;
+using SpectrumResources = Spectrum.Properties.Resources;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -169,13 +170,13 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("SP100 参数设置成功");
-                MessageBox.Show(LocalizedText.Get("SP100SetSuccess"));
+                MessageBox.Show(SpectrumResources.SP100SetSuccess);
             }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(ret);
                 log.Error($"SP100 参数设置失败: {errorMsg}");
-                MessageBox.Show(LocalizedText.Format("SP100SetFailed", errorMsg));
+                MessageBox.Show(string.Format(SpectrumResources.SP100SetFailed, errorMsg));
             }
         }
 
@@ -211,8 +212,8 @@ namespace Spectrum
 
                         var msgResult = MessageBox.Show(
                             Application.Current.GetActiveWindow(),
-                            LocalizedText.Format("ConnectionFailedWithDeviceDetected", errorMsg, result.IDs[0]),
-                            LocalizedText.Get("ConnectionFailedLicenseCheckTitle"),
+                            string.Format(SpectrumResources.ConnectionFailedWithDeviceDetected, errorMsg, result.IDs[0]),
+                            SpectrumResources.ConnectionFailedLicenseCheckTitle,
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Warning);
 
@@ -230,7 +231,7 @@ namespace Spectrum
             }
 
             // Default: just show the error message
-            MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format("ConnectionFailedWithError", errorMsg));
+            MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(SpectrumResources.ConnectionFailedWithError, errorMsg));
         }
     }
 }

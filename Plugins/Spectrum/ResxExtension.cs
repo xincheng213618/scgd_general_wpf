@@ -1,4 +1,4 @@
-using Spectrum.Properties;
+using SpectrumResources = Spectrum.Properties.Resources;
 using System.Globalization;
 using System.Windows.Markup;
 
@@ -26,6 +26,6 @@ public sealed class ResxExtension : MarkupExtension
             return string.Empty;
         }
 
-        return LocalizedText.Get(Key);
+        return SpectrumResources.ResourceManager.GetString(Key, SpectrumResources.Culture ?? CultureInfo.CurrentUICulture) ?? Key;
     }
 }

@@ -2,6 +2,7 @@ using ColorVision.UI;
 using Spectrum.Configs;
 using Spectrum.Data;
 using Spectrum.Models;
+using SpectrumResources = Spectrum.Properties.Resources;
 using Spectrum.TimedButtons;
 using System.ComponentModel;
 using System.Windows;
@@ -23,13 +24,13 @@ namespace Spectrum
                 operations.Register(
                     SmuConnectButton,
                     "smu-connect-toggle",
-                    LocalizedText.Get("ConnectSourceMeter"),
-                    LocalizedText.Get("ConnectSourceMeter"),
+                    SpectrumResources.ConnectSourceMeter,
+                    SpectrumResources.ConnectSourceMeter,
                     Brushes.Red,
                     contentFactory: _ => Manager.SmuController.ConnectButtonText,
                     tooltipFactory: stats => Manager.SmuController.IsOpen
-                        ? LocalizedText.Get("DisconnectSourceMeter")
-                        : TimedButtonOperationTextFormatter.BuildTooltip(LocalizedText.Get("ConnectSourceMeter"), stats),
+                        ? SpectrumResources.DisconnectSourceMeter
+                        : TimedButtonOperationTextFormatter.BuildTooltip(SpectrumResources.ConnectSourceMeter, stats),
                     minimumExpectedDurationMs: 2000);
             }
 
@@ -38,8 +39,8 @@ namespace Spectrum
                 operations.Register(
                     SmuMeasureButton,
                     "smu-measure",
-                    LocalizedText.Get("SmuMeasureOrSet"),
-                    LocalizedText.Get("MeasureAndReadSourceMeter"),
+                    SpectrumResources.SmuMeasureOrSet,
+                    SpectrumResources.MeasureAndReadSourceMeter,
                     Brushes.Red,
                     minimumExpectedDurationMs: 1000);
             }
@@ -49,8 +50,8 @@ namespace Spectrum
                 operations.Register(
                     SmuCloseOutputButton,
                     "smu-close-output",
-                    LocalizedText.Get("CloseOutput"),
-                    LocalizedText.Get("CloseSourceMeterOutput"),
+                    SpectrumResources.CloseOutput,
+                    SpectrumResources.CloseSourceMeterOutput,
                     Brushes.Red,
                     minimumExpectedDurationMs: 600);
             }
@@ -122,7 +123,7 @@ namespace Spectrum
             // Hide brightness column in 光通量模式
             ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
             // Update measurement mode
-            Manager.MeasurementMode = eqeEnabled ? LocalizedText.Get("LuminousFluxMode") : LocalizedText.Get("BrightnessChromaticityMode");
+            Manager.MeasurementMode = eqeEnabled ? SpectrumResources.LuminousFluxMode : SpectrumResources.BrightnessChromaticityMode;
         }
 
         private void CalculateEqe_Click(object sender, RoutedEventArgs e)
@@ -133,7 +134,7 @@ namespace Spectrum
             var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
             if (selectedItems.Count == 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("SelectDataToRecalculate"), LocalizedText.Get("PromptTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), SpectrumResources.SelectDataToRecalculate, SpectrumResources.PromptTitle, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -155,7 +156,7 @@ namespace Spectrum
 
             try
             {
-                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: disconnecting ? LocalizedText.Get("DisconnectSourceMeter") : LocalizedText.Get("ConnectSourceMeter"));
+                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: disconnecting ? SpectrumResources.DisconnectSourceMeter : SpectrumResources.ConnectSourceMeter);
 
                 if (disconnecting)
                 {
@@ -176,9 +177,9 @@ namespace Spectrum
                     else
                     {
                         string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
-                            ? LocalizedText.Get("SourceMeterConnectFailedCheckSettings")
+                            ? SpectrumResources.SourceMeterConnectFailedCheckSettings
                             : Manager.SmuController.LastErrorMessage;
-                        MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, LocalizedText.Get("ConnectionFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, SpectrumResources.ConnectionFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
             }
@@ -188,7 +189,7 @@ namespace Spectrum
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
                     ex.Message,
-                    disconnecting ? LocalizedText.Get("DisconnectionFailedTitle") : LocalizedText.Get("ConnectionFailedTitle"),
+                    disconnecting ? SpectrumResources.DisconnectionFailedTitle : SpectrumResources.ConnectionFailedTitle,
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -208,7 +209,7 @@ namespace Spectrum
 
             try
             {
-                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: LocalizedText.Get("SmuMeasureOrSet"));
+                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: SpectrumResources.SmuMeasureOrSet);
                 success = await Manager.SmuController.MeasureAndApplyAsync();
                 if (success)
                 {
@@ -220,15 +221,15 @@ namespace Spectrum
                 else
                 {
                     string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
-                        ? LocalizedText.Get("SourceMeterReadFailed")
+                        ? SpectrumResources.SourceMeterReadFailed
                         : Manager.SmuController.LastErrorMessage;
-                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, LocalizedText.Get("ReadFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, SpectrumResources.ReadFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 log.Error("SMU 测量失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, LocalizedText.Get("ReadFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, SpectrumResources.ReadFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
             {
@@ -245,7 +246,7 @@ namespace Spectrum
 
             try
             {
-                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: LocalizedText.Get("CloseOutput"));
+                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: SpectrumResources.CloseOutput);
                 success = Manager.SmuController.CloseOutput();
                 if (success)
                 {
@@ -254,15 +255,15 @@ namespace Spectrum
                 else
                 {
                     string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
-                        ? LocalizedText.Get("SourceMeterCloseOutputFailed")
+                        ? SpectrumResources.SourceMeterCloseOutputFailed
                         : Manager.SmuController.LastErrorMessage;
-                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, LocalizedText.Get("CloseOutputFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, SpectrumResources.CloseOutputFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 log.Error("SMU 关闭输出失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, LocalizedText.Get("CloseOutputFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, SpectrumResources.CloseOutputFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
             {

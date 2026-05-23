@@ -52,10 +52,28 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             foreach (var root in GetStartMenuRoots())
             {
+                foreach (var file in EnumerateFilesSafely(root))
+                {
+                    string extension = Path.GetExtension(file);
+                    if (ShortcutExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+                        yield return file;
+                }
+            }
+        }
+
+        private static IEnumerable<string> EnumerateFilesSafely(string root)
+        {
+            var pendingDirectories = new Stack<string>();
+            pendingDirectories.Push(root);
+
+            while (pendingDirectories.Count > 0)
+            {
+                string directory = pendingDirectories.Pop();
+
                 IEnumerable<string> files;
                 try
                 {
-                    files = Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories);
+                    files = Directory.EnumerateFiles(directory);
                 }
                 catch
                 {
@@ -63,11 +81,20 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 }
 
                 foreach (var file in files)
+                    yield return file;
+
+                IEnumerable<string> subDirectories;
+                try
                 {
-                    string extension = Path.GetExtension(file);
-                    if (ShortcutExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
-                        yield return file;
+                    subDirectories = Directory.EnumerateDirectories(directory);
                 }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var subDirectory in subDirectories)
+                    pendingDirectories.Push(subDirectory);
             }
         }
 
