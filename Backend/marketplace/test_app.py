@@ -124,6 +124,38 @@ class MarketplaceAppTests(unittest.TestCase):
         authed = self.client.get("/upload", headers=self._auth_headers())
         self.assertEqual(authed.status_code, 200)
 
+    def test_api_app_changelog_returns_plain_text(self):
+        self._create_changelog("## 1.2.3.4\n- update notes")
+
+        response = self.client.get("/api/app/changelog")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("update notes", response.get_data(as_text=True))
+        self.assertTrue(response.content_type.startswith("text/plain"))
+
+    def test_api_app_release_download_returns_matching_installer(self):
+        self._create_app_release("1.2.3.4", suffix=".exe", payload=b"installer")
+        self._create_app_release("1.2.3.4", in_history=True, suffix=".zip", payload=b"archive")
+
+        response = self.client.get("/api/app/releases/1.2.3.4/download")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_data(), b"installer")
+        response.close()
+
+    def test_api_app_incremental_download_repairs_legacy_update_layout(self):
+        legacy_dir = self.storage / "ColorVision" / "Update"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        misplaced = legacy_dir / "ColorVision-Update-[2.3.4.5].cvx"
+        misplaced.write_bytes(b"incremental-update")
+
+        response = self.client.get("/api/app/updates/2.3.4.5/download")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_data(), b"incremental-update")
+        self.assertTrue((self.storage / "Update" / misplaced.name).exists())
+        response.close()
+
     def test_api_plugins_invalid_page_returns_json_error(self):
         response = self.client.get("/api/plugins?Page=abc")
         self.assertEqual(response.status_code, 400)

@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Properties;
+using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using System.IO;
@@ -214,7 +215,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
 
             // Fallback to legacy LATEST_RELEASE file
-            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath  + PackageName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = MarketplaceConfig.BuildLegacyPluginUrl($"{PackageName}/LATEST_RELEASE");
             try
             {
                 using var httpClient = new System.Net.Http.HttpClient();

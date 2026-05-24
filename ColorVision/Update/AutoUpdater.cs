@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
+using ColorVision.UI.Marketplace;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -39,10 +41,6 @@ namespace ColorVision.Update
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
 
-        [ConfigSetting(Order = 500)]
-        public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
-        private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
-
         /// <summary>
         /// 是否自动更新
         /// </summary>
@@ -63,15 +61,14 @@ namespace ColorVision.Update
     public class AutoUpdater : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
+        private static readonly HttpClient _metadataClient = new() { Timeout = TimeSpan.FromSeconds(15) };
         private static AutoUpdater _instance;
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
-        
-        public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; OnPropertyChanged(); } }
-        private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
 
-        public string CHANGELOGUrl { get => _CHANGELOG; set { _CHANGELOG = value; OnPropertyChanged(); } }
-        private string _CHANGELOG = AutoUpdateConfig.Instance.UpdatePath + "/CHANGELOG.md";
+        public string UpdateUrl => BuildAppApiUrl("latest-version");
+
+        public string CHANGELOGUrl => BuildAppApiUrl("changelog");
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; OnPropertyChanged(); } }
         private Version _LatestVersion;
@@ -86,23 +83,17 @@ namespace ColorVision.Update
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
 
+        public string GetReleasePackageDownloadUrl(Version version) => BuildAppApiUrl($"releases/{Uri.EscapeDataString(version.ToString())}/download");
+
+        public string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
+
         public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
 
         public void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
         {
-            string downloadUrl;
-            string filePath;
-
-            if (IsIncrement)
-            {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{Version}].cvx";
-                filePath = Path.Combine(DownloadPath, $"ColorVision-Update-[{Version}].cvx");
-            }
-            else
-            {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{Version}.exe";
-                filePath = Path.Combine(DownloadPath, $"ColorVision-{Version}.exe");
-            }
+            string downloadUrl = IsIncrement
+                ? GetIncrementalPackageDownloadUrl(Version)
+                : GetReleasePackageDownloadUrl(Version);
             Action<DownloadTask>? taskCallback;
             taskCallback = task =>
             {
@@ -290,14 +281,20 @@ namespace ColorVision.Update
 
         public async Task<string?> GetChangeLog(string url)
         {
-            using HttpClient _httpClient = new();
-            string versionString = null;
+            string? versionString = null;
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                log.Warn("Failed to fetch changelog: update service URL is empty.");
+                return null;
+            }
+
             try
             {
-                var byteArray = Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-                // First attempt to get the string without authentication
-                versionString = await _httpClient.GetStringAsync(url);
+                using HttpRequestMessage request = new(HttpMethod.Get, url);
+                ApplyAuthorizationHeader(request);
+                using HttpResponseMessage response = await _metadataClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                versionString = await response.Content.ReadAsStringAsync();
             }
             catch (HttpRequestException ex)
             {
@@ -323,14 +320,21 @@ namespace ColorVision.Update
 
         public async Task<Version> GetLatestVersionNumber(string url)
         {
-            using HttpClient _httpClient = new();
-            string versionString = null;
+            string? versionString = null;
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                log.Warn("Failed to fetch update metadata: update service URL is empty.");
+                return new Version();
+            }
+
             try
             {
-                var byteArray = Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-                // First attempt to get the string without authentication
-                versionString = await _httpClient.GetStringAsync(url);
+                using HttpRequestMessage request = new(HttpMethod.Get, url);
+                ApplyAuthorizationHeader(request);
+                using HttpResponseMessage response = await _metadataClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                string payload = await response.Content.ReadAsStringAsync();
+                versionString = ExtractVersionString(payload);
             }
             catch (HttpRequestException ex)
             {
@@ -466,7 +470,7 @@ namespace ColorVision.Update
             {
                 string versionKey = version.ToString();
                 string packageFileName = GetIncrementalPackageFileName(version);
-                string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/{packageFileName}";
+                string downloadUrl = GetIncrementalPackageDownloadUrl(version);
 
                 Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, downloadPath, "1:1", task =>
                 {
@@ -520,6 +524,47 @@ namespace ColorVision.Update
         }
 
         public static string GetIncrementalPackageFileName(Version version) => $"ColorVision-Update-[{version}].cvx";
+
+        private static void ApplyAuthorizationHeader(HttpRequestMessage request)
+        {
+            string authorization = DownloadFileConfig.Instance.Authorization;
+            if (string.IsNullOrWhiteSpace(authorization))
+                return;
+
+            byte[] byteArray = Encoding.ASCII.GetBytes(authorization);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+        }
+
+        private static string ExtractVersionString(string payload)
+        {
+            string trimmed = payload?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmed))
+                return string.Empty;
+
+            if (!trimmed.StartsWith("{", StringComparison.Ordinal))
+                return trimmed;
+
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(trimmed);
+                if (document.RootElement.TryGetProperty("version", out JsonElement element)
+                    && element.ValueKind == JsonValueKind.String)
+                {
+                    return element.GetString() ?? string.Empty;
+                }
+            }
+            catch (JsonException ex)
+            {
+                log.Warn($"Failed to parse update version payload: {ex.Message}");
+            }
+
+            return trimmed;
+        }
+
+        private static string BuildAppApiUrl(string relativePath)
+        {
+            return MarketplaceConfig.BuildApiUrl($"api/app/{relativePath.TrimStart('/')}");
+        }
 
         public static bool IsIncrementalPackageFileReady(string? filePath)
         {

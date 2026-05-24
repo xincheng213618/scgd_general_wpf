@@ -384,7 +384,7 @@ namespace ColorVision.Update
             {
                 string versionKey = version.ToString();
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
-                string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/{packageFileName}";
+                string downloadUrl = AutoUpdater.GetInstance().GetIncrementalPackageDownloadUrl(version);
 
                 manager.AddDownload(downloadUrl, downloadDir, "1:1", task =>
                 {

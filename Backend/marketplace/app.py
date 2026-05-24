@@ -888,6 +888,59 @@ def api_app_latest_version():
     return jsonify({"version": version.strip()})
 
 
+def _find_app_release_installer(version: str) -> dict[str, Any] | None:
+    candidates = [
+        item for item in scan_app_release_artifacts()
+        if str(item.get("version", "")).strip() == version and str(item.get("kind", "")).upper() == "EXE"
+    ]
+    if not candidates:
+        return None
+
+    return max(
+        candidates,
+        key=lambda item: (item.get("source") == "current", str(item.get("modified", ""))),
+    )
+
+
+@app.route("/api/app/changelog", methods=["GET"])
+def api_app_changelog():
+    """Return the application CHANGELOG.md content as plain text."""
+    changelog = SERVICES._read_text_file(STORAGE / "CHANGELOG.md")
+    if not changelog:
+        return jsonify({"error": "CHANGELOG.md not found"}), 404
+
+    return app.response_class(changelog, content_type="text/plain; charset=utf-8")
+
+
+@app.route("/api/app/releases/<version>/download", methods=["GET"])
+def api_app_release_download(version):
+    """Download the installer (.exe) for a specific ColorVision version."""
+    if not _is_safe_version(version):
+        return jsonify({"error": "Invalid version format"}), 400
+
+    artifact = _find_app_release_installer(version)
+    if artifact is None:
+        return jsonify({"error": f"Installer for version {version} not found"}), 404
+
+    target = resolve_storage_file(str(artifact.get("relative_path", "")))
+    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+
+
+@app.route("/api/app/updates/<version>/download", methods=["GET"])
+def api_app_incremental_download(version):
+    """Download a specific incremental .cvx package for the application."""
+    if not _is_safe_version(version):
+        return jsonify({"error": "Invalid version format"}), 400
+
+    repair_update_storage_layout(STORAGE)
+    filename = f"ColorVision-Update-[{version}].cvx"
+    target = STORAGE / "Update" / filename
+    if not target.is_file():
+        return jsonify({"error": f"Incremental package for version {version} not found"}), 404
+
+    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+
+
 # ===================================================================
 # CVWindowsService Tool API
 # ===================================================================

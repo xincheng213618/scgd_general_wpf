@@ -488,7 +488,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             // Fallback to legacy LATEST_RELEASE if API failed
             if (version == new Version())
             {
-                string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
+                string LatestReleaseUrl = MarketplaceConfig.BuildLegacyPluginUrl($"{SearchName}/LATEST_RELEASE");
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient();

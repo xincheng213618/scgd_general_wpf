@@ -1,5 +1,4 @@
 using ColorVision.UI.Marketplace;
-using ColorVision.UI.Plugins;
 using ColorVision.Themes;
 using log4net;
 using Newtonsoft.Json;
@@ -34,31 +33,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
         }
 
-        /// <summary>
-        /// Returns the base URL for the marketplace API, or empty if not configured.
-        /// </summary>
-        private static string BaseUrl
-        {
-            get
-            {
-                string url = MarketplaceConfig.Instance.MarketplaceApiUrl?.TrimEnd('/') ?? string.Empty;
-                if (string.IsNullOrEmpty(url))
-                {
-                    // Derive from legacy PluginUpdatePath: http://host:port/D%3A/ColorVision/Marketplaces/ -> http://host:port
-                    string legacy = PluginLoaderrConfig.Instance.PluginUpdatePath ?? string.Empty;
-                    if (!string.IsNullOrEmpty(legacy))
-                    {
-                        try
-                        {
-                            var uri = new Uri(legacy);
-                            url = $"{uri.Scheme}://{uri.Authority}";
-                        }
-                        catch { }
-                    }
-                }
-                return url;
-            }
-        }
+        private static string BaseUrl => MarketplaceConfig.ServiceBaseUrl;
 
         public async Task<bool> IsAvailableAsync()
         {
@@ -161,12 +136,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public string GetDownloadUrl(string pluginId, string version)
         {
-            string baseUrl = BaseUrl;
-            if (!string.IsNullOrEmpty(baseUrl))
-                return $"{baseUrl}/api/packages/{Uri.EscapeDataString(pluginId)}/{Uri.EscapeDataString(version)}";
-
-            // Fallback to legacy URL
-            return $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{pluginId}/{pluginId}-{version}.cvxp";
+            return $"{BaseUrl}/api/packages/{Uri.EscapeDataString(pluginId)}/{Uri.EscapeDataString(version)}";
         }
 
         public async Task<List<string>> GetCategoriesAsync()
