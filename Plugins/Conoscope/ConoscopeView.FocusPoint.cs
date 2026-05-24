@@ -157,7 +157,7 @@ namespace Conoscope
 
             lastFocusPoiTemplateId = poiParam.Id;
             LoadFocusPoiTemplatesAsync(poiParam.Id, applySelectedTemplate: false);
-            MessageBox.Show(string.Format(Properties.Resources.MsgFocusPoiTemplateSaved, poiParam.Name), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFocusPoiTemplateSaved, poiParam.Name), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void btnManageFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
@@ -246,7 +246,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error("保存 Conoscope 关注点 POI 模板失败", ex);
-                MessageBox.Show(string.Format(Properties.Resources.MsgFocusPoiTemplateSaveFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFocusPoiTemplateSaveFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
@@ -727,7 +727,7 @@ namespace Conoscope
         private string FormatFocusPointOverlayMessage(DVCircleText circle, PoiResultCIExyuvData result, int sampleCount)
         {
             double radiusDegrees = GetFocusCircleRadiusAngle(Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius));
-            return $"{string.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"))}  R:{radiusDegrees:F2}°  N:{sampleCount}";
+            return $"{Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"))}  R:{radiusDegrees:F2}°  N:{sampleCount}";
         }
 
         private bool TryCreateFocusPointResult(DVCircleText circle, out PoiResultCIExyuvData result, out int sampleCount, out string? errorMessage)
@@ -783,7 +783,7 @@ namespace Conoscope
             double radius = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
             if (!TryCalculateFocusPointAverage(circle.Attribute.Center, radius, out double avgX, out double avgY, out double avgZ, out sampleCount))
             {
-                errorMessage = string.Format(Properties.Resources.MsgFocusPointNoPixels, ResolveFocusCircleName(circle));
+                errorMessage = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFocusPointNoPixels, ResolveFocusCircleName(circle));
                 return false;
             }
 

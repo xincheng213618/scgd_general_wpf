@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿#pragma warning disable CA1822,CA1852
+using ColorVision.UI.Menus;
 using log4net;
 using System.Windows;
 using System.Windows.Input;

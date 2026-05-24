@@ -66,9 +66,9 @@ namespace ColorVision.Update
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
 
-        public string UpdateUrl => BuildAppApiUrl("latest-version");
+        public static string UpdateUrl => BuildAppApiUrl("latest-version");
 
-        public string CHANGELOGUrl => BuildAppApiUrl("changelog");
+        public static string CHANGELOGUrl => BuildAppApiUrl("changelog");
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; OnPropertyChanged(); } }
         private Version _LatestVersion;
@@ -83,13 +83,13 @@ namespace ColorVision.Update
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
 
-        public string GetReleasePackageDownloadUrl(Version version) => BuildAppApiUrl($"releases/{Uri.EscapeDataString(version.ToString())}/download");
+        public static string GetReleasePackageDownloadUrl(Version version) => BuildAppApiUrl($"releases/{Uri.EscapeDataString(version.ToString())}/download");
 
-        public string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
+        public static string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
 
-        public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
+        public static void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
 
-        public void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
+        public static void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
         {
             string downloadUrl = IsIncrement
                 ? GetIncrementalPackageDownloadUrl(Version)
@@ -107,7 +107,6 @@ namespace ColorVision.Update
                     Application.Current?.Dispatcher.Invoke(() => downloadFailedAction?.Invoke());
                 }
             };
-            string auth = "1:1";
             DownloadWindow.ShowInstance();
             Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, DownloadPath, "1:1", taskCallback);
         }
@@ -204,7 +203,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, Version?.ToString(), MessageBoxButton.OK);
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, Version?.ToString() ?? string.Empty, MessageBoxButton.OK);
                         });
                     }
                 }
@@ -279,7 +278,7 @@ namespace ColorVision.Update
             }
         }
 
-        public async Task<string?> GetChangeLog(string url)
+        public static async Task<string?> GetChangeLog(string url)
         {
             string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
@@ -318,7 +317,7 @@ namespace ColorVision.Update
 
 
 
-        public async Task<Version> GetLatestVersionNumber(string url)
+        public static async Task<Version> GetLatestVersionNumber(string url)
         {
             string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
@@ -385,7 +384,7 @@ namespace ColorVision.Update
             };
         }
 
-        public void StartUpdatePlan(AutoUpdatePlan plan, Action? downloadFailedAction = null)
+        public static void StartUpdatePlan(AutoUpdatePlan plan, Action? downloadFailedAction = null)
         {
             string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
@@ -398,7 +397,7 @@ namespace ColorVision.Update
             Update(plan.TargetVersion, downloadPath, false, downloadFailedAction);
         }
 
-        private void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, Action? downloadFailedAction)
+        private static void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, Action? downloadFailedAction)
         {
             if (versions.Count == 0)
                 return;
@@ -494,7 +493,7 @@ namespace ColorVision.Update
             }
         }
 
-        private void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
+        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -541,7 +540,7 @@ namespace ColorVision.Update
             if (string.IsNullOrWhiteSpace(trimmed))
                 return string.Empty;
 
-            if (!trimmed.StartsWith("{", StringComparison.Ordinal))
+            if (!trimmed.StartsWith('{'))
                 return trimmed;
 
             try
@@ -581,7 +580,7 @@ namespace ColorVision.Update
             }
         }
 
-        private void UpdateApplication(string downloadPath, bool isIncrement)
+        private static void UpdateApplication(string downloadPath, bool isIncrement)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {

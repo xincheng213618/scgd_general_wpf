@@ -15,6 +15,7 @@ namespace Conoscope
         ColorDifferenceReferenceMode ColorDifferenceReferenceMode,
         double ColorDifferenceCustomU,
         double ColorDifferenceCustomV,
+        bool CanUseDerivedChannels,
         bool CanUseContrastChannel)
     {
         public string ReferenceLabel => ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.LabelAzimuthDegLabel : Properties.Resources.LabelPolarDegLabel;
@@ -26,7 +27,7 @@ namespace Conoscope
 
         public bool TryGetWindowQuickControlState(out ConoscopeWindowQuickControlState state)
         {
-            if (!HasXyzData())
+            if (!HasDisplayData())
             {
                 state = default;
                 return false;
@@ -48,12 +49,18 @@ namespace Conoscope
                 GetSelectedColorDifferenceReferenceMode(),
                 ColorDifferenceConfig.CustomU,
                 ColorDifferenceConfig.CustomV,
-                CanOfferContrastChannel());
+                HasXyzData(),
+                HasXyzData() && CanOfferContrastChannel());
             return true;
         }
 
         public void SetWindowQuickDisplayChannel(ExportChannel channel)
         {
+            if (RequiresFullXyzData(channel) && !HasXyzData())
+            {
+                channel = ExportChannel.Y;
+            }
+
             if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
             {
                 channel = ExportChannel.Y;
@@ -67,8 +74,14 @@ namespace Conoscope
             RenderingConfig.DisplayChannel = channel;
             RefreshDisplayControlsFromConfig();
 
-            if (!HasXyzData())
+            if (!HasDisplayData())
             {
+                return;
+            }
+
+            if (channel == ExportChannel.ColorDifference && !CanRefreshColorDifferenceDisplay())
+            {
+                RaiseWindowQuickControlStateChanged();
                 return;
             }
 
@@ -105,6 +118,11 @@ namespace Conoscope
 
         public void SetWindowQuickExportChannel(ExportChannel channel)
         {
+            if (RequiresFullXyzData(channel) && !HasXyzData())
+            {
+                channel = ExportChannel.Y;
+            }
+
             if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
             {
                 channel = ExportChannel.Y;

@@ -1,22 +1,22 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import {
+  defaultLocaleKey,
+  defaultSectionKey,
+  getLocaleDefinition,
+  getLocaleHomeUrl,
+  getSectionSortIndex,
+  getSectionTitle,
+  getSectionUrl,
+  isKnownSectionKey,
+  isLocaleKey,
+  localeOrder,
+} from '../i18n/locales.mjs'
 
 const docsRoot = path.resolve(process.cwd(), 'docs')
 const distRoot = path.join(docsRoot, '.vitepress', 'dist')
 const manifestOutputPath = path.join(distRoot, 'docs-manifest.json')
 const searchIndexOutputPath = path.join(distRoot, 'docs-search-index.json')
-
-const sectionDefinitions = [
-  { key: 'root', title: '首页与入口', url: '/' },
-  { key: '00-getting-started', title: '安装与首次使用', url: '/00-getting-started/README' },
-  { key: '01-user-guide', title: '日常使用', url: '/01-user-guide/README' },
-  { key: '02-developer-guide', title: '开发与交付', url: '/02-developer-guide/README' },
-  { key: '03-architecture', title: '设计与架构', url: '/03-architecture/README' },
-  { key: '04-api-reference', title: 'API 参考', url: '/04-api-reference/README' },
-  { key: '05-resources', title: '附录与资源', url: '/05-resources/README' },
-]
-
-const sectionTitleMap = new Map(sectionDefinitions.map((definition) => [definition.key, definition.title]))
 
 async function main() {
   await ensureDistDirectory()
@@ -40,14 +40,22 @@ async function main() {
   const manifest = {
     generatedAt,
     basePath: '/scgd_general_wpf/',
+    locales: localeOrder.map((localeKey) => ({
+      key: localeKey,
+      label: getLocaleDefinition(localeKey).label,
+      url: getLocaleHomeUrl(localeKey),
+    })),
     pagesCount: pages.length,
     entriesCount: searchEntries.length,
     sections,
     pages: pages.map((page) => ({
+      localeKey: page.localeKey,
+      localeLabel: page.localeLabel,
       title: page.title,
       summary: page.summary,
       url: page.url,
       relativePath: page.relativePath,
+      contentRelativePath: page.contentRelativePath,
       sourcePath: page.sourcePath,
       sectionKey: page.sectionKey,
       sectionTitle: page.sectionTitle,
@@ -59,6 +67,11 @@ async function main() {
   const searchIndex = {
     generatedAt,
     basePath: '/scgd_general_wpf/',
+    locales: localeOrder.map((localeKey) => ({
+      key: localeKey,
+      label: getLocaleDefinition(localeKey).label,
+      url: getLocaleHomeUrl(localeKey),
+    })),
     entriesCount: searchEntries.length,
     pagesCount: pages.length,
     entries: searchEntries,
@@ -124,12 +137,15 @@ function shouldSkipEntry(name) {
 async function buildPageRecord(markdownFilePath) {
   const rawContent = await fs.readFile(markdownFilePath, 'utf8')
   const relativePath = normalizePath(path.relative(docsRoot, markdownFilePath))
+  const localeKey = getLocaleKey(relativePath)
+  const localeLabel = getLocaleDefinition(localeKey).label
+  const contentRelativePath = stripLocalePrefix(relativePath, localeKey)
   const sourcePath = normalizePath(path.join('docs', relativePath))
   const url = toDocumentUrl(relativePath)
-  const sectionKey = getSectionKey(relativePath)
-  const sectionTitle = sectionTitleMap.get(sectionKey) ?? sectionKey
+  const sectionKey = getSectionKey(contentRelativePath)
+  const sectionTitle = getSectionTitle(localeKey, sectionKey)
   const parsedMarkdown = parseMarkdown(rawContent)
-  const title = parsedMarkdown.title || fallbackTitleFromPath(relativePath)
+  const title = parsedMarkdown.title || fallbackTitleFromPath(contentRelativePath, localeKey)
   const summary = createSummary(parsedMarkdown.summaryText)
   const headings = parsedMarkdown.headings.map((heading) => ({
     depth: heading.depth,
@@ -139,10 +155,13 @@ async function buildPageRecord(markdownFilePath) {
   }))
 
   return {
+    localeKey,
+    localeLabel,
     title,
     summary,
     url,
     relativePath,
+    contentRelativePath,
     sourcePath,
     sectionKey,
     sectionTitle,
@@ -273,6 +292,8 @@ function buildSearchEntries(page) {
   entries.push({
     id: page.url,
     kind: 'page',
+    localeKey: page.localeKey,
+    localeLabel: page.localeLabel,
     sectionKey: page.sectionKey,
     sectionTitle: page.sectionTitle,
     title: page.title,
@@ -286,6 +307,8 @@ function buildSearchEntries(page) {
     entries.push({
       id: section.url,
       kind: 'section',
+      localeKey: page.localeKey,
+      localeLabel: page.localeLabel,
       sectionKey: page.sectionKey,
       sectionTitle: page.sectionTitle,
       title: section.title || page.title,
@@ -301,40 +324,74 @@ function buildSearchEntries(page) {
 }
 
 function buildSections(pages) {
-  const pagesBySection = new Map(sectionDefinitions.map((definition) => [definition.key, []]))
+  const pagesBySection = new Map()
 
   for (const page of pages) {
-    if (!pagesBySection.has(page.sectionKey)) {
-      pagesBySection.set(page.sectionKey, [])
+    const compositeKey = `${page.localeKey}:${page.sectionKey}`
+
+    if (!pagesBySection.has(compositeKey)) {
+      pagesBySection.set(compositeKey, [])
     }
 
-    pagesBySection.get(page.sectionKey).push(page)
+    pagesBySection.get(compositeKey).push(page)
   }
 
   return [...pagesBySection.entries()]
-    .map(([key, sectionPages]) => ({
-      key,
-      title: sectionTitleMap.get(key) ?? key,
-      url: sectionDefinitions.find((definition) => definition.key === key)?.url ?? sectionPages[0]?.url ?? '/',
-      pageCount: sectionPages.length,
-      pages: sectionPages
-        .sort((left, right) => left.relativePath.localeCompare(right.relativePath, 'zh-CN'))
-        .map((page) => ({
-          title: page.title,
-          summary: page.summary,
-          url: page.url,
-          relativePath: page.relativePath,
-          sourcePath: page.sourcePath,
-          wordCount: page.wordCount,
-          headings: page.headings,
-        })),
-    }))
+    .map(([key, sectionPages]) => {
+      const [localeKey, sectionKey] = key.split(':')
+      return {
+        key,
+        localeKey,
+        localeLabel: getLocaleDefinition(localeKey).label,
+        sectionKey,
+        title: getSectionTitle(localeKey, sectionKey),
+        url: getSectionUrl(localeKey, sectionKey) ?? sectionPages[0]?.url ?? getLocaleHomeUrl(localeKey),
+        pageCount: sectionPages.length,
+        pages: sectionPages
+          .sort((left, right) => left.relativePath.localeCompare(right.relativePath, 'zh-CN'))
+          .map((page) => ({
+            localeKey: page.localeKey,
+            localeLabel: page.localeLabel,
+            title: page.title,
+            summary: page.summary,
+            url: page.url,
+            relativePath: page.relativePath,
+            contentRelativePath: page.contentRelativePath,
+            sourcePath: page.sourcePath,
+            wordCount: page.wordCount,
+            headings: page.headings,
+          })),
+      }
+    })
+    .sort(compareSectionGroup)
     .filter((section) => section.pageCount > 0)
 }
 
-function getSectionKey(relativePath) {
+function compareSectionGroup(left, right) {
+  const localeOrderDelta = localeOrder.indexOf(left.localeKey) - localeOrder.indexOf(right.localeKey)
+  if (localeOrderDelta !== 0) {
+    return localeOrderDelta
+  }
+
+  return getSectionSortIndex(left.localeKey, left.sectionKey) - getSectionSortIndex(right.localeKey, right.sectionKey)
+}
+
+function getLocaleKey(relativePath) {
   const firstSegment = relativePath.split('/')[0]
-  return sectionTitleMap.has(firstSegment) ? firstSegment : 'root'
+  return isLocaleKey(firstSegment) ? firstSegment : defaultLocaleKey
+}
+
+function stripLocalePrefix(relativePath, localeKey) {
+  if (localeKey === defaultLocaleKey) {
+    return relativePath
+  }
+
+  return relativePath.slice(localeKey.length + 1)
+}
+
+function getSectionKey(contentRelativePath) {
+  const firstSegment = contentRelativePath.split('/')[0]
+  return isKnownSectionKey(firstSegment) ? firstSegment : defaultSectionKey
 }
 
 function toDocumentUrl(relativePath) {
@@ -343,17 +400,21 @@ function toDocumentUrl(relativePath) {
     return '/'
   }
 
+  if (normalizedRelativePath.endsWith('/index')) {
+    return `/${normalizedRelativePath.slice(0, -'/index'.length)}/`
+  }
+
   return `/${normalizedRelativePath}`
 }
 
-function fallbackTitleFromPath(relativePath) {
-  if (relativePath === 'index.md') {
-    return 'ColorVision 文档首页'
+function fallbackTitleFromPath(contentRelativePath, localeKey) {
+  if (contentRelativePath === 'index.md') {
+    return getLocaleDefinition(localeKey).homeDocumentTitle
   }
 
-  const fileName = relativePath.split('/').pop()?.replace(/\.md$/iu, '') || 'Untitled'
+  const fileName = contentRelativePath.split('/').pop()?.replace(/\.md$/iu, '') || 'Untitled'
   if (fileName.toLowerCase() === 'readme') {
-    const parentSegment = relativePath.split('/').slice(-2, -1)[0]
+    const parentSegment = contentRelativePath.split('/').slice(-2, -1)[0]
     return formatTitle(parentSegment || 'README')
   }
 

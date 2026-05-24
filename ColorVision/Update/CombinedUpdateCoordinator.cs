@@ -222,7 +222,7 @@ namespace ColorVision.Update
 
             if (applicationPlan != null)
             {
-                AutoUpdater.GetInstance().StartUpdatePlan(applicationPlan, ShowUpdateDownloadFailedMessage);
+                AutoUpdater.StartUpdatePlan(applicationPlan, ShowUpdateDownloadFailedMessage);
                 return;
             }
 
@@ -384,7 +384,7 @@ namespace ColorVision.Update
             {
                 string versionKey = version.ToString();
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
-                string downloadUrl = AutoUpdater.GetInstance().GetIncrementalPackageDownloadUrl(version);
+                string downloadUrl = AutoUpdater.GetIncrementalPackageDownloadUrl(version);
 
                 manager.AddDownload(downloadUrl, downloadDir, "1:1", task =>
                 {
@@ -875,7 +875,7 @@ namespace ColorVision.Update
         {
             try
             {
-                string? changeLogText = await AutoUpdater.GetInstance().GetChangeLog(AutoUpdater.GetInstance().CHANGELOGUrl);
+                string? changeLogText = await AutoUpdater.GetChangeLog(AutoUpdater.CHANGELOGUrl);
                 if (string.IsNullOrWhiteSpace(changeLogText))
                     return Array.Empty<ChangeLogEntry>();
 

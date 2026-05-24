@@ -8,9 +8,49 @@ using System.Linq;
 
 namespace Conoscope.Infrastructure.FileIO
 {
+    internal enum CvcieChannel
+    {
+        X = 0,
+        Y = 1,
+        Z = 2
+    }
+
+    internal sealed class CvcieImagePayload
+    {
+        public CvcieImagePayload(byte[] data, int rows, int cols, int bitsPerPixel, string? exposureSummary)
+        {
+            Data = data;
+            Rows = rows;
+            Cols = cols;
+            BitsPerPixel = bitsPerPixel;
+            ExposureSummary = exposureSummary;
+        }
+
+        public byte[] Data { get; }
+
+        public int Rows { get; }
+
+        public int Cols { get; }
+
+        public int BitsPerPixel { get; }
+
+        public string? ExposureSummary { get; }
+
+        public int Width => Cols;
+
+        public int Height => Rows;
+
+        public int ChannelSize => Cols * Rows * (BitsPerPixel / 8);
+    }
+
     internal static class CvcieImageLoader
     {
         public static ConoscopeImageData Load(string filename)
+        {
+            return Load(LoadPayload(filename));
+        }
+
+        internal static CvcieImagePayload LoadPayload(string filename)
         {
             if (!CVFileUtil.IsCVCIEFile(filename))
             {
@@ -24,23 +64,48 @@ namespace Conoscope.Infrastructure.FileIO
 
             using (fileInfo)
             {
-                if (fileInfo.Channels < 3)
-                {
-                    throw new NotSupportedException(string.Format(Properties.Resources.CVCIEChannelInsufficientLoader, fileInfo.Channels));
-                }
+                ValidatePayload(fileInfo);
 
-                int bytesPerPixel = fileInfo.Bpp / 8;
-                int channelSize = fileInfo.Cols * fileInfo.Rows * bytesPerPixel;
-                if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
-                {
-                    throw new InvalidDataException(Properties.Resources.CVCIEDataLengthInsufficientLoader);
-                }
+                byte[] data = fileInfo.Data;
+                fileInfo.Data = Array.Empty<byte>();
+                return new CvcieImagePayload(
+                    data,
+                    fileInfo.Rows,
+                    fileInfo.Cols,
+                    fileInfo.Bpp,
+                    BuildExposureSummary(fileInfo.Exp));
+            }
+        }
 
-                MatType singleChannelType = GetSingleChannelMatType(fileInfo.Bpp);
-                Mat x = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-                Mat y = CreateFloatChannelMat(fileInfo.Data, channelSize, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-                Mat z = CreateFloatChannelMat(fileInfo.Data, channelSize * 2, channelSize, fileInfo.Rows, fileInfo.Cols, singleChannelType);
-                return new ConoscopeImageData(x, y, z, fileInfo.Bpp, BuildExposureSummary(fileInfo.Exp));
+        internal static ConoscopeImageData Load(CvcieImagePayload payload)
+        {
+            Mat x = CreateChannelMat(payload, CvcieChannel.X);
+            Mat y = CreateChannelMat(payload, CvcieChannel.Y);
+            Mat z = CreateChannelMat(payload, CvcieChannel.Z);
+            return new ConoscopeImageData(x, y, z, payload.BitsPerPixel, payload.ExposureSummary);
+        }
+
+        internal static Mat CreateChannelMat(CvcieImagePayload payload, CvcieChannel channel)
+        {
+            ArgumentNullException.ThrowIfNull(payload);
+
+            MatType singleChannelType = GetSingleChannelMatType(payload.BitsPerPixel);
+            int offset = payload.ChannelSize * (int)channel;
+            return CreateFloatChannelMat(payload.Data, offset, payload.ChannelSize, payload.Rows, payload.Cols, singleChannelType);
+        }
+
+        private static void ValidatePayload(CVCIEFile fileInfo)
+        {
+            if (fileInfo.Channels < 3)
+            {
+                throw new NotSupportedException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.CVCIEChannelInsufficientLoader, fileInfo.Channels));
+            }
+
+            int bytesPerPixel = fileInfo.Bpp / 8;
+            int channelSize = fileInfo.Cols * fileInfo.Rows * bytesPerPixel;
+            if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
+            {
+                throw new InvalidDataException(Properties.Resources.CVCIEDataLengthInsufficientLoader);
             }
         }
 

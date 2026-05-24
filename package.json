@@ -8,6 +8,7 @@
   },
   "scripts": {
     "docs:dev": "vitepress dev docs",
+    "docs:locale:add": "node docs/.vitepress/scripts/scaffold-locale.mjs",
     "docs:build": "vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs",
     "docs:preview": "vitepress preview docs"
   },

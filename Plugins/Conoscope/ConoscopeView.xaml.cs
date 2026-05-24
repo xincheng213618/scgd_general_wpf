@@ -168,7 +168,7 @@ namespace Conoscope
             RefreshDisplayControlsFromConfig();
             RefreshPreprocessControlsFromConfig();
             UpdatePseudoColorMapPreview();
-            if (HasXyzData())
+            if (HasDisplayData())
             {
                 EnsureSelectedDisplayChannelAvailable();
 
@@ -216,9 +216,10 @@ namespace Conoscope
             ExportChannel channel = GetSelectedDisplayChannel();
             bool isAvailable = channel switch
             {
+                ExportChannel.X or ExportChannel.Z or ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV => HasXyzData(),
                 ExportChannel.ColorDifference => CanRefreshColorDifferenceDisplay(),
                 ExportChannel.Contrast => CanRefreshContrastDisplay(),
-                _ => true
+                _ => HasDisplayData()
             };
 
             if (isAvailable)
@@ -250,13 +251,13 @@ namespace Conoscope
         public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
         {
             List<StatusBarMeta> items = new();
-            if (XMat != null)
+            if (YMat != null)
             {
                 items.Add(new StatusBarMeta
                 {
                     Id = "ConoscopeImageDimensions",
                     Name = Properties.Resources.StatusImageSize,
-                    Description = $"{XMat.Cols} x {XMat.Rows}",
+                    Description = $"{YMat.Cols} x {YMat.Rows}",
                     Type = StatusBarType.Text,
                     Alignment = StatusBarAlignment.Right,
                     Order = 100,

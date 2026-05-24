@@ -149,7 +149,7 @@ namespace Conoscope
             {
                 if (reportStatus)
                 {
-                    SetOperationStatus(string.Format(Properties.Resources.MsgNdNotBoundCalibration, ndPort), Brushes.Gray);
+                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdNotBoundCalibration, ndPort), Brushes.Gray);
                 }
 
                 return false;
@@ -158,7 +158,7 @@ namespace Conoscope
             cbCalibrationTemplate.SelectedItem = matched;
             if (reportStatus)
             {
-                SetOperationStatus(string.Format(Properties.Resources.MsgNdMatchedCalibration, ndPort, matched.Key), Brushes.LimeGreen);
+                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdMatchedCalibration, ndPort, matched.Key), Brushes.LimeGreen);
             }
 
             return true;
@@ -346,7 +346,7 @@ namespace Conoscope
             binding.CalibrationTemplateId = calibrationTemplate.Id;
             binding.CalibrationTemplateName = calibrationTemplate.Key;
             ConfigService.Instance.Save<ConoscopeConfig>();
-            SetOperationStatus(string.Format(Properties.Resources.MsgNdBound, ndPort, calibrationTemplate.Key), Brushes.LimeGreen);
+            SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdBound, ndPort, calibrationTemplate.Key), Brushes.LimeGreen);
         }
 
         private void btnClearNdCalibrationBinding_Click(object sender, RoutedEventArgs e)
@@ -361,13 +361,13 @@ namespace Conoscope
             ConoscopeNdCalibrationBinding? binding = FindNdCalibrationBinding(camera, ndPort);
             if (binding == null)
             {
-                SetOperationStatus(string.Format(Properties.Resources.MsgNdNotBound, ndPort), Brushes.Gray);
+                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdNotBound, ndPort), Brushes.Gray);
                 return;
             }
 
             CaptureConfig.NdCalibrationBindings.Remove(binding);
             ConfigService.Instance.Save<ConoscopeConfig>();
-            SetOperationStatus(string.Format(Properties.Resources.MsgNdUnbound, ndPort), Brushes.LimeGreen);
+            SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdUnbound, ndPort), Brushes.LimeGreen);
         }
 
         private async void btnRunFlow_Click(object sender, RoutedEventArgs e)
@@ -386,7 +386,7 @@ namespace Conoscope
             {
                 operationScope = BeginTrackedOperation(btnRunFlow, FlowRunOperationActionKey, "执行流程", DefaultFlowExpectedDurationMs);
                 SetOperationBusy(true);
-                SetOperationStatus(string.Format(Properties.Resources.MsgFlowExecuting, flowTemplate.Key), Brushes.DodgerBlue);
+                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowExecuting, flowTemplate.Key), Brushes.DodgerBlue);
 
                 ConoscopeFlowCaptureResult result = await ConoscopeCaptureWorkflow.RunFlowAsync(flowTemplate);
                 if (!result.Started)
@@ -397,8 +397,8 @@ namespace Conoscope
 
                 if (!result.Completed)
                 {
-                    SetOperationStatus(string.Format(Properties.Resources.MsgFlowIncomplete, result.FlowResult!.FlowStatus), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, result.FlowResult.FlowStatus, result.FlowResult.Params), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowIncomplete, result.FlowResult!.FlowStatus), Brushes.OrangeRed);
+                    MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowFailedDetail, result.FlowResult.FlowStatus, result.FlowResult.Params), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -406,7 +406,7 @@ namespace Conoscope
                 {
                     OpenConoscope(result.FilePath!, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     operationSucceeded = true;
-                    SetOperationStatus(string.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
+                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
                 }
                 else
                 {
@@ -417,7 +417,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgFlowFailed, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgFlowFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -443,13 +443,13 @@ namespace Conoscope
             {
                 operationScope = BeginTrackedOperation(btnCaptureCamera, CameraCaptureOperationActionKey, "相机拍照", DefaultCameraCaptureExpectedDurationMs);
                 SetOperationBusy(true);
-                SetOperationStatus(string.Format(Properties.Resources.MsgCapturingPhoto, camera.Config.Name), Brushes.DodgerBlue);
+                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCapturingPhoto, camera.Config.Name), Brushes.DodgerBlue);
 
                 ConoscopeCameraCaptureResult result = await ConoscopeCaptureWorkflow.CaptureCameraAsync(camera, GetSelectedCalibrationParam());
                 if (!result.Succeeded)
                 {
-                    SetOperationStatus(string.Format(Properties.Resources.MsgCaptureFailed, result.State), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, result.State, result.MessageRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCaptureFailed, result.State), Brushes.OrangeRed);
+                    MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCaptureFailedDetail, result.State, result.MessageRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -457,7 +457,7 @@ namespace Conoscope
                 {
                     OpenConoscope(result.FilePath!, result.ExposureSummary, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     operationSucceeded = true;
-                    SetOperationStatus(string.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
+                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
                 }
                 else
                 {
@@ -468,7 +468,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgCaptureFailedTitle, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgCaptureFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCaptureFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -496,7 +496,7 @@ namespace Conoscope
             try
             {
                 SetOperationBusy(true);
-                SetOperationStatus(string.Format(Properties.Resources.MsgSwitchingNd, port), Brushes.DodgerBlue);
+                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSwitchingNd, port), Brushes.DodgerBlue);
                 camera.Config.NDPort = port;
                 MsgRecord msgRecord = camera.DService.SetNDPort();
                 MsgRecordState state = await ConoscopeCaptureWorkflow.WaitForMsgRecordAsync(msgRecord);
@@ -504,19 +504,19 @@ namespace Conoscope
                 {
                     if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))
                     {
-                        SetOperationStatus(string.Format(Properties.Resources.MsgNdSwitched, port), Brushes.LimeGreen);
+                        SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitched, port), Brushes.LimeGreen);
                     }
                 }
                 else
                 {
-                    SetOperationStatus(string.Format(Properties.Resources.MsgNdSwitchFailed, state), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitchFailed, state), Brushes.OrangeRed);
+                    MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitchFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgNdSwitchFailed, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgNdSwitchFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitchFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -546,19 +546,19 @@ namespace Conoscope
                     txtNDPort.Text = port.ToString(CultureInfo.InvariantCulture);
                     if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))
                     {
-                        SetOperationStatus(string.Format(Properties.Resources.MsgCurrentNd, port), Brushes.LimeGreen);
+                        SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCurrentNd, port), Brushes.LimeGreen);
                     }
                 }
                 else
                 {
-                    SetOperationStatus(string.Format(Properties.Resources.MsgNdReadFailed, state), Brushes.OrangeRed);
-                    MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdReadFailed, state), Brushes.OrangeRed);
+                    MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdReadFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 SetOperationStatus(Properties.Resources.MsgNdReadFailed, Brushes.OrangeRed);
-                MessageBox.Show(string.Format(Properties.Resources.MsgNdReadFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdReadFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

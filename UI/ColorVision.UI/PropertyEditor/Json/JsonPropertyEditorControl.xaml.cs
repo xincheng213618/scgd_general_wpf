@@ -1,3 +1,4 @@
+#pragma warning disable CA1304,CA1310,CA1822,CA1859,CA1866
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Windows;

@@ -182,7 +182,7 @@ namespace Conoscope
             polarPlotReference.UpdatePlot(
                 points,
                 GetChannelPlotBrush(channel),
-                string.Format(Properties.Resources.RadiusFormat, ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)),
+                Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.RadiusFormat, ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)),
                 radialMaximum,
                 closePath);
         }

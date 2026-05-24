@@ -70,8 +70,8 @@ namespace ColorVision.Update.Export
             try
             {
                 // 1. 获取当前程序所在目录和exe路径
-                string appPath = Process.GetCurrentProcess().MainModule.FileName;
-                string appDir = Path.GetDirectoryName(appPath);
+                string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
+                string appDir = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
                 string iconPath = Path.Combine(appDir, "ColorVisionIcons64.dll");
 
                 // 2. 为了写入 .reg 文件，路径中的反斜杠需要转义 (例如 C:\Program 变成 C:\\Program)

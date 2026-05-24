@@ -1,3 +1,4 @@
+#pragma warning disable CA1513,CA1716
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows;

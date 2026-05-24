@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1852,CA1859,CS8601,CS8603,CS8625
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;

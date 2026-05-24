@@ -16,9 +16,15 @@
 
   <ItemGroup>
     <Compile Remove="Plugins\**" />
+    <Compile Remove="bin\**" />
     <EmbeddedResource Remove="Plugins\**" />
+    <EmbeddedResource Remove="bin\**" />
     <None Remove="Plugins\**" />
+    <None Remove="bin\**" />
     <Page Remove="Plugins\**" />
+    <Page Remove="bin\**" />
+    <Resource Remove="bin\**" />
+    <Content Remove="bin\**" />
   </ItemGroup>
 
 	<ItemGroup>

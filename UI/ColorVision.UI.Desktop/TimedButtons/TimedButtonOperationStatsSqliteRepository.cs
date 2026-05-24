@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using SqlSugar;
 using System.IO;
 

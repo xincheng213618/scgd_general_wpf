@@ -37,7 +37,7 @@ namespace Conoscope
             isUpdatingHomeQuickControls = true;
             try
             {
-                RefreshHomeChannelAvailability(state.CanUseContrastChannel);
+                RefreshHomeChannelAvailability(state.CanUseDerivedChannels, state.CanUseContrastChannel);
                 ComboBoxHelper.SelectItemByTag(cbHomeDisplayChannel, state.DisplayChannel.ToString());
                 ComboBoxHelper.SelectItemByTag(cbHomeExportChannel, state.ExportChannel.ToString());
                 ComboBoxHelper.SelectItemByTag(cbHomeContrastImageKind, state.ContrastImageKind.ToString());
@@ -47,7 +47,7 @@ namespace Conoscope
                 txtHomeReferenceValue.Text = state.ReferenceValue.ToString("F2", CultureInfo.InvariantCulture);
                 txtHomeReferenceValue.ToolTip = state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
                     ? Properties.Resources.TipEnterAzimuth
-                    : string.Format(Properties.Resources.TipEnterPolarAngle, state.ReferenceMaximum);
+                    : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, state.ReferenceMaximum);
 
                 txtHomeColorDifferenceCustomU.Text = state.ColorDifferenceCustomU.ToString("F4", CultureInfo.InvariantCulture);
                 txtHomeColorDifferenceCustomV.Text = state.ColorDifferenceCustomV.ToString("F4", CultureInfo.InvariantCulture);
@@ -66,24 +66,53 @@ namespace Conoscope
             }
         }
 
-        private void RefreshHomeChannelAvailability(bool canUseContrastChannel)
+        private void RefreshHomeChannelAvailability(bool canUseDerivedChannels, bool canUseContrastChannel)
         {
-            UpdateHomeChannelOptionVisibility(cbHomeDisplayChannel, canUseContrastChannel);
-            UpdateHomeChannelOptionVisibility(cbHomeExportChannel, canUseContrastChannel);
+            UpdateHomeChannelOptionVisibility(cbHomeDisplayChannel, canUseDerivedChannels, canUseContrastChannel);
+            UpdateHomeChannelOptionVisibility(cbHomeExportChannel, canUseDerivedChannels, canUseContrastChannel);
         }
 
-        private static void UpdateHomeChannelOptionVisibility(ComboBox? comboBox, bool canUseContrastChannel)
+        private static void UpdateHomeChannelOptionVisibility(ComboBox? comboBox, bool canUseDerivedChannels, bool canUseContrastChannel)
         {
             if (comboBox == null)
             {
                 return;
             }
 
+            foreach (ExportChannel channel in new[]
+            {
+                ExportChannel.X,
+                ExportChannel.Z,
+                ExportChannel.CieX,
+                ExportChannel.CieY,
+                ExportChannel.CieU,
+                ExportChannel.CieV,
+                ExportChannel.ColorDifference
+            })
+            {
+                ComboBoxHelper.SetItemVisibilityByTag(
+                    comboBox,
+                    channel.ToString(),
+                    canUseDerivedChannels ? Visibility.Visible : Visibility.Collapsed);
+            }
+
             string contrastTag = ExportChannel.Contrast.ToString();
             ComboBoxHelper.SetItemVisibilityByTag(comboBox, contrastTag, canUseContrastChannel ? Visibility.Visible : Visibility.Collapsed);
-            if (!canUseContrastChannel
+            bool selectedDerivedChannelUnavailable = !canUseDerivedChannels
+                && comboBox.SelectedItem is ComboBoxItem derivedSelectedItem
+                && Enum.TryParse<ExportChannel>(derivedSelectedItem.Tag?.ToString(), out ExportChannel derivedChannel)
+                && derivedChannel is ExportChannel.X
+                    or ExportChannel.Z
+                    or ExportChannel.CieX
+                    or ExportChannel.CieY
+                    or ExportChannel.CieU
+                    or ExportChannel.CieV
+                    or ExportChannel.ColorDifference;
+            bool selectedContrastChannelUnavailable = !canUseContrastChannel
                 && comboBox.SelectedItem is ComboBoxItem selectedItem
-                && string.Equals(selectedItem.Tag?.ToString(), contrastTag, StringComparison.OrdinalIgnoreCase))
+                && string.Equals(selectedItem.Tag?.ToString(), contrastTag, StringComparison.OrdinalIgnoreCase);
+
+            if (selectedDerivedChannelUnavailable || selectedContrastChannelUnavailable)
             {
                 ComboBoxHelper.TrySelectItemByTag(comboBox, ExportChannel.Y.ToString(), visibleOnly: true);
             }
@@ -145,8 +174,8 @@ namespace Conoscope
                 string label = GetContrastReferenceLabel(referenceKind);
                 string savedName = Path.GetFileName(fileName) ?? Properties.Resources.StateSaved;
                 button.ToolTip = isSaved
-                    ? string.Format(Properties.Resources.TipGlobalContrastReferenceSaved, label, savedName)
-                    : string.Format(Properties.Resources.TipSaveGlobalContrastReference, label);
+                    ? CompositeFormatCache.Format(Properties.Resources.TipGlobalContrastReferenceSaved, label, savedName)
+                    : CompositeFormatCache.Format(Properties.Resources.TipSaveGlobalContrastReference, label);
 
                 if (isSaved)
                 {
@@ -170,7 +199,7 @@ namespace Conoscope
             {
                 string savedName = Path.GetFileName(globalReferences.ColorDifferenceReferenceFileName) ?? Properties.Resources.StateSaved;
                 btnHomeSaveColorDifferenceReference.ToolTip = hasReference
-                    ? string.Format(Properties.Resources.TipGlobalColorDifferenceReferenceSaved, savedName)
+                    ? CompositeFormatCache.Format(Properties.Resources.TipGlobalColorDifferenceReferenceSaved, savedName)
                     : Properties.Resources.TipSaveGlobalColorDifferenceReference;
 
                 if (hasReference)
@@ -237,7 +266,7 @@ namespace Conoscope
 
             ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbHomeDisplayChannel, ExportChannel.Y);
             ActiveView.SetWindowQuickDisplayChannel(channel);
-            SetOperationStatus(string.Format(Properties.Resources.MsgChannelSwitched, channel), Brushes.LimeGreen);
+            SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgChannelSwitched, channel), Brushes.LimeGreen);
         }
 
         private void rbHomeReferenceLine_Checked(object sender, RoutedEventArgs e)
@@ -260,7 +289,7 @@ namespace Conoscope
             ActiveView.SetWindowQuickReferenceMode(mode);
             txtHomeReferenceValue.ToolTip = mode == ConoscopeCoordinateReferenceMode.AzimuthLine
                 ? Properties.Resources.TipEnterAzimuth
-                : string.Format(Properties.Resources.TipEnterPolarAngle, ActiveView.MaxAngle);
+                : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, ActiveView.MaxAngle);
             SetOperationStatus(mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.MsgRefModeSwitchedAzimuth : Properties.Resources.MsgRefModeSwitchedPolar, Brushes.LimeGreen);
         }
 
@@ -273,7 +302,7 @@ namespace Conoscope
 
             ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbHomeExportChannel, ExportChannel.Y);
             ActiveView.SetWindowQuickExportChannel(channel);
-            SetOperationStatus(string.Format(Properties.Resources.MsgExportChannelSwitched, channel), Brushes.LimeGreen);
+            SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgExportChannelSwitched, channel), Brushes.LimeGreen);
         }
 
         private void cbHomeContrastImageKind_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -288,7 +317,7 @@ namespace Conoscope
             string imageLabel = imageKind == ContrastReferenceKind.Black
                 ? Properties.Resources.ContrastImageBlack
                 : Properties.Resources.ContrastImageWhite;
-            SetOperationStatus(string.Format(Properties.Resources.MsgCurrentImageSwitched, imageLabel), Brushes.LimeGreen);
+            SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgCurrentImageSwitched, imageLabel), Brushes.LimeGreen);
         }
 
         private void cbHomeColorDifferenceReference_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -301,7 +330,7 @@ namespace Conoscope
             ColorDifferenceReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(cbHomeColorDifferenceReference, ColorDifferenceReferenceMode.D65);
             UpdateHomeColorDifferenceCustomVisibility(mode);
             ActiveView.SetWindowQuickColorDifferenceReferenceMode(mode);
-            SetOperationStatus(string.Format(Properties.Resources.MsgColorDifferenceReferenceSwitched, GetSelectedComboBoxText(cbHomeColorDifferenceReference)), Brushes.LimeGreen);
+            SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgColorDifferenceReferenceSwitched, GetSelectedComboBoxText(cbHomeColorDifferenceReference)), Brushes.LimeGreen);
         }
 
         private static string GetSelectedComboBoxText(ComboBox? comboBox)
@@ -389,8 +418,8 @@ namespace Conoscope
 
             ActiveView.SetWindowQuickReferenceValue(value);
             SetOperationStatus(state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? string.Format(Properties.Resources.MsgRefAzimuthSet, value)
-                : string.Format(Properties.Resources.MsgRefPolarSet, value), Brushes.LimeGreen);
+                ? CompositeFormatCache.Format(Properties.Resources.MsgRefAzimuthSet, value)
+                : CompositeFormatCache.Format(Properties.Resources.MsgRefPolarSet, value), Brushes.LimeGreen);
         }
 
         private void ApplyHomeColorDifferenceCustomValuesFromText()
@@ -411,7 +440,7 @@ namespace Conoscope
             }
 
             ActiveView.SetWindowQuickColorDifferenceCustomReference(u, v);
-            SetOperationStatus(string.Format(CultureInfo.CurrentCulture, Properties.Resources.MsgColorDifferenceCustomReferenceUpdated, u, v), Brushes.LimeGreen);
+            SetOperationStatus(CompositeFormatCache.Format(CultureInfo.CurrentCulture, Properties.Resources.MsgColorDifferenceCustomReferenceUpdated, u, v), Brushes.LimeGreen);
         }
 
         private void ToggleColorDifferenceReference()
@@ -449,7 +478,7 @@ namespace Conoscope
             {
                 globalReferences.ClearContrastReference(referenceKind);
                 ConoscopeModuleService.RefreshAllReferenceState();
-                SetOperationStatus(string.Format(Properties.Resources.MsgGlobalContrastReferenceCleared, GetContrastReferenceLabel(referenceKind)), Brushes.OrangeRed);
+                SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgGlobalContrastReferenceCleared, GetContrastReferenceLabel(referenceKind)), Brushes.OrangeRed);
                 return;
             }
 
@@ -461,7 +490,7 @@ namespace Conoscope
             try
             {
                 ActiveView.SaveCurrentAsGlobalContrastReference(referenceKind);
-                SetOperationStatus(string.Format(Properties.Resources.MsgGlobalContrastReferenceSaved, GetContrastReferenceLabel(referenceKind)), Brushes.LimeGreen);
+                SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgGlobalContrastReferenceSaved, GetContrastReferenceLabel(referenceKind)), Brushes.LimeGreen);
             }
             catch (Exception ex)
             {

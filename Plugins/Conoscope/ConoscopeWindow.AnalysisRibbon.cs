@@ -71,7 +71,7 @@ namespace Conoscope
         {
             if (capture == null)
             {
-                button.Content = string.Format(Properties.Resources.MsgRecordSlot, slotName);
+                button.Content = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordSlot, slotName);
                 button.ClearValue(Control.BackgroundProperty);
                 button.ClearValue(Control.BorderBrushProperty);
                 button.ClearValue(Control.ForegroundProperty);
@@ -80,27 +80,27 @@ namespace Conoscope
                 return;
             }
 
-            button.Content = string.Format(Properties.Resources.MsgRecordedSlot, slotName);
+            button.Content = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedSlot, slotName);
             button.Background = new SolidColorBrush(Color.FromArgb(64, accentColor.R, accentColor.G, accentColor.B));
             button.BorderBrush = new SolidColorBrush(accentColor);
             button.Foreground = Brushes.White;
             button.FontWeight = FontWeights.SemiBold;
-            button.ToolTip = string.Format(Properties.Resources.MsgSlotRecordedDetail, slotName, capture.SourceDisplayName, capture.PointCount);
+            button.ToolTip = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSlotRecordedDetail, slotName, capture.SourceDisplayName, capture.PointCount);
         }
 
         private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("R", capture => gamutRedCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "R"));
+            RecordFocusCapture("R", capture => gamutRedCapture = capture, Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedRGamut, "R"));
         }
 
         private void btnRecordGamutGreen_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("G", capture => gamutGreenCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "G"));
+            RecordFocusCapture("G", capture => gamutGreenCapture = capture, Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedRGamut, "G"));
         }
 
         private void btnRecordGamutBlue_Click(object sender, RoutedEventArgs e)
         {
-            RecordFocusCapture("B", capture => gamutBlueCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "B"));
+            RecordFocusCapture("B", capture => gamutBlueCapture = capture, Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedRGamut, "B"));
         }
 
         private void btnClearGamut_Click(object sender, RoutedEventArgs e)
@@ -136,7 +136,7 @@ namespace Conoscope
                 };
                 window.Show();
                 window.Activate();
-                SetOperationStatus(string.Format(Properties.Resources.MsgGamutComputed, standard.Name), Brushes.LimeGreen);
+                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgGamutComputed, standard.Name), Brushes.LimeGreen);
             }
             catch (Exception ex)
             {

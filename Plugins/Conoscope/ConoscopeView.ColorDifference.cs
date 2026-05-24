@@ -394,7 +394,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"保存色差基准图失败: {ex.Message}", ex);
-                MessageBox.Show(string.Format(Properties.Resources.MsgSaveBaseImageFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSaveBaseImageFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

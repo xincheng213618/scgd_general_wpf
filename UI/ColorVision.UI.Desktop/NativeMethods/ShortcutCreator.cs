@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿#pragma warning disable CS8602
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Desktop.NativeMethods

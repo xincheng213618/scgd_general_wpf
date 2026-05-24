@@ -215,7 +215,7 @@ namespace Conoscope.MVS
             if (imgDisplay.ImageShow.Source == null)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWaitingForImage, diameterMillimeters);
+                tbGratingOverlayStatus.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.TestAreaWaitingForImage, diameterMillimeters);
                 return;
             }
 
@@ -233,7 +233,7 @@ namespace Conoscope.MVS
                 imagePixelDiameter,
                 imgDisplay.Zoombox1.ContentMatrix.M11);
             imgDisplay.ImageShow.TopVisual(gratingOverlay);
-            tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWithCenter, diameterMillimeters, currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
+            tbGratingOverlayStatus.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.TestAreaWithCenter, diameterMillimeters, currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
         }
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)

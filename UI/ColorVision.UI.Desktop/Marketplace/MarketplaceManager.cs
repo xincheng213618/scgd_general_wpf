@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1001,CA1822,CA1863,CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;

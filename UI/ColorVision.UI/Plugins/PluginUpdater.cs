@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604
+#pragma warning disable CA1863
 using ColorVision.Update;
 using ColorVision.Common.Utilities;
 using log4net;

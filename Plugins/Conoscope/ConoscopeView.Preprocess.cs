@@ -139,7 +139,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"应用滤波失败: {ex.Message}", ex);
-                MessageBox.Show(string.Format(Properties.Resources.MsgPreprocessFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgPreprocessFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

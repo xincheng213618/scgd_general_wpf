@@ -1,3 +1,4 @@
+#pragma warning disable CA1852,CA1863
 using ColorVision.Themes;
 using ColorVision.UI.Marketplace;
 using log4net;

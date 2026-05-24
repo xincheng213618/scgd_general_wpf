@@ -83,7 +83,7 @@ namespace Conoscope.Analysis
             CVFileUtil.Read(filePath, out CVCIEFile fileInfo);
             if (fileInfo.Channels < 3)
             {
-                throw new NotSupportedException(string.Format(Properties.Resources.CVCIEChannelCountInsufficient, fileInfo.Channels));
+                throw new NotSupportedException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.CVCIEChannelCountInsufficient, fileInfo.Channels));
             }
 
             int bytesPerPixel = fileInfo.Bpp / 8;
@@ -197,7 +197,7 @@ namespace Conoscope.Analysis
             double standardArea = TriangleArea(standard.Red, standard.Green, standard.Blue);
             if (standardArea <= 0)
             {
-                throw new InvalidOperationException(string.Format(Properties.Resources.StandardGamutAreaInvalid, standard.Name));
+                throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.StandardGamutAreaInvalid, standard.Name));
             }
 
             return new ColorGamutResult(red, green, blue, standard, sampleArea, standardArea, sampleArea / standardArea * 100.0);
@@ -235,7 +235,7 @@ namespace Conoscope.Analysis
         {
             if (gamut.Vertices.Count < 3)
             {
-                throw new InvalidOperationException(string.Format(Properties.Resources.GamutNeedsAtLeastThreeVertices, gamut.Name));
+                throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.GamutNeedsAtLeastThreeVertices, gamut.Name));
             }
 
             return new ColorGamutStandard(

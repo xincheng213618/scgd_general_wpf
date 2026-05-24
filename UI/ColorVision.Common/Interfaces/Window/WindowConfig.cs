@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602,CA1852
+using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

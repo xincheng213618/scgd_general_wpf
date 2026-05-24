@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿#pragma warning disable CA1854,CA1862
+using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;

@@ -58,7 +58,7 @@ namespace Conoscope.Help
 
         private void ConoscopeHelpWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            tbTitle.Text = string.Format(Properties.Resources.HelpTitleWithVersion, GetVersionText());
+            tbTitle.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.HelpTitleWithVersion, GetVersionText());
             HelpList.ItemsSource = filteredEntries;
 
             isInitializing = true;
@@ -239,7 +239,7 @@ namespace Conoscope.Help
 
         private void UpdateItemCount()
         {
-            ItemCountText.Text = string.Format(Properties.Resources.ItemCountFormat, filteredEntries.Count, allEntries.Count);
+            ItemCountText.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.ItemCountFormat, filteredEntries.Count, allEntries.Count);
         }
 
         private void HelpList_SelectionChanged(object sender, SelectionChangedEventArgs e)

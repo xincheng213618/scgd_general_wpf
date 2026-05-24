@@ -162,7 +162,7 @@ namespace Conoscope.Core
         {
             if (source.Width != reference.Width || source.Height != reference.Height)
             {
-                throw new InvalidOperationException(string.Format(Properties.Resources.SizeMismatchFormat, referenceName));
+                throw new InvalidOperationException(CompositeFormatCache.Format(Properties.Resources.SizeMismatchFormat, referenceName));
             }
         }
 

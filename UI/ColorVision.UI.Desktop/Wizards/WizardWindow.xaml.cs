@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1805
+using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using log4net;
 using System.Diagnostics;

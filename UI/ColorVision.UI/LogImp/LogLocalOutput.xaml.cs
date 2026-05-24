@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using System.IO;
 using System.Text;
 using System.Windows;

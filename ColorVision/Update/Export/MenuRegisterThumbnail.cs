@@ -19,7 +19,8 @@ namespace ColorVision.Update.Export
         {
             try
             {
-                string appDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!;
+                string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
+                string appDir = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
                 string comHostDll = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
 
                 if (!File.Exists(comHostDll))
@@ -111,7 +112,8 @@ namespace ColorVision.Update.Export
         {
             try
             {
-                string appDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!;
+                string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
+                string appDir = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
                 string comHostDll = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
 
                 // Remove shellex associations first

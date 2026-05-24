@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604
+#pragma warning disable CA1822,CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;

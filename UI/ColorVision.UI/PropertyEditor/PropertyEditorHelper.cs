@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿#pragma warning disable CA1707,CA1852,CS8601
+using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;

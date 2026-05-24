@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CS8603
+using log4net;
 using SqlSugar;
 using System;
 using System.Collections.Generic;

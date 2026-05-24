@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿#pragma warning disable CS8603,CS8765
+using Newtonsoft.Json;
 using System.Windows.Media;
 
 namespace ColorVision.UI.Json

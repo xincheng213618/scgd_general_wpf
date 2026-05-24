@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.UI.Menus;
 using log4net;
 using System.Windows;

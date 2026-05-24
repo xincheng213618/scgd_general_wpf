@@ -66,7 +66,7 @@ namespace ColorVision.Update
                 Version version = new Version(Version);
                 if (version > AutoUpdater.CurrentVersion)
                 {
-                    AutoUpdater.GetInstance().Update(Version, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
+                    AutoUpdater.Update(Version, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
                 }
                 else if (version == AutoUpdater.CurrentVersion)
                 {
@@ -74,7 +74,7 @@ namespace ColorVision.Update
                 }
                 else
                 {
-                    string downloadUrl = AutoUpdater.GetInstance().GetReleasePackageDownloadUrl(version);
+                    string downloadUrl = AutoUpdater.GetReleasePackageDownloadUrl(version);
                     Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, Aria2cDownloadManager.GetInstance().Config.DefaultDownloadPath, "1:1");
                     DownloadWindow.ShowInstance();
                 }

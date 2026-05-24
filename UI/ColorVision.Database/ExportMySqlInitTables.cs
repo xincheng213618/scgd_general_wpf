@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿#pragma warning disable CA1822
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using SqlSugar;

@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.LogImp;
+﻿#pragma warning disable CA1805
+using ColorVision.UI.LogImp;
 using log4net.Appender;
 using log4net.Core;
 using System.ComponentModel;

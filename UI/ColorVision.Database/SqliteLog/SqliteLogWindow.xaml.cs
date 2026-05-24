@@ -1,3 +1,4 @@
+#pragma warning disable CA1805
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;

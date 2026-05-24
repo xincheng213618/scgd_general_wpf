@@ -1,3 +1,4 @@
+#pragma warning disable CA1001,CA1068
 using ColorVision.UI.Menus;
 using Microsoft.Win32;
 using System.IO;

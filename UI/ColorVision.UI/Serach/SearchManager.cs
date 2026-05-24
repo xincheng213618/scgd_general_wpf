@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CA1822
+using log4net;
 
 
 namespace ColorVision.UI.Serach

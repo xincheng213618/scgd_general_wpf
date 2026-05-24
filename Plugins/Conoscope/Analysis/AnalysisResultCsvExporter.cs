@@ -23,11 +23,11 @@ namespace Conoscope.Analysis
             try
             {
                 WriteCsv(filePath, BuildContrastRows(result));
-                MessageBox.Show(owner, string.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleContrastResult, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(owner, Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleContrastResult, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(owner, string.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleContrastResult, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(owner, Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleContrastResult, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -44,11 +44,11 @@ namespace Conoscope.Analysis
             try
             {
                 WriteCsv(filePath, BuildColorGamutRows(result));
-                MessageBox.Show(owner, string.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleColorGamutResult, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(owner, Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleColorGamutResult, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(owner, string.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleColorGamutResult, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(owner, Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleColorGamutResult, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

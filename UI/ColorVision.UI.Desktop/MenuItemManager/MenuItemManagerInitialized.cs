@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿#pragma warning disable CA1805
+using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.MenuItemManager

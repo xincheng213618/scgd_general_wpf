@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿#pragma warning disable CA1861,CA5351
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -326,7 +326,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error("打开 Conoscope 3D 视图失败", ex);
-                MessageBox.Show(string.Format(Properties.Resources.Msg3DViewOpenFailed, ex.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.Msg3DViewOpenFailed, ex.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

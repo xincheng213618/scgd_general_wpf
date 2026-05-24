@@ -76,7 +76,7 @@ namespace Conoscope
             string version = Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? string.Empty;
             Title = string.IsNullOrWhiteSpace(version)
                 ? Properties.Resources.WindowTitleConoscope
-                : string.Format(Properties.Resources.WindowTitleConoscopeWithVersion, version);
+                : Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.WindowTitleConoscopeWithVersion, version);
             DataContext = ConoscopeManager.GetInstance();
             this.ApplyCaption();
             ConoscopeWindowConfig.Instance.SetWindow(this);

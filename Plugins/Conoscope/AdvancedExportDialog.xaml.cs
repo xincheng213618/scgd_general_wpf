@@ -94,7 +94,7 @@ namespace Conoscope
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Properties.Resources.MsgSettingsError, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSettingsError, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

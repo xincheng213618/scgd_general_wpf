@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8603
+#pragma warning disable CA1850
 using Microsoft.Win32;
 using System.Net.NetworkInformation;
 using System.Reflection;

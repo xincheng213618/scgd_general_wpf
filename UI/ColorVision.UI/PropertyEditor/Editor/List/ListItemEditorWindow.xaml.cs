@@ -1,3 +1,4 @@
+#pragma warning disable CA1310,CA1822
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;

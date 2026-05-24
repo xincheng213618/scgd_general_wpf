@@ -11,6 +11,17 @@ namespace Conoscope
 {
     public partial class ConoscopeView
     {
+        private static readonly ExportChannel[] fullXyzChannels =
+        {
+            ExportChannel.X,
+            ExportChannel.Z,
+            ExportChannel.CieX,
+            ExportChannel.CieY,
+            ExportChannel.CieU,
+            ExportChannel.CieV,
+            ExportChannel.ColorDifference
+        };
+
         private OpenCvSharp.Mat? pseudoColorRangeMask;
         private OpenCvSharp.Mat? pseudoColorRangeOutsideMask;
         private int pseudoColorRangeMaskWidth;
@@ -21,7 +32,7 @@ namespace Conoscope
 
         private void RefreshDisplayedImage()
         {
-            if (!HasXyzData())
+            if (!HasDisplayData())
             {
                 UpdatePseudoColorLegendVisibility(false);
                 RaiseWindowQuickControlStateChanged();
@@ -29,11 +40,12 @@ namespace Conoscope
             }
 
             ExportChannel displayChannel = GetSelectedDisplayChannel();
-            OpenCvSharp.Mat? rangeMask = GetPseudoColorRangeMask(XMat!.Width, XMat.Height);
+            OpenCvSharp.Mat displayBaseMat = YMat!;
+            OpenCvSharp.Mat? rangeMask = GetPseudoColorRangeMask(displayBaseMat.Width, displayBaseMat.Height);
             ConoscopePseudoColorRenderResult renderResult = ConoscopePseudoColorRenderer.Render(
-                XMat,
+                XMat ?? displayBaseMat,
                 YMat!,
-                ZMat!,
+                ZMat ?? displayBaseMat,
                 displayChannel,
                 RenderingConfig.PseudoColorMap,
                 CreateColorDifferenceMat,
@@ -176,6 +188,23 @@ namespace Conoscope
             return XMat != null && YMat != null && ZMat != null;
         }
 
+        private bool HasDisplayData()
+        {
+            return YMat != null;
+        }
+
+        private static bool RequiresFullXyzData(ExportChannel channel)
+        {
+            return channel is ExportChannel.X
+                or ExportChannel.Z
+                or ExportChannel.CieX
+                or ExportChannel.CieY
+                or ExportChannel.CieU
+                or ExportChannel.CieV
+                or ExportChannel.ColorDifference
+                or ExportChannel.Contrast;
+        }
+
         private bool CanOfferContrastChannel()
         {
             return GlobalReferences.HasContrastReference(GetRequiredContrastReferenceKind());
@@ -183,16 +212,31 @@ namespace Conoscope
 
         private void RefreshChannelAvailability()
         {
-            bool canOfferContrastChannel = CanOfferContrastChannel();
+            bool hasFullXyzData = HasXyzData();
+            foreach (ExportChannel channel in fullXyzChannels)
+            {
+                bool isVisible = hasFullXyzData;
+                UpdateChannelOptionVisibility(cbDisplayChannel, channel, isVisible);
+                UpdateChannelOptionVisibility(cbExportChannel, channel, isVisible);
+            }
+
+            bool canOfferContrastChannel = hasFullXyzData && CanOfferContrastChannel();
             UpdateChannelOptionVisibility(cbDisplayChannel, ExportChannel.Contrast, canOfferContrastChannel);
             UpdateChannelOptionVisibility(cbExportChannel, ExportChannel.Contrast, canOfferContrastChannel);
+
+            if (RequiresFullXyzData(RenderingConfig.DisplayChannel) && !hasFullXyzData)
+            {
+                RenderingConfig.DisplayChannel = ExportChannel.Y;
+            }
 
             if (!canOfferContrastChannel && RenderingConfig.DisplayChannel == ExportChannel.Contrast)
             {
                 RenderingConfig.DisplayChannel = ExportChannel.Y;
             }
 
-            if (!canOfferContrastChannel && GetSelectedExportChannel() == ExportChannel.Contrast)
+            ExportChannel selectedExportChannel = GetSelectedExportChannel();
+            if ((RequiresFullXyzData(selectedExportChannel) && !hasFullXyzData)
+                || (!canOfferContrastChannel && selectedExportChannel == ExportChannel.Contrast))
             {
                 ComboBoxHelper.TrySelectItemByTag(cbExportChannel, ExportChannel.Y.ToString(), visibleOnly: true);
             }
@@ -233,6 +277,13 @@ namespace Conoscope
             }
 
             ExportChannel channel = GetSelectedDisplayChannel();
+            if (RequiresFullXyzData(channel) && !HasXyzData())
+            {
+                RefreshChannelAvailability();
+                RaiseWindowQuickControlStateChanged();
+                return;
+            }
+
             if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
             {
                 RefreshChannelAvailability();
@@ -288,7 +339,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"保存 Conoscope 配置失败: {ex.Message}", ex);
-                MessageBox.Show(string.Format(Properties.Resources.MsgSaveConfigFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSaveConfigFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
