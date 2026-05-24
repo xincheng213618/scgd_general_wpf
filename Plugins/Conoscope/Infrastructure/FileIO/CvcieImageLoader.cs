@@ -85,22 +85,26 @@ namespace Conoscope.Infrastructure.FileIO
             };
         }
 
-        private static Mat CreateFloatChannelMat(byte[] source, int offset, int channelSize, int rows, int cols, MatType sourceType)
+        private static unsafe Mat CreateFloatChannelMat(byte[] source, int offset, int channelSize, int rows, int cols, MatType sourceType)
         {
-            byte[] channelData = new byte[channelSize];
-            Buffer.BlockCopy(source, offset, channelData, 0, channelSize);
-
-            using Mat raw = Mat.FromPixelData(rows, cols, sourceType, channelData);
-            Mat copied = raw.Clone();
-            if (copied.Type() == MatType.CV_32FC1)
+            ArgumentNullException.ThrowIfNull(source);
+            if (offset < 0 || channelSize <= 0 || offset + channelSize > source.Length)
             {
-                return copied;
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            Mat floatMat = new Mat();
-            copied.ConvertTo(floatMat, MatType.CV_32FC1);
-            copied.Dispose();
-            return floatMat;
+            fixed (byte* sourcePtr = source)
+            {
+                using Mat raw = Mat.FromPixelData(rows, cols, sourceType, (nint)(sourcePtr + offset));
+                if (sourceType == MatType.CV_32FC1)
+                {
+                    return raw.Clone();
+                }
+
+                Mat floatMat = new Mat();
+                raw.ConvertTo(floatMat, MatType.CV_32FC1);
+                return floatMat;
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ using Conoscope.Core;
 using Conoscope.Domain.Models;
 using Conoscope.Infrastructure.FileIO;
 using System;
+using System.Diagnostics;
 using System.Windows;
 
 namespace Conoscope
@@ -20,6 +21,12 @@ namespace Conoscope
 
         public void OpenConoscope(string filename, string? exposureSummary = null)
         {
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            Stopwatch stageStopwatch = Stopwatch.StartNew();
+            double loadMilliseconds = 0;
+            double preprocessMilliseconds = 0;
+            bool autoPreprocessApplied = false;
+
             try
             {
                 Filename = filename;
@@ -28,19 +35,27 @@ namespace Conoscope
                 DisposeCoordinateAxis();
                 ImageView.Clear();
                 LoadConoscopeData(filename);
+                loadMilliseconds = stageStopwatch.Elapsed.TotalMilliseconds;
                 applyCircleFitOnNextRefresh = true;
 
-                if (PreprocessConfig.ApplyFilterOnOpen)
+                if (PreprocessConfig.ApplyFilterOnOpen && HasPreprocessEnabled())
                 {
+                    stageStopwatch.Restart();
                     ApplyPreprocessToCurrentMats();
+                    preprocessMilliseconds = stageStopwatch.Elapsed.TotalMilliseconds;
+                    autoPreprocessApplied = true;
                 }
 
+                stageStopwatch.Restart();
                 EnsureSelectedDisplayChannelAvailable();
 
                 RefreshDisplayedImage();
                 UpdateContrastReferenceUi();
                 SyncCieWindowFromCurrentPointer();
                 StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+
+                log.Info(
+                    $"打开Conoscope图像完成: 文件={filename}, 尺寸={XMat?.Cols}x{XMat?.Rows}, 加载={loadMilliseconds:F0}ms, 预处理={preprocessMilliseconds:F0}ms, 渲染={stageStopwatch.Elapsed.TotalMilliseconds:F0}ms, 总耗时={totalStopwatch.Elapsed.TotalMilliseconds:F0}ms, 自动预处理={autoPreprocessApplied}");
             }
             catch (Exception ex)
             {

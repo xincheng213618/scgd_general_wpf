@@ -84,6 +84,11 @@ namespace Conoscope
 
         private OpenCvSharp.Mat? GetPseudoColorRangeMask(int imageWidth, int imageHeight)
         {
+            if (!RenderingConfig.UsePseudoColorRangeLimit)
+            {
+                return null;
+            }
+
             if (imageWidth <= 0 || imageHeight <= 0)
             {
                 return null;

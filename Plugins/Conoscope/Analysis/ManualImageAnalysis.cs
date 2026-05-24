@@ -117,22 +117,26 @@ namespace Conoscope.Analysis
             };
         }
 
-        private static OpenCvSharp.Mat CreateFloatChannelMat(byte[] source, int offset, int channelSize, int rows, int cols, OpenCvSharp.MatType sourceType)
+        private static unsafe OpenCvSharp.Mat CreateFloatChannelMat(byte[] source, int offset, int channelSize, int rows, int cols, OpenCvSharp.MatType sourceType)
         {
-            byte[] channelData = new byte[channelSize];
-            Buffer.BlockCopy(source, offset, channelData, 0, channelSize);
-
-            using OpenCvSharp.Mat raw = OpenCvSharp.Mat.FromPixelData(rows, cols, sourceType, channelData);
-            OpenCvSharp.Mat copied = raw.Clone();
-            if (copied.Type() == OpenCvSharp.MatType.CV_32FC1)
+            ArgumentNullException.ThrowIfNull(source);
+            if (offset < 0 || channelSize <= 0 || offset + channelSize > source.Length)
             {
-                return copied;
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
-            copied.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
-            copied.Dispose();
-            return floatMat;
+            fixed (byte* sourcePtr = source)
+            {
+                using OpenCvSharp.Mat raw = OpenCvSharp.Mat.FromPixelData(rows, cols, sourceType, (nint)(sourcePtr + offset));
+                if (sourceType == OpenCvSharp.MatType.CV_32FC1)
+                {
+                    return raw.Clone();
+                }
+
+                OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
+                raw.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
+                return floatMat;
+            }
         }
     }
 

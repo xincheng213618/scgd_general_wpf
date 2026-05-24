@@ -34,6 +34,7 @@ namespace Conoscope
             public ExportChannel DisplayChannel { get; set; } = ExportChannel.Y;
             public ColormapTypes PseudoColorMap { get; set; } = ColormapTypes.COLORMAP_JET;
             public bool UsePseudoColor { get; set; } = true;
+            public bool UsePseudoColorRangeLimit { get; set; } = true;
         }
 
         private sealed class ViewPreprocessState
@@ -325,10 +326,21 @@ namespace Conoscope
 
         private void InitializeLocalViewStateFromDefaults()
         {
+            ApplyDefaultRenderingStateFromConfig();
+            ApplyDefaultPreprocessStateFromConfig();
+            InitializeLocalCoordinateAxisState(preserveReferenceState: false);
+        }
+
+        private void ApplyDefaultRenderingStateFromConfig()
+        {
             viewRenderingConfig.DisplayChannel = ConoscopeConfig.DisplayChannel;
             viewRenderingConfig.PseudoColorMap = ConoscopeConfig.PseudoColorMap;
             viewRenderingConfig.UsePseudoColor = ConoscopeConfig.UsePseudoColor;
+            viewRenderingConfig.UsePseudoColorRangeLimit = ConoscopeConfig.UsePseudoColorRangeLimit;
+        }
 
+        private void ApplyDefaultPreprocessStateFromConfig()
+        {
             viewPreprocessConfig.ApplyFilterOnOpen = ConoscopeConfig.ApplyFilterOnOpen;
             viewPreprocessConfig.ClampNonPositiveXyzOnLoad = ConoscopeConfig.ClampNonPositiveXyzOnLoad;
             viewPreprocessConfig.FilterType = ConoscopeConfig.FilterType;
@@ -346,7 +358,26 @@ namespace Conoscope
 
             ImageFilterType filterType = NormalizeFilterType(viewPreprocessConfig.FilterType);
             lastEnabledFilterType = filterType == ImageFilterType.None ? ImageFilterType.LowPass : filterType;
-            InitializeLocalCoordinateAxisState(preserveReferenceState: false);
+        }
+
+        internal void ApplyWindowRenderingDefaults()
+        {
+            ApplyDefaultRenderingStateFromConfig();
+            RefreshDisplayControlsFromConfig();
+            RefreshPreprocessControlsFromConfig();
+            UpdatePseudoColorMapPreview();
+
+            if (HasXyzData())
+            {
+                EnsureSelectedDisplayChannelAvailable();
+                RefreshDisplayedImage();
+            }
+        }
+
+        internal void ApplyWindowPreprocessDefaults()
+        {
+            ApplyDefaultPreprocessStateFromConfig();
+            RefreshPreprocessControlsFromConfig();
         }
 
         private void InitializeLocalCoordinateAxisState(bool preserveReferenceState)

@@ -110,7 +110,6 @@
         </Style>
 
         <Style x:Key="RibbonTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="MinHeight" Value="26" />
             <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
@@ -507,14 +506,32 @@
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
+                                        <WrapPanel>
                                             <CheckBox x:Name="chkWindowApplyFilterOnOpen"
                                                       Content="{x:Static properties:Resources.ChkEnablePreprocess}"
                                                       Checked="WindowPreprocess_Changed"
                                                       Unchecked="WindowPreprocess_Changed"
                                                       Margin="0,0,12,0"
                                                       VerticalAlignment="Center" />
-                                        </StackPanel>
+                                            <Button x:Name="btnApplyPreprocessToActiveView"
+                                                    Click="btnApplyPreprocessToActiveView_Click"
+                                                    Style="{StaticResource RibbonPrimaryButtonStyle}"
+                                                    ToolTip="{x:Static properties:Resources.TipApplyPreprocess}">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnReapply}" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button x:Name="btnOpenPreprocessSettings"
+                                                    Click="btnOpenPreprocessSettings_Click"
+                                                    Style="{StaticResource RibbonLargeButtonStyle}"
+                                                    ToolTip="{x:Static properties:Resources.TipOpenPreprocessSettings}">
+                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
+                                                    <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.BtnSettings}" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                </StackPanel>
+                                            </Button>
+                                        </WrapPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupEnable}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
@@ -525,51 +542,46 @@
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        
                                         <StackPanel Orientation="Horizontal">
-                                            <ComboBox x:Name="cbWindowFilterType"
-                                                      Width="162"
-                                                      SelectedValuePath="Tag"
-                                                      SelectionChanged="cbWindowFilterType_SelectionChanged"
-                                                      Style="{StaticResource ComboBox.Small}">
-                                                <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="{x:Static core:ImageFilterType.None}" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="{x:Static core:ImageFilterType.LowPass}" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="{x:Static core:ImageFilterType.MovingAverage}" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="{x:Static core:ImageFilterType.Gaussian}" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="{x:Static core:ImageFilterType.Median}" />
-                                                <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="{x:Static core:ImageFilterType.Bilateral}" />
-                                            </ComboBox>
-                                            <Border Padding="8,4"
-                                                    Margin="0,0,6,0"
-                                                    Background="{DynamicResource GlobalBorderBrush}"
-                                                    BorderBrush="{DynamicResource BorderBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="4"
-                                                    VerticalAlignment="Center">
-                                                <TextBlock x:Name="tbWindowFilterConfigSummary"
-                                                           Width="250"
-                                                           Foreground="Gray"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
-                                            </Border>
-                                            <Button x:Name="btnOpenPreprocessSettings"
-                                                    Click="btnOpenPreprocessSettings_Click"
-                                                    Style="{StaticResource RibbonLargeButtonStyle}"
-                                                    ToolTip="{x:Static properties:Resources.TipOpenPreprocessSettings}">
-                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
-                                                    <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnSettings}" Style="{StaticResource RibbonButtonCaptionStyle}" />
-                                                </StackPanel>
-                                            </Button>
-                                            <Button x:Name="btnApplyPreprocessToActiveView"
-                                                    Click="btnApplyPreprocessToActiveView_Click"
-                                                    Style="{StaticResource RibbonPrimaryButtonStyle}"
-                                                    ToolTip="{x:Static properties:Resources.TipApplyPreprocess}">
-                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
-                                                    <TextBlock Text="&#xE895;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnReapply}" Style="{StaticResource RibbonButtonCaptionStyle}" />
-                                                </StackPanel>
-                                            </Button>
+                                            <CheckBox x:Name="chkWindowEnableFilter"
+                                                      Content="{x:Static properties:Resources.ChkEnableFilter}"
+                                                      Checked="chkWindowEnableFilter_Changed"
+                                                      Unchecked="chkWindowEnableFilter_Changed"
+     
+                                                      VerticalAlignment="Center" />
+                                            <WrapPanel x:Name="panelWindowFilterOptions">
+                                                <ComboBox x:Name="cbWindowFilterType"
+                                                          Width="132"
+                                                          SelectedValuePath="Tag"
+                                                          SelectionChanged="cbWindowFilterType_SelectionChanged"
+                                                          Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="{x:Static core:ImageFilterType.LowPass}" />
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="{x:Static core:ImageFilterType.MovingAverage}" />
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="{x:Static core:ImageFilterType.Gaussian}" />
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="{x:Static core:ImageFilterType.Median}" />
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="{x:Static core:ImageFilterType.Bilateral}" />
+                                                </ComboBox>
+
+                                                <WrapPanel x:Name="fieldWindowFilterKernel" >
+                                                    <TextBox x:Name="txtWindowFilterKernelSize" Width="48" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+                                                </WrapPanel>
+                                                <WrapPanel x:Name="fieldWindowFilterSigma" Margin="0,0,8,0">
+                                                    <TextBlock Text="σ" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                    <TextBox x:Name="txtWindowFilterSigma" Width="48" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+                                                </WrapPanel>
+                                                <WrapPanel x:Name="fieldWindowFilterD" Margin="0,0,8,0">
+                                                    <TextBlock Text="d" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                    <TextBox x:Name="txtWindowFilterD" Width="42" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+                                                </WrapPanel>
+                                                <WrapPanel x:Name="fieldWindowFilterSigmaColor" Margin="0,0,8,0">
+                                                    <TextBlock Text="σColor" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                    <TextBox x:Name="txtWindowFilterSigmaColor" Width="54" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+                                                </WrapPanel>
+                                                <WrapPanel x:Name="fieldWindowFilterSigmaSpace">
+                                                    <TextBlock Text="σSpace" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                    <TextBox x:Name="txtWindowFilterSigmaSpace" Width="54" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+                                                </WrapPanel>
+                                            </WrapPanel>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupFilter}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
@@ -581,20 +593,68 @@
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
+                                        <StackPanel Orientation="Horizontal" >
+                                            <WrapPanel >
                                             <CheckBox x:Name="chkWindowUsePseudoColor"
                                                       Content="{x:Static properties:Resources.ChkPseudoColor}"
-                                                      Margin="0,0,12,0"
                                                       Checked="WindowDisplay_Changed"
                                                       Unchecked="WindowDisplay_Changed"
                                                       VerticalAlignment="Center" />
-                                            <TextBlock Text="{x:Static properties:Resources.LabelColorMap}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                        <ComboBox x:Name="cbWindowPseudoColorMap"
-                                                      Width="138"
-                                                      SelectionChanged="cbWindowPseudoColorMap_SelectionChanged"
-                                                      Style="{StaticResource RibbonComboBoxStyle}" />
-                                    </StackPanel>
+                                                <CheckBox x:Name="chkWindowUsePseudoColorRangeLimit"
+                                                          Content="范围限制"
+                                                          Checked="WindowDisplay_Changed"
+                                                          Unchecked="WindowDisplay_Changed"
+                                                          VerticalAlignment="Center"
+                                                          ToolTip="启用后只在有效圆域内做显示映射；关闭后整图显示。" />
+                                            </WrapPanel>
+                                            <WrapPanel x:Name="panelWindowPseudoColorOptions">
+                                                <ComboBox x:Name="cbWindowPseudoColorMap"
+                                                          Width="138"
+                                                          SelectionChanged="cbWindowPseudoColorMap_SelectionChanged"
+                                                          Style="{StaticResource RibbonComboBoxStyle}" />
+                                            </WrapPanel>
+                                        </StackPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDisplay}" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource RibbonGroupStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox x:Name="chkWindowDustRemovalEnabled"
+                                                      Content="{x:Static properties:Resources.ChkEnableDustRemoval}"
+                                                      Checked="WindowDustRemoval_Changed"
+                                                      Unchecked="WindowDustRemoval_Changed"
+                                                      VerticalAlignment="Center" />
+                                            <WrapPanel x:Name="panelWindowDustOptions">
+                                                <TextBlock Text="{x:Static properties:Resources.LabelDustType}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <ComboBox x:Name="cbWindowDustMode"
+                                                          Width="110"
+                                                          SelectionChanged="WindowDustRemoval_Changed"
+                                                          Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiDarkSpot}" Tag="DarkSpot" />
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiBrightSpot}" Tag="BrightSpot" />
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiBothSpots}" Tag="Both" />
+                                                </ComboBox>
+
+                                                <TextBlock Text="{x:Static properties:Resources.LabelThresholdPct}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <TextBox x:Name="txtWindowDustThreshold" Width="52" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+
+                                                <TextBlock Text="{x:Static properties:Resources.LabelMinArea}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <TextBox x:Name="txtWindowDustMinArea" Width="48" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+
+                                                <TextBlock Text="{x:Static properties:Resources.LabelMaxArea}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <TextBox x:Name="txtWindowDustMaxArea" Width="56" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+
+                                                <TextBlock Text="{x:Static properties:Resources.LabelRepairRadius}" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                                <TextBox x:Name="txtWindowDustRepairRadius" Width="46" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
+                                            </WrapPanel>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.HeaderDustRemoval}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 

@@ -98,6 +98,18 @@ namespace Conoscope.Core
         }
         private bool _UsePseudoColor = true;
 
+        public bool UsePseudoColorRangeLimit
+        {
+            get => _UsePseudoColorRangeLimit;
+            set
+            {
+                if (_UsePseudoColorRangeLimit == value) return;
+                _UsePseudoColorRangeLimit = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _UsePseudoColorRangeLimit = true;
+
         public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { if (_ApplyFilterOnOpen == value) return; _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
         private bool _ApplyFilterOnOpen = true;
 
@@ -266,6 +278,12 @@ namespace Conoscope.Core
         {
             get => config.UsePseudoColor;
             set => config.UsePseudoColor = value;
+        }
+
+        public bool UsePseudoColorRangeLimit
+        {
+            get => config.UsePseudoColorRangeLimit;
+            set => config.UsePseudoColorRangeLimit = value;
         }
     }
 
