@@ -32,6 +32,10 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(StartWindow));
         private const int StartupUiYieldIntervalMs = 180;
+        private const double DefaultStartupStepWeight = 1d;
+        private const double MinimumProfiledStepWeightMs = 20d;
+        private const double MaximumProfiledStepWeightMs = 12000d;
+        private const double StartupProfileSmoothing = 0.35d;
 
         public StartWindow()
         {
@@ -101,6 +105,7 @@ namespace ColorVision
         {
             _IComponentInitializers = CreateSortedInitializers();
             _startupTotalSteps = _IComponentInitializers.Count;
+            LoadStartupProgressProfile();
             UpdateStartupProgress(0);
             await YieldToUiAsync();
             await InitializedOver();
@@ -191,12 +196,79 @@ namespace ColorVision
         private  List<IInitializer> _IComponentInitializers;
         private int _startupTotalSteps;
         private readonly DispatcherTimer _startupProgressTimer = new(DispatcherPriority.Normal);
+        private readonly Dictionary<string, double> _startupStepWeights = new();
+        private readonly Dictionary<string, double> _startupObservedDurationsMs = new();
         private double _startupProgressTarget;
         private double _startupProgressSoftCap;
+        private double _startupTotalWeight;
         private bool _startupProgressCreepEnabled;
         private long _lastStartupYieldTimestamp;
 
-        private void UpdateStartupProgress(int completedSteps, bool initializerRunning = false)
+        private void LoadStartupProgressProfile()
+        {
+            _startupStepWeights.Clear();
+
+            StartupProgressProfileConfig profile = ConfigHandler.GetInstance().GetRequiredService<StartupProgressProfileConfig>();
+            foreach (var initializer in _IComponentInitializers)
+            {
+                string key = GetInitializerProfileKey(initializer);
+                double weight = DefaultStartupStepWeight;
+                if (profile.InitializerDurationsMs.TryGetValue(key, out double profiledDurationMs) && profiledDurationMs > 0)
+                {
+                    weight = Math.Clamp(profiledDurationMs, MinimumProfiledStepWeightMs, MaximumProfiledStepWeightMs);
+                }
+
+                _startupStepWeights[key] = weight;
+            }
+
+            _startupTotalWeight = Math.Max(_startupStepWeights.Values.Sum(), DefaultStartupStepWeight);
+            log.Info($"Startup progress profile loaded. Steps={_startupTotalSteps}, Weight={_startupTotalWeight:0.##}");
+        }
+
+        private void SaveStartupProgressProfile()
+        {
+            if (_startupObservedDurationsMs.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                StartupProgressProfileConfig profile = ConfigHandler.GetInstance().GetRequiredService<StartupProgressProfileConfig>();
+                foreach (var item in _startupObservedDurationsMs)
+                {
+                    double duration = Math.Clamp(item.Value, MinimumProfiledStepWeightMs, MaximumProfiledStepWeightMs);
+                    if (profile.InitializerDurationsMs.TryGetValue(item.Key, out double previousDuration) && previousDuration > 0)
+                    {
+                        duration = previousDuration * (1d - StartupProfileSmoothing) + duration * StartupProfileSmoothing;
+                    }
+
+                    profile.InitializerDurationsMs[item.Key] = duration;
+                }
+
+                profile.UpdatedAt = DateTime.Now;
+                ConfigHandler.GetInstance().Save<StartupProgressProfileConfig>();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to save startup progress profile.", ex);
+            }
+        }
+
+        private double GetStartupStepWeight(IInitializer initializer)
+        {
+            string key = GetInitializerProfileKey(initializer);
+            return _startupStepWeights.TryGetValue(key, out double weight) && weight > 0
+                ? weight
+                : DefaultStartupStepWeight;
+        }
+
+        private static string GetInitializerProfileKey(IInitializer initializer)
+        {
+            return $"{initializer.Name}|{initializer.GetType().FullName}";
+        }
+
+        private void UpdateStartupProgress(double completedWeight, bool initializerRunning = false, double runningWeight = 0)
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -205,14 +277,14 @@ namespace ColorVision
                     return;
                 }
 
-                double max = Math.Max(_startupTotalSteps, 1);
+                double max = Math.Max(_startupTotalWeight, DefaultStartupStepWeight);
                 startupProgressBar.Maximum = max;
-                _startupProgressTarget = _startupTotalSteps == 0
+                _startupProgressTarget = _startupTotalWeight <= 0
                     ? max
-                    : Math.Min(Math.Max(completedSteps, 0), max);
+                    : Math.Min(Math.Max(completedWeight, 0), max);
                 _startupProgressCreepEnabled = initializerRunning && _startupProgressTarget < max;
                 _startupProgressSoftCap = _startupProgressCreepEnabled
-                    ? Math.Min(_startupProgressTarget + 0.88, max - 0.02)
+                    ? Math.Min(_startupProgressTarget + Math.Max(runningWeight, DefaultStartupStepWeight) * 0.88, max - 0.02)
                     : _startupProgressTarget;
 
                 if (!_startupProgressTimer.IsEnabled && startupProgressBar.Value < max)
@@ -268,11 +340,13 @@ namespace ColorVision
         {
             Stopwatch stopwatch = new Stopwatch();
             int completedSteps = 0;
+            double completedWeight = 0;
 
             foreach (var initializer in _IComponentInitializers)
             {
-                UpdateStartupProgress(completedSteps, initializerRunning: true);
-                stopwatch.Start();
+                double stepWeight = GetStartupStepWeight(initializer);
+                UpdateStartupProgress(completedWeight, initializerRunning: true, runningWeight: stepWeight);
+                stopwatch.Restart();
 
                 log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}");
                 try
@@ -285,13 +359,34 @@ namespace ColorVision
                 }
                 stopwatch.Stop();
                 log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
-                stopwatch.Reset();
+                _startupObservedDurationsMs[GetInitializerProfileKey(initializer)] = Math.Max(stopwatch.ElapsedMilliseconds, MinimumProfiledStepWeightMs);
                 completedSteps++;
-                UpdateStartupProgress(completedSteps, completedSteps < _startupTotalSteps);
+                completedWeight += stepWeight;
+                UpdateStartupProgress(completedWeight);
                 await YieldToUiIfDueAsync();
 
             }
-            UpdateStartupProgress(_startupTotalSteps);
+            SaveStartupProgressProfile();
+            await CompleteStartupProgressAsync();
+        }
+
+        private Task CompleteStartupProgressAsync()
+        {
+            return Dispatcher.InvokeAsync(() =>
+            {
+                if (startupProgressBar == null)
+                {
+                    return;
+                }
+
+                double max = Math.Max(_startupTotalWeight, DefaultStartupStepWeight);
+                _startupProgressTimer.Stop();
+                startupProgressBar.Maximum = max;
+                startupProgressBar.Value = max;
+                _startupProgressTarget = max;
+                _startupProgressSoftCap = max;
+                _startupProgressCreepEnabled = false;
+            }, DispatcherPriority.Send).Task;
         }
 
         private async Task YieldToUiIfDueAsync()
@@ -486,5 +581,14 @@ namespace ColorVision
             }
         }
 
+    }
+
+    public class StartupProgressProfileConfig : IConfig
+    {
+        public int Version { get; set; } = 1;
+
+        public DateTime UpdatedAt { get; set; }
+
+        public Dictionary<string, double> InitializerDurationsMs { get; set; } = new();
     }
 }
