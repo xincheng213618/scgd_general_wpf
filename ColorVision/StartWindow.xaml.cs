@@ -1,8 +1,11 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
+using ColorVision.UI.LogImp;
 using Dm.util;
 using log4net;
+using log4net.Appender;
+using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using System;
@@ -11,11 +14,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision
 {
@@ -26,14 +31,20 @@ namespace ColorVision
     public partial class StartWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(StartWindow));
+        private const int StartupUiYieldIntervalMs = 180;
+
         public StartWindow()
         {
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             InitializeComponent();
+            _startupProgressTimer.Interval = TimeSpan.FromMilliseconds(100);
+            _startupProgressTimer.Tick += StartupProgressTimer_Tick;
+            Closed += (s, e) => _startupProgressTimer.Stop();
+            ContentRendered += StartWindow_ContentRendered;
             Left = SystemParameters.WorkArea.Right - Width;
             Top = SystemParameters.WorkArea.Bottom - Height;
         }
-        TextBoxAppender TextBoxAppender { get; set; }
+        StartupTextBoxAppender TextBoxAppender { get; set; }
         Hierarchy Hierarchy { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -48,7 +59,7 @@ namespace ColorVision
             log.Info(info);
             logTextBox.Text = ProgramTimer.InitAppender.Buffer.ToString();
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            TextBoxAppender = new TextBoxAppender(logTextBox, new TextBox());
+            TextBoxAppender = new StartupTextBoxAppender(logTextBox);
             TextBoxAppender.Layout = new PatternLayout("%date{HH:mm:ss;fff} %-5level %message%newline");
             Hierarchy.Root.RemoveAppender(ProgramTimer.InitAppender);
 
@@ -60,7 +71,43 @@ namespace ColorVision
             };
             if (ThemeManager.Current.SystemTheme == Theme.Dark)
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
+        }
 
+        private async void StartWindow_ContentRendered(object? sender, EventArgs e)
+        {
+            ContentRendered -= StartWindow_ContentRendered;
+            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            try
+            {
+                await Task.Run(RunStartupAsync);
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    DetachStartupAppender();
+                    ShowMainWindowAndClose();
+                }, DispatcherPriority.ContextIdle);
+            }
+            catch (Exception ex)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    DetachStartupAppender();
+                    MessageBox.Show("Startup Error:" + ex.Message);
+                    Environment.Exit(-1);
+                }, DispatcherPriority.Send);
+            }
+        }
+
+        private async Task RunStartupAsync()
+        {
+            _IComponentInitializers = CreateSortedInitializers();
+            _startupTotalSteps = _IComponentInitializers.Count;
+            UpdateStartupProgress(0);
+            await YieldToUiAsync();
+            await InitializedOver();
+        }
+
+        private List<IInitializer> CreateSortedInitializers()
+        {
             _IComponentInitializers = new List<IInitializer>();
             var parser = ArgumentParser.GetInstance();
             parser.AddArgument("skip", false, "skip");
@@ -138,12 +185,71 @@ namespace ColorVision
 
             // 使用排序后的初始化器列表
             _IComponentInitializers = sortedInitializers;
-            _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
-            Thread thread = new(async () => await InitializedOver()) { IsBackground =true};
-            thread.Start();
+            return _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
         }
-        private  List<IInitializer> _IComponentInitializers;
 
+        private  List<IInitializer> _IComponentInitializers;
+        private int _startupTotalSteps;
+        private readonly DispatcherTimer _startupProgressTimer = new(DispatcherPriority.Normal);
+        private double _startupProgressTarget;
+        private double _startupProgressSoftCap;
+        private bool _startupProgressCreepEnabled;
+        private long _lastStartupYieldTimestamp;
+
+        private void UpdateStartupProgress(int completedSteps, bool initializerRunning = false)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (startupProgressBar == null)
+                {
+                    return;
+                }
+
+                double max = Math.Max(_startupTotalSteps, 1);
+                startupProgressBar.Maximum = max;
+                _startupProgressTarget = _startupTotalSteps == 0
+                    ? max
+                    : Math.Min(Math.Max(completedSteps, 0), max);
+                _startupProgressCreepEnabled = initializerRunning && _startupProgressTarget < max;
+                _startupProgressSoftCap = _startupProgressCreepEnabled
+                    ? Math.Min(_startupProgressTarget + 0.88, max - 0.02)
+                    : _startupProgressTarget;
+
+                if (!_startupProgressTimer.IsEnabled && startupProgressBar.Value < max)
+                {
+                    _startupProgressTimer.Start();
+                }
+            }));
+        }
+
+        private void StartupProgressTimer_Tick(object? sender, EventArgs e)
+        {
+            if (startupProgressBar == null)
+            {
+                return;
+            }
+
+            double target = _startupProgressTarget;
+            if (_startupProgressCreepEnabled && startupProgressBar.Value < _startupProgressSoftCap)
+            {
+                double remainingToSoftCap = _startupProgressSoftCap - startupProgressBar.Value;
+                target = Math.Max(target, startupProgressBar.Value + Math.Max(remainingToSoftCap * 0.045, 0.01));
+            }
+
+            double delta = target - startupProgressBar.Value;
+            if (Math.Abs(delta) < 0.005)
+            {
+                startupProgressBar.Value = target;
+                if (!_startupProgressCreepEnabled && startupProgressBar.Value >= startupProgressBar.Maximum)
+                {
+                    _startupProgressTimer.Stop();
+                }
+                return;
+            }
+
+            double step = Math.Max(Math.Abs(delta) * 0.35, 0.025);
+            startupProgressBar.Value += Math.Sign(delta) * Math.Min(Math.Abs(delta), step);
+        }
 
 
         private static bool DebugBuild(Assembly assembly)
@@ -161,14 +267,17 @@ namespace ColorVision
         private async Task InitializedOver()
         {
             Stopwatch stopwatch = new Stopwatch();
+            int completedSteps = 0;
+
             foreach (var initializer in _IComponentInitializers)
             {
+                UpdateStartupProgress(completedSteps, initializerRunning: true);
                 stopwatch.Start();
 
                 log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}");
                 try
                 {
-                    await initializer.InitializeAsync();
+                    await initializer.InitializeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -177,67 +286,204 @@ namespace ColorVision
                 stopwatch.Stop();
                 log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
                 stopwatch.Reset();
+                completedSteps++;
+                UpdateStartupProgress(completedSteps, completedSteps < _startupTotalSteps);
+                await YieldToUiIfDueAsync();
 
             }
-            Hierarchy.Root.RemoveAppender(TextBoxAppender);
-            log4net.Config.BasicConfigurator.Configure(Hierarchy);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    var parser = ArgumentParser.GetInstance();
-                    parser.AddArgument("feature", false, "e");
-                    parser.Parse();
+            UpdateStartupProgress(_startupTotalSteps);
+        }
 
-                    string feature = parser.GetValue("feature");
-                    if (feature != null)
+        private async Task YieldToUiIfDueAsync()
+        {
+            long now = Stopwatch.GetTimestamp();
+            if (_lastStartupYieldTimestamp != 0)
+            {
+                double elapsedMs = (now - _lastStartupYieldTimestamp) * 1000d / Stopwatch.Frequency;
+                if (elapsedMs < StartupUiYieldIntervalMs)
+                {
+                    return;
+                }
+            }
+
+            _lastStartupYieldTimestamp = now;
+            await YieldToUiAsync();
+        }
+
+        private static Task YieldToUiAsync()
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted)
+            {
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background).Task;
+        }
+
+        private void DetachStartupAppender()
+        {
+            if (Hierarchy == null || TextBoxAppender == null)
+            {
+                return;
+            }
+
+            TextBoxAppender.FlushPendingLogs();
+            Hierarchy.Root.RemoveAppender(TextBoxAppender);
+            TextBoxAppender.Dispose();
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
+        }
+
+        private void ShowMainWindowAndClose()
+        {
+            try
+            {
+                var parser = ArgumentParser.GetInstance();
+                parser.AddArgument("feature", false, "e");
+                parser.Parse();
+
+                string feature = parser.GetValue("feature");
+                if (feature != null)
+                {
+                    List<IFeatureLauncher> IFeatureLaunchers = new List<IFeatureLauncher>();
+                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                     {
-                        List<IFeatureLauncher> IFeatureLaunchers = new List<IFeatureLauncher>();
-                        foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                        foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
                         {
-                            foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
+                            if (Activator.CreateInstance(type) is IFeatureLauncher projects)
                             {
-                                if (Activator.CreateInstance(type) is IFeatureLauncher projects)
-                                {
-                                    IFeatureLaunchers.Add(projects);
-                                }
+                                IFeatureLaunchers.Add(projects);
                             }
                         }
-                        if (IFeatureLaunchers.Find(a => a.Header == feature) is IFeatureLauncher project1)
-                        {
-                            StartupRegistryChecker.Clear();
-                            project1.Execute();
-                        }
-                        else if (IFeatureLaunchers.Find(a => a.GetType().ToString().contains(feature)) is IFeatureLauncher project2)
-                        {
-                            StartupRegistryChecker.Clear();
-                            project2.Execute();
-                        }
-                        else
-                        {
-                            log.Info($"Feature '{feature}' not found, starting MainWindow.");
-                            MainWindow mainWindow = new MainWindow();
-                            mainWindow.Show();
-                        }
+                    }
+                    if (IFeatureLaunchers.Find(a => a.Header == feature) is IFeatureLauncher project1)
+                    {
+                        StartupRegistryChecker.Clear();
+                        project1.Execute();
+                    }
+                    else if (IFeatureLaunchers.Find(a => a.GetType().ToString().contains(feature)) is IFeatureLauncher project2)
+                    {
+                        StartupRegistryChecker.Clear();
+                        project2.Execute();
                     }
                     else
                     {
+                        log.Info($"Feature '{feature}' not found, starting MainWindow.");
                         MainWindow mainWindow = new MainWindow();
                         mainWindow.Show();
                     }
-                    Close();
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show("MainWindow Create Error:" + ex.Message);
-                    Environment.Exit(-1);
+                    MainWindow mainWindow = new MainWindow();
+                    mainWindow.Show();
                 }
-            });
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("MainWindow Create Error:" + ex.Message);
+                Environment.Exit(-1);
+            }
         }
 
         private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)
         {
             logTextBox.ScrollToEnd();
+        }
+
+        private sealed class StartupTextBoxAppender : AppenderSkeleton, IDisposable
+        {
+            private const int StartupLogFlushIntervalMs = 80;
+
+            private readonly TextBox _textBox;
+            private readonly StringBuilder _pendingLogs = new();
+            private readonly object _lock = new();
+            private readonly DispatcherTimer _flushTimer;
+            private bool _isClosed;
+
+            public StartupTextBoxAppender(TextBox textBox)
+            {
+                _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
+                _flushTimer = new DispatcherTimer(DispatcherPriority.Background, _textBox.Dispatcher)
+                {
+                    Interval = TimeSpan.FromMilliseconds(StartupLogFlushIntervalMs)
+                };
+                _flushTimer.Tick += (s, e) => FlushPendingLogsOnUi();
+                _flushTimer.Start();
+            }
+
+            protected override void Append(LoggingEvent loggingEvent)
+            {
+                if (_isClosed)
+                {
+                    return;
+                }
+
+                string renderedMessage = RenderLoggingEvent(loggingEvent);
+                lock (_lock)
+                {
+                    _pendingLogs.Append(renderedMessage);
+                }
+            }
+
+            public void FlushPendingLogs()
+            {
+                if (_textBox.Dispatcher.CheckAccess())
+                {
+                    FlushPendingLogsOnUi();
+                    return;
+                }
+
+                _textBox.Dispatcher.Invoke(FlushPendingLogsOnUi, DispatcherPriority.Send);
+            }
+
+            private void FlushPendingLogsOnUi()
+            {
+                string logs;
+                lock (_lock)
+                {
+                    logs = _pendingLogs.ToString();
+                    _pendingLogs.Clear();
+                }
+
+                if (logs.Length == 0)
+                {
+                    return;
+                }
+
+                _textBox.AppendText(logs);
+                TrimTextBox();
+            }
+
+            private void TrimTextBox()
+            {
+                if (LogConfig.Instance.MaxChars <= LogConstants.MinMaxCharsForTrimming || _textBox.Text.Length <= LogConfig.Instance.MaxChars)
+                {
+                    return;
+                }
+
+                _textBox.Text = _textBox.Text.Substring(_textBox.Text.Length - LogConfig.Instance.MaxChars);
+            }
+
+            protected override void OnClose()
+            {
+                if (_isClosed)
+                {
+                    return;
+                }
+
+                _isClosed = true;
+                _flushTimer.Stop();
+                FlushPendingLogs();
+                base.OnClose();
+            }
+
+            public void Dispose()
+            {
+                Close();
+                GC.SuppressFinalize(this);
+            }
         }
 
     }
