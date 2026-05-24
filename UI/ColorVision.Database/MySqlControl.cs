@@ -62,7 +62,7 @@ namespace ColorVision.Database
                 var newConn = new MySqlConnection() { ConnectionString = connStr };
                 newConn.Open();
 
-                log.Info($"数据库连接成功:{connStr}");
+                log.Info($"数据库连接成功:{GetConnectionSummary(Config)}");
                 using var  _DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = GetConnectionString(Config), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // 检查数据库名是否为空
@@ -95,14 +95,14 @@ namespace ColorVision.Database
                     2003 => "无法连接到MySQL服务器，可能是端口未打开或网络不可达",
                     _ => $"MySqlException 错误码: {ex.Number}，错误信息: {ex.Message}"
                 };
-                log.Error($"数据库连接失败: {detailMsg}. 连接串: {connStr}");
+                log.Error($"数据库连接失败: {detailMsg}. 连接: {GetConnectionSummary(Config)}");
                 log.Error(ex);
                 return Task.FromResult(false);
             }
             catch (Exception ex)
             {
                 IsConnect = false;
-                log.Error($"数据库连接发生未知异常: {ex.Message}. 连接串: {connStr}");
+                log.Error($"数据库连接发生未知异常: {ex.Message}. 连接: {GetConnectionSummary(Config)}");
                 log.Error(ex);
                 return Task.FromResult(false);
             }
@@ -137,12 +137,19 @@ namespace ColorVision.Database
             return connStr;
         }
 
+        private static string GetConnectionSummary(MySqlConfig mySqlConfig)
+        {
+            string database = string.IsNullOrWhiteSpace(mySqlConfig.Database) ? "<empty>" : mySqlConfig.Database;
+            string user = string.IsNullOrWhiteSpace(mySqlConfig.UserName) ? "<empty>" : "***";
+            return $"server={mySqlConfig.Host};port={mySqlConfig.Port};uid={user};database={database}";
+        }
+
         public static void TestConnect(MySqlConfig MySqlConfig)
         {
             string connStr = GetConnectionString(MySqlConfig, 2);
             try
             {
-                log.Info($"Test数据库连接信息:{connStr}");
+                log.Info($"Test数据库连接信息:{GetConnectionSummary(MySqlConfig)}");
                 using (var mySqlConnection = new MySqlConnection(connStr))
                 {
                     mySqlConnection.Open();
