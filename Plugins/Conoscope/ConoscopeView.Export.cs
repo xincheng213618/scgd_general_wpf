@@ -3,6 +3,7 @@ using Conoscope.Core;
 using Conoscope.Presentation.Helpers;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 
@@ -175,17 +176,18 @@ namespace Conoscope
                     return;
                 }
 
-                AdvancedExportDialog dialog = new AdvancedExportDialog(GetExportDecimalPlaces()) { Owner = Window.GetWindow(this) };
+                AdvancedExportDialog dialog = new AdvancedExportDialog(GetAdvancedExportSettings(), GetExportDecimalPlaces()) { Owner = Window.GetWindow(this) };
                 if (dialog.ShowDialog() == true)
                 {
                     AdvancedExportSettings settings = dialog.Settings;
+                    SaveAdvancedExportSettings(settings);
+
                     if (!HasXyzData() && settings.Channels.Exists(channel => channel != ExportChannel.Y))
                     {
                         MessageBox.Show(Properties.Resources.XYZDataNotLoaded, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 
-                    SaveAdvancedExportDecimalPlaces(settings.DecimalPlaces);
                     PerformAdvancedExport(settings);
                 }
             }
@@ -260,6 +262,7 @@ namespace Conoscope
             try
             {
                 ConoscopeExportContext exportContext = CreateExportContext();
+                ConoscopeCrossSectionExportOptions exportOptions = CreateAdvancedCrossSectionExportOptions(settings);
                 foreach (ExportChannel channel in settings.Channels)
                 {
                     string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
@@ -268,11 +271,11 @@ namespace Conoscope
 
                     if (settings.CrossSectionType == CrossSectionType.Azimuth)
                     {
-                        ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, settings.DecimalPlaces);
+                        ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
                     }
                     else
                     {
-                        ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, settings.DecimalPlaces);
+                        ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
                     }
 
                     filesExported++;
@@ -319,6 +322,32 @@ namespace Conoscope
             };
         }
 
+        private static AdvancedExportSettings GetAdvancedExportSettings()
+        {
+            ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
+            ConoscopeAdvancedExportState saved = config.AdvancedExport;
+
+            return new AdvancedExportSettings
+            {
+                FilePrefix = saved.FilePrefix,
+                Channels = saved.Channels is { Count: > 0 }
+                    ? new List<ExportChannel>(saved.Channels)
+                    : new List<ExportChannel> { ExportChannel.Y },
+                ExportAzimuth = saved.ExportAzimuth,
+                ExportPolar = saved.ExportPolar,
+                AzimuthStep = saved.AzimuthStep,
+                RadialStep = saved.RadialStep,
+                PolarStep = saved.PolarStep,
+                CircumferentialStep = saved.CircumferentialStep,
+                DecimalPlaces = config.Export.DecimalPlaces,
+                EnableCrossSection = saved.EnableCrossSection,
+                CrossSectionType = saved.UseAzimuthCrossSection ? CrossSectionType.Azimuth : CrossSectionType.Polar,
+                CrossSectionAzimuthAngle = saved.CrossSectionAzimuthAngle,
+                CrossSectionPolarAngle = saved.CrossSectionPolarAngle,
+                CrossSectionAngle = saved.UseAzimuthCrossSection ? saved.CrossSectionAzimuthAngle : saved.CrossSectionPolarAngle
+            };
+        }
+
         private static void SaveCurrentCurveExportOptions(ConoscopeCrossSectionExportOptions options)
         {
             ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
@@ -342,10 +371,27 @@ namespace Conoscope
             return ConoscopeManager.GetInstance().Config.Export.DecimalPlaces;
         }
 
-        private static void SaveAdvancedExportDecimalPlaces(int decimalPlaces)
+        private static void SaveAdvancedExportSettings(AdvancedExportSettings settings)
         {
-            ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
-            exportConfig.DecimalPlaces = decimalPlaces;
+            ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
+            config.AdvancedExport = new ConoscopeAdvancedExportState
+            {
+                FilePrefix = settings.FilePrefix,
+                Channels = settings.Channels.Count > 0
+                    ? new List<ExportChannel>(settings.Channels)
+                    : new List<ExportChannel> { ExportChannel.Y },
+                ExportAzimuth = settings.ExportAzimuth,
+                ExportPolar = settings.ExportPolar,
+                AzimuthStep = settings.AzimuthStep,
+                RadialStep = settings.RadialStep,
+                PolarStep = settings.PolarStep,
+                CircumferentialStep = settings.CircumferentialStep,
+                EnableCrossSection = settings.EnableCrossSection,
+                UseAzimuthCrossSection = settings.CrossSectionType == CrossSectionType.Azimuth,
+                CrossSectionAzimuthAngle = settings.CrossSectionAzimuthAngle,
+                CrossSectionPolarAngle = settings.CrossSectionPolarAngle
+            };
+            config.Export.DecimalPlaces = settings.DecimalPlaces;
 
             try
             {
@@ -353,8 +399,20 @@ namespace Conoscope
             }
             catch (Exception ex)
             {
-                log.Warn($"保存高级导出小数位数失败: {ex.Message}", ex);
+                log.Warn($"保存高级导出配置失败: {ex.Message}", ex);
             }
+        }
+
+        private static ConoscopeCrossSectionExportOptions CreateAdvancedCrossSectionExportOptions(AdvancedExportSettings settings)
+        {
+            return new ConoscopeCrossSectionExportOptions
+            {
+                StepDegrees = settings.CrossSectionType == CrossSectionType.Azimuth
+                    ? settings.RadialStep
+                    : settings.CircumferentialStep,
+                IncludeMetadata = true,
+                DecimalPlaces = settings.DecimalPlaces
+            };
         }
 
         private void btnExportCurrentAzimuth_Click(object sender, RoutedEventArgs e)

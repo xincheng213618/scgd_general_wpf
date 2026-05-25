@@ -71,7 +71,6 @@
         </Style>
 
         <Style x:Key="RibbonLargeButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonButtonStyle}">
-            <Setter Property="MinWidth" Value="58" />
             <Setter Property="ToolTipService.ShowDuration" Value="12000" />
         </Style>
 
@@ -258,12 +257,10 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{x:Static properties:Resources.LabelFlowTemplate}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbFlowTemplate" Width="176" DisplayMemberPath="Key" SelectionChanged="cbFlowTemplate_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
                                             <Button x:Name="btnEditFlowTemplates" Click="btnEditFlowTemplates_Click" ToolTip="{x:Static properties:Resources.TipOpenFlowTemplateMgmt}" Style="{StaticResource RibbonLargeButtonStyle}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnSettings}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                             <Button x:Name="btnRunFlow" Click="btnRunFlow_Click" Style="{StaticResource RibbonExecuteButtonStyle}" ToolTip="{x:Static properties:Resources.TipExecuteFlow}">
@@ -290,13 +287,11 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{x:Static properties:Resources.LabelCamera}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbCameraDevice"
                                                       Width="176"
                                                       DisplayMemberPath="Config.Name"
                                                       SelectionChanged="cbCameraDevice_SelectionChanged"
                                                       Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <TextBlock Text="{x:Static properties:Resources.Calibration}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbCalibrationTemplate"
                                                       Width="140"
                                                       DisplayMemberPath="Key"
@@ -308,7 +303,6 @@
                                                     Style="{StaticResource RibbonLargeButtonStyle}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE713;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.Calibration}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                             <Button x:Name="btnRefreshCameraDevices"
@@ -317,7 +311,6 @@
                                                     Style="{StaticResource RibbonButtonStyle}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE72C;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnRefresh}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                             <Button x:Name="btnCaptureCamera"

@@ -1,5 +1,6 @@
 using Conoscope.Analysis;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,12 +11,25 @@ namespace Conoscope
     {
         private readonly DefaultBatchColorGamutCalculator batchColorGamutCalculator = new();
         private readonly DefaultBatchContrastCalculator batchContrastCalculator = new();
+        private readonly Dictionary<Button, RecordButtonVisualState> recordButtonVisualStates = new();
 
         private MeasurementCapture? gamutRedCapture;
         private MeasurementCapture? gamutGreenCapture;
         private MeasurementCapture? gamutBlueCapture;
         private MeasurementCapture? contrastWhiteCapture;
         private MeasurementCapture? contrastBlackCapture;
+
+        private sealed class RecordButtonVisualState
+        {
+            public RecordButtonVisualState(object? content, object? toolTip)
+            {
+                Content = content;
+                ToolTip = toolTip;
+            }
+
+            public object? Content { get; }
+            public object? ToolTip { get; }
+        }
 
         private void InitializeAnalysisRibbonControls()
         {
@@ -67,20 +81,33 @@ namespace Conoscope
             UpdateRecordButton(btnRecordContrastBlack, contrastBlackCapture, Color.FromRgb(90, 90, 90), Properties.Resources.SlotBlack);
         }
 
-        private static void UpdateRecordButton(Button button, MeasurementCapture? capture, Color accentColor, string slotName)
+        private RecordButtonVisualState GetRecordButtonVisualState(Button button)
         {
+            if (recordButtonVisualStates.TryGetValue(button, out RecordButtonVisualState? state))
+            {
+                return state;
+            }
+
+            state = new RecordButtonVisualState(button.Content, button.ToolTip);
+            recordButtonVisualStates.Add(button, state);
+            return state;
+        }
+
+        private void UpdateRecordButton(Button button, MeasurementCapture? capture, Color accentColor, string slotName)
+        {
+            RecordButtonVisualState baseState = GetRecordButtonVisualState(button);
+            button.Content = baseState.Content;
+
             if (capture == null)
             {
-                button.Content = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordSlot, slotName);
                 button.ClearValue(Control.BackgroundProperty);
                 button.ClearValue(Control.BorderBrushProperty);
                 button.ClearValue(Control.ForegroundProperty);
                 button.ClearValue(Control.FontWeightProperty);
-                button.ClearValue(FrameworkElement.ToolTipProperty);
+                button.ToolTip = baseState.ToolTip;
                 return;
             }
 
-            button.Content = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedSlot, slotName);
             button.Background = new SolidColorBrush(Color.FromArgb(64, accentColor.R, accentColor.G, accentColor.B));
             button.BorderBrush = new SolidColorBrush(accentColor);
             button.Foreground = Brushes.White;

@@ -278,19 +278,19 @@
     <value>清空</value>
   </data>
   <data name="BtnRecordR" xml:space="preserve">
-    <value>记录 R</value>
+    <value>R</value>
   </data>
   <data name="BtnRecordG" xml:space="preserve">
-    <value>记录 G</value>
+    <value>G</value>
   </data>
   <data name="BtnRecordB" xml:space="preserve">
-    <value>记录 B</value>
+    <value>B</value>
   </data>
   <data name="BtnRecordWhite" xml:space="preserve">
-    <value>记录白</value>
+    <value>W</value>
   </data>
   <data name="BtnRecordBlack" xml:space="preserve">
-    <value>记录黑</value>
+    <value>B</value>
   </data>
   <data name="BtnComputeContrast" xml:space="preserve">
     <value>计算对比度</value>

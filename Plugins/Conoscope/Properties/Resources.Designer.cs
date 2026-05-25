@@ -313,7 +313,7 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///   查找类似 记录 B 的本地化字符串。
+        ///   查找类似 B 的本地化字符串。
         /// </summary>
         public static string BtnRecordB {
             get {
@@ -322,7 +322,7 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///   查找类似 记录黑 的本地化字符串。
+        ///   查找类似 B 的本地化字符串。
         /// </summary>
         public static string BtnRecordBlack {
             get {
@@ -331,7 +331,7 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///   查找类似 记录 G 的本地化字符串。
+        ///   查找类似 G 的本地化字符串。
         /// </summary>
         public static string BtnRecordG {
             get {
@@ -340,7 +340,7 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///   查找类似 记录 R 的本地化字符串。
+        ///   查找类似 R 的本地化字符串。
         /// </summary>
         public static string BtnRecordR {
             get {
@@ -349,7 +349,7 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///   查找类似 记录白 的本地化字符串。
+        ///   查找类似 W 的本地化字符串。
         /// </summary>
         public static string BtnRecordWhite {
             get {
@@ -2702,6 +2702,51 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建 POI 模板失败。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateCreateFailed {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateCreateFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已保存关注点到 POI 模板: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaved {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存失败，具体报错信息请查看日志。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveFailedCheckLog {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedCheckLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveFailedDetail {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库未连接，无法保存 POI 模板。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveRequiresDatabase {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveRequiresDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 已完成 {0} 色域计算 的本地化字符串。
         /// </summary>
         public static string MsgGamutComputed {
@@ -2761,6 +2806,15 @@ namespace Conoscope.Properties {
         public static string MsgImageSizeMismatch {
             get {
                 return ResourceManager.GetString("MsgImageSizeMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前 ImageView 没有关联的文件路径 的本地化字符串。
+        /// </summary>
+        public static string MsgImageViewFilePathUnavailable {
+            get {
+                return ResourceManager.GetString("MsgImageViewFilePathUnavailable", resourceCulture);
             }
         }
         
@@ -3046,6 +3100,15 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已恢复原始数据 的本地化字符串。
+        /// </summary>
+        public static string MsgOriginalDataRestored {
+            get {
+                return ResourceManager.GetString("MsgOriginalDataRestored", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 极角模式导出失败: {0} 的本地化字符串。
         /// </summary>
         public static string MsgPolarExportFailed {
@@ -3078,6 +3141,24 @@ namespace Conoscope.Properties {
         public static string MsgPreprocessApplied {
             get {
                 return ResourceManager.GetString("MsgPreprocessApplied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存前处理配置失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgPreprocessConfigSaveFailedDetail {
+            get {
+                return ResourceManager.GetString("MsgPreprocessConfigSaveFailedDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 应用前处理失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgPreprocessFailedDetail {
+            get {
+                return ResourceManager.GetString("MsgPreprocessFailedDetail", resourceCulture);
             }
         }
         
@@ -3661,6 +3742,15 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 文件类型 的本地化字符串。
+        /// </summary>
+        public static string StatusFileType {
+            get {
+                return ResourceManager.GetString("StatusFileType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 帧率:  的本地化字符串。
         /// </summary>
         public static string StatusFrameRate {
@@ -3686,16 +3776,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusImageCount", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 文件类型 的本地化字符串。
-        /// </summary>
-        public static string StatusFileType {
-            get {
-                return ResourceManager.GetString("StatusFileType", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 图像尺寸 的本地化字符串。
         /// </summary>
@@ -4053,6 +4134,51 @@ namespace Conoscope.Properties {
         public static string TestAreaWithCenter {
             get {
                 return ResourceManager.GetString("TestAreaWithCenter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 青色 的本地化字符串。
+        /// </summary>
+        public static string ThemeCyan {
+            get {
+                return ResourceManager.GetString("ThemeCyan", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 暗色 的本地化字符串。
+        /// </summary>
+        public static string ThemeDark {
+            get {
+                return ResourceManager.GetString("ThemeDark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 亮色 的本地化字符串。
+        /// </summary>
+        public static string ThemeLight {
+            get {
+                return ResourceManager.GetString("ThemeLight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 粉色 的本地化字符串。
+        /// </summary>
+        public static string ThemePink {
+            get {
+                return ResourceManager.GetString("ThemePink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统 的本地化字符串。
+        /// </summary>
+        public static string ThemeSystem {
+            get {
+                return ResourceManager.GetString("ThemeSystem", resourceCulture);
             }
         }
         
@@ -4543,6 +4669,15 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 关注点极坐标编辑 的本地化字符串。
+        /// </summary>
+        public static string TitleFocusPointPolarEditor {
+            get {
+                return ResourceManager.GetString("TitleFocusPointPolarEditor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 色域计算 的本地化字符串。
         /// </summary>
         public static string TitleGamutCalc {
@@ -4604,51 +4739,6 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleSuccess", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 青色 的本地化字符串。
-        /// </summary>
-        public static string ThemeCyan {
-            get {
-                return ResourceManager.GetString("ThemeCyan", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 暗色 的本地化字符串。
-        /// </summary>
-        public static string ThemeDark {
-            get {
-                return ResourceManager.GetString("ThemeDark", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 亮色 的本地化字符串。
-        /// </summary>
-        public static string ThemeLight {
-            get {
-                return ResourceManager.GetString("ThemeLight", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 粉色 的本地化字符串。
-        /// </summary>
-        public static string ThemePink {
-            get {
-                return ResourceManager.GetString("ThemePink", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 系统 的本地化字符串。
-        /// </summary>
-        public static string ThemeSystem {
-            get {
-                return ResourceManager.GetString("ThemeSystem", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 未知版本 的本地化字符串。
@@ -4656,24 +4746,6 @@ namespace Conoscope.Properties {
         public static string UnknownVersion {
             get {
                 return ResourceManager.GetString("UnknownVersion", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Conoscope 的本地化字符串。
-        /// </summary>
-        public static string WindowTitleConoscope {
-            get {
-                return ResourceManager.GetString("WindowTitleConoscope", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Conoscope {0} 的本地化字符串。
-        /// </summary>
-        public static string WindowTitleConoscopeWithVersion {
-            get {
-                return ResourceManager.GetString("WindowTitleConoscopeWithVersion", resourceCulture);
             }
         }
         
@@ -4687,101 +4759,29 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Conoscope 的本地化字符串。
+        /// </summary>
+        public static string WindowTitleConoscope {
+            get {
+                return ResourceManager.GetString("WindowTitleConoscope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Conoscope {0} 的本地化字符串。
+        /// </summary>
+        public static string WindowTitleConoscopeWithVersion {
+            get {
+                return ResourceManager.GetString("WindowTitleConoscopeWithVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 XYZ 数据未加载 的本地化字符串。
         /// </summary>
         public static string XYZDataNotLoaded {
             get {
                 return ResourceManager.GetString("XYZDataNotLoaded", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 创建 POI 模板失败。 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateCreateFailed {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateCreateFailed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 保存失败，具体报错信息请查看日志。 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaveFailedCheckLog {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedCheckLog", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 保存失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaveFailedDetail {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedDetail", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 数据库未连接，无法保存 POI 模板。 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaveRequiresDatabase {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaveRequiresDatabase", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 已保存关注点到 POI 模板: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaved {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaved", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 当前 ImageView 没有关联的文件路径 的本地化字符串。
-        /// </summary>
-        public static string MsgImageViewFilePathUnavailable {
-            get {
-                return ResourceManager.GetString("MsgImageViewFilePathUnavailable", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 已恢复原始数据 的本地化字符串。
-        /// </summary>
-        public static string MsgOriginalDataRestored {
-            get {
-                return ResourceManager.GetString("MsgOriginalDataRestored", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 保存前处理配置失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgPreprocessConfigSaveFailedDetail {
-            get {
-                return ResourceManager.GetString("MsgPreprocessConfigSaveFailedDetail", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 应用前处理失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgPreprocessFailedDetail {
-            get {
-                return ResourceManager.GetString("MsgPreprocessFailedDetail", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 关注点极坐标编辑 的本地化字符串。
-        /// </summary>
-        public static string TitleFocusPointPolarEditor {
-            get {
-                return ResourceManager.GetString("TitleFocusPointPolarEditor", resourceCulture);
             }
         }
     }

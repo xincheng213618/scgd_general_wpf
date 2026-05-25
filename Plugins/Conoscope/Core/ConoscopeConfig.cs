@@ -3,6 +3,7 @@ using ColorVision.UI;
 using ColorVision.Core;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -205,6 +206,14 @@ namespace Conoscope.Core
             set { _NdCalibrationBindings = value; OnPropertyChanged(); }
         }
         private ObservableCollection<ConoscopeNdCalibrationBinding> _NdCalibrationBindings = new();
+
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public ConoscopeAdvancedExportState AdvancedExport
+        {
+            get => _AdvancedExport;
+            set { _AdvancedExport = value ?? new ConoscopeAdvancedExportState(); OnPropertyChanged(); }
+        }
+        private ConoscopeAdvancedExportState _AdvancedExport = new();
 
         [Category("导出"), DisplayName("当前曲线采样间隔(度)"), Description("当前曲线 CSV 导出的默认采样间隔，范围 0.01 到 360 度。")]
         public double CurrentCurveExportStepDegrees
@@ -481,6 +490,25 @@ namespace Conoscope.Core
             get => config.ExportDecimalPlaces;
             set => config.ExportDecimalPlaces = value;
         }
+    }
+
+    public sealed class ConoscopeAdvancedExportState
+    {
+        public string FilePrefix { get; set; } = "Conoscope_Export";
+
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<ExportChannel> Channels { get; set; } = new() { ExportChannel.Y };
+
+        public bool ExportAzimuth { get; set; } = true;
+        public bool ExportPolar { get; set; }
+        public double AzimuthStep { get; set; } = 1;
+        public double RadialStep { get; set; } = 1;
+        public double PolarStep { get; set; } = 1;
+        public double CircumferentialStep { get; set; } = 1;
+        public bool EnableCrossSection { get; set; }
+        public bool UseAzimuthCrossSection { get; set; } = true;
+        public double CrossSectionAzimuthAngle { get; set; }
+        public double CrossSectionPolarAngle { get; set; } = 45;
     }
 
     public class ConoscopeNdCalibrationBinding : ViewModelBase
