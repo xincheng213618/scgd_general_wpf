@@ -3,13 +3,11 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Messages;
 using ColorVision.UI;
 using Conoscope.ApplicationServices.Capture;
 using Conoscope.Core;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,14 +38,14 @@ namespace Conoscope
 
         private void RefreshCameraDevices()
         {
-            DeviceCamera? selectedCamera = cbCameraDevice.SelectedItem as DeviceCamera;
-            string? selectedCode = selectedCamera?.Config.Code;
+            string? selectedCameraCode = GetSelectedCamera()?.Config.Code;
             List<DeviceCamera> cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
+
             cbCameraDevice.ItemsSource = cameras;
 
-            if (!string.IsNullOrWhiteSpace(selectedCode))
+            if (!string.IsNullOrWhiteSpace(selectedCameraCode))
             {
-                cbCameraDevice.SelectedItem = cameras.FirstOrDefault(item => item.Config.Code == selectedCode);
+                cbCameraDevice.SelectedItem = cameras.FirstOrDefault(item => item.Config.Code == selectedCameraCode);
             }
 
             if (cbCameraDevice.SelectedItem == null && cameras.Count > 0)
@@ -56,7 +54,7 @@ namespace Conoscope
             }
 
             RefreshCalibrationTemplates();
-            RefreshNdControls();
+            btnCaptureCamera.IsEnabled = !isRunningOperation && GetSelectedCamera() != null;
         }
 
         private void RefreshCalibrationTemplates()
@@ -67,13 +65,7 @@ namespace Conoscope
             string previousKey = previous?.Key ?? string.Empty;
 
             cbCalibrationTemplate.ItemsSource = camera?.PhyCamera?.CalibrationParams.CreateEmpty();
-            TemplateModel<CalibrationParam>? target = null;
-            if (camera != null)
-            {
-                target = ResolveNdCalibrationTemplate(camera, camera.Config.NDPort);
-            }
-
-            target ??= cbCalibrationTemplate.Items.OfType<TemplateModel<CalibrationParam>>()
+            TemplateModel<CalibrationParam>? target = cbCalibrationTemplate.Items.OfType<TemplateModel<CalibrationParam>>()
                 .FirstOrDefault(item => item.Id == previousId || string.Equals(item.Key, previousKey, StringComparison.OrdinalIgnoreCase));
 
             cbCalibrationTemplate.SelectedItem = target;
@@ -81,18 +73,6 @@ namespace Conoscope
             {
                 cbCalibrationTemplate.SelectedIndex = cbCalibrationTemplate.Items.Count > 0 ? 0 : -1;
             }
-        }
-
-        private void RefreshNdControls()
-        {
-            DeviceCamera? camera = GetSelectedCamera();
-            bool isNdAvailable = camera?.Config.CFW.IsUseCFW == true && camera.Config.CFW.IsNDPort;
-            txtNDPort.IsEnabled = isNdAvailable && !isRunningOperation;
-            btnSetNDPort.IsEnabled = isNdAvailable && !isRunningOperation;
-            btnGetNDPort.IsEnabled = isNdAvailable && !isRunningOperation;
-            btnBindNdCalibration.IsEnabled = isNdAvailable && !isRunningOperation && cbCalibrationTemplate.SelectedItem is TemplateModel<CalibrationParam>;
-            btnClearNdCalibrationBinding.IsEnabled = isNdAvailable && !isRunningOperation;
-            txtNDPort.Text = camera?.Config.NDPort.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         }
 
         private void ServiceManager_ServiceChanged(object? sender, EventArgs e)
@@ -119,61 +99,6 @@ namespace Conoscope
         private TemplateModel<CalibrationParam>? GetSelectedCalibrationTemplate()
         {
             return cbCalibrationTemplate.SelectedItem as TemplateModel<CalibrationParam>;
-        }
-
-        private static ConoscopeNdCalibrationBinding? FindNdCalibrationBinding(DeviceCamera camera, int ndPort)
-        {
-            string cameraCode = camera.Config.Code ?? string.Empty;
-            return ConoscopeManager.GetInstance().Config.Capture.NdCalibrationBindings
-                .FirstOrDefault(item => item.NdPort == ndPort
-                    && string.Equals(item.CameraCode, cameraCode, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private TemplateModel<CalibrationParam>? ResolveNdCalibrationTemplate(DeviceCamera camera, int ndPort)
-        {
-            ConoscopeNdCalibrationBinding? binding = FindNdCalibrationBinding(camera, ndPort);
-            if (binding == null)
-            {
-                return null;
-            }
-
-            return cbCalibrationTemplate.Items.OfType<TemplateModel<CalibrationParam>>()
-                .FirstOrDefault(item => item.Id == binding.CalibrationTemplateId
-                    || string.Equals(item.Key, binding.CalibrationTemplateName, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private bool ApplyNdCalibrationBinding(DeviceCamera camera, int ndPort, bool reportStatus)
-        {
-            TemplateModel<CalibrationParam>? matched = ResolveNdCalibrationTemplate(camera, ndPort);
-            if (matched == null)
-            {
-                if (reportStatus)
-                {
-                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdNotBoundCalibration, ndPort), Brushes.Gray);
-                }
-
-                return false;
-            }
-
-            cbCalibrationTemplate.SelectedItem = matched;
-            if (reportStatus)
-            {
-                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdMatchedCalibration, ndPort, matched.Key), Brushes.LimeGreen);
-            }
-
-            return true;
-        }
-
-        private bool TryGetNdPort(out int ndPort)
-        {
-            if (int.TryParse(txtNDPort.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out ndPort))
-            {
-                return true;
-            }
-
-            DeviceCamera? camera = GetSelectedCamera();
-            ndPort = camera?.Config.NDPort ?? 0;
-            return camera != null;
         }
 
         private bool ShouldReuseActiveViewOnCapture()
@@ -277,7 +202,6 @@ namespace Conoscope
             btnCaptureCamera.IsEnabled = !busy && GetSelectedCamera() != null;
             btnRefreshCameraDevices.IsEnabled = !busy;
             btnApplyPreprocessToActiveView.IsEnabled = !busy && ActiveView != null;
-            RefreshNdControls();
         }
 
         private void SetOperationStatus(string text, Brush? brush = null)
@@ -315,59 +239,6 @@ namespace Conoscope
             }.ShowDialog();
 
             RefreshCalibrationTemplates();
-        }
-
-        private void btnBindNdCalibration_Click(object sender, RoutedEventArgs e)
-        {
-            DeviceCamera? camera = GetSelectedCamera();
-            TemplateModel<CalibrationParam>? calibrationTemplate = GetSelectedCalibrationTemplate();
-            if (camera == null || calibrationTemplate == null || calibrationTemplate.Id < 0)
-            {
-                MessageBox.Show(Properties.Resources.MsgSelectCameraAndCalibration, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!TryGetNdPort(out int ndPort))
-            {
-                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            ConoscopeNdCalibrationBinding? binding = FindNdCalibrationBinding(camera, ndPort);
-            if (binding == null)
-            {
-                binding = new ConoscopeNdCalibrationBinding();
-                CaptureConfig.NdCalibrationBindings.Add(binding);
-            }
-
-            binding.CameraCode = camera.Config.Code ?? string.Empty;
-            binding.CameraName = camera.Config.Name ?? string.Empty;
-            binding.NdPort = ndPort;
-            binding.CalibrationTemplateId = calibrationTemplate.Id;
-            binding.CalibrationTemplateName = calibrationTemplate.Key;
-            ConfigService.Instance.Save<ConoscopeConfig>();
-            SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdBound, ndPort, calibrationTemplate.Key), Brushes.LimeGreen);
-        }
-
-        private void btnClearNdCalibrationBinding_Click(object sender, RoutedEventArgs e)
-        {
-            DeviceCamera? camera = GetSelectedCamera();
-            if (camera == null || !TryGetNdPort(out int ndPort))
-            {
-                MessageBox.Show(Properties.Resources.MsgSelectCameraAndNd, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            ConoscopeNdCalibrationBinding? binding = FindNdCalibrationBinding(camera, ndPort);
-            if (binding == null)
-            {
-                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdNotBound, ndPort), Brushes.Gray);
-                return;
-            }
-
-            CaptureConfig.NdCalibrationBindings.Remove(binding);
-            ConfigService.Instance.Save<ConoscopeConfig>();
-            SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdUnbound, ndPort), Brushes.LimeGreen);
         }
 
         private async void btnRunFlow_Click(object sender, RoutedEventArgs e)
@@ -478,94 +349,6 @@ namespace Conoscope
             }
         }
 
-        private async void btnSetNDPort_Click(object sender, RoutedEventArgs e)
-        {
-            DeviceCamera? camera = GetSelectedCamera();
-            if (camera == null)
-            {
-                MessageBox.Show(Properties.Resources.MsgSelectCamera, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!int.TryParse(txtNDPort.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int port))
-            {
-                MessageBox.Show(Properties.Resources.MsgInvalidNdPort, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                SetOperationBusy(true);
-                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSwitchingNd, port), Brushes.DodgerBlue);
-                camera.Config.NDPort = port;
-                MsgRecord msgRecord = camera.DService.SetNDPort();
-                MsgRecordState state = await ConoscopeCaptureWorkflow.WaitForMsgRecordAsync(msgRecord);
-                if (state == MsgRecordState.Success)
-                {
-                    if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))
-                    {
-                        SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitched, port), Brushes.LimeGreen);
-                    }
-                }
-                else
-                {
-                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitchFailed, state), Brushes.OrangeRed);
-                    MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitchFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                SetOperationStatus(Properties.Resources.MsgNdSwitchFailed, Brushes.OrangeRed);
-                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdSwitchFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                SetOperationBusy(false);
-            }
-        }
-
-        private async void btnGetNDPort_Click(object sender, RoutedEventArgs e)
-        {
-            DeviceCamera? camera = GetSelectedCamera();
-            if (camera == null)
-            {
-                MessageBox.Show(Properties.Resources.MsgSelectCamera, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                SetOperationBusy(true);
-                SetOperationStatus(Properties.Resources.MsgReadingNd, Brushes.DodgerBlue);
-                MsgRecord msgRecord = camera.DService.GetPort();
-                MsgRecordState state = await ConoscopeCaptureWorkflow.WaitForMsgRecordAsync(msgRecord);
-                if (state == MsgRecordState.Success)
-                {
-                    int port = ConoscopeCaptureWorkflow.ReadMsgReturnInt(msgRecord.MsgReturn, "Port");
-                    camera.Config.NDPort = port;
-                    txtNDPort.Text = port.ToString(CultureInfo.InvariantCulture);
-                    if (!ApplyNdCalibrationBinding(camera, port, reportStatus: true))
-                    {
-                        SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCurrentNd, port), Brushes.LimeGreen);
-                    }
-                }
-                else
-                {
-                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdReadFailed, state), Brushes.OrangeRed);
-                    MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdReadFailedDetail, state, msgRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                SetOperationStatus(Properties.Resources.MsgNdReadFailed, Brushes.OrangeRed);
-                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgNdReadFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                SetOperationBusy(false);
-            }
-        }
-
         private void cbFlowTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (GetSelectedFlowTemplate() is TemplateModel<FlowParam> flowTemplate)
@@ -579,13 +362,11 @@ namespace Conoscope
         private void cbCameraDevice_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             RefreshCalibrationTemplates();
-            RefreshNdControls();
             btnCaptureCamera.IsEnabled = !isRunningOperation && GetSelectedCamera() != null;
         }
 
         private void cbCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            RefreshNdControls();
         }
     }
 }

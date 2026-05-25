@@ -217,12 +217,10 @@ namespace Conoscope
             {
                 bool isVisible = hasFullXyzData;
                 UpdateChannelOptionVisibility(cbDisplayChannel, channel, isVisible);
-                UpdateChannelOptionVisibility(cbExportChannel, channel, isVisible);
             }
 
             bool canOfferContrastChannel = hasFullXyzData && CanOfferContrastChannel();
             UpdateChannelOptionVisibility(cbDisplayChannel, ExportChannel.Contrast, canOfferContrastChannel);
-            UpdateChannelOptionVisibility(cbExportChannel, ExportChannel.Contrast, canOfferContrastChannel);
 
             if (RequiresFullXyzData(RenderingConfig.DisplayChannel) && !hasFullXyzData)
             {
@@ -234,11 +232,10 @@ namespace Conoscope
                 RenderingConfig.DisplayChannel = ExportChannel.Y;
             }
 
-            ExportChannel selectedExportChannel = GetSelectedExportChannel();
             if ((RequiresFullXyzData(selectedExportChannel) && !hasFullXyzData)
                 || (!canOfferContrastChannel && selectedExportChannel == ExportChannel.Contrast))
             {
-                ComboBoxHelper.TrySelectItemByTag(cbExportChannel, ExportChannel.Y.ToString(), visibleOnly: true);
+                selectedExportChannel = ExportChannel.Y;
             }
         }
 
@@ -319,14 +316,6 @@ namespace Conoscope
                     MessageBox.Show(ex.Message, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
-        }
-
-        private void ExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            RefreshChannelAvailability();
-            UpdateColorDifferencePanelVisibility();
-            UpdateContrastReferenceUi();
-            RaiseWindowQuickControlStateChanged();
         }
 
         private void btnSaveConoscopeConfig_Click(object sender, RoutedEventArgs e)

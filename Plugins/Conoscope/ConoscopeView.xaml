@@ -25,14 +25,6 @@
             <Setter Property="Padding" Value="9,3"/>
             <Setter Property="MinHeight" Value="26"/>
         </Style>
-        <Style x:Key="PanelPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style x:Key="PanelInlineCheckBoxStyle" TargetType="CheckBox">
-            <Setter Property="Margin" Value="0,0,12,0"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-        </Style>
         <Style x:Key="PanelSurfaceButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="9,3"/>
             <Setter Property="MinHeight" Value="26"/>
@@ -70,9 +62,6 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>
-        <Style x:Key="PanelSurfacePrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelSurfaceButtonStyle}">
-            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style x:Key="PanelSurfaceToggleStyle" TargetType="ToggleButton">
             <Setter Property="Padding" Value="9,3"/>
@@ -210,13 +199,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <ScrollViewer Grid.Row="0"
-                          MaxHeight="220"
-                          MinHeight="112"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          Focusable="False">
-                <StackPanel Margin="5">
+            <StackPanel Grid.Row="0" Margin="5" Visibility="Collapsed">
                     <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -269,44 +252,6 @@
                         </Grid>
                     </Grid>
 
-                    <WrapPanel Margin="0,0,0,8">
-                        <Button x:Name="btnApplyFilter" Content="{x:Static properties:Resources.BtnApplyPreset}" Click="btnApplyFilter_Click" Style="{StaticResource PanelSurfacePrimaryButtonStyle}" Margin="0,0,12,0"/>
-                        <CheckBox x:Name="chkViewUsePseudoColor" Content="{x:Static properties:Resources.ChkPseudoColor}" Style="{StaticResource PanelInlineCheckBoxStyle}" Checked="ViewDisplayQuick_Changed" Unchecked="ViewDisplayQuick_Changed"/>
-                        <TextBlock Text="{x:Static properties:Resources.LabelColorMap}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="cbViewPseudoColorMap" Width="130" Margin="0,0,12,0" SelectionChanged="cbViewPseudoColorMap_SelectionChanged"/>
-                        <CheckBox x:Name="chkViewDustRemoval" Content="{x:Static properties:Resources.DustLabel}" Style="{StaticResource PanelInlineCheckBoxStyle}" Checked="ViewPreprocessQuick_Changed" Unchecked="ViewPreprocessQuick_Changed"/>
-                        <CheckBox x:Name="chkViewEnableFilter" Content="{x:Static properties:Resources.ChkEnableFilter}" Style="{StaticResource PanelInlineCheckBoxStyle}" Checked="chkViewEnableFilter_Changed" Unchecked="chkViewEnableFilter_Changed"/>
-                        <ComboBox x:Name="cbViewFilterType" Width="122" Margin="0,0,12,0" SelectedValuePath="Tag" SelectionChanged="cbViewFilterType_SelectionChanged">
-                            <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="{x:Static Conoscope:ImageFilterType.LowPass}"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="{x:Static Conoscope:ImageFilterType.MovingAverage}"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}" Tag="{x:Static Conoscope:ImageFilterType.Gaussian}"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}" Tag="{x:Static Conoscope:ImageFilterType.Median}"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}" Tag="{x:Static Conoscope:ImageFilterType.Bilateral}"/>
-                        </ComboBox>
-                        <TextBlock Text="{x:Static properties:Resources.HeaderFilter}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
-                        <Border Padding="8,4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Background="{DynamicResource GlobalBorderBrush}">
-                            <TextBlock x:Name="tbViewFilterSummary" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
-                        </Border>
-                    </WrapPanel>
-
-                    <WrapPanel Margin="0,0,0,6">
-                        <TextBlock Text="{x:Static properties:Resources.LabelExport}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelXShort}" Tag="X"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelYShort}" Tag="Y"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelZShort}" Tag="Z"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieXShort}" Tag="CieX"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieYShort}" Tag="CieY"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
-                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelContrast}" Tag="Contrast"/>
-                        </ComboBox>
-                        <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Style="{StaticResource PanelSurfaceButtonStyle}" Padding="10,4" Margin="0,0,6,0"/>
-                        <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Style="{StaticResource PanelSurfaceButtonStyle}" Padding="10,4" Margin="0,0,6,0"/>
-                        <Button Content="{x:Static properties:Resources.TitleAdvancedExport}" Click="btnAdvancedExport_Click" Style="{StaticResource PanelSurfaceButtonStyle}" Padding="10,4" ToolTip="{x:Static properties:Resources.TipAdvancedExport}"/>
-                    </WrapPanel>
-
                     <StackPanel Visibility="Collapsed">
                         <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
                             <StackPanel>
@@ -353,9 +298,8 @@
                         <Grid x:Name="GridSetting" Margin="0,0,0,10" />
                     </StackPanel>
                 </StackPanel>
-            </ScrollViewer>
 
-            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,6,0,0">
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

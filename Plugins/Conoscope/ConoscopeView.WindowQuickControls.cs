@@ -1,5 +1,4 @@
 using Conoscope.Core;
-using Conoscope.Presentation.Helpers;
 using System;
 using System.Windows;
 
@@ -133,7 +132,7 @@ namespace Conoscope
                 return;
             }
 
-            ComboBoxHelper.SelectItemByTag(cbExportChannel, channel.ToString());
+            selectedExportChannel = channel;
             RaiseWindowQuickControlStateChanged();
         }
 

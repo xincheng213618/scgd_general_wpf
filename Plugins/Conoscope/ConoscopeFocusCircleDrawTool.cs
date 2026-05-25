@@ -30,6 +30,12 @@ namespace Conoscope
                 return;
             }
 
+            if (!host.CanCreateFocusCircleAt(startPoint))
+            {
+                e.Handled = true;
+                return;
+            }
+
             ClearCurrentSelection();
             draftCircle = host.CreateFocusCircle(startPoint);
             host.AttachFocusCircle(draftCircle);
@@ -45,7 +51,9 @@ namespace Conoscope
 
             Point center = draftCircle.Attribute.Center;
             double radius = Math.Sqrt(Math.Pow(currentPoint.X - center.X, 2) + Math.Pow(currentPoint.Y - center.Y, 2));
+            radius = host.ClampFocusCircleRadius(center, radius);
             draftCircle.Attribute.Radius = radius;
+            draftCircle.Attribute.RadiusY = radius;
             draftCircle.Render();
             e.Handled = true;
         }
@@ -66,6 +74,7 @@ namespace Conoscope
             }
             else
             {
+                host.ConstrainFocusCircleToBoundary(circle);
                 circle.Render();
             }
 

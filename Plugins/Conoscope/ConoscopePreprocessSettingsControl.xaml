@@ -122,7 +122,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelThresholdPct}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustThreshold, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="60" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="100" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
                 </Grid>
 
                 <Grid x:Name="rowDustMinArea" Margin="0,0,0,6">

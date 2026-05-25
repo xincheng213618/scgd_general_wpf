@@ -113,7 +113,6 @@ namespace Conoscope
         private ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
         private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
         private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
-        private ConoscopeCaptureSettings CaptureConfig => ConoscopeConfig.Capture;
 
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {

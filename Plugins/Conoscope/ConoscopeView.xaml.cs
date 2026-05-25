@@ -76,6 +76,7 @@ namespace Conoscope
         private double currentPixelsPerDegree;
         private ExportChannel currentReferenceScaleChannel = ExportChannel.Y;
         private double currentReferenceScaleMaximum = 1;
+        private ExportChannel selectedExportChannel = ExportChannel.Y;
 
         private ConoscopeCoordinateAxisController? coordinateAxisController;
         private PolarAngleLine? coordinateAxisPolarLine;

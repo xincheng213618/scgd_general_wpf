@@ -28,6 +28,46 @@ namespace Conoscope
             {
                 bdHomeQuickControls.Visibility = Visibility.Collapsed;
                 bdHomeExportControls.Visibility = Visibility.Collapsed;
+                if (cbHomeContrastImageKind != null)
+                {
+                    cbHomeContrastImageKind.IsEnabled = false;
+                }
+
+                if (btnHomeSaveBlackContrastReference != null)
+                {
+                    btnHomeSaveBlackContrastReference.IsEnabled = false;
+                }
+
+                if (btnHomeSaveWhiteContrastReference != null)
+                {
+                    btnHomeSaveWhiteContrastReference.IsEnabled = false;
+                }
+
+                if (cbHomeColorDifferenceReference != null)
+                {
+                    cbHomeColorDifferenceReference.IsEnabled = false;
+                }
+
+                if (txtHomeColorDifferenceCustomU != null)
+                {
+                    txtHomeColorDifferenceCustomU.IsEnabled = false;
+                }
+
+                if (txtHomeColorDifferenceCustomV != null)
+                {
+                    txtHomeColorDifferenceCustomV.IsEnabled = false;
+                }
+
+                if (btnHomeSaveColorDifferenceReference != null)
+                {
+                    btnHomeSaveColorDifferenceReference.IsEnabled = false;
+                }
+
+                if (panelHomeColorDifferenceCustomUv != null)
+                {
+                    panelHomeColorDifferenceCustomUv.Visibility = Visibility.Collapsed;
+                }
+
                 return;
             }
 
@@ -53,8 +93,12 @@ namespace Conoscope
                 txtHomeColorDifferenceCustomV.Text = state.ColorDifferenceCustomV.ToString("F4", CultureInfo.InvariantCulture);
                 UpdateHomeColorDifferenceCustomVisibility(state.ColorDifferenceReferenceMode);
 
+                cbHomeContrastImageKind.IsEnabled = true;
                 btnHomeSaveBlackContrastReference.IsEnabled = true;
                 btnHomeSaveWhiteContrastReference.IsEnabled = true;
+                cbHomeColorDifferenceReference.IsEnabled = true;
+                txtHomeColorDifferenceCustomU.IsEnabled = true;
+                txtHomeColorDifferenceCustomV.IsEnabled = true;
                 btnHomeSaveColorDifferenceReference.IsEnabled = true;
 
                 UpdateHomeContrastReferenceStatus();
@@ -348,6 +392,11 @@ namespace Conoscope
         private void btnHomeExportCircle_Click(object sender, RoutedEventArgs e)
         {
             ActiveView?.ExportCircleMode();
+        }
+
+        private void btnHomeAdvancedExport_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.AdvancedExport();
         }
 
         private void btnHomeSaveBlackContrastReference_Click(object sender, RoutedEventArgs e)

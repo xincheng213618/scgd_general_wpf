@@ -479,6 +479,8 @@ namespace Conoscope
                 currentImageCenter = center;
                 currentImageRadius = radius;
 
+                ImageView.SetFocusCircleBoundary(center, radius);
+
                 InitializeCoordinateAxis(center, radius);
 
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}, 系数: {currentPixelsPerDegree:F6}px/deg");

@@ -10,11 +10,6 @@ namespace Conoscope
 {
     public partial class ConoscopeView
     {
-        private void btnExportAngleMode_Click(object sender, RoutedEventArgs e)
-        {
-            ExportAngleMode();
-        }
-
         public void ExportAngleMode()
         {
             try
@@ -46,16 +41,6 @@ namespace Conoscope
                 log.Error($"方位角模式导出失败: {ex.Message}", ex);
                 MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgAzimuthExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        private void btnExportCircleMode_Click(object sender, RoutedEventArgs e)
-        {
-            ExportCircleMode();
-        }
-
-        private void btnAdvancedExport_Click(object sender, RoutedEventArgs e)
-        {
-            AdvancedExport();
         }
 
         public void ExportCircleMode()
@@ -93,7 +78,7 @@ namespace Conoscope
 
         private ExportChannel GetSelectedExportChannel()
         {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbExportChannel, ExportChannel.Y);
+            return selectedExportChannel;
         }
 
         private ExportChannel GetSelectedCurrentCurveChannel()

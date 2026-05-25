@@ -52,8 +52,12 @@ namespace Conoscope
         private DVCircleText? contextMenuFocusCircle;
         private bool isFocusCircleEditMode;
         private bool isFocusCircleSelectionEnabled;
+        private bool hasFocusCircleBoundary;
+        private bool isAdjustingFocusCircleBoundary;
         private bool suspendFocusCircleTracking;
         private int focusCircleSequence = 1;
+        private Point focusCircleBoundaryCenter;
+        private double focusCircleBoundaryRadius;
 
         public ConoscopeImageHost()
         {
@@ -175,6 +179,19 @@ namespace Conoscope
             }
 
             RefreshFocusCircleInteractionState();
+        }
+
+        public void SetFocusCircleBoundary(Point center, double radius)
+        {
+            focusCircleBoundaryCenter = center;
+            focusCircleBoundaryRadius = Math.Max(0, radius);
+            hasFocusCircleBoundary = focusCircleBoundaryRadius > 0;
+        }
+
+        public void ClearFocusCircleBoundary()
+        {
+            hasFocusCircleBoundary = false;
+            focusCircleBoundaryRadius = 0;
         }
 
         public void Dispose()
@@ -418,6 +435,7 @@ namespace Conoscope
                 Id = id,
                 Center = center,
                 Radius = MinimumFocusCircleRadius,
+                RadiusY = MinimumFocusCircleRadius,
                 Brush = Brushes.Transparent,
                 Pen = new Pen(Brushes.DeepSkyBlue, 2),
                 Text = $"Focus_{id}",
@@ -505,6 +523,95 @@ namespace Conoscope
             EditorContext.SelectionVisual.Render();
         }
 
+        internal bool CanCreateFocusCircleAt(Point center)
+        {
+            if (!hasFocusCircleBoundary)
+            {
+                return true;
+            }
+
+            return (center - focusCircleBoundaryCenter).Length <= focusCircleBoundaryRadius;
+        }
+
+        internal double ClampFocusCircleRadius(Point center, double radius)
+        {
+            if (!hasFocusCircleBoundary)
+            {
+                return radius;
+            }
+
+            double distance = (center - focusCircleBoundaryCenter).Length;
+            double maxRadius = Math.Max(0, focusCircleBoundaryRadius - distance);
+            return Math.Max(0, Math.Min(radius, maxRadius));
+        }
+
+        internal void ConstrainFocusCircleToBoundary(DVCircleText circle)
+        {
+            if (!hasFocusCircleBoundary || isAdjustingFocusCircleBoundary)
+            {
+                return;
+            }
+
+            CircleTextProperties attribute = circle.Attribute;
+            double radiusX = Math.Max(attribute.Radius, MinimumFocusCircleRadius);
+            double rawRadiusY = attribute.RadiusY > 0 ? attribute.RadiusY : attribute.Radius;
+            double radiusY = Math.Max(rawRadiusY, MinimumFocusCircleRadius);
+            double requiredRadius = Math.Max(radiusX, radiusY);
+            Point center = attribute.Center;
+            Vector delta = center - focusCircleBoundaryCenter;
+            double distance = delta.Length;
+            double maxCenterDistance = Math.Max(0, focusCircleBoundaryRadius - requiredRadius);
+            bool changed = false;
+
+            isAdjustingFocusCircleBoundary = true;
+            try
+            {
+                if (distance > maxCenterDistance)
+                {
+                    if (distance <= double.Epsilon)
+                    {
+                        center = new Point(focusCircleBoundaryCenter.X + maxCenterDistance, focusCircleBoundaryCenter.Y);
+                    }
+                    else
+                    {
+                        double scale = maxCenterDistance / distance;
+                        center = new Point(
+                            focusCircleBoundaryCenter.X + delta.X * scale,
+                            focusCircleBoundaryCenter.Y + delta.Y * scale);
+                    }
+
+                    attribute.Center = center;
+                    changed = true;
+                }
+
+                double centerDistance = (center - focusCircleBoundaryCenter).Length;
+                double maxRadius = Math.Max(0, focusCircleBoundaryRadius - centerDistance);
+                double clampedRadius = Math.Max(0, Math.Min(attribute.Radius, maxRadius));
+                if (!AreClose(attribute.Radius, clampedRadius))
+                {
+                    attribute.Radius = clampedRadius;
+                    changed = true;
+                }
+
+                double clampedRadiusY = Math.Max(0, Math.Min(rawRadiusY, maxRadius));
+                if (attribute.RadiusY > 0 && !AreClose(attribute.RadiusY, clampedRadiusY))
+                {
+                    attribute.RadiusY = clampedRadiusY;
+                    changed = true;
+                }
+            }
+            finally
+            {
+                isAdjustingFocusCircleBoundary = false;
+            }
+
+            if (changed)
+            {
+                circle.Render();
+                RefreshFocusCircleSelection();
+            }
+        }
+
         internal void RemoveFocusCircle(DVCircleText circle)
         {
             if (EditorContext.SelectionVisual.SelectVisuals.Contains(circle))
@@ -576,9 +683,21 @@ namespace Conoscope
 
         private void FocusCircleAttribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (suspendFocusCircleTracking)
+            if (suspendFocusCircleTracking || isAdjustingFocusCircleBoundary)
             {
                 return;
+            }
+
+            if (sender is CircleTextProperties properties
+                && e.PropertyName is nameof(CircleTextProperties.Center)
+                    or nameof(CircleTextProperties.Radius)
+                    or nameof(CircleTextProperties.RadiusY))
+            {
+                DVCircleText? circle = trackedFocusCircles.FirstOrDefault(item => ReferenceEquals(item.Attribute, properties));
+                if (circle != null)
+                {
+                    ConstrainFocusCircleToBoundary(circle);
+                }
             }
 
             if (e.PropertyName is nameof(CircleTextProperties.Center)
@@ -624,6 +743,11 @@ namespace Conoscope
         private static string ResolveFocusCircleName(DVCircleText circle)
         {
             return string.IsNullOrWhiteSpace(circle.Attribute.Text) ? $"Focus_{circle.Attribute.Id}" : circle.Attribute.Text;
+        }
+
+        private static bool AreClose(double left, double right)
+        {
+            return Math.Abs(left - right) < 0.000001;
         }
     }
 }
