@@ -53,10 +53,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Calibration" xml:space="preserve">
     <value>校正</value>
@@ -98,19 +98,19 @@
     <value>采集</value>
   </data>
   <data name="TabPreprocess" xml:space="preserve">
-    <value>预处理</value>
+    <value>处理</value>
   </data>
   <data name="TabAnalysis" xml:space="preserve">
     <value>分析</value>
   </data>
-  <data name="TabHelp" xml:space="preserve">
-    <value>帮助</value>
+  <data name="TabSystem" xml:space="preserve">
+    <value>系统</value>
   </data>
   <data name="GroupData" xml:space="preserve">
-    <value>数据</value>
+    <value>文件</value>
   </data>
   <data name="GroupModel" xml:space="preserve">
-    <value>模型</value>
+    <value>型号与观察</value>
   </data>
   <data name="GroupCurrentView" xml:space="preserve">
     <value>当前视图</value>
@@ -120,9 +120,6 @@
   </data>
   <data name="GroupMeasurementCamera" xml:space="preserve">
     <value>测量相机</value>
-  </data>
-  <data name="GroupNdCalibration" xml:space="preserve">
-    <value>ND / 校正</value>
   </data>
   <data name="GroupEnable" xml:space="preserve">
     <value>启用</value>
@@ -152,7 +149,16 @@
     <value>打开</value>
   </data>
   <data name="GroupDescription" xml:space="preserve">
-    <value>说明</value>
+    <value>视图功能</value>
+  </data>
+  <data name="GroupAnalysisParameters" xml:space="preserve">
+    <value>分析参数</value>
+  </data>
+  <data name="GroupComputeActions" xml:space="preserve">
+    <value>计算动作</value>
+  </data>
+  <data name="GroupThemeAndLanguage" xml:space="preserve">
+    <value>主题与语言</value>
   </data>
   <data name="LabelChannel" xml:space="preserve">
     <value>通道</value>
@@ -160,20 +166,8 @@
   <data name="LabelReference" xml:space="preserve">
     <value>参考</value>
   </data>
-  <data name="LabelExport" xml:space="preserve">
-    <value>导出</value>
-  </data>
-  <data name="LabelFlowTemplate" xml:space="preserve">
-    <value>流程模板</value>
-  </data>
-  <data name="LabelCamera" xml:space="preserve">
-    <value>相机</value>
-  </data>
   <data name="LabelStandard" xml:space="preserve">
     <value>标准</value>
-  </data>
-  <data name="LabelColorMap" xml:space="preserve">
-    <value>色带</value>
   </data>
   <data name="LabelAzimuthDeg" xml:space="preserve">
     <value>方位角(°)</value>
@@ -181,11 +175,17 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>极角(°)</value>
   </data>
-  <data name="LabelNdPort" xml:space="preserve">
-    <value>ND 端口</value>
-  </data>
   <data name="LabelStatus" xml:space="preserve">
     <value>状态</value>
+  </data>
+  <data name="LabelTheme" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="LabelLanguage" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="LabelDecimalPlaces" xml:space="preserve">
+    <value>数据小数位数:</value>
   </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>曝光</value>
@@ -259,9 +259,6 @@
   <data name="BtnReapply" xml:space="preserve">
     <value>重新应用</value>
   </data>
-  <data name="BtnRefresh" xml:space="preserve">
-    <value>刷新</value>
-  </data>
   <data name="BtnCapturePhoto" xml:space="preserve">
     <value>拍照</value>
   </data>
@@ -277,21 +274,6 @@
   <data name="BtnClear" xml:space="preserve">
     <value>清空</value>
   </data>
-  <data name="BtnRecordR" xml:space="preserve">
-    <value>R</value>
-  </data>
-  <data name="BtnRecordG" xml:space="preserve">
-    <value>G</value>
-  </data>
-  <data name="BtnRecordB" xml:space="preserve">
-    <value>B</value>
-  </data>
-  <data name="BtnRecordWhite" xml:space="preserve">
-    <value>W</value>
-  </data>
-  <data name="BtnRecordBlack" xml:space="preserve">
-    <value>B</value>
-  </data>
   <data name="BtnComputeContrast" xml:space="preserve">
     <value>计算对比度</value>
   </data>
@@ -304,9 +286,6 @@
   <data name="BtnColorDifferenceReference" xml:space="preserve">
     <value>色差基准</value>
   </data>
-  <data name="BtnHelpCenter" xml:space="preserve">
-    <value>帮助中心</value>
-  </data>
   <data name="BtnClose" xml:space="preserve">
     <value>关闭</value>
   </data>
@@ -316,14 +295,8 @@
   <data name="BtnCancel" xml:space="preserve">
     <value>取消</value>
   </data>
-  <data name="BtnApplyPreset" xml:space="preserve">
-    <value>应用当前预设</value>
-  </data>
   <data name="BtnSaveBaseImage" xml:space="preserve">
     <value>保存色差基准图</value>
-  </data>
-  <data name="BtnSaveShort" xml:space="preserve">
-    <value>存</value>
   </data>
   <data name="BtnComputeColorDiff" xml:space="preserve">
     <value>计算色差</value>
@@ -391,18 +364,6 @@
   <data name="TipCapturePhoto" xml:space="preserve">
     <value>使用当前相机与校正模板拍照</value>
   </data>
-  <data name="TipSwitchNdPort" xml:space="preserve">
-    <value>切换到输入的 ND 端口</value>
-  </data>
-  <data name="TipReadNdPort" xml:space="preserve">
-    <value>读取当前 ND 端口</value>
-  </data>
-  <data name="TipBindNdCalibration" xml:space="preserve">
-    <value>将当前 ND 端口绑定到当前校正模板</value>
-  </data>
-  <data name="TipClearNdCalibration" xml:space="preserve">
-    <value>取消当前 ND 端口与校正模板的绑定</value>
-  </data>
   <data name="TipReuseActiveView" xml:space="preserve">
     <value>勾选后，流程结果和相机拍图结果都会直接刷新当前活动 View，减少额外内存占用</value>
   </data>
@@ -421,6 +382,9 @@
   <data name="TipAdvancedExport" xml:space="preserve">
     <value>打开高级导出</value>
   </data>
+  <data name="TipRangeLimit" xml:space="preserve">
+    <value>启用后只在有效圆域内做显示映射；关闭后整图显示。</value>
+  </data>
   <data name="TipSelectedFocusPoint" xml:space="preserve">
     <value>当前选中关注点</value>
   </data>
@@ -432,9 +396,6 @@
   </data>
   <data name="TipManageFocusPoiTemplate" xml:space="preserve">
     <value>管理 POI 模板</value>
-  </data>
-  <data name="TbCircleFit" xml:space="preserve">
-    <value>圆适</value>
   </data>
   <data name="TbCircleFitTip" xml:space="preserve">
     <value>按有效圆区适应</value>
@@ -490,9 +451,6 @@
   <data name="TipOpenConoscopeSettings" xml:space="preserve">
     <value>打开 Conoscope 设置</value>
   </data>
-  <data name="TipHelpCenter" xml:space="preserve">
-    <value>打开可搜索的 Conoscope 帮助中心，查看使用路径、算法原理和名词解析</value>
-  </data>
   <data name="ChkEnablePreprocess" xml:space="preserve">
     <value>启用预处理</value>
   </data>
@@ -511,6 +469,9 @@
   <data name="ChkEnableDustRemoval" xml:space="preserve">
     <value>启用灰尘滤除</value>
   </data>
+  <data name="ChkRangeLimit" xml:space="preserve">
+    <value>范围限制</value>
+  </data>
   <data name="ChkExportTitle" xml:space="preserve">
     <value>导出标题和元数据</value>
   </data>
@@ -528,6 +489,9 @@
   </data>
   <data name="StateSaved" xml:space="preserve">
     <value>已保存</value>
+  </data>
+  <data name="StateNotSaved" xml:space="preserve">
+    <value>未保存</value>
   </data>
   <data name="StatusCapturing" xml:space="preserve">
     <value>拍照中</value>
@@ -555,24 +519,6 @@
   </data>
   <data name="MsgSelectCamera" xml:space="preserve">
     <value>请选择相机设备</value>
-  </data>
-  <data name="MsgSelectCameraAndCalibration" xml:space="preserve">
-    <value>请选择相机设备和有效的校正模板</value>
-  </data>
-  <data name="MsgInvalidNdPort" xml:space="preserve">
-    <value>请输入有效的 ND 端口</value>
-  </data>
-  <data name="MsgNdBound" xml:space="preserve">
-    <value>已绑定 ND {0} -&gt; {1}</value>
-  </data>
-  <data name="MsgSelectCameraAndNd" xml:space="preserve">
-    <value>请选择相机并输入有效的 ND 端口</value>
-  </data>
-  <data name="MsgNdNotBound" xml:space="preserve">
-    <value>ND {0} 没有绑定校正</value>
-  </data>
-  <data name="MsgNdUnbound" xml:space="preserve">
-    <value>已解除 ND {0} 的校正绑定</value>
   </data>
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>请选择流程</value>
@@ -621,38 +567,6 @@
   <data name="MsgCaptureFailedTitle" xml:space="preserve">
     <value>拍照失败</value>
   </data>
-  <data name="MsgSwitchingNd" xml:space="preserve">
-    <value>正在切换 ND: {0}</value>
-  </data>
-  <data name="MsgNdSwitched" xml:space="preserve">
-    <value>ND 已切换到 {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailed" xml:space="preserve">
-    <value>ND 切换失败: {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailedDetail" xml:space="preserve">
-    <value>ND 切换失败: {0}
-{1}</value>
-  </data>
-  <data name="MsgReadingNd" xml:space="preserve">
-    <value>正在读取 ND</value>
-  </data>
-  <data name="MsgCurrentNd" xml:space="preserve">
-    <value>当前 ND: {0}</value>
-  </data>
-  <data name="MsgNdReadFailed" xml:space="preserve">
-    <value>ND 读取失败: {0}</value>
-  </data>
-  <data name="MsgNdReadFailedDetail" xml:space="preserve">
-    <value>ND 读取失败: {0}
-{1}</value>
-  </data>
-  <data name="MsgNdNotBoundCalibration" xml:space="preserve">
-    <value>ND {0} 未绑定校正</value>
-  </data>
-  <data name="MsgNdMatchedCalibration" xml:space="preserve">
-    <value>ND {0} 已匹配校正: {1}</value>
-  </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>请先加载图像</value>
   </data>
@@ -674,10 +588,6 @@
   </data>
   <data name="MsgSelectExportFolder" xml:space="preserve">
     <value>选择导出文件夹</value>
-  </data>
-  <data name="MsgSectionExportDone" xml:space="preserve">
-    <value>截面导出完成，共导出 {0} 个文件到:
-{1}</value>
   </data>
   <data name="MsgExportDone" xml:space="preserve">
     <value>导出完成，共导出 {0} 个文件到:
@@ -734,56 +644,8 @@
   <data name="Msg3DViewOpenFailed" xml:space="preserve">
     <value>打开 3D 视图失败: {0}</value>
   </data>
-  <data name="TbPan" xml:space="preserve">
-    <value>平移</value>
-  </data>
-  <data name="TbPanTip" xml:space="preserve">
-    <value>开启后左键拖拽可平移图像；关闭后按住 Ctrl 再平移。</value>
-  </data>
-  <data name="TbRefDrag" xml:space="preserve">
-    <value>截面标记</value>
-  </data>
-  <data name="TbRefDragTip" xml:space="preserve">
-    <value>允许在图上直接拖动截面标记（方位线和极角圆）；进入关注点模式时会临时关闭。</value>
-  </data>
-  <data name="TbZoomOut" xml:space="preserve">
-    <value>缩小</value>
-  </data>
-  <data name="TbZoomIn" xml:space="preserve">
-    <value>放大</value>
-  </data>
-  <data name="TbOriginalSize" xml:space="preserve">
-    <value>原始尺寸</value>
-  </data>
-  <data name="TbFit" xml:space="preserve">
-    <value>适</value>
-  </data>
-  <data name="TbFitTip" xml:space="preserve">
-    <value>适应窗口</value>
-  </data>
-  <data name="TbFill" xml:space="preserve">
-    <value>填</value>
-  </data>
-  <data name="TbFillTip" xml:space="preserve">
-    <value>铺满窗口</value>
-  </data>
-  <data name="TbZoomRatioTip" xml:space="preserve">
-    <value>当前缩放倍率</value>
-  </data>
-  <data name="TbFullscreen" xml:space="preserve">
-    <value>全</value>
-  </data>
-  <data name="TbFullscreenTip" xml:space="preserve">
-    <value>切换图像全屏</value>
-  </data>
-  <data name="TbEditFocusPoint" xml:space="preserve">
-    <value>编辑关注点</value>
-  </data>
   <data name="TbEditFocusPointTip" xml:space="preserve">
     <value>开启后进入关注点工具模式...</value>
-  </data>
-  <data name="TbCircle" xml:space="preserve">
-    <value>圆</value>
   </data>
   <data name="TbCircleTip" xml:space="preserve">
     <value>仅绘制新的关注点圆</value>
@@ -794,14 +656,8 @@
   <data name="TbEditTip" xml:space="preserve">
     <value>选中并拖拽已有关注点圆</value>
   </data>
-  <data name="TbEraser" xml:space="preserve">
-    <value>橡皮</value>
-  </data>
   <data name="TbEraserTip" xml:space="preserve">
     <value>框选擦除关注点圆</value>
-  </data>
-  <data name="TbCalc" xml:space="preserve">
-    <value>算</value>
   </data>
   <data name="TbCalcTip" xml:space="preserve">
     <value>计算全部关注点</value>
@@ -926,9 +782,6 @@
   <data name="TitleConoscopeSettings" xml:space="preserve">
     <value>Conoscope 设置</value>
   </data>
-  <data name="TitleHelpCenter" xml:space="preserve">
-    <value>Conoscope 帮助中心</value>
-  </data>
   <data name="TitleMvsCameraView" xml:space="preserve">
     <value>MVS相机视图</value>
   </data>
@@ -1043,6 +896,12 @@
   <data name="HintSamplingDefault" xml:space="preserve">
     <value>默认 1，可调并保存</value>
   </data>
+  <data name="HintDecimalPlacesDefault4" xml:space="preserve">
+    <value>默认 4，可调</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4Saved" xml:space="preserve">
+    <value>默认 4，可调并保存</value>
+  </data>
   <data name="HintSamplingDescription" xml:space="preserve">
     <value>方位角模式会按 -MaxAngle 到 +MaxAngle 采样，极角模式会按 0 到 360 采样。</value>
   </data>
@@ -1055,6 +914,42 @@
   <data name="MsgInvalidSamplingInterval" xml:space="preserve">
     <value>采样间隔必须是 0.01 到 360 之间的数值</value>
   </data>
+  <data name="MsgInvalidDecimalPlaces" xml:space="preserve">
+    <value>小数位数必须是 0-8 之间的整数。</value>
+  </data>
+  <data name="MsgContrastReferenceMissingStatus" xml:space="preserve">
+    <value>当前{0}缺少{1}基准。</value>
+  </data>
+  <data name="MsgContrastReferenceSizeMismatchStatus" xml:space="preserve">
+    <value>当前{0}对应的{1}基准尺寸与当前图像不一致。</value>
+  </data>
+  <data name="MsgContrastReferenceUsingStatus" xml:space="preserve">
+    <value>当前{0}将使用{1}基准。</value>
+  </data>
+  <data name="MsgContrastReferenceSummary" xml:space="preserve">
+    <value>{0}
+{1}: {2}
+{3}: {4}</value>
+  </data>
+  <data name="MsgSaveContrastReferenceRequired" xml:space="preserve">
+    <value>请先保存{0}基准图</value>
+  </data>
+  <data name="MsgContrastReferenceImageSizeMismatch" xml:space="preserve">
+    <value>{0}基准图尺寸与当前图像不一致，请重新保存基准图</value>
+  </data>
+  <data name="MsgFocusPointDisplayInfoNotFound" xml:space="preserve">
+    <value>未找到关注点 {0} 的显示信息。</value>
+  </data>
+  <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
+    <value>{0} 数据中缺少关注点 {1}。
+来源: {2}</value>
+  </data>
+  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
+    <value>文件路径不能为空</value>
+  </data>
+  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
+    <value>当前文件类型没有可用的图像测量读取器</value>
+  </data>
   <data name="GroupBoxGlobalSettings" xml:space="preserve">
     <value>全局设置</value>
   </data>
@@ -1063,36 +958,6 @@
   </data>
   <data name="GroupBoxModelParams" xml:space="preserve">
     <value>型号参数</value>
-  </data>
-  <data name="TipSearchHelp" xml:space="preserve">
-    <value>输入功能名、算法名或术语，例如：色域 / 对比度 / CIE / 关注点</value>
-  </data>
-  <data name="TipClearSearch" xml:space="preserve">
-    <value>清除搜索</value>
-  </data>
-  <data name="RbAll" xml:space="preserve">
-    <value>全部</value>
-  </data>
-  <data name="RbQuickStart" xml:space="preserve">
-    <value>快速开始</value>
-  </data>
-  <data name="RbUsagePaths" xml:space="preserve">
-    <value>使用路径</value>
-  </data>
-  <data name="RbAlgorithmPrinciples" xml:space="preserve">
-    <value>算法原理</value>
-  </data>
-  <data name="RbGlossary" xml:space="preserve">
-    <value>名词解析</value>
-  </data>
-  <data name="PlaceholderSelectTopic" xml:space="preserve">
-    <value>← 请从左侧选择一个帮助主题</value>
-  </data>
-  <data name="HintHelpNativeView" xml:space="preserve">
-    <value>提示：帮助内容现在使用原生 WPF 文档视图显示，颜色和窗口主题保持一致。</value>
-  </data>
-  <data name="HelpDescription" xml:space="preserve">
-    <value>帮助中心窗口里已经集成快速开始、使用路径、算法原理和名词解析。直接打开一个窗口，在里面搜索或切换分类即可。</value>
   </data>
   <data name="MenuView" xml:space="preserve">
     <value>视图</value>
@@ -1226,9 +1091,6 @@
   <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
     <value>已切换到极角圆</value>
   </data>
-  <data name="MsgExportChannelSwitched" xml:space="preserve">
-    <value>已切换导出通道: {0}</value>
-  </data>
   <data name="MsgCurrentImageSwitched" xml:space="preserve">
     <value>当前图像已切换为 {0}</value>
   </data>
@@ -1267,12 +1129,6 @@
   </data>
   <data name="SlotBlack" xml:space="preserve">
     <value>黑</value>
-  </data>
-  <data name="MsgRecordedSlot" xml:space="preserve">
-    <value>已记录 {0}</value>
-  </data>
-  <data name="MsgRecordSlot" xml:space="preserve">
-    <value>记录 {0}</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} 已记录
@@ -1393,21 +1249,6 @@
   <data name="MsgNoFocusPointPixelsCalc" xml:space="preserve">
     <value>没有可用于计算的关注点像素。</value>
   </data>
-  <data name="HelpCenterTitle" xml:space="preserve">
-    <value>Conoscope 帮助中心</value>
-  </data>
-  <data name="HelpTitleWithVersion" xml:space="preserve">
-    <value>Conoscope 帮助  v{0}</value>
-  </data>
-  <data name="UnknownVersion" xml:space="preserve">
-    <value>未知版本</value>
-  </data>
-  <data name="ItemCountFormat" xml:space="preserve">
-    <value>共 {0} / {1} 条</value>
-  </data>
-  <data name="NoContentToDisplay" xml:space="preserve">
-    <value>没有可显示的内容。</value>
-  </data>
   <data name="TestAreaWaitingForImage" xml:space="preserve">
     <value>测试区域: {0} mm | 等待图像</value>
   </data>
@@ -1483,6 +1324,24 @@
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>色差通道需要指定 uv 基准</value>
   </data>
+  <data name="MsgColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>色差通道需要先设置色差基准</value>
+  </data>
+  <data name="MsgContrastReferenceRequired" xml:space="preserve">
+    <value>对比度通道需要先保存白场或黑场基准</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>请先保存全局色差基准图</value>
+  </data>
+  <data name="MsgInvalidCustomUvReference" xml:space="preserve">
+    <value>请输入有效的自定义 u/v 基准坐标</value>
+  </data>
+  <data name="MsgNoMeasurementDataToAlign" xml:space="preserve">
+    <value>没有可对齐的测量数据</value>
+  </data>
+  <data name="MsgEmptyMeasurementDataCannotAlignFocusPoints" xml:space="preserve">
+    <value>存在空的测量数据，无法对齐关注点</value>
+  </data>
   <data name="UReferenceImage" xml:space="preserve">
     <value>u 基准图</value>
   </data>
@@ -1503,85 +1362,6 @@
   </data>
   <data name="FocusPointYUV" xml:space="preserve">
     <value>Y:{0}  u:{1}  v:{2}</value>
-  </data>
-  <!-- ConoscopeHelpContent.cs 的 Title 资源 -->
-  <data name="HelpTitleQuickStart" xml:space="preserve">
-    <value>快速开始：从打开图像到得到结果</value>
-  </data>
-  <data name="HelpSummaryQuickStart" xml:space="preserve">
-    <value>第一次使用 Conoscope 时，建议按主页 -&gt; 关注点 -&gt; 分析结果窗的顺序操作。</value>
-  </data>
-  <data name="HelpTitleCaptureWorkflow" xml:space="preserve">
-    <value>采集与视图管理使用路径</value>
-  </data>
-  <data name="HelpSummaryCaptureWorkflow" xml:space="preserve">
-    <value>采集页负责流程模板、测量相机、ND / 校正绑定，结果默认回到当前活动 View。</value>
-  </data>
-  <data name="HelpTitlePreprocessWorkflow" xml:space="preserve">
-    <value>预处理与伪彩显示使用路径</value>
-  </data>
-  <data name="HelpSummaryPreprocessWorkflow" xml:space="preserve">
-    <value>预处理页把是否启用、滤波类型、伪彩显示、完整参数设置、应用到当前 View 集中在一页。</value>
-  </data>
-  <data name="HelpTitleFocusReferenceWorkflow" xml:space="preserve">
-    <value>关注点圆、参考线与极角圆使用路径</value>
-  </data>
-  <data name="HelpSummaryFocusReferenceWorkflow" xml:space="preserve">
-    <value>关注点圆在图像上方工具条中创建；参考模式既能在主页调，也能在 View 右侧面板中精调。</value>
-  </data>
-  <data name="HelpTitleGamutWorkflow" xml:space="preserve">
-    <value>综合色域计算使用路径</value>
-  </data>
-  <data name="HelpSummaryGamutWorkflow" xml:space="preserve">
-    <value>综合色域现在由主 Ribbon 统一记录 R/G/B 关注点批次，再弹出独立结果窗口显示。</value>
-  </data>
-  <data name="HelpTitleContrastWorkflow" xml:space="preserve">
-    <value>黑白对比度计算使用路径</value>
-  </data>
-  <data name="HelpSummaryContrastWorkflow" xml:space="preserve">
-    <value>黑白对比度和综合色域一样，先记录关注点批次，再在独立结果窗口中查看每个点的比值。</value>
-  </data>
-  <data name="HelpTitleVisualizationWorkflow" xml:space="preserve">
-    <value>CIE、3D、曲线与导出使用路径</value>
-  </data>
-  <data name="HelpTitleFocusPrinciple" xml:space="preserve">
-    <value>关注点采样原理</value>
-  </data>
-  <data name="HelpTitleGamutPrinciple" xml:space="preserve">
-    <value>综合色域计算原理</value>
-  </data>
-  <data name="HelpTitleContrastPrinciple" xml:space="preserve">
-    <value>黑白对比度计算原理</value>
-  </data>
-  <data name="HelpSummaryContrastPrinciple" xml:space="preserve">
-    <value>当前实现直接使用白场 Y / 黑场 Y，黑场亮度必须大于 0。</value>
-  </data>
-  <data name="HelpTitleCurvePrinciple" xml:space="preserve">
-    <value>参考曲线与导出原理</value>
-  </data>
-  <data name="HelpTitleVisualizationPrinciple" xml:space="preserve">
-    <value>CIE 与 3D 可视化原理</value>
-  </data>
-  <data name="HelpTitleActiveViewTerm" xml:space="preserve">
-    <value>活动 View</value>
-  </data>
-  <data name="HelpTitleFocusBatchTerm" xml:space="preserve">
-    <value>关注点与关注点批次</value>
-  </data>
-  <data name="HelpTitleCoordinateTerm" xml:space="preserve">
-    <value>方位角、极角与半径角</value>
-  </data>
-  <data name="HelpTitleChannelTerm" xml:space="preserve">
-    <value>显示通道与 CIE x/y/u/v</value>
-  </data>
-  <data name="HelpTitleGamutCoverageTerm" xml:space="preserve">
-    <value>样本面积、标准面积与覆盖率</value>
-  </data>
-  <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve">
-    <value>当前覆盖率是面积比，不是和标准色域求交集之后的面积比例。</value>
-  </data>
-  <data name="HelpTitleContrastTerm" xml:space="preserve">
-    <value>白场、黑场与对比度</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>已恢复原始数据</value>

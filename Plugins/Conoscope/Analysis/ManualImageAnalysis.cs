@@ -49,13 +49,13 @@ namespace Conoscope.Analysis
         {
             if (string.IsNullOrWhiteSpace(filePath))
             {
-                throw new ArgumentException("文件路径不能为空", nameof(filePath));
+                throw new ArgumentException(Conoscope.Properties.Resources.MsgFilePathCannotBeEmpty, paramName: nameof(filePath));
             }
 
             IImageMeasurementProvider? provider = providers.FirstOrDefault(item => item.CanRead(filePath));
             if (provider == null)
             {
-                throw new NotSupportedException("当前文件类型没有可用的图像测量读取器");
+                throw new NotSupportedException(Conoscope.Properties.Resources.MsgNoMeasurementProviderForFileType);
             }
 
             return provider.Read(filePath);

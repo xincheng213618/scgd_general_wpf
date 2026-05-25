@@ -323,7 +323,7 @@ namespace Conoscope.Core
             {
                 if (context.ReadColorDifference == null)
                 {
-                    throw new InvalidOperationException("色差通道需要先设置色差基准");
+                    throw new InvalidOperationException(Conoscope.Properties.Resources.MsgColorDifferenceReferenceRequired);
                 }
 
                 return context.ReadColorDifference(imageX, imageY);
@@ -333,7 +333,7 @@ namespace Conoscope.Core
             {
                 if (context.ReadContrast == null)
                 {
-                    throw new InvalidOperationException("对比度通道需要先保存白场或黑场基准");
+                    throw new InvalidOperationException(Conoscope.Properties.Resources.MsgContrastReferenceRequired);
                 }
 
                 return context.ReadContrast(imageX, imageY);

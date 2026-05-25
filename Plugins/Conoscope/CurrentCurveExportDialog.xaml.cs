@@ -29,7 +29,7 @@ namespace Conoscope
 
             if (!TryParseDecimalPlaces(txtDecimalPlaces.Text, out int decimalPlaces))
             {
-                MessageBox.Show("小数位数必须是 0-8 之间的整数。", Properties.Resources.TitleCurrentCurveExport, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgInvalidDecimalPlaces, Properties.Resources.TitleCurrentCurveExport, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

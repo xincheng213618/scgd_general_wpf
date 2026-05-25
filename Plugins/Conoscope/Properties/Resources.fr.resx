@@ -53,10 +53,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Calibration" xml:space="preserve">
     <value>Étalonnage</value>
@@ -98,19 +98,16 @@
     <value>Capture</value>
   </data>
   <data name="TabPreprocess" xml:space="preserve">
-    <value>Prétraitement</value>
+    <value>Traitement</value>
   </data>
   <data name="TabAnalysis" xml:space="preserve">
     <value>Analyse</value>
   </data>
-  <data name="TabHelp" xml:space="preserve">
-    <value>Aide</value>
-  </data>
   <data name="GroupData" xml:space="preserve">
-    <value>Données</value>
+    <value>Fichier</value>
   </data>
   <data name="GroupModel" xml:space="preserve">
-    <value>Modèle</value>
+    <value>Modele et observation</value>
   </data>
   <data name="GroupCurrentView" xml:space="preserve">
     <value>Vue actuelle</value>
@@ -120,9 +117,6 @@
   </data>
   <data name="GroupMeasurementCamera" xml:space="preserve">
     <value>Caméra de mesure</value>
-  </data>
-  <data name="GroupNdCalibration" xml:space="preserve">
-    <value>ND / Étalonnage</value>
   </data>
   <data name="GroupEnable" xml:space="preserve">
     <value>Activer</value>
@@ -149,7 +143,7 @@
     <value>Ouvrir</value>
   </data>
   <data name="GroupDescription" xml:space="preserve">
-    <value>Description</value>
+    <value>Actions de vue</value>
   </data>
   <data name="LabelChannel" xml:space="preserve">
     <value>Canal</value>
@@ -157,29 +151,14 @@
   <data name="LabelReference" xml:space="preserve">
     <value>Référence</value>
   </data>
-  <data name="LabelExport" xml:space="preserve">
-    <value>Export</value>
-  </data>
-  <data name="LabelFlowTemplate" xml:space="preserve">
-    <value>Modèle de flux</value>
-  </data>
-  <data name="LabelCamera" xml:space="preserve">
-    <value>Caméra</value>
-  </data>
   <data name="LabelStandard" xml:space="preserve">
     <value>Standard</value>
-  </data>
-  <data name="LabelColorMap" xml:space="preserve">
-    <value>Carte de couleurs</value>
   </data>
   <data name="LabelAzimuthDeg" xml:space="preserve">
     <value>Azimut (°)</value>
   </data>
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>Angle polaire (°)</value>
-  </data>
-  <data name="LabelNdPort" xml:space="preserve">
-    <value>Port ND</value>
   </data>
   <data name="LabelStatus" xml:space="preserve">
     <value>État</value>
@@ -250,9 +229,6 @@
   <data name="BtnExecute" xml:space="preserve">
     <value>Exécuter</value>
   </data>
-  <data name="BtnRefresh" xml:space="preserve">
-    <value>Actualiser</value>
-  </data>
   <data name="BtnCapturePhoto" xml:space="preserve">
     <value>Capturer</value>
   </data>
@@ -268,26 +244,8 @@
   <data name="BtnClear" xml:space="preserve">
     <value>Effacer</value>
   </data>
-  <data name="BtnRecordR" xml:space="preserve">
-    <value>Enregistrer R</value>
-  </data>
-  <data name="BtnRecordG" xml:space="preserve">
-    <value>Enregistrer G</value>
-  </data>
-  <data name="BtnRecordB" xml:space="preserve">
-    <value>Enregistrer B</value>
-  </data>
-  <data name="BtnRecordWhite" xml:space="preserve">
-    <value>Enregistrer le blanc</value>
-  </data>
-  <data name="BtnRecordBlack" xml:space="preserve">
-    <value>Enregistrer le noir</value>
-  </data>
   <data name="BtnComputeContrast" xml:space="preserve">
     <value>Calculer le contraste</value>
-  </data>
-  <data name="BtnHelpCenter" xml:space="preserve">
-    <value>Centre d'aide</value>
   </data>
   <data name="BtnClose" xml:space="preserve">
     <value>Fermer</value>
@@ -297,9 +255,6 @@
   </data>
   <data name="BtnCancel" xml:space="preserve">
     <value>Annuler</value>
-  </data>
-  <data name="BtnApplyPreset" xml:space="preserve">
-    <value>Appliquer le préréglage</value>
   </data>
   <data name="BtnSaveBaseImage" xml:space="preserve">
     <value>Enregistrer l'image de base</value>
@@ -367,18 +322,6 @@
   <data name="TipCapturePhoto" xml:space="preserve">
     <value>Capturer une image avec la caméra et l'étalonnage actuels</value>
   </data>
-  <data name="TipSwitchNdPort" xml:space="preserve">
-    <value>Basculer vers le port ND saisi</value>
-  </data>
-  <data name="TipReadNdPort" xml:space="preserve">
-    <value>Lire le port ND actuel</value>
-  </data>
-  <data name="TipBindNdCalibration" xml:space="preserve">
-    <value>Associer le port ND actuel au modèle d'étalonnage actuel</value>
-  </data>
-  <data name="TipClearNdCalibration" xml:space="preserve">
-    <value>Dissocier le port ND actuel du modèle d'étalonnage</value>
-  </data>
   <data name="TipReuseActiveView" xml:space="preserve">
     <value>Si activé, les résultats de flux et de capture actualisent la vue active afin de réduire l'utilisation mémoire</value>
   </data>
@@ -436,9 +379,6 @@
   <data name="TipOpenConoscopeSettings" xml:space="preserve">
     <value>Ouvrir les paramètres Conoscope</value>
   </data>
-  <data name="TipHelpCenter" xml:space="preserve">
-    <value>Ouvrir le centre d'aide Conoscope avec recherche pour les parcours d'utilisation, les algorithmes et le glossaire</value>
-  </data>
   <data name="ChkEnablePreprocess" xml:space="preserve">
     <value>Activer le prétraitement</value>
   </data>
@@ -493,24 +433,6 @@
   <data name="MsgSelectCamera" xml:space="preserve">
     <value>Veuillez sélectionner un périphérique de caméra</value>
   </data>
-  <data name="MsgSelectCameraAndCalibration" xml:space="preserve">
-    <value>Veuillez sélectionner un périphérique de caméra et un modèle d'étalonnage valide</value>
-  </data>
-  <data name="MsgInvalidNdPort" xml:space="preserve">
-    <value>Veuillez saisir un port ND valide</value>
-  </data>
-  <data name="MsgNdBound" xml:space="preserve">
-    <value>ND {0} lié à {1}</value>
-  </data>
-  <data name="MsgSelectCameraAndNd" xml:space="preserve">
-    <value>Veuillez sélectionner une caméra et saisir un port ND valide</value>
-  </data>
-  <data name="MsgNdNotBound" xml:space="preserve">
-    <value>Le ND {0} n'a aucune association d'étalonnage</value>
-  </data>
-  <data name="MsgNdUnbound" xml:space="preserve">
-    <value>Association d'étalonnage du ND {0} supprimée</value>
-  </data>
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>Veuillez sélectionner un flux</value>
   </data>
@@ -558,38 +480,6 @@
   <data name="MsgCaptureFailedTitle" xml:space="preserve">
     <value>Échec de la capture</value>
   </data>
-  <data name="MsgSwitchingNd" xml:space="preserve">
-    <value>Basculement du ND : {0}</value>
-  </data>
-  <data name="MsgNdSwitched" xml:space="preserve">
-    <value>ND basculé vers {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailed" xml:space="preserve">
-    <value>Échec du basculement ND : {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailedDetail" xml:space="preserve">
-    <value>Échec du basculement ND : {0}
-{1}</value>
-  </data>
-  <data name="MsgReadingNd" xml:space="preserve">
-    <value>Lecture du ND</value>
-  </data>
-  <data name="MsgCurrentNd" xml:space="preserve">
-    <value>ND actuel : {0}</value>
-  </data>
-  <data name="MsgNdReadFailed" xml:space="preserve">
-    <value>Échec de lecture du ND : {0}</value>
-  </data>
-  <data name="MsgNdReadFailedDetail" xml:space="preserve">
-    <value>Échec de lecture du ND : {0}
-{1}</value>
-  </data>
-  <data name="MsgNdNotBoundCalibration" xml:space="preserve">
-    <value>Le ND {0} n'est pas associé à un étalonnage</value>
-  </data>
-  <data name="MsgNdMatchedCalibration" xml:space="preserve">
-    <value>ND {0} associé à l'étalonnage : {1}</value>
-  </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>Veuillez d'abord charger une image</value>
   </data>
@@ -611,10 +501,6 @@
   </data>
   <data name="MsgSelectExportFolder" xml:space="preserve">
     <value>Sélectionnez le dossier d'export</value>
-  </data>
-  <data name="MsgSectionExportDone" xml:space="preserve">
-    <value>Export de coupe terminé, {0} fichiers exportés vers :
-{1}</value>
   </data>
   <data name="MsgExportDone" xml:space="preserve">
     <value>Export terminé, {0} fichiers exportés vers :
@@ -671,56 +557,8 @@
   <data name="Msg3DViewOpenFailed" xml:space="preserve">
     <value>Échec de l'ouverture de la vue 3D : {0}</value>
   </data>
-  <data name="TbPan" xml:space="preserve">
-    <value>Déplacer</value>
-  </data>
-  <data name="TbPanTip" xml:space="preserve">
-    <value>Si activé, faites glisser avec le clic gauche pour déplacer ; sinon, maintenez Ctrl pour déplacer.</value>
-  </data>
-  <data name="TbRefDrag" xml:space="preserve">
-    <value>Gliss. réf.</value>
-  </data>
-  <data name="TbRefDragTip" xml:space="preserve">
-    <value>Faites glisser directement sur l'image les lignes d'azimut de référence et les cercles polaires.</value>
-  </data>
-  <data name="TbZoomOut" xml:space="preserve">
-    <value>Zoom -</value>
-  </data>
-  <data name="TbZoomIn" xml:space="preserve">
-    <value>Zoom +</value>
-  </data>
-  <data name="TbOriginalSize" xml:space="preserve">
-    <value>Taille réelle</value>
-  </data>
-  <data name="TbFit" xml:space="preserve">
-    <value>Ajuster</value>
-  </data>
-  <data name="TbFitTip" xml:space="preserve">
-    <value>Ajuster à la fenêtre</value>
-  </data>
-  <data name="TbFill" xml:space="preserve">
-    <value>Remplir</value>
-  </data>
-  <data name="TbFillTip" xml:space="preserve">
-    <value>Remplir la fenêtre</value>
-  </data>
-  <data name="TbZoomRatioTip" xml:space="preserve">
-    <value>Niveau de zoom actuel</value>
-  </data>
-  <data name="TbFullscreen" xml:space="preserve">
-    <value>PE</value>
-  </data>
-  <data name="TbFullscreenTip" xml:space="preserve">
-    <value>Basculer l'image en plein écran</value>
-  </data>
-  <data name="TbEditFocusPoint" xml:space="preserve">
-    <value>Modif. pt focus</value>
-  </data>
   <data name="TbEditFocusPointTip" xml:space="preserve">
     <value>Entrer en mode outil de point de focus lorsqu'il est activé...</value>
-  </data>
-  <data name="TbCircle" xml:space="preserve">
-    <value>Cercle</value>
   </data>
   <data name="TbCircleTip" xml:space="preserve">
     <value>Tracer uniquement de nouveaux cercles de point de focus</value>
@@ -731,14 +569,8 @@
   <data name="TbEditTip" xml:space="preserve">
     <value>Sélectionner et déplacer les cercles de point de focus existants</value>
   </data>
-  <data name="TbEraser" xml:space="preserve">
-    <value>Effacer</value>
-  </data>
   <data name="TbEraserTip" xml:space="preserve">
     <value>Sélection par zone pour effacer les cercles de point de focus</value>
-  </data>
-  <data name="TbCalc" xml:space="preserve">
-    <value>Calc</value>
   </data>
   <data name="TbCalcTip" xml:space="preserve">
     <value>Calculer tous les points de focus</value>
@@ -847,9 +679,6 @@
   </data>
   <data name="TitleConoscopeSettings" xml:space="preserve">
     <value>Paramètres Conoscope</value>
-  </data>
-  <data name="TitleHelpCenter" xml:space="preserve">
-    <value>Centre d'aide Conoscope</value>
   </data>
   <data name="TitleMvsCameraView" xml:space="preserve">
     <value>Vue caméra MVS</value>
@@ -986,36 +815,6 @@
   <data name="GroupBoxModelParams" xml:space="preserve">
     <value>Paramètres du modèle</value>
   </data>
-  <data name="TipSearchHelp" xml:space="preserve">
-    <value>Saisissez une fonction, un algorithme ou un terme, par ex. : Gamut / Contraste / CIE / Point de focus</value>
-  </data>
-  <data name="TipClearSearch" xml:space="preserve">
-    <value>Effacer la recherche</value>
-  </data>
-  <data name="RbAll" xml:space="preserve">
-    <value>Tout</value>
-  </data>
-  <data name="RbQuickStart" xml:space="preserve">
-    <value>Démarrage rapide</value>
-  </data>
-  <data name="RbUsagePaths" xml:space="preserve">
-    <value>Parcours d'utilisation</value>
-  </data>
-  <data name="RbAlgorithmPrinciples" xml:space="preserve">
-    <value>Algorithmes</value>
-  </data>
-  <data name="RbGlossary" xml:space="preserve">
-    <value>Glossaire</value>
-  </data>
-  <data name="PlaceholderSelectTopic" xml:space="preserve">
-    <value>← Veuillez sélectionner un sujet d'aide à gauche</value>
-  </data>
-  <data name="HintHelpNativeView" xml:space="preserve">
-    <value>Astuce : le contenu d'aide utilise la vue documentaire WPF native, avec des couleurs adaptées au thème de la fenêtre.</value>
-  </data>
-  <data name="HelpDescription" xml:space="preserve">
-    <value>Le centre d'aide intègre Démarrage rapide, Parcours d'utilisation, Algorithmes et Glossaire. Ouvrez une fenêtre puis recherchez ou changez de catégorie.</value>
-  </data>
   <data name="MenuView" xml:space="preserve">
     <value>Affichage</value>
   </data>
@@ -1148,9 +947,6 @@
   <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
     <value>Bascule vers le cercle polaire</value>
   </data>
-  <data name="MsgExportChannelSwitched" xml:space="preserve">
-    <value>Canal d'export changé : {0}</value>
-  </data>
   <data name="MsgRefAzimuthSet" xml:space="preserve">
     <value>Azimut de référence défini : {0}°</value>
   </data>
@@ -1162,9 +958,6 @@
   </data>
   <data name="SlotBlack" xml:space="preserve">
     <value>Noir</value>
-  </data>
-  <data name="MsgRecordedSlot" xml:space="preserve">
-    <value>{0} enregistré</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} enregistré
@@ -1285,21 +1078,6 @@ Nombre : {2}</value>
   <data name="MsgNoFocusPointPixelsCalc" xml:space="preserve">
     <value>Aucun pixel de point de focus disponible pour le calcul.</value>
   </data>
-  <data name="HelpCenterTitle" xml:space="preserve">
-    <value>Centre d'aide Conoscope</value>
-  </data>
-  <data name="HelpTitleWithVersion" xml:space="preserve">
-    <value>Aide Conoscope v{0}</value>
-  </data>
-  <data name="UnknownVersion" xml:space="preserve">
-    <value>Version inconnue</value>
-  </data>
-  <data name="ItemCountFormat" xml:space="preserve">
-    <value>{0} / {1} éléments</value>
-  </data>
-  <data name="NoContentToDisplay" xml:space="preserve">
-    <value>Aucun contenu à afficher.</value>
-  </data>
   <data name="TestAreaWaitingForImage" xml:space="preserve">
     <value>Zone de test : {0} mm | En attente d'image</value>
   </data>
@@ -1396,130 +1174,135 @@ Nombre : {2}</value>
   <data name="FocusPointYUV" xml:space="preserve">
     <value>Y:{0}  u:{1}  v:{2}</value>
   </data>
-  <data name="HelpTitleQuickStart" xml:space="preserve">
-    <value>Démarrage rapide : de l'ouverture d'image aux résultats</value>
+  <data name="GroupColorDifference" xml:space="preserve">
+    <value>Ecart de couleur</value>
   </data>
-  <data name="HelpSummaryQuickStart" xml:space="preserve">
-    <value>Lors de la première utilisation de Conoscope, il est recommandé de suivre l'ordre Accueil -&gt; Point de focus -&gt; Fenêtre de résultat d'analyse.</value>
+  <data name="ChannelContrast" xml:space="preserve">
+    <value>Contraste</value>
   </data>
-  <data name="HelpTitleCaptureWorkflow" xml:space="preserve">
-    <value>Flux de travail de capture et de gestion des vues</value>
+  <data name="BtnReapply" xml:space="preserve">
+    <value>Reappliquer</value>
   </data>
-  <data name="HelpSummaryCaptureWorkflow" xml:space="preserve">
-    <value>L'onglet Capture gère les modèles de processus, les caméras de mesure, les associations ND / étalonnage, et les résultats reviennent par défaut dans la vue active actuelle.</value>
+  <data name="BtnBlackReference" xml:space="preserve">
+    <value>Ref. noire</value>
   </data>
-  <data name="HelpTitlePreprocessWorkflow" xml:space="preserve">
-    <value>Flux de travail Prétraitement et affichage pseudo-couleur</value>
+  <data name="BtnWhiteReference" xml:space="preserve">
+    <value>Ref. blanche</value>
   </data>
-  <data name="HelpSummaryPreprocessWorkflow" xml:space="preserve">
-    <value>L'onglet Prétraitement centralise sur une seule page l'activation, le type de filtre, l'affichage pseudo-couleur, les paramètres complets et l'application à la vue actuelle.</value>
+  <data name="BtnColorDifferenceReference" xml:space="preserve">
+    <value>Ref. Δuv</value>
   </data>
-  <data name="HelpTitleFocusReferenceWorkflow" xml:space="preserve">
-    <value>Flux de travail Cercles de point de focus, lignes de référence et cercles polaires</value>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve">
+    <value>Si active, la liste des cameras d'observation n'affiche que les appareils dont le modele contient CS200.</value>
   </data>
-  <data name="HelpSummaryFocusReferenceWorkflow" xml:space="preserve">
-    <value>Les cercles de point de focus se créent dans la barre d'outils au-dessus de l'image ; le mode de référence peut être ajusté depuis l'onglet Accueil et le panneau droit Affichage.</value>
+  <data name="TipSelectedFocusPoint" xml:space="preserve">
+    <value>Point de focus actuellement selectionne</value>
   </data>
-  <data name="HelpTitleGamutWorkflow" xml:space="preserve">
-    <value>Flux de travail du calcul complet de gamut</value>
+  <data name="TipFocusPoiTemplate" xml:space="preserve">
+    <value>Modele POI du point de focus</value>
   </data>
-  <data name="HelpSummaryGamutWorkflow" xml:space="preserve">
-    <value>Le gamut complet est désormais enregistré de façon uniforme depuis le Ribbon principal pour les lots de points de focus R/G/B, puis une fenêtre de résultat dédiée s'ouvre pour l'affichage.</value>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve">
+    <value>Enregistrer les points de focus actuels dans un modele POI</value>
   </data>
-  <data name="HelpTitleContrastWorkflow" xml:space="preserve">
-    <value>Flux de travail du calcul de contraste noir et blanc</value>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve">
+    <value>Gerer les modeles POI</value>
   </data>
-  <data name="HelpSummaryContrastWorkflow" xml:space="preserve">
-    <value>Comme pour le gamut complet, le contraste noir et blanc enregistre d'abord le lot de points de focus, puis affiche le ratio de chaque point dans une fenêtre de résultat distincte.</value>
+  <data name="TbCircleFitTip" xml:space="preserve">
+    <value>Ajuster a la zone circulaire utile</value>
   </data>
-  <data name="HelpTitleVisualizationWorkflow" xml:space="preserve">
-    <value>Flux de travail CIE, 3D, courbes et export</value>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve">
+    <value>Reference globale {0} actuelle : {1}. Cliquez de nouveau pour effacer</value>
   </data>
-  <data name="HelpTitleFocusPrinciple" xml:space="preserve">
-    <value>Principe d'échantillonnage des points de focus</value>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve">
+    <value>Enregistrer la vue actuelle comme reference globale {0}</value>
   </data>
-  <data name="HelpTitleGamutPrinciple" xml:space="preserve">
-    <value>Principe du calcul complet de gamut</value>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve">
+    <value>Reference globale d'ecart de couleur actuelle : {0}. Cliquez de nouveau pour effacer</value>
   </data>
-  <data name="HelpTitleContrastPrinciple" xml:space="preserve">
-    <value>Principe du calcul de contraste noir et blanc</value>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve">
+    <value>Enregistrer la vue actuelle comme reference globale d'ecart de couleur</value>
   </data>
-  <data name="HelpSummaryContrastPrinciple" xml:space="preserve">
-    <value>L'implémentation actuelle utilise directement Y du champ blanc / Y du champ noir, et la luminance du champ noir doit être supérieure à 0.</value>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve">
+    <value>Afficher seulement les appareils CS200</value>
   </data>
-  <data name="HelpTitleCurvePrinciple" xml:space="preserve">
-    <value>Principe des courbes de référence et de l'export</value>
+  <data name="ChkEnableFilter" xml:space="preserve">
+    <value>Activer le filtre</value>
   </data>
-  <data name="HelpTitleVisualizationPrinciple" xml:space="preserve">
-    <value>Principe de visualisation CIE et 3D</value>
+  <data name="StateSaved" xml:space="preserve">
+    <value>Enregistre</value>
   </data>
-  <data name="HelpTitleActiveViewTerm" xml:space="preserve">
-    <value>Vue active</value>
+  <data name="LabelCurrentImage" xml:space="preserve">
+    <value>Image actuelle</value>
   </data>
-  <data name="HelpTitleFocusBatchTerm" xml:space="preserve">
-    <value>Points de focus et lot de points de focus</value>
+  <data name="ContrastImageBlack" xml:space="preserve">
+    <value>Image sombre</value>
   </data>
-  <data name="HelpTitleCoordinateTerm" xml:space="preserve">
-    <value>Angle d'azimut, angle polaire et angle de rayon</value>
+  <data name="ContrastImageWhite" xml:space="preserve">
+    <value>Image claire</value>
   </data>
-  <data name="HelpTitleChannelTerm" xml:space="preserve">
-    <value>Canaux d'affichage et CIE x/y/u/v</value>
+  <data name="ContrastReferenceBlackField" xml:space="preserve">
+    <value>Champ noir</value>
   </data>
-  <data name="HelpTitleGamutCoverageTerm" xml:space="preserve">
-    <value>Surface d'échantillon, surface standard et couverture</value>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve">
+    <value>Champ blanc</value>
   </data>
-  <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve">
-    <value>La couverture actuelle est un ratio de surfaces, et non le ratio après intersection avec le gamut standard.</value>
+  <data name="MsgCurrentImageSwitched" xml:space="preserve">
+    <value>Image actuelle basculee sur {0}</value>
   </data>
-  <data name="HelpTitleContrastTerm" xml:space="preserve">
-    <value>Champ blanc, champ noir et contraste</value>
+  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
+    <value>Reference d'ecart de couleur basculee sur {0}</value>
   </data>
-  <data name="GroupColorDifference" xml:space="preserve"><value>Ecart de couleur</value></data>
-  <data name="ChannelContrast" xml:space="preserve"><value>Contraste</value></data>
-  <data name="BtnReapply" xml:space="preserve"><value>Reappliquer</value></data>
-  <data name="BtnBlackReference" xml:space="preserve"><value>Ref. noire</value></data>
-  <data name="BtnWhiteReference" xml:space="preserve"><value>Ref. blanche</value></data>
-  <data name="BtnColorDifferenceReference" xml:space="preserve"><value>Ref. Δuv</value></data>
-  <data name="BtnSaveShort" xml:space="preserve"><value>Enr.</value></data>
-  <data name="TipOnlyShowCs200Devices" xml:space="preserve"><value>Si active, la liste des cameras d'observation n'affiche que les appareils dont le modele contient CS200.</value></data>
-  <data name="TipSelectedFocusPoint" xml:space="preserve"><value>Point de focus actuellement selectionne</value></data>
-  <data name="TipFocusPoiTemplate" xml:space="preserve"><value>Modele POI du point de focus</value></data>
-  <data name="TipSaveFocusPoiTemplate" xml:space="preserve"><value>Enregistrer les points de focus actuels dans un modele POI</value></data>
-  <data name="TipManageFocusPoiTemplate" xml:space="preserve"><value>Gerer les modeles POI</value></data>
-  <data name="TbCircleFit" xml:space="preserve"><value>Cercle</value></data>
-  <data name="TbCircleFitTip" xml:space="preserve"><value>Ajuster a la zone circulaire utile</value></data>
-  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve"><value>Reference globale {0} actuelle : {1}. Cliquez de nouveau pour effacer</value></data>
-  <data name="TipSaveGlobalContrastReference" xml:space="preserve"><value>Enregistrer la vue actuelle comme reference globale {0}</value></data>
-  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>Reference globale d'ecart de couleur actuelle : {0}. Cliquez de nouveau pour effacer</value></data>
-  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve"><value>Enregistrer la vue actuelle comme reference globale d'ecart de couleur</value></data>
-  <data name="ChkOnlyShowCs200Devices" xml:space="preserve"><value>Afficher seulement les appareils CS200</value></data>
-  <data name="ChkEnableFilter" xml:space="preserve"><value>Activer le filtre</value></data>
-  <data name="StateSaved" xml:space="preserve"><value>Enregistre</value></data>
-  <data name="LabelCurrentImage" xml:space="preserve"><value>Image actuelle</value></data>
-  <data name="ContrastImageBlack" xml:space="preserve"><value>Image sombre</value></data>
-  <data name="ContrastImageWhite" xml:space="preserve"><value>Image claire</value></data>
-  <data name="ContrastReferenceBlackField" xml:space="preserve"><value>Champ noir</value></data>
-  <data name="ContrastReferenceWhiteField" xml:space="preserve"><value>Champ blanc</value></data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve"><value>Image actuelle basculee sur {0}</value></data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve"><value>Reference d'ecart de couleur basculee sur {0}</value></data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve"><value>Illuminant personnalise d'ecart de couleur mis a jour en u={0:F4}, v={1:F4}</value></data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve"><value>Reference globale d'ecart de couleur effacee</value></data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve"><value>Reference globale d'ecart de couleur enregistree</value></data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve"><value>Echec de l'enregistrement de la reference d'ecart de couleur</value></data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve"><value>Reference globale {0} effacee</value></data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve"><value>Reference globale {0} enregistree</value></data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve"><value>Echec de l'enregistrement de la reference de contraste</value></data>
-  <data name="MsgRecordSlot" xml:space="preserve"><value>Enregistrer {0}</value></data>
-  <data name="MsgOriginalDataRestored" xml:space="preserve"><value>Les donnees d'origine ont ete restaurees.</value></data>
-  <data name="MsgPreprocessFailedDetail" xml:space="preserve"><value>Echec de l'application du pretraitement : {0}</value></data>
-  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve"><value>Echec de l'enregistrement des parametres de pretraitement : {0}</value></data>
-  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve"><value>Points de focus enregistres dans le modele POI : {0}</value></data>
-  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve"><value>La base de donnees n'est pas connectee. Impossible d'enregistrer le modele POI.</value></data>
-  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve"><value>Echec de la creation du modele POI.</value></data>
-  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve"><value>Echec de l'enregistrement. Consultez le journal pour plus de details.</value></data>
-  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve"><value>Echec de l'enregistrement : {0}</value></data>
-  <data name="TitleFocusPointPolarEditor" xml:space="preserve"><value>Editeur polaire du point de focus</value></data>
-  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve"><value>L'ImageView actuel n'a aucun chemin de fichier associe.</value></data>
+  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
+    <value>Illuminant personnalise d'ecart de couleur mis a jour en u={0:F4}, v={1:F4}</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
+    <value>Reference globale d'ecart de couleur effacee</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
+    <value>Reference globale d'ecart de couleur enregistree</value>
+  </data>
+  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
+    <value>Echec de l'enregistrement de la reference d'ecart de couleur</value>
+  </data>
+  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
+    <value>Reference globale {0} effacee</value>
+  </data>
+  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
+    <value>Reference globale {0} enregistree</value>
+  </data>
+  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
+    <value>Echec de l'enregistrement de la reference de contraste</value>
+  </data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve">
+    <value>Les donnees d'origine ont ete restaurees.</value>
+  </data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve">
+    <value>Echec de l'application du pretraitement : {0}</value>
+  </data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve">
+    <value>Echec de l'enregistrement des parametres de pretraitement : {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve">
+    <value>Points de focus enregistres dans le modele POI : {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve">
+    <value>La base de donnees n'est pas connectee. Impossible d'enregistrer le modele POI.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve">
+    <value>Echec de la creation du modele POI.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve">
+    <value>Echec de l'enregistrement. Consultez le journal pour plus de details.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve">
+    <value>Echec de l'enregistrement : {0}</value>
+  </data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve">
+    <value>Editeur polaire du point de focus</value>
+  </data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve">
+    <value>L'ImageView actuel n'a aucun chemin de fichier associe.</value>
+  </data>
   <data name="StatusImageSize" xml:space="preserve">
     <value>Taille de l'image</value>
   </data>
@@ -1546,5 +1329,95 @@ Nombre : {2}</value>
   </data>
   <data name="WindowTitleConoscopeWithVersion" xml:space="preserve">
     <value>Conoscope {0}</value>
+  </data>
+  <data name="TabSystem" xml:space="preserve">
+    <value>Systeme</value>
+  </data>
+  <data name="GroupAnalysisParameters" xml:space="preserve">
+    <value>Parametres d'analyse</value>
+  </data>
+  <data name="GroupComputeActions" xml:space="preserve">
+    <value>Actions de calcul</value>
+  </data>
+  <data name="GroupThemeAndLanguage" xml:space="preserve">
+    <value>Theme et langue</value>
+  </data>
+  <data name="LabelTheme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="LabelLanguage" xml:space="preserve">
+    <value>Langue</value>
+  </data>
+  <data name="LabelDecimalPlaces" xml:space="preserve">
+    <value>Decimales des donnees :</value>
+  </data>
+  <data name="TipRangeLimit" xml:space="preserve">
+    <value>Si active, la cartographie ne s'applique qu'a l'interieur du cercle valide ; sinon toute l'image est affichee.</value>
+  </data>
+  <data name="ChkRangeLimit" xml:space="preserve">
+    <value>Limite de plage</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4" xml:space="preserve">
+    <value>Par defaut 4, ajustable</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4Saved" xml:space="preserve">
+    <value>Par defaut 4, ajustable et memorise</value>
+  </data>
+  <data name="MsgInvalidDecimalPlaces" xml:space="preserve">
+    <value>Le nombre de decimales doit etre un entier entre 0 et 8.</value>
+  </data>
+  <data name="MsgColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>Le canal de difference de couleur requiert d'abord une reference de difference de couleur</value>
+  </data>
+  <data name="MsgContrastReferenceRequired" xml:space="preserve">
+    <value>Le canal de contraste requiert d'abord une reference blanc ou noir enregistree</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>Veuillez d'abord enregistrer une image de reference globale pour la difference de couleur</value>
+  </data>
+  <data name="MsgInvalidCustomUvReference" xml:space="preserve">
+    <value>Veuillez saisir des coordonnees de reference u/v personnalisees valides</value>
+  </data>
+  <data name="MsgNoMeasurementDataToAlign" xml:space="preserve">
+    <value>Aucune donnee de mesure a aligner</value>
+  </data>
+  <data name="MsgEmptyMeasurementDataCannotAlignFocusPoints" xml:space="preserve">
+    <value>Certaines donnees de mesure sont vides, impossible d'aligner les points d'interet</value>
+  </data>
+  <data name="StateNotSaved" xml:space="preserve">
+    <value>Non enregistre</value>
+  </data>
+  <data name="MsgContrastReferenceMissingStatus" xml:space="preserve">
+    <value>L'{1} de reference manque pour le {0} actuel.</value>
+  </data>
+  <data name="MsgContrastReferenceSizeMismatchStatus" xml:space="preserve">
+    <value>La taille de l'{1} de reference utilisee par le {0} actuel ne correspond pas a l'image courante.</value>
+  </data>
+  <data name="MsgContrastReferenceUsingStatus" xml:space="preserve">
+    <value>Le {0} actuel utilisera l'{1} de reference.</value>
+  </data>
+  <data name="MsgContrastReferenceSummary" xml:space="preserve">
+    <value>{0}
+{1} : {2}
+{3} : {4}</value>
+  </data>
+  <data name="MsgSaveContrastReferenceRequired" xml:space="preserve">
+    <value>Veuillez d'abord enregistrer l'image de reference {0}</value>
+  </data>
+  <data name="MsgContrastReferenceImageSizeMismatch" xml:space="preserve">
+    <value>La taille de l'image de reference {0} ne correspond pas a l'image courante. Veuillez enregistrer a nouveau la reference.</value>
+  </data>
+  <data name="MsgFocusPointDisplayInfoNotFound" xml:space="preserve">
+    <value>Les informations d'affichage du point d'interet {0} sont introuvables.</value>
+  </data>
+  <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
+    <value>Les donnees {0} ne contiennent pas le point d'interet {1}.
+Source : {2}</value>
+  </data>
+  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
+    <value>Le chemin du fichier ne peut pas etre vide</value>
+  </data>
+  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
+    <value>Aucun lecteur de mesure d'image n'est disponible pour ce type de fichier</value>
   </data>
 </root>

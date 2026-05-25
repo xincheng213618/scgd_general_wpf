@@ -16,7 +16,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="tbSummary" Foreground="Gray" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Content="导出CSV" Padding="12,4" Click="btnExportCsv_Click"/>
+                <Button Grid.Column="1" Content="{x:Static properties:Resources.BtnExport}" Padding="12,4" Click="btnExportCsv_Click"/>
             </Grid>
         </Border>
 

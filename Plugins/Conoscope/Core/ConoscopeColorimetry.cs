@@ -86,8 +86,8 @@ namespace Conoscope.Core
                 ExportChannel.CieY => CreateXyChannelMat(XMat, YMat, ZMat, YMat),
                 ExportChannel.CieU => CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0),
                 ExportChannel.CieV => CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0),
-                ExportChannel.ColorDifference => throw new InvalidOperationException("色差通道需要指定 uv 基准"),
-                ExportChannel.Contrast => throw new InvalidOperationException("对比度通道需要先保存白场或黑场基准"),
+                ExportChannel.ColorDifference => throw new InvalidOperationException(Conoscope.Properties.Resources.ColorDiffNeedsUVRef),
+                ExportChannel.Contrast => throw new InvalidOperationException(Conoscope.Properties.Resources.MsgContrastReferenceRequired),
                 _ => YMat.Clone()
             };
         }

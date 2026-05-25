@@ -320,7 +320,7 @@ namespace Conoscope
         {
             if (GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.ReferenceImage && !GlobalReferences.HasColorDifferenceReference)
             {
-                throw new InvalidOperationException("请先保存全局色差基准图");
+                throw new InvalidOperationException(Properties.Resources.MsgGlobalColorDifferenceReferenceRequired);
             }
 
             if (GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.ReferenceImage && XMat != null && GlobalReferences.ColorDifferenceReferenceUMat != null
@@ -331,7 +331,7 @@ namespace Conoscope
 
             if (GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.Custom && !TryParseCustomColorDifferenceReference(out _))
             {
-                throw new InvalidOperationException("请输入有效的自定义 u/v 基准坐标");
+                throw new InvalidOperationException(Properties.Resources.MsgInvalidCustomUvReference);
             }
         }
 

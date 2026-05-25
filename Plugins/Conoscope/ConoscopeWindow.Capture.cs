@@ -122,7 +122,7 @@ namespace Conoscope
                         ProgressForeground = Brushes.DodgerBlue,
                         ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(FlowRunOperationActionKey, DefaultFlowExpectedDurationMs),
                         ContentFactory = _ => originalContent ?? Properties.Resources.BtnExecute,
-                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip("执行当前流程并打开结果图像", stats),
+                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.TipExecuteFlow, stats),
                         MinimumExpectedDurationMs = 2000
                     });
             }
@@ -139,7 +139,7 @@ namespace Conoscope
                         ProgressForeground = Brushes.DodgerBlue,
                         ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(CameraCaptureOperationActionKey, DefaultCameraCaptureExpectedDurationMs),
                         ContentFactory = _ => originalContent ?? Properties.Resources.BtnCapturePhoto,
-                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip("执行相机拍照并打开结果图像", stats),
+                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.TipCapturePhoto, stats),
                         MinimumExpectedDurationMs = 2000
                     });
             }
@@ -255,7 +255,7 @@ namespace Conoscope
 
             try
             {
-                operationScope = BeginTrackedOperation(btnRunFlow, FlowRunOperationActionKey, "执行流程", DefaultFlowExpectedDurationMs);
+                operationScope = BeginTrackedOperation(btnRunFlow, FlowRunOperationActionKey, Properties.Resources.BtnExecute, DefaultFlowExpectedDurationMs);
                 SetOperationBusy(true);
                 SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowExecuting, flowTemplate.Key), Brushes.DodgerBlue);
 
@@ -312,7 +312,7 @@ namespace Conoscope
 
             try
             {
-                operationScope = BeginTrackedOperation(btnCaptureCamera, CameraCaptureOperationActionKey, "相机拍照", DefaultCameraCaptureExpectedDurationMs);
+                operationScope = BeginTrackedOperation(btnCaptureCamera, CameraCaptureOperationActionKey, Properties.Resources.BtnCapturePhoto, DefaultCameraCaptureExpectedDurationMs);
                 SetOperationBusy(true);
                 SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCapturingPhoto, camera.Config.Name), Brushes.DodgerBlue);
 

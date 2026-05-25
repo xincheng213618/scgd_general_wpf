@@ -53,10 +53,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Calibration" xml:space="preserve">
     <value>Calibration</value>
@@ -98,19 +98,16 @@
     <value>Capture</value>
   </data>
   <data name="TabPreprocess" xml:space="preserve">
-    <value>Preprocess</value>
+    <value>Process</value>
   </data>
   <data name="TabAnalysis" xml:space="preserve">
     <value>Analysis</value>
   </data>
-  <data name="TabHelp" xml:space="preserve">
-    <value>Help</value>
-  </data>
   <data name="GroupData" xml:space="preserve">
-    <value>Data</value>
+    <value>File</value>
   </data>
   <data name="GroupModel" xml:space="preserve">
-    <value>Model</value>
+    <value>Model &amp; Observation</value>
   </data>
   <data name="GroupCurrentView" xml:space="preserve">
     <value>Current View</value>
@@ -120,9 +117,6 @@
   </data>
   <data name="GroupMeasurementCamera" xml:space="preserve">
     <value>Measurement Camera</value>
-  </data>
-  <data name="GroupNdCalibration" xml:space="preserve">
-    <value>ND / Calibration</value>
   </data>
   <data name="GroupEnable" xml:space="preserve">
     <value>Enable</value>
@@ -152,7 +146,7 @@
     <value>Open</value>
   </data>
   <data name="GroupDescription" xml:space="preserve">
-    <value>Description</value>
+    <value>View Actions</value>
   </data>
   <data name="LabelChannel" xml:space="preserve">
     <value>Channel</value>
@@ -160,29 +154,14 @@
   <data name="LabelReference" xml:space="preserve">
     <value>Reference</value>
   </data>
-  <data name="LabelExport" xml:space="preserve">
-    <value>Export</value>
-  </data>
-  <data name="LabelFlowTemplate" xml:space="preserve">
-    <value>Flow Template</value>
-  </data>
-  <data name="LabelCamera" xml:space="preserve">
-    <value>Camera</value>
-  </data>
   <data name="LabelStandard" xml:space="preserve">
     <value>Standard</value>
-  </data>
-  <data name="LabelColorMap" xml:space="preserve">
-    <value>Color Map</value>
   </data>
   <data name="LabelAzimuthDeg" xml:space="preserve">
     <value>Azimuth (°)</value>
   </data>
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>Polar Angle (°)</value>
-  </data>
-  <data name="LabelNdPort" xml:space="preserve">
-    <value>ND Port</value>
   </data>
   <data name="LabelStatus" xml:space="preserve">
     <value>Status</value>
@@ -256,9 +235,6 @@
   <data name="BtnExecute" xml:space="preserve">
     <value>Execute</value>
   </data>
-  <data name="BtnRefresh" xml:space="preserve">
-    <value>Refresh</value>
-  </data>
   <data name="BtnCapturePhoto" xml:space="preserve">
     <value>Capture</value>
   </data>
@@ -274,21 +250,6 @@
   <data name="BtnClear" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <data name="BtnRecordR" xml:space="preserve">
-    <value>R</value>
-  </data>
-  <data name="BtnRecordG" xml:space="preserve">
-    <value>G</value>
-  </data>
-  <data name="BtnRecordB" xml:space="preserve">
-    <value>B</value>
-  </data>
-  <data name="BtnRecordWhite" xml:space="preserve">
-    <value>W</value>
-  </data>
-  <data name="BtnRecordBlack" xml:space="preserve">
-    <value>B</value>
-  </data>
   <data name="BtnComputeContrast" xml:space="preserve">
     <value>Compute Contrast</value>
   </data>
@@ -301,9 +262,6 @@
   <data name="BtnColorDifferenceReference" xml:space="preserve">
     <value>Color Diff Ref</value>
   </data>
-  <data name="BtnHelpCenter" xml:space="preserve">
-    <value>Help Center</value>
-  </data>
   <data name="BtnClose" xml:space="preserve">
     <value>Close</value>
   </data>
@@ -313,14 +271,8 @@
   <data name="BtnCancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="BtnApplyPreset" xml:space="preserve">
-    <value>Apply Preset</value>
-  </data>
   <data name="BtnSaveBaseImage" xml:space="preserve">
     <value>Save Base Image</value>
-  </data>
-  <data name="BtnSaveShort" xml:space="preserve">
-    <value>Save</value>
   </data>
   <data name="BtnComputeColorDiff" xml:space="preserve">
     <value>Compute Color Diff</value>
@@ -385,18 +337,6 @@
   <data name="TipCapturePhoto" xml:space="preserve">
     <value>Capture photo with current camera and calibration</value>
   </data>
-  <data name="TipSwitchNdPort" xml:space="preserve">
-    <value>Switch to the input ND port</value>
-  </data>
-  <data name="TipReadNdPort" xml:space="preserve">
-    <value>Read current ND port</value>
-  </data>
-  <data name="TipBindNdCalibration" xml:space="preserve">
-    <value>Bind current ND port to current calibration template</value>
-  </data>
-  <data name="TipClearNdCalibration" xml:space="preserve">
-    <value>Unbind current ND port from calibration template</value>
-  </data>
   <data name="TipReuseActiveView" xml:space="preserve">
     <value>When checked, flow and capture results refresh the active View, reducing memory usage</value>
   </data>
@@ -426,9 +366,6 @@
   </data>
   <data name="TipManageFocusPoiTemplate" xml:space="preserve">
     <value>Manage POI templates</value>
-  </data>
-  <data name="TbCircleFit" xml:space="preserve">
-    <value>Fit Circle</value>
   </data>
   <data name="TbCircleFitTip" xml:space="preserve">
     <value>Fit to the effective circular area</value>
@@ -483,9 +420,6 @@
   </data>
   <data name="TipOpenConoscopeSettings" xml:space="preserve">
     <value>Open Conoscope settings</value>
-  </data>
-  <data name="TipHelpCenter" xml:space="preserve">
-    <value>Open searchable Conoscope help center for usage paths, algorithms, and glossary</value>
   </data>
   <data name="ChkEnablePreprocess" xml:space="preserve">
     <value>Enable Preprocess</value>
@@ -547,24 +481,6 @@
   <data name="MsgSelectCamera" xml:space="preserve">
     <value>Please select a camera device</value>
   </data>
-  <data name="MsgSelectCameraAndCalibration" xml:space="preserve">
-    <value>Please select a camera device and a valid calibration template</value>
-  </data>
-  <data name="MsgInvalidNdPort" xml:space="preserve">
-    <value>Please enter a valid ND port</value>
-  </data>
-  <data name="MsgNdBound" xml:space="preserve">
-    <value>Bound ND {0} -&gt; {1}</value>
-  </data>
-  <data name="MsgSelectCameraAndNd" xml:space="preserve">
-    <value>Please select a camera and enter a valid ND port</value>
-  </data>
-  <data name="MsgNdNotBound" xml:space="preserve">
-    <value>ND {0} has no calibration binding</value>
-  </data>
-  <data name="MsgNdUnbound" xml:space="preserve">
-    <value>Unbound ND {0} calibration</value>
-  </data>
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>Please select a flow</value>
   </data>
@@ -612,38 +528,6 @@
   <data name="MsgCaptureFailedTitle" xml:space="preserve">
     <value>Capture failed</value>
   </data>
-  <data name="MsgSwitchingNd" xml:space="preserve">
-    <value>Switching ND: {0}</value>
-  </data>
-  <data name="MsgNdSwitched" xml:space="preserve">
-    <value>ND switched to {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailed" xml:space="preserve">
-    <value>ND switch failed: {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailedDetail" xml:space="preserve">
-    <value>ND switch failed: {0}
-{1}</value>
-  </data>
-  <data name="MsgReadingNd" xml:space="preserve">
-    <value>Reading ND</value>
-  </data>
-  <data name="MsgCurrentNd" xml:space="preserve">
-    <value>Current ND: {0}</value>
-  </data>
-  <data name="MsgNdReadFailed" xml:space="preserve">
-    <value>ND read failed: {0}</value>
-  </data>
-  <data name="MsgNdReadFailedDetail" xml:space="preserve">
-    <value>ND read failed: {0}
-{1}</value>
-  </data>
-  <data name="MsgNdNotBoundCalibration" xml:space="preserve">
-    <value>ND {0} not bound to calibration</value>
-  </data>
-  <data name="MsgNdMatchedCalibration" xml:space="preserve">
-    <value>ND {0} matched calibration: {1}</value>
-  </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>Please load an image first</value>
   </data>
@@ -665,10 +549,6 @@
   </data>
   <data name="MsgSelectExportFolder" xml:space="preserve">
     <value>Select export folder</value>
-  </data>
-  <data name="MsgSectionExportDone" xml:space="preserve">
-    <value>Section export done, {0} files exported to:
-{1}</value>
   </data>
   <data name="MsgExportDone" xml:space="preserve">
     <value>Export done, {0} files exported to:
@@ -725,56 +605,8 @@
   <data name="Msg3DViewOpenFailed" xml:space="preserve">
     <value>Failed to open 3D view: {0}</value>
   </data>
-  <data name="TbPan" xml:space="preserve">
-    <value>Pan</value>
-  </data>
-  <data name="TbPanTip" xml:space="preserve">
-    <value>When enabled, left-click drag to pan; otherwise hold Ctrl to pan.</value>
-  </data>
-  <data name="TbRefDrag" xml:space="preserve">
-    <value>Section Marker</value>
-  </data>
-  <data name="TbRefDragTip" xml:space="preserve">
-    <value>Drag section markers, including azimuth lines and polar circles, directly on the image.</value>
-  </data>
-  <data name="TbZoomOut" xml:space="preserve">
-    <value>Zoom Out</value>
-  </data>
-  <data name="TbZoomIn" xml:space="preserve">
-    <value>Zoom In</value>
-  </data>
-  <data name="TbOriginalSize" xml:space="preserve">
-    <value>Original Size</value>
-  </data>
-  <data name="TbFit" xml:space="preserve">
-    <value>Fit</value>
-  </data>
-  <data name="TbFitTip" xml:space="preserve">
-    <value>Fit to window</value>
-  </data>
-  <data name="TbFill" xml:space="preserve">
-    <value>Fill</value>
-  </data>
-  <data name="TbFillTip" xml:space="preserve">
-    <value>Fill window</value>
-  </data>
-  <data name="TbZoomRatioTip" xml:space="preserve">
-    <value>Current zoom ratio</value>
-  </data>
-  <data name="TbFullscreen" xml:space="preserve">
-    <value>FS</value>
-  </data>
-  <data name="TbFullscreenTip" xml:space="preserve">
-    <value>Toggle image fullscreen</value>
-  </data>
-  <data name="TbEditFocusPoint" xml:space="preserve">
-    <value>Edit Focus Pt</value>
-  </data>
   <data name="TbEditFocusPointTip" xml:space="preserve">
     <value>Enter focus point tool mode when enabled...</value>
-  </data>
-  <data name="TbCircle" xml:space="preserve">
-    <value>Circle</value>
   </data>
   <data name="TbCircleTip" xml:space="preserve">
     <value>Draw new focus point circles only</value>
@@ -785,14 +617,8 @@
   <data name="TbEditTip" xml:space="preserve">
     <value>Select and drag existing focus point circles</value>
   </data>
-  <data name="TbEraser" xml:space="preserve">
-    <value>Eraser</value>
-  </data>
   <data name="TbEraserTip" xml:space="preserve">
     <value>Box-select to erase focus point circles</value>
-  </data>
-  <data name="TbCalc" xml:space="preserve">
-    <value>Calc</value>
   </data>
   <data name="TbCalcTip" xml:space="preserve">
     <value>Calculate all focus points</value>
@@ -916,9 +742,6 @@
   </data>
   <data name="TitleConoscopeSettings" xml:space="preserve">
     <value>Conoscope Settings</value>
-  </data>
-  <data name="TitleHelpCenter" xml:space="preserve">
-    <value>Conoscope Help Center</value>
   </data>
   <data name="TitleMvsCameraView" xml:space="preserve">
     <value>MVS Camera View</value>
@@ -1055,36 +878,6 @@
   <data name="GroupBoxModelParams" xml:space="preserve">
     <value>Model Parameters</value>
   </data>
-  <data name="TipSearchHelp" xml:space="preserve">
-    <value>Enter function, algorithm, or term, e.g.: Gamut / Contrast / CIE / Focus Point</value>
-  </data>
-  <data name="TipClearSearch" xml:space="preserve">
-    <value>Clear search</value>
-  </data>
-  <data name="RbAll" xml:space="preserve">
-    <value>All</value>
-  </data>
-  <data name="RbQuickStart" xml:space="preserve">
-    <value>Quick Start</value>
-  </data>
-  <data name="RbUsagePaths" xml:space="preserve">
-    <value>Usage Paths</value>
-  </data>
-  <data name="RbAlgorithmPrinciples" xml:space="preserve">
-    <value>Algorithms</value>
-  </data>
-  <data name="RbGlossary" xml:space="preserve">
-    <value>Glossary</value>
-  </data>
-  <data name="PlaceholderSelectTopic" xml:space="preserve">
-    <value>← Please select a help topic from the left</value>
-  </data>
-  <data name="HintHelpNativeView" xml:space="preserve">
-    <value>Tip: Help content uses native WPF document view, colors match the window theme.</value>
-  </data>
-  <data name="HelpDescription" xml:space="preserve">
-    <value>The help center integrates Quick Start, Usage Paths, Algorithms, and Glossary. Open a window and search or switch categories.</value>
-  </data>
   <data name="MenuView" xml:space="preserve">
     <value>View</value>
   </data>
@@ -1217,9 +1010,6 @@
   <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
     <value>Switched to polar circle</value>
   </data>
-  <data name="MsgExportChannelSwitched" xml:space="preserve">
-    <value>Export channel switched: {0}</value>
-  </data>
   <data name="MsgCurrentImageSwitched" xml:space="preserve">
     <value>Current image switched to {0}</value>
   </data>
@@ -1258,12 +1048,6 @@
   </data>
   <data name="SlotBlack" xml:space="preserve">
     <value>Black</value>
-  </data>
-  <data name="MsgRecordedSlot" xml:space="preserve">
-    <value>Recorded {0}</value>
-  </data>
-  <data name="MsgRecordSlot" xml:space="preserve">
-    <value>Record {0}</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} recorded
@@ -1384,21 +1168,6 @@ Count: {2}</value>
   <data name="MsgNoFocusPointPixelsCalc" xml:space="preserve">
     <value>No focus point pixels available for calculation.</value>
   </data>
-  <data name="HelpCenterTitle" xml:space="preserve">
-    <value>Conoscope Help Center</value>
-  </data>
-  <data name="HelpTitleWithVersion" xml:space="preserve">
-    <value>Conoscope Help  v{0}</value>
-  </data>
-  <data name="UnknownVersion" xml:space="preserve">
-    <value>Unknown version</value>
-  </data>
-  <data name="ItemCountFormat" xml:space="preserve">
-    <value>{0} / {1} items</value>
-  </data>
-  <data name="NoContentToDisplay" xml:space="preserve">
-    <value>No content to display.</value>
-  </data>
   <data name="TestAreaWaitingForImage" xml:space="preserve">
     <value>Test Area: {0} mm | Waiting for image</value>
   </data>
@@ -1495,84 +1264,6 @@ Count: {2}</value>
   <data name="FocusPointYUV" xml:space="preserve">
     <value>Y:{0}  u:{1}  v:{2}</value>
   </data>
-  <data name="HelpTitleQuickStart" xml:space="preserve">
-    <value>Quick Start: From Opening Image to Getting Results</value>
-  </data>
-  <data name="HelpSummaryQuickStart" xml:space="preserve">
-    <value>When using Conoscope for the first time, it is recommended to operate in the order of Home -&gt; Focus Point -&gt; Analysis Result Window.</value>
-  </data>
-  <data name="HelpTitleCaptureWorkflow" xml:space="preserve">
-    <value>Capture and View Management Workflow</value>
-  </data>
-  <data name="HelpSummaryCaptureWorkflow" xml:space="preserve">
-    <value>The Capture tab is responsible for process templates, measurement cameras, ND / correction binding, and results default back to the current active View.</value>
-  </data>
-  <data name="HelpTitlePreprocessWorkflow" xml:space="preserve">
-    <value>Preprocessing and Pseudocolor Display Workflow</value>
-  </data>
-  <data name="HelpSummaryPreprocessWorkflow" xml:space="preserve">
-    <value>The Preprocessing tab centralizes whether to enable, filter type, pseudocolor display, complete parameter settings, and application to the current View on one page.</value>
-  </data>
-  <data name="HelpTitleFocusReferenceWorkflow" xml:space="preserve">
-    <value>Focus Point Circles, Reference Lines and Polar Circles Workflow</value>
-  </data>
-  <data name="HelpSummaryFocusReferenceWorkflow" xml:space="preserve">
-    <value>Focus point circles are created in the toolbar above the image; reference mode can be adjusted both in the Home tab and in the View right panel.</value>
-  </data>
-  <data name="HelpTitleGamutWorkflow" xml:space="preserve">
-    <value>Comprehensive Gamut Calculation Workflow</value>
-  </data>
-  <data name="HelpSummaryGamutWorkflow" xml:space="preserve">
-    <value>The comprehensive gamut is now uniformly recorded by the main Ribbon for R/G/B focus point batches, then a separate result window pops up to display.</value>
-  </data>
-  <data name="HelpTitleContrastWorkflow" xml:space="preserve">
-    <value>Black-and-White Contrast Calculation Workflow</value>
-  </data>
-  <data name="HelpSummaryContrastWorkflow" xml:space="preserve">
-    <value>Black-and-white contrast, like comprehensive gamut, first records the focus point batch, then views the ratio of each point in a separate result window.</value>
-  </data>
-  <data name="HelpTitleVisualizationWorkflow" xml:space="preserve">
-    <value>CIE, 3D, Curves and Export Workflow</value>
-  </data>
-  <data name="HelpTitleFocusPrinciple" xml:space="preserve">
-    <value>Focus Point Sampling Principle</value>
-  </data>
-  <data name="HelpTitleGamutPrinciple" xml:space="preserve">
-    <value>Comprehensive Gamut Calculation Principle</value>
-  </data>
-  <data name="HelpTitleContrastPrinciple" xml:space="preserve">
-    <value>Black-and-White Contrast Calculation Principle</value>
-  </data>
-  <data name="HelpSummaryContrastPrinciple" xml:space="preserve">
-    <value>The current implementation directly uses White Field Y / Black Field Y, and the black field luminance must be greater than 0.</value>
-  </data>
-  <data name="HelpTitleCurvePrinciple" xml:space="preserve">
-    <value>Reference Curves and Export Principle</value>
-  </data>
-  <data name="HelpTitleVisualizationPrinciple" xml:space="preserve">
-    <value>CIE and 3D Visualization Principle</value>
-  </data>
-  <data name="HelpTitleActiveViewTerm" xml:space="preserve">
-    <value>Active View</value>
-  </data>
-  <data name="HelpTitleFocusBatchTerm" xml:space="preserve">
-    <value>Focus Points and Focus Point Batch</value>
-  </data>
-  <data name="HelpTitleCoordinateTerm" xml:space="preserve">
-    <value>Azimuth Angle, Polar Angle and Radius Angle</value>
-  </data>
-  <data name="HelpTitleChannelTerm" xml:space="preserve">
-    <value>Display Channels and CIE x/y/u/v</value>
-  </data>
-  <data name="HelpTitleGamutCoverageTerm" xml:space="preserve">
-    <value>Sample Area, Standard Area and Coverage</value>
-  </data>
-  <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve">
-    <value>The current coverage is the area ratio, not the area ratio after intersection with the standard gamut.</value>
-  </data>
-  <data name="HelpTitleContrastTerm" xml:space="preserve">
-    <value>White Field, Black Field and Contrast</value>
-  </data>
   <data name="BtnReapply" xml:space="preserve">
     <value>Reapply</value>
   </data>
@@ -1638,5 +1329,95 @@ Count: {2}</value>
   </data>
   <data name="WindowTitleConoscopeWithVersion" xml:space="preserve">
     <value>Conoscope {0}</value>
+  </data>
+  <data name="TabSystem" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="GroupAnalysisParameters" xml:space="preserve">
+    <value>Analysis Parameters</value>
+  </data>
+  <data name="GroupComputeActions" xml:space="preserve">
+    <value>Compute Actions</value>
+  </data>
+  <data name="GroupThemeAndLanguage" xml:space="preserve">
+    <value>Theme &amp; Language</value>
+  </data>
+  <data name="LabelTheme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="LabelLanguage" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="LabelDecimalPlaces" xml:space="preserve">
+    <value>Data Decimals:</value>
+  </data>
+  <data name="TipRangeLimit" xml:space="preserve">
+    <value>When enabled, display mapping is applied only inside the valid circle; otherwise the whole image is shown.</value>
+  </data>
+  <data name="ChkRangeLimit" xml:space="preserve">
+    <value>Range Limit</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4" xml:space="preserve">
+    <value>Default 4, adjustable</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4Saved" xml:space="preserve">
+    <value>Default 4, adjustable and saved</value>
+  </data>
+  <data name="MsgInvalidDecimalPlaces" xml:space="preserve">
+    <value>Decimal places must be an integer between 0 and 8.</value>
+  </data>
+  <data name="MsgColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>Color difference channel requires a saved color difference reference first</value>
+  </data>
+  <data name="MsgContrastReferenceRequired" xml:space="preserve">
+    <value>Contrast channel requires a saved white or black reference first</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>Please save a global color difference reference image first</value>
+  </data>
+  <data name="MsgInvalidCustomUvReference" xml:space="preserve">
+    <value>Please enter valid custom u/v reference coordinates</value>
+  </data>
+  <data name="MsgNoMeasurementDataToAlign" xml:space="preserve">
+    <value>No measurement data to align</value>
+  </data>
+  <data name="MsgEmptyMeasurementDataCannotAlignFocusPoints" xml:space="preserve">
+    <value>Some measurement data is empty; focus points cannot be aligned</value>
+  </data>
+  <data name="StateNotSaved" xml:space="preserve">
+    <value>Not saved</value>
+  </data>
+  <data name="MsgContrastReferenceMissingStatus" xml:space="preserve">
+    <value>Current {0} is missing the {1} reference.</value>
+  </data>
+  <data name="MsgContrastReferenceSizeMismatchStatus" xml:space="preserve">
+    <value>The {1} reference used by current {0} does not match the current image size.</value>
+  </data>
+  <data name="MsgContrastReferenceUsingStatus" xml:space="preserve">
+    <value>Current {0} will use the {1} reference.</value>
+  </data>
+  <data name="MsgContrastReferenceSummary" xml:space="preserve">
+    <value>{0}
+{1}: {2}
+{3}: {4}</value>
+  </data>
+  <data name="MsgSaveContrastReferenceRequired" xml:space="preserve">
+    <value>Please save the {0} reference image first</value>
+  </data>
+  <data name="MsgContrastReferenceImageSizeMismatch" xml:space="preserve">
+    <value>The {0} reference image size does not match the current image. Please save the reference again.</value>
+  </data>
+  <data name="MsgFocusPointDisplayInfoNotFound" xml:space="preserve">
+    <value>Display info for focus point {0} was not found.</value>
+  </data>
+  <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
+    <value>Focus point {1} is missing in {0} data.
+Source: {2}</value>
+  </data>
+  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
+    <value>File path cannot be empty</value>
+  </data>
+  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
+    <value>No image measurement reader is available for the current file type</value>
   </data>
 </root>

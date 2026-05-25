@@ -39,7 +39,7 @@
                             Background="Transparent"
                             BorderThickness="0"
                             Padding="0">
-                    <TabItem Header="主页">
+                    <TabItem Header="{x:Static properties:Resources.TabHome}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -52,11 +52,11 @@
                                             <Button Click="OpenFile_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenFile}">
                                                 <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
                                                     <TextBlock Text="&#xE8E5;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="打开图像" Style="{StaticResource RibbonButtonCaptionStyle}" />
+                                                    <TextBlock Text="{x:Static properties:Resources.GroupOpen}" Style="{StaticResource RibbonButtonCaptionStyle}" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="文件" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupData}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -75,7 +75,7 @@
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="型号与观察" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupModel}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -127,7 +127,7 @@
                                                          PreviewKeyDown="txtActiveReferenceValue_PreviewKeyDown"
                                                          LostFocus="txtActiveReferenceValue_LostFocus" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="当前视图" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupCurrentView}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
                                 </StackPanel>
@@ -143,7 +143,7 @@
                                                 <Button x:Name="btnActiveOpen3D" Content="3D" Click="btnActiveOpen3D_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpen3DView}" />
                                                 <Button x:Name="btnActiveOpenCie" Content="CIE" Click="btnActiveOpenCie_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="视图功能" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDescription}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
 
@@ -158,7 +158,7 @@
                                                 <Button x:Name="btnActiveExportCircle" Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnActiveExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportPolarData}" />
                                                 <Button x:Name="btnActiveAdvancedExport" Content="{x:Static properties:Resources.TitleAdvancedExport}" Click="btnActiveAdvancedExport_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipAdvancedExport}" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="当前通道导出" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupExport}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
                                 </StackPanel>
@@ -166,7 +166,7 @@
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="采集">
+                    <TabItem Header="{x:Static properties:Resources.TabCapture}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -192,10 +192,10 @@
                                                       Margin="8,0,0,0"
                                                       VerticalAlignment="Center"
                                                       IsChecked="True"
-                                                      Content="复用视图"
+                                                      Content="{x:Static properties:Resources.ChkReuseActiveView}"
                                                       ToolTip="{x:Static properties:Resources.TipReuseActiveView}" />
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="流程采集" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupFlowCapture}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -242,14 +242,14 @@
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="测量相机" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupMeasurementCamera}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="处理">
+                    <TabItem Header="{x:Static properties:Resources.TabPreprocess}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -275,7 +275,7 @@
                                                 </StackPanel>
                                             </Button>
                                         </WrapPanel>
-                                        <TextBlock Grid.Row="1" Text="处理开关" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupEnable}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -325,7 +325,7 @@
                                                 </WrapPanel>
                                             </WrapPanel>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="滤波" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupFilter}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -343,12 +343,12 @@
                                                       Margin="0,0,12,0"
                                                       VerticalAlignment="Center" />
                                             <CheckBox x:Name="chkWindowUsePseudoColorRangeLimit"
-                                                      Content="范围限制"
+                                                      Content="{x:Static properties:Resources.ChkRangeLimit}"
                                                       Checked="WindowDisplay_Changed"
                                                       Unchecked="WindowDisplay_Changed"
                                                       Margin="0,0,12,0"
                                                       VerticalAlignment="Center"
-                                                      ToolTip="启用后只在有效圆域内做显示映射；关闭后整图显示。" />
+                                                      ToolTip="{x:Static properties:Resources.TipRangeLimit}" />
                                             <StackPanel x:Name="panelWindowPseudoColorOptions"
                                                         Orientation="Horizontal"
                                                         VerticalAlignment="Center">
@@ -358,7 +358,7 @@
                                                           Style="{StaticResource RibbonComboBoxStyle}" />
                                             </StackPanel>
                                         </WrapPanel>
-                                        <TextBlock Grid.Row="1" Text="显示映射" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDisplay}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -375,7 +375,7 @@
                                                       Unchecked="WindowDustRemoval_Changed"
                                                       VerticalAlignment="Center" />
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="灰尘滤除" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.DustLabel}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -396,14 +396,14 @@
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="处理设置" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupConfig}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="分析">
+                    <TabItem Header="{x:Static properties:Resources.TabAnalysis}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
@@ -413,9 +413,9 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <WrapPanel>
-                                            <TextBlock Text="色域" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.GroupGamut}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbRibbonGamutStandard" Width="120" Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <TextBlock Text="色差" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
+                                            <TextBlock Text="{x:Static properties:Resources.GroupColorDifference}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
                                             <ComboBox x:Name="cbActiveColorDifferenceReference" Width="134" SelectionChanged="cbActiveColorDifferenceReference_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
                                                 <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
                                                 <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
@@ -432,7 +432,7 @@
                                                 <TextBox x:Name="txtActiveColorDifferenceCustomV" Width="62" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtActiveColorDifferenceCustom_PreviewKeyDown" LostFocus="txtActiveColorDifferenceCustom_LostFocus" />
                                             </StackPanel>
                                             <Button x:Name="btnActiveSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnColorDifferenceReference}" Click="btnActiveSaveColorDifferenceReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnColorDifferenceReference}" />
-                                            <TextBlock Text="对比度" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
+                                            <TextBlock Text="{x:Static properties:Resources.GroupContrast}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
                                             <ComboBox x:Name="cbActiveContrastImageKind" Width="84" SelectionChanged="cbActiveContrastImageKind_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageBlack}" Tag="Black"/>
                                                 <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageWhite}" Tag="White"/>
@@ -440,7 +440,7 @@
                                             <Button x:Name="btnActiveSaveBlackContrastReference" Content="{x:Static properties:Resources.BtnBlackReference}" Click="btnActiveSaveBlackContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnBlackReference}" />
                                             <Button x:Name="btnActiveSaveWhiteContrastReference" Content="{x:Static properties:Resources.BtnWhiteReference}" Click="btnActiveSaveWhiteContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnWhiteReference}" />
                                         </WrapPanel>
-                                        <TextBlock Grid.Row="1" Text="分析参数" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupAnalysisParameters}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -451,49 +451,28 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <WrapPanel>
-                                            <TextBlock Text="色域" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.GroupGamut}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <Button x:Name="btnRecordGamutRed" Click="btnRecordGamutRed_Click" Content="R" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordRData}" />
                                             <Button x:Name="btnRecordGamutGreen" Click="btnRecordGamutGreen_Click" Content="G" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordGData}" />
                                             <Button x:Name="btnRecordGamutBlue" Click="btnRecordGamutBlue_Click" Content="B" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordBData}" />
                                             <Button x:Name="btnComputeGamut" Click="btnComputeGamut_Click" Content="{x:Static properties:Resources.BtnComputeGamut}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipComputeGamut}" />
                                             <Button x:Name="btnClearGamut" Click="btnClearGamut_Click" Content="{x:Static properties:Resources.BtnClear}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipClearGamut}" />
-                                            <TextBlock Text="对比度" Style="{StaticResource RibbonFieldLabelStyle}" Margin="10,0,6,0" />
+                                            <TextBlock Text="{x:Static properties:Resources.GroupContrast}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="10,0,6,0" />
                                             <Button x:Name="btnRecordContrastWhite" Click="btnRecordContrastWhite_Click" Content="W" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordWhiteData}" />
                                             <Button x:Name="btnRecordContrastBlack" Click="btnRecordContrastBlack_Click" Content="B" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipRecordBlackData}" />
                                             <Button x:Name="btnComputeContrast" Click="btnComputeContrast_Click" Content="{x:Static properties:Resources.BtnComputeContrast}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipComputeContrast}" />
                                             <Button x:Name="btnClearContrast" Click="btnClearContrast_Click" Content="{x:Static properties:Resources.BtnClear}" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipClearContrast}" />
                                         </WrapPanel>
-                                        <TextBlock Grid.Row="1" Text="计算动作" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupComputeActions}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="系统">
+                    <TabItem Header="{x:Static properties:Resources.TabSystem}">
                         <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                             <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
-                                <Border Style="{StaticResource RibbonGroupStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button x:Name="btnOpenHelpCenter"
-                                                    Click="btnOpenConoscopeHelp_Click"
-                                                    Style="{StaticResource RibbonLargeButtonStyle}"
-                                                    ToolTip="{x:Static properties:Resources.TipHelpCenter}">
-                                                <StackPanel Style="{StaticResource RibbonInlineButtonContentStyle}">
-                                                    <TextBlock Text="&#xE897;" Style="{StaticResource RibbonIconTextStyle}" />
-                                                    <TextBlock Text="{x:Static properties:Resources.BtnHelpCenter}" Style="{StaticResource RibbonButtonCaptionStyle}" />
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="帮助中心" Style="{StaticResource RibbonGroupHeaderStyle}" />
-                                    </Grid>
-                                </Border>
-
                                 <Border Style="{StaticResource RibbonGroupStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -521,7 +500,7 @@
                                                 </TextBlock>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="系统配置" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupConfig}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -532,12 +511,12 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="主题" Style="{StaticResource RibbonFieldLabelStyle}" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelTheme}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbTheme" Width="120" SelectionChanged="cbTheme_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <TextBlock Text="语言" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
+                                            <TextBlock Text="{x:Static properties:Resources.LabelLanguage}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
                                             <ComboBox x:Name="cbLanguage" Width="140" SelectionChanged="cbLanguage_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}" />
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="主题与语言" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupThemeAndLanguage}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>

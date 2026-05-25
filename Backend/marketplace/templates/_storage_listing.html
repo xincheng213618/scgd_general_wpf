@@ -30,19 +30,19 @@
                     <a href="/download/{{ item.path }}" class="text-decoration-none">
                     {% endif %}
                         {% if item.is_dir %}
-                        <i class="bi bi-folder-fill text-warning"></i>
+                        <i class="bi bi-folder-fill text-warning me-1"></i>
                         {% elif item.name.endswith('.cvxp') or item.name.endswith('.zip') or item.name.endswith('.cvx') %}
-                        <i class="bi bi-file-earmark-zip text-success"></i>
+                        <i class="bi bi-file-earmark-zip text-success me-1"></i>
                         {% elif item.name.endswith('.exe') %}
-                        <i class="bi bi-file-earmark-binary text-danger"></i>
+                        <i class="bi bi-file-earmark-binary text-danger me-1"></i>
                         {% elif item.name.endswith('.md') %}
-                        <i class="bi bi-file-earmark-text text-info"></i>
+                        <i class="bi bi-file-earmark-text text-info me-1"></i>
                         {% elif item.name.endswith('.json') %}
-                        <i class="bi bi-file-earmark-code text-primary"></i>
+                        <i class="bi bi-file-earmark-code text-primary me-1"></i>
                         {% elif item.name.endswith('.png') or item.name.endswith('.ico') %}
-                        <i class="bi bi-file-earmark-image text-success"></i>
+                        <i class="bi bi-file-earmark-image text-success me-1"></i>
                         {% else %}
-                        <i class="bi bi-file-earmark text-secondary"></i>
+                        <i class="bi bi-file-earmark text-secondary me-1"></i>
                         {% endif %}
                         {{ item.name }}
                     </a>
@@ -64,11 +64,9 @@
             {% endfor %}
             {% if not items %}
             <tr>
-                <td colspan="4" class="text-center text-muted py-4">{{ empty_message }}</td>
+                <td colspan="4" class="text-center text-muted py-3 small">{{ empty_message }}</td>
             </tr>
             {% endif %}
         </tbody>
     </table>
 </div>
-
-

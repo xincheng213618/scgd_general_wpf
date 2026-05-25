@@ -42,6 +42,35 @@ from catalog_view_models import (
     collect_catalog_categories,
     normalize_catalog_sort_name,
 )
+from config_loader import (
+    DEFAULT_CONFIG,
+    DEFAULT_SECRET_KEY,
+    DEFAULT_UPLOAD_AUTH,
+    MAX_FEEDBACK_FIELD_LENGTH,
+    MAX_FEEDBACK_FILES,
+    MAX_UPLOAD_SIZE_BYTES,
+    get_upload_auth as get_upload_auth_impl,
+    load_config,
+    validate_runtime_config as validate_runtime_config_impl,
+)
+from db_cache import (
+    APP_RELEASES_CACHE_KEY,
+    APP_RELEASES_CACHE_TTL_SECONDS,
+    CHANGELOG_ANALYSIS_CACHE_KEY,
+    CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS,
+    DIRECTORY_COUNT_CACHE_TTL_SECONDS,
+    HOME_RELEASES_SNAPSHOT_CACHE_KEY,
+    HOME_RELEASES_SNAPSHOT_TTL_SECONDS,
+    HOME_TOOL_PREVIEW_CACHE_KEY,
+    HOME_TOOL_PREVIEW_TTL_SECONDS,
+    MARKDOWN_RENDER_CACHE_TTL_SECONDS,
+    OVERVIEW_CACHE_KEY,
+    OVERVIEW_CACHE_TTL_SECONDS,
+    PLUGIN_INFO_CACHE_TTL_SECONDS,
+    RELEASE_TIMELINE_CACHE_KEY,
+    RELEASE_TIMELINE_CACHE_TTL_SECONDS,
+    CacheManager,
+)
 from download_stats import build_stats_payload
 from feedback_service import FeedbackValidationError, save_feedback as save_feedback_impl
 from markupsafe import Markup
@@ -68,7 +97,6 @@ from plugin_marketplace import prewarm_plugin_metadata
 from runtime_health import (
     build_health_payload as build_health_payload_impl,
     build_ready_payload as build_ready_payload_impl,
-    validate_runtime_config as validate_runtime_config_impl,
 )
 from storage_paths import (
     is_safe_id as is_safe_id_impl,
@@ -99,42 +127,10 @@ from flask import (
 from werkzeug.exceptions import HTTPException
 
 # ---------------------------------------------------------------------------
-# Configuration
+# Configuration (loaded from config_loader)
 # ---------------------------------------------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_CONFIG = {
-    "storage_path": str(BASE_DIR / "storage"),
-    "host": "0.0.0.0",
-    "port": 9998,
-    "debug": False,
-    "secret_key": "change-this-in-production",
-    "app_release_keep_count": 5,
-    "plugin_package_keep_count": 3,
-    "upload_auth": {"username": "admin", "password": "admin"},
-}
-DEFAULT_SECRET_KEY = DEFAULT_CONFIG["secret_key"]
-DEFAULT_UPLOAD_AUTH = dict(DEFAULT_CONFIG["upload_auth"])
-MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024
-MAX_FEEDBACK_FILES = 10
-MAX_FEEDBACK_FIELD_LENGTH = 4000
-
-
-def load_config():
-    config = dict(DEFAULT_CONFIG)
-    config["upload_auth"] = dict(DEFAULT_UPLOAD_AUTH)
-    config_file = BASE_DIR / "config.json"
-    if config_file.exists():
-        with open(config_file, encoding="utf-8") as f:
-            loaded = json.load(f)
-        if isinstance(loaded.get("upload_auth"), dict):
-            config["upload_auth"].update(loaded["upload_auth"])
-        for key, value in loaded.items():
-            if key == "upload_auth":
-                continue
-            config[key] = value
-    return config
-
 
 CONFIG = load_config()
 STORAGE = Path(CONFIG["storage_path"])
@@ -148,143 +144,34 @@ app.secret_key = CONFIG["secret_key"]
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE_BYTES
 
 # ---------------------------------------------------------------------------
-# Database helpers (SQLite for download statistics and cache)
+# Database and cache (delegated to db_cache.CacheManager)
 # ---------------------------------------------------------------------------
 DB_PATH = BASE_DIR / "marketplace.db"
-OVERVIEW_CACHE_KEY = "storage_overview:v2"
-APP_RELEASES_CACHE_KEY = "app_releases:v1"
-OVERVIEW_CACHE_TTL_SECONDS = 300
-APP_RELEASES_CACHE_TTL_SECONDS = 300
-DIRECTORY_COUNT_CACHE_TTL_SECONDS = 300
-PLUGIN_INFO_CACHE_TTL_SECONDS = 86400
-CHANGELOG_ANALYSIS_CACHE_KEY = "app_changelog:v2"
-CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS = 3600
-MARKDOWN_RENDER_CACHE_TTL_SECONDS = 3600
-HOME_RELEASES_SNAPSHOT_CACHE_KEY = "home_release_snapshot:v1"
-HOME_RELEASES_SNAPSHOT_TTL_SECONDS = 300
-HOME_TOOL_PREVIEW_CACHE_KEY = "home_tool_preview:v1"
-HOME_TOOL_PREVIEW_CACHE_TTL_SECONDS = 300
-RELEASE_TIMELINE_CACHE_KEY = "release_timeline:v1"
-RELEASE_TIMELINE_CACHE_TTL_SECONDS = 3600
+_cache = CacheManager(DB_PATH)
+_cache.init_db()
 
-
-def get_db():
+# Thin wrappers that preserve the existing call signatures used throughout app.py.
+# These read DB_PATH at call time so tests can mutate it at runtime.
+def get_db() -> sqlite3.Connection:
     db = sqlite3.connect(str(DB_PATH))
     db.row_factory = sqlite3.Row
     return db
 
-
 def init_db():
-    db = get_db()
-    db.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS download_log (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            plugin_id   TEXT    NOT NULL,
-            version     TEXT    NOT NULL,
-            client_ip   TEXT,
-            client_ver  TEXT,
-            downloaded_at TEXT NOT NULL DEFAULT (datetime('now'))
-        );
-        CREATE INDEX IF NOT EXISTS idx_dl_plugin ON download_log(plugin_id);
-        CREATE INDEX IF NOT EXISTS idx_dl_time   ON download_log(downloaded_at);
-        CREATE TABLE IF NOT EXISTS cache_entry (
-            key         TEXT PRIMARY KEY,
-            value       TEXT NOT NULL,
-            signature   TEXT NOT NULL DEFAULT '',
-            expires_at  INTEGER NOT NULL,
-            updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-        );
-        CREATE INDEX IF NOT EXISTS idx_cache_expiry ON cache_entry(expires_at);
-    """
-    )
-    db.commit()
-    db.close()
-
-
-init_db()
-
-
-def _now_ts() -> int:
-    return int(datetime.now(timezone.utc).timestamp())
-
+    _cache._db_path = DB_PATH
+    _cache.init_db()
 
 def _set_cache_entry(key: str, value, *, ttl_seconds: int, signature: str = ""):
-    try:
-        payload = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
-        db = get_db()
-        db.execute(
-            """
-            INSERT INTO cache_entry (key, value, signature, expires_at, updated_at)
-            VALUES (?, ?, ?, ?, datetime('now'))
-            ON CONFLICT(key) DO UPDATE SET
-                value = excluded.value,
-                signature = excluded.signature,
-                expires_at = excluded.expires_at,
-                updated_at = datetime('now')
-            """,
-            (key, payload, signature, _now_ts() + ttl_seconds),
-        )
-        db.commit()
-        db.close()
-    except Exception:
-        pass
-
+    _cache.set_cache_entry(key, value, ttl_seconds=ttl_seconds, signature=signature)
 
 def _get_cache_entry(key: str, *, signature: str | None = None) -> dict | None:
-    try:
-        db = get_db()
-        row = db.execute(
-            "SELECT value, signature, expires_at, updated_at FROM cache_entry WHERE key = ?",
-            (key,),
-        ).fetchone()
-        db.close()
-    except Exception:
-        return None
-
-    if not row or row["expires_at"] <= _now_ts():
-        return None
-    if signature is not None and row["signature"] != signature:
-        return None
-
-    try:
-        value = json.loads(row["value"])
-    except (TypeError, json.JSONDecodeError):
-        return None
-
-    return {
-        "value": value,
-        "updated_at": row["updated_at"],
-        "expires_at": row["expires_at"],
-        "signature": row["signature"],
-    }
-
+    return _cache.get_cache_entry(key, signature=signature)
 
 def _invalidate_cache_prefix(prefix: str):
-    try:
-        db = get_db()
-        db.execute("DELETE FROM cache_entry WHERE key LIKE ?", (f"{prefix}%",))
-        db.commit()
-        db.close()
-    except Exception:
-        pass
-
+    _cache.invalidate_cache_prefix(prefix)
 
 def _refresh_related_caches(*, plugin_id: str | None = None, relative_path: str = ""):
-    _invalidate_cache_prefix("storage_overview:")
-    _invalidate_cache_prefix("app_releases:")
-    _invalidate_cache_prefix("home_release_snapshot:")
-    _invalidate_cache_prefix("home_tool_preview:")
-    _invalidate_cache_prefix("release_timeline:")
-
-    top_level = Path(relative_path).parts[0] if relative_path else ""
-    if top_level:
-        _invalidate_cache_prefix(f"dir_file_count:{top_level}")
-
-    if plugin_id:
-        _invalidate_cache_prefix("plugin_summary:")
-        _invalidate_cache_prefix("plugin_detail:")
-        _invalidate_cache_prefix(f"dir_file_count:Plugins/{plugin_id}")
+    _cache.refresh_related_caches(plugin_id=plugin_id, relative_path=relative_path)
 
 def _is_safe_id(value: str) -> bool:
     """Validate that a plugin ID contains only safe characters."""
@@ -306,12 +193,7 @@ def _normalize_relative_path(relative_path: str) -> str:
 
 
 def _get_upload_auth() -> tuple[str, str]:
-    auth_config = CONFIG.get("upload_auth") or {}
-    if not isinstance(auth_config, dict):
-        auth_config = {}
-    username = str(auth_config.get("username", "")).strip()
-    password = str(auth_config.get("password", ""))
-    return username, password
+    return get_upload_auth_impl(CONFIG)
 
 
 def _is_api_request() -> bool:
@@ -508,7 +390,7 @@ SERVICES = MarketplaceDataService(
         home_releases_snapshot_cache_key=HOME_RELEASES_SNAPSHOT_CACHE_KEY,
         home_releases_snapshot_ttl_seconds=HOME_RELEASES_SNAPSHOT_TTL_SECONDS,
         home_tool_preview_cache_key=HOME_TOOL_PREVIEW_CACHE_KEY,
-        home_tool_preview_ttl_seconds=HOME_TOOL_PREVIEW_CACHE_TTL_SECONDS,
+        home_tool_preview_ttl_seconds=HOME_TOOL_PREVIEW_TTL_SECONDS,
         release_timeline_cache_key=RELEASE_TIMELINE_CACHE_KEY,
         release_timeline_cache_ttl_seconds=RELEASE_TIMELINE_CACHE_TTL_SECONDS,
     ),
@@ -1431,9 +1313,13 @@ if __name__ == "__main__":
     if args.debug:
         CONFIG["debug"] = True
 
-    if not CONFIG.get("debug"):
-        issues = _validate_runtime_config(CONFIG)
-        if issues:
+    issues = _validate_runtime_config(CONFIG)
+    if issues:
+        if CONFIG.get("debug"):
+            print("WARNING: Insecure configuration detected (debug mode allows startup):")
+            for issue in issues:
+                print(f"  - {issue}")
+        else:
             print("Refusing to start with insecure production configuration:")
             for issue in issues:
                 print(f"  - {issue}")

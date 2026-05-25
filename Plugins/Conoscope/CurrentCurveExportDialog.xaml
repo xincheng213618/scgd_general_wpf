@@ -25,9 +25,9 @@
                     <TextBlock Text="{x:Static properties:Resources.HintSamplingDefault}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
                 </DockPanel>
                 <DockPanel Margin="0,0,0,8">
-                    <TextBlock Text="数据小数位数:" Width="110" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelDecimalPlaces}" Width="110" VerticalAlignment="Center"/>
                     <TextBox x:Name="txtDecimalPlaces" Width="90" Text="4" VerticalAlignment="Center"/>
-                    <TextBlock Text="默认 4，可调并保存" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                    <TextBlock Text="{x:Static properties:Resources.HintDecimalPlacesDefault4Saved}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
                 </DockPanel>
                 <TextBlock Text="{x:Static properties:Resources.HintSamplingDescription}"
                            TextWrapping="Wrap"
