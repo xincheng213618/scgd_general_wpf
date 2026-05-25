@@ -39,27 +39,87 @@ namespace ProjectARVRPro.Process.Distortion
                         if (details.Count == 1)
                         {
                             var distortion = new Distortion2View(details[0]);
-                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= recipeConfig.HorizontalTVDistortion.Fix;
-                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= recipeConfig.VerticalTVDistortion.Fix;
+                            var distortionData = distortion.DistortionReslut;
+                            if (distortionData == null)
+                                continue;
 
-                            foreach (var pt in distortion.DistortionReslut.TVDistortion.FinalPoints)
+                            if (distortionData.TVDistortion != null)
                             {
-                                distortionResult.Points.Add(new System.Windows.Point(pt.X, pt.Y));
+                                distortionData.TVDistortion.HorizontalRatio *= recipeConfig.HorizontalTVDistortion.Fix;
+                                distortionData.TVDistortion.VerticalRatio *= recipeConfig.VerticalTVDistortion.Fix;
+
+                                if (distortionData.TVDistortion.FinalPoints != null)
+                                {
+                                    foreach (var pt in distortionData.TVDistortion.FinalPoints)
+                                    {
+                                        distortionResult.Points.Add(new System.Windows.Point(pt.X, pt.Y));
+                                    }
+                                }
+
+                                distortionResult.HorizontalTVDistortion = Build(
+                                    "HorizontalTVDistortion",
+                                    distortionData.TVDistortion.HorizontalRatio,
+                                    recipeConfig.HorizontalTVDistortion.Min,
+                                    recipeConfig.HorizontalTVDistortion.Max);
+
+                                distortionResult.VerticalTVDistortion = Build(
+                                    "VerticalTVDistortion",
+                                    distortionData.TVDistortion.VerticalRatio,
+                                    recipeConfig.VerticalTVDistortion.Min,
+                                    recipeConfig.VerticalTVDistortion.Max);
                             }
 
-                            distortionResult.HorizontalTVDistortion = Build(
-                                "HorizontalTVDistortion",
-                                distortion.DistortionReslut.TVDistortion.HorizontalRatio,
-                                recipeConfig.HorizontalTVDistortion.Min,
-                                recipeConfig.HorizontalTVDistortion.Max);
+                            if (distortionData.Point9Distortion != null)
+                            {
+                                distortionData.Point9Distortion.TopRatio *= recipeConfig.DistortionTop.Fix;
+                                distortionData.Point9Distortion.BottomRatio *= recipeConfig.DistortionBottom.Fix;
+                                distortionData.Point9Distortion.LeftRatio *= recipeConfig.DistortionLeft.Fix;
+                                distortionData.Point9Distortion.RightRatio *= recipeConfig.DistortionRight.Fix;
+                                distortionData.Point9Distortion.KeyStoneHoriRatio *= recipeConfig.KeystoneHoriz.Fix;
+                                distortionData.Point9Distortion.KeyStoneVercRatio *= recipeConfig.KeystoneVert.Fix;
 
-                            distortionResult.VerticalTVDistortion = Build(
-                                "VerticalTVDistortion",
-                                distortion.DistortionReslut.TVDistortion.VerticalRatio,
-                                recipeConfig.VerticalTVDistortion.Min,
-                                recipeConfig.VerticalTVDistortion.Max);
+                                distortionResult.DistortionTop = Build(
+                                    "DistortionTop",
+                                    distortionData.Point9Distortion.TopRatio,
+                                    recipeConfig.DistortionTop.Min,
+                                    recipeConfig.DistortionTop.Max);
+                                distortionResult.DistortionBottom = Build(
+                                    "DistortionBottom",
+                                    distortionData.Point9Distortion.BottomRatio,
+                                    recipeConfig.DistortionBottom.Min,
+                                    recipeConfig.DistortionBottom.Max);
+                                distortionResult.DistortionLeft = Build(
+                                    "DistortionLeft",
+                                    distortionData.Point9Distortion.LeftRatio,
+                                    recipeConfig.DistortionLeft.Min,
+                                    recipeConfig.DistortionLeft.Max);
+                                distortionResult.DistortionRight = Build(
+                                    "DistortionRight",
+                                    distortionData.Point9Distortion.RightRatio,
+                                    recipeConfig.DistortionRight.Min,
+                                    recipeConfig.DistortionRight.Max);
+                                distortionResult.KeystoneHoriz = Build(
+                                    "KeystoneHoriz",
+                                    distortionData.Point9Distortion.KeyStoneHoriRatio,
+                                    recipeConfig.KeystoneHoriz.Min,
+                                    recipeConfig.KeystoneHoriz.Max);
+                                distortionResult.KeystoneVert = Build(
+                                    "KeystoneVert",
+                                    distortionData.Point9Distortion.KeyStoneVercRatio,
+                                    recipeConfig.KeystoneVert.Min,
+                                    recipeConfig.KeystoneVert.Max);
+                            }
 
-                            UpdateResult(ctx, distortionResult.HorizontalTVDistortion, distortionResult.VerticalTVDistortion);
+                            UpdateResult(
+                                ctx,
+                                distortionResult.HorizontalTVDistortion,
+                                distortionResult.VerticalTVDistortion,
+                                distortionResult.DistortionTop,
+                                distortionResult.DistortionBottom,
+                                distortionResult.DistortionLeft,
+                                distortionResult.DistortionRight,
+                                distortionResult.KeystoneHoriz,
+                                distortionResult.KeystoneVert);
                         }
                     }
                 }
@@ -143,6 +203,12 @@ namespace ProjectARVRPro.Process.Distortion
             ObservableCollection<ObjectiveTestItem> items = new ObservableCollection<ObjectiveTestItem>();
             AddIfNotNull(items, result.HorizontalTVDistortion);
             AddIfNotNull(items, result.VerticalTVDistortion);
+            AddIfNotNull(items, result.DistortionTop);
+            AddIfNotNull(items, result.DistortionBottom);
+            AddIfNotNull(items, result.DistortionLeft);
+            AddIfNotNull(items, result.DistortionRight);
+            AddIfNotNull(items, result.KeystoneHoriz);
+            AddIfNotNull(items, result.KeystoneVert);
             return items;
         }
 

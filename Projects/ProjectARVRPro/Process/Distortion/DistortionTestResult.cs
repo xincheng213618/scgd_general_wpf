@@ -20,5 +20,35 @@ namespace ProjectARVRPro.Process.Distortion
         /// </summary>
         public ObjectiveTestItem VerticalTVDistortion { get; set; }
 
+        /// <summary>
+        /// 9点上畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem DistortionTop { get; set; }
+
+        /// <summary>
+        /// 9点下畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem DistortionBottom { get; set; }
+
+        /// <summary>
+        /// 9点左畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem DistortionLeft { get; set; }
+
+        /// <summary>
+        /// 9点右畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem DistortionRight { get; set; }
+
+        /// <summary>
+        /// 9点水平梯形畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem KeystoneHoriz { get; set; }
+
+        /// <summary>
+        /// 9点垂直梯形畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem KeystoneVert { get; set; }
+
     }
 }
