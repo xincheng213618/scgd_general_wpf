@@ -19,7 +19,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(UseProjectReference)'=='true'">
-		<ProjectReference Include="..\..\Core\opencv_helper\opencv_helper.vcxproj" />
+		<ProjectReference Include="..\..\Native\opencv_helper\opencv_helper.vcxproj" />
 	</ItemGroup>
 	
 	<ItemGroup>
