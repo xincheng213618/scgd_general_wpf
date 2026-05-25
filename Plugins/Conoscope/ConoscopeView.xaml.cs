@@ -1,5 +1,4 @@
 ﻿using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.UI;
 using ColorVision.Core;
 using log4net;
@@ -88,7 +87,6 @@ namespace Conoscope
         private ContrastReferenceKind contrastImageKind = ContrastReferenceKind.Black;
         private ReferencePlotDisplayMode referencePlotDisplayMode;
         private WindowCIE? cieWindow;
-        private ImageFullScreenMode? imageFullScreenMode;
         private ConoscopeModelProfile? subscribedModelProfile;
         private const float MinPositiveXyzValue = 0.000001f;
         private const double Conoscope3DInitialHeightScale = 160.0;
@@ -300,12 +298,39 @@ namespace Conoscope
         public ConoscopeView()
         {
             InitializeComponent();
+            InitializeFocusToolbarIcons();
             InitializeLocalViewStateFromDefaults();
             ImageView.FocusCircleCalculationRequested += ImageView_FocusCircleCalculationRequested;
             ImageView.FocusCircleEditRequested += ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged += ImageView_FocusCirclesChanged;
             ImageView.FocusCircleSelectionChanged += ImageView_FocusCircleSelectionChanged;
             ConoscopeModuleService.Register(this);
+        }
+
+        private void InitializeFocusToolbarIcons()
+        {
+            SetFocusToolbarIcon(tglFocusCircleMode, "DrawingImagedrag");
+            SetFocusToolbarIcon(tglFocusCircleDrawTool, "DrawingImageCircle");
+            SetFocusToolbarIcon(tglFocusCircleEraseTool, "DrawingImageeraser");
+            SetFocusToolbarIcon(btnCircleFit, "DrawingImage1_1");
+            SetFocusToolbarIcon(btnCalculateFocusCircles, "DrawingImageAlgorithm");
+            SetFocusToolbarIcon(btnSaveFocusPoiTemplate, "DrawingImageSave");
+        }
+
+        private static void SetFocusToolbarIcon(ContentControl? control, string resourceKey)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            Image icon = IEditorToolFactory.TryFindResource(resourceKey);
+            if (Application.Current.TryFindResource("ToolBarImage") is Style toolBarImageStyle)
+            {
+                icon.Style = toolBarImageStyle;
+            }
+
+            control.Content = icon;
         }
 
         private void ImageView_FocusCirclesChanged(object? sender, EventArgs e)
@@ -436,11 +461,9 @@ namespace Conoscope
             UpdateReferencePlotDisplayMode();
             UpdateReferencePlotHeader();
 
-            imageFullScreenMode = new ImageFullScreenMode(ImageViewHost);
             ImageView.Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             ImageView.Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
             UpdatePseudoColorMapPreview();
-            UpdateToolbarZoomRatio();
             InitializeFocusPointTools();
             UpdatePanModeState();
         }
@@ -451,8 +474,6 @@ namespace Conoscope
             {
                 imageZoomMode = ConoscopeImageZoomMode.Custom;
             }
-
-            UpdateToolbarZoomRatio();
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)

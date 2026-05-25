@@ -9,7 +9,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Conoscope:ConoscopeManager}"
-        Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Background="{DynamicResource GlobalBackground}" d:Height="720" d:Width="1280" Initialized="Window_Initialized">
     <UserControl.Resources>
         <Style x:Key="PanelHeaderTextStyle" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -108,15 +108,17 @@
             <Setter Property="MinWidth" Value="68"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
-        <Style x:Key="OverlayToolButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
-            <Setter Property="Width" Value="34"/>
+        <Style x:Key="OverlayToolButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelSurfaceButtonStyle}">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="MinWidth" Value="36"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
-        <Style x:Key="OverlayToolToggleStyle" TargetType="ToggleButton">
-            <Setter Property="Padding" Value="6,2"/>
-            <Setter Property="MinWidth" Value="46"/>
+        <Style x:Key="OverlayToolToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource PanelSurfaceToggleStyle}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="MinWidth" Value="36"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
@@ -141,24 +143,6 @@
 
         <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{StaticResource TransparentGridBrush}">
             <local:ConoscopeImageHost x:Name="ImageView" />
-            <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
-                <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglPanMode" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbPan}" ToolTip="{x:Static properties:Resources.TbPanTip}" IsChecked="True" Checked="tglPanMode_Checked" Unchecked="tglPanMode_Unchecked" />
-                    <ToggleButton x:Name="tglReferenceInteraction" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbRefDrag}" ToolTip="{x:Static properties:Resources.TbRefDragTip}" IsChecked="True" Checked="tglReferenceInteraction_Checked" Unchecked="tglReferenceInteraction_Unchecked" />
-                    <Separator/>
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="-" FontSize="16" FontWeight="Bold" ToolTip="{x:Static properties:Resources.TbZoomOut}" Click="ToolbarZoomOut_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="{x:Static properties:Resources.TbZoomIn}" Click="ToolbarZoomIn_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="1:1" ToolTip="{x:Static properties:Resources.TbOriginalSize}" Click="ToolbarZoomNone_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFit}" ToolTip="{x:Static properties:Resources.TbFitTip}" Click="ToolbarZoomUniform_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbCircleFit}" ToolTip="{x:Static properties:Resources.TbCircleFitTip}" Click="ToolbarZoomCircleFit_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFill}" ToolTip="{x:Static properties:Resources.TbFillTip}" Click="ToolbarZoomUniformToFill_Click" />
-                    <TextBox x:Name="txtToolbarZoomRatio" Width="54" Margin="4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Text="1.00" ToolTip="{x:Static properties:Resources.TbZoomRatioTip}" PreviewKeyDown="txtToolbarZoomRatio_PreviewKeyDown" LostFocus="txtToolbarZoomRatio_LostFocus" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFullscreen}" ToolTip="{x:Static properties:Resources.TbFullscreenTip}" Click="ToolbarFullScreen_Click" />
-                    <Separator/>
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="3D" ToolTip="{x:Static properties:Resources.TipOpen3DView}" Click="ToolbarOpen3D_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="CIE" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}" Click="ToolbarOpenCie_Click" />
-                </ToolBar>
-            </Border>
             <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Padding="8" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
                 <StackPanel>
                     <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="SemiBold" Text="Y" HorizontalAlignment="Center" />
@@ -172,21 +156,22 @@
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
             </Border>
-            <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
+            <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEditFocusPoint}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbCircle}" ToolTip="{x:Static properties:Resources.TbCircleTip}" IsChecked="True" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEdit}" ToolTip="{x:Static properties:Resources.TbEditTip}" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEraser}" ToolTip="{x:Static properties:Resources.TbEraserTip}" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbCircleTip}" IsChecked="False" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEdit}" ToolTip="{x:Static properties:Resources.TbEditTip}" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" Visibility="Collapsed" />
+                    <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEraserTip}" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
                     <Separator/>
-                    <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbCalc}" ToolTip="{x:Static properties:Resources.TbCalcTip}" Click="btnCalculateFocusCircles_Click" />
-                    <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbClearAll}" ToolTip="{x:Static properties:Resources.TbClearAllTip}" Click="btnClearFocusCircles_Click" />
-                    <Separator/>
+                    <Button x:Name="btnCircleFit" Style="{StaticResource OverlayToolButtonStyle}" ToolTip="{x:Static properties:Resources.TbCircleFitTip}" Click="btnCircleFit_Click" />
+                    <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" ToolTip="{x:Static properties:Resources.TbCalcTip}" Click="btnCalculateFocusCircles_Click" />
+                    <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbClearAll}" ToolTip="{x:Static properties:Resources.TbClearAllTip}" Click="btnClearFocusCircles_Click" Visibility="Collapsed" />
+                    <Separator Visibility="Collapsed"/>
                     <TextBlock x:Name="tbSelectedFocusPointInfo" Width="280" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Visibility="Collapsed" Foreground="{DynamicResource GlobalTextBrush}" ToolTip="{x:Static properties:Resources.TipSelectedFocusPoint}" />
                     <Separator x:Name="sepSelectedFocusPointInfo" Visibility="Collapsed"/>
                     <ComboBox x:Name="cbFocusPoiTemplate" Width="118" Height="28" DisplayMemberPath="Key" SelectedValuePath="Value" ToolTip="{x:Static properties:Resources.TipFocusPoiTemplate}" SelectionChanged="cbFocusPoiTemplate_SelectionChanged"/>
-                    <Button x:Name="btnSaveFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.BtnSaveShort}" ToolTip="{x:Static properties:Resources.TipSaveFocusPoiTemplate}" Click="btnSaveFocusPoiTemplate_Click" />
-                    <Button x:Name="btnManageFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="POI" ToolTip="{x:Static properties:Resources.TipManageFocusPoiTemplate}" Click="btnManageFocusPoiTemplate_Click" />
+                    <Button x:Name="btnSaveFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" ToolTip="{x:Static properties:Resources.TipSaveFocusPoiTemplate}" Click="btnSaveFocusPoiTemplate_Click" />
+                    <Button x:Name="btnManageFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="POI" ToolTip="{x:Static properties:Resources.TipManageFocusPoiTemplate}" Click="btnManageFocusPoiTemplate_Click" Visibility="Collapsed" />
                 </ToolBar>
             </Border>
         </Grid>
@@ -299,7 +284,7 @@
                     </StackPanel>
                 </StackPanel>
 
-            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0">
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,1,0,0" CornerRadius="3" Margin="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

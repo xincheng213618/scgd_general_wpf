@@ -1,0 +1,198 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:Double x:Key="RibbonHostHeight">96</sys:Double>
+    <sys:Double x:Key="RibbonContentHeight">50</sys:Double>
+    <Thickness x:Key="RibbonTabContentMargin">4,3,4,2</Thickness>
+
+    <DataTemplate x:Key="DocumentHeaderTemplate">
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+    </DataTemplate>
+
+    <Style TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="QuickButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="Padding" Value="10,2" />
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="RibbonGroupStyle" TargetType="Border">
+        <Setter Property="MinHeight" Value="46" />
+        <Setter Property="Margin" Value="0,0,4,0" />
+        <Setter Property="Padding" Value="6,4,10,3" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <Style x:Key="RibbonGroupHeaderStyle" TargetType="TextBlock">
+        <Setter Property="Visibility" Value="Visible" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+
+    <Style x:Key="RibbonFieldLabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="RibbonButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="MinWidth" Value="38" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="RibbonLargeButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonButtonStyle}">
+        <Setter Property="ToolTipService.ShowDuration" Value="12000" />
+    </Style>
+
+    <Style x:Key="RibbonPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonLargeButtonStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="RibbonExecuteButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonPrimaryButtonStyle}">
+        <Setter Property="MinWidth" Value="74" />
+        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Background" Value="#FF17874E" />
+        <Setter Property="BorderBrush" Value="#FF0F663A" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style x:Key="RibbonSmallButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonButtonStyle}">
+        <Setter Property="MinWidth" Value="0" />
+    </Style>
+
+    <Style x:Key="RibbonIconTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+    </Style>
+
+    <Style x:Key="RibbonButtonCaptionStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="5,0,0,0" />
+    </Style>
+
+    <Style x:Key="RibbonExecuteButtonIconStyle" TargetType="TextBlock" BasedOn="{StaticResource RibbonIconTextStyle}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style x:Key="RibbonExecuteButtonCaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource RibbonButtonCaptionStyle}">
+        <Setter Property="FontSize" Value="13.5" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style x:Key="RibbonInlineButtonContentStyle" TargetType="StackPanel">
+        <Setter Property="Orientation" Value="Horizontal" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="RibbonComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource ComboBox.Small}">
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="RibbonTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="RibbonTabScrollViewerStyle" TargetType="ScrollViewer">
+        <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="Focusable" Value="False" />
+    </Style>
+
+    <Style x:Key="RibbonTabContentPanelStyle" TargetType="StackPanel">
+        <Setter Property="Margin" Value="{StaticResource RibbonTabContentMargin}" />
+        <Setter Property="Orientation" Value="Horizontal" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+
+    <Style x:Key="StatusPillStyle" TargetType="Border">
+        <Setter Property="Padding" Value="7,2" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+
+    <Style x:Key="CompactRibbonGroupHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource RibbonGroupHeaderStyle}">
+        <Setter Property="FontSize" Value="9.5" />
+        <Setter Property="Margin" Value="0,3,0,0" />
+    </Style>
+
+    <Style x:Key="CompactStatusPillStyle" TargetType="Border" BasedOn="{StaticResource StatusPillStyle}">
+        <Setter Property="Padding" Value="5,1" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+        <Setter Property="CornerRadius" Value="3" />
+    </Style>
+
+    <Style x:Key="CompactStatusTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="ReferenceModeRadioStyle" TargetType="RadioButton">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Margin" Value="0,0,4,0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3">
+                        <ContentPresenter Margin="6,4"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource GlobalTextBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource GlobalTextBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

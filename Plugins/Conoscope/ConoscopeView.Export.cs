@@ -21,7 +21,7 @@ namespace Conoscope
                     return;
                 }
 
-                ExportChannel channel = GetSelectedExportChannel();
+                ExportChannel channel = GetSelectedCurrentCurveChannel();
                 if (!EnsureExportChannelReady(channel))
                 {
                     return;
@@ -54,7 +54,7 @@ namespace Conoscope
                     return;
                 }
 
-                ExportChannel channel = GetSelectedExportChannel();
+                ExportChannel channel = GetSelectedCurrentCurveChannel();
                 if (!EnsureExportChannelReady(channel))
                 {
                     return;

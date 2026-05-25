@@ -28,13 +28,13 @@ namespace Conoscope
     {
         private enum FocusCircleToolKind
         {
+            None,
             Draw,
             Select,
             Erase,
         }
 
         private bool isUpdatingFocusCircleToolSelection;
-        private bool shouldRestoreReferenceInteractionAfterFocusMode;
         private static int lastFocusPoiTemplateId = -1;
         private int focusPoiTemplateLoadVersion;
         private bool isUpdatingFocusPoiTemplateSelection;
@@ -42,7 +42,7 @@ namespace Conoscope
         private void InitializeFocusPointTools()
         {
             SyncReferenceInteractionToggle();
-            SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
+            SetFocusCircleToolSelection(FocusCircleToolKind.None);
             UpdateFocusCircleModeState();
             LoadFocusPoiTemplatesAsync();
             UpdateSelectedFocusPointInfo();
@@ -128,8 +128,16 @@ namespace Conoscope
 
         private void cbFocusPoiTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (isUpdatingFocusPoiTemplateSelection || cbFocusPoiTemplate.SelectedValue is not PoiParam poiParam || poiParam.Id == -1)
+            if (isUpdatingFocusPoiTemplateSelection || cbFocusPoiTemplate.SelectedValue is not PoiParam poiParam)
             {
+                return;
+            }
+
+            if (poiParam.Id == -1)
+            {
+                lastFocusPoiTemplateId = -1;
+                ImageView.ClearFocusCircles();
+                UpdateFocusCircleToolbarState();
                 return;
             }
 
@@ -318,15 +326,15 @@ namespace Conoscope
 
         private void SyncReferenceInteractionToggle()
         {
-            if (tglReferenceInteraction == null)
+            bool isInteractionEnabled = tglFocusCircleMode?.IsChecked != true;
+            if (CoordinateAxisConfig.IsInteractionEnabled != isInteractionEnabled)
             {
-                return;
+                CoordinateAxisConfig.IsInteractionEnabled = isInteractionEnabled;
             }
 
-            bool isInteractionEnabled = CoordinateAxisConfig.IsInteractionEnabled;
-            if (tglReferenceInteraction.IsChecked != isInteractionEnabled)
+            if (!isInteractionEnabled)
             {
-                tglReferenceInteraction.IsChecked = isInteractionEnabled;
+                HideCoordinateDragOverlay();
             }
         }
 
@@ -348,17 +356,11 @@ namespace Conoscope
             }
 
             bool isFocusCircleModeEnabled = tglFocusCircleMode?.IsChecked == true;
-            ApplyFocusCircleReferenceInteractionLock(isFocusCircleModeEnabled);
+            SyncReferenceInteractionToggle();
 
             bool useDrawTool = isFocusCircleModeEnabled && tglFocusCircleDrawTool?.IsChecked == true;
-            bool useSelectTool = isFocusCircleModeEnabled && tglFocusCircleSelectTool?.IsChecked == true;
             bool useEraseTool = isFocusCircleModeEnabled && tglFocusCircleEraseTool?.IsChecked == true;
-
-            if (isFocusCircleModeEnabled && !useDrawTool && !useSelectTool && !useEraseTool)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                useDrawTool = true;
-            }
+            bool useSelectTool = isFocusCircleModeEnabled && !useDrawTool && !useEraseTool;
 
             ImageView.SetFocusCircleEditMode(isFocusCircleModeEnabled);
             ImageView.SetFocusCircleSelectionEnabled(isFocusCircleModeEnabled && useSelectTool);
@@ -366,36 +368,6 @@ namespace Conoscope
             ImageView.SetFocusCircleEraseMode(useEraseTool);
             UpdateFocusCircleToolbarState();
             UpdatePanModeState();
-        }
-
-        private void ApplyFocusCircleReferenceInteractionLock(bool isFocusCircleModeEnabled)
-        {
-            if (tglReferenceInteraction == null)
-            {
-                return;
-            }
-
-            if (isFocusCircleModeEnabled)
-            {
-                if (tglReferenceInteraction.IsChecked == true)
-                {
-                    shouldRestoreReferenceInteractionAfterFocusMode = true;
-                    tglReferenceInteraction.IsChecked = false;
-                }
-
-                tglReferenceInteraction.IsEnabled = false;
-                return;
-            }
-
-            tglReferenceInteraction.IsEnabled = true;
-            if (shouldRestoreReferenceInteractionAfterFocusMode)
-            {
-                shouldRestoreReferenceInteractionAfterFocusMode = false;
-                if (tglReferenceInteraction.IsChecked != true)
-                {
-                    tglReferenceInteraction.IsChecked = true;
-                }
-            }
         }
 
         private void UpdateFocusCircleToolbarState()
@@ -471,12 +443,6 @@ namespace Conoscope
 
         private void tglFocusCircleDrawTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleSelectTool?.IsChecked != true && tglFocusCircleEraseTool?.IsChecked != true)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                return;
-            }
-
             UpdateFocusCircleModeState();
         }
 
@@ -492,12 +458,6 @@ namespace Conoscope
 
         private void tglFocusCircleSelectTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleDrawTool?.IsChecked != true && tglFocusCircleEraseTool?.IsChecked != true)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                return;
-            }
-
             UpdateFocusCircleModeState();
         }
 
@@ -513,12 +473,6 @@ namespace Conoscope
 
         private void tglFocusCircleEraseTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleDrawTool?.IsChecked != true && tglFocusCircleSelectTool?.IsChecked != true)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                return;
-            }
-
             UpdateFocusCircleModeState();
         }
 
@@ -532,27 +486,6 @@ namespace Conoscope
         {
             ImageView.ClearFocusCircles();
             UpdateFocusCircleToolbarState();
-        }
-
-        private void tglReferenceInteraction_Checked(object sender, RoutedEventArgs e)
-        {
-            SetReferenceInteractionEnabled(true);
-        }
-
-        private void tglReferenceInteraction_Unchecked(object sender, RoutedEventArgs e)
-        {
-            SetReferenceInteractionEnabled(false);
-        }
-
-        private void SetReferenceInteractionEnabled(bool isEnabled)
-        {
-            CoordinateAxisConfig.IsInteractionEnabled = isEnabled;
-            if (!isEnabled)
-            {
-                HideCoordinateDragOverlay();
-            }
-
-            UpdateFocusCircleModeState();
         }
 
         private void ImageView_FocusCircleCalculationRequested(object? sender, ConoscopeFocusCircleCalculationRequestedEventArgs e)
@@ -589,6 +522,15 @@ namespace Conoscope
         {
             if (tbSelectedFocusPointInfo == null || sepSelectedFocusPointInfo == null || ImageView == null)
             {
+                return;
+            }
+
+            if (tglFocusCircleMode?.IsChecked == true)
+            {
+                tbSelectedFocusPointInfo.Text = string.Empty;
+                tbSelectedFocusPointInfo.ToolTip = Properties.Resources.TipSelectedFocusPoint;
+                tbSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
+                sepSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
                 return;
             }
 

@@ -145,6 +145,18 @@ namespace Conoscope.Core
     public class ConoscopeCoordinateAxisVisual : DrawingVisualBase, IDrawingVisual
     {
         private const double HitTolerance = 14;
+        private static readonly Vector[] TextOutlineDirections =
+        {
+            new Vector(-1, 0),
+            new Vector(1, 0),
+            new Vector(0, -1),
+            new Vector(0, 1),
+            new Vector(-1, -1),
+            new Vector(-1, 1),
+            new Vector(1, -1),
+            new Vector(1, 1)
+        };
+        private static readonly Brush TextOutlineBrush = CreateFrozenBrush(Color.FromArgb(224, 0, 0, 0));
         private readonly SolidColorBrush clearBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
         public ConoscopeCoordinateAxisParam Attribute { get; set; }
 
@@ -324,13 +336,30 @@ namespace Conoscope.Core
             string text = $"{angle:F0}(A)";
             FormattedText formattedText = CreateFormattedText(text, Attribute.TextBrush);
             Point origin = new Point(labelPoint.X - formattedText.Width / 2, labelPoint.Y - formattedText.Height / 2);
-            dc.DrawText(formattedText, origin);
+            DrawOutlinedText(dc, text, origin, Attribute.TextBrush);
         }
 
         private void DrawText(DrawingContext dc, string text, Point point, Brush brush)
         {
-            FormattedText formattedText = CreateFormattedText(text, brush);
-            dc.DrawText(formattedText, point);
+            DrawOutlinedText(dc, text, point, brush);
+        }
+
+        private void DrawOutlinedText(DrawingContext dc, string text, Point origin, Brush brush)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            FormattedText outlineText = CreateFormattedText(text, TextOutlineBrush);
+            double offset = 1.25 / Math.Max(Ratio, 1);
+            foreach (Vector direction in TextOutlineDirections)
+            {
+                dc.DrawText(outlineText, origin + direction * offset);
+            }
+
+            FormattedText mainText = CreateFormattedText(text, brush);
+            dc.DrawText(mainText, origin);
         }
 
         private FormattedText CreateFormattedText(string text, Brush brush)
@@ -375,6 +404,13 @@ namespace Conoscope.Core
             if (value < min) return min;
             if (value > max) return max;
             return value;
+        }
+
+        private static Brush CreateFrozenBrush(Color color)
+        {
+            SolidColorBrush brush = new(color);
+            brush.Freeze();
+            return brush;
         }
     }
 

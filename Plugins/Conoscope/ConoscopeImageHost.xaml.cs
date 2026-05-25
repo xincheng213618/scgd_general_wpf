@@ -440,7 +440,7 @@ namespace Conoscope
                 Pen = new Pen(Brushes.DeepSkyBlue, 2),
                 Text = $"Focus_{id}",
             };
-            properties.Foreground = Brushes.DeepSkyBlue;
+            properties.Foreground = Brushes.White;
             properties.FontWeight = FontWeights.SemiBold;
             properties.Msg = string.Empty;
             return new DVCircleText(properties);
@@ -495,7 +495,7 @@ namespace Conoscope
                 Pen = new Pen(Brushes.DeepSkyBlue, 2),
                 Text = text,
             };
-            properties.Foreground = Brushes.DeepSkyBlue;
+            properties.Foreground = Brushes.White;
             properties.FontWeight = FontWeights.SemiBold;
             properties.Msg = string.Empty;
             return new DVCircleText(properties);

@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -9,6 +10,7 @@ using Conoscope.MVS;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
@@ -82,8 +84,7 @@ namespace Conoscope
             InitializeTheme();
             InitializeLanguageAndThemeSelectors();
             InitializeModelSelector();
-            InitializeOperationControls();
-            InitializeAnalysisRibbonControls();
+            InitializeRibbonControls();
 
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -116,6 +117,13 @@ namespace Conoscope
 
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
+            if (!File.Exists(filename) || !CVFileUtil.IsCVCIEFile(filename))
+            {
+                SetOperationStatus(Properties.Resources.PleaseSelectCVCIEFile, Brushes.OrangeRed);
+                MessageBox.Show(Properties.Resources.PleaseSelectCVCIEFile, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             ConoscopeView? reuseView = preferReuseActiveView ? ActiveView : null;
             AddConoscopeView(filename, activate: true, exposureSummary, reuseView);
         }
@@ -124,8 +132,7 @@ namespace Conoscope
         {
             ConoscopeView? activeView = ActiveView;
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
-            RefreshHomeQuickControlState(activeView);
-            RefreshAnalysisRibbonState(activeView);
+            RefreshRibbonState(activeView);
 
             if (tbExposureStatus == null)
             {
@@ -231,15 +238,6 @@ namespace Conoscope
             }
         }
 
-        private void InitializeOperationControls()
-        {
-            RefreshFlowTemplates();
-            RefreshCameraDevices();
-            EnsureCaptureTimedButtonOperations();
-            InitializePreprocessControls();
-            RefreshActiveViewUi();
-        }
-
         private void StartOperationProgress(string label, double expectedDurationMs)
         {
             operationProgressLabel = label;
@@ -330,6 +328,8 @@ namespace Conoscope
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog
             {
+                Filter = "CVCIE 文件 (*.cvcie)|*.cvcie",
+                DefaultExt = "cvcie",
                 RestoreDirectory = true,
                 Multiselect = true
             };
@@ -403,7 +403,7 @@ namespace Conoscope
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
-            DetachHomeQuickControlView();
+            DetachActiveViewControlView();
             operationProgressTimer.Stop();
             operationProgressTimer.Tick -= OperationProgressTimer_Tick;
             this.DisposeTimedButtonOperations();
