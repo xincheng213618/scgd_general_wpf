@@ -630,29 +630,6 @@
                                                       Checked="WindowDustRemoval_Changed"
                                                       Unchecked="WindowDustRemoval_Changed"
                                                       VerticalAlignment="Center" />
-                                            <WrapPanel x:Name="panelWindowDustOptions">
-                                                <TextBlock Text="{x:Static properties:Resources.LabelDustType}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                                <ComboBox x:Name="cbWindowDustMode"
-                                                          Width="110"
-                                                          SelectionChanged="WindowDustRemoval_Changed"
-                                                          Style="{StaticResource RibbonComboBoxStyle}">
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiDarkSpot}" Tag="DarkSpot" />
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiBrightSpot}" Tag="BrightSpot" />
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiBothSpots}" Tag="Both" />
-                                                </ComboBox>
-
-                                                <TextBlock Text="{x:Static properties:Resources.LabelThresholdPct}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                                <TextBox x:Name="txtWindowDustThreshold" Width="52" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
-
-                                                <TextBlock Text="{x:Static properties:Resources.LabelMinArea}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                                <TextBox x:Name="txtWindowDustMinArea" Width="48" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
-
-                                                <TextBlock Text="{x:Static properties:Resources.LabelMaxArea}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                                <TextBox x:Name="txtWindowDustMaxArea" Width="56" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
-
-                                                <TextBlock Text="{x:Static properties:Resources.LabelRepairRadius}" Style="{StaticResource RibbonFieldLabelStyle}" />
-                                                <TextBox x:Name="txtWindowDustRepairRadius" Width="46" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="WindowPreprocessValue_PreviewKeyDown" LostFocus="WindowPreprocessValue_LostFocus" />
-                                            </WrapPanel>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.HeaderDustRemoval}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>

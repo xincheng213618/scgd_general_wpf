@@ -233,6 +233,20 @@ namespace Conoscope.Core
         }
         private bool _CurrentCurveExportIncludeMetadata = true;
 
+        [Category("导出"), DisplayName("导出数据小数位数"), Description("CSV 导出时数据值默认保留的小数位数，范围 0 到 8，默认 4。")]
+        public int ExportDecimalPlaces
+        {
+            get => _ExportDecimalPlaces;
+            set
+            {
+                int normalized = Math.Max(0, Math.Min(value, 8));
+                if (_ExportDecimalPlaces == normalized) return;
+                _ExportDecimalPlaces = normalized;
+                OnPropertyChanged();
+            }
+        }
+        private int _ExportDecimalPlaces = 4;
+
 
         public ConoscopeConfig()
         {
@@ -460,6 +474,12 @@ namespace Conoscope.Core
         {
             get => config.CurrentCurveExportIncludeMetadata;
             set => config.CurrentCurveExportIncludeMetadata = value;
+        }
+
+        public int DecimalPlaces
+        {
+            get => config.ExportDecimalPlaces;
+            set => config.ExportDecimalPlaces = value;
         }
     }
 

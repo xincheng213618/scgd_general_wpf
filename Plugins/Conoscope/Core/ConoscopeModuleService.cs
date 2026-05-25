@@ -1,7 +1,3 @@
-using AvalonDock.Layout;
-using ColorVision.Common.Utilities;
-using ColorVision.Solution.Workspace;
-using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +8,6 @@ namespace Conoscope.Core
 {
     internal static class ConoscopeModuleService
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeModuleService));
         private static readonly List<WeakReference<ConoscopeView>> Views = new();
 
         public static ConoscopeView? ActiveView { get; private set; }
@@ -66,17 +61,11 @@ namespace Conoscope.Core
 
         public static void OpenModule(string? filePath = null)
         {
-            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath) && TryOpenInWorkspace(filePath))
+            ConoscopeWindow window = GetOrCreateWindow();
+            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             {
-                return;
+                window.OpenConoscope(filePath);
             }
-
-            if (string.IsNullOrWhiteSpace(filePath) && TryOpenEmptyInWorkspace())
-            {
-                return;
-            }
-
-            OpenStandalone(filePath);
         }
 
         public static void OpenFromImageView(ColorVision.ImageEditor.EditorContext context)
@@ -99,124 +88,32 @@ namespace Conoscope.Core
                 && ColorVision.FileIO.CVFileUtil.IsCVCIEFile(filePath);
         }
 
-        private static bool TryOpenInWorkspace(string filePath)
+        private static ConoscopeWindow GetOrCreateWindow()
         {
-            if (!TryGetWorkspace(out LayoutRoot layoutRoot, out LayoutDocumentPane documentPane))
+            ConoscopeWindow? window = FindOpenWindow();
+            if (window == null)
             {
-                return false;
+                window = new ConoscopeWindow();
+                window.Show();
             }
-
-            string contentId = GetContentId(filePath);
-            LayoutDocument? existingDocument = WorkspaceManager.FindDocumentById(layoutRoot, contentId);
-            if (existingDocument != null)
+            else
             {
-                SelectDocument(existingDocument);
-                return true;
-            }
-
-            ConoscopeView view = new ConoscopeView();
-            view.OpenConoscope(filePath);
-
-            LayoutDocument layoutDocument = new LayoutDocument
-            {
-                ContentId = contentId,
-                Title = $"Conoscope - {Path.GetFileName(filePath)}",
-                Content = view,
-                CanClose = true,
-                CanFloat = true
-            };
-            layoutDocument.IsActiveChanged += (s, e) =>
-            {
-                if (layoutDocument.IsActive)
+                if (window.WindowState == WindowState.Minimized)
                 {
-                    Activate(view);
-                    WorkspaceManager.OnContentIdSelected(filePath);
+                    window.WindowState = WindowState.Normal;
                 }
-            };
-            layoutDocument.Closing += (s, e) => view.Dispose();
 
-            documentPane.Children.Add(layoutDocument);
-            documentPane.SelectedContentIndex = documentPane.IndexOf(layoutDocument);
-            layoutDocument.IsActive = true;
-            return true;
-        }
-
-        private static bool TryOpenEmptyInWorkspace()
-        {
-            if (!TryGetWorkspace(out _, out LayoutDocumentPane documentPane))
-            {
-                return false;
+                window.Activate();
             }
 
-            ConoscopeView view = new ConoscopeView();
-            string contentId = $"Conoscope:{Guid.NewGuid():N}";
-            LayoutDocument layoutDocument = new LayoutDocument
-            {
-                ContentId = contentId,
-                Title = Conoscope.Properties.Resources.WindowTitleConoscope,
-                Content = view,
-                CanClose = true,
-                CanFloat = true
-            };
-            layoutDocument.IsActiveChanged += (s, e) =>
-            {
-                if (layoutDocument.IsActive)
-                {
-                    Activate(view);
-                }
-            };
-            layoutDocument.Closing += (s, e) => view.Dispose();
-
-            documentPane.Children.Add(layoutDocument);
-            documentPane.SelectedContentIndex = documentPane.IndexOf(layoutDocument);
-            layoutDocument.IsActive = true;
-            return true;
+            return window;
         }
 
-        private static void OpenStandalone(string? filePath)
+        private static ConoscopeWindow? FindOpenWindow()
         {
-            ConoscopeWindow window = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath)
-                ? new ConoscopeWindow(filePath)
-                : new ConoscopeWindow();
-
-            window.Show();
-        }
-
-        private static bool TryGetWorkspace(out LayoutRoot layoutRoot, out LayoutDocumentPane documentPane)
-        {
-            layoutRoot = null!;
-            documentPane = null!;
-
-            try
-            {
-                layoutRoot = WorkspaceManager.layoutRoot;
-                documentPane = WorkspaceManager.LayoutDocumentPane;
-                return layoutRoot != null && documentPane != null;
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"主工作区尚未就绪: {ex.Message}");
-                return false;
-            }
-        }
-
-        private static string GetContentId(string filePath)
-        {
-            return "Conoscope:" + Tool.GetMD5(Path.GetFullPath(filePath));
-        }
-
-        private static void SelectDocument(LayoutDocument document)
-        {
-            if (document.Parent is LayoutDocumentPane pane)
-            {
-                pane.SelectedContentIndex = pane.IndexOf(document);
-            }
-            else if (document.Parent is LayoutFloatingWindow floatingWindow)
-            {
-                Window.GetWindow(floatingWindow)?.Activate();
-            }
-
-            document.IsActive = true;
+            return Application.Current?.Windows.OfType<ConoscopeWindow>().FirstOrDefault(window => window.IsActive)
+                ?? ConoscopeWindow.Instance
+                ?? Application.Current?.Windows.OfType<ConoscopeWindow>().FirstOrDefault();
         }
 
         private static void CleanupViews()

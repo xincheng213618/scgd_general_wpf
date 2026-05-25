@@ -1,5 +1,6 @@
 using ColorVision.Database;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,6 +28,7 @@ namespace ColorVision.Engine.Templates.Flow
         public string TemplateName { get; set; } = string.Empty;
         public string TemplateCode { get; set; } = string.Empty;
         public int TemplateDicId { get; set; }
+        public string? SerializedContent { get; set; }
         public List<FlowPackageDetailItem> Details { get; set; } = new List<FlowPackageDetailItem>();
     }
 
@@ -415,43 +417,44 @@ namespace ColorVision.Engine.Templates.Flow
             var manifest = new FlowPackageManifest
             {
                 FlowName = flowName,
-                Version = "1.0"
+                Version = "2.0"
             };
 
-            var templateNames = ExtractTemplateNames(stnData);
+            var knownTemplateNames = new HashSet<string>(
+                TemplateControl.ITemplateNames.Values.SelectMany(item => item.GetTemplateNames()),
+                StringComparer.OrdinalIgnoreCase);
+            var exportedTemplateNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var pendingTemplateNames = new Queue<string>(ExtractTemplateNames(stnData));
 
-            foreach (var name in templateNames)
+            while (pendingTemplateNames.Count > 0)
             {
-                foreach (var kvp in TemplateControl.ITemplateNames)
-                {
-                    var iTemplate = kvp.Value;
-                    var names = iTemplate.GetTemplateNames();
-                    int idx = names.FindIndex(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
-                    if (idx >= 0)
-                    {
-                        var paramObj = iTemplate.GetParamValue(idx) as ParamModBase;
-                        if (paramObj != null)
-                        {
-                            var details = new List<ModDetailModel>();
-                            paramObj.GetDetail(details);
+                string name = pendingTemplateNames.Dequeue();
+                if (!exportedTemplateNames.Add(name))
+                    continue;
 
-                            var pkgTemplate = new FlowPackageTemplate
-                            {
-                                TemplateName = name,
-                                TemplateCode = kvp.Key,
-                                TemplateDicId = iTemplate.TemplateDicId,
-                                Details = details.Select(d => new FlowPackageDetailItem
-                                {
-                                    SysPid = d.SysPid,
-                                    ValueA = d.ValueA,
-                                    ValueB = d.ValueB,
-                                    IsEnable = d.IsEnable,
-                                    IsDelete = d.IsDelete
-                                }).ToList()
-                            };
-                            manifest.Templates.Add(pkgTemplate);
-                        }
-                        break; // 找到第一个匹配的模板类型就跳出
+                if (!TryResolveTemplate(name, out string templateCode, out ITemplate iTemplate, out int index))
+                    continue;
+
+                object templateValue = iTemplate.GetParamValue(index);
+                if (templateValue == null)
+                    continue;
+
+                string serializedContent = SerializeTemplateContent(templateValue);
+                var pkgTemplate = new FlowPackageTemplate
+                {
+                    TemplateName = name,
+                    TemplateCode = templateCode,
+                    TemplateDicId = iTemplate.TemplateDicId,
+                    SerializedContent = serializedContent,
+                    Details = ExtractTemplateDetails(templateValue)
+                };
+                manifest.Templates.Add(pkgTemplate);
+
+                foreach (string referencedTemplateName in ExtractTemplateNamesFromSerializedContent(serializedContent, knownTemplateNames, name))
+                {
+                    if (!exportedTemplateNames.Contains(referencedTemplateName))
+                    {
+                        pendingTemplateNames.Enqueue(referencedTemplateName);
                     }
                 }
             }
@@ -466,6 +469,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             var nameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (manifest?.Templates == null) return nameMap;
+            var reservedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var importPlans = new List<(ITemplate Template, string NewName, FlowPackageTemplate PackageTemplate)>();
 
             foreach (var pkgTemplate in manifest.Templates)
             {
@@ -478,19 +483,24 @@ namespace ColorVision.Engine.Templates.Flow
 
                 // 检查是否存在同名模板
                 string newName = originalName;
-                if (iTemplate.GetTemplateNames().Any(n => n.Equals(originalName, StringComparison.OrdinalIgnoreCase)))
+                if (IsReservedTemplateName(originalName, reservedNames))
                 {
                     // 名称冲突，生成新名称
-                    newName = GenerateUniqueName(iTemplate, originalName, flowName);
+                    newName = GenerateUniqueName(originalName, flowName, reservedNames);
                 }
 
-                // 创建模板: 使用 ITemplate 的机制
-                CreateTemplateFromPackage(iTemplate, newName, pkgTemplate);
+                reservedNames.Add(newName);
+                importPlans.Add((iTemplate, newName, pkgTemplate));
 
                 if (!originalName.Equals(newName, StringComparison.OrdinalIgnoreCase))
                 {
                     nameMap[originalName] = newName;
                 }
+            }
+
+            foreach (var importPlan in importPlans)
+            {
+                CreateTemplateFromPackage(importPlan.Template, importPlan.NewName, importPlan.PackageTemplate, nameMap);
             }
 
             return nameMap;
@@ -499,16 +509,16 @@ namespace ColorVision.Engine.Templates.Flow
         /// <summary>
         /// 生成不冲突的模板名称
         /// </summary>
-        private static string GenerateUniqueName(ITemplate iTemplate, string baseName, string flowName)
+        private static string GenerateUniqueName(string baseName, string flowName, HashSet<string> reservedNames)
         {
             string candidate = $"{baseName}_{flowName}";
-            if (!iTemplate.GetTemplateNames().Any(n => n.Equals(candidate, StringComparison.OrdinalIgnoreCase)))
+            if (!IsReservedTemplateName(candidate, reservedNames))
                 return candidate;
 
             for (int i = 1; i < 9999; i++)
             {
                 candidate = $"{baseName}_{flowName}_{i}";
-                if (!iTemplate.GetTemplateNames().Any(n => n.Equals(candidate, StringComparison.OrdinalIgnoreCase)))
+                if (!IsReservedTemplateName(candidate, reservedNames))
                     return candidate;
             }
 
@@ -518,8 +528,18 @@ namespace ColorVision.Engine.Templates.Flow
         /// <summary>
         /// 从包数据创建模板
         /// </summary>
-        private static void CreateTemplateFromPackage(ITemplate iTemplate, string templateName, FlowPackageTemplate pkgTemplate)
+        private static void CreateTemplateFromPackage(ITemplate iTemplate, string templateName, FlowPackageTemplate pkgTemplate, Dictionary<string, string> nameMap)
         {
+            if (!string.IsNullOrWhiteSpace(pkgTemplate.SerializedContent))
+            {
+                string adjustedContent = ReplaceTemplateReferencesInJsonContent(pkgTemplate.SerializedContent, nameMap);
+                if (iTemplate.ImportJsonContent(templateName, adjustedContent))
+                {
+                    iTemplate.Create(templateName);
+                    return;
+                }
+            }
+
             // 某些模板（如 POI）不使用 ModMaster/ModDetail 架构，需走模板自身的 Create 逻辑。
             if (!CanCreateParamFromModData(iTemplate))
             {
@@ -553,8 +573,8 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         SysPid = item.SysPid,
                         Pid = modMaster.Id,
-                        ValueA = item.ValueA,
-                        ValueB = item.ValueB,
+                        ValueA = ReplaceTemplateReferencesInString(item.ValueA, nameMap),
+                        ValueB = ReplaceTemplateReferencesInString(item.ValueB, nameMap),
                         IsEnable = item.IsEnable,
                         IsDelete = item.IsDelete
                     });
@@ -576,6 +596,192 @@ namespace ColorVision.Engine.Templates.Flow
             // 将新模板加入到内存中的模板集合
             var modDetailModels = Db.Queryable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ToList();
             AddTemplateToCollection(iTemplate, modMaster, modDetailModels);
+        }
+
+        private static bool TryResolveTemplate(string templateName, out string templateCode, out ITemplate template, out int index)
+        {
+            foreach (var kvp in TemplateControl.ITemplateNames)
+            {
+                int templateIndex = kvp.Value.GetTemplateIndex(templateName);
+                if (templateIndex >= 0)
+                {
+                    templateCode = kvp.Key;
+                    template = kvp.Value;
+                    index = templateIndex;
+                    return true;
+                }
+            }
+
+            templateCode = string.Empty;
+            template = null!;
+            index = -1;
+            return false;
+        }
+
+        private static List<FlowPackageDetailItem> ExtractTemplateDetails(object templateValue)
+        {
+            if (templateValue is not ParamModBase paramModBase)
+                return new List<FlowPackageDetailItem>();
+
+            var details = new List<ModDetailModel>();
+            paramModBase.GetDetail(details);
+            return details.Select(d => new FlowPackageDetailItem
+            {
+                SysPid = d.SysPid,
+                ValueA = d.ValueA,
+                ValueB = d.ValueB,
+                IsEnable = d.IsEnable,
+                IsDelete = d.IsDelete
+            }).ToList();
+        }
+
+        private static string SerializeTemplateContent(object templateValue)
+        {
+            return JsonConvert.SerializeObject(templateValue, Formatting.Indented);
+        }
+
+        private static HashSet<string> ExtractTemplateNamesFromSerializedContent(string? serializedContent, HashSet<string> knownTemplateNames, string currentTemplateName)
+        {
+            var referencedTemplateNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            CollectTemplateNamesFromString(serializedContent, knownTemplateNames, referencedTemplateNames, currentTemplateName);
+            return referencedTemplateNames;
+        }
+
+        private static void CollectTemplateNamesFromString(string? rawValue, HashSet<string> knownTemplateNames, HashSet<string> referencedTemplateNames, string currentTemplateName)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+                return;
+
+            string trimmedValue = rawValue.Trim();
+            if (knownTemplateNames.Contains(trimmedValue) && !trimmedValue.Equals(currentTemplateName, StringComparison.OrdinalIgnoreCase))
+            {
+                referencedTemplateNames.Add(trimmedValue);
+            }
+
+            if (!LooksLikeJson(trimmedValue))
+                return;
+
+            try
+            {
+                JToken token = JToken.Parse(trimmedValue);
+                CollectTemplateNamesFromToken(token, knownTemplateNames, referencedTemplateNames, currentTemplateName);
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        private static void CollectTemplateNamesFromToken(JToken token, HashSet<string> knownTemplateNames, HashSet<string> referencedTemplateNames, string currentTemplateName)
+        {
+            if (token.Type == JTokenType.String)
+            {
+                CollectTemplateNamesFromString(token.Value<string>(), knownTemplateNames, referencedTemplateNames, currentTemplateName);
+                return;
+            }
+
+            foreach (JToken child in token.Children())
+            {
+                CollectTemplateNamesFromToken(child, knownTemplateNames, referencedTemplateNames, currentTemplateName);
+            }
+        }
+
+        private static bool IsReservedTemplateName(string templateName, HashSet<string> reservedNames)
+        {
+            return reservedNames.Contains(templateName) || TemplateControl.ExitsTemplateName(templateName);
+        }
+
+        private static string ReplaceTemplateReferencesInJsonContent(string jsonContent, Dictionary<string, string> nameMap)
+        {
+            if (string.IsNullOrWhiteSpace(jsonContent) || nameMap.Count == 0)
+                return jsonContent;
+
+            try
+            {
+                JToken token = JToken.Parse(jsonContent);
+                if (!ReplaceTemplateReferencesInToken(token, nameMap))
+                    return jsonContent;
+
+                return token.ToString(Formatting.Indented);
+            }
+            catch (JsonException)
+            {
+                return jsonContent;
+            }
+        }
+
+        private static bool ReplaceTemplateReferencesInToken(JToken token, Dictionary<string, string> nameMap)
+        {
+            if (token.Type == JTokenType.String)
+            {
+                string? currentValue = token.Value<string>();
+                string? replacedValue = ReplaceTemplateReferencesInString(currentValue, nameMap);
+                if (!string.Equals(currentValue, replacedValue, StringComparison.Ordinal))
+                {
+                    ((JValue)token).Value = replacedValue;
+                    return true;
+                }
+
+                return false;
+            }
+
+            bool changed = false;
+            if (token is JObject objectToken)
+            {
+                foreach (JProperty property in objectToken.Properties().ToList())
+                {
+                    if (ReplaceTemplateReferencesInToken(property.Value, nameMap))
+                        changed = true;
+                }
+
+                return changed;
+            }
+
+            foreach (JToken child in token.Children())
+            {
+                if (ReplaceTemplateReferencesInToken(child, nameMap))
+                    changed = true;
+            }
+
+            return changed;
+        }
+
+        private static string? ReplaceTemplateReferencesInString(string? rawValue, Dictionary<string, string> nameMap)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue) || nameMap.Count == 0)
+                return rawValue;
+
+            if (nameMap.TryGetValue(rawValue, out string directReplacement))
+                return directReplacement;
+
+            string trimmedValue = rawValue.Trim();
+            if (!trimmedValue.Equals(rawValue, StringComparison.Ordinal) && nameMap.TryGetValue(trimmedValue, out directReplacement))
+                return directReplacement;
+
+            if (!LooksLikeJson(trimmedValue))
+                return rawValue;
+
+            try
+            {
+                JToken nestedToken = JToken.Parse(trimmedValue);
+                if (!ReplaceTemplateReferencesInToken(nestedToken, nameMap))
+                    return rawValue;
+
+                return nestedToken.ToString(Formatting.None);
+            }
+            catch (JsonException)
+            {
+                return rawValue;
+            }
+        }
+
+        private static bool LooksLikeJson(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            char firstChar = value[0];
+            char lastChar = value[^1];
+            return (firstChar == '{' && lastChar == '}') || (firstChar == '[' && lastChar == ']');
         }
 
         private static bool CanCreateParamFromModData(ITemplate iTemplate)

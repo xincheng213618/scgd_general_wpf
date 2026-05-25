@@ -90,6 +90,13 @@ namespace Conoscope.Core
                 get => export.IncludeMetadata;
                 set => export.IncludeMetadata = value;
             }
+
+            [Category("导出"), DisplayName("导出数据小数位数"), Description("CSV 导出时数据值默认保留的小数位数。")]
+            public int ExportDecimalPlaces
+            {
+                get => export.DecimalPlaces;
+                set => export.DecimalPlaces = value;
+            }
         }
     }
 }

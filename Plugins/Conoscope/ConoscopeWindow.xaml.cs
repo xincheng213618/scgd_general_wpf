@@ -26,8 +26,7 @@ namespace Conoscope
 
         public override void Execute()
         {
-            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
-            conoscopeWindow.Show();
+            ConoscopeModuleService.OpenModule();
         }
     }
 

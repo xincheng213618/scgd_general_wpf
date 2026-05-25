@@ -54,11 +54,6 @@ namespace Conoscope
                 txtWindowFilterSigmaSpace.Text = PreprocessConfig.FilterSigmaSpace.ToString("0");
 
                 chkWindowDustRemovalEnabled.IsChecked = PreprocessConfig.DustRemovalEnabled;
-                ComboBoxHelper.SelectItemByTag(cbWindowDustMode, PreprocessConfig.DustRemovalMode.ToString());
-                txtWindowDustThreshold.Text = PreprocessConfig.DustThresholdPercent.ToString("0.0");
-                txtWindowDustMinArea.Text = PreprocessConfig.DustMinArea.ToString();
-                txtWindowDustMaxArea.Text = PreprocessConfig.DustMaxArea.ToString();
-                txtWindowDustRepairRadius.Text = PreprocessConfig.DustRepairRadius.ToString();
 
                 UpdateWindowPreprocessVisibility();
             }
@@ -77,11 +72,9 @@ namespace Conoscope
             ImageFilterType filterType = cbWindowFilterType.SelectedValue is ImageFilterType selectedFilterType
                 ? NormalizeFilterType(selectedFilterType)
                 : lastEnabledWindowFilterType;
-            bool useDustRemoval = chkWindowDustRemovalEnabled.IsChecked == true;
 
             panelWindowPseudoColorOptions.Visibility = usePseudoColor ? Visibility.Visible : Visibility.Collapsed;
             panelWindowFilterOptions.Visibility = useFilter ? Visibility.Visible : Visibility.Collapsed;
-            panelWindowDustOptions.Visibility = useDustRemoval ? Visibility.Visible : Visibility.Collapsed;
 
             fieldWindowFilterKernel.Visibility = filterType is ImageFilterType.LowPass or ImageFilterType.MovingAverage or ImageFilterType.Gaussian or ImageFilterType.Median
                 ? Visibility.Visible
@@ -203,8 +196,6 @@ namespace Conoscope
             }
 
             PreprocessConfig.DustRemovalEnabled = chkWindowDustRemovalEnabled.IsChecked == true;
-            PreprocessConfig.DustRemovalMode = ComboBoxHelper.GetSelectedEnumByTag(cbWindowDustMode, PreprocessConfig.DustRemovalMode);
-            UpdateWindowPreprocessVisibility();
             SavePreprocessConfig();
         }
 
@@ -298,22 +289,6 @@ namespace Conoscope
                 {
                     PreprocessConfig.FilterSigmaSpace = sigmaSpace;
                 }
-            }
-
-            if (chkWindowDustRemovalEnabled.IsChecked == true)
-            {
-                if (!TryParseWindowDouble(txtWindowDustThreshold, out double dustThreshold)
-                    || !TryParseWindowInt(txtWindowDustMinArea, out int dustMinArea)
-                    || !TryParseWindowInt(txtWindowDustMaxArea, out int dustMaxArea)
-                    || !TryParseWindowInt(txtWindowDustRepairRadius, out int dustRepairRadius))
-                {
-                    return false;
-                }
-
-                PreprocessConfig.DustThresholdPercent = dustThreshold;
-                PreprocessConfig.DustMinArea = dustMinArea;
-                PreprocessConfig.DustMaxArea = Math.Max(dustMinArea, dustMaxArea);
-                PreprocessConfig.DustRepairRadius = dustRepairRadius;
             }
 
             return true;

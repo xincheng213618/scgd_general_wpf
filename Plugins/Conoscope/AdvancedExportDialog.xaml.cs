@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Windows;
 
 namespace Conoscope
@@ -11,10 +12,14 @@ namespace Conoscope
     {
         public AdvancedExportSettings Settings { get; private set; }
 
-        public AdvancedExportDialog()
+        public AdvancedExportDialog(int defaultDecimalPlaces = 4)
         {
             InitializeComponent();
-            Settings = new AdvancedExportSettings();
+            Settings = new AdvancedExportSettings
+            {
+                DecimalPlaces = NormalizeDecimalPlaces(defaultDecimalPlaces)
+            };
+            txtDecimalPlaces.Text = Settings.DecimalPlaces.ToString(CultureInfo.InvariantCulture);
         }
 
         private void chkEnableCrossSection_Changed(object sender, RoutedEventArgs e)
@@ -71,6 +76,7 @@ namespace Conoscope
                 Settings.RadialStep = double.Parse(txtRadialStep.Text);
                 Settings.PolarStep = double.Parse(txtPolarStep.Text);
                 Settings.CircumferentialStep = double.Parse(txtCircumferentialStep.Text);
+                Settings.DecimalPlaces = int.Parse(txtDecimalPlaces.Text, CultureInfo.InvariantCulture);
 
                 // Cross-section
                 Settings.EnableCrossSection = chkEnableCrossSection.IsChecked == true;
@@ -135,6 +141,12 @@ namespace Conoscope
                 return false;
             }
 
+            if (!TryParseDecimalPlaces(txtDecimalPlaces.Text, out _))
+            {
+                MessageBox.Show("小数位数必须是 0-8 之间的整数", Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
             // Validate cross-section settings if enabled
             if (chkEnableCrossSection.IsChecked == true)
             {
@@ -158,6 +170,18 @@ namespace Conoscope
 
             return true;
         }
+
+        private static bool TryParseDecimalPlaces(string? text, out int decimalPlaces)
+        {
+            return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out decimalPlaces)
+                && decimalPlaces >= 0
+                && decimalPlaces <= 8;
+        }
+
+        private static int NormalizeDecimalPlaces(int decimalPlaces)
+        {
+            return Math.Clamp(decimalPlaces, 0, 8);
+        }
     }
 
     /// <summary>
@@ -173,6 +197,7 @@ namespace Conoscope
         public double RadialStep { get; set; } = 1;
         public double PolarStep { get; set; } = 1;
         public double CircumferentialStep { get; set; } = 1;
+        public int DecimalPlaces { get; set; } = 4;
         public bool EnableCrossSection { get; set; } = false;
         public CrossSectionType CrossSectionType { get; set; } = CrossSectionType.Azimuth;
         public double CrossSectionAngle { get; set; } = 0;

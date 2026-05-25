@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace Conoscope.Core
 {
@@ -239,12 +240,23 @@ namespace Conoscope.Core
 
             if (channel == ExportChannel.Contrast)
             {
-                return value.ToString("F3");
+                return value.ToString("F3", CultureInfo.InvariantCulture);
             }
 
             return channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV or ExportChannel.ColorDifference
-                ? value.ToString("F6")
-                : value.ToString("F2");
+                ? value.ToString("F6", CultureInfo.InvariantCulture)
+                : value.ToString("F2", CultureInfo.InvariantCulture);
+        }
+
+        public static string FormatChannelValue(double value, ExportChannel channel, int decimalPlaces)
+        {
+            if (!double.IsFinite(value))
+            {
+                return "--";
+            }
+
+            int normalizedDecimalPlaces = Math.Clamp(decimalPlaces, 0, 8);
+            return value.ToString($"F{normalizedDecimalPlaces}", CultureInfo.InvariantCulture);
         }
 
         public static string FormatCct(double cct)

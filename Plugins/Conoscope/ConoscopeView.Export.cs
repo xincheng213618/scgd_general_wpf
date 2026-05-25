@@ -37,7 +37,7 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportAngleModeToCsv(filePath, channel, CreateExportContext());
+                ConoscopeExportService.ExportAngleModeToCsv(filePath, channel, CreateExportContext(), GetExportDecimalPlaces());
                 MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 log.Info($"成功导出方位角模式CSV: {filePath}");
             }
@@ -80,7 +80,7 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportCircleModeToCsv(filePath, channel, CreateExportContext());
+                ConoscopeExportService.ExportCircleModeToCsv(filePath, channel, CreateExportContext(), GetExportDecimalPlaces());
                 MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 log.Info($"成功导出极角模式CSV: {filePath}");
             }
@@ -190,7 +190,7 @@ namespace Conoscope
                     return;
                 }
 
-                AdvancedExportDialog dialog = new AdvancedExportDialog { Owner = Window.GetWindow(this) };
+                AdvancedExportDialog dialog = new AdvancedExportDialog(GetExportDecimalPlaces()) { Owner = Window.GetWindow(this) };
                 if (dialog.ShowDialog() == true)
                 {
                     AdvancedExportSettings settings = dialog.Settings;
@@ -200,6 +200,7 @@ namespace Conoscope
                         return;
                     }
 
+                    SaveAdvancedExportDecimalPlaces(settings.DecimalPlaces);
                     PerformAdvancedExport(settings);
                 }
             }
@@ -228,14 +229,6 @@ namespace Conoscope
 
                 string outputFolder = folderDialog.SelectedPath;
 
-                if (settings.EnableCrossSection)
-                {
-                    ExportCrossSectionToFolder(settings, timestamp, outputFolder, ref filesExported);
-                    MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgSectionExportDone, filesExported, outputFolder), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-                    log.Info($"截面导出完成: {filesExported} 个文件");
-                    return;
-                }
-
                 if (settings.ExportAzimuth)
                 {
                     ConoscopeExportContext exportContext = CreateExportContext();
@@ -243,7 +236,7 @@ namespace Conoscope
                     {
                         string filename = $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv";
                         string filePath = Path.Combine(outputFolder, filename);
-                        ConoscopeExportService.ExportAzimuthWithStep(filePath, channel, exportContext, settings.AzimuthStep, settings.RadialStep);
+                        ConoscopeExportService.ExportAzimuthWithStep(filePath, channel, exportContext, settings.AzimuthStep, settings.RadialStep, settings.DecimalPlaces);
                         filesExported++;
                         log.Info($"方位角导出成功: {filePath}");
                     }
@@ -256,10 +249,15 @@ namespace Conoscope
                     {
                         string filename = $"{settings.FilePrefix}_Polar_{channel}_{ConoscopeConfig.CurrentModel}_{timestamp}.csv";
                         string filePath = Path.Combine(outputFolder, filename);
-                        ConoscopeExportService.ExportPolarWithStep(filePath, channel, exportContext, settings.PolarStep, settings.CircumferentialStep);
+                        ConoscopeExportService.ExportPolarWithStep(filePath, channel, exportContext, settings.PolarStep, settings.CircumferentialStep, settings.DecimalPlaces);
                         filesExported++;
                         log.Info($"极角导出成功: {filePath}");
                     }
+                }
+
+                if (settings.EnableCrossSection)
+                {
+                    ExportCrossSectionToFolder(settings, timestamp, outputFolder, ref filesExported);
                 }
 
                 MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportDone, filesExported, outputFolder), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
@@ -285,11 +283,11 @@ namespace Conoscope
 
                     if (settings.CrossSectionType == CrossSectionType.Azimuth)
                     {
-                        ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle);
+                        ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, settings.DecimalPlaces);
                     }
                     else
                     {
-                        ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle);
+                        ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, settings.DecimalPlaces);
                     }
 
                     filesExported++;
@@ -331,7 +329,8 @@ namespace Conoscope
             return new ConoscopeCrossSectionExportOptions
             {
                 StepDegrees = exportConfig.CurrentCurveStepDegrees,
-                IncludeMetadata = exportConfig.IncludeMetadata
+                IncludeMetadata = exportConfig.IncludeMetadata,
+                DecimalPlaces = exportConfig.DecimalPlaces
             };
         }
 
@@ -340,6 +339,7 @@ namespace Conoscope
             ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
             exportConfig.CurrentCurveStepDegrees = options.StepDegrees;
             exportConfig.IncludeMetadata = options.IncludeMetadata;
+            exportConfig.DecimalPlaces = options.DecimalPlaces;
 
             try
             {
@@ -349,6 +349,26 @@ namespace Conoscope
             {
                 log.Error($"保存当前曲线导出配置失败: {ex.Message}", ex);
                 MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgCurveExportConfigSaveFailed, ex.Message), Properties.Resources.TitleCurrentCurveExport, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private static int GetExportDecimalPlaces()
+        {
+            return ConoscopeManager.GetInstance().Config.Export.DecimalPlaces;
+        }
+
+        private static void SaveAdvancedExportDecimalPlaces(int decimalPlaces)
+        {
+            ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
+            exportConfig.DecimalPlaces = decimalPlaces;
+
+            try
+            {
+                ConfigService.Instance.Save<ConoscopeConfig>();
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"保存高级导出小数位数失败: {ex.Message}", ex);
             }
         }
 

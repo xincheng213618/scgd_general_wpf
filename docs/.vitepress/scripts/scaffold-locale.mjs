@@ -17,6 +17,7 @@ const localeDirectoryPrefixes = new Set(
     .filter(Boolean),
 )
 const rootContentExclusions = new Set(['.vitepress', 'assets', 'public'])
+const externalRootExclusions = new Set(['.vitepress', 'assets', 'public', 'translation_index.json'])
 
 async function main() {
   const options = parseArgs(process.argv.slice(2))
@@ -26,14 +27,14 @@ async function main() {
     return
   }
 
-  validateOptions(options)
+  await validateOptions(options)
 
   const sourceLocaleKey = options.source ?? defaultLocaleKey
   const targetPathPrefix = options.pathPrefix ?? options.locale
+  const sourceRoot = options.sourceDir ? path.resolve(process.cwd(), options.sourceDir) : getLocaleRoot(sourceLocaleKey)
   const sourceDefinition = getLocaleDefinition(sourceLocaleKey)
-  const sourceRoot = getLocaleRoot(sourceLocaleKey)
   const targetRoot = path.join(docsRoot, targetPathPrefix)
-  const copyEntries = await collectCopyEntries(sourceLocaleKey, sourceRoot)
+  const copyEntries = await collectCopyEntries({ sourceLocaleKey, sourceRoot, sourceDir: options.sourceDir })
   const currentNavigationData = await readJson(navigationDataPath)
   const nextDefinitions = buildNextLocaleDefinitions({
     localeKey: options.locale,
@@ -52,6 +53,7 @@ async function main() {
     printPlan({
       localeKey: options.locale,
       sourceLocaleKey,
+      sourceRoot,
       targetPathPrefix,
       targetRoot,
       copyEntries,
@@ -93,6 +95,7 @@ function parseArgs(args) {
     locale: undefined,
     pathPrefix: undefined,
     source: defaultLocaleKey,
+    sourceDir: undefined,
   }
 
   for (let index = 0; index < args.length; index += 1) {
@@ -135,6 +138,9 @@ function parseArgs(args) {
         case '--source':
           options.source = nextValue
           break
+        case '--source-dir':
+          options.sourceDir = nextValue
+          break
         default:
           throw new Error(`Unknown option: ${token}`)
       }
@@ -154,7 +160,7 @@ function parseArgs(args) {
   return options
 }
 
-function validateOptions(options) {
+async function validateOptions(options) {
   if (!options.locale) {
     throw new Error('Locale key is required. Example: --locale ja')
   }
@@ -170,6 +176,13 @@ function validateOptions(options) {
   const sourceLocaleKey = options.source ?? defaultLocaleKey
   if (!isLocaleKey(sourceLocaleKey)) {
     throw new Error(`Unknown source locale: ${sourceLocaleKey}`)
+  }
+
+  if (options.sourceDir) {
+    const resolvedSourceDir = path.resolve(process.cwd(), options.sourceDir)
+    if (!await pathExists(resolvedSourceDir)) {
+      throw new Error(`Source directory does not exist: ${resolvedSourceDir}`)
+    }
   }
 
   const targetPathPrefix = options.pathPrefix ?? options.locale
@@ -245,8 +258,12 @@ function getLocaleRoot(localeKey) {
   return path.join(docsRoot, getLocaleDefinition(localeKey).pathPrefix)
 }
 
-async function collectCopyEntries(localeKey, sourceRoot) {
-  if (localeKey === defaultLocaleKey) {
+async function collectCopyEntries({ sourceLocaleKey, sourceRoot, sourceDir }) {
+  if (sourceDir) {
+    return collectExternalCopyEntries(sourceRoot)
+  }
+
+  if (sourceLocaleKey === defaultLocaleKey) {
     const entries = await fs.readdir(sourceRoot, { withFileTypes: true })
     const rootEntries = []
 
@@ -272,8 +289,35 @@ async function collectCopyEntries(localeKey, sourceRoot) {
   return collectFilesRecursive(sourceRoot)
 }
 
+async function collectExternalCopyEntries(sourceRoot) {
+  const entries = await fs.readdir(sourceRoot, { withFileTypes: true })
+  const sourceEntries = []
+
+  for (const entry of entries) {
+    if (shouldSkipExternalRootEntry(entry.name)) {
+      continue
+    }
+
+    const fullPath = path.join(sourceRoot, entry.name)
+    if (entry.isDirectory()) {
+      sourceEntries.push(...await collectFilesRecursive(fullPath))
+      continue
+    }
+
+    if (entry.isFile()) {
+      sourceEntries.push(fullPath)
+    }
+  }
+
+  return sourceEntries
+}
+
 function shouldSkipRootEntry(entryName) {
   return rootContentExclusions.has(entryName) || localeDirectoryPrefixes.has(entryName)
+}
+
+function shouldSkipExternalRootEntry(entryName) {
+  return externalRootExclusions.has(entryName) || localeDirectoryPrefixes.has(entryName)
 }
 
 async function collectFilesRecursive(rootDirectory) {
@@ -373,10 +417,11 @@ async function writeNavigationData(navigationData) {
   await fs.writeFile(navigationDataPath, `${JSON.stringify(navigationData, null, 2)}\n`, 'utf8')
 }
 
-function printPlan({ localeKey, sourceLocaleKey, targetPathPrefix, targetRoot, copyEntries, nextDefinitions, localizedLabelCount }) {
+function printPlan({ localeKey, sourceLocaleKey, sourceRoot, targetPathPrefix, targetRoot, copyEntries, nextDefinitions, localizedLabelCount }) {
   const nextDefinition = nextDefinitions[localeKey]
   console.log(`Dry run for locale '${localeKey}'`)
   console.log(`  Source locale: ${sourceLocaleKey}`)
+  console.log(`  Source directory: ${sourceRoot}`)
   console.log(`  Target directory: ${targetRoot}`)
   console.log(`  Path prefix: ${targetPathPrefix}`)
   console.log(`  Label: ${nextDefinition.label}`)
@@ -394,6 +439,7 @@ function printUsage() {
   console.log('  --lang <code>         HTML lang attribute, for example ja-JP')
   console.log('  --path-prefix <dir>   Directory and URL prefix under docs/')
   console.log('  --source <locale>     Source locale to copy from. Defaults to root')
+  console.log('  --source-dir <path>   External docs directory to import from instead of docs/<locale>')
   console.log('  --dry-run             Print the plan without writing files')
   console.log('  --force               Overwrite an existing target locale')
 }
