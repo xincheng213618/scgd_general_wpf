@@ -309,4 +309,148 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>Check for plugin updates</value>
   </data>
+  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+    <value>Checking for updates</value>
+  </data>
+  <data name="UpdatePreviewCheckingSummary" xml:space="preserve">
+    <value>Fetching the latest version information for the main application, plugins, and themes. Please wait.</value>
+  </data>
+  <data name="UpdatePreviewScanningTitle" xml:space="preserve">
+    <value>Scanning available updates</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesTitle" xml:space="preserve">
+    <value>No updates available</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesMessage" xml:space="preserve">
+    <value>The main application, plugins, and themes are all up to date.</value>
+  </data>
+  <data name="UpdatePreviewFoundUpdatesHeading" xml:space="preserve">
+    <value>Updates found</value>
+  </data>
+  <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
+    <value>Already up to date</value>
+  </data>
+  <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
+    <value>Update now</value>
+  </data>
+  <data name="UpdatePreviewUpdatingButtonText" xml:space="preserve">
+    <value>Updating...</value>
+  </data>
+  <data name="UpdatePreviewLaterButtonText" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="UpdatePreviewCancelButtonText" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="UpdatePreviewCloseButtonText" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="UpdatePreviewSkipVersionButtonText" xml:space="preserve">
+    <value>Skip this version</value>
+  </data>
+  <data name="UpdatePreviewRequiredBadge" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="UpdatePreviewUnknownVersion" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateCategory" xml:space="preserve">
+    <value>Application update</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalCategory" xml:space="preserve">
+    <value>Incremental application update</value>
+  </data>
+  <data name="UpdatePreviewPluginUpdateCategory" xml:space="preserve">
+    <value>Plugin update</value>
+  </data>
+  <data name="UpdatePreviewApplicationFullPackageLabel" xml:space="preserve">
+    <value>Full application installer</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
+    <value>application</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindPlugin" xml:space="preserve">
+    <value>plugins</value>
+  </data>
+  <data name="UpdatePreviewNoInstallableUpdatesMessage" xml:space="preserve">
+    <value>No updates that need to be installed were found.</value>
+  </data>
+  <data name="UpdatePreviewPackageDownloadFailed" xml:space="preserve">
+    <value>Failed to download the update package. Please try again later.</value>
+  </data>
+  <data name="UpdatePreviewPluginDownloadFailed" xml:space="preserve">
+    <value>The plugin download did not complete successfully. Please try again later.</value>
+  </data>
+  <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
+    <value>No plugins can be updated.</value>
+  </data>
+  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
+    <value>The combined update packages are incomplete. Please try again later.</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
+    <value>The application and plugins are already up to date.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryNoUpdates" xml:space="preserve">
+    <value>The main application, plugins, and themes are all up to date.</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
+    <value>The full installer will be downloaded and the current application update workflow will be used.</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
+    <value>Includes an application update</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
+    <value>Includes required updates</value>
+  </data>
+  <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
+    <value>The application will restart after the update completes</value>
+  </data>
+  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
+    <value>A backup will be created automatically before updating, and a restart may be required afterward</value>
+  </data>
+  <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
+    <value>Host requirement: {0}</value>
+  </data>
+  <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
+    <value>Main app version {0}</value>
+  </data>
+  <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
+    <value>The following updates are hidden because of compatibility requirements: {0}</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalPackagesFormat" xml:space="preserve">
+    <value>{0} incremental packages</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryIncrementalFormat" xml:space="preserve">
+    <value>{0} incremental application packages will be applied together with the selected updates in this update cycle.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryWithKinds" xml:space="preserve">
+    <value>{0} updates are available, including {1}.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryDefault" xml:space="preserve">
+    <value>{0} updates are available. Select what you need and install them now.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummarySkippedCount" xml:space="preserve">
+    <value>{0} more updates are hidden because of compatibility requirements.</value>
+  </data>
+  <data name="UpdatePreviewHeaderApplicationCount" xml:space="preserve">
+    <value>{0} application updates</value>
+  </data>
+  <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
+    <value>{0} plugin updates</value>
+  </data>
+  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
+    <value>{0} theme updates</value>
+  </data>
+  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
+    <value>{0} other updates</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
+    <value>Selected {0} / {1} plugins</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedUpdatesFormat" xml:space="preserve">
+    <value>Selected {0} / {1} optional updates</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
+    <value>No executable combined updates are available. The following plugins were skipped because of compatibility requirements: {0}</value>
+  </data>
 </root>

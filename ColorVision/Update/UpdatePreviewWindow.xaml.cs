@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,6 +12,88 @@ using System.Windows.Data;
 
 namespace ColorVision.Update
 {
+    public enum UpdatePreviewItemKind
+    {
+        Other = 0,
+        Application = 1,
+        ApplicationIncremental = 2,
+        Plugin = 3,
+        Theme = 4,
+    }
+
+    public static class UpdatePreviewText
+    {
+        private static string Get(string key, string fallback)
+        {
+            return global::ColorVision.Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? fallback;
+        }
+
+        private static string Format(string key, string fallback, params object[] args)
+        {
+            return string.Format(CultureInfo.CurrentCulture, Get(key, fallback), args);
+        }
+
+        public static string WindowTitle => Get("CheckForUpdates", "检查更新");
+        public static string CheckingHeading => Get("UpdatePreviewCheckingHeading", "正在检查更新");
+        public static string CheckingSummary => Get("UpdatePreviewCheckingSummary", "正在获取主程序、插件和主题的最新版本信息，请稍候。");
+        public static string ScanningTitle => Get("UpdatePreviewScanningTitle", "正在扫描可用更新项");
+        public static string NoUpdatesTitle => Get("UpdatePreviewNoUpdatesTitle", "当前没有可用更新");
+        public static string NoUpdatesMessage => Get("UpdatePreviewNoUpdatesMessage", "当前主程序、插件和主题均无需更新。");
+        public static string FoundUpdatesHeading => Get("UpdatePreviewFoundUpdatesHeading", "发现更新");
+        public static string AlreadyLatestHeading => Get("UpdatePreviewAlreadyLatestHeading", "已是最新版本");
+        public static string UpdateNowButtonText => Get("UpdatePreviewUpdateNowButtonText", "立即更新");
+        public static string UpdatingButtonText => Get("UpdatePreviewUpdatingButtonText", "正在更新...");
+        public static string LaterButtonText => Get("UpdatePreviewLaterButtonText", "稍后");
+        public static string CancelButtonText => Get("UpdatePreviewCancelButtonText", "取消");
+        public static string CloseButtonText => Get("UpdatePreviewCloseButtonText", "关闭");
+        public static string SkipVersionButtonText => Get("UpdatePreviewSkipVersionButtonText", "跳过此版本");
+        public static string RequiredBadge => Get("UpdatePreviewRequiredBadge", "必选");
+        public static string UnknownVersion => Get("UpdatePreviewUnknownVersion", "未知");
+        public static string ApplicationUpdateCategory => Get("UpdatePreviewApplicationUpdateCategory", "主程序更新");
+        public static string ApplicationIncrementalCategory => Get("UpdatePreviewApplicationIncrementalCategory", "主程序增量");
+        public static string PluginUpdateCategory => Get("UpdatePreviewPluginUpdateCategory", "插件更新");
+        public static string ApplicationFullPackageLabel => Get("UpdatePreviewApplicationFullPackageLabel", "完整主程序安装包");
+        public static string UpdateKindApplication => Get("UpdatePreviewUpdateKindApplication", "主程序");
+        public static string UpdateKindPlugin => Get("UpdatePreviewUpdateKindPlugin", "插件");
+        public static string NoInstallableUpdatesMessage => Get("UpdatePreviewNoInstallableUpdatesMessage", "当前未发现需要安装的更新项。");
+        public static string PackageDownloadFailed => Get("UpdatePreviewPackageDownloadFailed", "更新包下载失败，请稍后重试。");
+        public static string PluginDownloadFailed => Get("UpdatePreviewPluginDownloadFailed", "插件下载未成功完成，请稍后重试。");
+        public static string NoPluginUpdates => Get("UpdatePreviewNoPluginUpdates", "没有可更新的插件。");
+        public static string CombinedPackageIncomplete => Get("UpdatePreviewCombinedPackageIncomplete", "联合更新包下载不完整，请稍后重试。");
+        public static string ShowNoUpdatesLatestMessage => Get("UpdatePreviewShowNoUpdatesLatestMessage", "当前主程序和插件都已经是最新版本。");
+        public static string DialogSummaryNoUpdates => Get("UpdatePreviewDialogSummaryNoUpdates", "当前主程序、插件和主题均无需更新。");
+        public static string ApplicationCardSummaryFull => Get("UpdatePreviewApplicationCardSummaryFull", "将下载完整安装包并沿用当前主程序更新流程。");
+        public static string SelectionIncludesApplication => Get("UpdatePreviewSelectionIncludesApplication", "包含主程序更新");
+        public static string SelectionIncludesRequired => Get("UpdatePreviewSelectionIncludesRequired", "包含必选更新");
+        public static string SelectionRestartRequired => Get("UpdatePreviewSelectionRestartRequired", "更新完成后将重启应用");
+        public static string SelectionBackupAndRestart => Get("UpdatePreviewSelectionBackupAndRestart", "更新前会自动创建备份，完成后可能需要重启应用");
+
+        public static string ListSeparator
+        {
+            get
+            {
+                string language = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                return language == "zh" || language == "ja" ? "、" : ", ";
+            }
+        }
+
+        public static string HostRequirement(string value) => Format("UpdatePreviewHostRequirementFormat", "宿主要求：{0}", value);
+        public static string HostVersion(string value) => Format("UpdatePreviewHostVersionFormat", "主程序版本 {0}", value);
+        public static string SkippedIncompatibleUpdates(string value) => Format("UpdatePreviewSkippedIncompatibleUpdatesFormat", "以下更新因兼容性要求未显示：{0}", value);
+        public static string ApplicationIncrementalPackages(int count) => Format("UpdatePreviewApplicationIncrementalPackagesFormat", "{0} 个增量更新包", count);
+        public static string ApplicationCardSummaryIncremental(int count) => Format("UpdatePreviewApplicationCardSummaryIncrementalFormat", "将应用 {0} 个主程序增量包，并与所选更新一起完成本轮更新。", count);
+        public static string DialogSummaryWithKinds(int count, string kinds) => Format("UpdatePreviewDialogSummaryWithKinds", "发现 {0} 个可用更新，包含{1}。", count, kinds);
+        public static string DialogSummaryDefault(int count) => Format("UpdatePreviewDialogSummaryDefault", "发现 {0} 个可用更新，可按需选择后立即安装。", count);
+        public static string DialogSummarySkippedCount(int count) => Format("UpdatePreviewDialogSummarySkippedCount", "另有 {0} 个更新因兼容性要求未显示。", count);
+        public static string HeaderApplicationCount(int count) => Format("UpdatePreviewHeaderApplicationCount", "{0} 个主程序更新", count);
+        public static string HeaderPluginCount(int count) => Format("UpdatePreviewHeaderPluginCount", "{0} 个插件更新", count);
+        public static string HeaderThemeCount(int count) => Format("UpdatePreviewHeaderThemeCount", "{0} 个主题更新", count);
+        public static string HeaderOtherCount(int count) => Format("UpdatePreviewHeaderOtherCount", "{0} 个其他更新", count);
+        public static string SelectionSelectedPlugins(int selected, int total) => Format("UpdatePreviewSelectionSelectedPluginsFormat", "已选择 {0} / {1} 个插件", selected, total);
+        public static string SelectionSelectedUpdates(int selected, int total) => Format("UpdatePreviewSelectionSelectedUpdatesFormat", "已选择 {0} / {1} 个可选更新", selected, total);
+        public static string ShowNoUpdatesSkippedMessage(string value) => Format("UpdatePreviewShowNoUpdatesSkippedMessage", "当前没有可执行的联合更新。以下插件因兼容性要求被跳过：{0}", value);
+    }
+
     public enum UpdatePreviewAction
     {
         None = 0,
@@ -21,6 +104,7 @@ namespace ColorVision.Update
     public class UpdatePreviewItem : ViewModelBase
     {
         public string ItemId { get; set; } = string.Empty;
+        public UpdatePreviewItemKind Kind { get; set; }
         public string Category { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string SecondaryLabel { get; set; } = string.Empty;
@@ -92,7 +176,7 @@ namespace ColorVision.Update
         public string VersionTransitionText => $"{FormatVersion(CurrentVersion)}  →  {FormatVersion(TargetVersion)}";
 
         public string HostRequirementText => HasMeaningfulHostRequirement(HostRequirement)
-            ? $"宿主要求：{HostRequirement.Trim()}"
+            ? UpdatePreviewText.HostRequirement(HostRequirement.Trim())
             : string.Empty;
 
         public Visibility HostRequirementVisibility => HasMeaningfulHostRequirement(HostRequirement)
@@ -105,7 +189,7 @@ namespace ColorVision.Update
 
         private static string FormatVersion(string? value)
         {
-            return string.IsNullOrWhiteSpace(value) ? "Unknown" : value.Trim();
+            return string.IsNullOrWhiteSpace(value) ? UpdatePreviewText.UnknownVersion : value.Trim();
         }
 
         private static bool HasMeaningfulHostRequirement(string? value)
@@ -205,7 +289,7 @@ namespace ColorVision.Update
         }
 
         public string WindowTitle { get => _windowTitle; set { _windowTitle = value; OnPropertyChanged(); } }
-        private string _windowTitle = "检查更新";
+        private string _windowTitle = UpdatePreviewText.WindowTitle;
 
         public double WindowWidth { get => _windowWidth; set { _windowWidth = value; OnPropertyChanged(); } }
         private double _windowWidth = StandardWindowWidth;
@@ -226,7 +310,7 @@ namespace ColorVision.Update
         private bool _windowAutoSizeHeight;
 
         public string Heading { get => _heading; set { _heading = value; OnPropertyChanged(); } }
-        private string _heading = "正在检查更新";
+        private string _heading = UpdatePreviewText.CheckingHeading;
 
         public string Summary
         {
@@ -238,19 +322,19 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(HeaderSummaryText));
             }
         }
-        private string _summary = "正在获取主程序、插件和主题的最新版本信息，请稍候。";
+        private string _summary = UpdatePreviewText.CheckingSummary;
 
         public string CheckingTitle { get => _checkingTitle; set { _checkingTitle = value; OnPropertyChanged(); } }
-        private string _checkingTitle = "正在扫描可用更新项";
+        private string _checkingTitle = UpdatePreviewText.ScanningTitle;
 
         public string CheckingSummary { get => _checkingSummary; set { _checkingSummary = value; OnPropertyChanged(); } }
-        private string _checkingSummary = "正在获取主程序、插件和主题的最新版本信息，请稍候。";
+        private string _checkingSummary = UpdatePreviewText.CheckingSummary;
 
         public string EmptyStateTitle { get => _emptyStateTitle; set { _emptyStateTitle = value; OnPropertyChanged(); } }
-        private string _emptyStateTitle = "当前没有可用更新";
+        private string _emptyStateTitle = UpdatePreviewText.NoUpdatesTitle;
 
         public string EmptyStateMessage { get => _emptyStateMessage; set { _emptyStateMessage = value; OnPropertyChanged(); } }
-        private string _emptyStateMessage = "当前主程序、插件和主题均无需更新。";
+        private string _emptyStateMessage = UpdatePreviewText.NoUpdatesMessage;
 
         public string StateGlyph { get => _stateGlyph; set { _stateGlyph = value; OnPropertyChanged(); } }
         private string _stateGlyph = "\uE895";
@@ -329,14 +413,14 @@ namespace ColorVision.Update
 
         public string ConfirmButtonText
         {
-            get => IsUpdating ? "正在更新..." : _confirmButtonBaseText;
+            get => IsUpdating ? UpdatePreviewText.UpdatingButtonText : _confirmButtonBaseText;
             set
             {
                 _confirmButtonBaseText = value;
                 OnPropertyChanged();
             }
         }
-        private string _confirmButtonBaseText = "立即更新";
+        private string _confirmButtonBaseText = UpdatePreviewText.UpdateNowButtonText;
 
         public bool IsUpdating
         {
@@ -354,7 +438,7 @@ namespace ColorVision.Update
         private bool _isUpdating;
 
         public string CancelButtonText { get => _cancelButtonText; set { _cancelButtonText = value; OnPropertyChanged(); } }
-        private string _cancelButtonText = "稍后";
+        private string _cancelButtonText = UpdatePreviewText.LaterButtonText;
 
         public string? SecondaryButtonText
         {
@@ -386,15 +470,15 @@ namespace ColorVision.Update
 
         public int ApplicationUpdateCount => Items.Count(IsApplicationUpdate);
 
-        public int PluginUpdateCount => Items.Count(item => item.Category.Contains("插件", StringComparison.OrdinalIgnoreCase));
+        public int PluginUpdateCount => Items.Count(item => item.Kind == UpdatePreviewItemKind.Plugin);
 
-        public int ThemeUpdateCount => Items.Count(item => item.Category.Contains("主题", StringComparison.OrdinalIgnoreCase));
+        public int ThemeUpdateCount => Items.Count(item => item.Kind == UpdatePreviewItemKind.Theme);
 
         public bool HasApplicationUpdates => ApplicationUpdateCount > 0;
 
         public bool AreAllSelectableItemsPlugins => !HasSelectableItems
             || Items.Where(item => item.IsSelectable)
-                .All(item => item.Category.Contains("插件", StringComparison.OrdinalIgnoreCase));
+                .All(item => item.Kind == UpdatePreviewItemKind.Plugin);
 
         public string HeaderSummaryText
         {
@@ -406,21 +490,21 @@ namespace ColorVision.Update
                 List<string> segments = new();
 
                 if (ApplicationUpdateCount > 0)
-                    segments.Add($"{ApplicationUpdateCount} 个主程序更新");
+                    segments.Add(UpdatePreviewText.HeaderApplicationCount(ApplicationUpdateCount));
 
                 if (PluginUpdateCount > 0)
-                    segments.Add($"{PluginUpdateCount} 个插件更新");
+                    segments.Add(UpdatePreviewText.HeaderPluginCount(PluginUpdateCount));
 
                 if (ThemeUpdateCount > 0)
-                    segments.Add($"{ThemeUpdateCount} 个主题更新");
+                    segments.Add(UpdatePreviewText.HeaderThemeCount(ThemeUpdateCount));
 
                 int otherCount = Items.Count - ApplicationUpdateCount - PluginUpdateCount - ThemeUpdateCount;
                 if (otherCount > 0)
-                    segments.Add($"{otherCount} 个其他更新");
+                    segments.Add(UpdatePreviewText.HeaderOtherCount(otherCount));
 
                 return segments.Count == 0
-                    ? $"发现 {Items.Count} 个可用更新，可按需选择后立即安装。"
-                    : $"发现 {Items.Count} 个可用更新，其中 {string.Join("、", segments)}。";
+                    ? UpdatePreviewText.DialogSummaryDefault(Items.Count)
+                    : UpdatePreviewText.DialogSummaryWithKinds(Items.Count, string.Join(UpdatePreviewText.ListSeparator, segments));
             }
         }
 
@@ -434,22 +518,23 @@ namespace ColorVision.Update
                 List<string> segments = new();
 
                 if (HasApplicationUpdates)
-                    segments.Add("包含主程序更新");
+                    segments.Add(UpdatePreviewText.SelectionIncludesApplication);
 
                 if (HasSelectableItems)
                 {
-                    string unit = AreAllSelectableItemsPlugins ? "个插件" : "个可选更新";
-                    segments.Add($"已选择 {SelectedSelectableItemCount} / {SelectableItemCount} {unit}");
+                    segments.Add(AreAllSelectableItemsPlugins
+                        ? UpdatePreviewText.SelectionSelectedPlugins(SelectedSelectableItemCount, SelectableItemCount)
+                        : UpdatePreviewText.SelectionSelectedUpdates(SelectedSelectableItemCount, SelectableItemCount));
                 }
                 else if (HasAlwaysIncludedItems && !HasApplicationUpdates)
                 {
-                    segments.Add("包含必选更新");
+                    segments.Add(UpdatePreviewText.SelectionIncludesRequired);
                 }
 
                 if (HasApplicationUpdates)
-                    segments.Add("更新完成后将重启应用");
+                    segments.Add(UpdatePreviewText.SelectionRestartRequired);
                 else if (HasSelectableItems || HasAlwaysIncludedItems)
-                    segments.Add("更新前会自动创建备份，完成后可能需要重启应用");
+                    segments.Add(UpdatePreviewText.SelectionBackupAndRestart);
 
                 return string.Join(" · ", segments);
             }
@@ -488,8 +573,8 @@ namespace ColorVision.Update
         {
             get
             {
-                int hostCount = Items.Count(item => item.Category.Contains("主程序", StringComparison.OrdinalIgnoreCase));
-                int pluginCount = Items.Count(item => item.Category == "插件更新");
+                int hostCount = Items.Count(IsApplicationUpdate);
+                int pluginCount = Items.Count(item => item.Kind == UpdatePreviewItemKind.Plugin);
 
                 if (hostCount > 0 && pluginCount > 0)
                     return $"包含 {hostCount} 个主体更新项和 {pluginCount} 个插件更新项。";
@@ -590,8 +675,9 @@ namespace ColorVision.Update
 
         private static bool IsApplicationUpdate(UpdatePreviewItem item)
         {
-            return item.ItemId == "application"
-                || item.Category.Contains("主程序", StringComparison.OrdinalIgnoreCase);
+            return item.Kind == UpdatePreviewItemKind.Application
+                || item.Kind == UpdatePreviewItemKind.ApplicationIncremental
+                || item.ItemId == "application";
         }
     }
 
@@ -651,7 +737,7 @@ namespace ColorVision.Update
 
         private void ApplyWindowPresentation()
         {
-            Title = string.IsNullOrWhiteSpace(Context.WindowTitle) ? "检查更新" : Context.WindowTitle;
+            Title = string.IsNullOrWhiteSpace(Context.WindowTitle) ? UpdatePreviewText.WindowTitle : Context.WindowTitle;
             MinWidth = UpdatePreviewDialogContext.StandardWindowMinWidth;
             MinHeight = UpdatePreviewDialogContext.StandardWindowMinHeight;
             MaxWidth = UpdatePreviewDialogContext.StandardWindowWidth;

@@ -309,4 +309,148 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>檢測插件更新</value>
   </data>
+  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+    <value>正在檢查更新</value>
+  </data>
+  <data name="UpdatePreviewCheckingSummary" xml:space="preserve">
+    <value>正在取得主程式、外掛與主題的最新版本資訊，請稍候。</value>
+  </data>
+  <data name="UpdatePreviewScanningTitle" xml:space="preserve">
+    <value>正在掃描可用更新項目</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesTitle" xml:space="preserve">
+    <value>目前沒有可用更新</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesMessage" xml:space="preserve">
+    <value>目前主程式、外掛與主題皆無需更新。</value>
+  </data>
+  <data name="UpdatePreviewFoundUpdatesHeading" xml:space="preserve">
+    <value>發現更新</value>
+  </data>
+  <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
+    <value>已是最新版本</value>
+  </data>
+  <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
+    <value>立即更新</value>
+  </data>
+  <data name="UpdatePreviewUpdatingButtonText" xml:space="preserve">
+    <value>正在更新...</value>
+  </data>
+  <data name="UpdatePreviewLaterButtonText" xml:space="preserve">
+    <value>稍後</value>
+  </data>
+  <data name="UpdatePreviewCancelButtonText" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="UpdatePreviewCloseButtonText" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="UpdatePreviewSkipVersionButtonText" xml:space="preserve">
+    <value>跳過此版本</value>
+  </data>
+  <data name="UpdatePreviewRequiredBadge" xml:space="preserve">
+    <value>必選</value>
+  </data>
+  <data name="UpdatePreviewUnknownVersion" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateCategory" xml:space="preserve">
+    <value>主程式更新</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalCategory" xml:space="preserve">
+    <value>主程式增量更新</value>
+  </data>
+  <data name="UpdatePreviewPluginUpdateCategory" xml:space="preserve">
+    <value>外掛更新</value>
+  </data>
+  <data name="UpdatePreviewApplicationFullPackageLabel" xml:space="preserve">
+    <value>完整主程式安裝套件</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
+    <value>主程式</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindPlugin" xml:space="preserve">
+    <value>外掛</value>
+  </data>
+  <data name="UpdatePreviewNoInstallableUpdatesMessage" xml:space="preserve">
+    <value>目前未發現需要安裝的更新項目。</value>
+  </data>
+  <data name="UpdatePreviewPackageDownloadFailed" xml:space="preserve">
+    <value>更新套件下載失敗，請稍後再試。</value>
+  </data>
+  <data name="UpdatePreviewPluginDownloadFailed" xml:space="preserve">
+    <value>外掛下載未成功完成，請稍後再試。</value>
+  </data>
+  <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
+    <value>沒有可更新的外掛。</value>
+  </data>
+  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
+    <value>聯合更新套件下載不完整，請稍後再試。</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
+    <value>目前主程式與外掛都已是最新版本。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryNoUpdates" xml:space="preserve">
+    <value>目前主程式、外掛與主題皆無需更新。</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
+    <value>將下載完整安裝套件並沿用目前的主程式更新流程。</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
+    <value>包含主程式更新</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
+    <value>包含必選更新</value>
+  </data>
+  <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
+    <value>更新完成後將重新啟動應用程式</value>
+  </data>
+  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
+    <value>更新前會自動建立備份，完成後可能需要重新啟動應用程式</value>
+  </data>
+  <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
+    <value>宿主要求：{0}</value>
+  </data>
+  <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
+    <value>主程式版本 {0}</value>
+  </data>
+  <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
+    <value>以下更新因相容性要求未顯示：{0}</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalPackagesFormat" xml:space="preserve">
+    <value>{0} 個增量更新套件</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryIncrementalFormat" xml:space="preserve">
+    <value>本輪更新將套用 {0} 個主程式增量套件，並與所選更新一併完成。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryWithKinds" xml:space="preserve">
+    <value>發現 {0} 個可用更新，包含{1}。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryDefault" xml:space="preserve">
+    <value>發現 {0} 個可用更新，可依需要選擇後立即安裝。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummarySkippedCount" xml:space="preserve">
+    <value>另有 {0} 個更新因相容性要求未顯示。</value>
+  </data>
+  <data name="UpdatePreviewHeaderApplicationCount" xml:space="preserve">
+    <value>{0} 個主程式更新</value>
+  </data>
+  <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
+    <value>{0} 個外掛更新</value>
+  </data>
+  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
+    <value>{0} 個主題更新</value>
+  </data>
+  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
+    <value>{0} 個其他更新</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
+    <value>已選擇 {0} / {1} 個外掛</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedUpdatesFormat" xml:space="preserve">
+    <value>已選擇 {0} / {1} 個可選更新</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
+    <value>目前沒有可執行的聯合更新。以下外掛因相容性要求被略過：{0}</value>
+  </data>
 </root>

@@ -8,7 +8,7 @@
         Height="580"
         MinWidth="860"
         MinHeight="520"
-        Title="检查更新"
+        Title="{x:Static local:UpdatePreviewText.WindowTitle}"
         ResizeMode="NoResize"
         SizeToContent="Manual"
         Background="{DynamicResource UpdateDialog.WindowBorder}"
@@ -203,7 +203,7 @@
                                                 <TextBlock FontSize="11"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource UpdateDialog.TagForeground}"
-                                                           Text="必选" />
+                                                           Text="{x:Static local:UpdatePreviewText.RequiredBadge}" />
                                             </Border>
                                         </Grid>
 

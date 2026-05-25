@@ -257,7 +257,7 @@ namespace ColorVision.Update
         private static void ShowUpdateDownloadFailedMessage()
         {
             ClearWorkflowState();
-            MessageBox.Show(Application.Current.GetActiveWindow(), "更新包下载失败，请稍后重试。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.PackageDownloadFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private static async Task StartPluginUpdateAsync(CombinedPluginUpdatePlan pluginPlan, bool showNoUpdatesMessage)
@@ -276,12 +276,12 @@ namespace ColorVision.Update
                 restartArguments: null,
                 noRestartAction: () =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "插件下载未成功完成，请稍后重试。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.PluginDownloadFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 });
 
             if (!started && showNoUpdatesMessage)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "没有可更新的插件。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.NoPluginUpdates, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             await Task.CompletedTask;
@@ -362,7 +362,7 @@ namespace ColorVision.Update
                 {
                     if (failed || orderedApplicationPaths == null || orderedPluginPaths == null)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "联合更新包下载不完整，请稍后重试。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.CombinedPackageIncomplete, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 
@@ -470,15 +470,15 @@ namespace ColorVision.Update
         {
             return new UpdatePreviewDialogContext
             {
-                WindowTitle = "检查更新",
-                Heading = "正在检查更新",
-                Summary = "正在获取主程序、插件和主题的最新版本信息，请稍候。",
-                CheckingTitle = "正在扫描可用更新项",
-                CheckingSummary = "正在获取主程序、插件和主题的最新版本信息，请稍候。",
+                WindowTitle = UpdatePreviewText.WindowTitle,
+                Heading = UpdatePreviewText.CheckingHeading,
+                Summary = UpdatePreviewText.CheckingSummary,
+                CheckingTitle = UpdatePreviewText.ScanningTitle,
+                CheckingSummary = UpdatePreviewText.CheckingSummary,
                 StateGlyph = "\uE895",
-                HostVersionText = $"主程序版本 {AutoUpdater.CurrentVersion}",
-                ConfirmButtonText = "立即更新",
-                CancelButtonText = "取消",
+                HostVersionText = UpdatePreviewText.HostVersion(AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion),
+                ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
+                CancelButtonText = UpdatePreviewText.CancelButtonText,
                 SecondaryButtonText = null,
                 WindowWidth = 780,
                 WindowHeight = 360,
@@ -493,22 +493,22 @@ namespace ColorVision.Update
         private static UpdatePreviewDialogContext CreateNoUpdatesContext(CombinedPluginUpdatePlan? pluginPlan)
         {
             string emptyMessage = pluginPlan?.SkippedIncompatiblePlugins.Count > 0
-                ? $"以下更新因兼容性要求未显示：{string.Join("、", pluginPlan.SkippedIncompatiblePlugins)}"
-                : "当前未发现需要安装的更新项。";
+                ? UpdatePreviewText.SkippedIncompatibleUpdates(string.Join(UpdatePreviewText.ListSeparator, pluginPlan.SkippedIncompatiblePlugins))
+                : UpdatePreviewText.NoInstallableUpdatesMessage;
 
             return new UpdatePreviewDialogContext
             {
-                WindowTitle = "检查更新",
-                Heading = "已是最新版本",
-                Summary = "当前主程序、插件和主题均无需更新。",
-                CheckingTitle = "正在扫描可用更新项",
-                CheckingSummary = "正在获取主程序、插件和主题的最新版本信息，请稍候。",
-                EmptyStateTitle = "已是最新版本",
+                WindowTitle = UpdatePreviewText.WindowTitle,
+                Heading = UpdatePreviewText.AlreadyLatestHeading,
+                Summary = UpdatePreviewText.DialogSummaryNoUpdates,
+                CheckingTitle = UpdatePreviewText.ScanningTitle,
+                CheckingSummary = UpdatePreviewText.CheckingSummary,
+                EmptyStateTitle = UpdatePreviewText.AlreadyLatestHeading,
                 EmptyStateMessage = emptyMessage,
                 StateGlyph = "\uE73E",
-                HostVersionText = $"主程序版本 {AutoUpdater.CurrentVersion}",
-                ConfirmButtonText = "立即更新",
-                CancelButtonText = "关闭",
+                HostVersionText = UpdatePreviewText.HostVersion(AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion),
+                ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
+                CancelButtonText = UpdatePreviewText.CloseButtonText,
                 SecondaryButtonText = null,
                 WindowWidth = 780,
                 WindowHeight = 360,
@@ -537,13 +537,13 @@ namespace ColorVision.Update
         {
             UpdatePreviewDialogContext context = new()
             {
-                WindowTitle = "检查更新",
+                WindowTitle = UpdatePreviewText.WindowTitle,
                 Heading = BuildPreviewHeading(applicationPlan, pluginPlan),
                 Summary = BuildDialogSummary(applicationPlan, pluginPlan),
-                HostVersionText = $"主程序版本 {applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion}",
-                ConfirmButtonText = "立即更新",
-                CancelButtonText = isStartupCheck ? "稍后" : "取消",
-                SecondaryButtonText = allowSkipVersion ? "跳过此版本" : null,
+                HostVersionText = UpdatePreviewText.HostVersion((applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion)?.ToString() ?? UpdatePreviewText.UnknownVersion),
+                ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
+                CancelButtonText = isStartupCheck ? UpdatePreviewText.LaterButtonText : UpdatePreviewText.CancelButtonText,
+                SecondaryButtonText = allowSkipVersion ? UpdatePreviewText.SkipVersionButtonText : null,
             };
 
             if (applicationPlan != null)
@@ -551,11 +551,12 @@ namespace ColorVision.Update
                 UpdatePreviewItem previewItem = new()
                 {
                     ItemId = "application",
-                    Category = applicationPlan.IsIncremental ? "主程序增量" : "主程序更新",
+                    Kind = applicationPlan.IsIncremental ? UpdatePreviewItemKind.ApplicationIncremental : UpdatePreviewItemKind.Application,
+                    Category = applicationPlan.IsIncremental ? UpdatePreviewText.ApplicationIncrementalCategory : UpdatePreviewText.ApplicationUpdateCategory,
                     Name = "ColorVision",
                     SecondaryLabel = applicationPlan.IsIncremental
-                        ? $"{applicationPlan.VersionsToApply.Count} 个增量更新包"
-                        : "完整主程序安装包",
+                        ? UpdatePreviewText.ApplicationIncrementalPackages(applicationPlan.VersionsToApply.Count)
+                        : UpdatePreviewText.ApplicationFullPackageLabel,
                     CurrentVersion = applicationPlan.CurrentVersion.ToString(),
                     TargetVersion = applicationPlan.LatestVersion.ToString(),
                     VersionSummary = $"{applicationPlan.CurrentVersion} -> {applicationPlan.LatestVersion}",
@@ -596,18 +597,19 @@ namespace ColorVision.Update
                 {
                     string pluginName = GetPluginDisplayName(item);
                     string pluginItemId = GetPluginItemId(item);
-                    string currentVersion = item.Plugin.AssemblyVersion?.ToString() ?? "Unknown";
+                    string currentVersion = item.Plugin.AssemblyVersion?.ToString() ?? UpdatePreviewText.UnknownVersion;
 
                     UpdatePreviewItem previewItem = new()
                     {
                         ItemId = pluginItemId,
-                        Category = "插件更新",
+                        Kind = UpdatePreviewItemKind.Plugin,
+                        Category = UpdatePreviewText.PluginUpdateCategory,
                         Name = pluginName,
                         SecondaryLabel = BuildPluginSecondaryLabel(item, pluginName),
                         CurrentVersion = currentVersion,
                         TargetVersion = item.VersionInfo.Version,
                         HostRequirement = string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion)
-                            ? "未指定"
+                            ? string.Empty
                             : item.VersionInfo.RequiresVersion,
                         VersionSummary = $"{currentVersion} -> {item.VersionInfo.Version}",
                         Summary = BuildPluginCardSummary(item),
@@ -659,19 +661,18 @@ namespace ColorVision.Update
         {
             int updateCount = (applicationPlan != null ? 1 : 0) + (pluginPlan?.Updates.Count ?? 0);
             if (updateCount == 0)
-                return "当前主程序、插件和主题均无需更新。";
+                return UpdatePreviewText.DialogSummaryNoUpdates;
 
             List<string> updateKinds = BuildUpdateKinds(applicationPlan, pluginPlan);
             StringBuilder builder = new();
 
             if (updateKinds.Count > 1)
-                builder.Append($"发现 {updateCount} 个可用更新，包含{string.Join("、", updateKinds)}。"
-);
+                builder.Append(UpdatePreviewText.DialogSummaryWithKinds(updateCount, string.Join(UpdatePreviewText.ListSeparator, updateKinds)));
             else
-                builder.Append($"发现 {updateCount} 个可用更新，可按需选择后立即安装。");
+                builder.Append(UpdatePreviewText.DialogSummaryDefault(updateCount));
 
             if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
-                builder.Append($" 另有 {pluginPlan.SkippedIncompatiblePlugins.Count} 个更新因兼容性要求未显示。");
+                builder.Append($" {UpdatePreviewText.DialogSummarySkippedCount(pluginPlan.SkippedIncompatiblePlugins.Count)}");
 
             return builder.ToString();
         }
@@ -679,9 +680,9 @@ namespace ColorVision.Update
         private static string BuildApplicationCardSummary(AutoUpdatePlan applicationPlan)
         {
             if (applicationPlan.IsIncremental)
-                return $"将应用 {applicationPlan.VersionsToApply.Count} 个主程序增量包，并与所选更新一起完成本轮更新。";
+                return UpdatePreviewText.ApplicationCardSummaryIncremental(applicationPlan.VersionsToApply.Count);
 
-            return "将下载完整安装包并沿用当前主程序更新流程。";
+            return UpdatePreviewText.ApplicationCardSummaryFull;
         }
 
         private static string BuildPluginCardSummary(CombinedPluginUpdateItem item)
@@ -706,8 +707,8 @@ namespace ColorVision.Update
         private static string BuildPreviewHeading(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
             return applicationPlan != null || pluginPlan?.HasUpdates == true
-                ? "发现更新"
-                : "检查更新";
+                ? UpdatePreviewText.FoundUpdatesHeading
+                : UpdatePreviewText.WindowTitle;
         }
 
         private static string BuildPreviewSummary(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
@@ -720,10 +721,10 @@ namespace ColorVision.Update
             List<string> kinds = new();
 
             if (applicationPlan != null)
-                kinds.Add("主程序");
+                kinds.Add(UpdatePreviewText.UpdateKindApplication);
 
             if (pluginPlan?.HasUpdates == true)
-                kinds.Add("插件");
+                kinds.Add(UpdatePreviewText.UpdateKindPlugin);
 
             return kinds;
         }
@@ -977,12 +978,12 @@ namespace ColorVision.Update
         {
             if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
             {
-                string skippedPlugins = string.Join("、", pluginPlan.SkippedIncompatiblePlugins);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"当前没有可执行的联合更新。以下插件因兼容性要求被跳过：{skippedPlugins}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                string skippedPlugins = string.Join(UpdatePreviewText.ListSeparator, pluginPlan.SkippedIncompatiblePlugins);
+                MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.ShowNoUpdatesSkippedMessage(skippedPlugins), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            MessageBox1.Show(Application.Current.GetActiveWindow(), "当前主体和插件都已经是最新版本。", "ColorVision", MessageBoxButton.OK);
+            MessageBox1.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.ShowNoUpdatesLatestMessage, "ColorVision", MessageBoxButton.OK);
         }
     }
 

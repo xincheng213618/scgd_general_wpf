@@ -309,4 +309,148 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>Проверить обновления плагинов</value>
   </data>
+  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+    <value>Проверка обновлений</value>
+  </data>
+  <data name="UpdatePreviewCheckingSummary" xml:space="preserve">
+    <value>Получение сведений о последних версиях основного приложения, плагинов и тем. Пожалуйста, подождите.</value>
+  </data>
+  <data name="UpdatePreviewScanningTitle" xml:space="preserve">
+    <value>Поиск доступных обновлений</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesTitle" xml:space="preserve">
+    <value>Нет доступных обновлений</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesMessage" xml:space="preserve">
+    <value>Основное приложение, плагины и темы уже обновлены.</value>
+  </data>
+  <data name="UpdatePreviewFoundUpdatesHeading" xml:space="preserve">
+    <value>Найдены обновления</value>
+  </data>
+  <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
+    <value>Уже установлена последняя версия</value>
+  </data>
+  <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
+    <value>Обновить сейчас</value>
+  </data>
+  <data name="UpdatePreviewUpdatingButtonText" xml:space="preserve">
+    <value>Обновление...</value>
+  </data>
+  <data name="UpdatePreviewLaterButtonText" xml:space="preserve">
+    <value>Позже</value>
+  </data>
+  <data name="UpdatePreviewCancelButtonText" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="UpdatePreviewCloseButtonText" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="UpdatePreviewSkipVersionButtonText" xml:space="preserve">
+    <value>Пропустить эту версию</value>
+  </data>
+  <data name="UpdatePreviewRequiredBadge" xml:space="preserve">
+    <value>Обязательно</value>
+  </data>
+  <data name="UpdatePreviewUnknownVersion" xml:space="preserve">
+    <value>Неизвестно</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateCategory" xml:space="preserve">
+    <value>Обновление приложения</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalCategory" xml:space="preserve">
+    <value>Инкрементальное обновление приложения</value>
+  </data>
+  <data name="UpdatePreviewPluginUpdateCategory" xml:space="preserve">
+    <value>Обновление плагина</value>
+  </data>
+  <data name="UpdatePreviewApplicationFullPackageLabel" xml:space="preserve">
+    <value>Полный установщик приложения</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
+    <value>приложение</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindPlugin" xml:space="preserve">
+    <value>плагины</value>
+  </data>
+  <data name="UpdatePreviewNoInstallableUpdatesMessage" xml:space="preserve">
+    <value>Не найдено обновлений, требующих установки.</value>
+  </data>
+  <data name="UpdatePreviewPackageDownloadFailed" xml:space="preserve">
+    <value>Не удалось загрузить пакет обновления. Повторите попытку позже.</value>
+  </data>
+  <data name="UpdatePreviewPluginDownloadFailed" xml:space="preserve">
+    <value>Загрузка плагина завершилась неуспешно. Повторите попытку позже.</value>
+  </data>
+  <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
+    <value>Нет плагинов для обновления.</value>
+  </data>
+  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
+    <value>Пакеты комбинированного обновления загружены не полностью. Повторите попытку позже.</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
+    <value>Приложение и плагины уже обновлены.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryNoUpdates" xml:space="preserve">
+    <value>Основное приложение, плагины и темы уже обновлены.</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
+    <value>Будет загружен полный установщик и использован текущий процесс обновления приложения.</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
+    <value>Включает обновление приложения</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
+    <value>Включает обязательные обновления</value>
+  </data>
+  <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
+    <value>После завершения обновления приложение будет перезапущено</value>
+  </data>
+  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
+    <value>Перед обновлением автоматически создаётся резервная копия, а после завершения может потребоваться перезапуск</value>
+  </data>
+  <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
+    <value>Требование к хосту: {0}</value>
+  </data>
+  <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
+    <value>Версия основного приложения {0}</value>
+  </data>
+  <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
+    <value>Следующие обновления скрыты из-за требований совместимости: {0}</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalPackagesFormat" xml:space="preserve">
+    <value>Инкрементальных пакетов: {0}</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryIncrementalFormat" xml:space="preserve">
+    <value>В этом цикле будет применено {0} инкрементальных пакетов приложения вместе с выбранными обновлениями.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryWithKinds" xml:space="preserve">
+    <value>Доступно {0} обновлений, включая {1}.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryDefault" xml:space="preserve">
+    <value>Доступно {0} обновлений. Выберите нужные и установите их сейчас.</value>
+  </data>
+  <data name="UpdatePreviewDialogSummarySkippedCount" xml:space="preserve">
+    <value>Ещё {0} обновлений скрыты из-за требований совместимости.</value>
+  </data>
+  <data name="UpdatePreviewHeaderApplicationCount" xml:space="preserve">
+    <value>Обновлений приложения: {0}</value>
+  </data>
+  <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
+    <value>Обновлений плагинов: {0}</value>
+  </data>
+  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
+    <value>Обновлений тем: {0}</value>
+  </data>
+  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
+    <value>Других обновлений: {0}</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
+    <value>Выбрано плагинов: {0} из {1}</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedUpdatesFormat" xml:space="preserve">
+    <value>Выбрано необязательных обновлений: {0} из {1}</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
+    <value>Нет доступных комбинированных обновлений для выполнения. Следующие плагины были пропущены из-за требований совместимости: {0}</value>
+  </data>
 </root>
