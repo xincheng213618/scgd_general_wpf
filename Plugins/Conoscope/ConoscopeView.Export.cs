@@ -97,6 +97,95 @@ namespace Conoscope
             return ready;
         }
 
+        private bool TryValidateExportChannels(List<ExportChannel> channels)
+        {
+            foreach (ExportChannel channel in channels)
+            {
+                string? error = GetChannelNotReadyReason(channel);
+                if (error != null)
+                {
+                    MessageBox.Show(error, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private string? GetChannelNotReadyReason(ExportChannel channel)
+        {
+            ContrastReferenceKind contrastKind = GetRequiredContrastReferenceKind();
+            OpenCvSharp.Mat? contrastRefMat = GlobalReferences.GetContrastReferenceYMat(contrastKind);
+            bool contrastSizeOk = contrastRefMat == null || YMat == null || (YMat.Width == contrastRefMat.Width && YMat.Height == contrastRefMat.Height);
+            bool cdSizeOk = XMat == null || GlobalReferences.ColorDifferenceReferenceUMat == null
+                || (XMat.Width == GlobalReferences.ColorDifferenceReferenceUMat.Width && XMat.Height == GlobalReferences.ColorDifferenceReferenceUMat.Height);
+
+            return GetExportChannelReadiness(channel,
+                hasYMat: YMat != null,
+                hasXyzData: HasXyzData(),
+                hasContrastReference: contrastRefMat != null,
+                contrastReferenceSizeMatches: contrastSizeOk,
+                colorDifferenceMode: GetSelectedColorDifferenceReferenceMode(),
+                hasColorDifferenceReference: GlobalReferences.HasColorDifferenceReference,
+                colorDifferenceReferenceSizeMatches: cdSizeOk,
+                hasValidCustomUv: TryParseCustomColorDifferenceReference(out _));
+        }
+
+        internal static string? GetExportChannelReadiness(
+            ExportChannel channel,
+            bool hasYMat,
+            bool hasXyzData,
+            bool hasContrastReference,
+            bool contrastReferenceSizeMatches,
+            ColorDifferenceReferenceMode colorDifferenceMode,
+            bool hasColorDifferenceReference,
+            bool colorDifferenceReferenceSizeMatches,
+            bool hasValidCustomUv)
+        {
+            if (channel == ExportChannel.Y)
+            {
+                return hasYMat ? null : Properties.Resources.MsgLoadImageFirst;
+            }
+
+            if (!hasXyzData)
+            {
+                return Properties.Resources.XYZDataNotLoaded;
+            }
+
+            if (channel == ExportChannel.Contrast)
+            {
+                if (!hasContrastReference)
+                {
+                    return Properties.Resources.MsgSaveContrastReferenceRequired;
+                }
+
+                if (!contrastReferenceSizeMatches)
+                {
+                    return Properties.Resources.MsgContrastReferenceImageSizeMismatch;
+                }
+            }
+
+            if (channel == ExportChannel.ColorDifference)
+            {
+                if (colorDifferenceMode == ColorDifferenceReferenceMode.ReferenceImage && !hasColorDifferenceReference)
+                {
+                    return Properties.Resources.MsgGlobalColorDifferenceReferenceRequired;
+                }
+
+                if (colorDifferenceMode == ColorDifferenceReferenceMode.ReferenceImage && !colorDifferenceReferenceSizeMatches)
+                {
+                    return Properties.Resources.MsgImageSizeMismatch;
+                }
+
+                if (colorDifferenceMode == ColorDifferenceReferenceMode.Custom && !hasValidCustomUv)
+                {
+                    return Properties.Resources.MsgInvalidCustomUvReference;
+                }
+            }
+
+            return null;
+        }
+
         private string? TrySelectCsvSavePath(string defaultFileName)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog
@@ -141,7 +230,6 @@ namespace Conoscope
                 },
                 ReadContrast = (ix, iy) =>
                 {
-                    EnsureContrastReferenceReady();
                     ExtractXYZValues(ix, iy, out _, out double Y, out _);
                     return GetContrastValue(ix, iy, Y);
                 }
@@ -169,6 +257,11 @@ namespace Conoscope
                     if (!HasXyzData() && settings.Channels.Exists(channel => channel != ExportChannel.Y))
                     {
                         MessageBox.Show(Properties.Resources.XYZDataNotLoaded, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    if (!TryValidateExportChannels(settings.Channels))
+                    {
                         return;
                     }
 

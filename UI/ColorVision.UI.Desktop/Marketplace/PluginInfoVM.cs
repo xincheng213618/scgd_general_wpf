@@ -44,14 +44,15 @@ namespace ColorVision.UI.Desktop.Marketplace
         }.Where(item => !string.IsNullOrWhiteSpace(item))!);
 
         public string? HeaderRightPrimary => PluginInfo?.Manifest?.DllName;
+        public string HeaderRightSecondary => string.Empty;
 
         public string InstalledBadgeText => string.IsNullOrWhiteSpace(AssemblyVersion?.ToString())
-            ? "Installed"
-            : $"Installed v{AssemblyVersion}";
+            ? Resources.Installed
+            : string.Format(Resources.MarketplaceInstalledVersionFormat, AssemblyVersion);
         public Visibility InstalledBadgeVisibility => Visibility.Visible;
         public Visibility UpdateBadgeVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
         public string UpdateBadgeText => HasUpdate && LastVersion != null
-            ? $"Update v{LastVersion}"
+            ? string.Format(Resources.MarketplaceUpdateVersionFormat, LastVersion)
             : string.Empty;
 
         public Visibility OpenLocalPathVisibility => Visibility.Visible;
@@ -116,7 +117,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Update, Command = UpdateCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "OpenLocalPath", Command = OpenLocalPathCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MarketplaceOpenLocalPath, Command = OpenLocalPathCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.ExtractPlugin, Command = ExtractPluginCommand });
 
 

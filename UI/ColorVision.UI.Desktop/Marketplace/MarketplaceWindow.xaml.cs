@@ -12,6 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using DesktopResources = ColorVision.UI.Desktop.Properties.Resources;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {
@@ -21,6 +22,13 @@ namespace ColorVision.UI.Desktop.Marketplace
     /// </summary>
     public partial class MarketplaceWindow : Window
     {
+        private enum DetailPanelMode
+        {
+            None,
+            Installed,
+            Marketplace,
+        }
+
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceWindow));
         private MarketplaceManager? _manager;
         private bool _isRefreshingVersions;
@@ -122,12 +130,18 @@ namespace ColorVision.UI.Desktop.Marketplace
             switch (BorderContent.DataContext)
             {
                 case PluginInfoVM pluginInfoVM:
+                    SetDetailPanelMode(DetailPanelMode.Installed);
+                    MarketplaceDetailScrollViewer.DataContext = null;
                     await RefreshInstalledPluginDetailAsync(pluginInfoVM);
                     break;
                 case MarketplaceDetailContext marketplaceDetail:
+                    SetDetailPanelMode(DetailPanelMode.Marketplace);
+                    MarketplaceDetailScrollViewer.DataContext = marketplaceDetail;
                     await RefreshMarketplaceDetailAsync(marketplaceDetail);
                     break;
                 default:
+                    SetDetailPanelMode(DetailPanelMode.None);
+                    MarketplaceDetailScrollViewer.DataContext = null;
                     DetailInfo.Children.Clear();
                     DependentsListView.ItemsSource = null;
                     break;
@@ -139,18 +153,13 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
             {
                 IsRefreshChangedX = true;
-                await RenderMarkdownAsync(webViewReadMe, context.Readme, "暂无 README");
+                await RenderMarkdownAsync(webViewReadMe, context.Readme, DesktopResources.MarketplaceReadmeEmpty);
             }
 
             if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
             {
                 IsRefreshChangedY = true;
-                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog, "暂无 CHANGELOG");
-            }
-
-            if (TabControl1.SelectedIndex == 2)
-            {
-                context.PopulateDetailInfo(DetailInfo, DependentsListView);
+                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
             }
 
             if (TabControl1.SelectedIndex == 3)
@@ -164,13 +173,13 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
             {
                 IsRefreshChangedX = true;
-                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README, "暂无 README");
+                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README, DesktopResources.MarketplaceReadmeEmpty);
             }
 
             if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
             {
                 IsRefreshChangedY = true;
-                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog, "暂无 CHANGELOG");
+                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
             }
 
             if (TabControl1.SelectedIndex == 2)
@@ -310,6 +319,12 @@ namespace ColorVision.UI.Desktop.Marketplace
             IsRefreshChangedX = false;
             IsRefreshChangedY = false;
             await RefreshSelectedDetailAsync();
+        }
+
+        private void SetDetailPanelMode(DetailPanelMode mode)
+        {
+            InstalledDetailScrollViewer.Visibility = mode == DetailPanelMode.Installed ? Visibility.Visible : Visibility.Collapsed;
+            MarketplaceDetailScrollViewer.Visibility = mode == DetailPanelMode.Marketplace ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }

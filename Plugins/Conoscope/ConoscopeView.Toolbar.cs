@@ -220,13 +220,14 @@ namespace Conoscope
 
         private WriteableBitmap Create3DHeightBitmapForCurrentView()
         {
+            OpenCvSharp.Mat fallback = YMat!;
             return ConoscopePseudoColorRenderer.CreateHeightMapBitmap(
                 XMat!,
                 YMat!,
                 ZMat!,
                 GetSelectedDisplayChannel(),
-                CreateColorDifferenceMat,
-                CreateContrastMat,
+                () => CreateColorDifferenceMat() ?? fallback,
+                () => CreateContrastMat() ?? fallback,
                 currentImageCenter,
                 currentImageRadius);
         }

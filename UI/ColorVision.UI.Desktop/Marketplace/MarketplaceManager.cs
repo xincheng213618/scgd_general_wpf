@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1001,CA1822,CA1863,CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
@@ -280,13 +281,13 @@ namespace ColorVision.UI.Desktop.Marketplace
             
             if (pluginsToUpdate.Count == 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "没有可更新的插件", "插件管理", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceNoUpdates, Resources.PluginManagerWindow, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(), 
-                $"检测到 {pluginsToUpdate.Count} 个插件有可用更新，是否全部更新？", 
-                "一键更新", 
+                string.Format(Resources.MarketplaceBulkUpdateConfirm, pluginsToUpdate.Count), 
+                Resources.MarketplaceBulkUpdateTitle, 
                 MessageBoxButton.YesNo, 
                 MessageBoxImage.Question) != MessageBoxResult.Yes)
             {
@@ -396,14 +397,18 @@ namespace ColorVision.UI.Desktop.Marketplace
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.ProjectNotFound, SearchName));
                 return;
             }
-            
-            Application.Current.Dispatcher.Invoke(() =>
+
+            MessageBoxResult confirmResult = await Application.Current.Dispatcher.InvokeAsync(() =>
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    string.Format(UI.Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{latestVersion}"),
+                    "ColorVision",
+                    MessageBoxButton.YesNo));
+
+            if (confirmResult == MessageBoxResult.Yes)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{latestVersion}"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    _ = InstallLatestRequestedPackageAsync(SearchName, latestVersion);
-                };
-            });
+                await InstallLatestRequestedPackageAsync(SearchName, latestVersion);
+            }
         }
 
         private async Task InstallLatestRequestedPackageAsync(string pluginId, string version)
@@ -425,7 +430,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 Filter = "Plugin Packages (*.cvxp;*.zip)|*.cvxp;*.zip|Plugin Package (*.cvxp)|*.cvxp|Zip Archive (*.zip)|*.zip|All Files (*.*)|*.*",
                 FilterIndex = 1,
-                Title = "Select a Update file"
+                Title = Resources.MarketplaceSelectUpdateFile
             };
 
             if (openFileDialog.ShowDialog() == true)

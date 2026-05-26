@@ -48,8 +48,8 @@ namespace Conoscope
                 ZMat ?? displayBaseMat,
                 displayChannel,
                 RenderingConfig.PseudoColorMap,
-                CreateColorDifferenceMat,
-                CreateContrastMat,
+                () => CreateColorDifferenceMat() ?? displayBaseMat,
+                () => CreateContrastMat() ?? displayBaseMat,
                 RenderingConfig.UsePseudoColor,
                 rangeMask,
                 rangeMask == null ? null : pseudoColorRangeOutsideMask);

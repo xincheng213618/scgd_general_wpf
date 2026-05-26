@@ -1,4 +1,3 @@
-#pragma warning disable CA1822,CA1859
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Desktop.Properties;
@@ -6,13 +5,54 @@ using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using System.Diagnostics;
-using System.Windows.Controls;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {
+    public enum MarketplaceVersionBadgeKind
+    {
+        Latest,
+        Installed,
+        Current,
+        Archive,
+    }
+
+    public sealed class MarketplaceVersionBadgeItem
+    {
+        public required string Text { get; init; }
+        public required MarketplaceVersionBadgeKind Kind { get; init; }
+    }
+
+    public sealed class MarketplaceDetailRow
+    {
+        public required string Label { get; init; }
+        public required string Value { get; init; }
+    }
+
+    public sealed class MarketplaceVersionItemViewModel
+    {
+        public required MarketplacePluginVersionInfo VersionInfo { get; init; }
+        public required string VersionText { get; init; }
+        public required string SummaryText { get; init; }
+        public string? ChangeLog { get; init; }
+        public string? HashText { get; init; }
+        public required string InstallText { get; init; }
+        public List<MarketplaceVersionBadgeItem> Badges { get; init; } = new();
+        public required AsyncRelayCommand InstallCommand { get; init; }
+        public required AsyncRelayCommand DownloadCommand { get; init; }
+        public bool HasChangeLog => !string.IsNullOrWhiteSpace(ChangeLog);
+        public bool HasHash => !string.IsNullOrWhiteSpace(HashText);
+    }
+
+    public sealed class MarketplaceVersionGroup
+    {
+        public required string Title { get; init; }
+        public List<MarketplaceVersionItemViewModel> Items { get; init; } = new();
+    }
+
     /// <summary>
     /// A lightweight view model for displaying marketplace plugin details in the right panel
     /// when a marketplace (remote) plugin is selected that is not installed locally.
@@ -20,6 +60,10 @@ namespace ColorVision.UI.Desktop.Marketplace
     public class MarketplaceDetailContext : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceDetailContext));
+        private static readonly CompositeFormat RequiresFormat = CompositeFormat.Parse(Resources.MarketplaceRequiresFormat);
+        private static readonly CompositeFormat InstalledVersionFormat = CompositeFormat.Parse(Resources.MarketplaceInstalledVersionFormat);
+        private static readonly CompositeFormat UpdateVersionFormat = CompositeFormat.Parse(Resources.MarketplaceUpdateVersionFormat);
+        private static readonly CompositeFormat DownloadCountFormat = CompositeFormat.Parse(Resources.MarketplaceDownloadCountFormat);
         private readonly PluginInfoVM? _installedPlugin;
         private readonly MarketplacePackageDownloadService _packageDownloadService = MarketplacePackageDownloadService.GetInstance();
         private ImageSource? _icon = MarketplaceClient.GetDefaultPluginIcon();
@@ -41,6 +85,8 @@ namespace ColorVision.UI.Desktop.Marketplace
         public DateTime UpdatedAt { get; set; }
         public int CurrentPackageCount { get; set; }
         public int HistoricalPackageCount { get; set; }
+        public List<MarketplaceDetailRow> DetailRows { get; private set; } = new();
+        public List<MarketplaceVersionGroup> VersionGroups { get; private set; } = new();
 
         public ImageSource? Icon
         {
@@ -70,23 +116,23 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public string HeaderRightPrimary => string.IsNullOrWhiteSpace(RequiresVersion)
             ? (string.IsNullOrWhiteSpace(Category) ? string.Empty : Category)
-            : $"Requires {RequiresVersion}";
+            : string.Format(null, RequiresFormat, RequiresVersion);
 
         public string HeaderRightSecondary => string.Join("  ·  ", new[]
         {
             string.IsNullOrWhiteSpace(Author) ? null : Author,
-            TotalDownloads > 0 ? $"⬇ {TotalDownloads}" : "0 download",
+            string.Format(null, DownloadCountFormat, TotalDownloads),
         }.Where(item => !string.IsNullOrWhiteSpace(item))!);
 
         public string InstalledBadgeText => IsInstalled
-            ? (string.IsNullOrWhiteSpace(InstalledVersion) ? "Installed" : $"Installed v{InstalledVersion}")
+            ? (string.IsNullOrWhiteSpace(InstalledVersion) ? Resources.MarketplaceStatusInstalled : string.Format(null, InstalledVersionFormat, InstalledVersion))
             : string.Empty;
 
         public Visibility InstalledBadgeVisibility => IsInstalled ? Visibility.Visible : Visibility.Collapsed;
         public Visibility UpdateBadgeVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
         public string UpdateBadgeText => HasUpdate && !string.IsNullOrWhiteSpace(LatestVersion)
-            ? $"Update v{LatestVersion}"
-            : "Update available";
+            ? string.Format(null, UpdateVersionFormat, LatestVersion)
+            : Resources.MarketplaceUpdateAvailable;
 
         public Visibility OpenLocalPathVisibility => IsInstalled ? Visibility.Visible : Visibility.Collapsed;
         public Visibility ExtractPluginVisibility => IsInstalled ? Visibility.Visible : Visibility.Collapsed;
@@ -96,9 +142,9 @@ namespace ColorVision.UI.Desktop.Marketplace
         public Visibility DownloadLatestVisibility => string.IsNullOrWhiteSpace(LatestVersion) ? Visibility.Collapsed : Visibility.Visible;
         public Visibility OpenProjectUrlVisibility => string.IsNullOrWhiteSpace(Url) ? Visibility.Collapsed : Visibility.Visible;
 
-        public IEnumerable<MarketplacePluginVersionInfo> CurrentVersions => OrderVersions(Versions.Where(v => !string.Equals(v.Source, "archive", StringComparison.OrdinalIgnoreCase)));
-        public IEnumerable<MarketplacePluginVersionInfo> ArchivedVersionsOrdered => OrderVersions(ArchivedVersions);
-        public bool HasVersions => Versions.Count > 0 || ArchivedVersions.Count > 0;
+        public List<MarketplacePluginVersionInfo> CurrentVersions => OrderVersions(Versions.Where(v => !string.Equals(v.Source, "archive", StringComparison.OrdinalIgnoreCase)));
+        public List<MarketplacePluginVersionInfo> ArchivedVersionsOrdered => OrderVersions(ArchivedVersions);
+    public bool HasVersions => VersionGroups.Count > 0;
 
         public bool IsInstalled => _installedPlugin != null;
         public bool HasUpdate => CompareVersions(LatestVersion, InstalledVersion) > 0;
@@ -130,6 +176,8 @@ namespace ColorVision.UI.Desktop.Marketplace
             UpdatedAt = detail.UpdatedAt;
             CurrentPackageCount = detail.CurrentPackageCount > 0 ? detail.CurrentPackageCount : Versions.Count(v => !string.Equals(v.Source, "archive", StringComparison.OrdinalIgnoreCase));
             HistoricalPackageCount = detail.HistoricalPackageCount > 0 ? detail.HistoricalPackageCount : ArchivedVersions.Count;
+            DetailRows = BuildDetailRows();
+            VersionGroups = BuildVersionGroups();
 
             InstallCommand = new AsyncRelayCommand(_ => InstallLatestFromMarketplaceAsync(), _ => !string.IsNullOrWhiteSpace(LatestVersion), logger: log);
             DownloadCommand = new AsyncRelayCommand(_ => DownloadLatestFromMarketplaceAsync(), _ => !string.IsNullOrWhiteSpace(LatestVersion), logger: log);
@@ -160,191 +208,122 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public void PopulateDetailInfo(StackPanel detailInfo, ListView dependentsListView)
+        private List<MarketplaceDetailRow> BuildDetailRows()
         {
-            detailInfo.Children.Clear();
-            dependentsListView.ItemsSource = null;
+            var rows = new List<MarketplaceDetailRow>();
 
-            void AddLine(string label, string? value)
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    return;
+            AddDetailRow(rows, Resources.MarketplacePluginId, PackageName);
+            AddDetailRow(rows, Resources.MarketplaceLatestVersion, LatestVersion);
+            AddDetailRow(rows, Resources.MarketplaceInstalledVersion, InstalledVersion);
+            AddDetailRow(rows, Resources.MarketplaceStatus, IsInstalled
+                ? (HasUpdate ? Resources.MarketplaceStatusInstalledUpdate : Resources.MarketplaceStatusInstalled)
+                : Resources.MarketplaceStatusMarketplaceOnly);
+            AddDetailRow(rows, Resources.MarketplaceRequires, RequiresVersion);
+            AddDetailRow(rows, Resources.MarketplaceAuthor, Author);
+            AddDetailRow(rows, Resources.MarketplaceCategory, Category);
+            AddDetailRow(rows, Resources.MarketplaceDownloads, TotalDownloads.ToString());
+            AddDetailRow(rows, Resources.MarketplaceUpdated, UpdatedAt == default ? string.Empty : UpdatedAt.ToString("yyyy/MM/dd HH:mm:ss"));
+            AddDetailRow(rows, Resources.MarketplaceProjectUrl, Url);
+            AddDetailRow(rows, Resources.MarketplaceDescription, Description);
+            AddDetailRow(rows, Resources.MarketplaceCurrentPackages, CurrentPackageCount.ToString());
+            AddDetailRow(rows, Resources.MarketplaceHistoryPackages, HistoricalPackageCount.ToString());
 
-                var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(5, 3, 5, 3) };
-                panel.Children.Add(new TextBlock
-                {
-                    Text = label + ": ",
-                    FontWeight = FontWeights.SemiBold,
-                    Width = 120,
-                });
-                panel.Children.Add(new TextBlock
-                {
-                    Text = value,
-                    TextWrapping = TextWrapping.Wrap,
-                });
-                detailInfo.Children.Add(panel);
-            }
-
-            void AddVersionGroup(string title, IEnumerable<MarketplacePluginVersionInfo> versions)
-            {
-                var list = versions.ToList();
-                if (list.Count == 0)
-                    return;
-
-                detailInfo.Children.Add(new TextBlock
-                {
-                    Text = title,
-                    FontWeight = FontWeights.Bold,
-                    Margin = new Thickness(5, 10, 5, 5),
-                });
-
-                foreach (var version in list)
-                {
-                    detailInfo.Children.Add(CreateVersionCard(version));
-                }
-            }
-
-            AddLine("Plugin ID", PackageName);
-            AddLine("Latest Version", LatestVersion);
-            AddLine("Installed Version", InstalledVersion);
-            AddLine("Status", IsInstalled ? (HasUpdate ? "Installed · update available" : "Installed") : "Marketplace only");
-            AddLine("Requires", RequiresVersion);
-            AddLine("Author", Author);
-            AddLine("Category", Category);
-            AddLine("Downloads", TotalDownloads.ToString());
-            AddLine("Updated", UpdatedAt == default ? string.Empty : UpdatedAt.ToString("yyyy/MM/dd HH:mm:ss"));
-            AddLine("Project URL", Url);
-            AddLine("Description", Description);
-            AddLine("Current Packages", CurrentPackageCount.ToString());
-            AddLine("History Packages", HistoricalPackageCount.ToString());
-
-            AddVersionGroup("Current Versions", CurrentVersions);
-            AddVersionGroup("Archived Versions", ArchivedVersionsOrdered);
+            return rows;
         }
 
-        private Border CreateVersionCard(MarketplacePluginVersionInfo version)
+        private List<MarketplaceVersionGroup> BuildVersionGroups()
         {
-            var card = new Border
+            var groups = new List<MarketplaceVersionGroup>();
+
+            List<MarketplaceVersionItemViewModel> currentItems = BuildVersionItems(CurrentVersions);
+            if (currentItems.Count > 0)
             {
-                Margin = new Thickness(12, 4, 5, 8),
-                Padding = new Thickness(10),
-                CornerRadius = new CornerRadius(6),
-                BorderThickness = new Thickness(1),
-                BorderBrush = Brushes.Gainsboro,
-                Background = Brushes.Transparent,
-            };
+                groups.Add(new MarketplaceVersionGroup
+                {
+                    Title = Resources.MarketplaceCurrentVersions,
+                    Items = currentItems,
+                });
+            }
 
-            var content = new StackPanel();
-            card.Child = content;
-
-            var header = new DockPanel();
-            content.Children.Add(header);
-
-            var title = new TextBlock
+            List<MarketplaceVersionItemViewModel> archiveItems = BuildVersionItems(ArchivedVersionsOrdered);
+            if (archiveItems.Count > 0)
             {
-                Text = $"v{version.Version}",
-                FontWeight = FontWeights.SemiBold,
-                FontSize = 13,
-                VerticalAlignment = VerticalAlignment.Center,
-            };
-            DockPanel.SetDock(title, Dock.Left);
-            header.Children.Add(title);
+                groups.Add(new MarketplaceVersionGroup
+                {
+                    Title = Resources.MarketplaceArchivedVersions,
+                    Items = archiveItems,
+                });
+            }
 
-            var badges = new WrapPanel
+            return groups;
+        }
+
+        private List<MarketplaceVersionItemViewModel> BuildVersionItems(IEnumerable<MarketplacePluginVersionInfo> versions)
+        {
+            return versions.Select(CreateVersionItem).ToList();
+        }
+
+        private MarketplaceVersionItemViewModel CreateVersionItem(MarketplacePluginVersionInfo version)
+        {
+            return new MarketplaceVersionItemViewModel
             {
-                HorizontalAlignment = HorizontalAlignment.Right,
+                VersionInfo = version,
+                VersionText = $"v{version.Version}",
+                SummaryText = BuildVersionSummary(version),
+                ChangeLog = string.IsNullOrWhiteSpace(version.ChangeLog) ? null : version.ChangeLog,
+                HashText = string.IsNullOrWhiteSpace(version.FileHash)
+                    ? null
+                    : $"{Resources.MarketplaceVersionSha256Label}: {version.FileHash}",
+                InstallText = GetInstallLabel(version),
+                Badges = BuildBadges(version),
+                InstallCommand = new AsyncRelayCommand(_ => InstallVersionAsync(version), logger: log),
+                DownloadCommand = new AsyncRelayCommand(_ => DownloadVersionAsync(version), logger: log),
             };
-            DockPanel.SetDock(badges, Dock.Right);
-            header.Children.Add(badges);
+        }
+
+        private List<MarketplaceVersionBadgeItem> BuildBadges(MarketplacePluginVersionInfo version)
+        {
+            var badges = new List<MarketplaceVersionBadgeItem>();
 
             if (string.Equals(version.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
-                badges.Children.Add(CreateBadge("Latest", Brushes.ForestGreen));
+            {
+                badges.Add(new MarketplaceVersionBadgeItem
+                {
+                    Text = Resources.MarketplaceLatest,
+                    Kind = MarketplaceVersionBadgeKind.Latest,
+                });
+            }
+
             if (string.Equals(version.Version, InstalledVersion, StringComparison.OrdinalIgnoreCase))
-                badges.Children.Add(CreateBadge("Installed", Brushes.SteelBlue));
+            {
+                badges.Add(new MarketplaceVersionBadgeItem
+                {
+                    Text = Resources.Installed,
+                    Kind = MarketplaceVersionBadgeKind.Installed,
+                });
+            }
+
             if (!string.IsNullOrWhiteSpace(version.Source))
-                badges.Children.Add(CreateBadge(version.Source.Equals("archive", StringComparison.OrdinalIgnoreCase) ? "Archive" : "Current", Brushes.DimGray));
-
-            content.Children.Add(new TextBlock
             {
-                Text = BuildVersionSummary(version),
-                Margin = new Thickness(0, 6, 0, 0),
-                Foreground = Brushes.Gray,
-                TextWrapping = TextWrapping.Wrap,
-            });
-
-            if (!string.IsNullOrWhiteSpace(version.ChangeLog))
-            {
-                content.Children.Add(new TextBlock
+                bool isArchive = version.Source.Equals("archive", StringComparison.OrdinalIgnoreCase);
+                badges.Add(new MarketplaceVersionBadgeItem
                 {
-                    Text = version.ChangeLog,
-                    Margin = new Thickness(0, 6, 0, 0),
-                    TextWrapping = TextWrapping.Wrap,
-                    MaxHeight = 90,
+                    Text = isArchive ? Resources.MarketplaceArchive : Resources.MarketplaceCurrent,
+                    Kind = isArchive ? MarketplaceVersionBadgeKind.Archive : MarketplaceVersionBadgeKind.Current,
                 });
             }
 
-            var actions = new WrapPanel
-            {
-                Margin = new Thickness(0, 8, 0, 0),
-            };
-            actions.Children.Add(CreateActionButton(GetInstallLabel(version), () => _ = InstallVersionAsync(version)));
-            actions.Children.Add(CreateActionButton(Resources.Download, () => _ = DownloadVersionAsync(version)));
-            content.Children.Add(actions);
-
-            if (!string.IsNullOrWhiteSpace(version.FileHash))
-            {
-                content.Children.Add(new TextBlock
-                {
-                    Text = $"SHA256: {version.FileHash}",
-                    Margin = new Thickness(0, 8, 0, 0),
-                    FontSize = 11,
-                    Foreground = Brushes.Gray,
-                    TextWrapping = TextWrapping.Wrap,
-                });
-            }
-
-            return card;
+            return badges;
         }
 
-        private static Border CreateBadge(string text, Brush background)
-        {
-            return new Border
-            {
-                Background = background,
-                CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(8, 2, 8, 2),
-                Margin = new Thickness(4, 0, 0, 0),
-                Child = new TextBlock
-                {
-                    Text = text,
-                    Foreground = Brushes.White,
-                    FontSize = 11,
-                    FontWeight = FontWeights.SemiBold,
-                }
-            };
-        }
-
-        private static Button CreateActionButton(string text, Action action)
-        {
-            return new Button
-            {
-                Content = text,
-                Margin = new Thickness(0, 0, 8, 0),
-                Padding = new Thickness(10, 4, 10, 4),
-                MinWidth = 84,
-                Command = new RelayCommand(_ => action()),
-            };
-        }
-
-        private string BuildVersionSummary(MarketplacePluginVersionInfo version)
+        private static string BuildVersionSummary(MarketplacePluginVersionInfo version)
         {
             return string.Join("  ·  ", new[]
             {
-                string.IsNullOrWhiteSpace(version.Version) ? null : $"Version {version.Version}",
                 version.FileSize > 0 ? FormatFileSize(version.FileSize) : null,
                 version.CreatedAt == default ? null : version.CreatedAt.ToString("yyyy/MM/dd HH:mm"),
-                string.IsNullOrWhiteSpace(version.RequiresVersion) ? null : $"Requires {version.RequiresVersion}",
-                version.DownloadCount > 0 ? $"⬇ {version.DownloadCount}" : null,
+                string.IsNullOrWhiteSpace(version.RequiresVersion) ? null : string.Format(null, RequiresFormat, version.RequiresVersion),
+                version.DownloadCount > 0 ? string.Format(null, DownloadCountFormat, version.DownloadCount) : null,
             }.Where(item => !string.IsNullOrWhiteSpace(item))!);
         }
 
@@ -357,7 +336,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             return Resources.Install;
         }
 
-        private static IEnumerable<MarketplacePluginVersionInfo> OrderVersions(IEnumerable<MarketplacePluginVersionInfo> versions)
+        private static List<MarketplacePluginVersionInfo> OrderVersions(IEnumerable<MarketplacePluginVersionInfo> versions)
         {
             return versions
                 .OrderByDescending(version => ParseVersion(version.Version) ?? new Version())
@@ -398,9 +377,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async Task InstallLatestFromMarketplaceAsync()
         {
-            var versionInfo = CurrentVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
-                ?? Versions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
-                ?? ArchivedVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase));
+            MarketplacePluginVersionInfo? versionInfo = FindLatestVersionInfo();
 
             if (versionInfo == null)
                 return;
@@ -410,9 +387,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async Task DownloadLatestFromMarketplaceAsync()
         {
-            var versionInfo = CurrentVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
-                ?? Versions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
-                ?? ArchivedVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase));
+            MarketplacePluginVersionInfo? versionInfo = FindLatestVersionInfo();
 
             if (versionInfo == null)
                 return;
@@ -450,6 +425,28 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 await _packageDownloadService.OpenDownloadedPackageFolderAsync(request);
             }
+        }
+
+        private MarketplacePluginVersionInfo? FindLatestVersionInfo()
+        {
+            return CurrentVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
+                ?? Versions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
+                ?? ArchivedVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
+                ?? CurrentVersions.FirstOrDefault()
+                ?? Versions.FirstOrDefault()
+                ?? ArchivedVersions.FirstOrDefault();
+        }
+
+        private static void AddDetailRow(List<MarketplaceDetailRow> rows, string label, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+
+            rows.Add(new MarketplaceDetailRow
+            {
+                Label = label,
+                Value = value,
+            });
         }
     }
 }

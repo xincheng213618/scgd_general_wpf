@@ -906,42 +906,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 CVCIE 文件通道数不足: {0} 的本地化字符串。
-        /// </summary>
-        public static string CVCIEChannelCountInsufficient {
-            get {
-                return ResourceManager.GetString("CVCIEChannelCountInsufficient", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 CVCIE 文件通道数不足: {0} 的本地化字符串。
-        /// </summary>
-        public static string CVCIEChannelInsufficientLoader {
-            get {
-                return ResourceManager.GetString("CVCIEChannelInsufficientLoader", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 CVCIE 文件数据长度不足，无法拆分 XYZ 通道 的本地化字符串。
-        /// </summary>
-        public static string CVCIEDataLengthInsufficient {
-            get {
-                return ResourceManager.GetString("CVCIEDataLengthInsufficient", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 CVCIE 文件数据长度不足，无法拆分 XYZ 通道 的本地化字符串。
-        /// </summary>
-        public static string CVCIEDataLengthInsufficientLoader {
-            get {
-                return ResourceManager.GetString("CVCIEDataLengthInsufficientLoader", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 暗斑+亮斑 的本地化字符串。
         /// </summary>
         public static string DustBoth {
@@ -2259,15 +2223,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 导出已完成，但保存当前曲线导出配置失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgCurveExportConfigSaveFailed {
-            get {
-                return ResourceManager.GetString("MsgCurveExportConfigSaveFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 请先绘制关注点圆。 的本地化字符串。
         /// </summary>
         public static string MsgDrawFocusPointsFirst {
@@ -2320,15 +2275,6 @@ namespace Conoscope.Properties {
         public static string MsgExportSuccess {
             get {
                 return ResourceManager.GetString("MsgExportSuccess", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 文件路径不能为空 的本地化字符串。
-        /// </summary>
-        public static string MsgFilePathCannotBeEmpty {
-            get {
-                return ResourceManager.GetString("MsgFilePathCannotBeEmpty", resourceCulture);
             }
         }
         
@@ -2758,15 +2704,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 当前文件类型没有可用的图像测量读取器 的本地化字符串。
-        /// </summary>
-        public static string MsgNoMeasurementProviderForFileType {
-            get {
-                return ResourceManager.GetString("MsgNoMeasurementProviderForFileType", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 图像中心 50px 关注点内没有可用像素 的本地化字符串。
         /// </summary>
         public static string MsgNoPixelsInCenter {
@@ -3102,15 +3039,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 当前视图仅支持 CVCIE XYZ 图像文件 的本地化字符串。
-        /// </summary>
-        public static string OnlyCVCIESupported {
-            get {
-                return ResourceManager.GetString("OnlyCVCIESupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 色差 的本地化字符串。
         /// </summary>
         public static string PanelColorDiff {
@@ -3197,15 +3125,6 @@ namespace Conoscope.Properties {
         public static string RbTriggerMode {
             get {
                 return ResourceManager.GetString("RbTriggerMode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 读取 CVCIE 文件失败 的本地化字符串。
-        /// </summary>
-        public static string ReadCVCIEFailed {
-            get {
-                return ResourceManager.GetString("ReadCVCIEFailed", resourceCulture);
             }
         }
         

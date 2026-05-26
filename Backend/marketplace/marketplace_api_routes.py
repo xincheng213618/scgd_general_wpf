@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+from typing import Callable
 
 from db_cache import PLUGIN_INFO_CACHE_TTL_SECONDS
 from package_publish import (
@@ -16,7 +19,41 @@ from update_retention import prune_update_packages, repair_update_storage_layout
 from flask import abort, jsonify, request, send_from_directory
 
 
-def register_marketplace_api_routes(app, ctx: Any) -> None:
+@dataclass(frozen=True)
+class MarketplaceApiRouteContext:
+    get_storage: Callable[[], Path]
+    max_upload_size_bytes: int
+    parse_int_arg: Callable[..., int]
+    normalize_catalog_sort_name: Callable[[str], str]
+    allowed_catalog_sorts: Any
+    allowed_catalog_sort_orders: Any
+    build_plugin_search_api_result: Callable[..., Any]
+    build_plugin_detail_api_result: Callable[..., Any]
+    collect_catalog_categories: Callable[..., Any]
+    get_request_plugin_catalog: Callable[[], Any]
+    build_plugin_icon_url: Callable[[str], str]
+    get_plugin_info: Callable[..., Any]
+    get_request_download_counts: Callable[[], Any]
+    read_text_file: Callable[[Path], str]
+    is_safe_id: Callable[[str], bool]
+    is_safe_version: Callable[[str], bool]
+    sanitize_filename: Callable[[str], str]
+    version_tuple: Callable[..., Any]
+    extract_package_version: Callable[..., Any]
+    load_manifest: Callable[[Path], Any]
+    refresh_related_caches: Callable[..., None]
+    get_download_counts: Callable[[], Any]
+    get_cache_entry: Callable[..., Any]
+    set_cache_entry: Callable[..., None]
+    record_download: Callable[[str, str], None]
+    normalize_relative_path: Callable[[str], str]
+    is_root_release_file: Callable[[str], bool]
+    reconcile_app_release_history: Callable[..., Any]
+    reconcile_plugin_package_history: Callable[..., Any]
+    require_upload_auth: Any
+
+
+def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> None:
     @app.route("/api/plugins", methods=["GET"])
     def api_search_plugins():
         """Search and list plugins. Compatible with IMarketplaceService.SearchPluginsAsync."""

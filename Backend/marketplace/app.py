@@ -29,7 +29,6 @@ import sqlite3
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 from app_releases import is_root_release_file as is_root_release_file_impl
@@ -88,7 +87,7 @@ from cvwindowsservice_publish import (
 from feedback_service import FeedbackValidationError, save_feedback as save_feedback_impl
 from markupsafe import Markup
 from marketplace_services import MarketplaceCacheSettings, MarketplaceDataService
-from marketplace_api_routes import register_marketplace_api_routes
+from marketplace_api_routes import MarketplaceApiRouteContext, register_marketplace_api_routes
 from package_publish import (
     PackageValidationError,
     extract_package_version,
@@ -1187,7 +1186,7 @@ def api_ready():
 
 register_marketplace_api_routes(
     app,
-    SimpleNamespace(
+    MarketplaceApiRouteContext(
         get_storage=lambda: STORAGE,
         max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
         parse_int_arg=_parse_int_arg,

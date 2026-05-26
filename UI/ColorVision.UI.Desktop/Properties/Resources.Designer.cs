@@ -934,6 +934,231 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 全部分类 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceAllCategories {
+            get {
+                return ResourceManager.GetString("MarketplaceAllCategories", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 历史 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceArchive {
+            get {
+                return ResourceManager.GetString("MarketplaceArchive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 历史版本 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceArchivedVersions {
+            get {
+                return ResourceManager.GetString("MarketplaceArchivedVersions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 作者 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceAuthor {
+            get {
+                return ResourceManager.GetString("MarketplaceAuthor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 检测到 {0} 个插件有可用更新，是否全部更新？ 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceBulkUpdateConfirm {
+            get {
+                return ResourceManager.GetString("MarketplaceBulkUpdateConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 一键更新 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceBulkUpdateTitle {
+            get {
+                return ResourceManager.GetString("MarketplaceBulkUpdateTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分类 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceCategory {
+            get {
+                return ResourceManager.GetString("MarketplaceCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 暂无 CHANGELOG 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceChangelogEmpty {
+            get {
+                return ResourceManager.GetString("MarketplaceChangelogEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CHANGELOG 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceChangelogHeader {
+            get {
+                return ResourceManager.GetString("MarketplaceChangelogHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceCurrent {
+            get {
+                return ResourceManager.GetString("MarketplaceCurrent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前包数量 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceCurrentPackages {
+            get {
+                return ResourceManager.GetString("MarketplaceCurrentPackages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前版本 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceCurrentVersions {
+            get {
+                return ResourceManager.GetString("MarketplaceCurrentVersions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 依赖 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceDependentsHeader {
+            get {
+                return ResourceManager.GetString("MarketplaceDependentsHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 描述 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceDescription {
+            get {
+                return ResourceManager.GetString("MarketplaceDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 详情 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceDetailInfoHeader {
+            get {
+                return ResourceManager.GetString("MarketplaceDetailInfoHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载 {0} 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceDownloadCountFormat {
+            get {
+                return ResourceManager.GetString("MarketplaceDownloadCountFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载量 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceDownloads {
+            get {
+                return ResourceManager.GetString("MarketplaceDownloads", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载文件校验失败: {0} v{1} 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceDownloadVerificationFailed {
+            get {
+                return ResourceManager.GetString("MarketplaceDownloadVerificationFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 有可用更新 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceHasUpdateTooltip {
+            get {
+                return ResourceManager.GetString("MarketplaceHasUpdateTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 历史包数量 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceHistoryPackages {
+            get {
+                return ResourceManager.GetString("MarketplaceHistoryPackages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已安装版本 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceInstalledVersion {
+            get {
+                return ResourceManager.GetString("MarketplaceInstalledVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已安装 v{0} 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceInstalledVersionFormat {
+            get {
+                return ResourceManager.GetString("MarketplaceInstalledVersionFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关键字 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceKeyword {
+            get {
+                return ResourceManager.GetString("MarketplaceKeyword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最新 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceLatest {
+            get {
+                return ResourceManager.GetString("MarketplaceLatest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最新版本 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceLatestVersion {
+            get {
+                return ResourceManager.GetString("MarketplaceLatestVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 加载商店失败 的本地化字符串。
         /// </summary>
         public static string MarketplaceLoadFailed {
@@ -943,11 +1168,227 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 没有匹配的插件 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceNoMatches {
+            get {
+                return ResourceManager.GetString("MarketplaceNoMatches", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 没有可更新的插件 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceNoUpdates {
+            get {
+                return ResourceManager.GetString("MarketplaceNoUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  (离线) 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceOffline {
+            get {
+                return ResourceManager.GetString("MarketplaceOffline", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开本地目录 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceOpenLocalPath {
+            get {
+                return ResourceManager.GetString("MarketplaceOpenLocalPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开链接 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceOpenProjectUrl {
+            get {
+                return ResourceManager.GetString("MarketplaceOpenProjectUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 包 的本地化字符串。
+        /// </summary>
+        public static string MarketplacePackageColumn {
+            get {
+                return ResourceManager.GetString("MarketplacePackageColumn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 共 {0} 个插件 的本地化字符串。
         /// </summary>
         public static string MarketplacePluginCount {
             get {
                 return ResourceManager.GetString("MarketplacePluginCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插件 ID 的本地化字符串。
+        /// </summary>
+        public static string MarketplacePluginId {
+            get {
+                return ResourceManager.GetString("MarketplacePluginId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 项目地址 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceProjectUrl {
+            get {
+                return ResourceManager.GetString("MarketplaceProjectUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 暂无 README 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceReadmeEmpty {
+            get {
+                return ResourceManager.GetString("MarketplaceReadmeEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 README 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceReadmeHeader {
+            get {
+                return ResourceManager.GetString("MarketplaceReadmeHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 依赖版本 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceRequires {
+            get {
+                return ResourceManager.GetString("MarketplaceRequires", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 依赖 {0} 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceRequiresFormat {
+            get {
+                return ResourceManager.GetString("MarketplaceRequiresFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择更新包 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceSelectUpdateFile {
+            get {
+                return ResourceManager.GetString("MarketplaceSelectUpdateFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载量 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceSortDownloads {
+            get {
+                return ResourceManager.GetString("MarketplaceSortDownloads", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 名称 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceSortName {
+            get {
+                return ResourceManager.GetString("MarketplaceSortName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最近更新 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceSortUpdated {
+            get {
+                return ResourceManager.GetString("MarketplaceSortUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 状态 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceStatus {
+            get {
+                return ResourceManager.GetString("MarketplaceStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已安装 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceStatusInstalled {
+            get {
+                return ResourceManager.GetString("MarketplaceStatusInstalled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已安装 · 可更新 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceStatusInstalledUpdate {
+            get {
+                return ResourceManager.GetString("MarketplaceStatusInstalledUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 仅商店提供 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceStatusMarketplaceOnly {
+            get {
+                return ResourceManager.GetString("MarketplaceStatusMarketplaceOnly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可更新 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceUpdateAvailable {
+            get {
+                return ResourceManager.GetString("MarketplaceUpdateAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新时间 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceUpdated {
+            get {
+                return ResourceManager.GetString("MarketplaceUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新到 v{0} 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceUpdateVersionFormat {
+            get {
+                return ResourceManager.GetString("MarketplaceUpdateVersionFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 SHA256 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceVersionSha256Label {
+            get {
+                return ResourceManager.GetString("MarketplaceVersionSha256Label", resourceCulture);
             }
         }
         

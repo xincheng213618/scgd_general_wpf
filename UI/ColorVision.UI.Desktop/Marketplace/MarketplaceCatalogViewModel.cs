@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,9 +19,10 @@ namespace ColorVision.UI.Desktop.Marketplace
         public string DisplayName { get; init; } = string.Empty;
     }
 
-    public sealed class MarketplaceCatalogViewModel : ViewModelBase
+    public sealed class MarketplaceCatalogViewModel : ViewModelBase, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceCatalogViewModel));
+        private static readonly CompositeFormat MarketplacePluginCountFormat = CompositeFormat.Parse(Resources.MarketplacePluginCount);
         private readonly MarketplaceClient _client = MarketplaceClient.GetInstance();
         private readonly Func<string, PluginInfoVM?> _installedPluginLookup;
         private readonly Action<MarketplaceDetailContext?> _detailChanged;
@@ -43,6 +45,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private int _pageSize = 20;
         private int _totalCount;
         private int _totalPages;
+        private bool _isDisposed;
 
         public MarketplaceCatalogViewModel(Func<string, PluginInfoVM?> installedPluginLookup, Action<MarketplaceDetailContext?> detailChanged)
         {
@@ -52,9 +55,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             Categories = new ObservableCollection<MarketplaceOptionItem>();
             SortOptions = new ObservableCollection<MarketplaceOptionItem>
             {
-                new() { Key = "updated", DisplayName = "最近更新" },
-                new() { Key = "downloads", DisplayName = "下载量" },
-                new() { Key = "name", DisplayName = "名称" },
+                new() { Key = "updated", DisplayName = Resources.MarketplaceSortUpdated },
+                new() { Key = "downloads", DisplayName = Resources.MarketplaceSortDownloads },
+                new() { Key = "name", DisplayName = Resources.MarketplaceSortName },
             };
             MarketplacePlugins = new ObservableCollection<MarketplacePluginSummary>();
             PackageSuggestions = new ObservableCollection<string>();
@@ -64,7 +67,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 OnPropertyChanged(nameof(IsEmpty));
             };
 
-            _selectedCategory = new MarketplaceOptionItem { Key = string.Empty, DisplayName = "全部分类" };
+            _selectedCategory = new MarketplaceOptionItem { Key = string.Empty, DisplayName = Resources.MarketplaceAllCategories };
             _selectedSortOption = SortOptions[0];
             Categories.Add(_selectedCategory);
 
@@ -109,7 +112,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             get => _selectedCategory;
             set
             {
-                _selectedCategory = value ?? Categories.First();
+                _selectedCategory = value ?? Categories.FirstOrDefault() ?? _selectedCategory;
                 OnPropertyChanged();
                 if (!_suspendAutoRefresh)
                 {
@@ -123,7 +126,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             get => _selectedSortOption;
             set
             {
-                _selectedSortOption = value ?? SortOptions.First();
+                _selectedSortOption = value ?? SortOptions.FirstOrDefault() ?? _selectedSortOption;
                 OnPropertyChanged();
                 if (!_suspendAutoRefresh)
                 {
@@ -286,7 +289,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (resetPage)
                 Page = 1;
 
-            _loadPageCancellation?.Cancel();
+            CancelAndDispose(ref _loadPageCancellation);
             var cancellation = new CancellationTokenSource();
             _loadPageCancellation = cancellation;
             _ = RefreshAfterDelayAsync(debounceMilliseconds, cancellation.Token);
@@ -320,8 +323,9 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async Task LoadPageAsync(bool reloadCategories, CancellationToken externalCancellationToken)
         {
-            _loadPageCancellation?.Cancel();
-            _loadPageCancellation?.Dispose();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
+
+            CancelAndDispose(ref _loadPageCancellation);
             _loadPageCancellation = CancellationTokenSource.CreateLinkedTokenSource(externalCancellationToken);
             CancellationToken cancellationToken = _loadPageCancellation.Token;
 
@@ -364,7 +368,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 TotalCount = result.TotalCount;
                 TotalPages = result.TotalPages;
                 Page = result.Page <= 0 ? 1 : result.Page;
-                StatusText = string.Format(Resources.MarketplacePluginCount, result.TotalCount);
+                StatusText = string.Format(null, MarketplacePluginCountFormat, result.TotalCount);
 
                 string? selectedPluginId = SelectedPlugin?.PluginId;
                 MarketplacePluginSummary? nextSelection = result.Items.FirstOrDefault(item => string.Equals(item.PluginId, selectedPluginId, StringComparison.OrdinalIgnoreCase))
@@ -403,7 +407,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             string currentCategory = SelectedCategory.Key;
             List<MarketplaceOptionItem> options = new()
             {
-                new MarketplaceOptionItem { Key = string.Empty, DisplayName = "全部分类" }
+                new MarketplaceOptionItem { Key = string.Empty, DisplayName = Resources.MarketplaceAllCategories }
             };
             options.AddRange(categories
                 .Where(item => !string.IsNullOrWhiteSpace(item))
@@ -425,8 +429,10 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async Task LoadSelectedDetailAsync(MarketplacePluginSummary? summary)
         {
-            _loadDetailCancellation?.Cancel();
-            _loadDetailCancellation?.Dispose();
+            if (_isDisposed)
+                return;
+
+            CancelAndDispose(ref _loadDetailCancellation);
             _loadDetailCancellation = new CancellationTokenSource();
             CancellationToken cancellationToken = _loadDetailCancellation.Token;
 
@@ -470,6 +476,33 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 target.Add(item);
             }
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+            CancelAndDispose(ref _loadPageCancellation);
+            CancelAndDispose(ref _loadDetailCancellation);
+        }
+
+        private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
+        {
+            if (cancellationTokenSource == null)
+                return;
+
+            try
+            {
+                cancellationTokenSource.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = null;
         }
     }
 }
