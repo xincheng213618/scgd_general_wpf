@@ -596,9 +596,6 @@
   <data name="MsgExportFailed" xml:space="preserve">
     <value>导出失败: {0}</value>
   </data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve">
-    <value>导出已完成，但保存当前曲线导出配置失败: {0}</value>
-  </data>
   <data name="MsgSelectAzimuthFirst" xml:space="preserve">
     <value>请先选择一个方位角</value>
   </data>
@@ -944,12 +941,6 @@
     <value>{0} 数据中缺少关注点 {1}。
 来源: {2}</value>
   </data>
-  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
-    <value>文件路径不能为空</value>
-  </data>
-  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
-    <value>当前文件类型没有可用的图像测量读取器</value>
-  </data>
   <data name="GroupBoxGlobalSettings" xml:space="preserve">
     <value>全局设置</value>
   </data>
@@ -1288,12 +1279,6 @@
   <data name="PleaseSelectCVCIEFile" xml:space="preserve">
     <value>请选择 CVCIE XYZ 图像文件</value>
   </data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve">
-    <value>CVCIE 文件通道数不足: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve">
-    <value>CVCIE 文件数据长度不足，无法拆分 XYZ 通道</value>
-  </data>
   <data name="Invalid" xml:space="preserve">
     <value>无效</value>
   </data>
@@ -1308,18 +1293,6 @@
   </data>
   <data name="FocusPointMismatchError" xml:space="preserve">
     <value>多组关注点之间没有可对应的编号，请在同一套关注点下记录 R/G/B 或白/黑 数据。</value>
-  </data>
-  <data name="OnlyCVCIESupported" xml:space="preserve">
-    <value>当前视图仅支持 CVCIE XYZ 图像文件</value>
-  </data>
-  <data name="ReadCVCIEFailed" xml:space="preserve">
-    <value>读取 CVCIE 文件失败</value>
-  </data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve">
-    <value>CVCIE 文件通道数不足: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve">
-    <value>CVCIE 文件数据长度不足，无法拆分 XYZ 通道</value>
   </data>
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>色差通道需要指定 uv 基准</value>

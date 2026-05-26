@@ -557,9 +557,6 @@
   <data name="MsgExportFailed" xml:space="preserve">
     <value>Export failed: {0}</value>
   </data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve">
-    <value>Export completed but failed to save curve export config: {0}</value>
-  </data>
   <data name="MsgSelectAzimuthFirst" xml:space="preserve">
     <value>Please select an azimuth first</value>
   </data>
@@ -1207,12 +1204,6 @@ Count: {2}</value>
   <data name="PleaseSelectCVCIEFile" xml:space="preserve">
     <value>Please select a CVCIE XYZ image file</value>
   </data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve">
-    <value>Insufficient CVCIE file channels: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve">
-    <value>Insufficient CVCIE file data length, cannot split XYZ channels</value>
-  </data>
   <data name="Invalid" xml:space="preserve">
     <value>Invalid</value>
   </data>
@@ -1227,18 +1218,6 @@ Count: {2}</value>
   </data>
   <data name="FocusPointMismatchError" xml:space="preserve">
     <value>No matching indices between focus point groups. Please record R/G/B or white/black data under the same focus point set.</value>
-  </data>
-  <data name="OnlyCVCIESupported" xml:space="preserve">
-    <value>Current view only supports CVCIE XYZ image files</value>
-  </data>
-  <data name="ReadCVCIEFailed" xml:space="preserve">
-    <value>Failed to read CVCIE file</value>
-  </data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve">
-    <value>Insufficient CVCIE file channels: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve">
-    <value>Insufficient CVCIE file data length, cannot split XYZ channels</value>
   </data>
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>Color difference channel requires uv reference</value>
@@ -1413,11 +1392,5 @@ Count: {2}</value>
   <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
     <value>Focus point {1} is missing in {0} data.
 Source: {2}</value>
-  </data>
-  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
-    <value>File path cannot be empty</value>
-  </data>
-  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
-    <value>No image measurement reader is available for the current file type</value>
   </data>
 </root>

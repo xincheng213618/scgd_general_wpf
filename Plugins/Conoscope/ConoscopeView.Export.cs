@@ -78,50 +78,23 @@ namespace Conoscope
             log.Info($"导出成功: {filePath}");
         }
 
-        private ExportChannel GetSelectedExportChannel()
-        {
-            return selectedExportChannel;
-        }
-
-        private ExportChannel GetSelectedCurrentCurveChannel()
-        {
-            return GetSelectedDisplayChannel();
-        }
+        private ExportChannel GetSelectedExportChannel() => selectedExportChannel;
+        private ExportChannel GetSelectedCurrentCurveChannel() => GetSelectedDisplayChannel();
 
         private bool EnsureExportChannelReady(ExportChannel channel)
         {
-            if (IsChannelReady(channel, HasXyzData(), YMat != null, CanRefreshContrastDisplay(), CanRefreshColorDifferenceDisplay()))
+            bool ready = channel == ExportChannel.Y
+                ? YMat != null
+                : HasXyzData()
+                    && (channel != ExportChannel.Contrast || CanRefreshContrastDisplay())
+                    && (channel != ExportChannel.ColorDifference || CanRefreshColorDifferenceDisplay());
+
+            if (!ready)
             {
-                return true;
+                MessageBox.Show(Properties.Resources.XYZDataNotLoaded, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 
-            MessageBox.Show(Properties.Resources.XYZDataNotLoaded, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
-            return false;
-        }
-
-        internal static bool IsChannelReady(ExportChannel channel, bool hasXyzData, bool hasYMat, bool canRefreshContrast, bool canRefreshColorDifference)
-        {
-            if (channel == ExportChannel.Y)
-            {
-                return hasYMat;
-            }
-
-            if (!hasXyzData)
-            {
-                return false;
-            }
-
-            if (channel == ExportChannel.Contrast && !canRefreshContrast)
-            {
-                return false;
-            }
-
-            if (channel == ExportChannel.ColorDifference && !canRefreshColorDifference)
-            {
-                return false;
-            }
-
-            return true;
+            return ready;
         }
 
         private string? TrySelectCsvSavePath(string defaultFileName)
@@ -329,7 +302,14 @@ namespace Conoscope
         {
             try
             {
-                ConoscopeCrossSectionExportOptions exportOptions = CreateAdvancedCrossSectionExportOptions(settings);
+                ConoscopeCrossSectionExportOptions exportOptions = new ConoscopeCrossSectionExportOptions
+                {
+                    StepDegrees = settings.CrossSectionType == CrossSectionType.Azimuth
+                        ? settings.RadialStep
+                        : settings.CircumferentialStep,
+                    IncludeMetadata = true,
+                    DecimalPlaces = settings.DecimalPlaces
+                };
                 foreach (ExportChannel channel in settings.Channels)
                 {
                     string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
@@ -354,18 +334,6 @@ namespace Conoscope
                 log.Error($"截面导出失败: {ex.Message}", ex);
                 throw;
             }
-        }
-
-        internal static ConoscopeCrossSectionExportOptions CreateAdvancedCrossSectionExportOptions(AdvancedExportSettings settings)
-        {
-            return new ConoscopeCrossSectionExportOptions
-            {
-                StepDegrees = settings.CrossSectionType == CrossSectionType.Azimuth
-                    ? settings.RadialStep
-                    : settings.CircumferentialStep,
-                IncludeMetadata = true,
-                DecimalPlaces = settings.DecimalPlaces
-            };
         }
 
         private void btnExportCurrentReference_Click(object sender, RoutedEventArgs e)

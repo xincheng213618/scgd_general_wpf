@@ -1,13 +1,11 @@
 #pragma warning disable CA1822,CA1859
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using System.Diagnostics;
-using System.IO;
 using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Input;
@@ -23,6 +21,7 @@ namespace ColorVision.UI.Desktop.Marketplace
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceDetailContext));
         private readonly PluginInfoVM? _installedPlugin;
+        private readonly MarketplacePackageDownloadService _packageDownloadService = MarketplacePackageDownloadService.GetInstance();
         private ImageSource? _icon = MarketplaceClient.GetDefaultPluginIcon();
 
         public string? Name { get; set; }
@@ -105,8 +104,8 @@ namespace ColorVision.UI.Desktop.Marketplace
         public bool HasUpdate => CompareVersions(LatestVersion, InstalledVersion) > 0;
         public string PrimaryActionText => HasUpdate ? Resources.Update : Resources.Install;
 
-        public RelayCommand InstallCommand { get; set; }
-        public RelayCommand DownloadCommand { get; set; }
+        public ICommand InstallCommand { get; set; }
+        public ICommand DownloadCommand { get; set; }
         public RelayCommand OpenProjectUrlCommand { get; set; }
         public ICommand? OpenLocalPathCommand => _installedPlugin?.OpenLocalPathCommand;
         public ICommand? ExtractPluginCommand => _installedPlugin?.ExtractPluginCommand;
@@ -132,8 +131,8 @@ namespace ColorVision.UI.Desktop.Marketplace
             CurrentPackageCount = detail.CurrentPackageCount > 0 ? detail.CurrentPackageCount : Versions.Count(v => !string.Equals(v.Source, "archive", StringComparison.OrdinalIgnoreCase));
             HistoricalPackageCount = detail.HistoricalPackageCount > 0 ? detail.HistoricalPackageCount : ArchivedVersions.Count;
 
-            InstallCommand = new RelayCommand(a => InstallLatestFromMarketplace(), a => !string.IsNullOrWhiteSpace(LatestVersion));
-            DownloadCommand = new RelayCommand(a => DownloadLatestFromMarketplace(), a => !string.IsNullOrWhiteSpace(LatestVersion));
+            InstallCommand = new AsyncRelayCommand(_ => InstallLatestFromMarketplaceAsync(), _ => !string.IsNullOrWhiteSpace(LatestVersion), logger: log);
+            DownloadCommand = new AsyncRelayCommand(_ => DownloadLatestFromMarketplaceAsync(), _ => !string.IsNullOrWhiteSpace(LatestVersion), logger: log);
             OpenProjectUrlCommand = new RelayCommand(a => OpenProjectUrl(), a => !string.IsNullOrWhiteSpace(Url));
         }
 
@@ -288,8 +287,8 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 Margin = new Thickness(0, 8, 0, 0),
             };
-            actions.Children.Add(CreateActionButton(GetInstallLabel(version), () => InstallVersion(version)));
-            actions.Children.Add(CreateActionButton(Resources.Download, () => DownloadVersion(version)));
+            actions.Children.Add(CreateActionButton(GetInstallLabel(version), () => _ = InstallVersionAsync(version)));
+            actions.Children.Add(CreateActionButton(Resources.Download, () => _ = DownloadVersionAsync(version)));
             content.Children.Add(actions);
 
             if (!string.IsNullOrWhiteSpace(version.FileHash))
@@ -397,7 +396,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             return $"{size:0.##} {units[index]}";
         }
 
-        private void InstallLatestFromMarketplace()
+        private async Task InstallLatestFromMarketplaceAsync()
         {
             var versionInfo = CurrentVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
                 ?? Versions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
@@ -406,10 +405,10 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (versionInfo == null)
                 return;
 
-            InstallVersion(versionInfo);
+            await InstallVersionAsync(versionInfo);
         }
 
-        private void DownloadLatestFromMarketplace()
+        private async Task DownloadLatestFromMarketplaceAsync()
         {
             var versionInfo = CurrentVersions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
                 ?? Versions.FirstOrDefault(v => string.Equals(v.Version, LatestVersion, StringComparison.OrdinalIgnoreCase))
@@ -418,72 +417,39 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (versionInfo == null)
                 return;
 
-            DownloadVersion(versionInfo);
+            await DownloadVersionAsync(versionInfo);
         }
 
-        private void InstallVersion(MarketplacePluginVersionInfo versionInfo)
+        private Task InstallVersionAsync(MarketplacePluginVersionInfo versionInfo)
         {
-            DownloadVersion(versionInfo, applyAfterDownload: true);
+            return ExecutePackageActionAsync(versionInfo, applyAfterDownload: true);
         }
 
-        private void DownloadVersion(MarketplacePluginVersionInfo versionInfo, bool applyAfterDownload = false)
+        private Task DownloadVersionAsync(MarketplacePluginVersionInfo versionInfo)
+        {
+            return ExecutePackageActionAsync(versionInfo, applyAfterDownload: false);
+        }
+
+        private async Task ExecutePackageActionAsync(MarketplacePluginVersionInfo versionInfo, bool applyAfterDownload)
         {
             if (string.IsNullOrEmpty(PackageName) || string.IsNullOrEmpty(versionInfo.Version))
                 return;
 
-            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
-
-            // Check if file already exists
-            string? expectedHash = versionInfo.FileHash;
-            string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, PackageName, versionInfo.Version, expectedHash);
-            if (existingFile != null)
+            MarketplacePackageRequest request = new()
             {
-                log.Info($"Plugin {PackageName} v{versionInfo.Version} already exists, using cached file.");
-                if (applyAfterDownload)
-                {
-                    Application.Current?.Dispatcher.Invoke(() => PluginUpdater.UpdatePlugin(existingFile));
-                }
-                else
-                {
-                    PlatformHelper.OpenFolder(Path.GetDirectoryName(existingFile));
-                }
-                return;
+                PluginId = PackageName,
+                Version = versionInfo.Version,
+                ExpectedHash = versionInfo.FileHash,
+            };
+
+            if (applyAfterDownload)
+            {
+                await _packageDownloadService.InstallPackageAsync(request);
             }
-
-            var client = MarketplaceClient.GetInstance();
-            string url = client.GetDownloadUrl(PackageName, versionInfo.Version);
-            string expectedFileName = $"{PackageName}-{versionInfo.Version}.cvxp";
-
-            DownloadWindow.ShowInstance();
-            Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
+            else
             {
-                if (task.Status == DownloadStatus.Completed)
-                {
-                    // Verify hash if available
-                    if (!string.IsNullOrEmpty(expectedHash) && !MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
-                    {
-                        log.Error($"Hash mismatch for {PackageName} v{versionInfo.Version}! Expected: {expectedHash}");
-                        Application.Current?.Dispatcher.Invoke(() =>
-                            MessageBox.Show(Application.Current.GetActiveWindow(),
-                                $"下载的文件哈希校验失败，文件可能已损坏。\nExpected: {expectedHash}",
-                                "Hash Verification Failed", MessageBoxButton.OK, MessageBoxImage.Error));
-                        return;
-                    }
-
-                    if (applyAfterDownload)
-                    {
-                        Application.Current?.Dispatcher.Invoke(() => PluginUpdater.UpdatePlugin(task.SavePath));
-                    }
-                    else
-                    {
-                        PlatformHelper.OpenFolder(Path.GetDirectoryName(task.SavePath));
-                    }
-                }
-                else
-                {
-                    log.Error($"Marketplace package download failed for {PackageName} v{versionInfo.Version}: {task.ErrorMessage}");
-                }
-            }, expectedFileName);
+                await _packageDownloadService.OpenDownloadedPackageFolderAsync(request);
+            }
         }
     }
 }

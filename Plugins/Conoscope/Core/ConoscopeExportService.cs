@@ -83,27 +83,13 @@ namespace Conoscope.Core
                 decimalPlaces);
         }
 
-        public static void ExportAzimuthCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double azimuthAngle, int decimalPlaces = 4)
-        {
-            int normalizedDecimalPlaces = NormalizeDecimalPlaces(decimalPlaces);
-            using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Azimuth Cross-Section Export (Angle = {azimuthAngle}°)", channel, context, includeMetadata: true);
-            writer.WriteLine($"Azimuth Position (degrees),{GetExportValueHeader(channel)}");
-
-            foreach (ExportSample sample in CreateAzimuthCrossSection(context, azimuthAngle))
-            {
-                double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel, normalizedDecimalPlaces)}");
-            }
-        }
-
         public static void ExportAzimuthCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double azimuthAngle, ConoscopeCrossSectionExportOptions options)
         {
             options ??= new ConoscopeCrossSectionExportOptions();
-            int decimalPlaces = NormalizeDecimalPlaces(options.DecimalPlaces);
+            int decimalPlaces = Math.Clamp(options.DecimalPlaces, 0, 8);
 
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Azimuth Cross-Section Export (Angle = {azimuthAngle}°)", channel, context, options.IncludeMetadata);
+            if (options.IncludeMetadata) WriteHeader(writer, $"Azimuth Cross-Section Export (Angle = {azimuthAngle}°)", channel, context);
             writer.WriteLine($"Azimuth Position (degrees),{GetExportValueHeader(channel)}");
 
             foreach (ExportSample sample in CreateAzimuthCrossSection(context, azimuthAngle, options.StepDegrees))
@@ -113,27 +99,13 @@ namespace Conoscope.Core
             }
         }
 
-        public static void ExportPolarCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double polarAngle, int decimalPlaces = 4)
-        {
-            int normalizedDecimalPlaces = NormalizeDecimalPlaces(decimalPlaces);
-            using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Polar Cross-Section Export (Radius Angle = {polarAngle}°)", channel, context, includeMetadata: true);
-            writer.WriteLine($"Circumferential Angle (degrees),{GetExportValueHeader(channel)}");
-
-            foreach (ExportSample sample in CreatePolarCrossSection(context, polarAngle, 1))
-            {
-                double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel, normalizedDecimalPlaces)}");
-            }
-        }
-
         public static void ExportPolarCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double polarAngle, ConoscopeCrossSectionExportOptions options)
         {
             options ??= new ConoscopeCrossSectionExportOptions();
-            int decimalPlaces = NormalizeDecimalPlaces(options.DecimalPlaces);
+            int decimalPlaces = Math.Clamp(options.DecimalPlaces, 0, 8);
 
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Polar Cross-Section Export (Radius Angle = {polarAngle}°)", channel, context, options.IncludeMetadata);
+            if (options.IncludeMetadata) WriteHeader(writer, $"Polar Cross-Section Export (Radius Angle = {polarAngle}°)", channel, context);
             writer.WriteLine($"Circumferential Angle (degrees),{GetExportValueHeader(channel)}");
 
             foreach (ExportSample sample in CreatePolarCrossSection(context, polarAngle, options.StepDegrees))
@@ -187,8 +159,8 @@ namespace Conoscope.Core
             double normalizedAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(azimuthAngle);
             double radians = normalizedAngle * Math.PI / 180.0;
             double radiusPixels = polarAngle * context.PixelsPerDegree;
-            int imageX = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
-            int imageY = ClampToInt((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
+            int imageX = Math.Clamp((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
+            int imageY = Math.Clamp((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
             return new ExportSample(polarAngle, imageX, imageY, context.ReadXyz(imageX, imageY));
         }
 
@@ -202,8 +174,8 @@ namespace Conoscope.Core
 
             double radians = normalizedAngle * Math.PI / 180.0;
             double radiusPixels = polarAngle * context.PixelsPerDegree;
-            int imageX = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
-            int imageY = ClampToInt((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
+            int imageX = Math.Clamp((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
+            int imageY = Math.Clamp((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
             return new ExportSample(circumferentialAngle, imageX, imageY, context.ReadXyz(imageX, imageY));
         }
 
@@ -242,7 +214,7 @@ namespace Conoscope.Core
                 return;
             }
 
-            int normalizedDecimalPlaces = NormalizeDecimalPlaces(decimalPlaces);
+            int normalizedDecimalPlaces = Math.Clamp(decimalPlaces, 0, 8);
             WriteHeader(writer, title, channel, context);
             foreach (string line in firstAxisComment.Split('\n'))
             {
@@ -280,16 +252,6 @@ namespace Conoscope.Core
             }
         }
 
-        private static void WriteCrossSectionHeader(StreamWriter writer, string title, ExportChannel channel, ConoscopeExportContext context, bool includeMetadata)
-        {
-            if (!includeMetadata)
-            {
-                return;
-            }
-
-            WriteHeader(writer, title, channel, context);
-        }
-
         private static void WriteHeader(StreamWriter writer, string title, ExportChannel channel, ConoscopeExportContext context)
         {
             writer.WriteLine($"# {title}");
@@ -305,16 +267,6 @@ namespace Conoscope.Core
             return channel is ExportChannel.X or ExportChannel.Y or ExportChannel.Z
                 ? $"{label} (cd/m2)"
                 : label;
-        }
-
-        private static int NormalizeDecimalPlaces(int decimalPlaces)
-        {
-            return Math.Clamp(decimalPlaces, 0, 8);
-        }
-
-        private static double ReadExportValue(ExportChannel channel, ConoscopeExportContext context, int imageX, int imageY)
-        {
-            return ReadExportValue(channel, context, imageX, imageY, context.ReadXyz(imageX, imageY));
         }
 
         private static double ReadExportValue(ExportChannel channel, ConoscopeExportContext context, int imageX, int imageY, ConoscopeXyzValue xyz)
@@ -340,16 +292,6 @@ namespace Conoscope.Core
             }
 
             return ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
-        }
-
-        private static int ClampToInt(int value, int min, int max)
-        {
-            if (max < min)
-            {
-                return min;
-            }
-
-            return Math.Max(min, Math.Min(value, max));
         }
 
         private static IEnumerable<double> EnumerateRange(double start, double end, double step)

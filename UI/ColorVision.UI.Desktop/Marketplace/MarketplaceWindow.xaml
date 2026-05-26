@@ -63,7 +63,7 @@
                     </WrapPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Grid>
-                            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="250" Padding="25,1,2,1"   IsEditable="True" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" hc:InfoElement.ShowClearButton="True" BorderBrush="#CCCEDB"   VerticalContentAlignment="Center" TextBoxBase.TextChanged="SearchComboBox_TextChanged" />
+                            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="250" Padding="25,1,2,1" IsEditable="True" ItemsSource="{Binding Catalog.PackageSuggestions}" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" hc:InfoElement.ShowClearButton="True" BorderBrush="#CCCEDB" VerticalContentAlignment="Center" />
                             <Viewbox Width="20 " Height="20" HorizontalAlignment="Left" Margin="4,0,0,0">
                                 <Rectangle Width="25 " Height="25" >
                                     <Rectangle.Resources>
@@ -122,7 +122,7 @@
                             <TextBlock Text="{x:Static properties:Resources.Installed}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </TabItem.Header>
-                    <ListBox x:Name="ListViewPlugins" Background="Transparent" ItemsSource="{Binding Plugins}" SelectionChanged="ListViewPlugins_SelectionChanged" Padding="2">
+                    <ListBox x:Name="ListViewPlugins" Background="Transparent" ItemsSource="{Binding Plugins}" SelectedItem="{Binding SelectedInstalledPlugin, Mode=TwoWay}" Padding="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True">
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="{x:Type ListBoxItem}">
                                 <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
@@ -209,10 +209,23 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock x:Name="MarketplaceStatus" Text="" Margin="5,2" FontStyle="Italic" Foreground="Gray"/>
-                        <ListBox x:Name="ListViewMarketplace" Background="Transparent" Grid.Row="1" SelectionChanged="ListViewMarketplace_SelectionChanged" Padding="2">
+                        <WrapPanel Margin="5,5,5,3">
+                            <TextBox Width="160" Margin="0,0,6,0" VerticalContentAlignment="Center" Text="{Binding Catalog.Keyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="关键字" />
+                            <TextBox Width="120" Margin="0,0,6,0" VerticalContentAlignment="Center" Text="{Binding Catalog.Author, UpdateSourceTrigger=PropertyChanged}" ToolTip="作者" />
+                            <ComboBox Width="120" Margin="0,0,6,0" ItemsSource="{Binding Catalog.Categories}" SelectedItem="{Binding Catalog.SelectedCategory, Mode=TwoWay}" DisplayMemberPath="DisplayName" />
+                            <ComboBox Width="110" Margin="0,0,6,0" ItemsSource="{Binding Catalog.SortOptions}" SelectedItem="{Binding Catalog.SelectedSortOption, Mode=TwoWay}" DisplayMemberPath="DisplayName" />
+                            <Button Command="{Binding Catalog.RefreshCommand}" Padding="8,2" Content="{x:Static properties:Resources.Refresh}" />
+                        </WrapPanel>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,0,5,3">
+                            <TextBlock Text="{Binding Catalog.StatusText}" FontStyle="Italic" Foreground="Gray"/>
+                            <TextBlock Text=" (离线)" Foreground="#C62828" Visibility="{Binding Catalog.IsOffline, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        </StackPanel>
+                        <Grid Grid.Row="2">
+                            <ListBox x:Name="ListViewMarketplace" Background="Transparent" ItemsSource="{Binding Catalog.MarketplacePlugins}" SelectedItem="{Binding Catalog.SelectedPlugin, Mode=TwoWay}" Padding="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True" Visibility="{Binding Catalog.HasItems, Converter={StaticResource bool2VisibilityConverter}}">
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListBoxItem}">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -296,13 +309,28 @@
                                     </Border>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
-                        </ListBox>
+                            </ListBox>
+                            <Border Background="Transparent" Visibility="{Binding Catalog.IsLoading, Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="{Binding Catalog.StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
+                            </Border>
+                            <Border Background="Transparent" Visibility="{Binding Catalog.HasError, Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="{Binding Catalog.StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#C62828" TextWrapping="Wrap" TextAlignment="Center" Margin="30"/>
+                            </Border>
+                            <Border Background="Transparent" Visibility="{Binding Catalog.IsEmpty, Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="没有匹配的插件" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
+                            </Border>
+                        </Grid>
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,4,5,5">
+                            <Button Command="{Binding Catalog.PreviousPageCommand}" Content="{x:Static properties:Resources.Previous}" Padding="8,2" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding Catalog.PageDisplayText}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <Button Command="{Binding Catalog.NextPageCommand}" Content="{x:Static properties:Resources.Next}" Padding="8,2"/>
+                        </StackPanel>
                     </Grid>
                 </TabItem>
             </TabControl>
         </Grid>
 
-        <Border x:Name="BorderContent" CornerRadius="5" Margin="0,0,5,5" d:DataContext="{d:DesignInstance local:PluginInfoVM}" Grid.Column="1">
+        <Border x:Name="BorderContent" CornerRadius="5" Margin="0,0,5,5" DataContext="{Binding CurrentDetailContext}" d:DataContext="{d:DesignInstance local:PluginInfoVM}" Grid.Column="1">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>

@@ -73,6 +73,17 @@ class CacheManagerTests(unittest.TestCase):
         self.assertIsNone(self.cache.get_cache_entry("plugin_summary:p1"))
         self.assertIsNone(self.cache.get_cache_entry("plugin_detail:p1"))
 
+    def test_refresh_related_caches_clears_plugin_catalog_hash_and_archive_metadata(self):
+        self.cache.set_cache_entry("plugin_catalog:v1", "catalog", ttl_seconds=60)
+        self.cache.set_cache_entry("plugin_package_hash:v1:Plugins/p1/p1-1.0.0.cvxp", "hash", ttl_seconds=60)
+        self.cache.set_cache_entry("plugin_archive_meta:v1:Plugins/p1/p1-1.0.0.cvxp", {"has_icon": True}, ttl_seconds=60)
+
+        self.cache.refresh_related_caches(plugin_id="p1", relative_path="Plugins/p1")
+
+        self.assertIsNone(self.cache.get_cache_entry("plugin_catalog:v1"))
+        self.assertIsNone(self.cache.get_cache_entry("plugin_package_hash:v1:Plugins/p1/p1-1.0.0.cvxp"))
+        self.assertIsNone(self.cache.get_cache_entry("plugin_archive_meta:v1:Plugins/p1/p1-1.0.0.cvxp"))
+
     def test_now_ts_returns_int(self):
         ts = now_ts()
         self.assertIsInstance(ts, int)

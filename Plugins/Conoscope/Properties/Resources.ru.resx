@@ -509,9 +509,6 @@
   <data name="MsgExportFailed" xml:space="preserve">
     <value>Экспорт не удался: {0}</value>
   </data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve">
-    <value>Экспорт завершен, но не удалось сохранить конфигурацию экспорта кривых: {0}</value>
-  </data>
   <data name="MsgSelectAzimuthFirst" xml:space="preserve">
     <value>Сначала выберите азимут</value>
   </data>
@@ -1117,12 +1114,6 @@
   <data name="PleaseSelectCVCIEFile" xml:space="preserve">
     <value>Выберите файл изображения CVCIE XYZ</value>
   </data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve">
-    <value>Недостаточно каналов в файле CVCIE: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve">
-    <value>Недостаточная длина данных файла CVCIE, невозможно разделить каналы XYZ</value>
-  </data>
   <data name="Invalid" xml:space="preserve">
     <value>Недопустимо</value>
   </data>
@@ -1137,18 +1128,6 @@
   </data>
   <data name="FocusPointMismatchError" xml:space="preserve">
     <value>Между группами фокусных точек нет совпадающих индексов. Запишите данные R/G/B или белого/черного для одного и того же набора фокусных точек.</value>
-  </data>
-  <data name="OnlyCVCIESupported" xml:space="preserve">
-    <value>Текущий вид поддерживает только файлы изображений CVCIE XYZ</value>
-  </data>
-  <data name="ReadCVCIEFailed" xml:space="preserve">
-    <value>Не удалось прочитать файл CVCIE</value>
-  </data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve">
-    <value>Недостаточно каналов в файле CVCIE: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve">
-    <value>Недостаточная длина данных файла CVCIE, невозможно разделить каналы XYZ</value>
   </data>
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>Для канала цветового различия требуется опора uv</value>
@@ -1413,11 +1392,5 @@
   <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
     <value>В данных {0} отсутствует точка интереса {1}.
 Источник: {2}</value>
-  </data>
-  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
-    <value>Путь к файлу не может быть пустым</value>
-  </data>
-  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
-    <value>Для текущего типа файла нет доступного считывателя измерений изображения</value>
   </data>
 </root>

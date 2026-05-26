@@ -95,13 +95,8 @@ namespace Conoscope.Core
         public static double CalculateColorDifference(double X, double Y, double Z, double referenceU, double referenceV)
         {
             ConoscopeChromaticity chromaticity = Calculate(X, Y, Z);
-            return CalculateColorDifferenceFromUv(chromaticity.u, chromaticity.v, referenceU, referenceV);
-        }
-
-        public static double CalculateColorDifferenceFromUv(double u, double v, double referenceU, double referenceV)
-        {
-            double deltaU = u - referenceU;
-            double deltaV = v - referenceV;
+            double deltaU = chromaticity.u - referenceU;
+            double deltaV = chromaticity.v - referenceV;
             return Math.Sqrt(deltaU * deltaU + deltaV * deltaV);
         }
 
@@ -259,9 +254,5 @@ namespace Conoscope.Core
             return value.ToString($"F{normalizedDecimalPlaces}", CultureInfo.InvariantCulture);
         }
 
-        public static string FormatCct(double cct)
-        {
-            return cct > 0 ? $"{cct:F0}K" : "--";
-        }
     }
 }

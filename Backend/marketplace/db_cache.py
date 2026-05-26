@@ -128,9 +128,15 @@ class CacheManager:
             self.invalidate_cache_prefix(f"dir_file_count:{top_level}")
 
         if plugin_id:
+            self.invalidate_cache_prefix("plugin_catalog:")
             self.invalidate_cache_prefix("plugin_summary:")
             self.invalidate_cache_prefix("plugin_detail:")
             self.invalidate_cache_prefix(f"dir_file_count:Plugins/{plugin_id}")
+
+        normalized_relative = Path(relative_path).as_posix().strip()
+        if normalized_relative:
+            self.invalidate_cache_prefix(f"plugin_package_hash:v1:{normalized_relative}")
+            self.invalidate_cache_prefix(f"plugin_archive_meta:v1:{normalized_relative}")
 
 
 # ---------------------------------------------------------------------------

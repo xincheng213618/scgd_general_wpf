@@ -509,9 +509,6 @@
   <data name="MsgExportFailed" xml:space="preserve">
     <value>エクスポートに失敗しました: {0}</value>
   </data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve">
-    <value>エクスポートは完了しましたが、カーブエクスポート設定の保存に失敗しました: {0}</value>
-  </data>
   <data name="MsgSelectAzimuthFirst" xml:space="preserve">
     <value>まず方位角を選択してください</value>
   </data>
@@ -1117,12 +1114,6 @@
   <data name="PleaseSelectCVCIEFile" xml:space="preserve">
     <value>CVCIE XYZ 画像ファイルを選択してください</value>
   </data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve">
-    <value>CVCIE ファイルのチャネル数が不足しています: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve">
-    <value>CVCIE ファイルのデータ長が不足しているため、XYZ チャネルに分割できません</value>
-  </data>
   <data name="Invalid" xml:space="preserve">
     <value>無効</value>
   </data>
@@ -1137,18 +1128,6 @@
   </data>
   <data name="FocusPointMismatchError" xml:space="preserve">
     <value>フォーカスポイント グループ間で一致するインデックスがありません。R/G/B または白/黒データは同じフォーカスポイント セットで記録してください。</value>
-  </data>
-  <data name="OnlyCVCIESupported" xml:space="preserve">
-    <value>現在のビューでは CVCIE XYZ 画像ファイルのみ対応しています</value>
-  </data>
-  <data name="ReadCVCIEFailed" xml:space="preserve">
-    <value>CVCIE ファイルの読み込みに失敗しました</value>
-  </data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve">
-    <value>CVCIE ファイルのチャネル数が不足しています: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve">
-    <value>CVCIE ファイルのデータ長が不足しているため、XYZ チャネルに分割できません</value>
   </data>
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>色差チャネルには uv 基準が必要です</value>
@@ -1413,11 +1392,5 @@
   <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
     <value>{0} データに注視点 {1} がありません。
 ソース: {2}</value>
-  </data>
-  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
-    <value>ファイルパスは空にできません</value>
-  </data>
-  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
-    <value>現在のファイル種類に対応する画像測定リーダーがありません</value>
   </data>
 </root>

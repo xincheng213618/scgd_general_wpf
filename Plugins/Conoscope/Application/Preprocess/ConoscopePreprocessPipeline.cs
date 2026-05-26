@@ -70,9 +70,6 @@ namespace Conoscope.ApplicationServices.Preprocess
 
             if (options.Filter.FilterType != ImageFilterType.None)
             {
-                ArgumentNullException.ThrowIfNull(xSource);
-                ArgumentNullException.ThrowIfNull(ySource);
-                ArgumentNullException.ThrowIfNull(zSource);
                 xSource = ReplaceWithFilteredMat(xSource, options.Filter);
                 ySource = ReplaceWithFilteredMat(ySource, options.Filter);
                 zSource = ReplaceWithFilteredMat(zSource, options.Filter);
@@ -108,7 +105,6 @@ namespace Conoscope.ApplicationServices.Preprocess
 
             if (options.Filter.FilterType != ImageFilterType.None)
             {
-                ArgumentNullException.ThrowIfNull(source);
                 source = ReplaceWithFilteredMat(source, options.Filter);
                 log?.Info($"滤波应用到 Y 通道完成: {options.Filter.FilterType}, kernelSize={options.Filter.KernelSize}");
             }

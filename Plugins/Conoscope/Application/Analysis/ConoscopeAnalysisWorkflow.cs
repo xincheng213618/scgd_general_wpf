@@ -1,5 +1,5 @@
 using Conoscope.Analysis;
-using System;
+using System; // Exception
 
 namespace Conoscope.ApplicationServices.Analysis
 {
@@ -47,7 +47,6 @@ namespace Conoscope.ApplicationServices.Analysis
 
         public void RecordCapture(CaptureSlot slot, MeasurementCapture capture)
         {
-            ArgumentNullException.ThrowIfNull(capture);
             switch (slot)
             {
                 case CaptureSlot.GamutRed: gamutRedCapture = capture; break;

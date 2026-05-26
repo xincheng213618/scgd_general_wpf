@@ -115,11 +115,6 @@ namespace Conoscope.Analysis
 
         public ColorGamutComputationResult Calculate(MeasurementCapture redCapture, MeasurementCapture greenCapture, MeasurementCapture blueCapture, ColorGamutStandard standard)
         {
-            ArgumentNullException.ThrowIfNull(redCapture);
-            ArgumentNullException.ThrowIfNull(greenCapture);
-            ArgumentNullException.ThrowIfNull(blueCapture);
-            ArgumentNullException.ThrowIfNull(standard);
-
             IReadOnlyList<AlignedPointSet> alignedPoints = MeasurementCaptureAlignment.Align(redCapture, greenCapture, blueCapture);
             List<ColorGamutPointResult> results = new(alignedPoints.Count);
 
@@ -156,9 +151,6 @@ namespace Conoscope.Analysis
 
         public ContrastComputationResult Calculate(MeasurementCapture whiteCapture, MeasurementCapture blackCapture)
         {
-            ArgumentNullException.ThrowIfNull(whiteCapture);
-            ArgumentNullException.ThrowIfNull(blackCapture);
-
             IReadOnlyList<AlignedPointSet> alignedPoints = MeasurementCaptureAlignment.Align(whiteCapture, blackCapture);
             List<ContrastPointResult> results = new(alignedPoints.Count);
 

@@ -509,9 +509,6 @@
   <data name="MsgExportFailed" xml:space="preserve">
     <value>Échec de l'export : {0}</value>
   </data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve">
-    <value>Export terminé, mais échec de l'enregistrement de la configuration d'export de courbe : {0}</value>
-  </data>
   <data name="MsgSelectAzimuthFirst" xml:space="preserve">
     <value>Veuillez d'abord sélectionner un azimut</value>
   </data>
@@ -1117,12 +1114,6 @@ Nombre : {2}</value>
   <data name="PleaseSelectCVCIEFile" xml:space="preserve">
     <value>Veuillez sélectionner un fichier image XYZ CVCIE</value>
   </data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve">
-    <value>Nombre de canaux du fichier CVCIE insuffisant : {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve">
-    <value>Longueur de données du fichier CVCIE insuffisante, impossible de séparer les canaux XYZ</value>
-  </data>
   <data name="Invalid" xml:space="preserve">
     <value>Invalide</value>
   </data>
@@ -1137,18 +1128,6 @@ Nombre : {2}</value>
   </data>
   <data name="FocusPointMismatchError" xml:space="preserve">
     <value>Aucun index correspondant entre les groupes de points de focus. Veuillez enregistrer les données R/G/B ou blanc/noir avec le même ensemble de points de focus.</value>
-  </data>
-  <data name="OnlyCVCIESupported" xml:space="preserve">
-    <value>La vue actuelle ne prend en charge que les fichiers image XYZ CVCIE</value>
-  </data>
-  <data name="ReadCVCIEFailed" xml:space="preserve">
-    <value>Échec de la lecture du fichier CVCIE</value>
-  </data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve">
-    <value>Nombre de canaux du fichier CVCIE insuffisant : {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve">
-    <value>Longueur de données du fichier CVCIE insuffisante, impossible de séparer les canaux XYZ</value>
   </data>
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>Le canal d'écart de couleur nécessite une référence uv</value>
@@ -1413,11 +1392,5 @@ Nombre : {2}</value>
   <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
     <value>Les donnees {0} ne contiennent pas le point d'interet {1}.
 Source : {2}</value>
-  </data>
-  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
-    <value>Le chemin du fichier ne peut pas etre vide</value>
-  </data>
-  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
-    <value>Aucun lecteur de mesure d'image n'est disponible pour ce type de fichier</value>
   </data>
 </root>

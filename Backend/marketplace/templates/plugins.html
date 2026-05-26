@@ -27,12 +27,16 @@
 
 <section class="panel-card p-3 mb-3">
     <form method="get" action="/plugins" class="row g-2 align-items-end">
-        <div class="col-lg-4">
+        <div class="col-lg-3">
             <label class="form-label text-soft small mb-1">关键字</label>
             <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" class="form-control" name="q" placeholder="插件名称、ID 或描述" value="{{ keyword }}">
             </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <label class="form-label text-soft small mb-1">作者</label>
+            <input type="text" class="form-control" name="author" placeholder="作者名称" value="{{ author }}">
         </div>
         <div class="col-md-4 col-lg-2">
             <label class="form-label text-soft small mb-1">分类</label>
@@ -58,9 +62,9 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-lg-3 d-flex gap-2">
+        <div class="col-lg-2 d-flex gap-2">
             <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search me-1"></i>搜索</button>
-            {% if keyword or category or sort_by != 'updated' or page_size != 12 %}
+            {% if keyword or category or author or sort_by != 'updated' or page_size != 12 %}
             <a href="{{ reset_url }}" class="btn btn-outline-secondary">清除</a>
             {% endif %}
         </div>
@@ -68,6 +72,7 @@
     <div class="summary-strip mt-2">
         <div class="summary-chip"><i class="bi bi-list-task"></i>{{ showing_from }}-{{ showing_to }} / {{ filtered_count }}</div>
         <div class="summary-chip"><i class="bi bi-sort-down"></i>{{ '名称升序' if sort_by == 'name' else ('下载量优先' if sort_by == 'downloads' else '最近更新') }}</div>
+        {% if author %}<div class="summary-chip"><i class="bi bi-person"></i>{{ author }}</div>{% endif %}
     </div>
 </section>
 

@@ -141,19 +141,23 @@ namespace Conoscope
             return Path.GetFileName(GlobalReferences.GetContrastReferenceFileName(referenceKind)) ?? Properties.Resources.StateSaved;
         }
 
-        private void EnsureContrastReferenceReady()
+        private bool EnsureContrastReferenceReady()
         {
             ContrastReferenceKind requiredReferenceKind = GetRequiredContrastReferenceKind();
             OpenCvSharp.Mat? referenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
             if (referenceYMat == null)
             {
-                throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSaveContrastReferenceRequired, GetContrastReferenceKindText(requiredReferenceKind)));
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSaveContrastReferenceRequired, GetContrastReferenceKindText(requiredReferenceKind)), Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
             }
 
             if (YMat != null && (YMat.Width != referenceYMat.Width || YMat.Height != referenceYMat.Height))
             {
-                throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgContrastReferenceImageSizeMismatch, GetContrastReferenceKindText(requiredReferenceKind)));
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgContrastReferenceImageSizeMismatch, GetContrastReferenceKindText(requiredReferenceKind)), Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
             }
+
+            return true;
         }
 
         private bool CanRefreshContrastDisplay()
@@ -175,14 +179,13 @@ namespace Conoscope
             return true;
         }
 
-        private OpenCvSharp.Mat CreateContrastMat()
+        private OpenCvSharp.Mat? CreateContrastMat()
         {
-            if (YMat == null)
+            if (YMat == null || !EnsureContrastReferenceReady())
             {
-                throw new InvalidOperationException(Properties.Resources.XYZDataNotLoaded);
+                return null;
             }
 
-            EnsureContrastReferenceReady();
             ContrastReferenceKind referenceKind = GetRequiredContrastReferenceKind();
             return ConoscopeColorimetry.CreateContrastMat(YMat, GlobalReferences.GetContrastReferenceYMat(referenceKind)!, referenceKind);
         }
@@ -224,7 +227,8 @@ namespace Conoscope
         {
             if (YMat == null)
             {
-                throw new InvalidOperationException(Properties.Resources.MsgLoadImageFirst);
+                MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
             GlobalReferences.SaveContrastReference(referenceKind, YMat, Filename);
@@ -233,21 +237,17 @@ namespace Conoscope
 
         private void btnCalculateContrast_Click(object sender, RoutedEventArgs e)
         {
-            try
+            if (!EnsureContrastReferenceReady())
             {
-                EnsureContrastReferenceReady();
-                bool refreshAfterSelection = GetSelectedDisplayChannel() == ExportChannel.Contrast;
-                ComboBoxHelper.SelectItemByTag(cbDisplayChannel, ExportChannel.Contrast.ToString());
-                if (refreshAfterSelection && GetSelectedDisplayChannel() == ExportChannel.Contrast && HasXyzData())
-                {
-                    RefreshDisplayedImage();
-                    UpdateReferencePlot();
-                }
+                return;
             }
-            catch (Exception ex)
+
+            bool refreshAfterSelection = GetSelectedDisplayChannel() == ExportChannel.Contrast;
+            ComboBoxHelper.SelectItemByTag(cbDisplayChannel, ExportChannel.Contrast.ToString());
+            if (refreshAfterSelection && GetSelectedDisplayChannel() == ExportChannel.Contrast && HasXyzData())
             {
-                log.Error($"计算对比度失败: {ex.Message}", ex);
-                MessageBox.Show(ex.Message, Properties.Resources.GroupContrast, MessageBoxButton.OK, MessageBoxImage.Warning);
+                RefreshDisplayedImage();
+                UpdateReferencePlot();
             }
         }
     }

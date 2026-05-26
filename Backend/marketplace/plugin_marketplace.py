@@ -122,6 +122,14 @@ def plugin_package_from_file(
     return package
 
 
+def _package_sort_key(package: dict[str, Any]) -> tuple[tuple[int, ...], str, str]:
+    return (
+        version_tuple(str(package.get("version") or "")),
+        str(package.get("modified") or ""),
+        str(package.get("filename") or "").lower(),
+    )
+
+
 def scan_plugin_package_sets(
     storage: Path,
     plugin_id: str,
@@ -168,8 +176,8 @@ def scan_plugin_package_sets(
             if package:
                 historical_packages.append(package)
 
-    current_packages.sort(key=lambda item: item["modified"], reverse=True)
-    historical_packages.sort(key=lambda item: item["modified"], reverse=True)
+    current_packages.sort(key=_package_sort_key, reverse=True)
+    historical_packages.sort(key=_package_sort_key, reverse=True)
     return current_packages, historical_packages
 
 
@@ -366,11 +374,57 @@ def _select_preferred_package_path(storage: Path, plugin_id: str, latest_version
     if preferred_name and (plugin_dir / preferred_name).is_file():
         return plugin_dir / preferred_name
 
-    current_latest = _latest_package_path(plugin_dir)
+    current_latest = None
+    current_key = None
+    for file_path in _iter_package_files(plugin_dir):
+        package = plugin_package_from_file(storage, file_path, plugin_id, "current", include_hash=False)
+        if not package:
+            continue
+        candidate_key = _package_sort_key(package)
+        if current_key is None or candidate_key > current_key:
+            current_key = candidate_key
+            current_latest = file_path
     if current_latest:
         return current_latest
 
-    return _latest_package_path(history_dir)
+    history_latest = None
+    history_key = None
+    for file_path in _iter_package_files(history_dir):
+        package = plugin_package_from_file(storage, file_path, plugin_id, "archive", include_hash=False)
+        if not package:
+            continue
+        candidate_key = _package_sort_key(package)
+        if history_key is None or candidate_key > history_key:
+            history_key = candidate_key
+            history_latest = file_path
+    return history_latest
+
+
+def load_plugin_icon_payload(storage: Path, plugin_id: str) -> tuple[bytes | None, str | None]:
+    if not is_safe_plugin_id(plugin_id):
+        return None, None
+
+    plugin_dir = storage / "Plugins" / plugin_id
+    icon_path = plugin_dir / "PackageIcon.png"
+    if icon_path.is_file():
+        try:
+            return icon_path.read_bytes(), "image/png"
+        except OSError:
+            return None, None
+
+    latest_version = read_text_file(plugin_dir / "LATEST_RELEASE") or ""
+    package_path = _select_preferred_package_path(storage, plugin_id, latest_version)
+    if not package_path:
+        return None, None
+
+    try:
+        with zipfile.ZipFile(package_path) as archive:
+            icon_name = _archive_member_map(archive).get("packageicon.png")
+            if not icon_name:
+                return None, None
+            return archive.read(icon_name), "image/png"
+    except (OSError, KeyError, zipfile.BadZipFile):
+        return None, None
 
 
 def _read_archive_metadata(

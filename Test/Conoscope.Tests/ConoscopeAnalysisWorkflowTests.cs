@@ -241,18 +241,6 @@ namespace Conoscope.Tests
             Assert.True(workflow.HasAnyContrastCapture);
         }
 
-        [Theory]
-        [InlineData(CaptureSlot.GamutRed)]
-        [InlineData(CaptureSlot.GamutGreen)]
-        [InlineData(CaptureSlot.GamutBlue)]
-        [InlineData(CaptureSlot.ContrastWhite)]
-        [InlineData(CaptureSlot.ContrastBlack)]
-        public void RecordCapture_ThrowsOnNull(CaptureSlot slot)
-        {
-            var workflow = new ConoscopeAnalysisWorkflow();
-            Assert.Throws<ArgumentNullException>(() => workflow.RecordCapture(slot, null!));
-        }
-
         [Fact]
         public void AnalysisWorkflowResult_Ok_PreservesValue()
         {

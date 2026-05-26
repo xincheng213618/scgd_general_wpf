@@ -29,6 +29,7 @@ import sqlite3
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from app_releases import is_root_release_file as is_root_release_file_impl
@@ -87,6 +88,7 @@ from cvwindowsservice_publish import (
 from feedback_service import FeedbackValidationError, save_feedback as save_feedback_impl
 from markupsafe import Markup
 from marketplace_services import MarketplaceCacheSettings, MarketplaceDataService
+from marketplace_api_routes import register_marketplace_api_routes
 from package_publish import (
     PackageValidationError,
     extract_package_version,
@@ -105,7 +107,7 @@ from page_contexts import (
     build_upload_page_context,
     build_updates_page_context,
 )
-from plugin_marketplace import prewarm_plugin_metadata
+from plugin_marketplace import load_plugin_icon_payload, prewarm_plugin_metadata
 from runtime_health import (
     build_health_payload as build_health_payload_impl,
     build_ready_payload as build_ready_payload_impl,
@@ -658,6 +660,7 @@ def plugins_page():
             _get_request_plugin_catalog(),
             keyword=request.args.get("q", ""),
             category=request.args.get("category", ""),
+            author=request.args.get("author", ""),
             sort_by=request.args.get("sort", "updated"),
             page=page,
             page_size=page_size,
@@ -681,10 +684,9 @@ def plugin_icon(plugin_id):
     """Serve plugin icon image."""
     if not _is_safe_id(plugin_id):
         abort(404)
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    icon_path = plugin_dir / "PackageIcon.png"
-    if icon_path.exists():
-        return send_from_directory(str(plugin_dir), "PackageIcon.png")
+    payload, content_type = load_plugin_icon_payload(STORAGE, plugin_id)
+    if payload is not None and content_type:
+        return app.response_class(payload, mimetype=content_type)
     abort(404)
 
 
@@ -1183,270 +1185,41 @@ def api_ready():
     return jsonify(payload), (200 if payload["ready"] else 503)
 
 
-@app.route("/api/plugins", methods=["GET"])
-def api_search_plugins():
-    """Search and list plugins. Compatible with IMarketplaceService.SearchPluginsAsync."""
-    keyword = request.args.get("Keyword", request.args.get("keyword", "")).strip()
-    category = request.args.get("Category", request.args.get("category", "")).strip()
-    sort_by = request.args.get("SortBy", request.args.get("sort", "updated"))
-    sort_order = request.args.get("SortOrder", request.args.get("sortOrder", "desc")).strip().lower()
-    page = _parse_int_arg("Page", "page", default=1, minimum=1)
-    page_size = _parse_int_arg("PageSize", "pageSize", default=20, minimum=1, maximum=100)
-    normalized_sort = normalize_catalog_sort_name(sort_by)
-    if normalized_sort not in ALLOWED_CATALOG_SORTS:
-        abort(400, description="Invalid SortBy parameter")
-    if sort_order not in ALLOWED_CATALOG_SORT_ORDERS:
-        abort(400, description="Invalid SortOrder parameter")
-
-    return jsonify(
-        build_plugin_search_api_result(
-            _get_request_plugin_catalog(),
-            keyword=keyword,
-            category=category,
-            sort_by=normalized_sort,
-            sort_order=sort_order,
-            page=page,
-            page_size=page_size,
-            icon_url_builder=_build_plugin_icon_url,
-        )
-    )
-
-@app.route("/api/plugins/categories", methods=["GET"])
-def api_categories():
-    """Get all plugin categories."""
-    return jsonify(collect_catalog_categories(_get_request_plugin_catalog()))
-
-
-@app.route("/api/plugins/batch-version-check", methods=["POST"])
-def api_batch_version_check():
-    """Batch check latest versions for multiple plugins at once."""
-    data = request.get_json(silent=True) or {}
-    plugin_ids = data.get("PluginIds", data.get("pluginIds", []))
-    if not isinstance(plugin_ids, list):
-        abort(400, description="PluginIds must be an array")
-
-    results = []
-    for pid in plugin_ids:
-        if not isinstance(pid, str) or not _is_safe_id(pid):
-            continue
-        latest = read_text_file(STORAGE / "Plugins" / pid / "LATEST_RELEASE")
-        if latest:
-            results.append({"pluginId": pid, "latestVersion": latest})
-    return jsonify(results)
-
-
-@app.route("/api/plugins/<plugin_id>", methods=["GET"])
-def api_plugin_detail(plugin_id):
-    """Get detailed plugin information."""
-    if not _is_safe_id(plugin_id):
-        abort(400, description="Invalid plugin_id")
-    info = get_plugin_info(plugin_id, download_counts=_get_request_download_counts())
-    if not info:
-        return jsonify({"error": "Plugin not found"}), 404
-
-    return jsonify(build_plugin_detail_api_result(info, icon_url_builder=_build_plugin_icon_url))
-
-
-@app.route("/api/plugins/<plugin_id>/latest-version", methods=["GET"])
-def api_latest_version(plugin_id):
-    """
-    Return latest version as plain text — backward compatible with LATEST_RELEASE.
-    This endpoint is used by older clients that check version via a simple GET.
-    """
-    if not _is_safe_id(plugin_id):
-        abort(400, description="Invalid plugin_id")
-    version = read_text_file(STORAGE / "Plugins" / plugin_id / "LATEST_RELEASE")
-    if not version:
-        return "Plugin not found", 404
-    return version, 200, {"Content-Type": "text/plain; charset=utf-8"}
-
-
-# ===================================================================
-# PACKAGE DOWNLOAD & UPLOAD API
-# ===================================================================
-
-
-@app.route("/api/packages/<plugin_id>/<version>", methods=["GET"])
-def api_download_package(plugin_id, version):
-    """Download a specific plugin version .cvxp file."""
-    if not _is_safe_id(plugin_id) or not _is_safe_version(version):
-        return jsonify({"error": "Invalid plugin_id or version"}), 400
-
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    filename = f"{plugin_id}-{version}.cvxp"
-    filepath = plugin_dir / filename
-
-    if not filepath.exists():
-        history_path = STORAGE / "History" / "Plugins" / plugin_id / filename
-        if history_path.exists():
-            _record_download(plugin_id, version)
-            return send_from_directory(str(history_path.parent), history_path.name, as_attachment=True)
-        return jsonify({"error": "Package not found"}), 404
-
-    _record_download(plugin_id, version)
-    return send_from_directory(str(plugin_dir), filename, as_attachment=True)
-
-
-@app.route("/api/packages/publish", methods=["POST"])
-@require_upload_auth
-def api_publish_package():
-    """
-    Publish a new plugin version.
-    Accepts multipart form: plugin metadata + .cvxp package file.
-    """
-    package = request.files.get("package")
-    plugin_id = request.form.get("PluginId", request.form.get("plugin_id", "")).strip()
-    version = request.form.get("Version", request.form.get("version", "")).strip()
-
-    name = request.form.get("Name", request.form.get("name", plugin_id)).strip()
-    description = request.form.get("Description", request.form.get("description", "")).strip()
-    author = request.form.get("Author", request.form.get("author", "")).strip()
-    category = request.form.get("Category", request.form.get("category", "")).strip()
-    requires_ver = request.form.get(
-        "RequiresVersion", request.form.get("requires_version", "")
-    ).strip()
-    changelog_text = request.form.get("ChangeLog", request.form.get("changelog", "")).strip()
-    icon = request.files.get("icon")
-
-    try:
-        upload_request = validate_api_publish_request(
-            package,
-            plugin_id,
-            version,
-            sanitize_filename=_sanitize_filename,
-            validate_plugin_id=_is_safe_id,
-            validate_version=_is_safe_version,
-        )
-        save_result = save_package_file(
-            STORAGE,
-            package,
-            upload_request,
-            validate_plugin_id=_is_safe_id,
-            read_text_file=read_text_file,
-            version_tuple=_version_tuple,
-            reconcile_plugin_package_history=reconcile_plugin_package_history,
-        )
-        persist_plugin_metadata(
-            save_result.plugin_dir,
-            plugin_id=upload_request.plugin_id,
-            version=upload_request.version,
-            name=name or upload_request.plugin_id,
-            description=description,
-            author=author,
-            category=category,
-            requires_version=requires_ver,
-            changelog_text=changelog_text,
-            icon_file=icon,
-            manifest_loader=load_manifest,
-        )
-        finalize_plugin_publish(
-            STORAGE,
-            plugin_id=upload_request.plugin_id,
-            version=upload_request.version,
-            refresh_related_caches=_refresh_related_caches,
-            prewarm_plugin_metadata=prewarm_plugin_metadata,
-            get_download_counts=_get_download_counts,
-            get_cache_entry=_get_cache_entry,
-            set_cache_entry=_set_cache_entry,
-            ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-        )
-    except PackageValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
-
-    return (
-        jsonify({"pluginId": upload_request.plugin_id, "version": upload_request.version}),
-        201,
-    )
-
-
-# ===================================================================
-# BACKWARD COMPATIBILITY — serve files the old way
-# ===================================================================
-
-
-@app.route("/D%3A/ColorVision/Plugins/<path:filepath>")
-@app.route("/D:/ColorVision/Plugins/<path:filepath>")
-def legacy_plugin_files(filepath):
-    """
-    Backward-compatible endpoint matching the old file-server URL pattern:
-    http://host:9999/D%3A/ColorVision/Plugins/{PluginId}/LATEST_RELEASE
-    http://host:9999/D%3A/ColorVision/Plugins/{PluginId}/{PluginId}-{ver}.cvxp
-    """
-    full_path = STORAGE / "Plugins" / filepath
-    try:
-        full_path.resolve().relative_to((STORAGE / "Plugins").resolve())
-    except ValueError:
-        abort(403)
-    if not full_path.exists():
-        abort(404)
-    if full_path.is_file():
-        return send_from_directory(str(full_path.parent), full_path.name)
-    abort(404)
-
-
-@app.route("/D%3A/ColorVision/<path:filepath>")
-@app.route("/D:/ColorVision/<path:filepath>")
-def legacy_files(filepath):
-    """
-    Backward-compatible endpoint for other legacy file-server URLs:
-    http://host:9999/D%3A/ColorVision/LATEST_RELEASE
-    http://host:9999/D%3A/ColorVision/CHANGELOG.md
-    http://host:9999/D%3A/ColorVision/Update/...
-    http://host:9999/D%3A/ColorVision/Tool/...
-    """
-    full_path = STORAGE / filepath
-    if filepath.replace("\\", "/").startswith("Update/") and not full_path.exists():
-        repair_update_storage_layout(STORAGE)
-        full_path = STORAGE / filepath
-    try:
-        full_path.resolve().relative_to(STORAGE.resolve())
-    except ValueError:
-        abort(403)
-    if not full_path.exists():
-        abort(404)
-    if full_path.is_file():
-        return send_from_directory(str(full_path.parent), full_path.name)
-    abort(404)
-
-
-# ===================================================================
-# UPLOAD API — PUT-based (backward compatible with build scripts)
-# ===================================================================
-
-
-@app.route("/upload/<path:filepath>", methods=["PUT"])
-@require_upload_auth
-def legacy_upload(filepath):
-    """
-    Backward-compatible upload endpoint matching old file_manager.py pattern:
-    PUT http://host:9998/upload/ColorVision/Plugins/{PluginId}/{filename}
-    """
-    try:
-        store_legacy_upload(
-            storage=STORAGE,
-            raw_filepath=filepath,
-            stream=request.stream,
-            max_size=MAX_UPLOAD_SIZE_BYTES,
-            normalize_relative_path=_normalize_relative_path,
-            validate_plugin_id=_is_safe_id,
-            extract_package_version=lambda filename, plugin_id: extract_package_version(
-                filename,
-                plugin_id,
-                sanitize_filename=_sanitize_filename,
-                validate_version=_is_safe_version,
-            ),
-            is_root_release_file=_is_root_release_file,
-            reconcile_app_release_history=reconcile_app_release_history,
-            reconcile_plugin_package_history=reconcile_plugin_package_history,
-            prune_update_packages=prune_update_packages,
-            refresh_related_caches=_refresh_related_caches,
-        )
-    except UploadTooLargeError as exc:
-        return exc.message, exc.status_code
-    except UploadWorkflowError as exc:
-        abort(exc.status_code, description=exc.message)
-
-    return "File uploaded successfully", 201
+register_marketplace_api_routes(
+    app,
+    SimpleNamespace(
+        get_storage=lambda: STORAGE,
+        max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
+        parse_int_arg=_parse_int_arg,
+        normalize_catalog_sort_name=normalize_catalog_sort_name,
+        allowed_catalog_sorts=ALLOWED_CATALOG_SORTS,
+        allowed_catalog_sort_orders=ALLOWED_CATALOG_SORT_ORDERS,
+        build_plugin_search_api_result=build_plugin_search_api_result,
+        build_plugin_detail_api_result=build_plugin_detail_api_result,
+        collect_catalog_categories=collect_catalog_categories,
+        get_request_plugin_catalog=_get_request_plugin_catalog,
+        build_plugin_icon_url=_build_plugin_icon_url,
+        get_plugin_info=get_plugin_info,
+        get_request_download_counts=_get_request_download_counts,
+        read_text_file=read_text_file,
+        is_safe_id=_is_safe_id,
+        is_safe_version=_is_safe_version,
+        sanitize_filename=_sanitize_filename,
+        version_tuple=_version_tuple,
+        extract_package_version=_extract_package_version,
+        load_manifest=_load_manifest,
+        refresh_related_caches=_refresh_related_caches,
+        get_download_counts=_get_download_counts,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        record_download=_record_download,
+        normalize_relative_path=_normalize_relative_path,
+        is_root_release_file=_is_root_release_file,
+        reconcile_app_release_history=reconcile_app_release_history,
+        reconcile_plugin_package_history=reconcile_plugin_package_history,
+        require_upload_auth=require_upload_auth,
+    ),
+)
 
 
 # ===================================================================

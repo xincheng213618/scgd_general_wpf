@@ -509,9 +509,6 @@
   <data name="MsgExportFailed" xml:space="preserve">
     <value>내보내기 실패: {0}</value>
   </data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve">
-    <value>내보내기는 완료되었지만 곡선 내보내기 구성을 저장하지 못했습니다: {0}</value>
-  </data>
   <data name="MsgSelectAzimuthFirst" xml:space="preserve">
     <value>먼저 방위각을 선택하세요</value>
   </data>
@@ -1117,12 +1114,6 @@
   <data name="PleaseSelectCVCIEFile" xml:space="preserve">
     <value>CVCIE XYZ 이미지 파일을 선택하세요</value>
   </data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve">
-    <value>CVCIE 파일 채널 수가 부족합니다: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve">
-    <value>CVCIE 파일 데이터 길이가 부족하여 XYZ 채널을 분리할 수 없습니다</value>
-  </data>
   <data name="Invalid" xml:space="preserve">
     <value>유효하지 않음</value>
   </data>
@@ -1137,18 +1128,6 @@
   </data>
   <data name="FocusPointMismatchError" xml:space="preserve">
     <value>포커스 포인트 그룹 간에 일치하는 인덱스가 없습니다. 동일한 포커스 포인트 세트에서 R/G/B 또는 White/Black 데이터를 기록하세요.</value>
-  </data>
-  <data name="OnlyCVCIESupported" xml:space="preserve">
-    <value>현재 뷰는 CVCIE XYZ 이미지 파일만 지원합니다</value>
-  </data>
-  <data name="ReadCVCIEFailed" xml:space="preserve">
-    <value>CVCIE 파일을 읽지 못했습니다</value>
-  </data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve">
-    <value>CVCIE 파일 채널 수가 부족합니다: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve">
-    <value>CVCIE 파일 데이터 길이가 부족하여 XYZ 채널을 분리할 수 없습니다</value>
   </data>
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>색차 채널에는 uv 기준값이 필요합니다</value>
@@ -1413,11 +1392,5 @@
   <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
     <value>{0} 데이터에 관심점 {1}이 없습니다.
 출처: {2}</value>
-  </data>
-  <data name="MsgFilePathCannotBeEmpty" xml:space="preserve">
-    <value>파일 경로는 비워 둘 수 없습니다</value>
-  </data>
-  <data name="MsgNoMeasurementProviderForFileType" xml:space="preserve">
-    <value>현재 파일 형식에 사용할 수 있는 이미지 측정 리더가 없습니다</value>
   </data>
 </root>
