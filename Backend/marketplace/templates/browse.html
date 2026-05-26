@@ -21,6 +21,11 @@
             <p class="page-header-desc">文件系统浏览 · 排障、审计和核对归档路径</p>
         </div>
         <div class="page-header-stats">
+            {% if subpath and subpath.replace('\\', '/').startswith('Tool/CVWindowsService') %}
+            <a href="/upload/cvwindowsservice" class="btn btn-sm btn-success align-self-center">
+                <i class="bi bi-cloud-upload me-1"></i>上传 CVWindowsService 包
+            </a>
+            {% endif %}
             <div class="page-header-stat">
                 <strong>{{ summary.directory_count }}</strong>
                 <span>目录</span>

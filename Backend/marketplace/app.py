@@ -72,6 +72,18 @@ from db_cache import (
     CacheManager,
 )
 from download_stats import build_stats_payload
+from cvwindowsservice_publish import (
+    CVWSError,
+    CVWS_PACKAGE_RE as _CVWS_PACKAGE_RE,
+    CVWSUploadResult,
+    build_cvws_page_context,
+    choose_target_filename,
+    infer_version_from_filename,
+    is_official_filename,
+    save_cvws_package,
+    update_cvws_latest_release,
+    validate_version as validate_cvws_version,
+)
 from feedback_service import FeedbackValidationError, save_feedback as save_feedback_impl
 from markupsafe import Markup
 from marketplace_services import MarketplaceCacheSettings, MarketplaceDataService
@@ -119,9 +131,11 @@ from flask import (
     Flask,
     abort,
     jsonify,
+    redirect,
     render_template,
     request,
     send_from_directory,
+    session,
     url_for,
 )
 from werkzeug.exceptions import HTTPException
@@ -230,6 +244,22 @@ def require_upload_auth(view_func):
             or not hmac.compare_digest(auth.password or "", expected_password)
         ):
             return _unauthorized_response()
+        return view_func(*args, **kwargs)
+
+    return wrapper
+
+
+def _check_web_session_auth() -> bool:
+    """Return True if the current Flask session is authenticated."""
+    return bool(session.get("authenticated"))
+
+
+def require_web_auth(view_func):
+    """Decorator that requires web session auth, redirecting to login page on failure."""
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if not _check_web_session_auth():
+            return redirect(url_for("login_page", next=request.url))
         return view_func(*args, **kwargs)
 
     return wrapper
@@ -659,7 +689,7 @@ def plugin_icon(plugin_id):
 
 
 @app.route("/upload", methods=["GET", "POST"])
-@require_upload_auth
+@require_web_auth
 def upload_page():
     """Upload page — upload a .cvxp plugin package."""
     if request.method == "GET":
@@ -828,10 +858,6 @@ def api_app_incremental_download(version):
 # ===================================================================
 
 _CVWS_DIR = "Tool/CVWindowsService"
-_CVWS_PACKAGE_RE = re.compile(
-    r"^CVWindowsService\[(?P<version>\d+\.\d+\.\d+\.\d+)\](?:-(?P<suffix>\d+))?\.zip$",
-    re.IGNORECASE,
-)
 CVWS_RELEASES_CACHE_KEY = "cvws_releases:v1"
 CVWS_RELEASES_CACHE_TTL_SECONDS = 180
 
@@ -960,6 +986,188 @@ def api_cvwindowsservice_download(version):
         return jsonify({"error": f"Package for version {version} not found"}), 404
 
     return send_from_directory(str(best_match.parent), best_match.name, as_attachment=True)
+
+
+# ===================================================================
+# Web Session Login / Logout
+# ===================================================================
+
+def _safe_next_url(raw: str | None) -> str | None:
+    """Validate that a next URL is a safe internal path. Returns None if unsafe."""
+    if not raw:
+        return None
+    # Only allow relative paths starting with / and not //
+    if raw.startswith("/") and not raw.startswith("//"):
+        return raw
+    return None
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login_page():
+    """Web login page using Flask session (not Basic Auth)."""
+    if _check_web_session_auth():
+        next_url = _safe_next_url(request.args.get("next")) or url_for("upload_page")
+        return redirect(next_url)
+
+    error = None
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        expected_username, expected_password = _get_upload_auth()
+        if (
+            hmac.compare_digest(username, expected_username)
+            and hmac.compare_digest(password, expected_password)
+        ):
+            session["authenticated"] = True
+            session["username"] = username
+            next_url = (
+                _safe_next_url(request.form.get("next"))
+                or _safe_next_url(request.args.get("next"))
+                or url_for("upload_page")
+            )
+            return redirect(next_url)
+        error = "用户名或密码错误"
+
+    next_url = _safe_next_url(request.args.get("next")) or ""
+    return render_template("login.html", error=error, next_url=next_url)
+
+
+@app.route("/logout", methods=["GET"])
+def logout_page():
+    """Clear the web session and redirect to home."""
+    session.clear()
+    return redirect(url_for("index"))
+
+
+# ===================================================================
+# CVWindowsService Web Upload (session-authenticated)
+# ===================================================================
+
+@app.route("/upload/cvwindowsservice", methods=["GET", "POST"])
+@require_web_auth
+def cvwindowsservice_upload_page():
+    """Upload page for CVWindowsService packages (web session auth)."""
+    if request.method == "GET":
+        return render_template(
+            "cvwindowsservice_upload.html",
+            **build_cvws_page_context(
+                STORAGE,
+                scan_packages=_scan_cvwindowsservice_packages,
+                read_text_file=read_text_file,
+                human_size=human_size,
+            ),
+        )
+
+    # POST: handle upload
+    file = request.files.get("package")
+    version = request.form.get("version", "").strip()
+    set_latest = request.form.get("set_latest") == "on"
+
+    # Validate file
+    if not file or not getattr(file, "filename", ""):
+        return render_template(
+            "cvwindowsservice_upload.html",
+            **build_cvws_page_context(
+                STORAGE,
+                scan_packages=_scan_cvwindowsservice_packages,
+                read_text_file=read_text_file,
+                human_size=human_size,
+                error="请选择要上传的文件",
+            ),
+        )
+
+    if not file.filename.lower().endswith(".zip"):
+        return render_template(
+            "cvwindowsservice_upload.html",
+            **build_cvws_page_context(
+                STORAGE,
+                scan_packages=_scan_cvwindowsservice_packages,
+                read_text_file=read_text_file,
+                human_size=human_size,
+                error="只允许上传 .zip 文件",
+            ),
+        )
+
+    # Try to infer version from official filename pattern only
+    if not version:
+        version = infer_version_from_filename(file.filename) or ""
+
+    if not version:
+        if is_official_filename(file.filename):
+            # Should not happen (official names always have version), but defensive
+            error = "无法从文件名解析版本号，请手动输入版本号"
+        else:
+            error = "文件名不符合 CVWindowsService[版本]-后缀.zip 规则，请手动输入版本号或重命名文件"
+        return render_template(
+            "cvwindowsservice_upload.html",
+            **build_cvws_page_context(
+                STORAGE,
+                scan_packages=_scan_cvwindowsservice_packages,
+                read_text_file=read_text_file,
+                human_size=human_size,
+                error=error,
+            ),
+        )
+
+    if not validate_cvws_version(version):
+        return render_template(
+            "cvwindowsservice_upload.html",
+            **build_cvws_page_context(
+                STORAGE,
+                scan_packages=_scan_cvwindowsservice_packages,
+                read_text_file=read_text_file,
+                human_size=human_size,
+                error=f"版本号格式不正确: {version}，必须为 x.y.z.w 数字格式",
+            ),
+        )
+
+    # Save — preserve original filename if it matches official pattern
+    target_dir = STORAGE / "Tool" / "CVWindowsService"
+    try:
+        result = save_cvws_package(
+            file, target_dir, version,
+            original_filename=file.filename if is_official_filename(file.filename) else None,
+        )
+    except OSError as exc:
+        return render_template(
+            "cvwindowsservice_upload.html",
+            **build_cvws_page_context(
+                STORAGE,
+                scan_packages=_scan_cvwindowsservice_packages,
+                read_text_file=read_text_file,
+                human_size=human_size,
+                error=f"保存文件失败: {exc}",
+            ),
+        )
+
+    # Update LATEST_RELEASE only when explicitly requested
+    if set_latest:
+        update_cvws_latest_release(target_dir, version)
+
+    # Refresh caches
+    _cache.invalidate_cache_prefix("cvws_releases:")
+    _cache.invalidate_cache_prefix("home_tool_preview:")
+    _cache.invalidate_cache_prefix("storage_overview:")
+    _cache.invalidate_cache_prefix(f"dir_file_count:Tool/CVWindowsService")
+
+    # Build success message
+    latest_now = (read_text_file(target_dir / "LATEST_RELEASE") or "").strip()
+    message = (
+        f"上传成功: {result.saved_filename} (版本 {result.version})"
+        + (f"，已更新 LATEST_RELEASE → {latest_now}" if set_latest else "")
+    )
+
+    return render_template(
+        "cvwindowsservice_upload.html",
+        **build_cvws_page_context(
+            STORAGE,
+            scan_packages=_scan_cvwindowsservice_packages,
+            read_text_file=read_text_file,
+            human_size=human_size,
+            message=message,
+            result=result,
+        ),
+    )
 
 
 @app.route("/api/health", methods=["GET"])

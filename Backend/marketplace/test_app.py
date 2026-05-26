@@ -116,13 +116,10 @@ class MarketplaceAppTests(unittest.TestCase):
             os.utime(path, (mtime, mtime))
         return path
 
-    def test_upload_page_requires_basic_auth(self):
-        response = self.client.get("/upload")
-        self.assertEqual(response.status_code, 401)
-        self.assertIn("Basic", response.headers.get("WWW-Authenticate", ""))
-
-        authed = self.client.get("/upload", headers=self._auth_headers())
-        self.assertEqual(authed.status_code, 200)
+    def test_upload_page_requires_web_login(self):
+        response = self.client.get("/upload", follow_redirects=False)
+        self.assertIn(response.status_code, [302, 303])
+        self.assertIn("login", response.headers.get("Location", ""))
 
     def test_api_app_changelog_returns_plain_text(self):
         self._create_changelog("## 1.2.3.4\n- update notes")

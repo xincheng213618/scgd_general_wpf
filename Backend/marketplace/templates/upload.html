@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}上传插件 — ColorVision{% endblock %}
+{% block title %}上传 — ColorVision{% endblock %}
 
 {% block content %}
 <div class="page-header mb-3">
     <div class="page-header-row">
         <div>
-            <h1 class="page-header-title"><i class="bi bi-cloud-upload"></i>上传插件</h1>
-            <p class="page-header-desc">上传 .cvxp 插件包，自动写入目录并归档旧版本</p>
+            <h1 class="page-header-title"><i class="bi bi-cloud-upload"></i>上传中心</h1>
+            <p class="page-header-desc">上传插件包或发布 CVWindowsService 服务包</p>
         </div>
         <div class="page-header-stats">
             <div class="page-header-stat">
@@ -18,6 +18,23 @@
                 <span>保留包数</span>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-6">
+        <a href="/upload" class="card text-decoration-none p-3 text-center border-primary">
+            <i class="bi bi-puzzle fs-4 text-primary d-block mb-1"></i>
+            <strong class="small">上传插件包</strong>
+            <small class="text-muted">.cvxp 插件包</small>
+        </a>
+    </div>
+    <div class="col-6">
+        <a href="/upload/cvwindowsservice" class="card text-decoration-none p-3 text-center">
+            <i class="bi bi-gear fs-4 text-success d-block mb-1"></i>
+            <strong class="small">发布 CVWindowsService</strong>
+            <small class="text-muted">.zip 服务包</small>
+        </a>
     </div>
 </div>
 
