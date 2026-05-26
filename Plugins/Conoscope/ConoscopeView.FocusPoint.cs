@@ -547,19 +547,18 @@ namespace Conoscope
         {
             double radiusPixels = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
             string circleName = ResolveFocusCircleName(circle);
+            double azimuthDegrees = FocusPointMeasurementService.GetFullAzimuthAngle(circle.Attribute.Center, currentImageCenter);
+            double polarDegrees = FocusPointMeasurementService.GetPolarRadiusAngle(circle.Attribute.Center, currentImageCenter, currentImageRadius, MaxAngle);
+            double radiusDegrees = FocusPointMeasurementService.GetFocusCircleRadiusAngle(radiusPixels, currentPixelsPerDegree, currentImageRadius, MaxAngle);
+            string info = $"{circleName}  方位 {azimuthDegrees:F2}°  极角 {polarDegrees:F2}°  R {radiusPixels:F1}px/{radiusDegrees:F2}°";
 
             if (includeMeasurement
                 && TryCalculateFocusPointAverage(circle.Attribute.Center, radiusPixels, out _, out double avgY, out _, out int sampleCount))
             {
-                return FocusPointMeasurementService.BuildFocusPointInfoText(
-                    circleName, circle.Attribute.Center, radiusPixels,
-                    currentImageCenter, currentImageRadius, MaxAngle, currentPixelsPerDegree,
-                    sampleCount, avgY);
+                info += $"  N {sampleCount}  Y {avgY:F3}";
             }
 
-            return FocusPointMeasurementService.BuildFocusPointInfoText(
-                circleName, circle.Attribute.Center, radiusPixels,
-                currentImageCenter, currentImageRadius, MaxAngle, currentPixelsPerDegree);
+            return info;
         }
 
         public bool TryGetFocusPointMeasurementCapture(string slotName, out MeasurementCapture capture, out string? errorMessage)
@@ -737,10 +736,10 @@ namespace Conoscope
 
             string pointName = ResolveFocusCircleName(circle);
             double radiusPixels = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
-            point = FocusPointMeasurementService.CreateMeasurementPoint(
-                pointName, measurement,
-                circle.Attribute.Center, radiusPixels,
-                currentImageCenter, currentImageRadius, MaxAngle, currentPixelsPerDegree);
+            double azimuthDegrees = FocusPointMeasurementService.GetFullAzimuthAngle(circle.Attribute.Center, currentImageCenter);
+            double polarDegrees = FocusPointMeasurementService.GetPolarRadiusAngle(circle.Attribute.Center, currentImageCenter, currentImageRadius, MaxAngle);
+            double radiusDegrees = FocusPointMeasurementService.GetFocusCircleRadiusAngle(radiusPixels, currentPixelsPerDegree, currentImageRadius, MaxAngle);
+            point = new MeasurementPoint(pointName, pointName, measurement, azimuthDegrees, polarDegrees, radiusDegrees);
             return true;
         }
 

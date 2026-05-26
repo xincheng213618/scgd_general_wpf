@@ -181,49 +181,6 @@ namespace Conoscope.Tests
         }
 
         [Fact]
-        public void BuildFocusPointInfoText_ContainsBasicInfo()
-        {
-            Point center = new Point(150, 100);
-            string text = FocusPointMeasurementService.BuildFocusPointInfoText(
-                "TestCircle", center, 25, new Point(100, 100), 200, 90, 10);
-            Assert.Contains("TestCircle", text);
-            Assert.Contains("方位", text);
-            Assert.Contains("极角", text);
-            Assert.Contains("R", text);
-        }
-
-        [Fact]
-        public void BuildFocusPointInfoText_IncludesSampleCount_WhenProvided()
-        {
-            Point center = new Point(150, 100);
-            string text = FocusPointMeasurementService.BuildFocusPointInfoText(
-                "TestCircle", center, 25, new Point(100, 100), 200, 90, 10,
-                sampleCount: 42, avgY: 0.75);
-            Assert.Contains("N 42", text);
-            Assert.Contains("Y 0.750", text);
-        }
-
-        [Fact]
-        public void CreateMeasurementPoint_ReturnsCorrectAngles()
-        {
-            var chromaticity = new ConoscopeChromaticity(0.3, 0.3, 0.2, 0.4, 6500);
-            var measurement = new ImageMeasurement("test.cvcie", 0.5, 0.6, 0.4, chromaticity);
-            Point center = new Point(200, 100);
-            Point imageCenter = new Point(100, 100);
-
-            MeasurementPoint point = FocusPointMeasurementService.CreateMeasurementPoint(
-                "P1", measurement, center, 25, imageCenter, 200, 90, 10);
-
-            Assert.Equal("P1", point.Name);
-            Assert.NotNull(point.AzimuthDegrees);
-            Assert.NotNull(point.PolarDegrees);
-            Assert.NotNull(point.RadiusDegrees);
-            Assert.Equal(0.0, point.AzimuthDegrees.Value, 2);
-            Assert.Equal(45.0, point.PolarDegrees.Value, 2);
-            Assert.Equal(2.5, point.RadiusDegrees.Value, 2);
-        }
-
-        [Fact]
         public void TryCalculateCircleRoiAverage_ReturnsFalse_WhenMatIsNull()
         {
             bool result = FocusPointMeasurementService.TryCalculateCircleRoiAverage(

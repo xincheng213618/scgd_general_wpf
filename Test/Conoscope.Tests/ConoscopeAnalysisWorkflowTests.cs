@@ -47,10 +47,10 @@ namespace Conoscope.Tests
 
             Assert.False(workflow.CanComputeGamut(standard));
 
-            workflow.RecordGamutRed(CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
             Assert.False(workflow.CanComputeGamut(standard));
 
-            workflow.RecordGamutGreen(CreateCapture("G"));
+            workflow.RecordCapture(CaptureSlot.GamutGreen, CreateCapture("G"));
             Assert.False(workflow.CanComputeGamut(standard));
         }
 
@@ -58,9 +58,9 @@ namespace Conoscope.Tests
         public void CanComputeGamut_ReturnsFalse_WhenStandardIsNull()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutRed(CreateCapture("R"));
-            workflow.RecordGamutGreen(CreateCapture("G"));
-            workflow.RecordGamutBlue(CreateCapture("B"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutGreen, CreateCapture("G"));
+            workflow.RecordCapture(CaptureSlot.GamutBlue, CreateCapture("B"));
 
             Assert.False(workflow.CanComputeGamut(null));
         }
@@ -69,9 +69,9 @@ namespace Conoscope.Tests
         public void CanComputeGamut_ReturnsTrue_WhenAllCapturesAndStandardPresent()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutRed(CreateCapture("R"));
-            workflow.RecordGamutGreen(CreateCapture("G"));
-            workflow.RecordGamutBlue(CreateCapture("B"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutGreen, CreateCapture("G"));
+            workflow.RecordCapture(CaptureSlot.GamutBlue, CreateCapture("B"));
 
             Assert.True(workflow.CanComputeGamut(ColorGamutStandards.All[0]));
         }
@@ -80,8 +80,8 @@ namespace Conoscope.Tests
         public void ComputeGamut_ReturnsFailure_WhenMissingRedCapture()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutGreen(CreateCapture("G"));
-            workflow.RecordGamutBlue(CreateCapture("B"));
+            workflow.RecordCapture(CaptureSlot.GamutGreen, CreateCapture("G"));
+            workflow.RecordCapture(CaptureSlot.GamutBlue, CreateCapture("B"));
 
             var result = workflow.ComputeGamut(ColorGamutStandards.All[0]);
 
@@ -94,8 +94,8 @@ namespace Conoscope.Tests
         public void ComputeGamut_ReturnsFailure_WhenMissingGreenCapture()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutRed(CreateCapture("R"));
-            workflow.RecordGamutBlue(CreateCapture("B"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutBlue, CreateCapture("B"));
 
             var result = workflow.ComputeGamut(ColorGamutStandards.All[0]);
 
@@ -107,8 +107,8 @@ namespace Conoscope.Tests
         public void ComputeGamut_ReturnsFailure_WhenMissingBlueCapture()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutRed(CreateCapture("R"));
-            workflow.RecordGamutGreen(CreateCapture("G"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutGreen, CreateCapture("G"));
 
             var result = workflow.ComputeGamut(ColorGamutStandards.All[0]);
 
@@ -120,9 +120,9 @@ namespace Conoscope.Tests
         public void ComputeGamut_ReturnsSuccess_WhenAllCapturesPresent()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutRed(CreateCapture("R"));
-            workflow.RecordGamutGreen(CreateCapture("G"));
-            workflow.RecordGamutBlue(CreateCapture("B"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutGreen, CreateCapture("G"));
+            workflow.RecordCapture(CaptureSlot.GamutBlue, CreateCapture("B"));
 
             var result = workflow.ComputeGamut(ColorGamutStandards.All[0]);
 
@@ -139,7 +139,7 @@ namespace Conoscope.Tests
 
             Assert.False(workflow.CanComputeContrast);
 
-            workflow.RecordContrastWhite(CreateCapture("White"));
+            workflow.RecordCapture(CaptureSlot.ContrastWhite, CreateCapture("White"));
             Assert.False(workflow.CanComputeContrast);
         }
 
@@ -147,8 +147,8 @@ namespace Conoscope.Tests
         public void CanComputeContrast_ReturnsTrue_WhenBothCapturesPresent()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordContrastWhite(CreateCapture("White"));
-            workflow.RecordContrastBlack(CreateCapture("Black"));
+            workflow.RecordCapture(CaptureSlot.ContrastWhite, CreateCapture("White"));
+            workflow.RecordCapture(CaptureSlot.ContrastBlack, CreateCapture("Black"));
 
             Assert.True(workflow.CanComputeContrast);
         }
@@ -157,7 +157,7 @@ namespace Conoscope.Tests
         public void ComputeContrast_ReturnsFailure_WhenMissingWhiteCapture()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordContrastBlack(CreateCapture("Black"));
+            workflow.RecordCapture(CaptureSlot.ContrastBlack, CreateCapture("Black"));
 
             var result = workflow.ComputeContrast();
 
@@ -170,7 +170,7 @@ namespace Conoscope.Tests
         public void ComputeContrast_ReturnsFailure_WhenMissingBlackCapture()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordContrastWhite(CreateCapture("White"));
+            workflow.RecordCapture(CaptureSlot.ContrastWhite, CreateCapture("White"));
 
             var result = workflow.ComputeContrast();
 
@@ -182,8 +182,8 @@ namespace Conoscope.Tests
         public void ComputeContrast_ReturnsSuccess_WhenBothCapturesPresent()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordContrastWhite(CreateCapture("White"));
-            workflow.RecordContrastBlack(CreateCapture("Black"));
+            workflow.RecordCapture(CaptureSlot.ContrastWhite, CreateCapture("White"));
+            workflow.RecordCapture(CaptureSlot.ContrastBlack, CreateCapture("Black"));
 
             var result = workflow.ComputeContrast();
 
@@ -197,9 +197,9 @@ namespace Conoscope.Tests
         public void ClearGamut_ResetsAllGamutCaptures()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutRed(CreateCapture("R"));
-            workflow.RecordGamutGreen(CreateCapture("G"));
-            workflow.RecordGamutBlue(CreateCapture("B"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutGreen, CreateCapture("G"));
+            workflow.RecordCapture(CaptureSlot.GamutBlue, CreateCapture("B"));
 
             workflow.ClearGamut();
 
@@ -213,8 +213,8 @@ namespace Conoscope.Tests
         public void ClearContrast_ResetsAllContrastCaptures()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordContrastWhite(CreateCapture("White"));
-            workflow.RecordContrastBlack(CreateCapture("Black"));
+            workflow.RecordCapture(CaptureSlot.ContrastWhite, CreateCapture("White"));
+            workflow.RecordCapture(CaptureSlot.ContrastBlack, CreateCapture("Black"));
 
             workflow.ClearContrast();
 
@@ -227,7 +227,7 @@ namespace Conoscope.Tests
         public void HasAnyGamutCapture_ReturnsTrue_AfterRecordingOne()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordGamutRed(CreateCapture("R"));
+            workflow.RecordCapture(CaptureSlot.GamutRed, CreateCapture("R"));
 
             Assert.True(workflow.HasAnyGamutCapture);
         }
@@ -236,44 +236,21 @@ namespace Conoscope.Tests
         public void HasAnyContrastCapture_ReturnsTrue_AfterRecordingOne()
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            workflow.RecordContrastWhite(CreateCapture("White"));
+            workflow.RecordCapture(CaptureSlot.ContrastWhite, CreateCapture("White"));
 
             Assert.True(workflow.HasAnyContrastCapture);
         }
 
-        [Fact]
-        public void RecordGamutRed_ThrowsOnNull()
+        [Theory]
+        [InlineData(CaptureSlot.GamutRed)]
+        [InlineData(CaptureSlot.GamutGreen)]
+        [InlineData(CaptureSlot.GamutBlue)]
+        [InlineData(CaptureSlot.ContrastWhite)]
+        [InlineData(CaptureSlot.ContrastBlack)]
+        public void RecordCapture_ThrowsOnNull(CaptureSlot slot)
         {
             var workflow = new ConoscopeAnalysisWorkflow();
-            Assert.Throws<ArgumentNullException>(() => workflow.RecordGamutRed(null!));
-        }
-
-        [Fact]
-        public void RecordGamutGreen_ThrowsOnNull()
-        {
-            var workflow = new ConoscopeAnalysisWorkflow();
-            Assert.Throws<ArgumentNullException>(() => workflow.RecordGamutGreen(null!));
-        }
-
-        [Fact]
-        public void RecordGamutBlue_ThrowsOnNull()
-        {
-            var workflow = new ConoscopeAnalysisWorkflow();
-            Assert.Throws<ArgumentNullException>(() => workflow.RecordGamutBlue(null!));
-        }
-
-        [Fact]
-        public void RecordContrastWhite_ThrowsOnNull()
-        {
-            var workflow = new ConoscopeAnalysisWorkflow();
-            Assert.Throws<ArgumentNullException>(() => workflow.RecordContrastWhite(null!));
-        }
-
-        [Fact]
-        public void RecordContrastBlack_ThrowsOnNull()
-        {
-            var workflow = new ConoscopeAnalysisWorkflow();
-            Assert.Throws<ArgumentNullException>(() => workflow.RecordContrastBlack(null!));
+            Assert.Throws<ArgumentNullException>(() => workflow.RecordCapture(slot, null!));
         }
 
         [Fact]

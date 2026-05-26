@@ -183,32 +183,5 @@ namespace Conoscope.ApplicationServices.Analysis
                 imageCenter.X + Math.Cos(radians) * distancePixels,
                 imageCenter.Y - Math.Sin(radians) * distancePixels);
         }
-
-        public static MeasurementPoint CreateMeasurementPoint(
-            string pointName, ImageMeasurement measurement,
-            Point center, double radiusPixels,
-            Point imageCenter, double imageRadius, double maxAngle, double pixelsPerDegree)
-        {
-            double azimuthDegrees = GetFullAzimuthAngle(center, imageCenter);
-            double polarDegrees = GetPolarRadiusAngle(center, imageCenter, imageRadius, maxAngle);
-            double radiusDegrees = GetFocusCircleRadiusAngle(radiusPixels, pixelsPerDegree, imageRadius, maxAngle);
-            return new MeasurementPoint(pointName, pointName, measurement, azimuthDegrees, polarDegrees, radiusDegrees);
-        }
-
-        public static string BuildFocusPointInfoText(
-            string circleName, Point center, double radiusPixels,
-            Point imageCenter, double imageRadius, double maxAngle, double pixelsPerDegree,
-            int? sampleCount = null, double? avgY = null)
-        {
-            double azimuthDegrees = GetFullAzimuthAngle(center, imageCenter);
-            double polarDegrees = GetPolarRadiusAngle(center, imageCenter, imageRadius, maxAngle);
-            double radiusDegrees = GetFocusCircleRadiusAngle(radiusPixels, pixelsPerDegree, imageRadius, maxAngle);
-            string info = $"{circleName}  方位 {azimuthDegrees:F2}°  极角 {polarDegrees:F2}°  R {radiusPixels:F1}px/{radiusDegrees:F2}°";
-            if (sampleCount.HasValue && avgY.HasValue)
-            {
-                info += $"  N {sampleCount.Value}  Y {avgY.Value:F3}";
-            }
-            return info;
-        }
     }
 }

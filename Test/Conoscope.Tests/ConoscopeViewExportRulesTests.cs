@@ -1,18 +1,17 @@
-using Conoscope.ApplicationServices.Export;
 using Conoscope.Core;
 
 namespace Conoscope.Tests
 {
-    public class ConoscopeExportContextFactoryTests
+    public class ConoscopeViewExportRulesTests
     {
         [Fact]
         public void IsChannelReady_Y_RequiresYMat()
         {
-            Assert.True(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.True(ConoscopeView.IsChannelReady(
                 ExportChannel.Y, hasXyzData: false, hasYMat: true,
                 canRefreshContrast: false, canRefreshColorDifference: false));
 
-            Assert.False(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.False(ConoscopeView.IsChannelReady(
                 ExportChannel.Y, hasXyzData: false, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: false));
         }
@@ -20,11 +19,11 @@ namespace Conoscope.Tests
         [Fact]
         public void IsChannelReady_NonY_RequiresXyzData()
         {
-            Assert.True(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.True(ConoscopeView.IsChannelReady(
                 ExportChannel.X, hasXyzData: true, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: false));
 
-            Assert.False(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.False(ConoscopeView.IsChannelReady(
                 ExportChannel.X, hasXyzData: false, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: false));
         }
@@ -32,11 +31,11 @@ namespace Conoscope.Tests
         [Fact]
         public void IsChannelReady_Contrast_RequiresContrastCapability()
         {
-            Assert.True(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.True(ConoscopeView.IsChannelReady(
                 ExportChannel.Contrast, hasXyzData: true, hasYMat: false,
                 canRefreshContrast: true, canRefreshColorDifference: false));
 
-            Assert.False(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.False(ConoscopeView.IsChannelReady(
                 ExportChannel.Contrast, hasXyzData: true, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: false));
         }
@@ -44,11 +43,11 @@ namespace Conoscope.Tests
         [Fact]
         public void IsChannelReady_ColorDifference_RequiresColorDifferenceCapability()
         {
-            Assert.True(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.True(ConoscopeView.IsChannelReady(
                 ExportChannel.ColorDifference, hasXyzData: true, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: true));
 
-            Assert.False(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.False(ConoscopeView.IsChannelReady(
                 ExportChannel.ColorDifference, hasXyzData: true, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: false));
         }
@@ -56,11 +55,11 @@ namespace Conoscope.Tests
         [Fact]
         public void IsChannelReady_CieX_RequiresOnlyXyzData()
         {
-            Assert.True(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.True(ConoscopeView.IsChannelReady(
                 ExportChannel.CieX, hasXyzData: true, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: false));
 
-            Assert.False(ConoscopeExportContextFactory.IsChannelReady(
+            Assert.False(ConoscopeView.IsChannelReady(
                 ExportChannel.CieX, hasXyzData: false, hasYMat: false,
                 canRefreshContrast: false, canRefreshColorDifference: false));
         }
@@ -76,7 +75,7 @@ namespace Conoscope.Tests
                 DecimalPlaces = 4
             };
 
-            var options = ConoscopeExportContextFactory.CreateAdvancedCrossSectionExportOptions(settings);
+            var options = ConoscopeView.CreateAdvancedCrossSectionExportOptions(settings);
             Assert.Equal(0.5, options.StepDegrees);
             Assert.True(options.IncludeMetadata);
             Assert.Equal(4, options.DecimalPlaces);
@@ -93,7 +92,7 @@ namespace Conoscope.Tests
                 DecimalPlaces = 3
             };
 
-            var options = ConoscopeExportContextFactory.CreateAdvancedCrossSectionExportOptions(settings);
+            var options = ConoscopeView.CreateAdvancedCrossSectionExportOptions(settings);
             Assert.Equal(2.0, options.StepDegrees);
             Assert.True(options.IncludeMetadata);
             Assert.Equal(3, options.DecimalPlaces);

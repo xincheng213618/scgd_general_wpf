@@ -3,6 +3,15 @@ using System;
 
 namespace Conoscope.ApplicationServices.Analysis
 {
+    public enum CaptureSlot
+    {
+        GamutRed,
+        GamutGreen,
+        GamutBlue,
+        ContrastWhite,
+        ContrastBlack,
+    }
+
     public sealed class ConoscopeAnalysisWorkflow
     {
         private readonly DefaultBatchColorGamutCalculator batchColorGamutCalculator = new();
@@ -36,34 +45,17 @@ namespace Conoscope.ApplicationServices.Analysis
             get { return contrastWhiteCapture != null && contrastBlackCapture != null; }
         }
 
-        public void RecordGamutRed(MeasurementCapture capture)
+        public void RecordCapture(CaptureSlot slot, MeasurementCapture capture)
         {
             ArgumentNullException.ThrowIfNull(capture);
-            gamutRedCapture = capture;
-        }
-
-        public void RecordGamutGreen(MeasurementCapture capture)
-        {
-            ArgumentNullException.ThrowIfNull(capture);
-            gamutGreenCapture = capture;
-        }
-
-        public void RecordGamutBlue(MeasurementCapture capture)
-        {
-            ArgumentNullException.ThrowIfNull(capture);
-            gamutBlueCapture = capture;
-        }
-
-        public void RecordContrastWhite(MeasurementCapture capture)
-        {
-            ArgumentNullException.ThrowIfNull(capture);
-            contrastWhiteCapture = capture;
-        }
-
-        public void RecordContrastBlack(MeasurementCapture capture)
-        {
-            ArgumentNullException.ThrowIfNull(capture);
-            contrastBlackCapture = capture;
+            switch (slot)
+            {
+                case CaptureSlot.GamutRed: gamutRedCapture = capture; break;
+                case CaptureSlot.GamutGreen: gamutGreenCapture = capture; break;
+                case CaptureSlot.GamutBlue: gamutBlueCapture = capture; break;
+                case CaptureSlot.ContrastWhite: contrastWhiteCapture = capture; break;
+                case CaptureSlot.ContrastBlack: contrastBlackCapture = capture; break;
+            }
         }
 
         public void ClearGamut()

@@ -1,3 +1,4 @@
+using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
 using Conoscope.Presentation.Formatters;
 using Conoscope.Presentation.Helpers;
@@ -284,8 +285,8 @@ namespace Conoscope
 
             ExportChannel displayChannel = GetSelectedDisplayChannel();
             double displayValue = GetChannelValue(sample.XyzX, sample.XyzY, sample.X, sample.Y, sample.Z, displayChannel);
-            double azimuthAngle = GetFullAzimuthAngle(e.Position);
-            double polarAngle = GetPolarRadiusAngle(e.Position);
+            double azimuthAngle = FocusPointMeasurementService.GetFullAzimuthAngle(e.Position, currentImageCenter);
+            double polarAngle = FocusPointMeasurementService.GetPolarRadiusAngle(e.Position, currentImageCenter, currentImageRadius, MaxAngle);
 
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.ReferenceFormat, GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)));
@@ -342,16 +343,6 @@ namespace Conoscope
             ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
             sample = new PixelChromaticitySample(imageX, imageY, xyzX, xyzY, X, Y, Z, chromaticity);
             return true;
-        }
-
-        private double GetFullAzimuthAngle(Point point)
-        {
-              return ApplicationServices.Analysis.FocusPointMeasurementService.GetFullAzimuthAngle(point, currentImageCenter);
-        }
-
-        private double GetPolarRadiusAngle(Point point)
-        {
-            return ApplicationServices.Analysis.FocusPointMeasurementService.GetPolarRadiusAngle(point, currentImageCenter, currentImageRadius, MaxAngle);
         }
 
         private void HideCoordinateDragOverlay()

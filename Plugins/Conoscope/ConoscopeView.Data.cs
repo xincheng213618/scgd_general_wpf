@@ -124,8 +124,8 @@ namespace Conoscope
         private void LoadConoscopeData(string filename)
         {
             ClearMatData();
-
-            using ConoscopeImageData data = CvcieImageLoader.Load(filename);
+            var payload = CvcieImageLoader.LoadPayload(filename);
+            using ConoscopeImageData data =new ConoscopeImageData(CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.X), CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.Y), CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.Z), payload.BitsPerPixel, payload.ExposureSummary);
             (OpenCvSharp.Mat xMat, OpenCvSharp.Mat yMat, OpenCvSharp.Mat zMat) = data.Detach();
             XMat = xMat;
             YMat = yMat;
