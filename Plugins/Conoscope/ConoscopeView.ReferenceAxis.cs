@@ -346,21 +346,12 @@ namespace Conoscope
 
         private double GetFullAzimuthAngle(Point point)
         {
-            double deltaX = point.X - currentImageCenter.X;
-            double deltaY = currentImageCenter.Y - point.Y;
-            double angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
-            return angle < 0 ? angle + 360.0 : angle;
+              return ApplicationServices.Analysis.FocusPointMeasurementService.GetFullAzimuthAngle(point, currentImageCenter);
         }
 
         private double GetPolarRadiusAngle(Point point)
         {
-            if (currentImageRadius <= 0)
-            {
-                return 0;
-            }
-
-            double distance = (point - currentImageCenter).Length;
-            return Math.Max(0, Math.Min(distance / currentImageRadius * MaxAngle, MaxAngle));
+            return ApplicationServices.Analysis.FocusPointMeasurementService.GetPolarRadiusAngle(point, currentImageCenter, currentImageRadius, MaxAngle);
         }
 
         private void HideCoordinateDragOverlay()

@@ -163,9 +163,12 @@ dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 
 ## 相关文件
 
+- 架构文档：Docs/ARCHITECTURE.md
 - 主窗口：ConoscopeWindow.xaml / ConoscopeWindow.xaml.cs
 - Ribbon 编排：ConoscopeWindow.Ribbon.cs
 - 当前视图快捷控制：ConoscopeWindow.HomeQuickControls.cs
+- 分析 Ribbon：ConoscopeWindow.AnalysisRibbon.cs
+- 分析工作流服务：Application/Analysis/ConoscopeAnalysisWorkflow.cs
 - Ribbon 资源：Presentation/Ribbon/ConoscopeRibbonResources.xaml
 - 当前视图桥接：ConoscopeView.WindowQuickControls.cs
 - 关注点逻辑：ConoscopeView.FocusPoint.cs
@@ -173,3 +176,4 @@ dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 - 批量计算模型：Analysis/MeasurementCaptureModels.cs
 - 色域结果窗：Analysis/ColorGamutResultWindow.xaml
 - 对比度结果窗：Analysis/ContrastResultWindow.xaml
+- 测试项目：Test/Conoscope.Tests

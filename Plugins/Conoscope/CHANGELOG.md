@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [1.4.6.1] 2026.05.26
+- 架构治理第一阶段：新增 CONO-00 ~ CONO-60 编号化架构分层文档（Docs/ARCHITECTURE.md）。
+- 抽出 ConoscopeAnalysisWorkflow 应用服务，将色域/对比度分析的状态管理和计算编排从 ConoscopeWindow.AnalysisRibbon.cs 迁移至 Application 层。
+- ConoscopeAnalysisWorkflow 返回纯结果对象（AnalysisWorkflowResult<T>），不依赖 WPF 控件，可独立测试。
+- 新增 Test/Conoscope.Tests 测试项目，覆盖 workflow 状态判断、数据完整性校验和计算编排。
+- ConoscopeWindow.AnalysisRibbon.cs 职责缩减为：按钮状态管理 + UI 反馈 + 结果窗口创建。
+- 架构治理第二阶段：减法重构。
+  - 抽出 FocusPointMeasurementService（Application/Analysis/），从 FocusPoint.cs 提取 ROI 圆形均值计算、坐标转换、测量构建等纯计算逻辑。
+  - 抽出 ConoscopeExportContextFactory（Application/Export/），从 Export.cs 提取导出上下文构建、配置读写、通道就绪检查。
+  - ConoscopeView.FocusPoint.cs 减少 125 行（1152→1027）。
+  - ConoscopeView.Export.cs 减少 156 行（520→364）：内联薄委托方法、合并重复的截面导出流程、提取 TryPrepareSimpleExport/OnExportSuccess/TryExportCurrentCrossSection。
+  - ConoscopeView.ReferenceAxis.cs 中 GetFullAzimuthAngle/GetPolarRadiusAngle 统一委托至 FocusPointMeasurementService，消除重复。
+  - 新增 FocusPointMeasurementServiceTests / ConoscopeExportContextFactoryTests 等测试用例，并补充版本一致性与 Application 层约束测试；当前测试项目可编译，`dotnet test` 在 .NET 10 / xUnit 环境下仍需继续修正测试发现配置后再纳入 CI。
+
 ## [1.4.2.22] 2026.05.14
 - 新增 Conoscope 帮助窗口，并在 Help 菜单和窗口页提供帮助入口，直接读取 README.md 与 CHANGELOG.md。
 - 重写 README.md 为当前版本的用户帮助文档，覆盖主页快捷控制、关注点圆、参考图形、色域/对比度流程与旧窗口入口。
