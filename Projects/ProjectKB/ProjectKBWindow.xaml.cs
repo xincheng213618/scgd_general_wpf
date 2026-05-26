@@ -782,11 +782,15 @@ namespace ProjectKB
 
         public static string BuildSummaryText(KBItemMaster kmitemmaster)
         {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("KB");
-            sb.AppendLine(kmitemmaster.SN);
-            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}");
-            sb.AppendLine(kmitemmaster.Model);
+            var sb = new StringBuilder();
+            string modelName = string.IsNullOrWhiteSpace(kmitemmaster.Model) ? "KB" : kmitemmaster.Model;
+            sb.AppendLine($"档案名称 (Model): {modelName}");
+            sb.AppendLine($"系列号 (SN): {kmitemmaster.SN}");
+            if (!string.IsNullOrWhiteSpace(kmitemmaster.KBTemplate))
+            {
+                sb.AppendLine($"关注点 (POI Set): {kmitemmaster.KBTemplate}");
+            }
+            sb.AppendLine($"测试时间 (Time): {kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}");
             sb.AppendLine();
             sb.AppendLine($"{"PT",-15}{"Lv",-15}{"LC",-15}");
 
