@@ -787,7 +787,7 @@ namespace ProjectKB
             sb.AppendLine($"档案名称 (Model): {modelName}");
             sb.AppendLine($"系列号 (SN): {kmitemmaster.SN}");
             if (!string.IsNullOrWhiteSpace(kmitemmaster.KBTemplate))
-            {
+            {  
                 sb.AppendLine($"关注点 (POI Set): {kmitemmaster.KBTemplate}");
             }
             sb.AppendLine($"测试时间 (Time): {kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}");
