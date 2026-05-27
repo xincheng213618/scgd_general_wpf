@@ -10255,6 +10255,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 修复补丁下载完成。将关闭 ColorVision 以安装补丁，安装后会自动重启。是否继续？ 的本地化字符串。
+        /// </summary>
+        public static string OpenCvSharpFixConfirmClose {
+            get {
+                return ResourceManager.GetString("OpenCvSharpFixConfirmClose", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 DLL 被占用无法替换，请关闭 ColorVision 后重试。  错误详情：{0} 的本地化字符串。
         /// </summary>
         public static string OpenCvSharpFixDllLocked {
