@@ -693,6 +693,238 @@ class SecurityTests(unittest.TestCase):
         backup_path = Path(payload["backup_path"])
         self.assertTrue(backup_path.exists())
 
+    # -------------------------------------------------------------------
+    # Basic Auth validation for admin endpoints
+    # -------------------------------------------------------------------
+
+    def test_bad_basic_auth_returns_401(self):
+        """Bad Basic Auth credentials must be rejected."""
+        bad_headers = {
+            "Authorization": "Basic " + base64.b64encode(b"bad:bad").decode("ascii"),
+        }
+        response = self.client.get("/api/admin/cache/status", headers=bad_headers)
+        self.assertEqual(response.status_code, 401)
+
+    def test_correct_basic_auth_returns_200(self):
+        """Correct Basic Auth credentials must be accepted."""
+        response = self.client.get(
+            "/api/admin/cache/status",
+            headers=self._auth_headers(),
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_basic_auth_wrong_password_returns_401(self):
+        """Correct username but wrong password must be rejected."""
+        bad_headers = {
+            "Authorization": "Basic " + base64.b64encode(b"tester:wrong").decode("ascii"),
+        }
+        response = self.client.get("/api/admin/cache/status", headers=bad_headers)
+        self.assertEqual(response.status_code, 401)
+
+    def test_basic_auth_wrong_username_returns_401(self):
+        """Wrong username must be rejected."""
+        bad_headers = {
+            "Authorization": "Basic " + base64.b64encode(b"wrong:secret").decode("ascii"),
+        }
+        response = self.client.get("/api/admin/cache/status", headers=bad_headers)
+        self.assertEqual(response.status_code, 401)
+
+    # -------------------------------------------------------------------
+    # Scope whitelist includes plugin:read and release:publish
+    # -------------------------------------------------------------------
+
+    def test_plugin_read_scope_accepted(self):
+        response = self.client.post(
+            "/api/admin/api-keys",
+            headers=self._auth_headers(),
+            json={"name": "Read Key", "scopes": "plugin:read"},
+        )
+        self.assertEqual(response.status_code, 201)
+
+    def test_release_publish_scope_accepted(self):
+        response = self.client.post(
+            "/api/admin/api-keys",
+            headers=self._auth_headers(),
+            json={"name": "Release Key", "scopes": "release:publish"},
+        )
+        self.assertEqual(response.status_code, 201)
+
+
+class HomepageIndexTests(unittest.TestCase):
+    """Tests for home page index integration."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.storage = self.root / "storage"
+        (self.storage / "Plugins").mkdir(parents=True, exist_ok=True)
+
+        self.original_storage = marketplace_app.STORAGE
+        self.original_db_path = marketplace_app.DB_PATH
+        self.original_config = copy.deepcopy(marketplace_app.CONFIG)
+        self.original_testing = marketplace_app.app.config.get("TESTING", False)
+        self.original_secret_key = marketplace_app.app.secret_key
+
+        marketplace_app.STORAGE = self.storage
+        marketplace_app.DB_PATH = self.root / "marketplace.db"
+        marketplace_app.CONFIG = copy.deepcopy(marketplace_app.CONFIG)
+        marketplace_app.CONFIG["storage_path"] = str(self.storage)
+        marketplace_app.CONFIG["upload_auth"] = {"username": "tester", "password": "secret"}
+        marketplace_app.CONFIG["secret_key"] = "test-secret-key"
+        marketplace_app.CONFIG["debug"] = False
+        marketplace_app.app.secret_key = marketplace_app.CONFIG["secret_key"]
+        marketplace_app.app.config["TESTING"] = True
+        marketplace_app.app.config["MAX_CONTENT_LENGTH"] = marketplace_app.MAX_UPLOAD_SIZE_BYTES
+        marketplace_app.init_db()
+
+        self.cache = CacheManager(self.root / "marketplace.db")
+        self.cache.init_db()
+
+        self.client = marketplace_app.app.test_client()
+
+    def tearDown(self):
+        marketplace_app.STORAGE = self.original_storage
+        marketplace_app.DB_PATH = self.original_db_path
+        marketplace_app.CONFIG = self.original_config
+        marketplace_app.app.secret_key = self.original_secret_key
+        marketplace_app.app.config["TESTING"] = self.original_testing
+        self.temp_dir.cleanup()
+
+    def test_home_page_shows_update_packages_from_index(self):
+        update_dir = self.storage / "Update"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "ColorVision-Update-[1.0.0.1].cvx").write_bytes(b"update")
+
+        from services.artifact_index import refresh_update_index
+        refresh_update_index(self.cache, self.storage)
+
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("1.0.0.1", html)
+
+    def test_home_page_falls_back_to_disk_when_index_empty(self):
+        update_dir = self.storage / "Update"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "ColorVision-Update-[2.0.0.1].cvx").write_bytes(b"update")
+
+        # Index is empty, should fallback to disk scan
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("2.0.0.1", html)
+
+
+class UploadIndexRefreshTests(unittest.TestCase):
+    """Tests that legacy PUT uploads trigger artifact index refresh."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.storage = self.root / "storage"
+        (self.storage / "Plugins").mkdir(parents=True, exist_ok=True)
+
+        self.original_storage = marketplace_app.STORAGE
+        self.original_db_path = marketplace_app.DB_PATH
+        self.original_config = copy.deepcopy(marketplace_app.CONFIG)
+        self.original_testing = marketplace_app.app.config.get("TESTING", False)
+        self.original_secret_key = marketplace_app.app.secret_key
+
+        marketplace_app.STORAGE = self.storage
+        marketplace_app.DB_PATH = self.root / "marketplace.db"
+        marketplace_app.CONFIG = copy.deepcopy(marketplace_app.CONFIG)
+        marketplace_app.CONFIG["storage_path"] = str(self.storage)
+        marketplace_app.CONFIG["upload_auth"] = {"username": "tester", "password": "secret"}
+        marketplace_app.CONFIG["secret_key"] = "test-secret-key"
+        marketplace_app.CONFIG["debug"] = False
+        marketplace_app.app.secret_key = marketplace_app.CONFIG["secret_key"]
+        marketplace_app.app.config["TESTING"] = True
+        marketplace_app.app.config["MAX_CONTENT_LENGTH"] = marketplace_app.MAX_UPLOAD_SIZE_BYTES
+        marketplace_app.init_db()
+
+        self.cache = CacheManager(self.root / "marketplace.db")
+        self.cache.init_db()
+
+        self.client = marketplace_app.app.test_client()
+
+    def tearDown(self):
+        marketplace_app.STORAGE = self.original_storage
+        marketplace_app.DB_PATH = self.original_db_path
+        marketplace_app.CONFIG = self.original_config
+        marketplace_app.app.secret_key = self.original_secret_key
+        marketplace_app.app.config["TESTING"] = self.original_testing
+        self.temp_dir.cleanup()
+
+    def _auth_headers(self, username="tester", password="secret"):
+        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        return {"Authorization": f"Basic {token}"}
+
+    def test_put_release_file_refreshes_release_index(self):
+        response = self.client.put(
+            "/upload/ColorVision/ColorVision-1.2.0.1.exe",
+            data=b"installer-payload",
+            headers=self._auth_headers(),
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        from services.artifact_index import get_releases_from_index
+        releases = get_releases_from_index(self.cache)
+        self.assertIsNotNone(releases)
+        self.assertTrue(any(r["version"] == "1.2.0.1" for r in releases))
+
+    def test_put_update_file_refreshes_update_index(self):
+        response = self.client.put(
+            "/upload/ColorVision/Update/ColorVision-Update-[1.0.0.1].cvx",
+            data=b"update-payload",
+            headers=self._auth_headers(),
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        from services.artifact_index import get_updates_from_index
+        updates = get_updates_from_index(self.cache)
+        self.assertIsNotNone(updates)
+        self.assertTrue(any(u["version"] == "1.0.0.1" for u in updates))
+
+    def test_put_tool_file_refreshes_tool_index(self):
+        response = self.client.put(
+            "/upload/ColorVision/Tool/SomeTool.zip",
+            data=b"tool-payload",
+            headers=self._auth_headers(),
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        from services.artifact_index import get_tools_from_index
+        tools = get_tools_from_index(self.cache)
+        self.assertIsNotNone(tools)
+        self.assertTrue(any(t["name"] == "SomeTool.zip" for t in tools))
+
+    def test_put_plugin_package_does_not_crash(self):
+        """Plugin uploads should still work (plugin_index handled separately)."""
+        response = self.client.put(
+            "/upload/ColorVision/Plugins/TestPlugin/TestPlugin-1.0.0.cvxp",
+            data=b"plugin-payload",
+            headers=self._auth_headers(),
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(response.status_code, 201)
+
+    def test_put_release_zip_refreshes_release_index(self):
+        response = self.client.put(
+            "/upload/ColorVision/ColorVision-1.0.0.1.zip",
+            data=b"zip-payload",
+            headers=self._auth_headers(),
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        from services.artifact_index import get_releases_from_index
+        releases = get_releases_from_index(self.cache)
+        self.assertIsNotNone(releases)
+        self.assertTrue(any(r["version"] == "1.0.0.1" for r in releases))
+
 
 if __name__ == "__main__":
     unittest.main()

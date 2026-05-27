@@ -68,6 +68,12 @@ Session and Basic Auth always have full access. Bearer API Key access is control
 | POST `/api/admin/cache/cleanup` | `cache:refresh` |
 | POST `/api/admin/index/plugins/refresh` | `cache:refresh` |
 | POST `/api/admin/index/plugins/<id>/refresh` | `cache:refresh` |
+| POST `/api/admin/index/releases/refresh` | `cache:refresh` |
+| POST `/api/admin/index/updates/refresh` | `cache:refresh` |
+| POST `/api/admin/index/tools/refresh` | `cache:refresh` |
+| POST `/api/admin/index/refresh-all` | `cache:refresh` |
+| GET `/api/admin/index/status` | `cache:read` |
+| POST `/api/admin/backup/db` | `admin:*` |
 | GET `/api/admin/jobs` | `jobs:read` |
 | POST `/api/admin/jobs/<id>/run` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
@@ -76,7 +82,7 @@ Session and Basic Auth always have full access. Bearer API Key access is control
 | GET `/api/admin/audit-log` | `admin:*` |
 | API Key management | `admin:*` |
 
-`admin:*` grants access to all endpoints. Session/Basic Auth always has full access.
+`admin:*` grants access to all endpoints. Session and Basic Auth (validated against `upload_auth` config) always have full access.
 
 ### Cache Management
 
@@ -182,21 +188,24 @@ curl -X POST http://localhost:9998/api/packages/publish \
 | Job | Interval | Description |
 |-----|----------|-------------|
 | `plugin_index_check` | 5 min | Compare Plugins directory signature with stored signature; refresh only if changed |
+| `release_index_check` | 10 min | Compare release artifacts signature; refresh only if changed |
+| `update_index_check` | 10 min | Compare Update directory signature; refresh only if changed |
+| `tool_index_check` | 10 min | Compare Tool directory signature; refresh only if changed |
 | `cache_cleanup` | 1 hour | Delete expired cache entries |
-| `startup_index_check` | Once | Ensure plugin_index is populated on startup |
+| `startup_index_check` | Once | Ensure all indexes are populated on startup |
 
 The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.
 
-Signature-based check: `plugin_index_check` computes `plugin_catalog_signature(storage)` and compares it with the stored signature in `index_state`. If they match, no refresh is triggered. The signature is updated after each successful `refresh_all_plugin_index`.
+Signature-based check: each index check computes a directory signature and compares it with the stored signature in `index_state`. If they match, no refresh is triggered. The signature is updated after each successful refresh.
 
 ## Deployment Notes
 
-1. **First deploy**: Run `python app.py --refresh-index` to populate the plugin index.
-2. **Manual file changes**: If you manually modify `H:\ColorVision\Plugins`, either:
-   - Wait for the 5-minute periodic check, or
-   - Call `POST /api/admin/index/plugins/refresh`
-3. **Database backup**: `marketplace.db` contains indexes, cache, and audit logs. Back it up.
-4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised.
+1. **First deploy**: Run `python app.py --refresh-all-indexes` to populate all indexes (plugins, releases, updates, tools).
+2. **Manual file changes**: If you manually modify storage directories, either:
+   - Wait for the periodic scheduler check, or
+   - Call `POST /api/admin/index/refresh-all`
+3. **Database backup**: `POST /api/admin/backup/db` creates a timestamped backup of `marketplace.db`.
+4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time.
 5. **Config**: Edit `config.json` to set `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
 ### Config Options

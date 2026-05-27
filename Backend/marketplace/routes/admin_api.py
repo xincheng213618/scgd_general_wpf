@@ -92,6 +92,7 @@ def _get_ctx() -> AdminApiContext:
 
 def _require_admin_auth(required_scopes: list[str] | None = None):
     """Check authentication for admin endpoints with optional scope check."""
+    import hmac as _hmac
     ctx = _get_ctx()
 
     # First check if authenticated at all
@@ -99,10 +100,13 @@ def _require_admin_auth(required_scopes: list[str] | None = None):
     if session.get("authenticated"):
         return None  # Session auth always has full access
 
-    # Check Basic Auth
+    # Check Basic Auth — must validate against config upload_auth
     auth = request.authorization
     if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-        return None  # Basic Auth always has full access
+        config = ctx.config_getter()
+        expected_username, expected_password = config.get("upload_auth", {}).get("username", ""), config.get("upload_auth", {}).get("password", "")
+        if expected_username and expected_password and _hmac.compare_digest(auth.username, expected_username) and _hmac.compare_digest(auth.password, expected_password):
+            return None  # Valid Basic Auth
 
     # Check Bearer API Key
     auth_header = request.headers.get("Authorization", "")
@@ -637,8 +641,18 @@ ALLOWED_SCOPES = {
     "jobs:read",
     "jobs:write",
     "stats:read",
+    "plugin:read",
     "plugin:publish",
+    "release:publish",
 }
+
+
+def validate_scopes(scopes_str: str) -> tuple[list[str], list[str]]:
+    """Validate scopes against ALLOWED_SCOPES. Returns (valid, invalid)."""
+    requested = {s.strip() for s in scopes_str.split(",") if s.strip()}
+    invalid = sorted(requested - ALLOWED_SCOPES)
+    valid = sorted(requested & ALLOWED_SCOPES)
+    return valid, invalid
 
 
 @admin_api.route("/api-keys", methods=["POST"])
@@ -656,11 +670,10 @@ def create_api_key():
 
     # Validate scopes against whitelist
     if scopes:
-        requested_scopes = {s.strip() for s in scopes.split(",") if s.strip()}
-        invalid = requested_scopes - ALLOWED_SCOPES
+        _, invalid = validate_scopes(scopes)
         if invalid:
             return jsonify({
-                "error": f"Invalid scopes: {', '.join(sorted(invalid))}",
+                "error": f"Invalid scopes: {', '.join(invalid)}",
                 "allowed_scopes": sorted(ALLOWED_SCOPES),
             }), 400
 

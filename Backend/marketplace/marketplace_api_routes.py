@@ -52,6 +52,31 @@ class MarketplaceApiRouteContext:
     reconcile_plugin_package_history: Callable[..., Any]
     require_upload_auth: Any
     refresh_plugin_index_on_publish: Callable[[str], None] | None = None
+    cache: Any = None
+
+
+def _refresh_artifact_index_on_upload(ctx: MarketplaceApiRouteContext, storage: Path, normalized_path: str):
+    """Refresh the appropriate artifact index after a successful upload."""
+    if ctx.cache is None:
+        return
+    parts = normalized_path.replace("\\", "/").split("/")
+    top_dir = parts[0] if parts else ""
+
+    try:
+        if top_dir == "Plugins":
+            return  # plugin_index handled by refresh_plugin_index_on_publish
+        if top_dir == "Update":
+            from services.artifact_index import refresh_update_index
+            refresh_update_index(ctx.cache, storage)
+        elif top_dir == "Tool":
+            from services.artifact_index import refresh_tool_index
+            refresh_tool_index(ctx.cache, storage)
+        else:
+            # Root-level file — likely a release artifact
+            from services.artifact_index import refresh_release_index
+            refresh_release_index(ctx.cache, storage)
+    except Exception as exc:
+        print(f"[upload] artifact index refresh failed for '{normalized_path}': {exc}")
 
 
 def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> None:
@@ -295,6 +320,10 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         """
         try:
             storage = ctx.get_storage()
+
+            def _on_upload_complete(normalized_path: str):
+                _refresh_artifact_index_on_upload(ctx, storage, normalized_path)
+
             store_legacy_upload(
                 storage=storage,
                 raw_filepath=filepath,
@@ -308,6 +337,7 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
                 reconcile_plugin_package_history=ctx.reconcile_plugin_package_history,
                 prune_update_packages=prune_update_packages,
                 refresh_related_caches=ctx.refresh_related_caches,
+                on_upload_complete=_on_upload_complete,
             )
         except UploadTooLargeError as exc:
             return exc.message, exc.status_code

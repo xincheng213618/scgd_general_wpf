@@ -628,6 +628,7 @@ def index():
             get_app_info=_get_request_home_app_info,
             get_storage_overview_context=get_storage_overview_context,
             get_tool_preview=_get_request_home_tool_preview,
+            cache_manager=_cache,
         ),
     )
 
@@ -1226,6 +1227,13 @@ def cvwindowsservice_upload_page():
     _cache.invalidate_cache_prefix("storage_overview:")
     _cache.invalidate_cache_prefix(f"dir_file_count:Tool/CVWindowsService")
 
+    # Refresh tool index
+    try:
+        from services.artifact_index import refresh_tool_index
+        refresh_tool_index(_cache, STORAGE)
+    except Exception as exc:
+        print(f"[cvws] tool index refresh failed: {exc}")
+
     # Build success message
     latest_now = (read_text_file(target_dir / "LATEST_RELEASE") or "").strip()
     message = (
@@ -1331,6 +1339,7 @@ register_marketplace_api_routes(
         reconcile_plugin_package_history=reconcile_plugin_package_history,
         require_upload_auth=require_upload_auth,
         refresh_plugin_index_on_publish=_refresh_plugin_index_on_publish,
+        cache=_cache,
     ),
 )
 
@@ -1624,8 +1633,15 @@ if __name__ == "__main__":
 
     if args.create_api_key:
         from services.api_key_service import create_api_key
+        from routes.admin_api import validate_scopes, ALLOWED_SCOPES
         name = args.create_api_key
         scopes = args.scopes
+        if scopes:
+            _, invalid = validate_scopes(scopes)
+            if invalid:
+                print(f"ERROR: Invalid scopes: {', '.join(invalid)}")
+                print(f"Allowed scopes: {', '.join(sorted(ALLOWED_SCOPES))}")
+                raise SystemExit(1)
         print(f"Creating API key: {name}")
         print(f"Scopes: {scopes}")
         result = create_api_key(_cache, name=name, scopes=scopes, created_by="cli")

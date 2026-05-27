@@ -255,10 +255,38 @@ def build_index_page_context(
     get_app_info: Callable[[], dict[str, Any]],
     get_storage_overview_context: Callable[[], tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]],
     get_tool_preview: Callable[[], dict[str, Any]] | None = None,
+    cache_manager=None,
 ) -> dict[str, Any]:
     app_info = get_app_info()
     overview, overview_summary, overview_meta = get_storage_overview_context()
-    update_packages, update_summary = scan_update_preview_fast(storage)
+
+    # Try update_index first (fast, no disk scan)
+    update_packages = None
+    update_summary = None
+    if cache_manager is not None:
+        try:
+            from services.artifact_index import get_updates_from_index
+            indexed_updates = get_updates_from_index(cache_manager)
+            if indexed_updates is not None:
+                update_packages = []
+                for item in indexed_updates[:8]:
+                    update_packages.append({
+                        "filename": item["filename"],
+                        "version": item["version"],
+                        "branch": item.get("branch", ""),
+                        "fix": item.get("fix", 0),
+                        "size": item.get("size", 0),
+                        "modified": (item.get("modified", "") or "")[:19],
+                        "relative_path": item.get("relative_path", f"Update/{item['filename']}"),
+                    })
+                from update_retention import build_update_summary
+                update_summary = build_update_summary(update_packages, [])
+        except Exception as exc:
+            print(f"[update_index] home preview fallback: {exc}")
+
+    if update_packages is None:
+        update_packages, update_summary = scan_update_preview_fast(storage)
+
     tools_context = get_tool_preview() if get_tool_preview is not None else build_storage_page_context(storage, "Tool")
     filesystem_spotlight = _build_filesystem_spotlight(overview)
     recent_change_dashboard, recent_change_summary = _build_recent_change_dashboard(

@@ -49,6 +49,7 @@ def store_legacy_upload(
     reconcile_plugin_package_history: Callable[[str], list[dict[str, str]]],
     prune_update_packages: Callable[[Path], object],
     refresh_related_caches: Callable[..., None],
+    on_upload_complete: Callable[[str], None] | None = None,
 ) -> LegacyUploadResult:
     normalized = normalize_relative_path(_normalize_upload_filepath(raw_filepath))
     if not normalized:
@@ -97,6 +98,12 @@ def store_legacy_upload(
         plugin_id=plugin_id,
         relative_path=normalized,
     )
+
+    if on_upload_complete is not None:
+        try:
+            on_upload_complete(normalized)
+        except Exception as exc:
+            print(f"[upload] on_upload_complete callback failed: {exc}")
 
     return LegacyUploadResult(
         normalized_path=normalized,
