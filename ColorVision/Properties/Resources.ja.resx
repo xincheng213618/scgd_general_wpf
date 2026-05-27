@@ -462,4 +462,154 @@
   <data name="MenuFileAssociation" xml:space="preserve">
     <value>ファイル関連付け</value>
   </data>
+  <data name="CopilotNewConversation" xml:space="preserve">
+    <value>新しい会話</value>
+  </data>
+  <data name="CopilotExpandConversationList" xml:space="preserve">
+    <value>会話リストを展開</value>
+  </data>
+  <data name="CopilotConfigureCopilot" xml:space="preserve">
+    <value>Copilotを設定</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
+  <data name="CopilotCopyMessage" xml:space="preserve">
+    <value>現在のメッセージをコピー</value>
+  </data>
+  <data name="CopilotRetry" xml:space="preserve">
+    <value>再試行</value>
+  </data>
+  <data name="CopilotRegenerateAnswer" xml:space="preserve">
+    <value>現在の回答を再生成</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="CopilotRefreshWebContext" xml:space="preserve">
+    <value>Webコンテキストを再取得して回答を生成</value>
+  </data>
+  <data name="CopilotCurrentWindowContext" xml:space="preserve">
+    <value>現在のウィンドウコンテキスト</value>
+  </data>
+  <data name="CopilotAttachTooltip" xml:space="preserve">
+    <value>ファイル、画像、またはコンテキストを添付</value>
+  </data>
+  <data name="CopilotPasteImage" xml:space="preserve">
+    <value>画像を貼り付け</value>
+  </data>
+  <data name="CopilotSpecifyWebPage" xml:space="preserve">
+    <value>Webページを指定</value>
+  </data>
+  <data name="CopilotAddFile" xml:space="preserve">
+    <value>ファイルを追加</value>
+  </data>
+  <data name="CopilotAddContext" xml:space="preserve">
+    <value>コンテキストを追加</value>
+  </data>
+  <data name="CopilotCollapseConversationList" xml:space="preserve">
+    <value>会話リストを折りたたむ</value>
+  </data>
+  <data name="CopilotConversations" xml:space="preserve">
+    <value>会話</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>名前を変更</value>
+  </data>
+  <data name="CopilotLanguageModel" xml:space="preserve">
+    <value>言語モデル</value>
+  </data>
+  <data name="CopilotModelConfigDescription" xml:space="preserve">
+    <value>複数のモデル構成を保存できます。保存後、右側のAIパネルがこのモデルリストを直接使用します。</value>
+  </data>
+  <data name="CopilotAddModel" xml:space="preserve">
+    <value>+ モデルを追加</value>
+  </data>
+  <data name="CopilotVendorHint" xml:space="preserve">
+    <value>まずベンダーを選択してから追加します。右側で互換性、アドレス、モデル、システムプロンプトを引き続き変更できます。</value>
+  </data>
+  <data name="CopilotName" xml:space="preserve">
+    <value>名前</value>
+  </data>
+  <data name="CopilotVendor" xml:space="preserve">
+    <value>ベンダー</value>
+  </data>
+  <data name="CopilotProtocol" xml:space="preserve">
+    <value>プロトコル</value>
+  </data>
+  <data name="CopilotModel" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="CopilotMaxToken" xml:space="preserve">
+    <value>最大トークン</value>
+  </data>
+  <data name="CopilotTemperature" xml:space="preserve">
+    <value>温度</value>
+  </data>
+  <data name="CopilotToolRounds" xml:space="preserve">
+    <value>ツールラウンド</value>
+  </data>
+  <data name="CopilotSystemPrompt" xml:space="preserve">
+    <value>システムプロンプト</value>
+  </data>
+  <data name="CopilotSettingsHint" xml:space="preserve">
+    <value>ベンダープリセット、モデルプリセット、手動アドレス入力をサポート。AIパネルは送信前にモデルを切り替えられます。</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
+    <value>例外診断</value>
+  </data>
+  <data name="CopilotUnhandledException" xml:space="preserve">
+    <value>ColorVisionが未処理の例外をキャッチしました</value>
+  </data>
+  <data name="CopilotExceptionDetails" xml:space="preserve">
+    <value>例外の詳細</value>
+  </data>
+  <data name="CopilotRecentLogs" xml:space="preserve">
+    <value>最近のログ</value>
+  </data>
+  <data name="CopilotRecentNLines" xml:space="preserve">
+    <value>最近のN行</value>
+  </data>
+  <data name="CopilotLines" xml:space="preserve">
+    <value>行</value>
+  </data>
+  <data name="CopilotTodayLog" xml:space="preserve">
+    <value>今日のログ</value>
+  </data>
+  <data name="CopilotRefreshLog" xml:space="preserve">
+    <value>ログを更新</value>
+  </data>
+  <data name="CopilotAiRequest" xml:space="preserve">
+    <value>AIリクエスト</value>
+  </data>
+  <data name="CopilotCopyDetails" xml:space="preserve">
+    <value>詳細をコピー</value>
+  </data>
+  <data name="CopilotAskAi" xml:space="preserve">
+    <value>AIに質問</value>
+  </data>
+  <data name="CopilotGoogleSearch" xml:space="preserve">
+    <value>Google検索</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>入力</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>開く</value>
+  </data>
+  <data name="OpenWithSystemDefault" xml:space="preserve">
+    <value>システム既定で開く</value>
+  </data>
 </root>

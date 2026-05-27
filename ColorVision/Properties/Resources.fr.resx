@@ -462,4 +462,154 @@
   <data name="MenuFileAssociation" xml:space="preserve">
     <value>Association de fichiers</value>
   </data>
+  <data name="CopilotNewConversation" xml:space="preserve">
+    <value>Nouvelle conversation</value>
+  </data>
+  <data name="CopilotExpandConversationList" xml:space="preserve">
+    <value>Développer la liste des conversations</value>
+  </data>
+  <data name="CopilotConfigureCopilot" xml:space="preserve">
+    <value>Configurer Copilot</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copier</value>
+  </data>
+  <data name="CopilotCopyMessage" xml:space="preserve">
+    <value>Copier le message actuel</value>
+  </data>
+  <data name="CopilotRetry" xml:space="preserve">
+    <value>Réessayer</value>
+  </data>
+  <data name="CopilotRegenerateAnswer" xml:space="preserve">
+    <value>Régénérer la réponse actuelle</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="CopilotRefreshWebContext" xml:space="preserve">
+    <value>Récupérer le contexte Web et générer une réponse</value>
+  </data>
+  <data name="CopilotCurrentWindowContext" xml:space="preserve">
+    <value>Contexte de la fenêtre actuelle</value>
+  </data>
+  <data name="CopilotAttachTooltip" xml:space="preserve">
+    <value>Joindre des fichiers, images ou contexte</value>
+  </data>
+  <data name="CopilotPasteImage" xml:space="preserve">
+    <value>Coller une image</value>
+  </data>
+  <data name="CopilotSpecifyWebPage" xml:space="preserve">
+    <value>Spécifier une page Web</value>
+  </data>
+  <data name="CopilotAddFile" xml:space="preserve">
+    <value>Ajouter un fichier</value>
+  </data>
+  <data name="CopilotAddContext" xml:space="preserve">
+    <value>Ajouter un contexte</value>
+  </data>
+  <data name="CopilotCollapseConversationList" xml:space="preserve">
+    <value>Réduire la liste des conversations</value>
+  </data>
+  <data name="CopilotConversations" xml:space="preserve">
+    <value>Conversations</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Renommer</value>
+  </data>
+  <data name="CopilotLanguageModel" xml:space="preserve">
+    <value>Modèle de langue</value>
+  </data>
+  <data name="CopilotModelConfigDescription" xml:space="preserve">
+    <value>Enregistrez plusieurs configurations de modèles ; le panneau AI à droite utilisera directement cette liste de modèles.</value>
+  </data>
+  <data name="CopilotAddModel" xml:space="preserve">
+    <value>+ Ajouter un modèle</value>
+  </data>
+  <data name="CopilotVendorHint" xml:space="preserve">
+    <value>Sélectionnez d'abord un fournisseur, puis ajoutez ; vous pouvez continuer à modifier la compatibilité, l'adresse, le modèle et l'invite système à droite.</value>
+  </data>
+  <data name="CopilotName" xml:space="preserve">
+    <value>Nom</value>
+  </data>
+  <data name="CopilotVendor" xml:space="preserve">
+    <value>Fournisseur</value>
+  </data>
+  <data name="CopilotProtocol" xml:space="preserve">
+    <value>Protocole</value>
+  </data>
+  <data name="CopilotModel" xml:space="preserve">
+    <value>Modèle</value>
+  </data>
+  <data name="CopilotMaxToken" xml:space="preserve">
+    <value>Token maximum</value>
+  </data>
+  <data name="CopilotTemperature" xml:space="preserve">
+    <value>Température</value>
+  </data>
+  <data name="CopilotToolRounds" xml:space="preserve">
+    <value>Tours d'outils</value>
+  </data>
+  <data name="CopilotSystemPrompt" xml:space="preserve">
+    <value>Invite système</value>
+  </data>
+  <data name="CopilotSettingsHint" xml:space="preserve">
+    <value>Prend en charge les préréglages de fournisseurs, de modèles et la saisie manuelle d'adresses ; le panneau AI peut changer de modèle avant l'envoi.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
+    <value>Diagnostic des exceptions</value>
+  </data>
+  <data name="CopilotUnhandledException" xml:space="preserve">
+    <value>ColorVision a capturé une exception non gérée</value>
+  </data>
+  <data name="CopilotExceptionDetails" xml:space="preserve">
+    <value>Détails de l'exception</value>
+  </data>
+  <data name="CopilotRecentLogs" xml:space="preserve">
+    <value>Journaux récents</value>
+  </data>
+  <data name="CopilotRecentNLines" xml:space="preserve">
+    <value>N lignes récentes</value>
+  </data>
+  <data name="CopilotLines" xml:space="preserve">
+    <value>Lignes</value>
+  </data>
+  <data name="CopilotTodayLog" xml:space="preserve">
+    <value>Journal d'aujourd'hui</value>
+  </data>
+  <data name="CopilotRefreshLog" xml:space="preserve">
+    <value>Actualiser le journal</value>
+  </data>
+  <data name="CopilotAiRequest" xml:space="preserve">
+    <value>Requête AI</value>
+  </data>
+  <data name="CopilotCopyDetails" xml:space="preserve">
+    <value>Copier les détails</value>
+  </data>
+  <data name="CopilotAskAi" xml:space="preserve">
+    <value>Demander à l'AI</value>
+  </data>
+  <data name="CopilotGoogleSearch" xml:space="preserve">
+    <value>Recherche Google</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>Entrée</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouvrir</value>
+  </data>
+  <data name="OpenWithSystemDefault" xml:space="preserve">
+    <value>Ouvrir avec le système par défaut</value>
+  </data>
 </root>

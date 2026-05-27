@@ -462,4 +462,154 @@
   <data name="MenuFileAssociation" xml:space="preserve">
     <value>檔案關聯</value>
   </data>
+  <data name="CopilotNewConversation" xml:space="preserve">
+    <value>新會話</value>
+  </data>
+  <data name="CopilotExpandConversationList" xml:space="preserve">
+    <value>展開會話列表</value>
+  </data>
+  <data name="CopilotConfigureCopilot" xml:space="preserve">
+    <value>配置 Copilot</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="CopilotCopyMessage" xml:space="preserve">
+    <value>複製當前訊息</value>
+  </data>
+  <data name="CopilotRetry" xml:space="preserve">
+    <value>重試</value>
+  </data>
+  <data name="CopilotRegenerateAnswer" xml:space="preserve">
+    <value>重新生成當前回答</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>重新整理</value>
+  </data>
+  <data name="CopilotRefreshWebContext" xml:space="preserve">
+    <value>重新抓取網頁上下文並生成回答</value>
+  </data>
+  <data name="CopilotCurrentWindowContext" xml:space="preserve">
+    <value>當前視窗上下文</value>
+  </data>
+  <data name="CopilotAttachTooltip" xml:space="preserve">
+    <value>附加檔案、圖片或上下文</value>
+  </data>
+  <data name="CopilotPasteImage" xml:space="preserve">
+    <value>貼上圖片</value>
+  </data>
+  <data name="CopilotSpecifyWebPage" xml:space="preserve">
+    <value>指定網頁</value>
+  </data>
+  <data name="CopilotAddFile" xml:space="preserve">
+    <value>新增檔案</value>
+  </data>
+  <data name="CopilotAddContext" xml:space="preserve">
+    <value>新增上下文</value>
+  </data>
+  <data name="CopilotCollapseConversationList" xml:space="preserve">
+    <value>收起會話列表</value>
+  </data>
+  <data name="CopilotConversations" xml:space="preserve">
+    <value>會話</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>重新命名</value>
+  </data>
+  <data name="CopilotLanguageModel" xml:space="preserve">
+    <value>語言模型</value>
+  </data>
+  <data name="CopilotModelConfigDescription" xml:space="preserve">
+    <value>可同時儲存多個模型配置；儲存後，右側 AI 面板會直接使用這裡的模型列表。</value>
+  </data>
+  <data name="CopilotAddModel" xml:space="preserve">
+    <value>+ 新增模型</value>
+  </data>
+  <data name="CopilotVendorHint" xml:space="preserve">
+    <value>先選廠商再新增；右側仍可繼續修改相容性、位址、模型和系統提示詞。</value>
+  </data>
+  <data name="CopilotName" xml:space="preserve">
+    <value>名稱</value>
+  </data>
+  <data name="CopilotVendor" xml:space="preserve">
+    <value>廠商</value>
+  </data>
+  <data name="CopilotProtocol" xml:space="preserve">
+    <value>協議</value>
+  </data>
+  <data name="CopilotModel" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="CopilotMaxToken" xml:space="preserve">
+    <value>最大 Token</value>
+  </data>
+  <data name="CopilotTemperature" xml:space="preserve">
+    <value>溫度</value>
+  </data>
+  <data name="CopilotToolRounds" xml:space="preserve">
+    <value>工具輪次</value>
+  </data>
+  <data name="CopilotSystemPrompt" xml:space="preserve">
+    <value>系統提示詞</value>
+  </data>
+  <data name="CopilotSettingsHint" xml:space="preserve">
+    <value>支援廠商預設、模型預設和手動位址輸入；右側 AI 面板傳送前可直接切換模型。</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>儲存</value>
+  </data>
+  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
+    <value>異常診斷</value>
+  </data>
+  <data name="CopilotUnhandledException" xml:space="preserve">
+    <value>ColorVision 捕獲到未處理異常</value>
+  </data>
+  <data name="CopilotExceptionDetails" xml:space="preserve">
+    <value>異常詳情</value>
+  </data>
+  <data name="CopilotRecentLogs" xml:space="preserve">
+    <value>最近日誌</value>
+  </data>
+  <data name="CopilotRecentNLines" xml:space="preserve">
+    <value>最近 N 行</value>
+  </data>
+  <data name="CopilotLines" xml:space="preserve">
+    <value>行</value>
+  </data>
+  <data name="CopilotTodayLog" xml:space="preserve">
+    <value>當日日誌</value>
+  </data>
+  <data name="CopilotRefreshLog" xml:space="preserve">
+    <value>重新整理日誌</value>
+  </data>
+  <data name="CopilotAiRequest" xml:space="preserve">
+    <value>AI 請求</value>
+  </data>
+  <data name="CopilotCopyDetails" xml:space="preserve">
+    <value>複製詳情</value>
+  </data>
+  <data name="CopilotAskAi" xml:space="preserve">
+    <value>詢問 AI</value>
+  </data>
+  <data name="CopilotGoogleSearch" xml:space="preserve">
+    <value>Google 搜尋</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>輸入</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>開啟</value>
+  </data>
+  <data name="OpenWithSystemDefault" xml:space="preserve">
+    <value>系統預設開啟</value>
+  </data>
 </root>

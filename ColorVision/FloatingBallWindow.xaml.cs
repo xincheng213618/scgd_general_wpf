@@ -171,10 +171,10 @@ namespace ColorVision.FloatingBall
                 {
                     var tips = new[]
                     {
-                        "我在这儿，有消息会提醒你。",
-                        "休息一下眼睛，顺手保存当前工作。",
-                        "需要我安静一点，可以右键把通知关掉。",
-                        "有本地 Live2D 模型的话，可以在设置里接进来。"
+                        Properties.Resources.DesktopPetIdleTip1,
+                        Properties.Resources.DesktopPetIdleTip2,
+                        Properties.Resources.DesktopPetIdleTip3,
+                        Properties.Resources.DesktopPetIdleTip4
                     };
                     EnqueueNotification(new DesktopPetNotification
                     {
@@ -244,35 +244,35 @@ namespace ColorVision.FloatingBall
         {
             var contextMenu = new ContextMenu();
 
-            var testMessage = new MenuItem { Header = "发送测试提醒" };
-            testMessage.Click += (_, _) => DesktopPetService.GetInstance().Notify("桌宠提醒", "这是一条来自桌宠的测试消息。", DesktopPetNotificationKind.Success);
+            var testMessage = new MenuItem { Header = Properties.Resources.DesktopPetSendTestReminder };
+            testMessage.Click += (_, _) => DesktopPetService.GetInstance().Notify(Properties.Resources.DesktopPetReminder, Properties.Resources.DesktopPetTestMessage, DesktopPetNotificationKind.Success);
             contextMenu.Items.Add(testMessage);
 
-            var showMainWindow = new MenuItem { Header = "显示主窗口" };
+            var showMainWindow = new MenuItem { Header = Properties.Resources.DesktopPetShowMainWindow };
             showMainWindow.Click += (_, _) => DesktopPetService.GetInstance().ShowMainWindow();
             contextMenu.Items.Add(showMainWindow);
 
-            var settings = new MenuItem { Header = "桌宠设置" };
+            var settings = new MenuItem { Header = Properties.Resources.DesktopPetSettings };
             settings.Click += (_, _) => DesktopPetService.GetInstance().OpenSettings();
             contextMenu.Items.Add(settings);
 
             contextMenu.Items.Add(new Separator());
 
-            var topmost = new MenuItem { Header = "始终置顶", IsCheckable = true, IsChecked = PetConfig.AlwaysOnTop };
+            var topmost = new MenuItem { Header = Properties.Resources.DesktopPetAlwaysOnTop, IsCheckable = true, IsChecked = PetConfig.AlwaysOnTop };
             topmost.Click += (_, _) => PetConfig.AlwaysOnTop = topmost.IsChecked;
             contextMenu.Items.Add(topmost);
 
-            var notifications = new MenuItem { Header = "显示通知", IsCheckable = true, IsChecked = PetConfig.ShowNotifications };
+            var notifications = new MenuItem { Header = Properties.Resources.DesktopPetShowNotifications, IsCheckable = true, IsChecked = PetConfig.ShowNotifications };
             notifications.Click += (_, _) => PetConfig.ShowNotifications = notifications.IsChecked;
             contextMenu.Items.Add(notifications);
 
             contextMenu.Items.Add(new Separator());
 
-            var hide = new MenuItem { Header = "隐藏桌宠" };
+            var hide = new MenuItem { Header = Properties.Resources.DesktopPetHide };
             hide.Click += (_, _) => MainWindowConfig.Instance.OpenFloatingBall = false;
             contextMenu.Items.Add(hide);
 
-            var exit = new MenuItem { Header = "退出程序" };
+            var exit = new MenuItem { Header = Properties.Resources.DesktopPetExit };
             exit.Click += (_, _) => Application.Current.Shutdown();
             contextMenu.Items.Add(exit);
 
@@ -290,7 +290,7 @@ namespace ColorVision.FloatingBall
                 EnqueueNotification(new DesktopPetNotification
                 {
                     Title = PetConfig.PetName,
-                    Message = "我在，随时可以提醒你。",
+                    Message = Properties.Resources.DesktopPetIdleTip1,
                     Kind = DesktopPetNotificationKind.Info
                 });
             }
@@ -456,8 +456,8 @@ namespace ColorVision.FloatingBall
                 {
                     Title = "Live2D",
                     Message = string.IsNullOrWhiteSpace(error)
-                        ? "模型加载失败，已切换为内置形象。"
-                        : $"模型加载失败：{error}",
+                        ? Properties.Resources.DesktopPetLive2DError
+                        : string.Format(Properties.Resources.DesktopPetLive2DErrorDetail, error),
                     Kind = DesktopPetNotificationKind.Warning
                 });
             }

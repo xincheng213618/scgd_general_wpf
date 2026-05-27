@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        Title="异常诊断"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
+        Title="{x:Static properties:Resources.CopilotExceptionDiagnosis}"
         Width="860"
         Height="680"
         MinWidth="720"
@@ -28,7 +29,7 @@
                 <TextBlock FontSize="20"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource GlobalTextBrush}"
-                           Text="ColorVision 捕获到未处理异常" />
+                           Text="{x:Static properties:Resources.CopilotUnhandledException}" />
                 <TextBlock Margin="0,8,0,0"
                            FontSize="15"
                            FontWeight="SemiBold"
@@ -56,7 +57,7 @@
         </Border>
 
         <TabControl Grid.Row="2">
-            <TabItem Header="异常详情">
+            <TabItem Header="{x:Static properties:Resources.CopilotExceptionDetails}">
                 <TextBox Margin="12"
                          FontFamily="Consolas"
                          Foreground="{DynamicResource GlobalTextBrush}"
@@ -68,7 +69,7 @@
                          VerticalScrollBarVisibility="Auto"
                          HorizontalScrollBarVisibility="Auto" />
             </TabItem>
-            <TabItem Header="最近日志">
+            <TabItem Header="{x:Static properties:Resources.CopilotRecentLogs}">
                 <Grid Margin="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -81,7 +82,7 @@
                                      Margin="0,0,12,0"
                                      VerticalAlignment="Center"
                                      Checked="RecentLinesRadioButton_Checked"
-                                     Content="最近 N 行"
+                                     Content="{x:Static properties:Resources.CopilotRecentNLines}"
                                      IsChecked="True" />
                         <TextBox x:Name="RecentLineCountTextBox"
                                  Width="72"
@@ -90,15 +91,15 @@
                         <TextBlock Margin="8,0,12,0"
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource GlobalTextBrush}"
-                                   Text="行" />
+                                   Text="{x:Static properties:Resources.CopilotLines}" />
                         <RadioButton x:Name="FullDayRadioButton"
                                      Margin="0,0,12,0"
                                      VerticalAlignment="Center"
                                      Checked="FullDayRadioButton_Checked"
-                                     Content="当日日志" />
+                                     Content="{x:Static properties:Resources.CopilotTodayLog}" />
                         <Button Padding="12,4"
                                 Click="RefreshLogButton_Click"
-                                Content="刷新日志" />
+                                Content="{x:Static properties:Resources.CopilotRefreshLog}" />
                     </StackPanel>
 
                     <TextBlock Grid.Row="1"
@@ -120,7 +121,7 @@
                              HorizontalScrollBarVisibility="Auto" />
                 </Grid>
             </TabItem>
-            <TabItem Header="AI 请求">
+            <TabItem Header="{x:Static properties:Resources.CopilotAiRequest}">
                 <TextBox Margin="12"
                          FontFamily="Consolas"
                          Foreground="{DynamicResource GlobalTextBrush}"
@@ -141,20 +142,20 @@
             <Button Margin="0,0,8,0"
                     Padding="14,6"
                     Click="CopyDetailsButton_Click"
-                    Content="复制详情" />
+                    Content="{x:Static properties:Resources.CopilotCopyDetails}" />
             <Button Margin="0,0,8,0"
                     Padding="14,6"
                     Click="AskAiButton_Click"
-                    Content="询问 AI"
+                    Content="{x:Static properties:Resources.CopilotAskAi}"
                     IsEnabled="{Binding CanAskAi}" />
                 <Button Margin="0,0,8,0"
                     Padding="14,6"
                     Click="SearchGoogleButton_Click"
-                    Content="Google 搜索"
+                    Content="{x:Static properties:Resources.CopilotGoogleSearch}"
                     IsEnabled="{Binding CanSearchGoogle}" />
             <Button Padding="14,6"
                     Click="CloseButton_Click"
-                    Content="关闭" />
+                    Content="{x:Static properties:Resources.Close}" />
         </StackPanel>
     </Grid>
 </Window>

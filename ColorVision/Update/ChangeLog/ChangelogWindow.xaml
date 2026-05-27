@@ -53,8 +53,8 @@
 
             </Grid>
             <StackPanel Grid.Column="1" Margin="5,5,10,5" HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button Margin="0,0,5,0" Command="{Binding OpenInWeview2Command}" Content="打开" />
-                <Button Margin="0,0,5,0" Command="{Binding OpenInExplorerCommand}" Content="系统默认打开" />
+                <Button Margin="0,0,5,0" Command="{Binding OpenInWeview2Command}" Content="{x:Static properties:Resources.Open}" />
+                <Button Margin="0,0,5,0" Command="{Binding OpenInExplorerCommand}" Content="{x:Static properties:Resources.OpenWithSystemDefault}" />
                 <Button Width="27" Height="27" Padding="2" Command="{Binding EditCommand}">
                     <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}" RenderTransformOrigin="0.5,0.5" Text="&#xE713;">
                         <TextBlock.RenderTransform>

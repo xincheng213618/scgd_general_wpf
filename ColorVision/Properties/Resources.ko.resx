@@ -462,4 +462,154 @@
   <data name="MenuFileAssociation" xml:space="preserve">
     <value>파일 연결</value>
   </data>
+  <data name="CopilotNewConversation" xml:space="preserve">
+    <value>새 대화</value>
+  </data>
+  <data name="CopilotExpandConversationList" xml:space="preserve">
+    <value>대화 목록 펼치기</value>
+  </data>
+  <data name="CopilotConfigureCopilot" xml:space="preserve">
+    <value>Copilot 설정</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>복사</value>
+  </data>
+  <data name="CopilotCopyMessage" xml:space="preserve">
+    <value>현재 메시지 복사</value>
+  </data>
+  <data name="CopilotRetry" xml:space="preserve">
+    <value>재시도</value>
+  </data>
+  <data name="CopilotRegenerateAnswer" xml:space="preserve">
+    <value>현재 답변 다시 생성</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>새로고침</value>
+  </data>
+  <data name="CopilotRefreshWebContext" xml:space="preserve">
+    <value>웹 컨텍스트를 다시 가져와서 답변 생성</value>
+  </data>
+  <data name="CopilotCurrentWindowContext" xml:space="preserve">
+    <value>현재 창 컨텍스트</value>
+  </data>
+  <data name="CopilotAttachTooltip" xml:space="preserve">
+    <value>파일, 이미지 또는 컨텍스트 첨부</value>
+  </data>
+  <data name="CopilotPasteImage" xml:space="preserve">
+    <value>이미지 붙여넣기</value>
+  </data>
+  <data name="CopilotSpecifyWebPage" xml:space="preserve">
+    <value>웹 페이지 지정</value>
+  </data>
+  <data name="CopilotAddFile" xml:space="preserve">
+    <value>파일 추가</value>
+  </data>
+  <data name="CopilotAddContext" xml:space="preserve">
+    <value>컨텍스트 추가</value>
+  </data>
+  <data name="CopilotCollapseConversationList" xml:space="preserve">
+    <value>대화 목록 접기</value>
+  </data>
+  <data name="CopilotConversations" xml:space="preserve">
+    <value>대화</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>이름 변경</value>
+  </data>
+  <data name="CopilotLanguageModel" xml:space="preserve">
+    <value>언어 모델</value>
+  </data>
+  <data name="CopilotModelConfigDescription" xml:space="preserve">
+    <value>여러 모델 구성을 저장할 수 있습니다. 저장 후 오른쪽 AI 패널이 이 모델 목록을 직접 사용합니다.</value>
+  </data>
+  <data name="CopilotAddModel" xml:space="preserve">
+    <value>+ 모델 추가</value>
+  </data>
+  <data name="CopilotVendorHint" xml:space="preserve">
+    <value>먼저 벤더를 선택한 후 추가하세요. 오른쪽에서 호환성, 주소, 모델, 시스템 프롬프트를 계속 수정할 수 있습니다.</value>
+  </data>
+  <data name="CopilotName" xml:space="preserve">
+    <value>이름</value>
+  </data>
+  <data name="CopilotVendor" xml:space="preserve">
+    <value>벤더</value>
+  </data>
+  <data name="CopilotProtocol" xml:space="preserve">
+    <value>프로토콜</value>
+  </data>
+  <data name="CopilotModel" xml:space="preserve">
+    <value>모델</value>
+  </data>
+  <data name="CopilotMaxToken" xml:space="preserve">
+    <value>최대 토큰</value>
+  </data>
+  <data name="CopilotTemperature" xml:space="preserve">
+    <value>온도</value>
+  </data>
+  <data name="CopilotToolRounds" xml:space="preserve">
+    <value>도구 라운드</value>
+  </data>
+  <data name="CopilotSystemPrompt" xml:space="preserve">
+    <value>시스템 프롬프트</value>
+  </data>
+  <data name="CopilotSettingsHint" xml:space="preserve">
+    <value>벤더 프리셋, 모델 프리셋 및 수동 주소 입력을 지원합니다. AI 패널에서 보내기 전에 모델을 전환할 수 있습니다.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>취소</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>저장</value>
+  </data>
+  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
+    <value>예외 진단</value>
+  </data>
+  <data name="CopilotUnhandledException" xml:space="preserve">
+    <value>ColorVision이 처리되지 않은 예외를 포착했습니다</value>
+  </data>
+  <data name="CopilotExceptionDetails" xml:space="preserve">
+    <value>예외 세부정보</value>
+  </data>
+  <data name="CopilotRecentLogs" xml:space="preserve">
+    <value>최근 로그</value>
+  </data>
+  <data name="CopilotRecentNLines" xml:space="preserve">
+    <value>최근 N줄</value>
+  </data>
+  <data name="CopilotLines" xml:space="preserve">
+    <value>줄</value>
+  </data>
+  <data name="CopilotTodayLog" xml:space="preserve">
+    <value>오늘의 로그</value>
+  </data>
+  <data name="CopilotRefreshLog" xml:space="preserve">
+    <value>로그 새로고침</value>
+  </data>
+  <data name="CopilotAiRequest" xml:space="preserve">
+    <value>AI 요청</value>
+  </data>
+  <data name="CopilotCopyDetails" xml:space="preserve">
+    <value>세부정보 복사</value>
+  </data>
+  <data name="CopilotAskAi" xml:space="preserve">
+    <value>AI에 질문</value>
+  </data>
+  <data name="CopilotGoogleSearch" xml:space="preserve">
+    <value>Google 검색</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>닫기</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>입력</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>확인</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>열기</value>
+  </data>
+  <data name="OpenWithSystemDefault" xml:space="preserve">
+    <value>시스템 기본값으로 열기</value>
+  </data>
 </root>

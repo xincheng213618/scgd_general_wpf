@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Copilot"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=local:CopilotChatViewModel}" d:Height="500" d:Width="600">
     <UserControl.Resources>
@@ -229,7 +230,7 @@
                                FontSize="16"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource GlobalTextBrush}"
-                               Text="{Binding SelectedConversation.Title, FallbackValue=新会话, TargetNullValue=新会话}"
+                               Text="{Binding SelectedConversation.Title, FallbackValue={x:Static properties:Resources.CopilotNewConversation}, TargetNullValue={x:Static properties:Resources.CopilotNewConversation}}"
                                TextTrimming="CharacterEllipsis" />
 
                     <StackPanel Grid.Column="1"
@@ -239,7 +240,7 @@
                                 Margin="0,0,6,0"
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Click="ToggleConversationSidebarButton_Click"
-                                ToolTip="展开会话列表"
+                                ToolTip="{x:Static properties:Resources.CopilotExpandConversationList}"
                                 Visibility="Collapsed">
                             <TextBlock FontFamily="Segoe MDL2 Assets"
                                        FontSize="15"
@@ -250,7 +251,7 @@
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding NewChatCommand}"
                                 IsEnabled="{Binding CanSwitchConversation}"
-                                ToolTip="新建会话">
+                                ToolTip="{x:Static properties:Resources.CopilotNewConversation}">
                             <TextBlock FontSize="18"
                                        Foreground="{DynamicResource GlobalTextBrush}"
                                        Text="✚" />
@@ -259,7 +260,7 @@
                         <Button Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding OpenSettingsCommand}"
                                 IsEnabled="{Binding CanSwitchConversation}"
-                                ToolTip="配置 Copilot">
+                                ToolTip="{x:Static properties:Resources.CopilotConfigureCopilot}">
                             <TextBlock FontFamily="Segoe MDL2 Assets"
                                        FontSize="15"
                                        Text="&#xE713;" />
@@ -343,19 +344,19 @@
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
-                                                    Content="复制"
-                                                    ToolTip="复制当前消息" />
+                                                    Content="{x:Static properties:Resources.Copy}"
+                                                    ToolTip="{x:Static properties:Resources.CopilotCopyMessage}" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
-                                                    Content="重试"
-                                                    ToolTip="重新生成当前轮回答" />
+                                                    Content="{x:Static properties:Resources.CopilotRetry}"
+                                                    ToolTip="{x:Static properties:Resources.CopilotRegenerateAnswer}" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Margin="0"
                                                     Command="{Binding DataContext.RefreshMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
-                                                    Content="刷新"
-                                                    ToolTip="重新抓取网页上下文并生成回答" />
+                                                    Content="{x:Static properties:Resources.Refresh}"
+                                                    ToolTip="{x:Static properties:Resources.CopilotRefreshWebContext}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -403,7 +404,7 @@
                                 <TextBlock FontSize="11"
                                            Foreground="{DynamicResource GlobalTextBrush}"
                                            Opacity="0.58"
-                                           Text="当前窗口上下文" />
+                                           Text="{x:Static properties:Resources.CopilotCurrentWindowContext}" />
                                 <TextBlock Margin="0,2,0,0"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource GlobalTextBrush}"
@@ -638,14 +639,14 @@
                                 Height="36"
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Click="AttachMenuButton_Click"
-                                ToolTip="挂载文件、图片或上下文">
+                                ToolTip="{x:Static properties:Resources.CopilotAttachTooltip}">
                             <Button.ContextMenu>
                                 <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                    <MenuItem Header="粘贴图片" Command="{Binding PasteImageAttachmentCommand}" />
-                                    <MenuItem Header="指定网页" Command="{Binding AddWebPageAttachmentCommand}" />
+                                    <MenuItem Header="{x:Static properties:Resources.CopilotPasteImage}" Command="{Binding PasteImageAttachmentCommand}" />
+                                    <MenuItem Header="{x:Static properties:Resources.CopilotSpecifyWebPage}" Command="{Binding AddWebPageAttachmentCommand}" />
                                     <Separator />
-                                    <MenuItem Header="添加文件" Command="{Binding AddFileAttachmentCommand}" />
-                                    <MenuItem Header="添加上下文" Command="{Binding AddContextAttachmentCommand}" />
+                                    <MenuItem Header="{x:Static properties:Resources.CopilotAddFile}" Command="{Binding AddFileAttachmentCommand}" />
+                                    <MenuItem Header="{x:Static properties:Resources.CopilotAddContext}" Command="{Binding AddContextAttachmentCommand}" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                             <TextBlock HorizontalAlignment="Center"
@@ -698,7 +699,7 @@
                                 Margin="0,0,6,0"
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Click="ToggleConversationSidebarButton_Click"
-                                ToolTip="收起会话列表"
+                                ToolTip="{x:Static properties:Resources.CopilotCollapseConversationList}"
                                 Visibility="Collapsed">
                             <TextBlock FontFamily="Segoe MDL2 Assets"
                                        FontSize="15"
@@ -710,7 +711,7 @@
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding NewChatCommand}"
                                 DockPanel.Dock="Right"
-                                ToolTip="新建会话">
+                                ToolTip="{x:Static properties:Resources.CopilotNewConversation}">
                             <TextBlock HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        FontSize="18"
@@ -722,7 +723,7 @@
                                    FontSize="14"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource GlobalTextBrush}"
-                                   Text="会话" />
+                                   Text="{x:Static properties:Resources.CopilotConversations}" />
                     </DockPanel>
 
                     <ListBox Grid.Row="1"
@@ -741,14 +742,14 @@
                                         CornerRadius="12">
                                     <Border.ContextMenu>
                                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                            <MenuItem Header="重命名"
+                                            <MenuItem Header="{x:Static properties:Resources.Rename}"
                                                       Command="{Binding DataContext.RenameConversationCommand, Source={x:Reference Root}}"
                                                       CommandParameter="{Binding}" />
                                             <MenuItem Header="{Binding PinMenuText}"
                                                       Command="{Binding DataContext.TogglePinConversationCommand, Source={x:Reference Root}}"
                                                       CommandParameter="{Binding}" />
                                             <Separator />
-                                            <MenuItem Header="删除"
+                                            <MenuItem Header="{x:Static properties:Resources.Delete}"
                                                       Command="{Binding DataContext.DeleteConversationCommand, Source={x:Reference Root}}"
                                                       CommandParameter="{Binding}" />
                                         </ContextMenu>

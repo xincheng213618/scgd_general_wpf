@@ -29,7 +29,7 @@ namespace ColorVision
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
 
-        [DisplayName("启用桌面宠物")]
+        [DisplayName("ConfigEnableDesktopPet")]
         public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; OnPropertyChanged(); FloatingBall(); } }
         private bool _OpenFloatingBall;
 
@@ -84,7 +84,7 @@ namespace ColorVision
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = "桌面宠物",
+                    Name = Properties.Resources.ConfigDesktopPet,
                     Type = ConfigSettingType.Class,
                     Source = DesktopPetConfig.Instance,
                     Order = 20,

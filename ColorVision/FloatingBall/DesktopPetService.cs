@@ -78,7 +78,7 @@ namespace ColorVision.FloatingBall
             if (!DesktopPetConfig.Instance.ShowStartupGreeting || !MainWindowConfig.Instance.OpenFloatingBall)
                 return;
 
-            Notify(DesktopPetConfig.Instance.PetName, "ColorVision 已启动，我会在这里提醒你。", DesktopPetNotificationKind.Success);
+            Notify(DesktopPetConfig.Instance.PetName, Properties.Resources.DesktopPetStartupGreeting, DesktopPetNotificationKind.Success);
         }
 
         public void ShowMainWindow()
@@ -112,7 +112,7 @@ namespace ColorVision.FloatingBall
 
             var window = new PropertyEditorWindow(DesktopPetConfig.Instance)
             {
-                Title = "桌面宠物设置",
+                Title = Properties.Resources.DesktopPetSettingsTitle,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -126,7 +126,7 @@ namespace ColorVision.FloatingBall
 
     public class DesktopPetInitializer : MainWindowInitializedBase
     {
-        public override string Name => "桌面宠物";
+        public override string Name => Properties.Resources.DesktopPetInitializerName;
         public override int Order { get; set; } = 1000;
 
         public override async System.Threading.Tasks.Task Initialize()

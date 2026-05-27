@@ -27,7 +27,7 @@ namespace ColorVision.Update.Export
                 if (!File.Exists(comHostDll))
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(),
-                        $"未找到 Shell Extension:\n{comHostDll}",
+                        string.Format(Properties.Resources.ShellExtensionNotFound, comHostDll),
                         "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -46,7 +46,7 @@ namespace ColorVision.Update.Export
                 {
                     log.Warn($"regsvr32 exited with code {regsvr32?.ExitCode}");
                     MessageBox.Show(Application.Current.GetActiveWindow(),
-                        "COM 注册失败，请确认已授予管理员权限。",
+                        Properties.Resources.ComRegistrationFailed,
                         "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -88,14 +88,14 @@ namespace ColorVision.Update.Export
 
                 log.Info("Thumbnail shell extension registered successfully");
                 MessageBox.Show(Application.Current.GetActiveWindow(),
-                    "缩略图预览注册成功！\n重启资源管理器后，.cvraw 和 .cvcie 文件将显示图像缩略图。",
+                    Properties.Resources.ThumbnailRegistrationSuccess,
                     "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 log.Error($"RegisterThumbnail failed: {ex}");
                 MessageBox.Show(Application.Current.GetActiveWindow(),
-                    $"注册失败：{ex.Message}",
+                    string.Format(Properties.Resources.RegistrationFailed, ex.Message),
                     "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -149,14 +149,14 @@ namespace ColorVision.Update.Export
 
                 log.Info("Thumbnail shell extension unregistered successfully");
                 MessageBox.Show(Application.Current.GetActiveWindow(),
-                    "缩略图预览已卸载。",
+                    Properties.Resources.ThumbnailUnregistered,
                     "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 log.Error($"UnregisterThumbnail failed: {ex}");
                 MessageBox.Show(Application.Current.GetActiveWindow(),
-                    $"卸载失败：{ex.Message}",
+                    string.Format(Properties.Resources.UnregistrationFailed, ex.Message),
                     "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

@@ -54,7 +54,7 @@
                                     </EventTrigger>
                                 </Border.Triggers>
                                 <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                    <graphics:TextShape x:Name="TextSharp1" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" FontSize="50" StrokeThickness="2" Text="确定">
+                                    <graphics:TextShape x:Name="TextSharp1" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" FontSize="50" StrokeThickness="2" Text="{x:Static properties:Resources.OK}">
                                         <graphics:TextShape.Stroke>
                                             <LinearGradientBrush Opacity="0.8" StartPoint="1,1" EndPoint="0.0,0">
                                                 <LinearGradientBrush.RelativeTransform>

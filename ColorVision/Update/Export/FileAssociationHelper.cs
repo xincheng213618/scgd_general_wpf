@@ -20,7 +20,7 @@ namespace ColorVision.Update.Export
         public override void Execute()
         {
             FileAssociationHelper.RegisterAssociations();
-            MessageBox.Show(Application.Current.GetActiveWindow(),"注册表应用成功","ColorVision");
+            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resources.RegistryAppliedSuccess,"ColorVision");
         }
     }
     public class RegConfig : ViewModelBase, IConfig

@@ -567,25 +567,25 @@ namespace ColorVision.Update
 
                 previewItem.Facts.Add(new UpdatePreviewFact
                 {
-                    Label = "当前版本",
+                    Label = Properties.Resources.UpdateCurrentVersion,
                     Value = applicationPlan.CurrentVersion.ToString(),
                 });
                 previewItem.Facts.Add(new UpdatePreviewFact
                 {
-                    Label = "目标版本",
+                    Label = Properties.Resources.UpdateTargetVersion,
                     Value = applicationPlan.LatestVersion.ToString(),
                 });
                 previewItem.Facts.Add(new UpdatePreviewFact
                 {
-                    Label = "更新方式",
-                    Value = applicationPlan.IsIncremental ? "主体增量包" : "完整安装包",
+                    Label = Properties.Resources.UpdateMethod,
+                    Value = applicationPlan.IsIncremental ? Properties.Resources.UpdateIncrementalPackage : Properties.Resources.UpdateFullPackage,
                 });
                 previewItem.Facts.Add(new UpdatePreviewFact
                 {
-                    Label = applicationPlan.IsIncremental ? "更新包数" : "更新范围",
+                    Label = applicationPlan.IsIncremental ? Properties.Resources.UpdatePackageCount : Properties.Resources.UpdateScope,
                     Value = applicationPlan.IsIncremental
                         ? applicationPlan.VersionsToApply.Count.ToString()
-                        : "主体完整更新",
+                        : Properties.Resources.UpdateFullApplicationUpdate,
                 });
 
                 context.Items.Add(previewItem);
@@ -620,17 +620,17 @@ namespace ColorVision.Update
 
                     previewItem.Facts.Add(new UpdatePreviewFact
                     {
-                        Label = "插件 ID",
+                        Label = Properties.Resources.UpdatePluginId,
                         Value = item.Plugin.PackageName ?? "Unknown",
                     });
                     previewItem.Facts.Add(new UpdatePreviewFact
                     {
-                        Label = "当前版本",
+                        Label = Properties.Resources.UpdateCurrentVersion,
                         Value = currentVersion,
                     });
                     previewItem.Facts.Add(new UpdatePreviewFact
                     {
-                        Label = "目标版本",
+                        Label = Properties.Resources.UpdateTargetVersion,
                         Value = item.VersionInfo.Version,
                     });
 
@@ -638,7 +638,7 @@ namespace ColorVision.Update
                     {
                         previewItem.Facts.Add(new UpdatePreviewFact
                         {
-                            Label = "宿主要求",
+                            Label = Properties.Resources.UpdateHostRequirement,
                             Value = item.VersionInfo.RequiresVersion,
                         });
                     }
@@ -761,7 +761,7 @@ namespace ColorVision.Update
 
         private static string NormalizeUpdateSummary(string? text)
         {
-            const string fallback = "包含兼容性与稳定性更新。";
+            string fallback = Properties.Resources.UpdateCompatibilityStability;
             const int maxLength = 160;
 
             if (string.IsNullOrWhiteSpace(text))
@@ -820,7 +820,7 @@ namespace ColorVision.Update
                 ?? item.Plugin.PluginInfo?.Name
                 ?? item.Plugin.PackageName
                 ?? item.Plugin.AssemblyName
-                ?? "未命名插件";
+                ?? Properties.Resources.UpdateUnnamedPlugin;
         }
 
         private static string GetPluginItemId(CombinedPluginUpdateItem item)
@@ -841,23 +841,23 @@ namespace ColorVision.Update
             if (names.Count <= 4)
                 return string.Join("、", names);
 
-            return $"{string.Join("、", names.Take(4))} 等 {names.Count} 个插件";
+            return $"{string.Join("、", names.Take(4))} {string.Format(Properties.Resources.UpdatePluginCount, names.Count)}";
         }
 
         private static async Task<string> BuildApplicationDetailTextAsync(AutoUpdatePlan applicationPlan)
         {
             StringBuilder builder = new();
-            builder.AppendLine($"当前版本：{applicationPlan.CurrentVersion}");
-            builder.AppendLine($"目标版本：{applicationPlan.LatestVersion}");
+            builder.AppendLine($"{Properties.Resources.UpdateCurrentVersionLabel}{applicationPlan.CurrentVersion}");
+            builder.AppendLine($"{Properties.Resources.UpdateTargetVersionLabel}{applicationPlan.LatestVersion}");
 
             if (applicationPlan.IsIncremental)
             {
-                builder.AppendLine($"增量链：{string.Join(" -> ", applicationPlan.VersionsToApply)}");
-                builder.AppendLine("执行方式：主体增量包与插件包会先全部下载，再一次性覆盖更新。");
+                builder.AppendLine(string.Format(Properties.Resources.UpdateIncrementalChain, string.Join(" -> ", applicationPlan.VersionsToApply)));
+                builder.AppendLine(Properties.Resources.UpdateExecutionIncremental);
             }
             else
             {
-                builder.AppendLine("执行方式：下载完整安装包，按原来的主体更新流程安装。\n插件不参与本次自动更新。");
+                builder.AppendLine(Properties.Resources.UpdateExecutionFull);
             }
 
             IReadOnlyList<ChangeLogEntry> changeLogEntries = await TryLoadRemoteChangeLogEntriesAsync();
@@ -865,7 +865,7 @@ namespace ColorVision.Update
             if (relevantEntries.Count > 0)
             {
                 builder.AppendLine();
-                builder.AppendLine("更新说明：");
+                builder.AppendLine(Properties.Resources.UpdateNotes);
                 builder.Append(BuildChangeLogText(relevantEntries));
             }
 
@@ -943,20 +943,20 @@ namespace ColorVision.Update
             StringBuilder builder = new();
             string pluginName = GetPluginDisplayName(item);
 
-            builder.AppendLine($"插件：{pluginName}");
-            builder.AppendLine($"插件 ID：{item.Plugin.PackageName}");
-            builder.AppendLine($"当前版本：{item.Plugin.AssemblyVersion?.ToString() ?? "Unknown"}");
-            builder.AppendLine($"目标版本：{item.VersionInfo.Version}");
+            builder.AppendLine($"{Properties.Resources.UpdatePlugin}{pluginName}");
+            builder.AppendLine($"{Properties.Resources.UpdatePluginIdLabel}{item.Plugin.PackageName}");
+            builder.AppendLine($"{Properties.Resources.UpdateCurrentVersionLabel}{item.Plugin.AssemblyVersion?.ToString() ?? "Unknown"}");
+            builder.AppendLine($"{Properties.Resources.UpdateTargetVersionLabel}{item.VersionInfo.Version}");
 
             if (!string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion))
             {
-                builder.AppendLine($"宿主要求：{item.VersionInfo.RequiresVersion}");
+                builder.AppendLine($"{Properties.Resources.UpdateHostRequirementLabel}{item.VersionInfo.RequiresVersion}");
             }
 
             if (!string.IsNullOrWhiteSpace(item.Plugin.Description))
             {
                 builder.AppendLine();
-                builder.AppendLine("插件说明：");
+                builder.AppendLine(Properties.Resources.UpdatePluginDescription);
                 builder.AppendLine(item.Plugin.Description.Trim());
             }
 
@@ -967,7 +967,7 @@ namespace ColorVision.Update
             if (!string.IsNullOrWhiteSpace(changeLog))
             {
                 builder.AppendLine();
-                builder.AppendLine("版本说明：");
+                builder.AppendLine(Properties.Resources.UpdateVersionNotes);
                 builder.AppendLine(changeLog.Trim());
             }
 

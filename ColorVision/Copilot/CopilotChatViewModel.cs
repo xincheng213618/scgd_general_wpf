@@ -158,15 +158,15 @@ namespace ColorVision.Copilot
             && SelectedConversation?.Attachments.Any(item => item.Type == CopilotAttachmentType.Context
                 && string.Equals(item.Source, _currentLiveContext.SourceId, StringComparison.Ordinal)) == true;
 
-        public string CurrentLiveContextActionText => IsCurrentLiveContextAttached ? "更新快照" : "附加到提问";
+        public string CurrentLiveContextActionText => IsCurrentLiveContextAttached ? Properties.Resources.CopilotUpdateSnapshot : Properties.Resources.CopilotAttachToQuestion;
 
         public string EmptyStateText => _config.IsConfigured
-            ? "从右侧选择历史会话，或点击 + 新建会话。"
-            : "先点右上角配置添加模型，再开始对话。";
+            ? Properties.Resources.CopilotSelectHistoryOrNew
+            : Properties.Resources.CopilotConfigureModelFirst;
 
         public string PrimaryActionGlyph => IsBusy ? "■" : "↑";
 
-        public string PrimaryActionToolTip => IsBusy ? "停止生成" : SelectedAgentMode == CopilotAgentMode.Chat ? "发送" : "执行 Agent";
+        public string PrimaryActionToolTip => IsBusy ? Properties.Resources.CopilotStopGeneration : SelectedAgentMode == CopilotAgentMode.Chat ? Properties.Resources.CopilotSend : Properties.Resources.CopilotExecuteAgent;
 
         public CopilotConversationRecord? SelectedConversation
         {

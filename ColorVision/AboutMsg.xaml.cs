@@ -68,9 +68,9 @@ namespace ColorVision
             Topmost = true;
             CloseButton.Focus();
             #if (DEBUG == true)
-            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " Debug " : "Release")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位) - {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
+            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " Debug " : "Release")}{(Debugger.IsAttached ? $" ({Properties.Resources.Debugging}) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}{Properties.Resources.Bit}) - {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
 #else
-            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " Debug" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位 -  {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
+            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " Debug" : "")}{(Debugger.IsAttached ? $" ({Properties.Resources.Debugging}) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}{Properties.Resources.Bit} -  {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
             Icon = null;
             TextSharp1.Text = version?.ToString() ?? string.Empty;

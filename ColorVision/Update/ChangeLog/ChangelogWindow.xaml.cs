@@ -93,13 +93,13 @@ namespace ColorVision.Update
                 }
                 else
                 {
-                    MessageBox.Show("无法找到更新记录");
+                    MessageBox.Show(Properties.Resources.CannotFindUpdateRecord);
                     ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("读取更新记录失败: " + ex.Message);
+                MessageBox.Show(string.Format(Properties.Resources.ReadUpdateRecordFailed, ex.Message));
                 ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>();
             }
         }

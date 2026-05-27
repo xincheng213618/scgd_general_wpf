@@ -462,4 +462,154 @@
   <data name="MenuFileAssociation" xml:space="preserve">
     <value>Ассоциация файлов</value>
   </data>
+  <data name="CopilotNewConversation" xml:space="preserve">
+    <value>Новый разговор</value>
+  </data>
+  <data name="CopilotExpandConversationList" xml:space="preserve">
+    <value>Развернуть список разговоров</value>
+  </data>
+  <data name="CopilotConfigureCopilot" xml:space="preserve">
+    <value>Настроить Copilot</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="CopilotCopyMessage" xml:space="preserve">
+    <value>Копировать текущее сообщение</value>
+  </data>
+  <data name="CopilotRetry" xml:space="preserve">
+    <value>Повторить</value>
+  </data>
+  <data name="CopilotRegenerateAnswer" xml:space="preserve">
+    <value>Перегенерировать текущий ответ</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="CopilotRefreshWebContext" xml:space="preserve">
+    <value>Повторно получить веб-контекст и сгенерировать ответ</value>
+  </data>
+  <data name="CopilotCurrentWindowContext" xml:space="preserve">
+    <value>Контекст текущего окна</value>
+  </data>
+  <data name="CopilotAttachTooltip" xml:space="preserve">
+    <value>Прикрепить файлы, изображения или контекст</value>
+  </data>
+  <data name="CopilotPasteImage" xml:space="preserve">
+    <value>Вставить изображение</value>
+  </data>
+  <data name="CopilotSpecifyWebPage" xml:space="preserve">
+    <value>Указать веб-страницу</value>
+  </data>
+  <data name="CopilotAddFile" xml:space="preserve">
+    <value>Добавить файл</value>
+  </data>
+  <data name="CopilotAddContext" xml:space="preserve">
+    <value>Добавить контекст</value>
+  </data>
+  <data name="CopilotCollapseConversationList" xml:space="preserve">
+    <value>Свернуть список разговоров</value>
+  </data>
+  <data name="CopilotConversations" xml:space="preserve">
+    <value>Разговоры</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Переименовать</value>
+  </data>
+  <data name="CopilotLanguageModel" xml:space="preserve">
+    <value>Языковая модель</value>
+  </data>
+  <data name="CopilotModelConfigDescription" xml:space="preserve">
+    <value>Сохраняйте несколько конфигураций моделей; панель AI справа будет использовать этот список моделей напрямую.</value>
+  </data>
+  <data name="CopilotAddModel" xml:space="preserve">
+    <value>+ Добавить модель</value>
+  </data>
+  <data name="CopilotVendorHint" xml:space="preserve">
+    <value>Сначала выберите поставщика, затем добавьте; справа можно продолжить изменять совместимость, адрес, модель и системный промпт.</value>
+  </data>
+  <data name="CopilotName" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="CopilotVendor" xml:space="preserve">
+    <value>Поставщик</value>
+  </data>
+  <data name="CopilotProtocol" xml:space="preserve">
+    <value>Протокол</value>
+  </data>
+  <data name="CopilotModel" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="CopilotMaxToken" xml:space="preserve">
+    <value>Макс. токенов</value>
+  </data>
+  <data name="CopilotTemperature" xml:space="preserve">
+    <value>Температура</value>
+  </data>
+  <data name="CopilotToolRounds" xml:space="preserve">
+    <value>Раунды инструментов</value>
+  </data>
+  <data name="CopilotSystemPrompt" xml:space="preserve">
+    <value>Системный промпт</value>
+  </data>
+  <data name="CopilotSettingsHint" xml:space="preserve">
+    <value>Поддерживает предустановки поставщиков, моделей и ручной ввод адресов; панель AI может переключать модели перед отправкой.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
+    <value>Диагностика исключений</value>
+  </data>
+  <data name="CopilotUnhandledException" xml:space="preserve">
+    <value>ColorVision перехватил необработанное исключение</value>
+  </data>
+  <data name="CopilotExceptionDetails" xml:space="preserve">
+    <value>Детали исключения</value>
+  </data>
+  <data name="CopilotRecentLogs" xml:space="preserve">
+    <value>Последние логи</value>
+  </data>
+  <data name="CopilotRecentNLines" xml:space="preserve">
+    <value>Последние N строк</value>
+  </data>
+  <data name="CopilotLines" xml:space="preserve">
+    <value>Строки</value>
+  </data>
+  <data name="CopilotTodayLog" xml:space="preserve">
+    <value>Лог за сегодня</value>
+  </data>
+  <data name="CopilotRefreshLog" xml:space="preserve">
+    <value>Обновить лог</value>
+  </data>
+  <data name="CopilotAiRequest" xml:space="preserve">
+    <value>AI запрос</value>
+  </data>
+  <data name="CopilotCopyDetails" xml:space="preserve">
+    <value>Копировать детали</value>
+  </data>
+  <data name="CopilotAskAi" xml:space="preserve">
+    <value>Спросить AI</value>
+  </data>
+  <data name="CopilotGoogleSearch" xml:space="preserve">
+    <value>Поиск в Google</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>Ввод</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="OpenWithSystemDefault" xml:space="preserve">
+    <value>Открыть системным приложением по умолчанию</value>
+  </data>
 </root>
