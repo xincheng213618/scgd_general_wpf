@@ -151,4 +151,265 @@
   <data name="Command" xml:space="preserve">
     <value>命令</value>
   </data>
+  <data name="Sched_ExecHistory" xml:space="preserve">
+    <value>执行历史</value>
+  </data>
+  <data name="Sched_ExecHistoryTooltip" xml:space="preserve">
+    <value>查看所有任务的执行历史记录</value>
+  </data>
+  <data name="Sched_ExportCsv" xml:space="preserve">
+    <value>导出CSV</value>
+  </data>
+  <data name="Sched_ExportCsvTooltip" xml:space="preserve">
+    <value>导出任务列表到CSV文件</value>
+  </data>
+  <data name="Sched_ExportJson" xml:space="preserve">
+    <value>导出JSON</value>
+  </data>
+  <data name="Sched_ExportJsonTooltip" xml:space="preserve">
+    <value>导出任务配置到JSON文件</value>
+  </data>
+  <data name="Sched_ExportReport" xml:space="preserve">
+    <value>导出报告</value>
+  </data>
+  <data name="Sched_ExportReportTooltip" xml:space="preserve">
+    <value>导出执行统计报告</value>
+  </data>
+  <data name="Sched_SuccessFail" xml:space="preserve">
+    <value>成功/失败</value>
+  </data>
+  <data name="Sched_Priority" xml:space="preserve">
+    <value>优先级</value>
+  </data>
+  <data name="Sched_ExecTimeMs" xml:space="preserve">
+    <value>执行时间(ms)</value>
+  </data>
+  <data name="Sched_LastResult" xml:space="preserve">
+    <value>最后结果</value>
+  </data>
+  <data name="Sched_EditTask" xml:space="preserve">
+    <value>编辑任务</value>
+  </data>
+  <data name="Sched_ViewProps" xml:space="preserve">
+    <value>查看属性</value>
+  </data>
+  <data name="Sched_PauseTask" xml:space="preserve">
+    <value>暂停任务</value>
+  </data>
+  <data name="Sched_ResumeTask" xml:space="preserve">
+    <value>继续任务</value>
+  </data>
+  <data name="Sched_DeleteTask" xml:space="preserve">
+    <value>删除任务</value>
+  </data>
+  <data name="Sched_RunNow" xml:space="preserve">
+    <value>立即执行</value>
+  </data>
+  <data name="Sched_ExecHistoryMenu" xml:space="preserve">
+    <value>执行历史</value>
+  </data>
+  <data name="Sched_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Sched_Prompt" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Sched_ConfirmDelete" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="Sched_Success" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="Sched_PartialSuccess" xml:space="preserve">
+    <value>部分成功</value>
+  </data>
+  <data name="Sched_ExportSuccess" xml:space="preserve">
+    <value>导出成功</value>
+  </data>
+  <data name="Sched_HistoryTitle" xml:space="preserve">
+    <value>执行历史记录</value>
+  </data>
+  <data name="Sched_TaskLabel" xml:space="preserve">
+    <value>任务:</value>
+  </data>
+  <data name="Sched_AllTasks" xml:space="preserve">
+    <value>全部任务</value>
+  </data>
+  <data name="Sched_Filter" xml:space="preserve">
+    <value>筛选:</value>
+  </data>
+  <data name="Sched_All" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="Sched_SuccessFilter" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="Sched_FailFilter" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="Sched_Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="Sched_Clear90Days" xml:space="preserve">
+    <value>清理90天前记录</value>
+  </data>
+  <data name="Sched_TotalExec" xml:space="preserve">
+    <value>总执行: </value>
+  </data>
+  <data name="Sched_SuccessCount" xml:space="preserve">
+    <value>成功: </value>
+  </data>
+  <data name="Sched_FailCount" xml:space="preserve">
+    <value>失败: </value>
+  </data>
+  <data name="Sched_AvgTime" xml:space="preserve">
+    <value>平均耗时: </value>
+  </data>
+  <data name="Sched_StartTime" xml:space="preserve">
+    <value>开始时间</value>
+  </data>
+  <data name="Sched_TaskName" xml:space="preserve">
+    <value>任务名称</value>
+  </data>
+  <data name="Sched_Group" xml:space="preserve">
+    <value>分组</value>
+  </data>
+  <data name="Sched_ElapsedMs" xml:space="preserve">
+    <value>耗时(ms)</value>
+  </data>
+  <data name="Sched_Result" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="Sched_Detail" xml:space="preserve">
+    <value>详情</value>
+  </data>
+  <data name="Sched_PrevPage" xml:space="preserve">
+    <value>上一页</value>
+  </data>
+  <data name="Sched_PageInfo" xml:space="preserve">
+    <value>第 {0} 页</value>
+  </data>
+  <data name="Sched_Page1" xml:space="preserve">
+    <value>第 1 页</value>
+  </data>
+  <data name="Sched_NextPage" xml:space="preserve">
+    <value>下一页</value>
+  </data>
+  <data name="Sched_ConfirmClear90" xml:space="preserve">
+    <value>确定要清理90天前的历史记录吗？</value>
+  </data>
+  <data name="Sched_ConfirmClearTitle" xml:space="preserve">
+    <value>确认清理</value>
+  </data>
+  <data name="Sched_Cleared" xml:space="preserve">
+    <value>已清理 {0} 条历史记录</value>
+  </data>
+  <data name="Sched_ClearDone" xml:space="preserve">
+    <value>清理完成</value>
+  </data>
+  <data name="Sched_Task" xml:space="preserve">
+    <value>任务</value>
+  </data>
+  <data name="Sched_RepeatCount" xml:space="preserve">
+    <value>重复次数</value>
+  </data>
+  <data name="Sched_Interval" xml:space="preserve">
+    <value>间隔时间</value>
+  </data>
+  <data name="Sched_CronGenerator" xml:space="preserve">
+    <value>在线Cron表达式生成器</value>
+  </data>
+  <data name="Sched_Advanced" xml:space="preserve">
+    <value>高级设置</value>
+  </data>
+  <data name="Sched_PriorityLabel" xml:space="preserve">
+    <value>优先级 (1-10)</value>
+  </data>
+  <data name="Sched_PriorityTooltip" xml:space="preserve">
+    <value>数值越大优先级越高</value>
+  </data>
+  <data name="Sched_Timeout" xml:space="preserve">
+    <value>超时时间(秒)</value>
+  </data>
+  <data name="Sched_TimeoutTooltip" xml:space="preserve">
+    <value>0表示无超时限制</value>
+  </data>
+  <data name="Sched_NoLimit" xml:space="preserve">
+    <value>0 = 无限制</value>
+  </data>
+  <data name="Sched_SaveFailed" xml:space="preserve">
+    <value>保存任务配置失败: {0}</value>
+  </data>
+  <data name="Sched_LoadFailed" xml:space="preserve">
+    <value>加载任务配置失败: {0}</value>
+  </data>
+  <data name="Sched_RestoreWarning" xml:space="preserve">
+    <value>以下任务未能恢复: {0}</value>
+  </data>
+  <data name="Sched_RestoreWarningTitle" xml:space="preserve">
+    <value>任务恢复警告</value>
+  </data>
+  <data name="Sched_StartFailed" xml:space="preserve">
+    <value>调度器启动失败: {0}</value>
+  </data>
+  <data name="Sched_ParamError" xml:space="preserve">
+    <value>参数错误</value>
+  </data>
+  <data name="Sched_NotInit" xml:space="preserve">
+    <value>调度器未初始化</value>
+  </data>
+  <data name="Sched_CreateTriggerFailed" xml:space="preserve">
+    <value>创建触发器失败</value>
+  </data>
+  <data name="Sched_CreateTaskFailed" xml:space="preserve">
+    <value>创建任务失败: {0}</value>
+  </data>
+  <data name="Sched_UpdateTaskFailed" xml:space="preserve">
+    <value>更新任务失败: {0}</value>
+  </data>
+  <data name="Sched_TypeEmpty" xml:space="preserve">
+    <value>任务类型不能为空</value>
+  </data>
+  <data name="Sched_NameEmpty" xml:space="preserve">
+    <value>任务名和分组名不能为空</value>
+  </data>
+  <data name="Sched_CronEmpty" xml:space="preserve">
+    <value>Cron表达式不能为空</value>
+  </data>
+  <data name="Sched_CronInvalid" xml:space="preserve">
+    <value>Cron表达式不合法</value>
+  </data>
+  <data name="Sched_RepeatInvalid" xml:space="preserve">
+    <value>重复次数必须大于0</value>
+  </data>
+  <data name="Sched_TriggerNow" xml:space="preserve">
+    <value>立即</value>
+  </data>
+  <data name="Sched_TriggerDelay" xml:space="preserve">
+    <value>延时</value>
+  </data>
+  <data name="Sched_Simple" xml:space="preserve">
+    <value>简单</value>
+  </data>
+  <data name="Sched_Calendar" xml:space="preserve">
+    <value>日历</value>
+  </data>
+  <data name="Sched_IntervalType" xml:space="preserve">
+    <value>间隔</value>
+  </data>
+  <data name="Sched_Once" xml:space="preserve">
+    <value>一次</value>
+  </data>
+  <data name="Sched_Multiple" xml:space="preserve">
+    <value>多次</value>
+  </data>
+  <data name="Sched_Forever" xml:space="preserve">
+    <value>永远</value>
+  </data>
+  <data name="Sched_ExecSuccess" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="Sched_ExecFail" xml:space="preserve">
+    <value>失败</value>
+  </data>
 </root>

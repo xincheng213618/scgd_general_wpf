@@ -19,10 +19,10 @@
         <DockPanel Grid.Row="0">
             <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}" FontWeight="Bold" Click="CreateTaskButton_Click" Padding="10,5" Margin="5"/>
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                <Button Content="执行历史" Click="ViewAllHistory_Click" Margin="5" ToolTip="查看所有任务的执行历史记录"/>
-                <Button Content="导出CSV" Click="ExportCSV_Click" Margin="5" ToolTip="导出任务列表到CSV文件"/>
-                <Button Content="导出JSON" Click="ExportJSON_Click" Margin="5" ToolTip="导出任务配置到JSON文件"/>
-                <Button Content="导出报告" Click="ExportReport_Click" Margin="5" ToolTip="导出执行统计报告"/>
+                <Button Content="{x:Static properties:Resources.Sched_ExecHistory}" Click="ViewAllHistory_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExecHistoryTooltip}"/>
+                <Button Content="{x:Static properties:Resources.Sched_ExportCsv}" Click="ExportCSV_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExportCsvTooltip}"/>
+                <Button Content="{x:Static properties:Resources.Sched_ExportJson}" Click="ExportJSON_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExportJsonTooltip}"/>
+                <Button Content="{x:Static properties:Resources.Sched_ExportReport}" Click="ExportReport_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExportReportTooltip}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <Button  Content="{x:Static properties:Resources.Start}" Command="{Binding StartCommand}"  Margin="5"/>
@@ -62,7 +62,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="成功/失败">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_SuccessFail}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock>
@@ -73,21 +73,21 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="优先级">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_Priority}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding Priority}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="执行时间(ms)">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_ExecTimeMs}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding LastExecutionTimeMs}" ToolTip="{Binding AverageExecutionTimeMs, StringFormat='平均: {0}ms'}"/>
+                                <TextBlock Text="{Binding LastExecutionTimeMs}" ToolTip="{Binding AverageExecutionTimeMs, StringFormat='Avg: {0}ms'}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="最后结果">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_LastResult}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding LastExecutionResult}" ToolTip="{Binding LastExecutionMessage}"/>

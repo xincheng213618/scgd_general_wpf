@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Scheduler"
+        xmlns:properties="clr-namespace:ColorVision.Scheduler.Properties"
         mc:Ignorable="d"
-        Title="执行历史记录" Height="600" Width="900" Background="{StaticResource GlobalBackground}">
+        Title="{x:Static properties:Resources.Sched_HistoryTitle}" Height="600" Width="900" Background="{StaticResource GlobalBackground}">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -16,28 +17,28 @@
 
         <!-- 标题和筛选 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="任务:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-            <TextBlock x:Name="TextBlockTaskName" Text="全部任务" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
-            <TextBlock Text="筛选:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBlock Text="{x:Static properties:Resources.Sched_TaskLabel}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBlock x:Name="TextBlockTaskName" Text="{x:Static properties:Resources.Sched_AllTasks}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
+            <TextBlock Text="{x:Static properties:Resources.Sched_Filter}" VerticalAlignment="Center" Margin="0,0,5,0"/>
             <ComboBox x:Name="ComboBoxFilter" Width="100" SelectionChanged="ComboBoxFilter_SelectionChanged">
-                <ComboBoxItem Content="全部" IsSelected="True"/>
-                <ComboBoxItem Content="成功"/>
-                <ComboBoxItem Content="失败"/>
+                <ComboBoxItem Content="{x:Static properties:Resources.Sched_All}" IsSelected="True"/>
+                <ComboBoxItem Content="{x:Static properties:Resources.Sched_SuccessFilter}"/>
+                <ComboBoxItem Content="{x:Static properties:Resources.Sched_FailFilter}"/>
             </ComboBox>
-            <Button Content="刷新" Click="Refresh_Click" Margin="10,0,0,0" Padding="10,3"/>
-            <Button Content="清理90天前记录" Click="Cleanup_Click" Margin="10,0,0,0" Padding="10,3"/>
+            <Button Content="{x:Static properties:Resources.Sched_Refresh}" Click="Refresh_Click" Margin="10,0,0,0" Padding="10,3"/>
+            <Button Content="{x:Static properties:Resources.Sched_Clear90Days}" Click="Cleanup_Click" Margin="10,0,0,0" Padding="10,3"/>
         </StackPanel>
 
         <!-- 统计摘要 -->
         <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Padding="10" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="总执行: " />
+                <TextBlock Text="{x:Static properties:Resources.Sched_TotalExec}" />
                 <TextBlock x:Name="TextBlockTotal" Text="0" FontWeight="Bold" Margin="0,0,15,0"/>
-                <TextBlock Text="成功: " />
+                <TextBlock Text="{x:Static properties:Resources.Sched_SuccessCount}" />
                 <TextBlock x:Name="TextBlockSuccess" Text="0" FontWeight="Bold" Foreground="Green" Margin="0,0,15,0"/>
-                <TextBlock Text="失败: " />
+                <TextBlock Text="{x:Static properties:Resources.Sched_FailCount}" />
                 <TextBlock x:Name="TextBlockFailure" Text="0" FontWeight="Bold" Foreground="Red" Margin="0,0,15,0"/>
-                <TextBlock Text="平均耗时: " />
+                <TextBlock Text="{x:Static properties:Resources.Sched_AvgTime}" />
                 <TextBlock x:Name="TextBlockAvgTime" Text="0ms" FontWeight="Bold" Margin="0,0,15,0"/>
             </StackPanel>
         </Border>
@@ -51,42 +52,42 @@
                             <Setter Property="Background" Value="Transparent"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn Header="开始时间" Width="160">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_StartTime}" Width="160">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding StartTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="任务名称" Width="120">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_TaskName}" Width="120">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding JobName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="分组" Width="80">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_Group}" Width="80">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding GroupName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="耗时(ms)" Width="80">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_ElapsedMs}" Width="80">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding ExecutionTimeMs}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="结果" Width="60">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_Result}" Width="60">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Result}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="详情" Width="300">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sched_Detail}" Width="300">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Message}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Message}"/>
@@ -99,9 +100,9 @@
 
         <!-- 分页 -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
-            <Button Content="上一页" Click="PreviousPage_Click" Padding="10,3" Margin="5,0"/>
-            <TextBlock x:Name="TextBlockPage" Text="第 1 页" VerticalAlignment="Center" Margin="10,0"/>
-            <Button Content="下一页" Click="NextPage_Click" Padding="10,3" Margin="5,0"/>
+            <Button Content="{x:Static properties:Resources.Sched_PrevPage}" Click="PreviousPage_Click" Padding="10,3" Margin="5,0"/>
+            <TextBlock x:Name="TextBlockPage" Text="{x:Static properties:Resources.Sched_Page1}" VerticalAlignment="Center" Margin="10,0"/>
+            <Button Content="{x:Static properties:Resources.Sched_NextPage}" Click="NextPage_Click" Padding="10,3" Margin="5,0"/>
         </StackPanel>
     </Grid>
 </Window>

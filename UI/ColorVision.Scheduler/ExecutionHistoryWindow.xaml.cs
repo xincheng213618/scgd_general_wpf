@@ -11,7 +11,7 @@ namespace ColorVision.Scheduler
         private readonly string? _groupName;
         private int _pageIndex = 1;
         private const int PageSize = 100;
-        private string _filter = "全部";
+        private string _filter = Properties.Resources.Sched_All;
 
         /// <summary>
         /// 查看所有任务的执行历史
@@ -20,7 +20,7 @@ namespace ColorVision.Scheduler
         {
             InitializeComponent();
             this.ApplyCaption();
-            TextBlockTaskName.Text = "全部任务";
+            TextBlockTaskName.Text = Properties.Resources.Sched_AllTasks;
             LoadData();
         }
 
@@ -52,13 +52,13 @@ namespace ColorVision.Scheduler
             }
 
             // 应用筛选
-            if (_filter == "成功")
+            if (_filter == Properties.Resources.Sched_SuccessFilter)
                 records = records.Where(r => r.Success).ToList();
-            else if (_filter == "失败")
+            else if (_filter == Properties.Resources.Sched_FailFilter)
                 records = records.Where(r => !r.Success).ToList();
 
             ListViewHistory.ItemsSource = records;
-            TextBlockPage.Text = $"第 {_pageIndex} 页 (共 {records.Count} 条)";
+            TextBlockPage.Text = string.Format(Properties.Resources.Sched_PageInfo, _pageIndex);
 
             // 更新统计
             UpdateStats();
@@ -97,11 +97,11 @@ namespace ColorVision.Scheduler
 
         private void Cleanup_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("确定要清理90天前的历史记录吗？", "确认清理", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var result = MessageBox.Show(Properties.Resources.Sched_ConfirmClear90, Properties.Resources.Sched_ConfirmClearTitle, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
                 int deleted = SchedulerDbManager.GetInstance().CleanupOldRecords(90);
-                MessageBox.Show($"已清理 {deleted} 条历史记录", "清理完成", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Format(Properties.Resources.Sched_Cleared, deleted), Properties.Resources.Sched_ClearDone, MessageBoxButton.OK, MessageBoxImage.Information);
                 LoadData();
             }
         }
@@ -126,7 +126,7 @@ namespace ColorVision.Scheduler
             if (!IsInitialized) return;
             if (ComboBoxFilter.SelectedItem is ComboBoxItem item)
             {
-                _filter = item.Content?.ToString() ?? "全部";
+                _filter = item.Content?.ToString() ?? Properties.Resources.Sched_All;
                 _pageIndex = 1;
                 LoadData();
             }

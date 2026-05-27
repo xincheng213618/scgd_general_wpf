@@ -71,7 +71,7 @@ namespace ColorVision.Scheduler
             catch (Exception ex)
             {
                 _logger.Error("Failed to save tasks", ex);
-                MessageBox.Show($"保存任务配置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.Sched_SaveFailed, ex.Message), Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -104,7 +104,7 @@ namespace ColorVision.Scheduler
             catch (Exception ex)
             {
                 _logger.Error("Failed to load tasks", ex);
-                MessageBox.Show($"加载任务配置失败: {ex.Message}\n将使用空配置启动。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(string.Format(Properties.Resources.Sched_LoadFailed, ex.Message), Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -218,7 +218,7 @@ namespace ColorVision.Scheduler
                 if (failedJobs.Count > 0)
                 {
                     _logger.Warn($"{failedJobs.Count} tasks failed to recover");
-                    MessageBox.Show("以下任务未能恢复：\n" + string.Join("\n", failedJobs), "任务恢复警告");
+                    MessageBox.Show(string.Format(Properties.Resources.Sched_RestoreWarning, string.Join("\n", failedJobs)), Properties.Resources.Sched_RestoreWarningTitle);
                 }
                 else
                 {
@@ -228,7 +228,7 @@ namespace ColorVision.Scheduler
             catch (Exception ex)
             {
                 _logger.Error("Failed to start scheduler", ex);
-                MessageBox.Show($"调度器启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.Sched_StartFailed, ex.Message), Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
         }
@@ -317,7 +317,7 @@ namespace ColorVision.Scheduler
                 if (!ValidateSchedulerInfo(schedulerInfo, out string errorMsg))
                 {
                     _logger.Warn($"Job validation failed: {errorMsg}");
-                    MessageBox.Show(errorMsg, "参数错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(errorMsg, Properties.Resources.Sched_ParamError, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 
@@ -326,7 +326,7 @@ namespace ColorVision.Scheduler
                 if (scheduler == null)
                 {
                     _logger.Error("Scheduler is null");
-                    MessageBox.Show("调度器未初始化", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(Properties.Resources.Sched_NotInit, Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
                 
@@ -349,13 +349,13 @@ namespace ColorVision.Scheduler
                 else
                 {
                     _logger.Error($"Failed to build trigger for job: {schedulerInfo.JobName}");
-                    MessageBox.Show("创建触发器失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(Properties.Resources.Sched_CreateTriggerFailed, Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 _logger.Error($"Failed to create job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
-                MessageBox.Show($"创建任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.Sched_CreateTaskFailed, ex.Message), Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
         }
@@ -373,7 +373,7 @@ namespace ColorVision.Scheduler
             catch (Exception ex)
             {
                 _logger.Error($"Failed to update job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
-                MessageBox.Show($"更新任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.Sched_UpdateTaskFailed, ex.Message), Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
         }
@@ -450,30 +450,30 @@ namespace ColorVision.Scheduler
         {
             if (info.JobType == null)
             {
-                errorMsg = "任务类型不能为空";
+                errorMsg = Properties.Resources.Sched_TypeEmpty;
                 return false;
             }
             if (string.IsNullOrWhiteSpace(info.JobName) || string.IsNullOrWhiteSpace(info.GroupName))
             {
-                errorMsg = "任务名和分组名不能为空";
+                errorMsg = Properties.Resources.Sched_NameEmpty;
                 return false;
             }
             if (info.Mode == JobExecutionMode.Cron)
             {
                 if (string.IsNullOrWhiteSpace(info.CronExpression))
                 {
-                    errorMsg = "Cron表达式不能为空";
+                    errorMsg = Properties.Resources.Sched_CronEmpty;
                     return false;
                 }
                 if (!Quartz.CronExpression.IsValidExpression(info.CronExpression))
                 {
-                    errorMsg = "Cron表达式不合法";
+                    errorMsg = Properties.Resources.Sched_CronInvalid;
                     return false;
                 }
             }
             if (info.RepeatMode == JobRepeatMode.Multiple && info.RepeatCount <= 0)
             {
-                errorMsg = "重复次数必须大于0";
+                errorMsg = Properties.Resources.Sched_RepeatInvalid;
                 return false;
             }
             errorMsg = string.Empty;

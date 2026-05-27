@@ -48,19 +48,19 @@ namespace ColorVision.Scheduler
             this.ApplyCaption();
 
             // 添加右键菜单
-            var menuEdit = new MenuItem { Header = "编辑任务" };
+            var menuEdit = new MenuItem { Header = Properties.Resources.Sched_EditTask };
             menuEdit.Click += MenuEdit_Click;
-            var menuView = new MenuItem { Header = "查看属性" };
+            var menuView = new MenuItem { Header = Properties.Resources.Sched_ViewProps };
             menuView.Click += MenuView_Click;
-            var menuPause = new MenuItem { Header = "暂停任务" };
+            var menuPause = new MenuItem { Header = Properties.Resources.Sched_PauseTask };
             menuPause.Click += MenuPause_Click;
-            var menuResume = new MenuItem { Header = "继续任务" };
+            var menuResume = new MenuItem { Header = Properties.Resources.Sched_ResumeTask };
             menuResume.Click += MenuResume_Click;
-            var menuDelete = new MenuItem { Header = "删除任务" };
+            var menuDelete = new MenuItem { Header = Properties.Resources.Sched_DeleteTask };
             menuDelete.Click += MenuDelete_Click;
-            var menuTrigger = new MenuItem { Header = "立即执行" };
+            var menuTrigger = new MenuItem { Header = Properties.Resources.Sched_RunNow };
             menuTrigger.Click += MenuTrigger_Click;
-            var menuHistory = new MenuItem { Header = "执行历史" };
+            var menuHistory = new MenuItem { Header = Properties.Resources.Sched_ExecHistoryMenu };
             menuHistory.Click += MenuHistory_Click;
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(menuEdit);
@@ -196,7 +196,7 @@ namespace ColorVision.Scheduler
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"暂停任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"暂停任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -212,7 +212,7 @@ namespace ColorVision.Scheduler
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"恢复任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"恢复任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -223,8 +223,8 @@ namespace ColorVision.Scheduler
             {
                 try
                 {
-                    var result = MessageBox.Show($"确定要删除任务 {info.JobName}({info.GroupName}) 吗？", 
-                        "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    var result = MessageBox.Show($"确定要删除任务 {info.JobName}({info.GroupName}) 吗？",
+                        Properties.Resources.Sched_ConfirmDelete, MessageBoxButton.YesNo, MessageBoxImage.Question);
                     if (result == MessageBoxResult.Yes)
                     {
                         await QuartzSchedulerManager.RemoveJob(info.JobName, info.GroupName);
@@ -233,7 +233,7 @@ namespace ColorVision.Scheduler
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"删除任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"删除任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -249,7 +249,7 @@ namespace ColorVision.Scheduler
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"触发任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"触发任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -318,12 +318,12 @@ namespace ColorVision.Scheduler
                     }
 
                     File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
-                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务到:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务到:\n{dialog.FileName}", Properties.Resources.Sched_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出CSV失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"导出CSV失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -348,12 +348,12 @@ namespace ColorVision.Scheduler
 
                     var json = JsonConvert.SerializeObject(TaskInfos, settings);
                     File.WriteAllText(dialog.FileName, json, Encoding.UTF8);
-                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务配置到:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务配置到:\n{dialog.FileName}", Properties.Resources.Sched_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出JSON失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"导出JSON失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -444,12 +444,12 @@ namespace ColorVision.Scheduler
                     sb.AppendLine("═══════════════════════════════════════════════════════════════");
 
                     File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
-                    MessageBox.Show($"成功生成执行统计报告:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"成功生成执行统计报告:\n{dialog.FileName}", Properties.Resources.Sched_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"生成报告失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"生成报告失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -459,7 +459,7 @@ namespace ColorVision.Scheduler
             var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
             if (selectedTasks.Count == 0)
             {
-                MessageBox.Show("请先选择要启动的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("请先选择要启动的任务", Properties.Resources.Sched_Prompt, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -484,17 +484,17 @@ namespace ColorVision.Scheduler
 
                 if (failedTasks.Count > 0)
                 {
-                    MessageBox.Show($"成功启动 {successCount} 个任务\n以下任务启动失败:\n{string.Join("\n", failedTasks)}", 
-                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"成功启动 {successCount} 个任务\n以下任务启动失败:\n{string.Join("\n", failedTasks)}",
+                        Properties.Resources.Sched_PartialSuccess, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 else
                 {
-                    MessageBox.Show($"成功启动 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"成功启动 {successCount} 个任务", Properties.Resources.Sched_Success, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"批量启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"批量启动失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -503,7 +503,7 @@ namespace ColorVision.Scheduler
             var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
             if (selectedTasks.Count == 0)
             {
-                MessageBox.Show("请先选择要暂停的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("请先选择要暂停的任务", Properties.Resources.Sched_Prompt, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -528,17 +528,17 @@ namespace ColorVision.Scheduler
 
                 if (failedTasks.Count > 0)
                 {
-                    MessageBox.Show($"成功暂停 {successCount} 个任务\n以下任务暂停失败:\n{string.Join("\n", failedTasks)}", 
-                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"成功暂停 {successCount} 个任务\n以下任务暂停失败:\n{string.Join("\n", failedTasks)}",
+                        Properties.Resources.Sched_PartialSuccess, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 else
                 {
-                    MessageBox.Show($"成功暂停 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"成功暂停 {successCount} 个任务", Properties.Resources.Sched_Success, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"批量暂停失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"批量暂停失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -547,12 +547,12 @@ namespace ColorVision.Scheduler
             var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
             if (selectedTasks.Count == 0)
             {
-                MessageBox.Show("请先选择要删除的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("请先选择要删除的任务", Properties.Resources.Sched_Prompt, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var result = MessageBox.Show($"确定要删除选中的 {selectedTasks.Count} 个任务吗？\n此操作不可撤销！", 
-                "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            var result = MessageBox.Show($"确定要删除选中的 {selectedTasks.Count} 个任务吗？\n此操作不可撤销！",
+                Properties.Resources.Sched_ConfirmDelete, MessageBoxButton.YesNo, MessageBoxImage.Warning);
             
             if (result != MessageBoxResult.Yes)
                 return;
@@ -578,17 +578,17 @@ namespace ColorVision.Scheduler
 
                 if (failedTasks.Count > 0)
                 {
-                    MessageBox.Show($"成功删除 {successCount} 个任务\n以下任务删除失败:\n{string.Join("\n", failedTasks)}", 
-                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"成功删除 {successCount} 个任务\n以下任务删除失败:\n{string.Join("\n", failedTasks)}",
+                        Properties.Resources.Sched_PartialSuccess, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 else
                 {
-                    MessageBox.Show($"成功删除 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"成功删除 {successCount} 个任务", Properties.Resources.Sched_Success, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"批量删除失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"批量删除失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

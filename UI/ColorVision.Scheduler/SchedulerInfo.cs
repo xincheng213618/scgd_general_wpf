@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Scheduler
 {
@@ -12,31 +13,31 @@ namespace ColorVision.Scheduler
 
     public enum JobStartMode
     {
-        [Description("立即")]
+        [Display(Name = "Sched_TriggerNow", ResourceType = typeof(Properties.Resources))]
         Immediate,
-        [Description("延时")]
+        [Display(Name = "Sched_TriggerDelay", ResourceType = typeof(Properties.Resources))]
         Delayed
     }
 
     public enum JobExecutionMode
     {
-        [Description("简单")]
+        [Display(Name = "Sched_Simple", ResourceType = typeof(Properties.Resources))]
         Simple,
-        [Description("日历")]
+        [Display(Name = "Sched_Calendar", ResourceType = typeof(Properties.Resources))]
         Calendar,
         [Description("Cron")]
         Cron,
-        [Description("间隔")]
+        [Display(Name = "Sched_IntervalType", ResourceType = typeof(Properties.Resources))]
         Interval
     }
 
     public enum JobRepeatMode
     {
-        [Description("一次")]
+        [Display(Name = "Sched_Once", ResourceType = typeof(Properties.Resources))]
         Once,
-        [Description("多次")]
+        [Display(Name = "Sched_Multiple", ResourceType = typeof(Properties.Resources))]
         Multiple,
-        [Description("永远")]
+        [Display(Name = "Sched_Forever", ResourceType = typeof(Properties.Resources))]
         Forever
     }
 
