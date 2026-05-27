@@ -309,7 +309,6 @@ namespace Conoscope
 
             ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbActiveDisplayChannel, ExportChannel.Y);
             ActiveView.SetWindowQuickDisplayChannel(channel);
-            SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgChannelSwitched, channel), Brushes.LimeGreen);
         }
 
         private void rbActiveReferenceLine_Checked(object sender, RoutedEventArgs e)
@@ -336,8 +335,6 @@ namespace Conoscope
                     ? Properties.Resources.TipEnterAzimuth
                     : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, ActiveView.MaxAngle);
             }
-
-            SetOperationStatus(mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.MsgRefModeSwitchedAzimuth : Properties.Resources.MsgRefModeSwitchedPolar, Brushes.LimeGreen);
         }
 
         private void cbActiveContrastImageKind_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -349,10 +346,6 @@ namespace Conoscope
 
             ContrastReferenceKind imageKind = ComboBoxHelper.GetSelectedEnumByTag(cbActiveContrastImageKind, ContrastReferenceKind.Black);
             ActiveView.SetWindowQuickContrastImageKind(imageKind);
-            string imageLabel = imageKind == ContrastReferenceKind.Black
-                ? Properties.Resources.ContrastImageBlack
-                : Properties.Resources.ContrastImageWhite;
-            SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgCurrentImageSwitched, imageLabel), Brushes.LimeGreen);
         }
 
         private void cbActiveColorDifferenceReference_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -365,14 +358,6 @@ namespace Conoscope
             ColorDifferenceReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(cbActiveColorDifferenceReference, ColorDifferenceReferenceMode.D65);
             UpdateActiveColorDifferenceCustomVisibility(mode);
             ActiveView.SetWindowQuickColorDifferenceReferenceMode(mode);
-            SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgColorDifferenceReferenceSwitched, GetSelectedComboBoxText(cbActiveColorDifferenceReference)), Brushes.LimeGreen);
-        }
-
-        private static string GetSelectedComboBoxText(ComboBox? comboBox)
-        {
-            return comboBox?.SelectedItem is ComboBoxItem item
-                ? item.Content?.ToString() ?? string.Empty
-                : string.Empty;
         }
 
         private void btnActiveExportAngle_Click(object sender, RoutedEventArgs e)
@@ -460,16 +445,13 @@ namespace Conoscope
                 return;
             }
 
-            if (!ActiveView.TryGetWindowQuickControlState(out ConoscopeWindowQuickControlState state))
+            if (!ActiveView.TryGetWindowQuickControlState(out _))
             {
                 RefreshActiveViewControlState(ActiveView);
                 return;
             }
 
             ActiveView.SetWindowQuickReferenceValue(value);
-            SetOperationStatus(state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? CompositeFormatCache.Format(Properties.Resources.MsgRefAzimuthSet, value)
-                : CompositeFormatCache.Format(Properties.Resources.MsgRefPolarSet, value), Brushes.LimeGreen);
         }
 
         private void ApplyActiveColorDifferenceCustomValuesFromText()
@@ -490,7 +472,6 @@ namespace Conoscope
             }
 
             ActiveView.SetWindowQuickColorDifferenceCustomReference(u, v);
-            SetOperationStatus(CompositeFormatCache.Format(CultureInfo.CurrentCulture, Properties.Resources.MsgColorDifferenceCustomReferenceUpdated, u, v), Brushes.LimeGreen);
         }
 
         private void ToggleColorDifferenceReference()
@@ -500,7 +481,6 @@ namespace Conoscope
             {
                 globalReferences.ClearColorDifferenceReference();
                 ConoscopeModuleService.RefreshAllReferenceState();
-                SetOperationStatus(Properties.Resources.MsgGlobalColorDifferenceReferenceCleared, Brushes.OrangeRed);
                 return;
             }
 
@@ -512,12 +492,10 @@ namespace Conoscope
             try
             {
                 ActiveView.SaveWindowQuickColorDifferenceReference();
-                SetOperationStatus(Properties.Resources.MsgGlobalColorDifferenceReferenceSaved, Brushes.LimeGreen);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this, ex.Message, Properties.Resources.GroupColorDifference, MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus(Properties.Resources.MsgSaveGlobalColorDifferenceReferenceFailed, Brushes.OrangeRed);
             }
         }
 
@@ -528,7 +506,6 @@ namespace Conoscope
             {
                 globalReferences.ClearContrastReference(referenceKind);
                 ConoscopeModuleService.RefreshAllReferenceState();
-                SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgGlobalContrastReferenceCleared, GetContrastReferenceLabel(referenceKind)), Brushes.OrangeRed);
                 return;
             }
 
@@ -540,12 +517,10 @@ namespace Conoscope
             try
             {
                 ActiveView.SaveCurrentAsGlobalContrastReference(referenceKind);
-                SetOperationStatus(CompositeFormatCache.Format(Properties.Resources.MsgGlobalContrastReferenceSaved, GetContrastReferenceLabel(referenceKind)), Brushes.LimeGreen);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this, ex.Message, Properties.Resources.GroupContrast, MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus(Properties.Resources.MsgSaveGlobalContrastReferenceFailed, Brushes.OrangeRed);
             }
         }
     }

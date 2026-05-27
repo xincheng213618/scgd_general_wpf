@@ -1851,15 +1851,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 状态 的本地化字符串。
-        /// </summary>
-        public static string LabelStatus {
-            get {
-                return ResourceManager.GetString("LabelStatus", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 主题 的本地化字符串。
         /// </summary>
         public static string LabelTheme {
@@ -2004,38 +1995,11 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 相机列表已刷新 的本地化字符串。
-        /// </summary>
-        public static string MsgCameraListRefreshed {
-            get {
-                return ResourceManager.GetString("MsgCameraListRefreshed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 拍照结果未找到 CVCIE 的本地化字符串。
-        /// </summary>
-        public static string MsgCaptureCvcieNotFound {
-            get {
-                return ResourceManager.GetString("MsgCaptureCvcieNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 拍照完成，但结果中没有找到 .cvcie 文件 的本地化字符串。
         /// </summary>
         public static string MsgCaptureCvcieNotFoundDetail {
             get {
                 return ResourceManager.GetString("MsgCaptureCvcieNotFoundDetail", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 拍照失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgCaptureFailed {
-            get {
-                return ResourceManager.GetString("MsgCaptureFailed", resourceCulture);
             }
         }
         
@@ -2050,74 +2014,11 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 拍照失败 的本地化字符串。
-        /// </summary>
-        public static string MsgCaptureFailedTitle {
-            get {
-                return ResourceManager.GetString("MsgCaptureFailedTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 正在拍照: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgCapturingPhoto {
-            get {
-                return ResourceManager.GetString("MsgCapturingPhoto", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已切换显示通道: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgChannelSwitched {
-            get {
-                return ResourceManager.GetString("MsgChannelSwitched", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已清空对比度记录 的本地化字符串。
-        /// </summary>
-        public static string MsgClearedContrast {
-            get {
-                return ResourceManager.GetString("MsgClearedContrast", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已清空色域记录 的本地化字符串。
-        /// </summary>
-        public static string MsgClearedGamut {
-            get {
-                return ResourceManager.GetString("MsgClearedGamut", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 色差自定义光源已更新为 u={0:F4}, v={1:F4} 的本地化字符串。
-        /// </summary>
-        public static string MsgColorDifferenceCustomReferenceUpdated {
-            get {
-                return ResourceManager.GetString("MsgColorDifferenceCustomReferenceUpdated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 色差通道需要先设置色差基准 的本地化字符串。
         /// </summary>
         public static string MsgColorDifferenceReferenceRequired {
             get {
                 return ResourceManager.GetString("MsgColorDifferenceReferenceRequired", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 色差基准已切换为 {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgColorDifferenceReferenceSwitched {
-            get {
-                return ResourceManager.GetString("MsgColorDifferenceReferenceSwitched", resourceCulture);
             }
         }
         
@@ -2136,24 +2037,6 @@ namespace Conoscope.Properties {
         public static string MsgConfigSaveFailed {
             get {
                 return ResourceManager.GetString("MsgConfigSaveFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已完成对比度计算 的本地化字符串。
-        /// </summary>
-        public static string MsgContrastComputed {
-            get {
-                return ResourceManager.GetString("MsgContrastComputed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 对比度计算失败 的本地化字符串。
-        /// </summary>
-        public static string MsgContrastFailed {
-            get {
-                return ResourceManager.GetString("MsgContrastFailed", resourceCulture);
             }
         }
         
@@ -2214,15 +2097,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 当前图像已切换为 {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgCurrentImageSwitched {
-            get {
-                return ResourceManager.GetString("MsgCurrentImageSwitched", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 请先绘制关注点圆。 的本地化字符串。
         /// </summary>
         public static string MsgDrawFocusPointsFirst {
@@ -2279,15 +2153,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 流程结果未找到 CVCIE 的本地化字符串。
-        /// </summary>
-        public static string MsgFlowCvcieNotFound {
-            get {
-                return ResourceManager.GetString("MsgFlowCvcieNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 流程执行完成，但结果中没有找到 .cvcie 文件 的本地化字符串。
         /// </summary>
         public static string MsgFlowCvcieNotFoundDetail {
@@ -2297,57 +2162,11 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 正在执行流程: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgFlowExecuting {
-            get {
-                return ResourceManager.GetString("MsgFlowExecuting", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 流程执行失败 的本地化字符串。
-        /// </summary>
-        public static string MsgFlowFailed {
-            get {
-                return ResourceManager.GetString("MsgFlowFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 流程执行失败: {0} 的本地化字符串。
         /// </summary>
         public static string MsgFlowFailedDetail {
             get {
                 return ResourceManager.GetString("MsgFlowFailedDetail", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 流程执行未完成: {0}
-        ///{1} 的本地化字符串。
-        /// </summary>
-        public static string MsgFlowIncomplete {
-            get {
-                return ResourceManager.GetString("MsgFlowIncomplete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 流程未启动 的本地化字符串。
-        /// </summary>
-        public static string MsgFlowNotStarted {
-            get {
-                return ResourceManager.GetString("MsgFlowNotStarted", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已打开 {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgFlowResultOpened {
-            get {
-                return ResourceManager.GetString("MsgFlowResultOpened", resourceCulture);
             }
         }
         
@@ -2433,65 +2252,11 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 已完成 {0} 色域计算 的本地化字符串。
-        /// </summary>
-        public static string MsgGamutComputed {
-            get {
-                return ResourceManager.GetString("MsgGamutComputed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 色域计算失败 的本地化字符串。
-        /// </summary>
-        public static string MsgGamutFailed {
-            get {
-                return ResourceManager.GetString("MsgGamutFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已清除全局色差基准图 的本地化字符串。
-        /// </summary>
-        public static string MsgGlobalColorDifferenceReferenceCleared {
-            get {
-                return ResourceManager.GetString("MsgGlobalColorDifferenceReferenceCleared", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 请先保存全局色差基准图 的本地化字符串。
         /// </summary>
         public static string MsgGlobalColorDifferenceReferenceRequired {
             get {
                 return ResourceManager.GetString("MsgGlobalColorDifferenceReferenceRequired", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已保存全局色差基准图 的本地化字符串。
-        /// </summary>
-        public static string MsgGlobalColorDifferenceReferenceSaved {
-            get {
-                return ResourceManager.GetString("MsgGlobalColorDifferenceReferenceSaved", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已清除{0}全局基准 的本地化字符串。
-        /// </summary>
-        public static string MsgGlobalContrastReferenceCleared {
-            get {
-                return ResourceManager.GetString("MsgGlobalContrastReferenceCleared", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已保存{0}全局基准 的本地化字符串。
-        /// </summary>
-        public static string MsgGlobalContrastReferenceSaved {
-            get {
-                return ResourceManager.GetString("MsgGlobalContrastReferenceSaved", resourceCulture);
             }
         }
         
@@ -2659,15 +2424,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 已新建视图 的本地化字符串。
-        /// </summary>
-        public static string MsgNewViewCreated {
-            get {
-                return ResourceManager.GetString("MsgNewViewCreated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 请先打开或新建一个 Conoscope 视图 的本地化字符串。
         /// </summary>
         public static string MsgNoActiveView {
@@ -2794,69 +2550,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///     查找类似 已记录黑场关注点数据 的本地化字符串。
-        /// </summary>
-        public static string MsgRecordedBlack {
-            get {
-                return ResourceManager.GetString("MsgRecordedBlack", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已记录 R 关注点数据 的本地化字符串。
-        /// </summary>
-        public static string MsgRecordedRGamut {
-            get {
-                return ResourceManager.GetString("MsgRecordedRGamut", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已记录白场关注点数据 的本地化字符串。
-        /// </summary>
-        public static string MsgRecordedWhite {
-            get {
-                return ResourceManager.GetString("MsgRecordedWhite", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已设置参考方位角: {0}° 的本地化字符串。
-        /// </summary>
-        public static string MsgRefAzimuthSet {
-            get {
-                return ResourceManager.GetString("MsgRefAzimuthSet", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已切换到方位角直线 的本地化字符串。
-        /// </summary>
-        public static string MsgRefModeSwitchedAzimuth {
-            get {
-                return ResourceManager.GetString("MsgRefModeSwitchedAzimuth", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已切换到极角圆 的本地化字符串。
-        /// </summary>
-        public static string MsgRefModeSwitchedPolar {
-            get {
-                return ResourceManager.GetString("MsgRefModeSwitchedPolar", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 已设置参考极角: {0}° 的本地化字符串。
-        /// </summary>
-        public static string MsgRefPolarSet {
-            get {
-                return ResourceManager.GetString("MsgRefPolarSet", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///     查找类似 保存色差基准图失败: {0} 的本地化字符串。
         /// </summary>
         public static string MsgSaveBaseImageFailed {
@@ -2880,24 +2573,6 @@ namespace Conoscope.Properties {
         public static string MsgSaveContrastReferenceRequired {
             get {
                 return ResourceManager.GetString("MsgSaveContrastReferenceRequired", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 保存色差基准失败 的本地化字符串。
-        /// </summary>
-        public static string MsgSaveGlobalColorDifferenceReferenceFailed {
-            get {
-                return ResourceManager.GetString("MsgSaveGlobalColorDifferenceReferenceFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 保存对比度基准失败 的本地化字符串。
-        /// </summary>
-        public static string MsgSaveGlobalContrastReferenceFailed {
-            get {
-                return ResourceManager.GetString("MsgSaveGlobalContrastReferenceFailed", resourceCulture);
             }
         }
         
@@ -3296,15 +2971,6 @@ namespace Conoscope.Properties {
         public static string StatusNotRecorded {
             get {
                 return ResourceManager.GetString("StatusNotRecorded", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///     查找类似 就绪 的本地化字符串。
-        /// </summary>
-        public static string StatusReady {
-            get {
-                return ResourceManager.GetString("StatusReady", resourceCulture);
             }
         }
         

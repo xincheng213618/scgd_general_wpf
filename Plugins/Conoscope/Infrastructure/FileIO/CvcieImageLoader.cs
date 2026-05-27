@@ -2,6 +2,8 @@ using ColorVision.FileIO;
 using ColorVision.UI.Extension;
 using OpenCvSharp;
 using System;
+using System.Collections.Generic;
+using System.Windows.Documents;
 
 namespace Conoscope.Infrastructure.FileIO
 {
@@ -40,7 +42,12 @@ namespace Conoscope.Infrastructure.FileIO
                 byte[] data = fileInfo.Data;
                 fileInfo.Data = Array.Empty<byte>();
 
-                return new CvcieImagePayload(data, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp, fileInfo.Exp.ToJsonN());
+                List<string> exp =  new  List<string>(data.Length) ;
+                foreach (var item in fileInfo.Exp)
+                {
+                    exp.Add(item.ToString("F0"));
+                }
+                return new CvcieImagePayload(data, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp,string.Join(",", exp));
             }
         }
             

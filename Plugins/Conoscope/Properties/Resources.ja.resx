@@ -160,9 +160,6 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>極角 (°)</value>
   </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>状態</value>
-  </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>露光</value>
   </data>
@@ -397,9 +394,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>断面エクスポートを有効にする</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>準備完了</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>未記録</value>
   </data>
@@ -414,12 +408,6 @@
   </data>
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>設定の保存に失敗しました</value>
-  </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>新しいビューを作成しました</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>カメラ一覧を更新しました</value>
   </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>現在の前処理プリセットを適用しました</value>
@@ -436,49 +424,18 @@
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>フローを選択してください</value>
   </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>フローを実行中: {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>フローは開始されませんでした</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>フロー実行が完了しませんでした: {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>{0} を開きました</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>フロー結果に CVCIE が見つかりません</value>
-  </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>フローは完了しましたが、結果に .cvcie ファイルが見つかりませんでした</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>フローの実行に失敗しました</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>フローの実行に失敗しました: {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>写真を取得中: {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>キャプチャに失敗しました: {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>キャプチャに失敗しました: {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>キャプチャ結果に CVCIE が見つかりません</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>キャプチャは完了しましたが、結果に .cvcie ファイルが見つかりませんでした</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>キャプチャ失敗</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>まず画像を読み込んでください</value>
@@ -517,48 +474,6 @@
   </data>
   <data name="MsgSelectPolarFirst" xml:space="preserve">
     <value>まず極角を選択してください</value>
-  </data>
-  <data name="MsgPolarExportSuccess" xml:space="preserve">
-    <value>極角 {0}° を正常にエクスポートしました</value>
-  </data>
-  <data name="MsgNoFixedLightSource" xml:space="preserve">
-    <value>現在の色差基準は固定光源ではありません</value>
-  </data>
-  <data name="MsgInvalidCustomUV" xml:space="preserve">
-    <value>有効なカスタム u/v 基準座標を入力してください</value>
-  </data>
-  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
-    <value>測定基準画像では、点ごとの計算を行う前にまず基準画像を保存する必要があります</value>
-  </data>
-  <data name="MsgNoPixelsInCenter" xml:space="preserve">
-    <value>中心 50px のフォーカスポイントに使用可能なピクセルがありません</value>
-  </data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
-    <value>基準画像の保存に失敗しました: {0}</value>
-  </data>
-  <data name="MsgImageSizeMismatch" xml:space="preserve">
-    <value>現在の画像サイズが色差基準画像と一致しないため、点ごとの計算はできません</value>
-  </data>
-  <data name="MsgFocusPointNotReady" xml:space="preserve">
-    <value>現在の画像はフォーカスポイント計算の準備ができていません。</value>
-  </data>
-  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
-    <value>まずフォーカスポイント円を描画してください。</value>
-  </data>
-  <data name="MsgFocusPointNoPixels" xml:space="preserve">
-    <value>{0} に使用可能なピクセルがありません。</value>
-  </data>
-  <data name="Msg3DViewNotReady" xml:space="preserve">
-    <value>現在の画像は 3D ビューの準備ができていません</value>
-  </data>
-  <data name="Msg3DViewOpenFailed" xml:space="preserve">
-    <value>3D ビューを開けませんでした: {0}</value>
-  </data>
-  <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>有効時にフォーカスポイントツール モードに入ります...</value>
-  </data>
-  <data name="TbCircleTip" xml:space="preserve">
-    <value>新しいフォーカスポイント円のみを描画します</value>
   </data>
   <data name="TbEdit" xml:space="preserve">
     <value>編集</value>
@@ -935,21 +850,6 @@
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>0-{0} の極角を入力し、Enter で適用します</value>
   </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>表示チャネルを切り替えました: {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>方位基準線に切り替えました</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>極角基準円に切り替えました</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>基準方位角を設定しました: {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>基準極角を設定しました: {0}°</value>
-  </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>白</value>
   </data>
@@ -961,41 +861,14 @@
 ソース: {1}
 件数: {2}</value>
   </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>R フォーカスポイント データを記録しました</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>色域記録をクリアしました</value>
-  </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>まず R/G/B データを記録またはインポートしてください。</value>
   </data>
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>色域標準を選択してください。</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>{0} 色域計算が完了しました</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>色域計算に失敗しました</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>白フィールドのフォーカスポイント データを記録しました</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>黒フィールドのフォーカスポイント データを記録しました</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>コントラスト記録をクリアしました</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>まず白と黒のデータを記録してください。</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>コントラスト計算が完了しました</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>コントラスト計算に失敗しました</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>現在のフォーカスポイントは使用できません。</value>
@@ -1224,33 +1097,6 @@
   </data>
   <data name="ContrastReferenceWhiteField" xml:space="preserve">
     <value>白場</value>
-  </data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve">
-    <value>現在の画像を {0} に切り替えました</value>
-  </data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
-    <value>色差基準を {0} に切り替えました</value>
-  </data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
-    <value>色差カスタム光源を u={0:F4}, v={1:F4} に更新しました</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
-    <value>グローバル色差基準画像をクリアしました</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
-    <value>グローバル色差基準画像を保存しました</value>
-  </data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
-    <value>色差基準の保存に失敗しました</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
-    <value>グローバル{0}基準をクリアしました</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
-    <value>グローバル{0}基準を保存しました</value>
-  </data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
-    <value>コントラスト基準の保存に失敗しました</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>元のデータを復元しました。</value>

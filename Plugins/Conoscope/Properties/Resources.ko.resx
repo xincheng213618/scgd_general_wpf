@@ -160,9 +160,6 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>극각 (°)</value>
   </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>상태</value>
-  </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>노출</value>
   </data>
@@ -397,9 +394,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>단면 내보내기 사용</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>준비됨</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>기록 안 됨</value>
   </data>
@@ -414,12 +408,6 @@
   </data>
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>구성 저장에 실패했습니다</value>
-  </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>새 뷰를 만들었습니다</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>카메라 목록을 새로 고쳤습니다</value>
   </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>현재 전처리 프리셋을 적용했습니다</value>
@@ -436,49 +424,18 @@
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>플로우를 선택하세요</value>
   </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>플로우 실행 중: {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>플로우가 시작되지 않았습니다</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>플로우 실행이 완료되지 않았습니다: {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>열었습니다: {0}</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>플로우 결과에서 CVCIE를 찾을 수 없습니다</value>
-  </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>플로우는 완료되었지만 결과에서 .cvcie 파일을 찾을 수 없습니다</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>플로우 실행 실패</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>플로우 실행 실패: {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>사진 캡처 중: {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>캡처 실패: {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>캡처 실패: {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>캡처 결과에서 CVCIE를 찾을 수 없습니다</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>캡처는 완료되었지만 결과에서 .cvcie 파일을 찾을 수 없습니다</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>캡처 실패</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>먼저 이미지를 불러오세요</value>
@@ -517,48 +474,6 @@
   </data>
   <data name="MsgSelectPolarFirst" xml:space="preserve">
     <value>먼저 극각을 선택하세요</value>
-  </data>
-  <data name="MsgPolarExportSuccess" xml:space="preserve">
-    <value>극각 {0}°를 성공적으로 내보냈습니다</value>
-  </data>
-  <data name="MsgNoFixedLightSource" xml:space="preserve">
-    <value>현재 색차 기준이 고정 광원이 아닙니다</value>
-  </data>
-  <data name="MsgInvalidCustomUV" xml:space="preserve">
-    <value>유효한 사용자 지정 u/v 기준 좌표를 입력하세요</value>
-  </data>
-  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
-    <value>측정 기준 이미지로 점대점 계산을 하려면 먼저 기준 이미지를 저장해야 합니다</value>
-  </data>
-  <data name="MsgNoPixelsInCenter" xml:space="preserve">
-    <value>중앙 50px 포커스 포인트에 사용할 수 있는 픽셀이 없습니다</value>
-  </data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
-    <value>기준 이미지 저장 실패: {0}</value>
-  </data>
-  <data name="MsgImageSizeMismatch" xml:space="preserve">
-    <value>현재 이미지 크기가 색차 기준 이미지와 일치하지 않아 점대점 계산을 할 수 없습니다</value>
-  </data>
-  <data name="MsgFocusPointNotReady" xml:space="preserve">
-    <value>현재 이미지는 포커스 포인트 계산을 할 준비가 되어 있지 않습니다.</value>
-  </data>
-  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
-    <value>먼저 포커스 포인트 원을 그리세요.</value>
-  </data>
-  <data name="MsgFocusPointNoPixels" xml:space="preserve">
-    <value>{0}에는 사용할 수 있는 픽셀이 없습니다.</value>
-  </data>
-  <data name="Msg3DViewNotReady" xml:space="preserve">
-    <value>현재 이미지로는 3D 뷰를 열 수 없습니다</value>
-  </data>
-  <data name="Msg3DViewOpenFailed" xml:space="preserve">
-    <value>3D 뷰를 열지 못했습니다: {0}</value>
-  </data>
-  <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>사용하면 포커스 포인트 도구 모드로 들어갑니다...</value>
-  </data>
-  <data name="TbCircleTip" xml:space="preserve">
-    <value>새 포커스 포인트 원만 그립니다</value>
   </data>
   <data name="TbEdit" xml:space="preserve">
     <value>편집</value>
@@ -935,21 +850,6 @@
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>0-{0} 범위의 극각을 입력하고 Enter를 눌러 적용하세요</value>
   </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>표시 채널 전환: {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>방위각 선으로 전환했습니다</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>극각 원으로 전환했습니다</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>참조 방위각 설정: {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>참조 극각 설정: {0}°</value>
-  </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>White</value>
   </data>
@@ -961,41 +861,14 @@
 원본: {1}
 개수: {2}</value>
   </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>R 포커스 포인트 데이터를 기록했습니다</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>색역 기록을 지웠습니다</value>
-  </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>먼저 R/G/B 데이터를 기록하거나 가져오세요.</value>
   </data>
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>색역 표준을 선택하세요.</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>{0} 색역 계산을 완료했습니다</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>색역 계산 실패</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>White 필드 포커스 포인트 데이터를 기록했습니다</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>Black 필드 포커스 포인트 데이터를 기록했습니다</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>대비 기록을 지웠습니다</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>먼저 White 및 Black 데이터를 기록하세요.</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>대비 계산을 완료했습니다</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>대비 계산 실패</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>현재 포커스 포인트를 사용할 수 없습니다.</value>
@@ -1224,33 +1097,6 @@
   </data>
   <data name="ContrastReferenceWhiteField" xml:space="preserve">
     <value>백장</value>
-  </data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve">
-    <value>현재 이미지를 {0}(으)로 전환했습니다</value>
-  </data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
-    <value>색차 기준을 {0}(으)로 전환했습니다</value>
-  </data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
-    <value>색차 사용자 광원을 u={0:F4}, v={1:F4}로 업데이트했습니다</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
-    <value>전역 색차 기준 이미지를 지웠습니다</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
-    <value>전역 색차 기준 이미지를 저장했습니다</value>
-  </data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
-    <value>색차 기준 저장에 실패했습니다</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
-    <value>전역 {0} 기준을 지웠습니다</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
-    <value>전역 {0} 기준을 저장했습니다</value>
-  </data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
-    <value>콘트라스트 기준 저장에 실패했습니다</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>원본 데이터를 복원했습니다.</value>

@@ -119,7 +119,6 @@ namespace Conoscope
         {
             if (!File.Exists(filename) || !CVFileUtil.IsCVCIEFile(filename))
             {
-                SetOperationStatus(Properties.Resources.PleaseSelectCVCIEFile, Brushes.OrangeRed);
                 MessageBox.Show(Properties.Resources.PleaseSelectCVCIEFile, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -314,12 +313,10 @@ namespace Conoscope
                 ConfigService.Instance.Save<ConoscopeConfig>();
                 ConfigService.Instance.Save<ConoscopeWindowConfig>();
                 ConfigService.Instance.Save<FlowEngineConfig>();
-                SetOperationStatus(Properties.Resources.MsgConfigSaved, Brushes.LimeGreen);
                 MessageBox.Show(Properties.Resources.MsgConfigSaved, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                SetOperationStatus(Properties.Resources.MsgConfigSaveFailed, Brushes.OrangeRed);
                 MessageBox.Show($"{Properties.Resources.MsgConfigSaveFailed}: {ex.Message}", Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -346,13 +343,11 @@ namespace Conoscope
         private void btnNewView_Click(object sender, RoutedEventArgs e)
         {
             AddConoscopeView(null, activate: true);
-            SetOperationStatus(Properties.Resources.MsgNewViewCreated, Brushes.LimeGreen);
         }
 
         private void btnRefreshCameraDevices_Click(object sender, RoutedEventArgs e)
         {
             RefreshCameraDevices();
-            SetOperationStatus(Properties.Resources.MsgCameraListRefreshed, Brushes.LimeGreen);
         }
 
         private void btnApplyPreprocessToActiveView_Click(object sender, RoutedEventArgs e)
@@ -365,7 +360,6 @@ namespace Conoscope
             }
 
             activeView.ApplyPreprocessFromCurrentSettings();
-            SetOperationStatus(Properties.Resources.MsgPreprocessApplied, Brushes.LimeGreen);
         }
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)

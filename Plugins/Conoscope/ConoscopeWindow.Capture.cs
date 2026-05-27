@@ -204,12 +204,6 @@ namespace Conoscope
             btnApplyPreprocessToActiveView.IsEnabled = !busy && ActiveView != null;
         }
 
-        private void SetOperationStatus(string text, Brush? brush = null)
-        {
-            tbOperationStatus.Text = text;
-            tbOperationStatus.Foreground = brush ?? Brushes.Gray;
-        }
-
         private void btnEditFlowTemplates_Click(object sender, RoutedEventArgs e)
         {
             int selectedIndex = Math.Max(0, cbFlowTemplate.SelectedIndex);
@@ -257,18 +251,15 @@ namespace Conoscope
             {
                 operationScope = BeginTrackedOperation(btnRunFlow, FlowRunOperationActionKey, Properties.Resources.BtnExecute, DefaultFlowExpectedDurationMs);
                 SetOperationBusy(true);
-                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowExecuting, flowTemplate.Key), Brushes.DodgerBlue);
 
                 ConoscopeFlowCaptureResult result = await ConoscopeCaptureWorkflow.RunFlowAsync(flowTemplate);
                 if (!result.Started)
                 {
-                    SetOperationStatus(Properties.Resources.MsgFlowNotStarted, Brushes.OrangeRed);
                     return;
                 }
 
                 if (!result.Completed)
                 {
-                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowIncomplete, result.FlowResult!.FlowStatus), Brushes.OrangeRed);
                     MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowFailedDetail, result.FlowResult.FlowStatus, result.FlowResult.Params), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -277,17 +268,14 @@ namespace Conoscope
                 {
                     OpenConoscope(result.FilePath!, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     operationSucceeded = true;
-                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
                 }
                 else
                 {
-                    SetOperationStatus(Properties.Resources.MsgFlowCvcieNotFound, Brushes.OrangeRed);
                     MessageBox.Show(Properties.Resources.MsgFlowCvcieNotFoundDetail, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                SetOperationStatus(Properties.Resources.MsgFlowFailed, Brushes.OrangeRed);
                 MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -314,12 +302,10 @@ namespace Conoscope
             {
                 operationScope = BeginTrackedOperation(btnCaptureCamera, CameraCaptureOperationActionKey, Properties.Resources.BtnCapturePhoto, DefaultCameraCaptureExpectedDurationMs);
                 SetOperationBusy(true);
-                SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCapturingPhoto, camera.Config.Name), Brushes.DodgerBlue);
 
                 ConoscopeCameraCaptureResult result = await ConoscopeCaptureWorkflow.CaptureCameraAsync(camera, GetSelectedCalibrationParam());
                 if (!result.Succeeded)
                 {
-                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCaptureFailed, result.State), Brushes.OrangeRed);
                     MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCaptureFailedDetail, result.State, result.MessageRecord.MsgReturn?.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -328,17 +314,14 @@ namespace Conoscope
                 {
                     OpenConoscope(result.FilePath!, result.ExposureSummary, preferReuseActiveView: ShouldReuseActiveViewOnCapture());
                     operationSucceeded = true;
-                    SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFlowResultOpened, System.IO.Path.GetFileName(result.FilePath)), Brushes.LimeGreen);
                 }
                 else
                 {
-                    SetOperationStatus(Properties.Resources.MsgCaptureCvcieNotFound, Brushes.OrangeRed);
                     MessageBox.Show(Properties.Resources.MsgCaptureCvcieNotFoundDetail, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                SetOperationStatus(Properties.Resources.MsgCaptureFailedTitle, Brushes.OrangeRed);
                 MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgCaptureFailedDetail, ex.Message, string.Empty), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally

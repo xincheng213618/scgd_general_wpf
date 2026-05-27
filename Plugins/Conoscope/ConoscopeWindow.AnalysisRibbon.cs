@@ -109,15 +109,14 @@ namespace Conoscope
             button.ToolTip = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSlotRecordedDetail, slotName, capture.SourceDisplayName, capture.PointCount);
         }
 
-        private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutRed, "R", Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedRGamut, "R"));
-        private void btnRecordGamutGreen_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutGreen, "G", Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedRGamut, "G"));
-        private void btnRecordGamutBlue_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutBlue, "B", Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgRecordedRGamut, "B"));
+        private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutRed, "R");
+        private void btnRecordGamutGreen_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutGreen, "G");
+        private void btnRecordGamutBlue_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutBlue, "B");
 
         private void btnClearGamut_Click(object sender, RoutedEventArgs e)
         {
             analysisWorkflow.ClearGamut();
             RefreshAnalysisRibbonState(ActiveView);
-            SetOperationStatus(Properties.Resources.MsgClearedGamut, Brushes.Gray);
         }
 
         private void btnComputeGamut_Click(object sender, RoutedEventArgs e)
@@ -132,7 +131,6 @@ namespace Conoscope
             if (!result.IsSuccess)
             {
                 MessageBox.Show(this, result.ErrorMessage, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus(Properties.Resources.MsgGamutFailed, Brushes.OrangeRed);
                 return;
             }
 
@@ -143,17 +141,15 @@ namespace Conoscope
             };
             window.Show();
             window.Activate();
-            SetOperationStatus(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgGamutComputed, standard.Name), Brushes.LimeGreen);
         }
 
-        private void btnRecordContrastWhite_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.ContrastWhite, Properties.Resources.SlotWhite, Properties.Resources.MsgRecordedWhite);
-        private void btnRecordContrastBlack_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.ContrastBlack, Properties.Resources.SlotBlack, Properties.Resources.MsgRecordedBlack);
+        private void btnRecordContrastWhite_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.ContrastWhite, Properties.Resources.SlotWhite);
+        private void btnRecordContrastBlack_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.ContrastBlack, Properties.Resources.SlotBlack);
 
         private void btnClearContrast_Click(object sender, RoutedEventArgs e)
         {
             analysisWorkflow.ClearContrast();
             RefreshAnalysisRibbonState(ActiveView);
-            SetOperationStatus(Properties.Resources.MsgClearedContrast, Brushes.Gray);
         }
 
         private void btnComputeContrast_Click(object sender, RoutedEventArgs e)
@@ -162,7 +158,6 @@ namespace Conoscope
             if (!result.IsSuccess)
             {
                 MessageBox.Show(this, result.ErrorMessage, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus(Properties.Resources.MsgContrastFailed, Brushes.OrangeRed);
                 return;
             }
 
@@ -173,10 +168,9 @@ namespace Conoscope
             };
             window.Show();
             window.Activate();
-            SetOperationStatus(Properties.Resources.MsgContrastComputed, Brushes.LimeGreen);
         }
 
-        private void RecordFocusCapture(CaptureSlot slot, string slotName, string successMessage)
+        private void RecordFocusCapture(CaptureSlot slot, string slotName)
         {
             ConoscopeView? activeView = ActiveView;
             if (activeView == null)
@@ -193,7 +187,6 @@ namespace Conoscope
 
             analysisWorkflow.RecordCapture(slot, capture);
             RefreshAnalysisRibbonState(activeView);
-            SetOperationStatus(successMessage, Brushes.LimeGreen);
         }
     }
 }

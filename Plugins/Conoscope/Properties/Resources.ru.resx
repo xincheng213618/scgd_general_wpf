@@ -160,9 +160,6 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>Полярный угол (°)</value>
   </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>Состояние</value>
-  </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>Экспозиция</value>
   </data>
@@ -397,9 +394,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>Включить экспорт сечения</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>Готово</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>Не записано</value>
   </data>
@@ -414,12 +408,6 @@
   </data>
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>Не удалось сохранить конфигурацию</value>
-  </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>Новый вид создан</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>Список камер обновлен</value>
   </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>Текущий пресет предобработки применен</value>
@@ -436,49 +424,18 @@
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>Выберите поток</value>
   </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>Выполняется поток: {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>Поток не запущен</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>Выполнение потока завершено не полностью: {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>Открыто {0}</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>CVCIE не найден в результатах потока</value>
-  </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>Поток завершен, но файл .cvcie не найден в результатах</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>Не удалось выполнить поток</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>Не удалось выполнить поток: {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>Съемка изображения: {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>Съемка не удалась: {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>Съемка не удалась: {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>CVCIE не найден в результатах съемки</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>Съемка завершена, но файл .cvcie не найден в результатах</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>Съемка не удалась</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>Сначала загрузите изображение</value>
@@ -517,48 +474,6 @@
   </data>
   <data name="MsgSelectPolarFirst" xml:space="preserve">
     <value>Сначала выберите полярный угол</value>
-  </data>
-  <data name="MsgPolarExportSuccess" xml:space="preserve">
-    <value>Полярный угол {0}° успешно экспортирован</value>
-  </data>
-  <data name="MsgNoFixedLightSource" xml:space="preserve">
-    <value>Текущая база цветового различия не является фиксированным источником света</value>
-  </data>
-  <data name="MsgInvalidCustomUV" xml:space="preserve">
-    <value>Введите корректные пользовательские координаты базы u/v</value>
-  </data>
-  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
-    <value>Для поточечного расчета по измеренной базе сначала сохраните базовое изображение</value>
-  </data>
-  <data name="MsgNoPixelsInCenter" xml:space="preserve">
-    <value>В центральной фокусной точке 50px нет пригодных пикселей</value>
-  </data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
-    <value>Не удалось сохранить базовое изображение: {0}</value>
-  </data>
-  <data name="MsgImageSizeMismatch" xml:space="preserve">
-    <value>Размер текущего изображения не совпадает с базовым изображением цветового различия, поточечный расчет невозможен</value>
-  </data>
-  <data name="MsgFocusPointNotReady" xml:space="preserve">
-    <value>Текущее изображение не готово к расчету по фокусным точкам.</value>
-  </data>
-  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
-    <value>Сначала нарисуйте окружности фокусных точек.</value>
-  </data>
-  <data name="MsgFocusPointNoPixels" xml:space="preserve">
-    <value>Для {0} нет пригодных пикселей.</value>
-  </data>
-  <data name="Msg3DViewNotReady" xml:space="preserve">
-    <value>Текущее изображение не готово к 3D-представлению</value>
-  </data>
-  <data name="Msg3DViewOpenFailed" xml:space="preserve">
-    <value>Не удалось открыть 3D-представление: {0}</value>
-  </data>
-  <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>Включите, чтобы перейти в режим инструмента фокусных точек...</value>
-  </data>
-  <data name="TbCircleTip" xml:space="preserve">
-    <value>Рисовать только новые окружности фокусных точек</value>
   </data>
   <data name="TbEdit" xml:space="preserve">
     <value>Правка</value>
@@ -935,21 +850,6 @@
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>Введите полярный угол 0-{0} и нажмите Enter, чтобы применить</value>
   </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>Канал отображения переключен: {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>Переключено на азимутальную линию</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>Переключено на полярную окружность</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>Эталонный азимут задан: {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>Эталонный полярный угол задан: {0}°</value>
-  </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>Белый</value>
   </data>
@@ -961,41 +861,14 @@
 Источник: {1}
 Количество: {2}</value>
   </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>Данные фокусных точек R записаны</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>Записи охвата очищены</value>
-  </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>Сначала запишите или импортируйте данные R/G/B.</value>
   </data>
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>Выберите стандарт охвата.</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>Расчет охвата {0} завершен</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>Расчет охвата не удался</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>Данные фокусных точек белого поля записаны</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>Данные фокусных точек черного поля записаны</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>Записи контраста очищены</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>Сначала запишите данные белого и черного поля.</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>Расчет контраста завершен</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>Расчет контраста не удался</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>Текущие фокусные точки недоступны.</value>
@@ -1224,33 +1097,6 @@
   </data>
   <data name="ContrastReferenceWhiteField" xml:space="preserve">
     <value>Белое поле</value>
-  </data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve">
-    <value>Текущее изображение переключено на {0}</value>
-  </data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
-    <value>Эталон цветового различия переключен на {0}</value>
-  </data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
-    <value>Пользовательский источник света для цветового различия обновлен до u={0:F4}, v={1:F4}</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
-    <value>Глобальное эталонное изображение цветового различия очищено</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
-    <value>Глобальное эталонное изображение цветового различия сохранено</value>
-  </data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
-    <value>Не удалось сохранить эталон цветового различия</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
-    <value>Глобальный эталон {0} очищен</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
-    <value>Глобальный эталон {0} сохранен</value>
-  </data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
-    <value>Не удалось сохранить эталон контраста</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>Исходные данные восстановлены.</value>

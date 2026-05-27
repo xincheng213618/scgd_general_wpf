@@ -160,9 +160,6 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>極角(°)</value>
   </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>狀態</value>
-  </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>曝光</value>
   </data>
@@ -397,9 +394,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>啟用截面匯出</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>就緒</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>未記錄</value>
   </data>
@@ -414,12 +408,6 @@
   </data>
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>設定儲存失敗</value>
-  </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>已建立視圖</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>相機清單已重新整理</value>
   </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>已應用當前預處理預設</value>
@@ -436,49 +424,18 @@
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>請選擇流程</value>
   </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>正在執行流程: {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>流程未啟動</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>流程執行未完成: {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>已開啟 {0}</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>流程結果未找到 CVCIE</value>
-  </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>流程執行完成，但結果中沒有找到 .cvcie 文件</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>流程執行失敗</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>流程執行失敗: {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>正在拍照: {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>拍照失敗: {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>拍照失敗: {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>拍照結果未找到 CVCIE</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>拍照完成，但結果中沒有找到 .cvcie 文件</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>拍照失敗</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>請先載入影像</value>
@@ -517,48 +474,6 @@
   </data>
   <data name="MsgSelectPolarFirst" xml:space="preserve">
     <value>請先選擇一個極角</value>
-  </data>
-  <data name="MsgPolarExportSuccess" xml:space="preserve">
-    <value>極角 {0}° 匯出成功</value>
-  </data>
-  <data name="MsgNoFixedLightSource" xml:space="preserve">
-    <value>當前色差基準不是固定光源</value>
-  </data>
-  <data name="MsgInvalidCustomUV" xml:space="preserve">
-    <value>請輸入有效的自定義 u/v 基準座標</value>
-  </data>
-  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
-    <value>實測基準圖需要儲存基準圖後逐點計算</value>
-  </data>
-  <data name="MsgNoPixelsInCenter" xml:space="preserve">
-    <value>影像中心 50px 關注點內沒有可用像素</value>
-  </data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
-    <value>儲存色差基準圖失敗: {0}</value>
-  </data>
-  <data name="MsgImageSizeMismatch" xml:space="preserve">
-    <value>當前影像尺寸與色差基準圖不一致，無法逐點計算</value>
-  </data>
-  <data name="MsgFocusPointNotReady" xml:space="preserve">
-    <value>當前影像尚未準備好關注點計算。</value>
-  </data>
-  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
-    <value>請先繪製關注點圓。</value>
-  </data>
-  <data name="MsgFocusPointNoPixels" xml:space="preserve">
-    <value>{0} 沒有可用像素。</value>
-  </data>
-  <data name="Msg3DViewNotReady" xml:space="preserve">
-    <value>當前影像尚未準備好 3D 視圖</value>
-  </data>
-  <data name="Msg3DViewOpenFailed" xml:space="preserve">
-    <value>開啟 3D 視圖失敗: {0}</value>
-  </data>
-  <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>開啟後進入關注點工具模式...</value>
-  </data>
-  <data name="TbCircleTip" xml:space="preserve">
-    <value>僅繪製新的關注點圓</value>
   </data>
   <data name="TbEdit" xml:space="preserve">
     <value>編輯</value>
@@ -935,21 +850,6 @@
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>輸入 0-{0} 的極角並回車應用</value>
   </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>已切換顯示通道: {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>已切換到方位角直線</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>已切換到極角圓</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>已設定參考方位角: {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>已設定參考極角: {0}°</value>
-  </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>白</value>
   </data>
@@ -961,41 +861,14 @@
 來源: {1}
 數量: {2}</value>
   </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>已記錄 R 關注點資料</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>已清空色域記錄</value>
-  </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>請先記錄或匯入 R/G/B 三組資料。</value>
   </data>
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>請選擇色域標準。</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>已完成 {0} 色域計算</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>色域計算失敗</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>已記錄白場關注點資料</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>已記錄黑場關注點資料</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>已清空對比度記錄</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>請先記錄白/黑兩組資料。</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>已完成對比度計算</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>對比度計算失敗</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>當前關注點不可用。</value>
@@ -1224,33 +1097,6 @@
   </data>
   <data name="ContrastReferenceWhiteField" xml:space="preserve">
     <value>白場</value>
-  </data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve">
-    <value>目前影像已切換為 {0}</value>
-  </data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
-    <value>色差基準已切換為 {0}</value>
-  </data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
-    <value>色差自訂光源已更新為 u={0:F4}, v={1:F4}</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
-    <value>已清除全域色差基準圖</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
-    <value>已儲存全域色差基準圖</value>
-  </data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
-    <value>儲存色差基準失敗</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
-    <value>已清除{0}全域基準</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
-    <value>已儲存{0}全域基準</value>
-  </data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
-    <value>儲存對比度基準失敗</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>已還原原始資料</value>

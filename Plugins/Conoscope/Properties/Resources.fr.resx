@@ -160,9 +160,6 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>Angle polaire (°)</value>
   </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>État</value>
-  </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>Exposition</value>
   </data>
@@ -397,9 +394,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>Activer l'export de coupe</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>Prêt</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>Non enregistré</value>
   </data>
@@ -414,12 +408,6 @@
   </data>
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>Échec de l'enregistrement de la configuration</value>
-  </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>Nouvelle vue créée</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>Liste des caméras actualisée</value>
   </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>Préréglage de prétraitement actuel appliqué</value>
@@ -436,49 +424,18 @@
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>Veuillez sélectionner un flux</value>
   </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>Exécution du flux : {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>Flux non démarré</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>Exécution du flux incomplète : {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>Ouverture de {0}</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>CVCIE introuvable dans les résultats du flux</value>
-  </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>Le flux s'est terminé mais aucun fichier .cvcie n'a été trouvé dans les résultats</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>Échec de l'exécution du flux</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>Échec de l'exécution du flux : {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>Capture en cours : {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>Échec de la capture : {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>Échec de la capture : {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>CVCIE introuvable dans les résultats de capture</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>La capture est terminée mais aucun fichier .cvcie n'a été trouvé dans les résultats</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>Échec de la capture</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>Veuillez d'abord charger une image</value>
@@ -517,48 +474,6 @@
   </data>
   <data name="MsgSelectPolarFirst" xml:space="preserve">
     <value>Veuillez d'abord sélectionner un angle polaire</value>
-  </data>
-  <data name="MsgPolarExportSuccess" xml:space="preserve">
-    <value>Angle polaire {0}° exporté avec succès</value>
-  </data>
-  <data name="MsgNoFixedLightSource" xml:space="preserve">
-    <value>La base actuelle d'écart de couleur n'est pas une source lumineuse fixe</value>
-  </data>
-  <data name="MsgInvalidCustomUV" xml:space="preserve">
-    <value>Veuillez saisir des coordonnées de base u/v personnalisées valides</value>
-  </data>
-  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
-    <value>L'image de base mesurée doit d'abord être enregistrée pour le calcul point par point</value>
-  </data>
-  <data name="MsgNoPixelsInCenter" xml:space="preserve">
-    <value>Aucun pixel exploitable dans le point de focus central de 50 px</value>
-  </data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
-    <value>Échec de l'enregistrement de l'image de base : {0}</value>
-  </data>
-  <data name="MsgImageSizeMismatch" xml:space="preserve">
-    <value>La taille de l'image actuelle ne correspond pas à celle de l'image de base d'écart de couleur ; calcul point par point impossible</value>
-  </data>
-  <data name="MsgFocusPointNotReady" xml:space="preserve">
-    <value>L'image actuelle n'est pas prête pour le calcul des points de focus.</value>
-  </data>
-  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
-    <value>Veuillez d'abord tracer les cercles de point de focus.</value>
-  </data>
-  <data name="MsgFocusPointNoPixels" xml:space="preserve">
-    <value>{0} ne contient aucun pixel exploitable.</value>
-  </data>
-  <data name="Msg3DViewNotReady" xml:space="preserve">
-    <value>L'image actuelle n'est pas prête pour la vue 3D</value>
-  </data>
-  <data name="Msg3DViewOpenFailed" xml:space="preserve">
-    <value>Échec de l'ouverture de la vue 3D : {0}</value>
-  </data>
-  <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>Entrer en mode outil de point de focus lorsqu'il est activé...</value>
-  </data>
-  <data name="TbCircleTip" xml:space="preserve">
-    <value>Tracer uniquement de nouveaux cercles de point de focus</value>
   </data>
   <data name="TbEdit" xml:space="preserve">
     <value>Modifier</value>
@@ -935,21 +850,6 @@
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>Saisissez un angle polaire entre 0 et {0}, puis appuyez sur Entrée pour appliquer</value>
   </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>Canal d'affichage changé : {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>Bascule vers la ligne d'azimut</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>Bascule vers le cercle polaire</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>Azimut de référence défini : {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>Angle polaire de référence défini : {0}°</value>
-  </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>Blanc</value>
   </data>
@@ -961,41 +861,14 @@
 Source : {1}
 Nombre : {2}</value>
   </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>Données R des points de focus enregistrées</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>Enregistrements de gamut effacés</value>
-  </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>Veuillez d'abord enregistrer ou importer les données R/G/B.</value>
   </data>
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>Veuillez sélectionner un standard de gamut.</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>Calcul du gamut {0} terminé</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>Échec du calcul du gamut</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>Données de champ blanc des points de focus enregistrées</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>Données de champ noir des points de focus enregistrées</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>Enregistrements de contraste effacés</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>Veuillez d'abord enregistrer les données blanc et noir.</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>Calcul du contraste terminé</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>Échec du calcul du contraste</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>Les points de focus actuels sont indisponibles.</value>
@@ -1224,33 +1097,6 @@ Nombre : {2}</value>
   </data>
   <data name="ContrastReferenceWhiteField" xml:space="preserve">
     <value>Champ blanc</value>
-  </data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve">
-    <value>Image actuelle basculee sur {0}</value>
-  </data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
-    <value>Reference d'ecart de couleur basculee sur {0}</value>
-  </data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
-    <value>Illuminant personnalise d'ecart de couleur mis a jour en u={0:F4}, v={1:F4}</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
-    <value>Reference globale d'ecart de couleur effacee</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
-    <value>Reference globale d'ecart de couleur enregistree</value>
-  </data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
-    <value>Echec de l'enregistrement de la reference d'ecart de couleur</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
-    <value>Reference globale {0} effacee</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
-    <value>Reference globale {0} enregistree</value>
-  </data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
-    <value>Echec de l'enregistrement de la reference de contraste</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>Les donnees d'origine ont ete restaurees.</value>

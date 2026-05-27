@@ -540,12 +540,6 @@
         </xcad:DockingManager>
 
         <StatusBar Grid.Row="2" Height="26" Background="{DynamicResource GlobalBackground}">
-            <StatusBarItem>
-                <TextBlock Text="{x:Static properties:Resources.LabelStatus}" Margin="0,0,6,0" />
-            </StatusBarItem>
-            <StatusBarItem>
-                <TextBlock x:Name="tbOperationStatus" Text="{x:Static properties:Resources.StatusReady}" Foreground="Gray" />
-            </StatusBarItem>
             <StatusBarItem x:Name="operationProgressStatusItem" Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock x:Name="tbOperationProgressText" Margin="12,0,8,0" Foreground="DodgerBlue" />
@@ -558,7 +552,6 @@
                                  Foreground="DodgerBlue" />
                 </StackPanel>
             </StatusBarItem>
-            <Separator />
             <StatusBarItem>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Margin="0,0,5,0" Text="{x:Static properties:Resources.CurrentModel}" />

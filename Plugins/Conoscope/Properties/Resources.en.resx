@@ -163,9 +163,6 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>Polar Angle (°)</value>
   </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>Status</value>
-  </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>Exposure</value>
   </data>
@@ -442,9 +439,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>Enable section export</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>Ready</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>Not Recorded</value>
   </data>
@@ -463,12 +457,6 @@
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>Configuration save failed</value>
   </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>New view created</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>Camera list refreshed</value>
-  </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>Current preprocess preset applied</value>
   </data>
@@ -484,49 +472,18 @@
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>Please select a flow</value>
   </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>Executing flow: {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>Flow not started</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>Flow execution incomplete: {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>Opened {0}</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>CVCIE not found in flow results</value>
-  </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>Flow completed but no .cvcie file found in results</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>Flow execution failed</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>Flow execution failed: {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>Capturing photo: {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>Capture failed: {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>Capture failed: {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>CVCIE not found in capture results</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>Capture completed but no .cvcie file found in results</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>Capture failed</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>Please load an image first</value>
@@ -998,48 +955,6 @@
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>Enter polar angle 0-{0} and press Enter to apply</value>
   </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>Display channel switched: {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>Switched to azimuth line</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>Switched to polar circle</value>
-  </data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve">
-    <value>Current image switched to {0}</value>
-  </data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
-    <value>Color diff reference switched to {0}</value>
-  </data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
-    <value>Custom color diff illuminant updated to u={0:F4}, v={1:F4}</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
-    <value>Cleared global color diff reference</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
-    <value>Saved global color diff reference</value>
-  </data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
-    <value>Saving global color diff reference failed</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
-    <value>Cleared global {0} reference</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
-    <value>Saved global {0} reference</value>
-  </data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
-    <value>Saving global contrast reference failed</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>Reference azimuth set: {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>Reference polar angle set: {0}°</value>
-  </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>White</value>
   </data>
@@ -1051,41 +966,14 @@
 Source: {1}
 Count: {2}</value>
   </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>Recorded R focus point data</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>Cleared gamut records</value>
-  </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>Please record or import R/G/B data first.</value>
   </data>
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>Please select a gamut standard.</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>Completed {0} gamut calculation</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>Gamut calculation failed</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>Recorded white field focus point data</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>Recorded black field focus point data</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>Cleared contrast records</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>Please record white and black data first.</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>Completed contrast calculation</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>Contrast calculation failed</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>Current focus points unavailable.</value>

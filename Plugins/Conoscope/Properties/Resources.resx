@@ -175,9 +175,6 @@
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>极角(°)</value>
   </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>状态</value>
-  </data>
   <data name="LabelTheme" xml:space="preserve">
     <value>主题</value>
   </data>
@@ -478,9 +475,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>启用截面导出</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>就绪</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>未记录</value>
   </data>
@@ -502,12 +496,6 @@
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>配置保存失败</value>
   </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>已新建视图</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>相机列表已刷新</value>
-  </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>已应用当前预处理预设</value>
   </data>
@@ -523,49 +511,18 @@
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>请选择流程</value>
   </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>正在执行流程: {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>流程未启动</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>流程执行未完成: {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>已打开 {0}</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>流程结果未找到 CVCIE</value>
-  </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>流程执行完成，但结果中没有找到 .cvcie 文件</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>流程执行失败</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>流程执行失败: {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>正在拍照: {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>拍照失败: {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>拍照失败: {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>拍照结果未找到 CVCIE</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>拍照完成，但结果中没有找到 .cvcie 文件</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>拍照失败</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>请先加载图像</value>
@@ -1073,48 +1030,6 @@
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>输入 0-{0} 的极角并回车应用</value>
   </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>已切换显示通道: {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>已切换到方位角直线</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>已切换到极角圆</value>
-  </data>
-  <data name="MsgCurrentImageSwitched" xml:space="preserve">
-    <value>当前图像已切换为 {0}</value>
-  </data>
-  <data name="MsgColorDifferenceReferenceSwitched" xml:space="preserve">
-    <value>色差基准已切换为 {0}</value>
-  </data>
-  <data name="MsgColorDifferenceCustomReferenceUpdated" xml:space="preserve">
-    <value>色差自定义光源已更新为 u={0:F4}, v={1:F4}</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceCleared" xml:space="preserve">
-    <value>已清除全局色差基准图</value>
-  </data>
-  <data name="MsgGlobalColorDifferenceReferenceSaved" xml:space="preserve">
-    <value>已保存全局色差基准图</value>
-  </data>
-  <data name="MsgSaveGlobalColorDifferenceReferenceFailed" xml:space="preserve">
-    <value>保存色差基准失败</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceCleared" xml:space="preserve">
-    <value>已清除{0}全局基准</value>
-  </data>
-  <data name="MsgGlobalContrastReferenceSaved" xml:space="preserve">
-    <value>已保存{0}全局基准</value>
-  </data>
-  <data name="MsgSaveGlobalContrastReferenceFailed" xml:space="preserve">
-    <value>保存对比度基准失败</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>已设置参考方位角: {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>已设置参考极角: {0}°</value>
-  </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>白</value>
   </data>
@@ -1126,41 +1041,14 @@
 来源: {1}
 数量: {2}</value>
   </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>已记录 R 关注点数据</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>已清空色域记录</value>
-  </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>请先记录或导入 R/G/B 三组数据。</value>
   </data>
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>请选择色域标准。</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>已完成 {0} 色域计算</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>色域计算失败</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>已记录白场关注点数据</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>已记录黑场关注点数据</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>已清空对比度记录</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>请先记录白/黑两组数据。</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>已完成对比度计算</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>对比度计算失败</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>当前关注点不可用。</value>
