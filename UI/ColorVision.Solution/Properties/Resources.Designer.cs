@@ -709,6 +709,2013 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddItem_Add {
+            get {
+                return ResourceManager.GetString("Sol_AddItem_Add", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddItem_Cancel {
+            get {
+                return ResourceManager.GetString("Sol_AddItem_Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类别: 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddItem_Category {
+            get {
+                return ResourceManager.GetString("Sol_AddItem_Category", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 扩展名 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddItem_Extension {
+            get {
+                return ResourceManager.GetString("Sol_AddItem_Extension", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 名称: 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddItem_Name {
+            get {
+                return ResourceManager.GetString("Sol_AddItem_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索模板... 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddItem_Search {
+            get {
+                return ResourceManager.GetString("Sol_AddItem_Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加新建项 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddItem_Title {
+            get {
+                return ResourceManager.GetString("Sol_AddItem_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_Cancel {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类别: 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_Category {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_Category", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类别 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_CategoryCol {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_CategoryCol", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_Create {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 描述 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_Desc {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_Desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 名称 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_Name {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 项目名称: 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_ProjectName {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_ProjectName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索项目模板... 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_Search {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加新项目 的本地化字符串。
+        /// </summary>
+        public static string Sol_AddProject_Title {
+            get {
+                return ResourceManager.GetString("Sol_AddProject_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_Cancel {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认新密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_Confirm {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_Confirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 再次输入新密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_ConfirmPlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_ConfirmPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_Current {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_Current", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入当前密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_CurrentPlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_CurrentPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_Label {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_New {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_New", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 至少6个字符 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_NewPlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_NewPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_Save {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_ChangePwd_Title {
+            get {
+                return ResourceManager.GetString("Sol_ChangePwd_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清屏 的本地化字符串。
+        /// </summary>
+        public static string Sol_ClearScreen {
+            get {
+                return ResourceManager.GetString("Sol_ClearScreen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Cancel {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建用户 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Create {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Password {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 至少6个字符 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_PasswordDesc {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_PasswordDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 备注 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Remark {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Remark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户的描述信息（可选） 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_RemarkDesc {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_RemarkDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Role {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Role", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择用户的初始角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_RoleDesc {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_RoleDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 填写用户信息并分配角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Subtitle {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建新用户 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Title {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户名 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_Username {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_Username", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户登录名，必须唯一 的本地化字符串。
+        /// </summary>
+        public static string Sol_CreateUser_UsernameDesc {
+            get {
+                return ResourceManager.GetString("Sol_CreateUser_UsernameDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Hex文本编辑器 的本地化字符串。
+        /// </summary>
+        public static string Sol_Editor_Hex {
+            get {
+                return ResourceManager.GetString("Sol_Editor_Hex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图片编辑器 的本地化字符串。
+        /// </summary>
+        public static string Sol_Editor_Image {
+            get {
+                return ResourceManager.GetString("Sol_Editor_Image", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图片编辑器 的本地化字符串。
+        /// </summary>
+        public static string Sol_Editor_Project {
+            get {
+                return ResourceManager.GetString("Sol_Editor_Project", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统默认 的本地化字符串。
+        /// </summary>
+        public static string Sol_Editor_System {
+            get {
+                return ResourceManager.GetString("Sol_Editor_System", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文本编辑器 的本地化字符串。
+        /// </summary>
+        public static string Sol_Editor_Text {
+            get {
+                return ResourceManager.GetString("Sol_Editor_Text", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 WebView2编辑器 的本地化字符串。
+        /// </summary>
+        public static string Sol_Editor_WebView2 {
+            get {
+                return ResourceManager.GetString("Sol_Editor_WebView2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditRoles_Cancel {
+            get {
+                return ResourceManager.GetString("Sol_EditRoles_Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑用户角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditRoles_Label {
+            get {
+                return ResourceManager.GetString("Sol_EditRoles_Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditRoles_Save {
+            get {
+                return ResourceManager.GetString("Sol_EditRoles_Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索角色名称 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditRoles_Search {
+            get {
+                return ResourceManager.GetString("Sol_EditRoles_Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已选择 {0} 个角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditRoles_Selected {
+            get {
+                return ResourceManager.GetString("Sol_EditRoles_Selected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择用户的角色分配 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditRoles_Subtitle {
+            get {
+                return ResourceManager.GetString("Sol_EditRoles_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑用户角色 - RBAC 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditRoles_Title {
+            get {
+                return ResourceManager.GetString("Sol_EditRoles_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 地址 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Address {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Address", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 联系地址 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_AddressPlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_AddressPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Cancel {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 公司 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Company {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Company", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 公司名称 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_CompanyPlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_CompanyPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 部门 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Dept {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Dept", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 所属部门 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_DeptPlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_DeptPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 邮箱 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Email {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Email", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑用户信息 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Label {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电话 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Phone {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Phone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 联系电话 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_PhonePlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_PhonePlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 职位 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Position {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Position", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 职位名称 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_PositionPlaceholder {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_PositionPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 备注 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Remark {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Remark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Save {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改个人资料 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Subtitle {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑用户信息 的本地化字符串。
+        /// </summary>
+        public static string Sol_EditUser_Title {
+            get {
+                return ResourceManager.GetString("Sol_EditUser_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 目录 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Dir {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Dir", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 存在 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Exists {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Exists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 扩展名 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Ext {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Ext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件名: 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_FileNameLabel {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_FileNameLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件大小 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_FileSize {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_FileSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高度 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Height {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Height", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改时间 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Modified {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Modified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改时间: 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_ModLabel {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_ModLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件名 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Name {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件路径 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Path {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Path", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 路径: 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_PathLabel {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_PathLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分辨率: 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_ResLabel {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_ResLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分辨率 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Resolution {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Resolution", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 大小 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Size {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Size", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 大小: 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_SizeLabel {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_SizeLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未知 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Unknown {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Unknown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 宽度 的本地化字符串。
+        /// </summary>
+        public static string Sol_FileInfo_Width {
+            get {
+                return ResourceManager.GetString("Sol_FileInfo_Width", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加文件 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_AddFile {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_AddFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 所有文件 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_AllFiles {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_AllFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 GPU 异步 (CUDA Async) 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Async {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Async", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自动 (CUDA可用时使用GPU) 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Auto {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Auto", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合计算失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_CalcFailed {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_CalcFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Cancel {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Clear {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清除 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_ClearBtn {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_ClearBtn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合配置 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Config {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Config", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合完成，正在转换结果... 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Converting {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Converting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 转换(ms) 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_ConvertMs {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_ConvertMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CUDA: 可用 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_CudaAvail {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_CudaAvail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CUDA: 不可用 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_CudaUnavail {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_CudaUnavail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 完成  融合: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Done {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Done", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合出错 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Error {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行融合 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Execute {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Execute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在执行融合... 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Executing {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Executing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Failed {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像文件列表（按顺序排列） 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_FileList {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_FileList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件不存在: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_FileNotExist {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_FileNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合(ms) 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_FusionMs {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_FusionMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Hint {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Hint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像数 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_ImageCount {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_ImageCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像文件 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_ImageFiles {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_ImageFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 景深融合 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Label {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载(ms) 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_LoadMs {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_LoadMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缺少运行库 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_MissingLib {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_MissingLib", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缺少必要的运行库: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_MissingRuntime {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_MissingRuntime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 计算模式： 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Mode {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Mode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 模式 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_ModeCol {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_ModeCol", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下移 ↓ 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_MoveDown {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_MoveDown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上移 ↑ 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_MoveUp {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_MoveUp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 性能统计 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Perf {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Perf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合过程中发生错误: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_ProcessError {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_ProcessError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 移除选中 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Remove {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Remove", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 融合结果 - {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Result {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Result", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请至少选择2张图像文件。 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_SelectMin2 {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_SelectMin2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 景深融合 (Fusion) 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_Title {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总计(ms) 的本地化字符串。
+        /// </summary>
+        public static string Sol_Fusion_TotalMs {
+            get {
+                return ResourceManager.GetString("Sol_Fusion_TotalMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载文件失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Hex_LoadFailed {
+            get {
+                return ResourceManager.GetString("Sol_Hex_LoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 勾选后，下次启动软件将自动登录 的本地化字符串。
+        /// </summary>
+        public static string Sol_Login_AutoLogin {
+            get {
+                return ResourceManager.GetString("Sol_Login_AutoLogin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册新账户 的本地化字符串。
+        /// </summary>
+        public static string Sol_Login_Register {
+            get {
+                return ResourceManager.GetString("Sol_Login_Register", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 欢迎使用 ColorVision 系统 的本地化字符串。
+        /// </summary>
+        public static string Sol_Login_Welcome {
+            get {
+                return ResourceManager.GetString("Sol_Login_Welcome", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制文件路径 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_CopyPath {
+            get {
+                return ResourceManager.GetString("Sol_Miv_CopyPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 错误 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_Error {
+            get {
+                return ResourceManager.GetString("Sol_Miv_Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 共 {0} 个文件 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_FileCount {
+            get {
+                return ResourceManager.GetString("Sol_Miv_FileCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件不存在 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_FileNotExist {
+            get {
+                return ResourceManager.GetString("Sol_Miv_FileNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件夹不存在: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_FolderNotExist {
+            get {
+                return ResourceManager.GetString("Sol_Miv_FolderNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载中... 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_Loading {
+            get {
+                return ResourceManager.GetString("Sol_Miv_Loading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 在资源管理器中打开 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_OpenInExplorer {
+            get {
+                return ResourceManager.GetString("Sol_Miv_OpenInExplorer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_Refresh {
+            get {
+                return ResourceManager.GetString("Sol_Miv_Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请从左侧列表选择图片 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_SelectImage {
+            get {
+                return ResourceManager.GetString("Sol_Miv_SelectImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设置 的本地化字符串。
+        /// </summary>
+        public static string Sol_Miv_Settings {
+            get {
+                return ResourceManager.GetString("Sol_Miv_Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缓存 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_Cache {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_Cache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缓存数量 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_CacheCount {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_CacheCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缓存大小 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_CacheSize {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_CacheSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用缩略图缓存 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_EnableCache {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_EnableCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 列表高度 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_ListHeight {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_ListHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最大显示数量 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_MaxDisplay {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_MaxDisplay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像读取延迟(ms) 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_ReadDelay {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_ReadDelay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示文件列表 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_ShowFileList {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_ShowFileList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示缩略图 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_ShowThumb {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_ShowThumb", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缩略图 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_Thumbnail {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_Thumbnail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缩略图大小 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_ThumbSize {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_ThumbSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视图 的本地化字符串。
+        /// </summary>
+        public static string Sol_MivCfg_View {
+            get {
+                return ResourceManager.GetString("Sol_MivCfg_View", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 + 新终端 的本地化字符串。
+        /// </summary>
+        public static string Sol_NewTerminal {
+            get {
+                return ResourceManager.GetString("Sol_NewTerminal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启动新的终端会话 的本地化字符串。
+        /// </summary>
+        public static string Sol_NewTerminalTooltip {
+            get {
+                return ResourceManager.GetString("Sol_NewTerminalTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定 的本地化字符串。
+        /// </summary>
+        public static string Sol_OK {
+            get {
+                return ResourceManager.GetString("Sol_OK", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开方式 的本地化字符串。
+        /// </summary>
+        public static string Sol_OpenAs {
+            get {
+                return ResourceManager.GetString("Sol_OpenAs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择要用来打开此文件的程序 的本地化字符串。
+        /// </summary>
+        public static string Sol_OpenFileHint {
+            get {
+                return ResourceManager.GetString("Sol_OpenFileHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开文件夹 的本地化字符串。
+        /// </summary>
+        public static string Sol_OpenFolder {
+            get {
+                return ResourceManager.GetString("Sol_OpenFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 直接将本地目录作为工作区打开 的本地化字符串。
+        /// </summary>
+        public static string Sol_OpenFolderDesc {
+            get {
+                return ResourceManager.GetString("Sol_OpenFolderDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择要用来打开此文件夹的程序 的本地化字符串。
+        /// </summary>
+        public static string Sol_OpenFolderHint {
+            get {
+                return ResourceManager.GetString("Sol_OpenFolderHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可用权限 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_Available {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_Available", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前角色： 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_CurrentRole {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_CurrentRole", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ✗ 全不选 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_DeselectAll {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_DeselectAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色权限管理 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_Label {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未选择 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_NotSelected {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_NotSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 就绪 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_Ready {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_Ready", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_Refresh {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存权限分配 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_Save {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ✓ 全选 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_SelectAll {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_SelectAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分配和管理角色的系统权限 的本地化字符串。
+        /// </summary>
+        public static string Sol_PermMgr_Subtitle {
+            get {
+                return ResourceManager.GetString("Sol_PermMgr_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Sol_Rbac_Close {
+            get {
+                return ResourceManager.GetString("Sol_Rbac_Close", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_RbacMgr_ChangePwdLabel {
+            get {
+                return ResourceManager.GetString("Sol_RbacMgr_ChangePwdLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改当前账户密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_RbacMgr_ChangePwdTooltip {
+            get {
+                return ResourceManager.GetString("Sol_RbacMgr_ChangePwdTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑当前用户详细信息 的本地化字符串。
+        /// </summary>
+        public static string Sol_RbacMgr_EditUserTooltip {
+            get {
+                return ResourceManager.GetString("Sol_RbacMgr_EditUserTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 点击登录或切换账户 的本地化字符串。
+        /// </summary>
+        public static string Sol_RbacMgr_LoginTooltip {
+            get {
+                return ResourceManager.GetString("Sol_RbacMgr_LoginTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 退出登录 的本地化字符串。
+        /// </summary>
+        public static string Sol_RbacMgr_LogoutTooltip {
+            get {
+                return ResourceManager.GetString("Sol_RbacMgr_LogoutTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 管理系统用户和角色（仅管理员可用） 的本地化字符串。
+        /// </summary>
+        public static string Sol_RbacMgr_UserMgmtTooltip {
+            get {
+                return ResourceManager.GetString("Sol_RbacMgr_UserMgmtTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_ConfirmPassword {
+            get {
+                return ResourceManager.GetString("Sol_Register_ConfirmPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建新账户 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_Create {
+            get {
+                return ResourceManager.GetString("Sol_Register_Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入密码（至少6位） 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_EnterPassword {
+            get {
+                return ResourceManager.GetString("Sol_Register_EnterPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入用户名 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_EnterUsername {
+            get {
+                return ResourceManager.GetString("Sol_Register_EnterUsername", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加入 ColorVision 系统 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_Join {
+            get {
+                return ResourceManager.GetString("Sol_Register_Join", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 再次输入密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_ReenterPassword {
+            get {
+                return ResourceManager.GetString("Sol_Register_ReenterPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_Register {
+            get {
+                return ResourceManager.GetString("Sol_Register_Register", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册即表示您同意 ColorVision 使用条款 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_Terms {
+            get {
+                return ResourceManager.GetString("Sol_Register_Terms", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册新用户 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_Title {
+            get {
+                return ResourceManager.GetString("Sol_Register_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户名 的本地化字符串。
+        /// </summary>
+        public static string Sol_Register_Username {
+            get {
+                return ResourceManager.GetString("Sol_Register_Username", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 终止 的本地化字符串。
+        /// </summary>
+        public static string Sol_Terminate {
+            get {
+                return ResourceManager.GetString("Sol_Terminate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 终止当前终端进程 的本地化字符串。
+        /// </summary>
+        public static string Sol_TerminateTooltip {
+            get {
+                return ResourceManager.GetString("Sol_TerminateTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建 的本地化字符串。
+        /// </summary>
+        public static string Sol_TreeView_New {
+            get {
+                return ResourceManager.GetString("Sol_TreeView_New", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统管理员模式 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Admin {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Admin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 操作 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_Action {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_Action", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建时间 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_CreateTime {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_CreateTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_Delete {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 备注 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_Remark {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_Remark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_Role {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_Role", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色代码 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_RoleCode {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_RoleCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色名称 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_RoleName {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_RoleName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 状态 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_Status {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_Status", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户名 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Col_Username {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Col_Username", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_CreateRole {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_CreateRole", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建用户 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_CreateUser {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_CreateUser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开创建用户窗口 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_CreateUserTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_CreateUserTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除用户 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_DeleteUserTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_DeleteUserTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示: 双击用户可查看详细信息 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_DoubleClickHint {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_DoubleClickHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑角色 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_EditRoleTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_EditRoleTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户和角色管理 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Label {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户管理操作 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Ops {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Ops", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 权限管理 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_PermMgmt {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_PermMgmt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 权限缓存统计: 加载中... 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_PermStats {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_PermStats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新数据 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Refresh {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 备注: 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Remark {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Remark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色描述信息 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_RemarkTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_RemarkTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重置密码 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_ResetPwdTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_ResetPwdTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色代码: 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_RoleCode {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_RoleCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输入角色的唯一标识代码 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_RoleCodeTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_RoleCodeTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色管理 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_RoleMgmt {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_RoleMgmt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色名称: 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_RoleName {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_RoleName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输入角色显示名称 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_RoleNameTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_RoleNameTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索用户名... 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_SearchTooltip {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_SearchTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户管理 - RBAC 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_Title {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 共 {0} 个用户 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_UserCount {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_UserCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户列表 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserMgr_UserList {
+            get {
+                return ResourceManager.GetString("Sol_UserMgr_UserList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似   主页 的本地化字符串。
+        /// </summary>
+        public static string Sol_Workspace_Home {
+            get {
+                return ResourceManager.GetString("Sol_Workspace_Home", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 解决方案配置 的本地化字符串。
         /// </summary>
         public static string SolutionConfiguration {

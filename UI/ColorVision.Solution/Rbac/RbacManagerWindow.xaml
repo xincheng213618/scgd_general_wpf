@@ -69,7 +69,7 @@
                             Style="{StaticResource ModernButton}"
                             Margin="0,0,10,0"
                             Visibility="{Binding LoginButtonVisibility}"
-                            ToolTip="点击登录或切换账户">
+                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LoginTooltip}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
                             <TextBlock Text="{x:Static properties:Resources.LoginOrSwitch}"/>
@@ -79,7 +79,7 @@
                             Style="{StaticResource SecondaryButton}"
                             Margin="0,0,10,0"
                             Visibility="{Binding LoggedInButtonVisibility}"
-                            ToolTip="编辑当前用户详细信息">
+                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_EditUserTooltip}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
                             <TextBlock Text="{x:Static properties:Resources.EditInfo}"/>
@@ -90,16 +90,16 @@
                             Style="{StaticResource SecondaryButton}"
                             Margin="0,0,10,0"
                             Visibility="{Binding LoggedInButtonVisibility}"
-                            ToolTip="修改当前账户密码">
+                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_ChangePwdTooltip}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
-                            <TextBlock Text="修改密码"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_RbacMgr_ChangePwdLabel}"/>
                         </StackPanel>
                     </Button>
                     <Button Command="{Binding OpenUserManagerCommand}" 
                             Style="{StaticResource ModernButton}"
                             Visibility="{Binding AdminButtonVisibility}"
-                            ToolTip="管理系统用户和角色（仅管理员可用）">
+                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_UserMgmtTooltip}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
                             <TextBlock Text="{x:Static properties:Resources.UserManagement}"/>
@@ -109,7 +109,7 @@
                             Style="{StaticResource SecondaryButton}"
                             Margin="10,0,0,0"
                             Visibility="{Binding LoggedInButtonVisibility}"
-                            ToolTip="退出登录">
+                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LogoutTooltip}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
                             <TextBlock Text="{x:Static properties:Resources.Sign_out}"/>

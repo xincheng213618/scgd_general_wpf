@@ -131,8 +131,8 @@
                         <Viewbox Grid.Row="0" Grid.RowSpan="2"  Margin="5,10,10,10">
                             <Path Fill="#FFF7D16A"  Data="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z" />
                         </Viewbox>
-                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="打开文件夹" />
-                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="直接将本地目录作为工作区打开" VerticalAlignment="Center"/>
+                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resources.Sol_OpenFolder}" />
+                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resources.Sol_OpenFolderDesc}" VerticalAlignment="Center"/>
                     </Grid>
                     <Button  Background="Transparent"  BorderThickness="0" Click="OpenFolder_Click" Padding="0"/>
                 </Grid>

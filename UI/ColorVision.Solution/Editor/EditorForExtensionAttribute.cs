@@ -5,13 +5,15 @@
     public class EditorForExtensionAttribute : Attribute
     {
         public string? Name { get; }
+        public string? ResourceKey { get; }
 
         public string[] Extensions { get; }
         public bool IsDefault { get; }
 
-        public EditorForExtensionAttribute(string extensions,string? name =null, bool isDefault = false)
+        public EditorForExtensionAttribute(string extensions, string? name = null, bool isDefault = false, string? resourceKey = null)
         {
             Name = name;
+            ResourceKey = resourceKey;
             Extensions = extensions.Split('|');
             IsDefault = isDefault;
         }

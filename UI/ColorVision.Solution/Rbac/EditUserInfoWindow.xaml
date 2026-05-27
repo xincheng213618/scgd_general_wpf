@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="编辑用户信息" Height="560" Width="500"
+        Title="{x:Static properties:Resources.Sol_EditUser_Title}" Height="560" Width="500"
         Background="Transparent"
         AllowsTransparency="True"
         WindowStyle="None"
@@ -45,9 +46,9 @@
                     <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <StackPanel>
-                        <TextBlock Text="编辑用户信息" FontSize="18" FontWeight="Bold"
+                        <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Label}" FontSize="18" FontWeight="Bold"
                                    Foreground="White" VerticalAlignment="Center"/>
-                        <TextBlock Text="修改个人资料" FontSize="12" Foreground="White" Opacity="0.8" Margin="0,2,0,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Subtitle}" FontSize="12" Foreground="White" Opacity="0.8" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -60,7 +61,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,6,0"/>
-                            <TextBlock Text="邮箱" FontSize="13"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Email}" FontSize="13"/>
                         </StackPanel>
                         <hc:TextBox x:Name="TxtEmail" Padding="10,8" FontSize="14"
                                     hc:InfoElement.Placeholder="user@example.com"/>
@@ -71,10 +72,10 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE717;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,6,0"/>
-                            <TextBlock Text="电话" FontSize="13"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Phone}" FontSize="13"/>
                         </StackPanel>
                         <hc:TextBox x:Name="TxtPhone" Padding="10,8" FontSize="14"
-                                    hc:InfoElement.Placeholder="联系电话"/>
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_EditUser_PhonePlaceholder}"/>
                     </StackPanel>
 
                     <!-- 公司 -->
@@ -82,10 +83,10 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE731;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,6,0"/>
-                            <TextBlock Text="公司" FontSize="13"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Company}" FontSize="13"/>
                         </StackPanel>
                         <hc:TextBox x:Name="TxtCompany" Padding="10,8" FontSize="14"
-                                    hc:InfoElement.Placeholder="公司名称"/>
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_EditUser_CompanyPlaceholder}"/>
                     </StackPanel>
 
                     <!-- 部门 -->
@@ -93,10 +94,10 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,6,0"/>
-                            <TextBlock Text="部门" FontSize="13"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Dept}" FontSize="13"/>
                         </StackPanel>
                         <hc:TextBox x:Name="TxtDepartment" Padding="10,8" FontSize="14"
-                                    hc:InfoElement.Placeholder="所属部门"/>
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_EditUser_DeptPlaceholder}"/>
                     </StackPanel>
 
                     <!-- 职位 -->
@@ -104,10 +105,10 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,6,0"/>
-                            <TextBlock Text="职位" FontSize="13"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Position}" FontSize="13"/>
                         </StackPanel>
                         <hc:TextBox x:Name="TxtPosition" Padding="10,8" FontSize="14"
-                                    hc:InfoElement.Placeholder="职位名称"/>
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_EditUser_PositionPlaceholder}"/>
                     </StackPanel>
 
                     <!-- 地址 -->
@@ -115,10 +116,10 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE707;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,6,0"/>
-                            <TextBlock Text="地址" FontSize="13"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Address}" FontSize="13"/>
                         </StackPanel>
                         <hc:TextBox x:Name="TxtAddress" Padding="10,8" FontSize="14"
-                                    hc:InfoElement.Placeholder="联系地址"/>
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_EditUser_AddressPlaceholder}"/>
                     </StackPanel>
 
                     <!-- 备注 -->
@@ -126,7 +127,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,6,0"/>
-                            <TextBlock Text="备注" FontSize="13"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_EditUser_Remark}" FontSize="13"/>
                         </StackPanel>
                         <TextBox x:Name="TxtRemark" Padding="10,8" FontSize="14" Height="70"
                                  TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
@@ -143,9 +144,9 @@
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="保存" Height="36"
+                    <Button Grid.Column="0" Content="{x:Static properties:Resources.Sol_EditUser_Save}" Height="36"
                             Click="BtnSave_Click" Style="{StaticResource ModernButton}"/>
-                    <Button Grid.Column="2" Content="取消" Height="36"
+                    <Button Grid.Column="2" Content="{x:Static properties:Resources.Sol_EditUser_Cancel}" Height="36"
                             Click="BtnCancel_Click" Style="{StaticResource SecondaryButton}"/>
                 </Grid>
             </Border>

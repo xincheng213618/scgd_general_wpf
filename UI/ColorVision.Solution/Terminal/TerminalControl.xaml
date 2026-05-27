@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:ColorVision.Solution.Terminal"
+             xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
              Background="#1E1E1E"
@@ -21,12 +22,12 @@
                 <ComboBoxItem Content="CMD"/>
             </ComboBox>
             <Separator/>
-            <Button x:Name="ButtonNewShell" Content="+ 新终端" Click="ButtonNewShell_Click" Padding="6,2" Margin="2"
-                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="启动新的终端会话"/>
-            <Button x:Name="ButtonClear" Content="清屏" Click="ButtonClear_Click" Padding="6,2" Margin="2"
+            <Button x:Name="ButtonNewShell" Content="{x:Static properties:Resources.Sol_NewTerminal}" Click="ButtonNewShell_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="{x:Static properties:Resources.Sol_NewTerminalTooltip}"/>
+            <Button x:Name="ButtonClear" Content="{x:Static properties:Resources.Sol_ClearScreen}" Click="ButtonClear_Click" Padding="6,2" Margin="2"
                     Foreground="{DynamicResource GlobalTextBrush}"/>
-            <Button x:Name="ButtonKill" Content="终止" Click="ButtonKill_Click" Padding="6,2" Margin="2"
-                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="终止当前终端进程"/>
+            <Button x:Name="ButtonKill" Content="{x:Static properties:Resources.Sol_Terminate}" Click="ButtonKill_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="{x:Static properties:Resources.Sol_TerminateTooltip}"/>
         </ToolBar>
 
         <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->

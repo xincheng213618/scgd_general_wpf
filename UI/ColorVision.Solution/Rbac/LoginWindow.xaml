@@ -57,7 +57,7 @@
                                Foreground="White"
                                HorizontalAlignment="Center"
                                Margin="0,0,0,6"/>
-                    <TextBlock Text="欢迎使用 ColorVision 系统" 
+                    <TextBlock Text="{x:Static properties:Resources.Sol_Login_Welcome}"
                                FontSize="12" 
                                Foreground="#C0FFFFFF"
                                HorizontalAlignment="Center"/>
@@ -94,7 +94,7 @@
                           Content="{x:Static properties:Resources.RememberLoginStatus7Days}"
                           FontSize="12"
                           Margin="0,0,0,20"
-                          ToolTip="勾选后，下次启动软件将自动登录"/>
+                          ToolTip="{x:Static properties:Resources.Sol_Login_AutoLogin}"/>
                 
                 <Button x:Name="BtnLogin"
                         Content="{x:Static properties:Resources.Sign_in}" 
@@ -113,7 +113,7 @@
                     <TextBlock HorizontalAlignment="Center" FontSize="12">
                         <Run Text="{x:Static properties:Resources.NoAccountYet}"/>
                         <Hyperlink Click="RegisterHyperlink_Click" 
-                                   ToolTip="注册新账户"
+                                   ToolTip="{x:Static properties:Resources.Sol_Login_Register}"
                                    Foreground="{DynamicResource StatusBarBackgroundBrush}"
                                    TextDecorations="None">
                             <Run Text="{x:Static properties:Resources.Create_an_account}" />

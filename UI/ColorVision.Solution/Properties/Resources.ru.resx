@@ -302,4 +302,565 @@
   <data name="MenuFusion" xml:space="preserve">
     <value>Слияние глубины(_F)</value>
   </data>
-<data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data></root>
+<data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
+  <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>Показать список файлов</value></data>
+  <data name="Sol_MivCfg_View" xml:space="preserve"><value>Вид</value></data>
+  <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>Высота списка</value></data>
+  <data name="Sol_MivCfg_ThumbSize" xml:space="preserve"><value>Размер миниатюры</value></data>
+  <data name="Sol_MivCfg_Thumbnail" xml:space="preserve"><value>Миниатюры</value></data>
+  <data name="Sol_MivCfg_MaxDisplay" xml:space="preserve"><value>Макс. количество</value></data>
+  <data name="Sol_MivCfg_EnableCache" xml:space="preserve"><value>Включить кэш миниатюр</value></data>
+  <data name="Sol_MivCfg_ShowThumb" xml:space="preserve"><value>Показать миниатюры</value></data>
+  <data name="Sol_MivCfg_ReadDelay" xml:space="preserve"><value>Задержка чтения(мс)</value></data>
+  <data name="Sol_MivCfg_CacheSize" xml:space="preserve"><value>Размер кэша</value></data>
+  <data name="Sol_MivCfg_Cache" xml:space="preserve"><value>Кэш</value></data>
+  <data name="Sol_MivCfg_CacheCount" xml:space="preserve"><value>Количество в кэше</value></data>
+  <data name="Sol_FileInfo_Path" xml:space="preserve"><value>Путь к файлу</value></data>
+  <data name="Sol_FileInfo_Name" xml:space="preserve"><value>Имя файла</value></data>
+  <data name="Sol_FileInfo_Dir" xml:space="preserve"><value>Каталог</value></data>
+  <data name="Sol_FileInfo_Ext" xml:space="preserve"><value>Расширение</value></data>
+  <data name="Sol_FileInfo_FileSize" xml:space="preserve"><value>Размер файла</value></data>
+  <data name="Sol_FileInfo_Size" xml:space="preserve"><value>Размер</value></data>
+  <data name="Sol_FileInfo_Modified" xml:space="preserve"><value>Дата изменения</value></data>
+  <data name="Sol_FileInfo_Width" xml:space="preserve"><value>Ширина</value></data>
+  <data name="Sol_FileInfo_Height" xml:space="preserve"><value>Высота</value></data>
+  <data name="Sol_FileInfo_Resolution" xml:space="preserve"><value>Разрешение</value></data>
+  <data name="Sol_FileInfo_Exists" xml:space="preserve"><value>Существует</value></data>
+  <data name="Sol_FileInfo_FileNameLabel" xml:space="preserve"><value>Имя файла:</value></data>
+  <data name="Sol_FileInfo_PathLabel" xml:space="preserve"><value>Путь:</value></data>
+  <data name="Sol_FileInfo_SizeLabel" xml:space="preserve"><value>Размер:</value></data>
+  <data name="Sol_FileInfo_ResLabel" xml:space="preserve"><value>Разрешение:</value></data>
+  <data name="Sol_FileInfo_ModLabel" xml:space="preserve"><value>Изменено:</value></data>
+  <data name="Sol_FileInfo_Unknown" xml:space="preserve"><value>Неизвестно</value></data>
+  <data name="Sol_Editor_WebView2" xml:space="preserve"><value>Редактор WebView2</value></data>
+  <data name="Sol_Editor_Image" xml:space="preserve"><value>Редактор изображений</value></data>
+  <data name="Sol_Editor_Text" xml:space="preserve"><value>Текстовый редактор</value></data>
+  <data name="Sol_Editor_Hex" xml:space="preserve"><value>Hex редактор</value></data>
+  <data name="Sol_Editor_Project" xml:space="preserve"><value>Редактор изображений</value></data>
+  <data name="Sol_Editor_System" xml:space="preserve"><value>Системный</value></data>
+  <data name="Sol_Fusion_CudaAvail" xml:space="preserve"><value>CUDA: Доступно</value></data>
+  <data name="Sol_Fusion_CudaUnavail" xml:space="preserve"><value>CUDA: Недоступно</value></data>
+  <data name="Sol_Fusion_Executing" xml:space="preserve"><value>Выполнение слияния...</value></data>
+  <data name="Sol_Fusion_Failed" xml:space="preserve"><value>Ошибка слияния: {0}</value></data>
+  <data name="Sol_Fusion_Converting" xml:space="preserve"><value>Слияние завершено, преобразование результатов...</value></data>
+  <data name="Sol_Fusion_Done" xml:space="preserve"><value>Готово  Слияние: {0}</value></data>
+  <data name="Sol_Fusion_MissingLib" xml:space="preserve"><value>Отсутствует библиотека</value></data>
+  <data name="Sol_Fusion_Error" xml:space="preserve"><value>Ошибка слияния</value></data>
+  <data name="Sol_Fusion_Result" xml:space="preserve"><value>Результат слияния - {0}</value></data>
+  <data name="Sol_Fusion_SelectMin2" xml:space="preserve"><value>Выберите не менее 2 файлов изображений.</value></data>
+  <data name="Sol_Fusion_Hint" xml:space="preserve"><value>Подсказка</value></data>
+  <data name="Sol_Fusion_FileNotExist" xml:space="preserve"><value>Файл не существует: {0}</value></data>
+  <data name="Sol_Fusion_CalcFailed" xml:space="preserve"><value>Ошибка расчёта слияния: {0}</value></data>
+  <data name="Sol_Fusion_MissingRuntime" xml:space="preserve"><value>Отсутствует runtime: {0}</value></data>
+  <data name="Sol_Fusion_ProcessError" xml:space="preserve"><value>Ошибка при слиянии: {0}</value></data>
+  <data name="Sol_Fusion_ImageFiles" xml:space="preserve"><value>Файлы изображений</value></data>
+  <data name="Sol_Fusion_AllFiles" xml:space="preserve"><value>Все файлы</value></data>
+  <data name="Sol_Workspace_Home" xml:space="preserve"><value>  Главная</value></data>
+  <data name="Sol_Hex_LoadFailed" xml:space="preserve"><value>Ошибка загрузки файла: {0}</value></data>  <data name="Sol_Fusion_Title" xml:space="preserve">
+    <value>Слияние глубины (Fusion)</value>
+  </data>
+  <data name="Sol_Fusion_Label" xml:space="preserve">
+    <value>Слияние глубины</value>
+  </data>
+  <data name="Sol_Fusion_FileList" xml:space="preserve">
+    <value>Список файлов изображений (по порядку)</value>
+  </data>
+  <data name="Sol_Fusion_AddFile" xml:space="preserve">
+    <value>Добавить файл</value>
+  </data>
+  <data name="Sol_Fusion_Remove" xml:space="preserve">
+    <value>Удалить выбранное</value>
+  </data>
+  <data name="Sol_Fusion_Clear" xml:space="preserve">
+    <value>Очистить</value>
+  </data>
+  <data name="Sol_Fusion_MoveUp" xml:space="preserve">
+    <value>Вверх ↑</value>
+  </data>
+  <data name="Sol_Fusion_MoveDown" xml:space="preserve">
+    <value>Вниз ↓</value>
+  </data>
+  <data name="Sol_Fusion_Config" xml:space="preserve">
+    <value>Конфигурация слияния</value>
+  </data>
+  <data name="Sol_Fusion_Mode" xml:space="preserve">
+    <value>Режим вычисления:</value>
+  </data>
+  <data name="Sol_Fusion_Auto" xml:space="preserve">
+    <value>Авто (GPU при наличии CUDA)</value>
+  </data>
+  <data name="Sol_Fusion_Async" xml:space="preserve">
+    <value>GPU асинхр. (CUDA Async)</value>
+  </data>
+  <data name="Sol_Fusion_Perf" xml:space="preserve">
+    <value>Статистика производительности</value>
+  </data>
+  <data name="Sol_Fusion_ModeCol" xml:space="preserve">
+    <value>Режим</value>
+  </data>
+  <data name="Sol_Fusion_LoadMs" xml:space="preserve">
+    <value>Загрузка(мс)</value>
+  </data>
+  <data name="Sol_Fusion_FusionMs" xml:space="preserve">
+    <value>Слияние(мс)</value>
+  </data>
+  <data name="Sol_Fusion_ConvertMs" xml:space="preserve">
+    <value>Конверт.(мс)</value>
+  </data>
+  <data name="Sol_Fusion_TotalMs" xml:space="preserve">
+    <value>Итого(мс)</value>
+  </data>
+  <data name="Sol_Fusion_ImageCount" xml:space="preserve">
+    <value>Кол-во изобр.</value>
+  </data>
+  <data name="Sol_Fusion_ClearBtn" xml:space="preserve">
+    <value>Очистить</value>
+  </data>
+  <data name="Sol_Fusion_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sol_Fusion_Execute" xml:space="preserve">
+    <value>Выполнить слияние</value>
+  </data>
+  <data name="Sol_Miv_Loading" xml:space="preserve">
+    <value>Загрузка...</value>
+  </data>
+  <data name="Sol_Miv_FileNotExist" xml:space="preserve">
+    <value>Файл не существует</value>
+  </data>
+  <data name="Sol_Miv_Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="Sol_Miv_Settings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="Sol_Miv_OpenInExplorer" xml:space="preserve">
+    <value>Открыть в проводнике</value>
+  </data>
+  <data name="Sol_Miv_CopyPath" xml:space="preserve">
+    <value>Копировать путь к файлу</value>
+  </data>
+  <data name="Sol_Miv_SelectImage" xml:space="preserve">
+    <value>Выберите изображение из списка слева</value>
+  </data>
+  <data name="Sol_Miv_FileCount" xml:space="preserve">
+    <value>Всего файлов: {0}</value>
+  </data>
+  <data name="Sol_Miv_FolderNotExist" xml:space="preserve">
+    <value>Папка не существует: {0}</value>
+  </data>
+  <data name="Sol_Miv_Error" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="Sol_AddProject_Title" xml:space="preserve">
+    <value>Добавить новый проект</value>
+  </data>
+  <data name="Sol_AddProject_Category" xml:space="preserve">
+    <value>Категория:</value>
+  </data>
+  <data name="Sol_AddProject_Search" xml:space="preserve">
+    <value>Поиск шаблонов проектов...</value>
+  </data>
+  <data name="Sol_AddProject_Name" xml:space="preserve">
+    <value>Название</value>
+  </data>
+  <data name="Sol_AddProject_CategoryCol" xml:space="preserve">
+    <value>Категория</value>
+  </data>
+  <data name="Sol_AddProject_Desc" xml:space="preserve">
+    <value>Описание</value>
+  </data>
+  <data name="Sol_AddProject_ProjectName" xml:space="preserve">
+    <value>Название проекта:</value>
+  </data>
+  <data name="Sol_AddProject_Create" xml:space="preserve">
+    <value>Создать</value>
+  </data>
+  <data name="Sol_AddProject_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sol_AddItem_Title" xml:space="preserve">
+    <value>Добавить новый элемент</value>
+  </data>
+  <data name="Sol_AddItem_Category" xml:space="preserve">
+    <value>Категория:</value>
+  </data>
+  <data name="Sol_AddItem_Search" xml:space="preserve">
+    <value>Поиск шаблонов...</value>
+  </data>
+  <data name="Sol_AddItem_Extension" xml:space="preserve">
+    <value>Расширение</value>
+  </data>
+  <data name="Sol_AddItem_Name" xml:space="preserve">
+    <value>Название:</value>
+  </data>
+  <data name="Sol_AddItem_Add" xml:space="preserve">
+    <value>Добавить</value>
+  </data>
+  <data name="Sol_AddItem_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sol_TreeView_New" xml:space="preserve">
+    <value>Создать</value>
+  </data>
+  <data name="Sol_OpenAs" xml:space="preserve">
+    <value>Открыть с помощью</value>
+  </data>
+  <data name="Sol_OpenFileHint" xml:space="preserve">
+    <value>Выберите программу для открытия файла</value>
+  </data>
+  <data name="Sol_OpenFolderHint" xml:space="preserve">
+    <value>Выберите программу для открытия папки</value>
+  </data>
+  <data name="Sol_OK" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="Sol_OpenFolder" xml:space="preserve">
+    <value>Открыть папку</value>
+  </data>
+  <data name="Sol_OpenFolderDesc" xml:space="preserve">
+    <value>Открыть локальную директорию как рабочее пространство</value>
+  </data>
+  <data name="Sol_NewTerminal" xml:space="preserve">
+    <value>+ Новый терминал</value>
+  </data>
+  <data name="Sol_NewTerminalTooltip" xml:space="preserve">
+    <value>Запустить новый сеанс терминала</value>
+  </data>
+  <data name="Sol_ClearScreen" xml:space="preserve">
+    <value>Очистить экран</value>
+  </data>
+  <data name="Sol_Terminate" xml:space="preserve">
+    <value>Завершить</value>
+  </data>
+  <data name="Sol_TerminateTooltip" xml:space="preserve">
+    <value>Завершить текущий процесс терминала</value>
+  </data>
+  <data name="Sol_Login_Welcome" xml:space="preserve">
+    <value>Добро пожаловать в систему ColorVision</value>
+  </data>
+  <data name="Sol_Login_AutoLogin" xml:space="preserve">
+    <value>Автоматический вход при следующем запуске</value>
+  </data>
+  <data name="Sol_Login_Register" xml:space="preserve">
+    <value>Зарегистрировать новый аккаунт</value>
+  </data>
+  <data name="Sol_Register_Title" xml:space="preserve">
+    <value>Регистрация нового пользователя</value>
+  </data>
+  <data name="Sol_Register_Create" xml:space="preserve">
+    <value>Создать новый аккаунт</value>
+  </data>
+  <data name="Sol_Register_Join" xml:space="preserve">
+    <value>Присоединиться к системе ColorVision</value>
+  </data>
+  <data name="Sol_Register_Username" xml:space="preserve">
+    <value>Имя пользователя</value>
+  </data>
+  <data name="Sol_Register_ConfirmPassword" xml:space="preserve">
+    <value>Подтвердите пароль</value>
+  </data>
+  <data name="Sol_Register_EnterUsername" xml:space="preserve">
+    <value>Введите имя пользователя</value>
+  </data>
+  <data name="Sol_Register_EnterPassword" xml:space="preserve">
+    <value>Введите пароль (не менее 6 символов)</value>
+  </data>
+  <data name="Sol_Register_ReenterPassword" xml:space="preserve">
+    <value>Введите пароль еще раз</value>
+  </data>
+  <data name="Sol_Register_Register" xml:space="preserve">
+    <value>Зарегистрироваться</value>
+  </data>
+  <data name="Sol_Register_Terms" xml:space="preserve">
+    <value>Регистрируясь, вы соглашаетесь с условиями использования ColorVision</value>
+  </data>
+  <data name="Sol_ChangePwd_Title" xml:space="preserve">
+    <value>Изменить пароль</value>
+  </data>
+  <data name="Sol_ChangePwd_Label" xml:space="preserve">
+    <value>Изменить пароль</value>
+  </data>
+  <data name="Sol_ChangePwd_Current" xml:space="preserve">
+    <value>Текущий пароль</value>
+  </data>
+  <data name="Sol_ChangePwd_CurrentPlaceholder" xml:space="preserve">
+    <value>Введите текущий пароль</value>
+  </data>
+  <data name="Sol_ChangePwd_New" xml:space="preserve">
+    <value>Новый пароль</value>
+  </data>
+  <data name="Sol_ChangePwd_NewPlaceholder" xml:space="preserve">
+    <value>Не менее 6 символов</value>
+  </data>
+  <data name="Sol_ChangePwd_Confirm" xml:space="preserve">
+    <value>Подтвердите новый пароль</value>
+  </data>
+  <data name="Sol_ChangePwd_ConfirmPlaceholder" xml:space="preserve">
+    <value>Введите новый пароль еще раз</value>
+  </data>
+  <data name="Sol_ChangePwd_Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="Sol_ChangePwd_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sol_CreateUser_Title" xml:space="preserve">
+    <value>Создать нового пользователя</value>
+  </data>
+  <data name="Sol_CreateUser_Subtitle" xml:space="preserve">
+    <value>Заполните данные пользователя и назначьте роли</value>
+  </data>
+  <data name="Sol_CreateUser_Username" xml:space="preserve">
+    <value>Имя пользователя</value>
+  </data>
+  <data name="Sol_CreateUser_UsernameDesc" xml:space="preserve">
+    <value>Логин, должен быть уникальным</value>
+  </data>
+  <data name="Sol_CreateUser_Password" xml:space="preserve">
+    <value>Пароль</value>
+  </data>
+  <data name="Sol_CreateUser_PasswordDesc" xml:space="preserve">
+    <value>Не менее 6 символов</value>
+  </data>
+  <data name="Sol_CreateUser_Role" xml:space="preserve">
+    <value>Роль</value>
+  </data>
+  <data name="Sol_CreateUser_RoleDesc" xml:space="preserve">
+    <value>Выберите начальную роль пользователя</value>
+  </data>
+  <data name="Sol_CreateUser_Remark" xml:space="preserve">
+    <value>Примечание</value>
+  </data>
+  <data name="Sol_CreateUser_RemarkDesc" xml:space="preserve">
+    <value>Описание пользователя (необязательно)</value>
+  </data>
+  <data name="Sol_CreateUser_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sol_CreateUser_Create" xml:space="preserve">
+    <value>Создать пользователя</value>
+  </data>
+  <data name="Sol_UserMgr_Title" xml:space="preserve">
+    <value>Управление пользователями - RBAC</value>
+  </data>
+  <data name="Sol_UserMgr_Label" xml:space="preserve">
+    <value>Управление пользователями и ролями</value>
+  </data>
+  <data name="Sol_UserMgr_Admin" xml:space="preserve">
+    <value>Режим системного администратора</value>
+  </data>
+  <data name="Sol_UserMgr_Refresh" xml:space="preserve">
+    <value>Обновить данные</value>
+  </data>
+  <data name="Sol_UserMgr_Ops" xml:space="preserve">
+    <value>Операции управления пользователями</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUser" xml:space="preserve">
+    <value>Создать пользователя</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUserTooltip" xml:space="preserve">
+    <value>Открыть окно создания пользователя</value>
+  </data>
+  <data name="Sol_UserMgr_RoleMgmt" xml:space="preserve">
+    <value>Управление ролями</value>
+  </data>
+  <data name="Sol_UserMgr_RoleName" xml:space="preserve">
+    <value>Название роли:</value>
+  </data>
+  <data name="Sol_UserMgr_RoleNameTooltip" xml:space="preserve">
+    <value>Введите отображаемое имя роли</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCode" xml:space="preserve">
+    <value>Код роли:</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCodeTooltip" xml:space="preserve">
+    <value>Введите уникальный код роли</value>
+  </data>
+  <data name="Sol_UserMgr_Remark" xml:space="preserve">
+    <value>Примечание:</value>
+  </data>
+  <data name="Sol_UserMgr_RemarkTooltip" xml:space="preserve">
+    <value>Описание роли</value>
+  </data>
+  <data name="Sol_UserMgr_CreateRole" xml:space="preserve">
+    <value>Создать роль</value>
+  </data>
+  <data name="Sol_UserMgr_PermMgmt" xml:space="preserve">
+    <value>Управление правами</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleName" xml:space="preserve">
+    <value>Название роли</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleCode" xml:space="preserve">
+    <value>Код роли</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Remark" xml:space="preserve">
+    <value>Примечание</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Status" xml:space="preserve">
+    <value>Статус</value>
+  </data>
+  <data name="Sol_UserMgr_Col_CreateTime" xml:space="preserve">
+    <value>Время создания</value>
+  </data>
+  <data name="Sol_UserMgr_SearchTooltip" xml:space="preserve">
+    <value>Поиск имени пользователя...</value>
+  </data>
+  <data name="Sol_UserMgr_UserCount" xml:space="preserve">
+    <value>Всего пользователей: {0}</value>
+  </data>
+  <data name="Sol_UserMgr_UserList" xml:space="preserve">
+    <value>Список пользователей</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Username" xml:space="preserve">
+    <value>Имя пользователя</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Role" xml:space="preserve">
+    <value>Роль</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Action" xml:space="preserve">
+    <value>Действие</value>
+  </data>
+  <data name="Sol_UserMgr_EditRoleTooltip" xml:space="preserve">
+    <value>Редактировать роль</value>
+  </data>
+  <data name="Sol_UserMgr_DeleteUserTooltip" xml:space="preserve">
+    <value>Удалить пользователя</value>
+  </data>
+  <data name="Sol_UserMgr_ResetPwdTooltip" xml:space="preserve">
+    <value>Сбросить пароль</value>
+  </data>
+  <data name="Sol_UserMgr_PermStats" xml:space="preserve">
+    <value>Статистика кэша прав: Загрузка...</value>
+  </data>
+  <data name="Sol_UserMgr_DoubleClickHint" xml:space="preserve">
+    <value>Совет: Дважды щёлкните по пользователю для подробностей</value>
+  </data>
+  <data name="Sol_EditRoles_Title" xml:space="preserve">
+    <value>Редактирование ролей - RBAC</value>
+  </data>
+  <data name="Sol_EditRoles_Label" xml:space="preserve">
+    <value>Редактирование ролей пользователя</value>
+  </data>
+  <data name="Sol_EditRoles_Subtitle" xml:space="preserve">
+    <value>Выберите назначение ролей для пользователя</value>
+  </data>
+  <data name="Sol_EditRoles_Search" xml:space="preserve">
+    <value>Поиск названия роли</value>
+  </data>
+  <data name="Sol_EditRoles_Selected" xml:space="preserve">
+    <value>Выбрано ролей: {0}</value>
+  </data>
+  <data name="Sol_EditRoles_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sol_EditRoles_Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="Sol_EditUser_Title" xml:space="preserve">
+    <value>Редактирование информации пользователя</value>
+  </data>
+  <data name="Sol_EditUser_Label" xml:space="preserve">
+    <value>Редактирование информации пользователя</value>
+  </data>
+  <data name="Sol_EditUser_Subtitle" xml:space="preserve">
+    <value>Редактирование личного профиля</value>
+  </data>
+  <data name="Sol_EditUser_Email" xml:space="preserve">
+    <value>Эл. почта</value>
+  </data>
+  <data name="Sol_EditUser_Phone" xml:space="preserve">
+    <value>Телефон</value>
+  </data>
+  <data name="Sol_EditUser_PhonePlaceholder" xml:space="preserve">
+    <value>Контактный телефон</value>
+  </data>
+  <data name="Sol_EditUser_Company" xml:space="preserve">
+    <value>Компания</value>
+  </data>
+  <data name="Sol_EditUser_CompanyPlaceholder" xml:space="preserve">
+    <value>Название компании</value>
+  </data>
+  <data name="Sol_EditUser_Dept" xml:space="preserve">
+    <value>Отдел</value>
+  </data>
+  <data name="Sol_EditUser_DeptPlaceholder" xml:space="preserve">
+    <value>Подразделение</value>
+  </data>
+  <data name="Sol_EditUser_Position" xml:space="preserve">
+    <value>Должность</value>
+  </data>
+  <data name="Sol_EditUser_PositionPlaceholder" xml:space="preserve">
+    <value>Название должности</value>
+  </data>
+  <data name="Sol_EditUser_Address" xml:space="preserve">
+    <value>Адрес</value>
+  </data>
+  <data name="Sol_EditUser_AddressPlaceholder" xml:space="preserve">
+    <value>Контактный адрес</value>
+  </data>
+  <data name="Sol_EditUser_Remark" xml:space="preserve">
+    <value>Примечание</value>
+  </data>
+  <data name="Sol_EditUser_Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="Sol_EditUser_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sol_PermMgr_Label" xml:space="preserve">
+    <value>Управление правами ролей</value>
+  </data>
+  <data name="Sol_PermMgr_Subtitle" xml:space="preserve">
+    <value>Назначение и управление системными правами ролей</value>
+  </data>
+  <data name="Sol_PermMgr_Refresh" xml:space="preserve">
+    <value>Обновить роли</value>
+  </data>
+  <data name="Sol_PermMgr_Available" xml:space="preserve">
+    <value>Доступные права</value>
+  </data>
+  <data name="Sol_PermMgr_SelectAll" xml:space="preserve">
+    <value>✓ Выбрать все</value>
+  </data>
+  <data name="Sol_PermMgr_DeselectAll" xml:space="preserve">
+    <value>✗ Снять все</value>
+  </data>
+  <data name="Sol_PermMgr_CurrentRole" xml:space="preserve">
+    <value>Текущая роль:</value>
+  </data>
+  <data name="Sol_PermMgr_NotSelected" xml:space="preserve">
+    <value>Не выбрано</value>
+  </data>
+  <data name="Sol_PermMgr_Save" xml:space="preserve">
+    <value>Сохранить назначение прав</value>
+  </data>
+  <data name="Sol_PermMgr_Ready" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Sol_RbacMgr_LoginTooltip" xml:space="preserve">
+    <value>Нажмите для входа или переключения аккаунта</value>
+  </data>
+  <data name="Sol_RbacMgr_EditUserTooltip" xml:space="preserve">
+    <value>Редактировать данные текущего пользователя</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdTooltip" xml:space="preserve">
+    <value>Изменить пароль текущего аккаунта</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdLabel" xml:space="preserve">
+    <value>Изменить пароль</value>
+  </data>
+  <data name="Sol_RbacMgr_UserMgmtTooltip" xml:space="preserve">
+    <value>Управление пользователями и ролями (только для администраторов)</value>
+  </data>
+  <data name="Sol_RbacMgr_LogoutTooltip" xml:space="preserve">
+    <value>Выйти</value>
+  </data>
+  <data name="Sol_Rbac_Close" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+</root>

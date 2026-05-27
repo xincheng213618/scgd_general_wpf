@@ -302,4 +302,565 @@
   <data name="MenuFusion" xml:space="preserve">
     <value>Fusion de profondeur(_F)</value>
   </data>
-<data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data></root>
+<data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
+  <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>Afficher la liste des fichiers</value></data>
+  <data name="Sol_MivCfg_View" xml:space="preserve"><value>Vue</value></data>
+  <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>Hauteur de la liste</value></data>
+  <data name="Sol_MivCfg_ThumbSize" xml:space="preserve"><value>Taille des miniatures</value></data>
+  <data name="Sol_MivCfg_Thumbnail" xml:space="preserve"><value>Miniatures</value></data>
+  <data name="Sol_MivCfg_MaxDisplay" xml:space="preserve"><value>Nombre max d'affichage</value></data>
+  <data name="Sol_MivCfg_EnableCache" xml:space="preserve"><value>Activer le cache des miniatures</value></data>
+  <data name="Sol_MivCfg_ShowThumb" xml:space="preserve"><value>Afficher les miniatures</value></data>
+  <data name="Sol_MivCfg_ReadDelay" xml:space="preserve"><value>Délai de lecture(ms)</value></data>
+  <data name="Sol_MivCfg_CacheSize" xml:space="preserve"><value>Taille du cache</value></data>
+  <data name="Sol_MivCfg_Cache" xml:space="preserve"><value>Cache</value></data>
+  <data name="Sol_MivCfg_CacheCount" xml:space="preserve"><value>Nombre en cache</value></data>
+  <data name="Sol_FileInfo_Path" xml:space="preserve"><value>Chemin du fichier</value></data>
+  <data name="Sol_FileInfo_Name" xml:space="preserve"><value>Nom du fichier</value></data>
+  <data name="Sol_FileInfo_Dir" xml:space="preserve"><value>Répertoire</value></data>
+  <data name="Sol_FileInfo_Ext" xml:space="preserve"><value>Extension</value></data>
+  <data name="Sol_FileInfo_FileSize" xml:space="preserve"><value>Taille du fichier</value></data>
+  <data name="Sol_FileInfo_Size" xml:space="preserve"><value>Taille</value></data>
+  <data name="Sol_FileInfo_Modified" xml:space="preserve"><value>Date de modification</value></data>
+  <data name="Sol_FileInfo_Width" xml:space="preserve"><value>Largeur</value></data>
+  <data name="Sol_FileInfo_Height" xml:space="preserve"><value>Hauteur</value></data>
+  <data name="Sol_FileInfo_Resolution" xml:space="preserve"><value>Résolution</value></data>
+  <data name="Sol_FileInfo_Exists" xml:space="preserve"><value>Existe</value></data>
+  <data name="Sol_FileInfo_FileNameLabel" xml:space="preserve"><value>Nom du fichier:</value></data>
+  <data name="Sol_FileInfo_PathLabel" xml:space="preserve"><value>Chemin:</value></data>
+  <data name="Sol_FileInfo_SizeLabel" xml:space="preserve"><value>Taille:</value></data>
+  <data name="Sol_FileInfo_ResLabel" xml:space="preserve"><value>Résolution:</value></data>
+  <data name="Sol_FileInfo_ModLabel" xml:space="preserve"><value>Modifié:</value></data>
+  <data name="Sol_FileInfo_Unknown" xml:space="preserve"><value>Inconnu</value></data>
+  <data name="Sol_Editor_WebView2" xml:space="preserve"><value>Éditeur WebView2</value></data>
+  <data name="Sol_Editor_Image" xml:space="preserve"><value>Éditeur d'images</value></data>
+  <data name="Sol_Editor_Text" xml:space="preserve"><value>Éditeur de texte</value></data>
+  <data name="Sol_Editor_Hex" xml:space="preserve"><value>Éditeur de texte Hex</value></data>
+  <data name="Sol_Editor_Project" xml:space="preserve"><value>Éditeur d'images</value></data>
+  <data name="Sol_Editor_System" xml:space="preserve"><value>Par défaut</value></data>
+  <data name="Sol_Fusion_CudaAvail" xml:space="preserve"><value>CUDA: Disponible</value></data>
+  <data name="Sol_Fusion_CudaUnavail" xml:space="preserve"><value>CUDA: Non disponible</value></data>
+  <data name="Sol_Fusion_Executing" xml:space="preserve"><value>Exécution de la fusion...</value></data>
+  <data name="Sol_Fusion_Failed" xml:space="preserve"><value>Échec de la fusion: {0}</value></data>
+  <data name="Sol_Fusion_Converting" xml:space="preserve"><value>Fusion terminée, conversion des résultats...</value></data>
+  <data name="Sol_Fusion_Done" xml:space="preserve"><value>Terminé  Fusion: {0}</value></data>
+  <data name="Sol_Fusion_MissingLib" xml:space="preserve"><value>Bibliothèque manquante</value></data>
+  <data name="Sol_Fusion_Error" xml:space="preserve"><value>Erreur de fusion</value></data>
+  <data name="Sol_Fusion_Result" xml:space="preserve"><value>Résultat de fusion - {0}</value></data>
+  <data name="Sol_Fusion_SelectMin2" xml:space="preserve"><value>Veuillez sélectionner au moins 2 fichiers image.</value></data>
+  <data name="Sol_Fusion_Hint" xml:space="preserve"><value>Conseil</value></data>
+  <data name="Sol_Fusion_FileNotExist" xml:space="preserve"><value>Le fichier n'existe pas: {0}</value></data>
+  <data name="Sol_Fusion_CalcFailed" xml:space="preserve"><value>Échec du calcul de fusion: {0}</value></data>
+  <data name="Sol_Fusion_MissingRuntime" xml:space="preserve"><value>Runtime manquant: {0}</value></data>
+  <data name="Sol_Fusion_ProcessError" xml:space="preserve"><value>Erreur lors de la fusion: {0}</value></data>
+  <data name="Sol_Fusion_ImageFiles" xml:space="preserve"><value>Fichiers image</value></data>
+  <data name="Sol_Fusion_AllFiles" xml:space="preserve"><value>Tous les fichiers</value></data>
+  <data name="Sol_Workspace_Home" xml:space="preserve"><value>  Accueil</value></data>
+  <data name="Sol_Hex_LoadFailed" xml:space="preserve"><value>Échec du chargement: {0}</value></data>  <data name="Sol_Fusion_Title" xml:space="preserve">
+    <value>Fusion de profondeur (Fusion)</value>
+  </data>
+  <data name="Sol_Fusion_Label" xml:space="preserve">
+    <value>Fusion de profondeur</value>
+  </data>
+  <data name="Sol_Fusion_FileList" xml:space="preserve">
+    <value>Liste de fichiers image (en ordre)</value>
+  </data>
+  <data name="Sol_Fusion_AddFile" xml:space="preserve">
+    <value>Ajouter un fichier</value>
+  </data>
+  <data name="Sol_Fusion_Remove" xml:space="preserve">
+    <value>Supprimer la sélection</value>
+  </data>
+  <data name="Sol_Fusion_Clear" xml:space="preserve">
+    <value>Vider</value>
+  </data>
+  <data name="Sol_Fusion_MoveUp" xml:space="preserve">
+    <value>Monter ↑</value>
+  </data>
+  <data name="Sol_Fusion_MoveDown" xml:space="preserve">
+    <value>Descendre ↓</value>
+  </data>
+  <data name="Sol_Fusion_Config" xml:space="preserve">
+    <value>Configuration de fusion</value>
+  </data>
+  <data name="Sol_Fusion_Mode" xml:space="preserve">
+    <value>Mode de calcul :</value>
+  </data>
+  <data name="Sol_Fusion_Auto" xml:space="preserve">
+    <value>Auto (GPU si CUDA disponible)</value>
+  </data>
+  <data name="Sol_Fusion_Async" xml:space="preserve">
+    <value>GPU asynchrone (CUDA Async)</value>
+  </data>
+  <data name="Sol_Fusion_Perf" xml:space="preserve">
+    <value>Statistiques de performance</value>
+  </data>
+  <data name="Sol_Fusion_ModeCol" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Sol_Fusion_LoadMs" xml:space="preserve">
+    <value>Chargement(ms)</value>
+  </data>
+  <data name="Sol_Fusion_FusionMs" xml:space="preserve">
+    <value>Fusion(ms)</value>
+  </data>
+  <data name="Sol_Fusion_ConvertMs" xml:space="preserve">
+    <value>Conversion(ms)</value>
+  </data>
+  <data name="Sol_Fusion_TotalMs" xml:space="preserve">
+    <value>Total(ms)</value>
+  </data>
+  <data name="Sol_Fusion_ImageCount" xml:space="preserve">
+    <value>Nombre d images</value>
+  </data>
+  <data name="Sol_Fusion_ClearBtn" xml:space="preserve">
+    <value>Effacer</value>
+  </data>
+  <data name="Sol_Fusion_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sol_Fusion_Execute" xml:space="preserve">
+    <value>Exécuter la fusion</value>
+  </data>
+  <data name="Sol_Miv_Loading" xml:space="preserve">
+    <value>Chargement...</value>
+  </data>
+  <data name="Sol_Miv_FileNotExist" xml:space="preserve">
+    <value>Le fichier n&apos;existe pas</value>
+  </data>
+  <data name="Sol_Miv_Refresh" xml:space="preserve">
+    <value>Rafraîchir</value>
+  </data>
+  <data name="Sol_Miv_Settings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="Sol_Miv_OpenInExplorer" xml:space="preserve">
+    <value>Ouvrir dans l&apos;explorateur</value>
+  </data>
+  <data name="Sol_Miv_CopyPath" xml:space="preserve">
+    <value>Copier le chemin du fichier</value>
+  </data>
+  <data name="Sol_Miv_SelectImage" xml:space="preserve">
+    <value>Veuillez sélectionner une image dans la liste de gauche</value>
+  </data>
+  <data name="Sol_Miv_FileCount" xml:space="preserve">
+    <value>{0} fichiers au total</value>
+  </data>
+  <data name="Sol_Miv_FolderNotExist" xml:space="preserve">
+    <value>Le dossier n&apos;existe pas : {0}</value>
+  </data>
+  <data name="Sol_Miv_Error" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
+  <data name="Sol_AddProject_Title" xml:space="preserve">
+    <value>Ajouter un nouveau projet</value>
+  </data>
+  <data name="Sol_AddProject_Category" xml:space="preserve">
+    <value>Catégorie :</value>
+  </data>
+  <data name="Sol_AddProject_Search" xml:space="preserve">
+    <value>Rechercher des modèles de projet...</value>
+  </data>
+  <data name="Sol_AddProject_Name" xml:space="preserve">
+    <value>Nom</value>
+  </data>
+  <data name="Sol_AddProject_CategoryCol" xml:space="preserve">
+    <value>Catégorie</value>
+  </data>
+  <data name="Sol_AddProject_Desc" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Sol_AddProject_ProjectName" xml:space="preserve">
+    <value>Nom du projet :</value>
+  </data>
+  <data name="Sol_AddProject_Create" xml:space="preserve">
+    <value>Créer</value>
+  </data>
+  <data name="Sol_AddProject_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sol_AddItem_Title" xml:space="preserve">
+    <value>Ajouter un nouvel élément</value>
+  </data>
+  <data name="Sol_AddItem_Category" xml:space="preserve">
+    <value>Catégorie :</value>
+  </data>
+  <data name="Sol_AddItem_Search" xml:space="preserve">
+    <value>Rechercher des modèles...</value>
+  </data>
+  <data name="Sol_AddItem_Extension" xml:space="preserve">
+    <value>Extension</value>
+  </data>
+  <data name="Sol_AddItem_Name" xml:space="preserve">
+    <value>Nom :</value>
+  </data>
+  <data name="Sol_AddItem_Add" xml:space="preserve">
+    <value>Ajouter</value>
+  </data>
+  <data name="Sol_AddItem_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sol_TreeView_New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Sol_OpenAs" xml:space="preserve">
+    <value>Ouvrir avec</value>
+  </data>
+  <data name="Sol_OpenFileHint" xml:space="preserve">
+    <value>Sélectionnez un programme pour ouvrir ce fichier</value>
+  </data>
+  <data name="Sol_OpenFolderHint" xml:space="preserve">
+    <value>Sélectionnez un programme pour ouvrir ce dossier</value>
+  </data>
+  <data name="Sol_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Sol_OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="Sol_OpenFolderDesc" xml:space="preserve">
+    <value>Ouvrir un répertoire local comme espace de travail</value>
+  </data>
+  <data name="Sol_NewTerminal" xml:space="preserve">
+    <value>+ Nouveau terminal</value>
+  </data>
+  <data name="Sol_NewTerminalTooltip" xml:space="preserve">
+    <value>Démarrer une nouvelle session de terminal</value>
+  </data>
+  <data name="Sol_ClearScreen" xml:space="preserve">
+    <value>Effacer l&apos;écran</value>
+  </data>
+  <data name="Sol_Terminate" xml:space="preserve">
+    <value>Terminer</value>
+  </data>
+  <data name="Sol_TerminateTooltip" xml:space="preserve">
+    <value>Terminer le processus terminal actuel</value>
+  </data>
+  <data name="Sol_Login_Welcome" xml:space="preserve">
+    <value>Bienvenue dans le système ColorVision</value>
+  </data>
+  <data name="Sol_Login_AutoLogin" xml:space="preserve">
+    <value>Connexion automatique au prochain démarrage si coché</value>
+  </data>
+  <data name="Sol_Login_Register" xml:space="preserve">
+    <value>Créer un nouveau compte</value>
+  </data>
+  <data name="Sol_Register_Title" xml:space="preserve">
+    <value>Enregistrer un nouvel utilisateur</value>
+  </data>
+  <data name="Sol_Register_Create" xml:space="preserve">
+    <value>Créer un nouveau compte</value>
+  </data>
+  <data name="Sol_Register_Join" xml:space="preserve">
+    <value>Rejoindre le système ColorVision</value>
+  </data>
+  <data name="Sol_Register_Username" xml:space="preserve">
+    <value>Nom d&apos;utilisateur</value>
+  </data>
+  <data name="Sol_Register_ConfirmPassword" xml:space="preserve">
+    <value>Confirmer le mot de passe</value>
+  </data>
+  <data name="Sol_Register_EnterUsername" xml:space="preserve">
+    <value>Veuillez entrer le nom d&apos;utilisateur</value>
+  </data>
+  <data name="Sol_Register_EnterPassword" xml:space="preserve">
+    <value>Veuillez entrer le mot de passe (au moins 6 caractères)</value>
+  </data>
+  <data name="Sol_Register_ReenterPassword" xml:space="preserve">
+    <value>Entrez à nouveau le mot de passe</value>
+  </data>
+  <data name="Sol_Register_Register" xml:space="preserve">
+    <value>S&apos;inscrire</value>
+  </data>
+  <data name="Sol_Register_Terms" xml:space="preserve">
+    <value>En vous inscrivant, vous acceptez les conditions d&apos;utilisation de ColorVision</value>
+  </data>
+  <data name="Sol_ChangePwd_Title" xml:space="preserve">
+    <value>Changer le mot de passe</value>
+  </data>
+  <data name="Sol_ChangePwd_Label" xml:space="preserve">
+    <value>Changer le mot de passe</value>
+  </data>
+  <data name="Sol_ChangePwd_Current" xml:space="preserve">
+    <value>Mot de passe actuel</value>
+  </data>
+  <data name="Sol_ChangePwd_CurrentPlaceholder" xml:space="preserve">
+    <value>Veuillez entrer le mot de passe actuel</value>
+  </data>
+  <data name="Sol_ChangePwd_New" xml:space="preserve">
+    <value>Nouveau mot de passe</value>
+  </data>
+  <data name="Sol_ChangePwd_NewPlaceholder" xml:space="preserve">
+    <value>Au moins 6 caractères</value>
+  </data>
+  <data name="Sol_ChangePwd_Confirm" xml:space="preserve">
+    <value>Confirmer le nouveau mot de passe</value>
+  </data>
+  <data name="Sol_ChangePwd_ConfirmPlaceholder" xml:space="preserve">
+    <value>Entrez à nouveau le nouveau mot de passe</value>
+  </data>
+  <data name="Sol_ChangePwd_Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Sol_ChangePwd_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sol_CreateUser_Title" xml:space="preserve">
+    <value>Créer un nouvel utilisateur</value>
+  </data>
+  <data name="Sol_CreateUser_Subtitle" xml:space="preserve">
+    <value>Remplir les informations utilisateur et attribuer des rôles</value>
+  </data>
+  <data name="Sol_CreateUser_Username" xml:space="preserve">
+    <value>Nom d&apos;utilisateur</value>
+  </data>
+  <data name="Sol_CreateUser_UsernameDesc" xml:space="preserve">
+    <value>Nom de connexion, doit être unique</value>
+  </data>
+  <data name="Sol_CreateUser_Password" xml:space="preserve">
+    <value>Mot de passe</value>
+  </data>
+  <data name="Sol_CreateUser_PasswordDesc" xml:space="preserve">
+    <value>Au moins 6 caractères</value>
+  </data>
+  <data name="Sol_CreateUser_Role" xml:space="preserve">
+    <value>Rôle</value>
+  </data>
+  <data name="Sol_CreateUser_RoleDesc" xml:space="preserve">
+    <value>Sélectionner le rôle initial de l&apos;utilisateur</value>
+  </data>
+  <data name="Sol_CreateUser_Remark" xml:space="preserve">
+    <value>Remarque</value>
+  </data>
+  <data name="Sol_CreateUser_RemarkDesc" xml:space="preserve">
+    <value>Description de l&apos;utilisateur (facultatif)</value>
+  </data>
+  <data name="Sol_CreateUser_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sol_CreateUser_Create" xml:space="preserve">
+    <value>Créer un utilisateur</value>
+  </data>
+  <data name="Sol_UserMgr_Title" xml:space="preserve">
+    <value>Gestion des utilisateurs - RBAC</value>
+  </data>
+  <data name="Sol_UserMgr_Label" xml:space="preserve">
+    <value>Gestion des utilisateurs et des rôles</value>
+  </data>
+  <data name="Sol_UserMgr_Admin" xml:space="preserve">
+    <value>Mode administrateur système</value>
+  </data>
+  <data name="Sol_UserMgr_Refresh" xml:space="preserve">
+    <value>Actualiser les données</value>
+  </data>
+  <data name="Sol_UserMgr_Ops" xml:space="preserve">
+    <value>Opérations de gestion des utilisateurs</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUser" xml:space="preserve">
+    <value>Créer un utilisateur</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUserTooltip" xml:space="preserve">
+    <value>Ouvrir la fenêtre de création d&apos;utilisateur</value>
+  </data>
+  <data name="Sol_UserMgr_RoleMgmt" xml:space="preserve">
+    <value>Gestion des rôles</value>
+  </data>
+  <data name="Sol_UserMgr_RoleName" xml:space="preserve">
+    <value>Nom du rôle :</value>
+  </data>
+  <data name="Sol_UserMgr_RoleNameTooltip" xml:space="preserve">
+    <value>Entrez le nom d&apos;affichage du rôle</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCode" xml:space="preserve">
+    <value>Code du rôle :</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCodeTooltip" xml:space="preserve">
+    <value>Entrez le code identifiant unique du rôle</value>
+  </data>
+  <data name="Sol_UserMgr_Remark" xml:space="preserve">
+    <value>Remarque :</value>
+  </data>
+  <data name="Sol_UserMgr_RemarkTooltip" xml:space="preserve">
+    <value>Description du rôle</value>
+  </data>
+  <data name="Sol_UserMgr_CreateRole" xml:space="preserve">
+    <value>Créer un rôle</value>
+  </data>
+  <data name="Sol_UserMgr_PermMgmt" xml:space="preserve">
+    <value>Gestion des permissions</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleName" xml:space="preserve">
+    <value>Nom du rôle</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleCode" xml:space="preserve">
+    <value>Code du rôle</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Remark" xml:space="preserve">
+    <value>Remarque</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Status" xml:space="preserve">
+    <value>Statut</value>
+  </data>
+  <data name="Sol_UserMgr_Col_CreateTime" xml:space="preserve">
+    <value>Date de création</value>
+  </data>
+  <data name="Sol_UserMgr_SearchTooltip" xml:space="preserve">
+    <value>Rechercher un nom d&apos;utilisateur...</value>
+  </data>
+  <data name="Sol_UserMgr_UserCount" xml:space="preserve">
+    <value>{0} utilisateurs au total</value>
+  </data>
+  <data name="Sol_UserMgr_UserList" xml:space="preserve">
+    <value>Liste des utilisateurs</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Username" xml:space="preserve">
+    <value>Nom d&apos;utilisateur</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Role" xml:space="preserve">
+    <value>Rôle</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Sol_UserMgr_EditRoleTooltip" xml:space="preserve">
+    <value>Modifier le rôle</value>
+  </data>
+  <data name="Sol_UserMgr_DeleteUserTooltip" xml:space="preserve">
+    <value>Supprimer l&apos;utilisateur</value>
+  </data>
+  <data name="Sol_UserMgr_ResetPwdTooltip" xml:space="preserve">
+    <value>Réinitialiser le mot de passe</value>
+  </data>
+  <data name="Sol_UserMgr_PermStats" xml:space="preserve">
+    <value>Statistiques du cache de permissions : Chargement...</value>
+  </data>
+  <data name="Sol_UserMgr_DoubleClickHint" xml:space="preserve">
+    <value>Astuce : Double-cliquez sur l&apos;utilisateur pour voir les détails</value>
+  </data>
+  <data name="Sol_EditRoles_Title" xml:space="preserve">
+    <value>Modifier les rôles utilisateur - RBAC</value>
+  </data>
+  <data name="Sol_EditRoles_Label" xml:space="preserve">
+    <value>Modifier les rôles utilisateur</value>
+  </data>
+  <data name="Sol_EditRoles_Subtitle" xml:space="preserve">
+    <value>Sélectionnez les attributions de rôles pour l&apos;utilisateur</value>
+  </data>
+  <data name="Sol_EditRoles_Search" xml:space="preserve">
+    <value>Rechercher un nom de rôle</value>
+  </data>
+  <data name="Sol_EditRoles_Selected" xml:space="preserve">
+    <value>{0} rôles sélectionnés</value>
+  </data>
+  <data name="Sol_EditRoles_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sol_EditRoles_Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Sol_EditUser_Title" xml:space="preserve">
+    <value>Modifier les informations utilisateur</value>
+  </data>
+  <data name="Sol_EditUser_Label" xml:space="preserve">
+    <value>Modifier les informations utilisateur</value>
+  </data>
+  <data name="Sol_EditUser_Subtitle" xml:space="preserve">
+    <value>Modifier le profil personnel</value>
+  </data>
+  <data name="Sol_EditUser_Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="Sol_EditUser_Phone" xml:space="preserve">
+    <value>Téléphone</value>
+  </data>
+  <data name="Sol_EditUser_PhonePlaceholder" xml:space="preserve">
+    <value>Téléphone de contact</value>
+  </data>
+  <data name="Sol_EditUser_Company" xml:space="preserve">
+    <value>Entreprise</value>
+  </data>
+  <data name="Sol_EditUser_CompanyPlaceholder" xml:space="preserve">
+    <value>Nom de l&apos;entreprise</value>
+  </data>
+  <data name="Sol_EditUser_Dept" xml:space="preserve">
+    <value>Département</value>
+  </data>
+  <data name="Sol_EditUser_DeptPlaceholder" xml:space="preserve">
+    <value>Département</value>
+  </data>
+  <data name="Sol_EditUser_Position" xml:space="preserve">
+    <value>Poste</value>
+  </data>
+  <data name="Sol_EditUser_PositionPlaceholder" xml:space="preserve">
+    <value>Intitulé du poste</value>
+  </data>
+  <data name="Sol_EditUser_Address" xml:space="preserve">
+    <value>Adresse</value>
+  </data>
+  <data name="Sol_EditUser_AddressPlaceholder" xml:space="preserve">
+    <value>Adresse de contact</value>
+  </data>
+  <data name="Sol_EditUser_Remark" xml:space="preserve">
+    <value>Remarque</value>
+  </data>
+  <data name="Sol_EditUser_Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Sol_EditUser_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sol_PermMgr_Label" xml:space="preserve">
+    <value>Gestion des permissions des rôles</value>
+  </data>
+  <data name="Sol_PermMgr_Subtitle" xml:space="preserve">
+    <value>Attribuer et gérer les autorisations système pour les rôles</value>
+  </data>
+  <data name="Sol_PermMgr_Refresh" xml:space="preserve">
+    <value>Actualiser les rôles</value>
+  </data>
+  <data name="Sol_PermMgr_Available" xml:space="preserve">
+    <value>Autorisations disponibles</value>
+  </data>
+  <data name="Sol_PermMgr_SelectAll" xml:space="preserve">
+    <value>✓ Tout sélectionner</value>
+  </data>
+  <data name="Sol_PermMgr_DeselectAll" xml:space="preserve">
+    <value>✗ Tout désélectionner</value>
+  </data>
+  <data name="Sol_PermMgr_CurrentRole" xml:space="preserve">
+    <value>Rôle actuel :</value>
+  </data>
+  <data name="Sol_PermMgr_NotSelected" xml:space="preserve">
+    <value>Non sélectionné</value>
+  </data>
+  <data name="Sol_PermMgr_Save" xml:space="preserve">
+    <value>Enregistrer l&apos;attribution des autorisations</value>
+  </data>
+  <data name="Sol_PermMgr_Ready" xml:space="preserve">
+    <value>Prêt</value>
+  </data>
+  <data name="Sol_RbacMgr_LoginTooltip" xml:space="preserve">
+    <value>Cliquez pour vous connecter ou changer de compte</value>
+  </data>
+  <data name="Sol_RbacMgr_EditUserTooltip" xml:space="preserve">
+    <value>Modifier les détails de l&apos;utilisateur actuel</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdTooltip" xml:space="preserve">
+    <value>Changer le mot de passe du compte actuel</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdLabel" xml:space="preserve">
+    <value>Changer le mot de passe</value>
+  </data>
+  <data name="Sol_RbacMgr_UserMgmtTooltip" xml:space="preserve">
+    <value>Gérer les utilisateurs et les rôles du système (admin uniquement)</value>
+  </data>
+  <data name="Sol_RbacMgr_LogoutTooltip" xml:space="preserve">
+    <value>Se déconnecter</value>
+  </data>
+  <data name="Sol_Rbac_Close" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+</root>
