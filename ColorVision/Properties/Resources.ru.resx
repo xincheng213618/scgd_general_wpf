@@ -453,4 +453,13 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>Нет доступных комбинированных обновлений для выполнения. Следующие плагины были пропущены из-за требований совместимости: {0}</value>
   </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>Зарегистрировать предпросмотр миниатюр</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>Удалить предпросмотр миниатюр</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>Ассоциация файлов</value>
+  </data>
 </root>

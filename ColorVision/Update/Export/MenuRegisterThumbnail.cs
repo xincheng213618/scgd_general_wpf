@@ -1,3 +1,4 @@
+using ColorVision.Properties;
 using ColorVision.UI.Menus;
 using log4net;
 using System;
@@ -11,7 +12,7 @@ namespace ColorVision.Update.Export
     {
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1001;
-        public override string Header => "注册缩略图预览";
+        public override string Header => Resources.MenuRegisterThumbnail;
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuRegisterThumbnail));
 
@@ -104,7 +105,7 @@ namespace ColorVision.Update.Export
     {
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1002;
-        public override string Header => "卸载缩略图预览";
+        public override string Header => Resources.MenuUnregisterThumbnail;
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuUnregisterThumbnail));
 

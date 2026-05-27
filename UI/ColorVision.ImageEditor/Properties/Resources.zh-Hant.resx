@@ -243,4 +243,7 @@
   <data name="HistogramEqualization" xml:space="preserve">
     <value>直方圖均衡化</value>
   </data>
+  <data name="MenuModelViewer3D" xml:space="preserve">
+    <value>3D 模型檢視器</value>
+  </data>
 </root>

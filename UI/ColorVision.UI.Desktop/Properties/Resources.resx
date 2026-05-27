@@ -859,4 +859,10 @@
   <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
     <value>选择更新包</value>
   </data>
+  <data name="MenuMenuItemManager" xml:space="preserve">
+    <value>菜单管理器</value>
+  </data>
+  <data name="MenuTimedButtonOperationStats" xml:space="preserve">
+    <value>按钮耗时统计</value>
+  </data>
 </root>

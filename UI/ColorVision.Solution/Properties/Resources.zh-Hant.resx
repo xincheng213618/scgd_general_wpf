@@ -342,4 +342,22 @@
   <data name="UserName" xml:space="preserve">
     <value>使用者名稱:</value>
   </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>儲存視窗配置</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>套用視窗配置</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>重設視窗配置</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>找不到已儲存的視窗配置。</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>套用視窗配置</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>景深融合(_F)</value>
+  </data>
 </root>

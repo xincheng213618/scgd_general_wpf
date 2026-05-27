@@ -322,4 +322,22 @@
   <data name="UserName" xml:space="preserve">
     <value>用户名:</value>
   </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>保存窗口布局</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>应用窗口布局</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>重置窗口布局</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>未找到已保存的窗口布局。</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>应用窗口布局</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>景深融合(_F)</value>
+  </data>
 </root>

@@ -453,4 +453,13 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>실행 가능한 통합 업데이트가 없습니다. 다음 플러그인은 호환성 요구 사항 때문에 건너뛰었습니다: {0}</value>
   </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>썸네일 미리 보기 등록</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>썸네일 미리 보기 해제</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>파일 연결</value>
+  </data>
 </root>

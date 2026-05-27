@@ -453,4 +453,13 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>No executable combined updates are available. The following plugins were skipped because of compatibility requirements: {0}</value>
   </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>Register Thumbnail Preview</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>Unregister Thumbnail Preview</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>File Association</value>
+  </data>
 </root>

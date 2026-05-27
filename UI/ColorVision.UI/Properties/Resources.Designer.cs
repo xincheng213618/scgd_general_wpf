@@ -817,6 +817,33 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保存(_S) 的本地化字符串。
+        /// </summary>
+        public static string MenuSave {
+            get {
+                return ResourceManager.GetString("MenuSave", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 另存为(_A) 的本地化字符串。
+        /// </summary>
+        public static string MenuSaveAs {
+            get {
+                return ResourceManager.GetString("MenuSaveAs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全选(_A) 的本地化字符串。
+        /// </summary>
+        public static string MenuSelectAll {
+            get {
+                return ResourceManager.GetString("MenuSelectAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 模板(_M) 的本地化字符串。
         /// </summary>
         public static string MenuTemplate {
@@ -831,6 +858,15 @@ namespace ColorVision.UI.Properties {
         public static string MenuTool {
             get {
                 return ResourceManager.GetString("MenuTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Treemap 查看器 的本地化字符串。
+        /// </summary>
+        public static string MenuTreemapViewer {
+            get {
+                return ResourceManager.GetString("MenuTreemapViewer", resourceCulture);
             }
         }
         

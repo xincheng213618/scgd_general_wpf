@@ -453,4 +453,13 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>実行可能な統合更新はありません。次のプラグインは互換性要件のためスキップされました: {0}</value>
   </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>サムネイル プレビューを登録</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>サムネイル プレビューを解除</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>ファイル関連付け</value>
+  </data>
 </root>

@@ -12,6 +12,7 @@ namespace ColorVision.Engine.MQTT
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
+        private const string EmptyHostMessage = "MQTT服务器地址为空。";
 
         private static MQTTControl _instance;
         private static readonly object _locker = new();
@@ -34,6 +35,24 @@ namespace ColorVision.Engine.MQTT
             MQTTClient = new MqttClientFactory().CreateMqttClient();
         }
 
+        private static string NormalizeHost(string host)
+        {
+            return string.IsNullOrWhiteSpace(host) ? null : host.Trim();
+        }
+
+        private static MqttClientOptions BuildClientOptions(MQTTConfig mqttConfig)
+        {
+            ArgumentNullException.ThrowIfNull(mqttConfig);
+
+            var host = NormalizeHost(mqttConfig.Host) ?? throw new InvalidOperationException(EmptyHostMessage);
+
+            return new MqttClientOptionsBuilder()
+                .WithTcpServer(host, mqttConfig.Port)
+                .WithCredentials(mqttConfig.UserName, mqttConfig.UserPwd)
+                .WithClientId(Guid.NewGuid().ToString("N"))
+                .Build();
+        }
+
         public async Task<bool> Connect()=> await Connect(Config);
         public async Task<bool> Connect(MQTTConfig mqttConfig)
         {
@@ -41,23 +60,20 @@ namespace ColorVision.Engine.MQTT
 
             IsConnect = false;
 
-            MQTTClient.ConnectedAsync -= MQTTClient_ConnectedAsync;
-            MQTTClient.DisconnectedAsync -= MQTTClient_DisconnectedAsync;
-            MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
-            await MQTTClient.DisconnectAsync();
-            MQTTClient?.Dispose();
-            MQTTClient = new MqttClientFactory().CreateMqttClient();
-            var options = new MqttClientOptionsBuilder()
-                .WithTcpServer(mqttConfig.Host, mqttConfig.Port)
-                .WithCredentials(mqttConfig.UserName, mqttConfig.UserPwd)
-                .WithClientId(Guid.NewGuid().ToString("N"))
-                .Build();
-            MQTTClient.ConnectedAsync += MQTTClient_ConnectedAsync;
-            MQTTClient.DisconnectedAsync += MQTTClient_DisconnectedAsync;
-            MQTTClient.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
-
             try
             {
+                MQTTClient.ConnectedAsync -= MQTTClient_ConnectedAsync;
+                MQTTClient.DisconnectedAsync -= MQTTClient_DisconnectedAsync;
+                MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
+                await MQTTClient.DisconnectAsync();
+                MQTTClient?.Dispose();
+                MQTTClient = new MqttClientFactory().CreateMqttClient();
+
+                var options = BuildClientOptions(mqttConfig);
+
+                MQTTClient.ConnectedAsync += MQTTClient_ConnectedAsync;
+                MQTTClient.DisconnectedAsync += MQTTClient_DisconnectedAsync;
+                MQTTClient.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
                 await MQTTClient.ConnectAsync(options);
                 IsConnect = true;
                 return true;
@@ -103,28 +119,26 @@ namespace ColorVision.Engine.MQTT
 
         private async Task ReConnectAsync()
         {
-            var options = new MqttClientOptionsBuilder()
-                .WithTcpServer(Config.Host, Config.Port)
-                .WithCredentials(Config.UserName, Config.UserPwd)
-                .WithClientId(Guid.NewGuid().ToString("N"))
-                .Build();
-
-            await MQTTClient.ConnectAsync(options);
+            try
+            {
+                var options = BuildClientOptions(Config);
+                await MQTTClient.ConnectAsync(options);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                IsConnect = false;
+            }
         }
 
         public async Task<bool> TestConnect(MQTTConfig mqttConfig)
         {
-            var options = new MqttClientOptionsBuilder()
-                .WithTcpServer(mqttConfig.Host, mqttConfig.Port)
-                .WithCredentials(mqttConfig.UserName, mqttConfig.UserPwd)
-                .WithClientId(Guid.NewGuid().ToString("N"))
-                .Build();
-
             var mqttClient = new MqttClientFactory().CreateMqttClient();
             bool isConnected = false;
 
             try
             {
+                var options = BuildClientOptions(mqttConfig);
                 await mqttClient.ConnectAsync(options);
                 isConnected = mqttClient.IsConnected;
             }

@@ -229,4 +229,13 @@
   <data name="CurrentLog" xml:space="preserve">
     <value>当前日志</value>
   </data>
+  <data name="MenuMySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MenuEntityBrowser" xml:space="preserve">
+    <value>数据库浏览器</value>
+  </data>
+  <data name="MenuMySqlInitTables" xml:space="preserve">
+    <value>初始化 MySQL 表(调试)</value>
+  </data>
 </root>

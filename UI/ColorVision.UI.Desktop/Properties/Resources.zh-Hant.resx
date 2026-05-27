@@ -669,4 +669,10 @@
   <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
     <value>確定要刪除自訂應用 "{0}" 嗎？</value>
   </data>
+  <data name="MenuMenuItemManager" xml:space="preserve">
+    <value>選單管理器</value>
+  </data>
+  <data name="MenuTimedButtonOperationStats" xml:space="preserve">
+    <value>按鈕耗時統計</value>
+  </data>
 </root>

@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.UI;
+using ColorVision.Database.Properties;
 using ColorVision.UI.Menus;
 using log4net;
 using SqlSugar;
@@ -22,7 +23,7 @@ namespace ColorVision.Database
 
         public override string OwnerGuid => nameof(ExportMySqlMenuItem);
         public override string GuidId => nameof(ExportMySqlInitTables);
-        public override string Header => "MySqlInitTables(调试)";
+        public override string Header => Resources.MenuMySqlInitTables;
         public override int Order => 2;
 
         private static Stopwatch _stopwatch;

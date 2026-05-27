@@ -249,4 +249,13 @@
   <data name="CurrentLog" xml:space="preserve">
     <value>現在のログ</value>
   </data>
+  <data name="MenuMySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MenuEntityBrowser" xml:space="preserve">
+    <value>データベース ブラウザ</value>
+  </data>
+  <data name="MenuMySqlInitTables" xml:space="preserve">
+    <value>MySQL テーブルを初期化 (デバッグ)</value>
+  </data>
 </root>

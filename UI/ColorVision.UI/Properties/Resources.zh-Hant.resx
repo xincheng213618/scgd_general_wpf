@@ -178,6 +178,15 @@
   <data name="MenuOpen" xml:space="preserve">
     <value>打开(_O)</value>
   </data>
+  <data name="MenuSave" xml:space="preserve">
+    <value>儲存(_S)</value>
+  </data>
+  <data name="MenuSaveAs" xml:space="preserve">
+    <value>另存為(_A)</value>
+  </data>
+  <data name="MenuSelectAll" xml:space="preserve">
+    <value>全選(_A)</value>
+  </data>
   <data name="Reset" xml:space="preserve">
     <value>重置</value>
   </data>
@@ -465,5 +474,8 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>主題</value>
+  </data>
+  <data name="MenuTreemapViewer" xml:space="preserve">
+    <value>Treemap 檢視器</value>
   </data>
 </root>

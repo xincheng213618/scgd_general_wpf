@@ -226,7 +226,16 @@ namespace Conoscope
 
         private bool SaveFocusPoiTemplate(PoiParam poiParam)
         {
-            UpdatePoiTemplateImageSize(poiParam);
+            if (ImageView.ImageShow.Source is BitmapSource bmp)
+            {
+                poiParam.Width = bmp.PixelWidth;
+                poiParam.Height = bmp.PixelHeight;
+            }
+            else if (ImageView.ImageShow.Source != null)
+            {
+                poiParam.Width = (int)Math.Round(ImageView.ImageShow.Source.Width);
+                poiParam.Height = (int)Math.Round(ImageView.ImageShow.Source.Height);
+            }
             poiParam.PoiPoints.Clear();
             foreach (DVCircleText circle in ImageView.FocusCircles)
             {
@@ -311,19 +320,6 @@ namespace Conoscope
             }
         }
 
-        private void UpdatePoiTemplateImageSize(PoiParam poiParam)
-        {
-            if (ImageView.ImageShow.Source is BitmapSource bitmapSource)
-            {
-                poiParam.Width = bitmapSource.PixelWidth;
-                poiParam.Height = bitmapSource.PixelHeight;
-            }
-            else if (ImageView.ImageShow.Source != null)
-            {
-                poiParam.Width = (int)Math.Round(ImageView.ImageShow.Source.Width);
-                poiParam.Height = (int)Math.Round(ImageView.ImageShow.Source.Height);
-            }
-        }
 
         private void SyncReferenceInteractionToggle()
         {
@@ -584,7 +580,7 @@ namespace Conoscope
                 points.Add(point);
             }
 
-            capture = MeasurementCapture.FromFocusPoints(slotName, GetFocusPointCaptureSourceLabel(), points);
+            capture = MeasurementCapture.FromFocusPoints(slotName, string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename), points);
             return true;
         }
 
@@ -710,7 +706,7 @@ namespace Conoscope
             }
 
             double radius = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
-            string label = CreateFocusPointMeasurementLabel(circle);
+            string label = $"[{Properties.Resources.FocusPointLabel}] {(string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename))} - {ResolveFocusCircleName(circle)}";
             if (!FocusPointMeasurementService.TryCalculateCircleRoiAverage(
                 XMat, YMat, ZMat,
                 currentBitmapSource.PixelWidth, currentBitmapSource.PixelHeight,
@@ -767,16 +763,6 @@ namespace Conoscope
             return FocusPointMeasurementService.ResolveFocusCircleName(circle.Attribute.Text, circle.Attribute.Id);
         }
 
-        private string CreateFocusPointMeasurementLabel(DVCircleText circle)
-        {
-            string viewName = string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename);
-            return $"[{Properties.Resources.FocusPointLabel}] {viewName} - {ResolveFocusCircleName(circle)}";
-        }
-
-        private string GetFocusPointCaptureSourceLabel()
-        {
-            return string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename);
-        }
 
     }
 }

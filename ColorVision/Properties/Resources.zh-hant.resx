@@ -453,4 +453,13 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>目前沒有可執行的聯合更新。以下外掛因相容性要求被略過：{0}</value>
   </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>註冊縮圖預覽</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>卸載縮圖預覽</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>檔案關聯</value>
+  </data>
 </root>

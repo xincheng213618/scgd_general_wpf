@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
@@ -15,7 +16,7 @@ namespace ColorVision.Update.Export
     {
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1000;
-        public override string Header => "FileAssociation";
+        public override string Header => Resources.MenuFileAssociation;
         public override void Execute()
         {
             FileAssociationHelper.RegisterAssociations();

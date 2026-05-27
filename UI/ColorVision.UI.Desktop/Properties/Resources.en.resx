@@ -732,4 +732,10 @@
   <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
     <value>Delete custom app "{0}"?</value>
   </data>
+  <data name="MenuMenuItemManager" xml:space="preserve">
+    <value>Menu Manager</value>
+  </data>
+  <data name="MenuTimedButtonOperationStats" xml:space="preserve">
+    <value>Button Timing Statistics</value>
+  </data>
 </root>

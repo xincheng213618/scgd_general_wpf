@@ -1,3 +1,4 @@
+using ColorVision.Solution.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
@@ -7,7 +8,7 @@ namespace ColorVision.Solution.Fusion
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 100;
-        public override string Header => "景深融合(_F)";
+        public override string Header => Resources.MenuFusion;
 
         public override void Execute()
         {

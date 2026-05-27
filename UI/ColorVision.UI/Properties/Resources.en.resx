@@ -178,6 +178,15 @@
   <data name="MenuOpen" xml:space="preserve">
     <value>_Open</value>
   </data>
+  <data name="MenuSave" xml:space="preserve">
+    <value>_Save</value>
+  </data>
+  <data name="MenuSaveAs" xml:space="preserve">
+    <value>Save _As</value>
+  </data>
+  <data name="MenuSelectAll" xml:space="preserve">
+    <value>Select _All</value>
+  </data>
   <data name="Reset" xml:space="preserve">
     <value>Reset</value>
   </data>
@@ -477,5 +486,8 @@
   </data>
   <data name="EverythingPath" xml:space="preserve">
     <value>Everything Path</value>
+  </data>
+  <data name="MenuTreemapViewer" xml:space="preserve">
+    <value>Treemap Viewer</value>
   </data>
 </root>

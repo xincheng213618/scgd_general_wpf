@@ -342,4 +342,22 @@
   <data name="UserName" xml:space="preserve">
     <value>사용자 이름:</value>
   </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>창 레이아웃 저장</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>창 레이아웃 적용</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>창 레이아웃 재설정</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>저장된 창 레이아웃을 찾을 수 없습니다.</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>창 레이아웃 적용</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>심도 합성(_F)</value>
+  </data>
 </root>

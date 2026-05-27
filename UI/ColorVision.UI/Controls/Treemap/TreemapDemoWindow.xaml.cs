@@ -1,5 +1,6 @@
 #pragma warning disable CA1001,CA1068
 using ColorVision.UI.Menus;
+using ColorVision.UI.Properties;
 using Microsoft.Win32;
 using System.IO;
 using System.Windows;
@@ -12,7 +13,7 @@ namespace ColorVision.UI.Controls
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override int Order => 10005;
-        public override string Header => "Treemap Viewer";
+        public override string Header => Resources.MenuTreemapViewer;
         public override void Execute() => new TreemapDemoWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
     }
 

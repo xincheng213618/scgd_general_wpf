@@ -277,6 +277,33 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 数据库浏览器 的本地化字符串。
+        /// </summary>
+        public static string MenuEntityBrowser {
+            get {
+                return ResourceManager.GetString("MenuEntityBrowser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 MySQL 的本地化字符串。
+        /// </summary>
+        public static string MenuMySql {
+            get {
+                return ResourceManager.GetString("MenuMySql", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 初始化 MySQL 表(调试) 的本地化字符串。
+        /// </summary>
+        public static string MenuMySqlInitTables {
+            get {
+                return ResourceManager.GetString("MenuMySqlInitTables", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 消息 的本地化字符串。
         /// </summary>
         public static string Message {

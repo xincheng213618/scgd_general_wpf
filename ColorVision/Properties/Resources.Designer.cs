@@ -367,6 +367,33 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 文件关联 的本地化字符串。
+        /// </summary>
+        public static string MenuFileAssociation {
+            get {
+                return ResourceManager.GetString("MenuFileAssociation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册缩略图预览 的本地化字符串。
+        /// </summary>
+        public static string MenuRegisterThumbnail {
+            get {
+                return ResourceManager.GetString("MenuRegisterThumbnail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 卸载缩略图预览 的本地化字符串。
+        /// </summary>
+        public static string MenuUnregisterThumbnail {
+            get {
+                return ResourceManager.GetString("MenuUnregisterThumbnail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 检查更新(_U) 的本地化字符串。
         /// </summary>
         public static string MenuUpdate {
@@ -597,6 +624,438 @@ namespace ColorVision.Properties {
         public static string UpdateFailed {
             get {
                 return ResourceManager.GetString("UpdateFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已是最新版本 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewAlreadyLatestHeading {
+            get {
+                return ResourceManager.GetString("UpdatePreviewAlreadyLatestHeading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 将下载完整安装包并沿用当前主程序更新流程。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationCardSummaryFull {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationCardSummaryFull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 将应用 {0} 个主程序增量包，并与所选更新一起完成本轮更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationCardSummaryIncrementalFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationCardSummaryIncrementalFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 完整主程序安装包 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationFullPackageLabel {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationFullPackageLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主程序增量 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationIncrementalCategory {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationIncrementalCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 个增量更新包 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationIncrementalPackagesFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationIncrementalPackagesFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主程序更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationUpdateCategory {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationUpdateCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewCancelButtonText {
+            get {
+                return ResourceManager.GetString("UpdatePreviewCancelButtonText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在检查更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewCheckingHeading {
+            get {
+                return ResourceManager.GetString("UpdatePreviewCheckingHeading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在获取主程序、插件和主题的最新版本信息，请稍候。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewCheckingSummary {
+            get {
+                return ResourceManager.GetString("UpdatePreviewCheckingSummary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewCloseButtonText {
+            get {
+                return ResourceManager.GetString("UpdatePreviewCloseButtonText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 联合更新包下载不完整，请稍后重试。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewCombinedPackageIncomplete {
+            get {
+                return ResourceManager.GetString("UpdatePreviewCombinedPackageIncomplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发现 {0} 个可用更新，可按需选择后立即安装。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewDialogSummaryDefault {
+            get {
+                return ResourceManager.GetString("UpdatePreviewDialogSummaryDefault", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前主程序、插件和主题均无需更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewDialogSummaryNoUpdates {
+            get {
+                return ResourceManager.GetString("UpdatePreviewDialogSummaryNoUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 另有 {0} 个更新因兼容性要求未显示。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewDialogSummarySkippedCount {
+            get {
+                return ResourceManager.GetString("UpdatePreviewDialogSummarySkippedCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发现 {0} 个可用更新，包含{1}。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewDialogSummaryWithKinds {
+            get {
+                return ResourceManager.GetString("UpdatePreviewDialogSummaryWithKinds", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发现更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewFoundUpdatesHeading {
+            get {
+                return ResourceManager.GetString("UpdatePreviewFoundUpdatesHeading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 个主程序更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewHeaderApplicationCount {
+            get {
+                return ResourceManager.GetString("UpdatePreviewHeaderApplicationCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 个其他更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewHeaderOtherCount {
+            get {
+                return ResourceManager.GetString("UpdatePreviewHeaderOtherCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 个插件更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewHeaderPluginCount {
+            get {
+                return ResourceManager.GetString("UpdatePreviewHeaderPluginCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 个主题更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewHeaderThemeCount {
+            get {
+                return ResourceManager.GetString("UpdatePreviewHeaderThemeCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 宿主要求：{0} 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewHostRequirementFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewHostRequirementFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主程序版本 {0} 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewHostVersionFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewHostVersionFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 稍后 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewLaterButtonText {
+            get {
+                return ResourceManager.GetString("UpdatePreviewLaterButtonText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前未发现需要安装的更新项。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewNoInstallableUpdatesMessage {
+            get {
+                return ResourceManager.GetString("UpdatePreviewNoInstallableUpdatesMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 没有可更新的插件。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewNoPluginUpdates {
+            get {
+                return ResourceManager.GetString("UpdatePreviewNoPluginUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前主程序、插件和主题均无需更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewNoUpdatesMessage {
+            get {
+                return ResourceManager.GetString("UpdatePreviewNoUpdatesMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前没有可用更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewNoUpdatesTitle {
+            get {
+                return ResourceManager.GetString("UpdatePreviewNoUpdatesTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新包下载失败，请稍后重试。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewPackageDownloadFailed {
+            get {
+                return ResourceManager.GetString("UpdatePreviewPackageDownloadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插件下载未成功完成，请稍后重试。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewPluginDownloadFailed {
+            get {
+                return ResourceManager.GetString("UpdatePreviewPluginDownloadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插件更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewPluginUpdateCategory {
+            get {
+                return ResourceManager.GetString("UpdatePreviewPluginUpdateCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 必选 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewRequiredBadge {
+            get {
+                return ResourceManager.GetString("UpdatePreviewRequiredBadge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在扫描可用更新项 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewScanningTitle {
+            get {
+                return ResourceManager.GetString("UpdatePreviewScanningTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新前会自动创建备份，完成后可能需要重启应用 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSelectionBackupAndRestart {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSelectionBackupAndRestart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 包含主程序更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSelectionIncludesApplication {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSelectionIncludesApplication", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 包含必选更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSelectionIncludesRequired {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSelectionIncludesRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新完成后将重启应用 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSelectionRestartRequired {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSelectionRestartRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已选择 {0} / {1} 个插件 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSelectionSelectedPluginsFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSelectionSelectedPluginsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已选择 {0} / {1} 个可选更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSelectionSelectedUpdatesFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSelectionSelectedUpdatesFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前主程序和插件都已经是最新版本。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewShowNoUpdatesLatestMessage {
+            get {
+                return ResourceManager.GetString("UpdatePreviewShowNoUpdatesLatestMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前没有可执行的联合更新。以下插件因兼容性要求被跳过：{0} 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewShowNoUpdatesSkippedMessage {
+            get {
+                return ResourceManager.GetString("UpdatePreviewShowNoUpdatesSkippedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 以下更新因兼容性要求未显示：{0} 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSkippedIncompatibleUpdatesFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSkippedIncompatibleUpdatesFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 跳过此版本 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSkipVersionButtonText {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSkipVersionButtonText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未知 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewUnknownVersion {
+            get {
+                return ResourceManager.GetString("UpdatePreviewUnknownVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主程序 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewUpdateKindApplication {
+            get {
+                return ResourceManager.GetString("UpdatePreviewUpdateKindApplication", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插件 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewUpdateKindPlugin {
+            get {
+                return ResourceManager.GetString("UpdatePreviewUpdateKindPlugin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 立即更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewUpdateNowButtonText {
+            get {
+                return ResourceManager.GetString("UpdatePreviewUpdateNowButtonText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在更新... 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewUpdatingButtonText {
+            get {
+                return ResourceManager.GetString("UpdatePreviewUpdatingButtonText", resourceCulture);
             }
         }
         

@@ -453,4 +453,13 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>Aucune mise à jour combinée exécutable n'est disponible. Les plugins suivants ont été ignorés en raison des exigences de compatibilité : {0}</value>
   </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>Activer l'aperçu des miniatures</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>Désactiver l'aperçu des miniatures</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>Association de fichiers</value>
+  </data>
 </root>

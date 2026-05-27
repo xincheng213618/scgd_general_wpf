@@ -87,7 +87,7 @@ namespace Conoscope
                     }
 
                     polarDegrees = clamped;
-                    distancePixels = owner != null ? FocusPointMeasurementService.GetPolarDistancePixels(polarDegrees, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle) : distancePixels;
+                    distancePixels = owner != null ? PolarDegreesToPixels(polarDegrees, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle) : distancePixels;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(DistancePixels));
                     ApplyCenterFromPolar();
@@ -107,7 +107,7 @@ namespace Conoscope
                     }
 
                     distancePixels = clamped;
-                    polarDegrees = owner != null ? FocusPointMeasurementService.GetPolarAngleFromDistancePixels(distancePixels, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle) : polarDegrees;
+                    polarDegrees = owner != null ? PixelsToPolarDegrees(distancePixels, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle) : polarDegrees;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(PolarDegrees));
                     ApplyCenterFromPolar();
@@ -127,7 +127,7 @@ namespace Conoscope
                     }
 
                     radiusPixels = clamped;
-                    radiusDegrees = owner != null ? FocusPointMeasurementService.GetFocusCircleRadiusAngle(radiusPixels, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle) : radiusDegrees;
+                    radiusDegrees = owner != null ? RadiusPixelsToDegrees(radiusPixels, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle) : radiusDegrees;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(RadiusDegrees));
                     ApplyRadius();
@@ -147,7 +147,7 @@ namespace Conoscope
                     }
 
                     radiusDegrees = clamped;
-                    radiusPixels = owner != null ? FocusPointMeasurementService.GetFocusCircleRadiusPixelsFromAngle(radiusDegrees, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle, ConoscopeImageHost.MinimumFocusCircleRadius) : radiusPixels;
+                    radiusPixels = owner != null ? RadiusDegreesToPixels(radiusDegrees, owner.currentPixelsPerDegree, owner.currentImageRadius, owner.MaxAngle, ConoscopeImageHost.MinimumFocusCircleRadius) : radiusPixels;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(RadiusPixels));
                     ApplyRadius();
@@ -192,7 +192,10 @@ namespace Conoscope
                     return;
                 }
 
-                circle.Attribute.Center = FocusPointMeasurementService.CreatePointFromPolar(azimuthDegrees, distancePixels, owner.currentImageCenter);
+                double radians = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(azimuthDegrees) * Math.PI / 180.0;
+                circle.Attribute.Center = new Point(
+                    owner.currentImageCenter.X + Math.Cos(radians) * distancePixels,
+                    owner.currentImageCenter.Y - Math.Sin(radians) * distancePixels);
                 ApplyVisualUpdate();
             }
 
@@ -234,6 +237,37 @@ namespace Conoscope
             private static bool AreClose(double left, double right)
             {
                 return Math.Abs(left - right) < 0.000001;
+            }
+
+            private static double PolarDegreesToPixels(double polarDegrees, double pixelsPerDegree, double imageRadius, double maxAngle)
+            {
+                double clamped = Math.Max(0, Math.Min(polarDegrees, maxAngle));
+                if (pixelsPerDegree > double.Epsilon) return clamped * pixelsPerDegree;
+                if (imageRadius > 0 && maxAngle > double.Epsilon) return clamped / maxAngle * imageRadius;
+                return 0;
+            }
+
+            private static double PixelsToPolarDegrees(double distancePixels, double pixelsPerDegree, double imageRadius, double maxAngle)
+            {
+                double distance = Math.Max(0, distancePixels);
+                if (pixelsPerDegree > double.Epsilon) return Math.Max(0, Math.Min(distance / pixelsPerDegree, maxAngle));
+                if (imageRadius > 0) return Math.Max(0, Math.Min(distance / imageRadius * maxAngle, maxAngle));
+                return 0;
+            }
+
+            private static double RadiusPixelsToDegrees(double radiusPixels, double pixelsPerDegree, double imageRadius, double maxAngle)
+            {
+                if (pixelsPerDegree > double.Epsilon) return Math.Max(0, radiusPixels / pixelsPerDegree);
+                if (imageRadius > 0) return Math.Max(0, Math.Min(radiusPixels / imageRadius * maxAngle, maxAngle));
+                return 0;
+            }
+
+            private static double RadiusDegreesToPixels(double radiusDegrees, double pixelsPerDegree, double imageRadius, double maxAngle, double minimumRadius)
+            {
+                double angle = Math.Max(0, radiusDegrees);
+                if (pixelsPerDegree > double.Epsilon) return Math.Max(minimumRadius, angle * pixelsPerDegree);
+                if (imageRadius > 0 && maxAngle > double.Epsilon) return Math.Max(minimumRadius, angle / maxAngle * imageRadius);
+                return minimumRadius;
             }
         }
     }

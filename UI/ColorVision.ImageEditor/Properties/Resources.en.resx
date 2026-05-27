@@ -243,4 +243,7 @@
   <data name="HistogramEqualization" xml:space="preserve">
     <value>Histogram equalization</value>
   </data>
+  <data name="MenuModelViewer3D" xml:space="preserve">
+    <value>3D Model Viewer</value>
+  </data>
 </root>

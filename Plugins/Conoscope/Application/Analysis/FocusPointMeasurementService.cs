@@ -109,54 +109,6 @@ namespace Conoscope.ApplicationServices.Analysis
             return 0;
         }
 
-        public static double GetPolarDistancePixels(double polarDegrees, double pixelsPerDegree, double imageRadius, double maxAngle)
-        {
-            double clampedPolar = Math.Max(0, Math.Min(polarDegrees, maxAngle));
-            if (pixelsPerDegree > double.Epsilon)
-            {
-                return clampedPolar * pixelsPerDegree;
-            }
-
-            if (imageRadius > 0 && maxAngle > double.Epsilon)
-            {
-                return clampedPolar / maxAngle * imageRadius;
-            }
-
-            return 0;
-        }
-
-        public static double GetPolarAngleFromDistancePixels(double distancePixels, double pixelsPerDegree, double imageRadius, double maxAngle)
-        {
-            double distance = Math.Max(0, distancePixels);
-            if (pixelsPerDegree > double.Epsilon)
-            {
-                return Math.Max(0, Math.Min(distance / pixelsPerDegree, maxAngle));
-            }
-
-            if (imageRadius > 0)
-            {
-                return Math.Max(0, Math.Min(distance / imageRadius * maxAngle, maxAngle));
-            }
-
-            return 0;
-        }
-
-        public static double GetFocusCircleRadiusPixelsFromAngle(double radiusDegrees, double pixelsPerDegree, double imageRadius, double maxAngle, double minimumRadius)
-        {
-            double angle = Math.Max(0, radiusDegrees);
-            if (pixelsPerDegree > double.Epsilon)
-            {
-                return Math.Max(minimumRadius, angle * pixelsPerDegree);
-            }
-
-            if (imageRadius > 0 && maxAngle > double.Epsilon)
-            {
-                return Math.Max(minimumRadius, angle / maxAngle * imageRadius);
-            }
-
-            return minimumRadius;
-        }
-
         public static double GetFullAzimuthAngle(Point point, Point imageCenter)
         {
             double deltaX = point.X - imageCenter.X;
@@ -176,12 +128,5 @@ namespace Conoscope.ApplicationServices.Analysis
             return Math.Max(0, Math.Min(distance / imageRadius * maxAngle, maxAngle));
         }
 
-        public static Point CreatePointFromPolar(double azimuthDegrees, double distancePixels, Point imageCenter)
-        {
-            double radians = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(azimuthDegrees) * Math.PI / 180.0;
-            return new Point(
-                imageCenter.X + Math.Cos(radians) * distancePixels,
-                imageCenter.Y - Math.Sin(radians) * distancePixels);
-        }
     }
 }

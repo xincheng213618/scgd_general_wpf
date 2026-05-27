@@ -127,14 +127,14 @@ namespace Conoscope
                 return;
             }
 
-            AnalysisWorkflowResult<ColorGamutComputationResult> result = analysisWorkflow.ComputeGamut(standard);
-            if (!result.IsSuccess)
+            var (gamutResult, gamutError) = analysisWorkflow.ComputeGamut(standard);
+            if (gamutError != null)
             {
-                MessageBox.Show(this, result.ErrorMessage, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, gamutError, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            ColorGamutResultWindow window = new(result.Value!)
+            ColorGamutResultWindow window = new(gamutResult!)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -154,14 +154,14 @@ namespace Conoscope
 
         private void btnComputeContrast_Click(object sender, RoutedEventArgs e)
         {
-            AnalysisWorkflowResult<ContrastComputationResult> result = analysisWorkflow.ComputeContrast();
-            if (!result.IsSuccess)
+            var (contrastResult, contrastError) = analysisWorkflow.ComputeContrast();
+            if (contrastError != null)
             {
-                MessageBox.Show(this, result.ErrorMessage, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, contrastError, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            ContrastResultWindow window = new(result.Value!)
+            ContrastResultWindow window = new(contrastResult!)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner

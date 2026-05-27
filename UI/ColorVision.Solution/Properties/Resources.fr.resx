@@ -342,4 +342,22 @@
   <data name="UserName" xml:space="preserve">
     <value>nom d'utilisateur:</value>
   </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>Enregistrer la disposition des fenêtres</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>Appliquer la disposition des fenêtres</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>Réinitialiser la disposition des fenêtres</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>La disposition de fenêtre enregistrée est introuvable.</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>Appliquer la disposition des fenêtres</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>Fusion de profondeur(_F)</value>
+  </data>
 </root>

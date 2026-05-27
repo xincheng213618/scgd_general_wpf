@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿using ColorVision.UI.Properties;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Menus.Base.File
 {
@@ -6,7 +7,7 @@ namespace ColorVision.UI.Menus.Base.File
     {
 
         public override string GuidId => nameof(MenuSave);
-        public override string Header => "Save";
+        public override string Header => Resources.MenuSave;
         public override int Order => 30;
         public override string InputGestureText => "Ctrl+S";
         public override ICommand Command => ApplicationCommands.Save;

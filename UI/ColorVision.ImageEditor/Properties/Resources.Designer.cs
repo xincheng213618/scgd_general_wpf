@@ -268,6 +268,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 3D模型查看器 的本地化字符串。
+        /// </summary>
+        public static string MenuModelViewer3D {
+            get {
+                return ResourceManager.GetString("MenuModelViewer3D", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 去除摩尔纹 的本地化字符串。
         /// </summary>
         public static string MoireRemove {

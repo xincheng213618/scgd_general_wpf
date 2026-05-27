@@ -249,4 +249,13 @@
   <data name="CurrentLog" xml:space="preserve">
     <value>현재 로그</value>
   </data>
+  <data name="MenuMySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MenuEntityBrowser" xml:space="preserve">
+    <value>데이터베이스 브라우저</value>
+  </data>
+  <data name="MenuMySqlInitTables" xml:space="preserve">
+    <value>MySQL 테이블 초기화(디버그)</value>
+  </data>
 </root>

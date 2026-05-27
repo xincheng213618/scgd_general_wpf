@@ -70,71 +70,37 @@ namespace Conoscope.ApplicationServices.Analysis
             contrastBlackCapture = null;
         }
 
-        public AnalysisWorkflowResult<ColorGamutComputationResult> ComputeGamut(ColorGamutStandard standard)
+        public (ColorGamutComputationResult? Result, string? Error) ComputeGamut(ColorGamutStandard standard)
         {
             if (gamutRedCapture == null || gamutGreenCapture == null || gamutBlueCapture == null)
-            {
-                return AnalysisWorkflowResult<ColorGamutComputationResult>.Fail(Properties.Resources.MsgNeedRGBData);
-            }
+                return (null, Properties.Resources.MsgNeedRGBData);
 
             if (standard == null)
-            {
-                return AnalysisWorkflowResult<ColorGamutComputationResult>.Fail(Properties.Resources.MsgSelectGamutStandard);
-            }
+                return (null, Properties.Resources.MsgSelectGamutStandard);
 
             try
             {
-                ColorGamutComputationResult result = batchColorGamutCalculator.Calculate(
-                    gamutRedCapture, gamutGreenCapture, gamutBlueCapture, standard);
-                return AnalysisWorkflowResult<ColorGamutComputationResult>.Ok(result);
+                return (batchColorGamutCalculator.Calculate(gamutRedCapture, gamutGreenCapture, gamutBlueCapture, standard), null);
             }
             catch (Exception ex)
             {
-                return AnalysisWorkflowResult<ColorGamutComputationResult>.Fail(ex.Message);
+                return (null, ex.Message);
             }
         }
 
-        public AnalysisWorkflowResult<ContrastComputationResult> ComputeContrast()
+        public (ContrastComputationResult? Result, string? Error) ComputeContrast()
         {
             if (contrastWhiteCapture == null || contrastBlackCapture == null)
-            {
-                return AnalysisWorkflowResult<ContrastComputationResult>.Fail(Properties.Resources.MsgNeedWhiteBlackData);
-            }
+                return (null, Properties.Resources.MsgNeedWhiteBlackData);
 
             try
             {
-                ContrastComputationResult result = batchContrastCalculator.Calculate(
-                    contrastWhiteCapture, contrastBlackCapture);
-                return AnalysisWorkflowResult<ContrastComputationResult>.Ok(result);
+                return (batchContrastCalculator.Calculate(contrastWhiteCapture, contrastBlackCapture), null);
             }
             catch (Exception ex)
             {
-                return AnalysisWorkflowResult<ContrastComputationResult>.Fail(ex.Message);
+                return (null, ex.Message);
             }
-        }
-    }
-
-    public sealed class AnalysisWorkflowResult<T>
-    {
-        private AnalysisWorkflowResult(bool isSuccess, T? value, string? errorMessage)
-        {
-            IsSuccess = isSuccess;
-            Value = value;
-            ErrorMessage = errorMessage;
-        }
-
-        public bool IsSuccess { get; }
-        public T? Value { get; }
-        public string? ErrorMessage { get; }
-
-        public static AnalysisWorkflowResult<T> Ok(T value)
-        {
-            return new AnalysisWorkflowResult<T>(true, value, null);
-        }
-
-        public static AnalysisWorkflowResult<T> Fail(string errorMessage)
-        {
-            return new AnalysisWorkflowResult<T>(false, default, errorMessage);
         }
     }
 }

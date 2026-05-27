@@ -342,4 +342,22 @@
   <data name="UserName" xml:space="preserve">
     <value>имя пользователя:</value>
   </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>Сохранить раскладку окон</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>Применить раскладку окон</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>Сбросить раскладку окон</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>Сохраненная раскладка окон не найдена.</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>Применить раскладку окон</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>Слияние глубины(_F)</value>
+  </data>
 </root>

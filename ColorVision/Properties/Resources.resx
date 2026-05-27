@@ -453,4 +453,13 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>当前没有可执行的联合更新。以下插件因兼容性要求被跳过：{0}</value>
   </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>注册缩略图预览</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>卸载缩略图预览</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>文件关联</value>
+  </data>
 </root>

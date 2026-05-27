@@ -342,4 +342,22 @@
   <data name="UserName" xml:space="preserve">
     <value>Username:</value>
   </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>Save Window Layout</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>Apply Window Layout</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>Reset Window Layout</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>Saved window layout was not found.</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>Apply Window Layout</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>Depth Fusion(_F)</value>
+  </data>
 </root>

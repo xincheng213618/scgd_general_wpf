@@ -249,4 +249,13 @@
   <data name="CurrentLog" xml:space="preserve">
     <value>當前日誌</value>
   </data>
+  <data name="MenuMySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MenuEntityBrowser" xml:space="preserve">
+    <value>資料庫瀏覽器</value>
+  </data>
+  <data name="MenuMySqlInitTables" xml:space="preserve">
+    <value>初始化 MySQL 資料表(偵錯)</value>
+  </data>
 </root>

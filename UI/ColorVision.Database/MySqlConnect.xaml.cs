@@ -15,7 +15,7 @@ namespace ColorVision.Database
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override string GuidId => nameof(ExportMySqlMenuItem);
-        public override string Header => "MySql";
+        public override string Header => Resources.MenuMySql;
         public override int Order => 20;
     }
 

@@ -277,6 +277,24 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未找到已保存的窗口布局。 的本地化字符串。
+        /// </summary>
+        public static string LayoutNotFoundMessage {
+            get {
+                return ResourceManager.GetString("LayoutNotFoundMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 应用窗口布局 的本地化字符串。
+        /// </summary>
+        public static string LayoutNotFoundTitle {
+            get {
+                return ResourceManager.GetString("LayoutNotFoundTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 行 的本地化字符串。
         /// </summary>
         public static string Line {
@@ -313,11 +331,29 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 应用窗口布局 的本地化字符串。
+        /// </summary>
+        public static string MenuApplyLayout {
+            get {
+                return ResourceManager.GetString("MenuApplyLayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制完整路径(_U) 的本地化字符串。
         /// </summary>
         public static string MenuCopyFullPath {
             get {
                 return ResourceManager.GetString("MenuCopyFullPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 景深融合(_F) 的本地化字符串。
+        /// </summary>
+        public static string MenuFusion {
+            get {
+                return ResourceManager.GetString("MenuFusion", resourceCulture);
             }
         }
         
@@ -354,6 +390,24 @@ namespace ColorVision.Solution.Properties {
         public static string MenuProperty {
             get {
                 return ResourceManager.GetString("MenuProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重置窗口布局 的本地化字符串。
+        /// </summary>
+        public static string MenuResetLayout {
+            get {
+                return ResourceManager.GetString("MenuResetLayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存窗口布局 的本地化字符串。
+        /// </summary>
+        public static string MenuSaveLayout {
+            get {
+                return ResourceManager.GetString("MenuSaveLayout", resourceCulture);
             }
         }
         

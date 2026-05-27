@@ -1393,6 +1393,24 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 菜单管理器 的本地化字符串。
+        /// </summary>
+        public static string MenuMenuItemManager {
+            get {
+                return ResourceManager.GetString("MenuMenuItemManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按钮耗时统计 的本地化字符串。
+        /// </summary>
+        public static string MenuTimedButtonOperationStats {
+            get {
+                return ResourceManager.GetString("MenuTimedButtonOperationStats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 消息日志窗口 的本地化字符串。
         /// </summary>
         public static string MsgList {
