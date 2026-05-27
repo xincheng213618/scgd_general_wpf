@@ -297,4 +297,19 @@
   <data name="SocketServerDisconnected" xml:space="preserve">
     <value>Socket サーバー未接続</value>
   </data>
+  <data name="Socket_Receive" xml:space="preserve">
+    <value>Receive</value>
+  </data>
+  <data name="Socket_Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Socket_QueryCount" xml:space="preserve">
+    <value>Query Count</value>
+  </data>
+  <data name="Socket_SortByType" xml:space="preserve">
+    <value>Sort by Type</value>
+  </data>
+  <data name="Socket_MessageTable" xml:space="preserve">
+    <value>Socket Messages</value>
+  </data>
 </root>

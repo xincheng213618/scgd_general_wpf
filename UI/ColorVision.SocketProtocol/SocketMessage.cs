@@ -2,6 +2,7 @@
 using ColorVision.Database;
 using SqlSugar;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.SocketProtocol
 {
@@ -10,9 +11,9 @@ namespace ColorVision.SocketProtocol
     /// </summary>
     public enum SocketMessageDirection
     {
-        [Description("接收")]
+        [Display(Name = "Socket_Receive", ResourceType = typeof(Properties.Resources))]
         Received,
-        [Description("发送")]
+        [Display(Name = "Socket_Send", ResourceType = typeof(Properties.Resources))]
         Sent
     }
 

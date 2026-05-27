@@ -493,6 +493,51 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Socket 消息 的本地化字符串。
+        /// </summary>
+        public static string Socket_MessageTable {
+            get {
+                return ResourceManager.GetString("Socket_MessageTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询数量 的本地化字符串。
+        /// </summary>
+        public static string Socket_QueryCount {
+            get {
+                return ResourceManager.GetString("Socket_QueryCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 接收 的本地化字符串。
+        /// </summary>
+        public static string Socket_Receive {
+            get {
+                return ResourceManager.GetString("Socket_Receive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发送 的本地化字符串。
+        /// </summary>
+        public static string Socket_Send {
+            get {
+                return ResourceManager.GetString("Socket_Send", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按类型排序 的本地化字符串。
+        /// </summary>
+        public static string Socket_SortByType {
+            get {
+                return ResourceManager.GetString("Socket_SortByType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Socket 连接管理器 的本地化字符串。
         /// </summary>
         public static string SocketManagementWindow {

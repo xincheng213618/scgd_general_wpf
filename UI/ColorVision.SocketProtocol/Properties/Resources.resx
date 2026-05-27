@@ -277,4 +277,19 @@
   <data name="SocketServerDisconnected" xml:space="preserve">
     <value>Socket 服务未连接</value>
   </data>
+  <data name="Socket_Receive" xml:space="preserve">
+    <value>接收</value>
+  </data>
+  <data name="Socket_Send" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="Socket_QueryCount" xml:space="preserve">
+    <value>查询数量</value>
+  </data>
+  <data name="Socket_SortByType" xml:space="preserve">
+    <value>按类型排序</value>
+  </data>
+  <data name="Socket_MessageTable" xml:space="preserve">
+    <value>Socket 消息</value>
+  </data>
 </root>

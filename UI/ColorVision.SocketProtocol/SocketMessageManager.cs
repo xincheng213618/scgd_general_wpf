@@ -7,6 +7,7 @@ using log4net;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Windows;
 
@@ -17,11 +18,11 @@ namespace ColorVision.SocketProtocol
     /// </summary>
     public class SocketMessageManagerConfig : ViewModelBase, IConfig
     {
-        [DisplayName("查询数量"), Category("View")]
+        [Display(Name = "Socket_QueryCount", ResourceType = typeof(Properties.Resources)), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 100;
 
-        [DisplayName("按类型排序"), Category("View")]
+        [Display(Name = "Socket_SortByType", ResourceType = typeof(Properties.Resources)), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
     }
@@ -87,7 +88,7 @@ namespace ColorVision.SocketProtocol
             public static IDatabaseBrowserProvider CreateBrowserProvider() =>
                 new SqliteDatabaseBrowserProvider(
                     "sqlite.socketmessages",
-                    "Socket 消息",
+                    Properties.Resources.Socket_MessageTable,
                     () => SqliteDbPath,
                     dbPath => new SqlSugarClient(new ConnectionConfig
                     {
