@@ -202,10 +202,125 @@ The following categories of Chinese text were found but intentionally not proces
 5. **Desktop pet feature** - Lower priority feature, can be processed later
 6. **Update coordinator** - Internal update logic strings
 
+## ColorVision.UI Project
+
+| Project | File | Resource Key | Chinese | English | 备注 |
+|---|---|---|---|---|---|
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_Title | 磁盘空间分析 - Treemap Viewer | Disk Space Analyzer - Treemap Viewer | Window Title |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_DriveLabel | 盘符： | Drive: | Label |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_BrowseDirectory | 浏览目录… | Browse... | Button Content |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_BrowseDirectoryTooltip | 选择要扫描的目录 | Select directory to scan | ToolTip |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_Scan | 扫 描 | Scan | Button Content |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_ScanTooltip | 扫描选定目录并显示树图 | Scan selected directory and display treemap | ToolTip |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_Cancel | 取 消 | Cancel | Button Content |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_CancelTooltip | 中止当前扫描 | Abort current scan | ToolTip |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_Save | 保 存 | Save | Button Content |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_SaveTooltip | 将当前扫描结果保存为 JSON 文件 | Save current scan results as JSON file | ToolTip |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_Load | 加 载 | Load | Button Content |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_LoadTooltip | 从已保存的 JSON 文件加载扫描结果 | Load scan results from saved JSON file | ToolTip |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_Up | ↑ 上级 | ↑ Up | Button Content |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_UpTooltip | 返回父目录节点 | Return to parent directory node | ToolTip |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_ShowLabels | 显示标签 | Show Labels | CheckBox Content |
+| ColorVision.UI | TreemapDemoWindow.xaml | Treemap_NodeCount | 节点数： | Nodes: | Label |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_SelectDirPrompt | 请选择目录并点击"扫描"... | Select a directory and click "Scan"... | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_Scanning | 扫描中… | Scanning... | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_ScannedFiles | 已扫描 {0:N0} 个文件… | Scanned {0:N0} files... | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_Cancelled | 已取消。 | Cancelled. | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_Complete | 完成。共 {0:N0} 个文件。 | Done. {0:N0} files total. | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_ScanError | 扫描出错：{0} | Scan error: {0} | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_SaveDialogTitle | 保存扫描结果 | Save Scan Results | Dialog Title |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_Saved | 已保存：{0} | Saved: {0} | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_SaveFailed | 保存失败：{0} | Save failed: {0} | MessageBox |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_LoadDialogTitle | 加载扫描结果 | Load Scan Results | Dialog Title |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_InvalidFormat | 文件格式无效或为空。 | Invalid or empty file format. | MessageBox |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_Loaded | 已加载：{0} | Loaded: {0} | Status text |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_LoadFailed | 加载失败：{0} | Load failed: {0} | MessageBox |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_OpenFile | 打开文件 | Open File | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_OpenFolder | 打开文件夹 | Open Folder | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_OpenInExplorer | 在资源管理器中打开 | Open in Explorer | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_ShowInExplorer | 在资源管理器中显示 | Show in Explorer | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_CopyPath | 复制路径 | Copy Path | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_DrillDown | 向下钻取（以此为根） | Drill Down (set as root) | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_GoUp | 返回上级 | Go Up | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_DeleteFile | 删除文件{0} | Delete file {0} | Context menu |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_ConfirmDelete | 确认删除文件：\n{0} | Confirm delete file:\n{0} | MessageBox |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_ConfirmDeleteTitle | 确认删除 | Confirm Delete | MessageBox Title |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_DeleteFailed | 删除失败：{0} | Delete failed: {0} | MessageBox |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_Error | 错误 | Error | MessageBox Title |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_Prompt | 提示 | Prompt | MessageBox Title |
+| ColorVision.UI | TreemapDemoWindow.xaml.cs | Treemap_SelectValidDir | 请先选择有效的目录。 | Please select a valid directory first. | MessageBox |
+| ColorVision.UI | TreemapControl.cs | Treemap_File | 文件 | File | Tooltip type |
+| ColorVision.UI | TreemapControl.cs | Treemap_Folder | 文件夹 | Folder | Tooltip type |
+| ColorVision.UI | PropertyEditorWindow.xaml | PropEditor_SearchPlaceholder | 搜索属性... | Search properties... | Placeholder |
+| ColorVision.UI | PropertyEditorWindow.xaml | PropEditor_ResetToDefault | 恢复到默认 | Reset to Default | Button Content |
+| ColorVision.UI | PropertyEditorWindow.xaml | PropEditor_ResetTooltip | 重置到类默认值 | Reset to class default values | ToolTip |
+| ColorVision.UI | PropertyEditorWindow.xaml.cs | PropEditor_SortDefault | 默认排序 | Default Sort | ComboBoxItem |
+| ColorVision.UI | PropertyEditorWindow.xaml.cs | PropEditor_SortNameAsc | 按名称排序 (升序) | Sort by Name (Ascending) | ComboBoxItem |
+| ColorVision.UI | PropertyEditorWindow.xaml.cs | PropEditor_SortNameDesc | 按名称排序 (降序) | Sort by Name (Descending) | ComboBoxItem |
+| ColorVision.UI | PropertyEditorWindow.xaml.cs | PropEditor_SortCategoryAsc | 按分类排序 (升序) | Sort by Category (Ascending) | ComboBoxItem |
+| ColorVision.UI | PropertyEditorWindow.xaml.cs | PropEditor_SortCategoryDesc | 按分类排序 (降序) | Sort by Category (Descending) | ComboBoxItem |
+| ColorVision.UI | JsonPropertyEditorControl.xaml.cs | PropEditor_JsonParseError | JSON 解析错误： | JSON parse error: | Error text |
+| ColorVision.UI | JsonPropertyEditorControl.xaml.cs | PropEditor_LoadError | 加载错误： | Load error: | Error text |
+| ColorVision.UI | JsonPropertyEditorControl.xaml.cs | PropEditor_NoEditableProperties | 没有可编辑的属性 | No editable properties | TextBlock |
+| ColorVision.UI | JsonPropertyEditorControl.xaml.cs | PropEditor_JsonGenerateError | JSON 生成错误： | JSON generation error: | Error text |
+| ColorVision.UI | JsonPropertyEditorControl.xaml.cs | PropEditor_ValidationError | 验证失败： | Validation failed: | Error text |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_Title | 编辑列表 | Edit List | Window Title |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_Add | 添加 | Add | Button Content |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_Delete | 删除 | Delete | Button Content |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_DeleteAll | 全部删除 | Delete All | Button Content |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_MoveUp | 上移 | Move Up | Button Content |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_MoveDown | 下移 | Move Down | Button Content |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_Index | 索引 | Index | Column Header |
+| ColorVision.UI | ListEditorWindow.xaml | ListEditor_Value | 值 | Value | Column Header |
+| ColorVision.UI | ListItemEditorWindow.xaml | ListItemEditor_Title | 编辑项 | Edit Item | Window Title |
+| ColorVision.UI | ListItemEditorWindow.xaml | ListItemEditor_EditorType | 编辑器类型: | Editor Type: | Label |
+| ColorVision.UI | DictionaryEditorWindow.xaml | DictEditor_Title | 编辑字典 | Edit Dictionary | Window Title |
+| ColorVision.UI | DictionaryEditorWindow.xaml | DictEditor_Key | 键 (Key) | Key | Column Header |
+| ColorVision.UI | DictionaryEditorWindow.xaml | DictEditor_Value | 值 (Value) | Value | Column Header |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml | DictItemEditor_Title | 编辑字典项 | Edit Dictionary Item | Window Title |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml | DictItemEditor_Key | 键 (Key) | Key | GroupBox Header |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml | DictItemEditor_Value | 值 (Value) | Value | GroupBox Header |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml.cs | DictItemEditor_Count | 当前包含 {0} 个项 | Contains {0} items | TextBlock |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml.cs | DictItemEditor_Empty | 空列表 | Empty list | TextBlock |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml.cs | DictItemEditor_EditList | 编辑列表... | Edit list... | Button Content |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml.cs | DictItemEditor_KeyEmpty | 键不能为空！ | Key cannot be empty! | MessageBox |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml.cs | DictItemEditor_ValidationError | 验证错误 | Validation Error | MessageBox Title |
+| ColorVision.UI | DictionaryItemEditorWindow.xaml.cs | DictItemEditor_KeyExists | 键 '{0}' 已存在！ | Key '{0}' already exists! | MessageBox |
+| ColorVision.UI | DictionaryEditorWindow.xaml.cs | DictEditor_CollectionCount | 集合: {0} 项 | Collection: {0} items | Display text |
+| ColorVision.UI | DictionaryEditorWindow.xaml.cs | DictEditor_ConfirmDeleteSelected | 确定要删除选中的 {0} 项吗？ | Are you sure you want to delete the selected {0} items? | MessageBox |
+| ColorVision.UI | DictionaryEditorWindow.xaml.cs | DictEditor_ConfirmDeleteTitle | 确认删除 | Confirm Delete | MessageBox Title |
+| ColorVision.UI | DictionaryEditorWindow.xaml.cs | DictEditor_ConfirmDeleteAll | 确定要删除全部 {0} 项吗？ | Are you sure you want to delete all {0} items? | MessageBox |
+| ColorVision.UI | DictionaryEditorWindow.xaml.cs | DictEditor_ConfirmDeleteAllTitle | 确认全部删除 | Confirm Delete All | MessageBox Title |
+| ColorVision.UI | ConfigHandler.cs | Config_Parameters | 配置相关参数 | Configuration Parameters | DisplayName |
+| ColorVision.UI | ConfigHandler.cs | Config_EnableBackup | 是否启用定时备份 | Enable scheduled backup | DisplayName |
+| ColorVision.UI | HotKeysSetting.xaml | HotKey_RestoreDefault | 恢复默认 | Restore Default | Button Content |
+| ColorVision.UI | HotKeysSetting.xaml | HotKey_SaveHotkey | 保存热键 | Save Hotkey | Button Content |
+| ColorVision.UI | HotKeysSetting.xaml | HotKey_LoadHotkey | 加载热键 | Load Hotkey | Button Content |
+| ColorVision.UI | LogLocalOutput.xaml | Log_ReverseOrder | 倒序 | Reverse | ToggleButton Content |
+| ColorVision.UI | LogLocalOutput.xaml | Log_OpenFolder | 打开文件夹 | Open Folder | Button Content |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_ViewStats | 查看耗时统计 | View Timing Stats | MenuItem Header |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_NoHistory | 暂无历史耗时。 | No timing history. | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_Warmup | 预热: | Warmup: | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_NoStableSamples | 稳定样本暂无记录。 | No stable samples recorded yet. | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_WarmupNote | 本次软件启动的首轮样本按预热处理... | First-run samples after startup are treated as warmup... | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_Last | 上次: | Last: | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_Average | 平均: | Average: | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_Fastest | 最快: | Fastest: | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_Slowest | 最慢: | Slowest: | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_StableSamples | 稳定样本: | Stable samples: | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_RightClickHint | 右键按钮可打开统计窗口。 | Right-click the button to open stats window. | Tooltip |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_FewSamples | 稳定样本仍然较少... | Stable samples still few... | Trend text |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_StatsRecorded | 耗时统计已记录。 | Timing stats recorded. | Trend text |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_CloseToAverage | 本次与历史平均接近。 | Close to historical average. | Trend text |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_FasterThanAverage | 本次比历史平均快 {0}。 | {0} faster than historical average. | Trend text |
+| ColorVision.UI | TimedButtonOperation.cs | TimedOp_SlowerThanAverage | 本次比历史平均慢 {0}。 | {0} slower than historical average. | Trend text |
+| ColorVision.UI | UpdateRecoveryService.cs | UpdateRecovery_Restored | 上次更新未完成，已恢复到更新前版本。 | Previous update was incomplete. System has been restored... | MessageBox |
+| ColorVision.UI | UpdateRecoveryService.cs | UpdateRecovery_Failed | 上次更新未完成，且自动恢复失败... | Previous update was incomplete and automatic recovery failed... | MessageBox |
+
 ## Next Steps
 
-1. Process remaining C# files in ColorVision/ project
-2. Process UI/ColorVision.UI/ project
+1. ~~Process remaining C# files in ColorVision/ project~~ ✓
+2. ~~Process UI/ColorVision.UI/ project~~ ✓
 3. Process UI/ColorVision.UI.Desktop/ project
 4. Process UI/ColorVision.Themes/ project
 5. Process UI/ColorVision.ImageEditor/ project

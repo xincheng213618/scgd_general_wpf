@@ -1,3 +1,4 @@
+using ColorVision.UI.Properties;
 using Newtonsoft.Json;
 using System.Collections;
 using System.Windows;
@@ -32,7 +33,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                     // Special handling for nested lists
                     if (Value is System.Collections.IList list)
                     {
-                        return $"[列表: {list.Count} 项]";
+                        return string.Format(Properties.Resources.ListEditor_ListCount, list.Count);
                     }
                     if (Type.IsClass)
                     {
@@ -136,7 +137,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             if (ItemsListView.SelectedItems.Count == 0) return;
 
             int selectedCount = ItemsListView.SelectedItems.Count;
-            var result = MessageBox.Show($"确定要删除选中的 {selectedCount} 项吗？", "确认删除", 
+            var result = MessageBox.Show(string.Format(Properties.Resources.ListEditor_ConfirmDeleteSelected, selectedCount), Properties.Resources.ListEditor_ConfirmDeleteTitle,
                 MessageBoxButton.YesNo, MessageBoxImage.Question);
             
             if (result == MessageBoxResult.Yes)
@@ -163,7 +164,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         {
             if (_items.Count == 0) return;
 
-            var result = MessageBox.Show($"确定要删除全部 {_items.Count} 项吗？", "确认全部删除", 
+            var result = MessageBox.Show(string.Format(Properties.Resources.ListEditor_ConfirmDeleteAll, _items.Count), Properties.Resources.ListEditor_ConfirmDeleteAllTitle, 
                 MessageBoxButton.YesNo, MessageBoxImage.Warning);
             
             if (result == MessageBoxResult.Yes)

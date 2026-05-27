@@ -1,4 +1,5 @@
 #pragma warning disable CA1822
+using ColorVision.UI.Properties;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -272,13 +273,13 @@ namespace ColorVision.Update
             bool rolledBack = RollbackLastUpdate(state);
             if (rolledBack)
             {
-                MessageBox.Show(owner, "上次更新未完成，已恢复到更新前版本。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(owner, Resources.UpdateRecovery_Restored, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 CleanupOldBackups();
                 return;
             }
 
             string backupPath = string.IsNullOrWhiteSpace(state.BackupPath) ? BackupRoot : state.BackupPath;
-            MessageBox.Show(owner, $"上次更新未完成，且自动恢复失败，请手动重新安装或检查备份目录。\n\n备份目录：{backupPath}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(owner, $"{Resources.UpdateRecovery_Failed}\n\n{backupPath}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private string CreateBackupDirectory()

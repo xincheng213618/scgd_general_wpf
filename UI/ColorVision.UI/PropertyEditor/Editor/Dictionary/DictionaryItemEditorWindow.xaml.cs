@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.PropertyEditor.Editor.List;
+using ColorVision.UI.Properties;
 
 namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
 {
@@ -217,7 +218,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             // Display current list info
             var infoText = new TextBlock
             {
-                Text = list != null ? $"当前包含 {list.Count} 个项" : "空列表",
+                Text = list != null ? string.Format(Properties.Resources.DictItemEditor_Count, list.Count) : Properties.Resources.DictItemEditor_Empty,
                 Margin = new Thickness(0, 0, 0, 10),
                 Foreground = PropertyEditorHelper.GlobalTextBrush
             };
@@ -226,7 +227,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             // Edit button to open nested list editor
             var editButton = new Button
             {
-                Content = "编辑列表...",
+                Content = Properties.Resources.DictItemEditor_EditList,
                 Width = 120,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Margin = new Thickness(0, 0, 0, 0)
@@ -242,7 +243,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
                     if (nestedEditor.ShowDialog() == true)
                     {
                         // Update the info text
-                        infoText.Text = $"当前包含 {list.Count} 个项";
+                        infoText.Text = string.Format(Properties.Resources.DictItemEditor_Count, list.Count);
                     }
                 }
             };
@@ -277,7 +278,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
                 var dockPanel = new DockPanel();
                 var label = new TextBlock
                 {
-                    Text = property.Name == "Key" ? "键:" : "值:",
+                    Text = property.Name == "Key" ? Properties.Resources.DictItemEditor_Key : Properties.Resources.DictItemEditor_Value,
                     MinWidth = 60,
                     Margin = new Thickness(0, 0, 10, 0)
                 };
@@ -312,7 +313,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             // Validate key is not null and not duplicate
             if (_wrapper.Key == null)
             {
-                MessageBox.Show("键不能为空！", "验证错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.DictItemEditor_KeyEmpty, Properties.Resources.DictItemEditor_ValidationError, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -321,7 +322,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             {
                 if (Equals(existingKey, _wrapper.Key))
                 {
-                    MessageBox.Show($"键 '{_wrapper.Key}' 已存在！请使用不同的键。", "验证错误", 
+                    MessageBox.Show(string.Format(Properties.Resources.DictItemEditor_KeyExists, _wrapper.Key), Properties.Resources.DictItemEditor_ValidationError,
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }

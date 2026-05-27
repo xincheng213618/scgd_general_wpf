@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.UI.HotKey"
+        xmlns:properties="clr-namespace:ColorVision.UI.Properties"
         mc:Ignorable="d"
         d:Height  ="200" d:Width="500" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -27,9 +28,9 @@
         </Border>
 
         <UniformGrid Grid.Row="1" Columns="3"  Width="300" HorizontalAlignment="Right" Margin="10">
-            <Button Content="恢复默认" Width="80" Click="SetDefault_Click" />
-            <Button Content="保存热键" Width="80" Click="ButtonSave_Click" />
-            <Button Content="加载热键" Width="80" Click="ButtonLoad_Click" />
+            <Button Content="{x:Static properties:Resources.HotKey_RestoreDefault}" Width="80" Click="SetDefault_Click" />
+            <Button Content="{x:Static properties:Resources.HotKey_SaveHotkey}" Width="80" Click="ButtonSave_Click" />
+            <Button Content="{x:Static properties:Resources.HotKey_LoadHotkey}" Width="80" Click="ButtonLoad_Click" />
         </UniformGrid>
     </Grid>
 </UserControl>

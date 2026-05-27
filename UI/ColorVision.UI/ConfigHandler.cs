@@ -7,16 +7,17 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 
 namespace ColorVision.UI
 {
-    [DisplayName("配置相关参数")]
+    [Display(Name = "Config_Parameters", ResourceType = typeof(Properties.Resources))]
     public class ConfigOptions:ViewModelBase, IConfig
     {
-        [DisplayName("是否启用定时备份")]
+        [Display(Name = "Config_EnableBackup", ResourceType = typeof(Properties.Resources))]
         public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; OnPropertyChanged(); } }
         private bool _EnableBackup = true;
     }

@@ -1,4 +1,5 @@
 #pragma warning disable CA1310,CA1822
+using ColorVision.UI.Properties;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
@@ -109,11 +110,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             // Map editor types to user-friendly names
             var nameMap = new Dictionary<Type, string>
             {
-                { typeof(TextSelectFilePropertiesEditor), "文件选择器" },
-                { typeof(TextSelectFolderPropertiesEditor), "文件夹选择器" },
-                { typeof(TextboxPropertiesEditor), "文本框" },
-                { typeof(EnumPropertiesEditor), "下拉选择" },
-                { typeof(BoolPropertiesEditor), "复选框" }
+                { typeof(TextSelectFilePropertiesEditor), Properties.Resources.ResourceManager.GetString("ListItemEditor_FileSelector", System.Globalization.CultureInfo.CurrentUICulture) ?? "File Selector" },
+                { typeof(TextSelectFolderPropertiesEditor), Properties.Resources.ResourceManager.GetString("ListItemEditor_FolderSelector", System.Globalization.CultureInfo.CurrentUICulture) ?? "Folder Selector" },
+                { typeof(TextboxPropertiesEditor), Properties.Resources.ResourceManager.GetString("ListItemEditor_Textbox", System.Globalization.CultureInfo.CurrentUICulture) ?? "Textbox" },
+                { typeof(EnumPropertiesEditor), Properties.Resources.ResourceManager.GetString("ListItemEditor_Dropdown", System.Globalization.CultureInfo.CurrentUICulture) ?? "Dropdown" },
+                { typeof(BoolPropertiesEditor), Properties.Resources.ResourceManager.GetString("ListItemEditor_Checkbox", System.Globalization.CultureInfo.CurrentUICulture) ?? "Checkbox" }
             };
 
             if (nameMap.TryGetValue(editorType, out var displayName))
@@ -208,7 +209,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             // Create UI for editing nested lists
             var label = new TextBlock
             {
-                Text = "嵌套列表:",
+                Text = Properties.Resources.ListItemEditor_NestedList,
                 Margin = new Thickness(0, 0, 0, 5),
                 FontWeight = FontWeights.Bold
             };
@@ -229,7 +230,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             // Display current list info
             var infoText = new TextBlock
             {
-                Text = list != null ? $"当前包含 {list.Count} 个项" : "空列表",
+                Text = list != null ? string.Format(Properties.Resources.DictItemEditor_Count, list.Count) : Properties.Resources.DictItemEditor_Empty,
                 Margin = new Thickness(0, 0, 0, 10),
                 Foreground = PropertyEditorHelper.GlobalTextBrush
             };
@@ -238,7 +239,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             // Edit button to open nested list editor
             var editButton = new Button
             {
-                Content = "编辑列表...",
+                Content = Properties.Resources.DictItemEditor_EditList,
                 Width = 120,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Margin = new Thickness(0, 0, 0, 0)
@@ -254,7 +255,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                     if (nestedEditor.ShowDialog() == true)
                     {
                         // Update the info text
-                        infoText.Text = $"当前包含 {list.Count} 个项";
+                        infoText.Text = string.Format(Properties.Resources.DictItemEditor_Count, list.Count);
                     }
                 }
             };
@@ -313,7 +314,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         {
             var label = new TextBlock
             {
-                Text = "值:",
+                Text = Properties.Resources.DictItemEditor_Value,
                 Margin = new Thickness(0, 0, 0, 5),
                 FontWeight = FontWeights.Bold
             };

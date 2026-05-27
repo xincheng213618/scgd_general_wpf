@@ -39,7 +39,7 @@ namespace ColorVision.UI.Controls
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             PopulateDrives();
-            TxtProgress.Text = "请选择目录并点击\"扫描\"，或点击\"加载\"读取已保存的扫描结果。";
+            TxtProgress.Text = Properties.Resources.Treemap_SelectDirPrompt;
         }
 
         // ─── Drive picker ─────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ namespace ColorVision.UI.Controls
             // OpenFolderDialog is available in .NET 8+ WPF
             var dlg = new OpenFolderDialog
             {
-                Title = "选择要扫描的目录",
+                Title = Properties.Resources.Treemap_BrowseDirectoryTooltip,
                 Multiselect = false
             };
             if (dlg.ShowDialog(this) == true)
@@ -92,7 +92,7 @@ namespace ColorVision.UI.Controls
             string path = TxtPath.Text;
             if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
             {
-                MessageBox.Show("请先选择有效的目录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.Treemap_SelectValidDir, Properties.Resources.Treemap_Prompt, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -102,14 +102,14 @@ namespace ColorVision.UI.Controls
             var ct = _cts.Token;
 
             SetScanningState(true);
-            TxtProgress.Text = "扫描中…";
+            TxtProgress.Text = Properties.Resources.Treemap_Scanning;
             TxtNodeCount.Text = "—";
 
             try
             {
                 var progress = new Progress<int>(count =>
                 {
-                    TxtProgress.Text = $"已扫描 {count:N0} 个文件…";
+                    TxtProgress.Text = string.Format(Properties.Resources.Treemap_ScannedFiles, count);
                 });
 
                 var (root, fileCount) = await Task.Run(
@@ -117,7 +117,7 @@ namespace ColorVision.UI.Controls
 
                 if (ct.IsCancellationRequested)
                 {
-                    TxtProgress.Text = "已取消。";
+                    TxtProgress.Text = Properties.Resources.Treemap_Cancelled;
                     return;
                 }
 
@@ -127,16 +127,16 @@ namespace ColorVision.UI.Controls
                     _fullRoot = root;
                     _navStack.Clear();
                     SetDisplayRoot(root);
-                    TxtProgress.Text = $"完成。共 {fileCount:N0} 个文件。";
+                    TxtProgress.Text = string.Format(Properties.Resources.Treemap_Complete, fileCount);
                 }
             }
             catch (OperationCanceledException)
             {
-                TxtProgress.Text = "已取消。";
+                TxtProgress.Text = Properties.Resources.Treemap_Cancelled;
             }
             catch (Exception ex)
             {
-                TxtProgress.Text = $"扫描出错：{ex.Message}";
+                TxtProgress.Text = string.Format(Properties.Resources.Treemap_ScanError, ex.Message);
             }
             finally
             {
@@ -261,8 +261,8 @@ namespace ColorVision.UI.Controls
 
             var dlg = new SaveFileDialog
             {
-                Title = "保存扫描结果",
-                Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|所有文件|*.*",
+                Title = Properties.Resources.Treemap_SaveDialogTitle,
+                Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|All Files (*.*)|*.*",
                 DefaultExt = ".treemap.json",
                 FileName = $"{safeName}_scan"
             };
@@ -270,11 +270,11 @@ namespace ColorVision.UI.Controls
             try
             {
                 _fullRoot.SaveToJson(dlg.FileName);
-                TxtProgress.Text = $"已保存：{dlg.FileName}";
+                TxtProgress.Text = string.Format(Properties.Resources.Treemap_Saved, dlg.FileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存失败：{ex.Message}", "错误",
+                MessageBox.Show(string.Format(Properties.Resources.Treemap_SaveFailed, ex.Message), Properties.Resources.Treemap_Error,
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -283,8 +283,8 @@ namespace ColorVision.UI.Controls
         {
             var dlg = new OpenFileDialog
             {
-                Title = "加载扫描结果",
-                Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|所有文件|*.*",
+                Title = Properties.Resources.Treemap_LoadDialogTitle,
+                Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|All Files (*.*)|*.*",
                 DefaultExt = ".treemap.json"
             };
             if (dlg.ShowDialog(this) != true) return;
@@ -293,7 +293,7 @@ namespace ColorVision.UI.Controls
                 var root = TreemapNode.LoadFromJson(dlg.FileName);
                 if (root == null)
                 {
-                    MessageBox.Show("文件格式无效或为空。", "错误",
+                    MessageBox.Show(Properties.Resources.Treemap_InvalidFormat, Properties.Resources.Treemap_Error,
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -301,11 +301,11 @@ namespace ColorVision.UI.Controls
                 _fullRoot = root;
                 SetDisplayRoot(root);
                 TxtPath.Text = root.FullPath ?? root.Name;
-                TxtProgress.Text = $"已加载：{dlg.FileName}";
+                TxtProgress.Text = string.Format(Properties.Resources.Treemap_Loaded, dlg.FileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"加载失败：{ex.Message}", "错误",
+                MessageBox.Show(string.Format(Properties.Resources.Treemap_LoadFailed, ex.Message), Properties.Resources.Treemap_Error,
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -333,7 +333,7 @@ namespace ColorVision.UI.Controls
             {
                 var miOpenFile = new MenuItem
                 {
-                    Header = "打开文件",
+                    Header = Properties.Resources.Treemap_OpenFile,
                     Icon = new TextBlock { Text = "📄", FontSize = 13 }
                 };
                 miOpenFile.Click += (_, _) =>
@@ -354,7 +354,7 @@ namespace ColorVision.UI.Controls
             {
                 var miOpenDir = new MenuItem
                 {
-                    Header = "打开文件夹",
+                    Header = Properties.Resources.Treemap_OpenFolder,
                     Icon = new TextBlock { Text = "📁", FontSize = 13 }
                 };
                 miOpenDir.Click += (_, _) =>
@@ -377,7 +377,7 @@ namespace ColorVision.UI.Controls
             {
                 var miOpen = new MenuItem
                 {
-                    Header = isDir ? "在资源管理器中打开" : "在资源管理器中显示",
+                    Header = isDir ? Properties.Resources.Treemap_OpenInExplorer : Properties.Resources.Treemap_ShowInExplorer,
                     Icon = new TextBlock { Text = "📂", FontSize = 13 }
                 };
                 miOpen.Click += (_, _) =>
@@ -412,7 +412,7 @@ namespace ColorVision.UI.Controls
             {
                 var miCopy = new MenuItem
                 {
-                    Header = "复制路径",
+                    Header = Properties.Resources.Treemap_CopyPath,
                     Icon = new TextBlock { Text = "📋", FontSize = 13 }
                 };
                 miCopy.Click += (_, _) =>
@@ -428,7 +428,7 @@ namespace ColorVision.UI.Controls
             {
                 var miDrill = new MenuItem
                 {
-                    Header = "向下钻取（以此为根）",
+                    Header = Properties.Resources.Treemap_DrillDown,
                     Icon = new TextBlock { Text = "🔍", FontSize = 13 }
                 };
                 miDrill.Click += (_, _) =>
@@ -445,7 +445,7 @@ namespace ColorVision.UI.Controls
             {
                 var miUp = new MenuItem
                 {
-                    Header = "返回上级",
+                    Header = Properties.Resources.Treemap_GoUp,
                     Icon = new TextBlock { Text = "⬆", FontSize = 13 }
                 };
                 miUp.Click += (_, _) => SetDisplayRoot(_navStack.Pop());
@@ -458,15 +458,15 @@ namespace ColorVision.UI.Controls
                 cm.Items.Add(new Separator());
                 var miDel = new MenuItem
                 {
-                    Header = $"删除文件{node.Name}",
+                    Header = string.Format(Properties.Resources.Treemap_DeleteFile, node.Name),
                     Icon = new TextBlock { Text = "🗑", FontSize = 13 },
                     Foreground = System.Windows.Media.Brushes.OrangeRed
                 };
                 miDel.Click += (_, _) =>
                 {
                     var res = MessageBox.Show(
-                        $"确认删除文件：\n{node.FullPath}",
-                        "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                        string.Format(Properties.Resources.Treemap_ConfirmDelete, node.FullPath),
+                        Properties.Resources.Treemap_ConfirmDeleteTitle, MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (res == MessageBoxResult.Yes)
                     {
                         try
@@ -482,7 +482,7 @@ namespace ColorVision.UI.Controls
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show($"删除失败：{ex.Message}", "错误",
+                            MessageBox.Show(string.Format(Properties.Resources.Treemap_DeleteFailed, ex.Message), Properties.Resources.Treemap_Error,
                                 MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     }
