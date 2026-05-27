@@ -38,10 +38,10 @@ namespace ColorVision.Engine.Services.Devices.Motor
             switch (e)
             {
                 case DeviceStatusType.Closed:
-                    ButtonSwitch.Content = "连接";
+                    ButtonSwitch.Content = Properties.Resources.Connect;
                     break;
                 case DeviceStatusType.Opened:
-                    ButtonSwitch.Content = "关闭";
+                    ButtonSwitch.Content = Properties.Resources.Close;
                     break;
             }
         }
@@ -56,19 +56,19 @@ namespace ColorVision.Engine.Services.Devices.Motor
         {
             if (sender is Button button)
             {
-                if ( button.Content.ToString() == "连接")
+                if ( button.Content.ToString() == Properties.Resources.Connect)
                 {
                     var msgRecord = DeviceService.Open();
                     ServicesHelper.SendCommand(button, msgRecord);
                 }
-                else if (button.Content.ToString() == "关闭")
+                else if (button.Content.ToString() == Properties.Resources.Close)
                 {
                     var msgRecord = DeviceService.Close();
                     ServicesHelper.SendCommand(button, msgRecord);
                 }
                 else
                 {
-                    MessageBox1.Show(Application.Current.MainWindow,"指令已经发送请稍等","ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow,Properties.Resources.CommandSentPleaseWait,"ColorVision");
                 }
             }
         }

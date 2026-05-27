@@ -4,11 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:EditConfigPhyCamera}"
-        Title="编辑相机配置"
+        Title="{x:Static properties:Resources.TitleEditCameraConfig}"
         Height="720" Width="1040"
         MinHeight="640" MinWidth="920"
         Background="{DynamicResource GlobalBackground}"
@@ -74,7 +75,7 @@
                         <UniformGrid Columns="4">
                             <Border Style="{StaticResource FieldBoxStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="相机型号" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.CameraType}" Style="{StaticResource FieldLabelStyle}"/>
                                     <hc:ComboBox x:Name="ComboxCameraModel"
                                                  SelectedValue="{Binding EditConfig.CameraModel}"
                                                  SelectedValuePath="Key"
@@ -83,7 +84,7 @@
                             </Border>
                             <Border Style="{StaticResource FieldBoxStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="相机模式" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.CamreaMode}" Style="{StaticResource FieldLabelStyle}"/>
                                     <hc:ComboBox x:Name="ComboxCameraMode"
                                                  SelectedValue="{Binding EditConfig.CameraMode}"
                                                  SelectedValuePath="Key"
@@ -93,7 +94,7 @@
                             </Border>
                             <Border Style="{StaticResource FieldBoxStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="默认图像位数" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.DefaultImageBits}" Style="{StaticResource FieldLabelStyle}"/>
                                     <ComboBox x:Name="ComboxCameraImageBpp"
                                               SelectedValue="{Binding EditConfig.ImageBpp}"
                                               SelectedValuePath="Key"
@@ -102,7 +103,7 @@
                             </Border>
                             <Border x:Name="ChannelField" Style="{StaticResource FieldBoxStyle}" Margin="0,0,0,10">
                                 <StackPanel>
-                                    <TextBlock Text="默认通道数" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.DefaultChannelCount}" Style="{StaticResource FieldLabelStyle}"/>
                                     <hc:ComboBox x:Name="ComboxCameraChannel"
                                                  SelectedValue="{Binding EditConfig.Channel}"
                                                  SelectedValuePath="Key"
@@ -115,7 +116,7 @@
 
                 <Border Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="画面裁切 ROI" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock Text="{x:Static properties:Resources.LabelFrameCropROI}" Style="{StaticResource SectionTitleStyle}"/>
                         <Expander Header="PhyCameraCfg" Style="{StaticResource ExpanderHeaderStyle}">
                             <StackPanel x:Name="CameraCfgPanel" Margin="0,8,0,0"/>
                         </Expander>
@@ -135,10 +136,10 @@
                                     Visibility="{Binding EditConfig.CFW.IsUseCFW, Converter={StaticResource bool2VisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/>
-                                    <TextBlock Text="重置通道"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ButtonResetChannels}"/>
                                 </StackPanel>
                             </Button>
-                            <TextBlock Text="CFW 配置" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.LabelCFWConfig}" Style="{StaticResource SectionTitleStyle}"/>
                         </DockPanel>
 
                         <Grid Grid.Row="1">
@@ -154,8 +155,8 @@
                                         <ui:ToggleSwitch DockPanel.Dock="Right"
                                                          IsChecked="{Binding EditConfig.CFW.IsUseCFW}"/>
                                         <StackPanel>
-                                            <TextBlock Text="启用 CFW" Style="{StaticResource FieldLabelStyle}"/>
-                                            <TextBlock Text="关闭后保存时会清空通道映射。"
+                                            <TextBlock Text="{x:Static properties:Resources.LabelEnableCFW}" Style="{StaticResource FieldLabelStyle}"/>
+                                            <TextBlock Text="{x:Static properties:Resources.DescriptionCFWDisableNote}"
                                                        FontSize="11" Opacity="0.55"/>
                                         </StackPanel>
                                     </DockPanel>
@@ -164,7 +165,7 @@
                                 <StackPanel Visibility="{Binding EditConfig.CFW.IsUseCFW, Converter={StaticResource bool2VisibilityConverter}}">
                                     <Border Style="{StaticResource FieldBoxStyle}" Margin="0,0,0,10">
                                         <StackPanel>
-                                            <TextBlock Text="滤轮数量" Style="{StaticResource FieldLabelStyle}"/>
+                                            <TextBlock Text="{x:Static properties:Resources.LabelFilterWheelCount}" Style="{StaticResource FieldLabelStyle}"/>
                                             <hc:NumericUpDown Value="{Binding EditConfig.CFW.CFWNum}"
                                                               Minimum="1"
                                                               Maximum="3"/>
@@ -175,8 +176,8 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right"
                                                              IsChecked="{Binding EditConfig.CFW.IsBingNDDevice}"/>
                                             <StackPanel>
-                                                <TextBlock Text="绑定 ND 设备" Style="{StaticResource FieldLabelStyle}"/>
-                                                <TextBlock Text="绑定时使用设备列表，不直接使用串口参数。"
+                                                <TextBlock Text="{x:Static properties:Resources.LabelBindNDDevice}" Style="{StaticResource FieldLabelStyle}"/>
+                                                <TextBlock Text="{x:Static properties:Resources.DescriptionBindNDNote}"
                                                            FontSize="11" Opacity="0.55"/>
                                             </StackPanel>
                                         </DockPanel>
@@ -186,8 +187,8 @@
                                             <ui:ToggleSwitch DockPanel.Dock="Right"
                                                              IsChecked="{Binding EditConfig.CFW.IsCOM}"/>
                                             <StackPanel>
-                                                <TextBlock Text="启用串口发送" Style="{StaticResource FieldLabelStyle}"/>
-                                                <TextBlock Text="未绑定 ND 设备时显示串口与波特率。"
+                                                <TextBlock Text="{x:Static properties:Resources.EnableSerialPort}" Style="{StaticResource FieldLabelStyle}"/>
+                                                <TextBlock Text="{x:Static properties:Resources.DescriptionSerialPortNote}"
                                                            FontSize="11" Opacity="0.55"/>
                                             </StackPanel>
                                         </DockPanel>
@@ -196,7 +197,7 @@
                                     <Border Style="{StaticResource SectionDividerStyle}"/>
                                     <StackPanel x:Name="CfwConnectionFieldsPanel"/>
 
-                                    <Expander Header="CFW 高级参数" Style="{StaticResource ExpanderHeaderStyle}">
+                                    <Expander Header="{x:Static properties:Resources.HeaderCFWAdvancedParams}" Style="{StaticResource ExpanderHeaderStyle}">
                                         <StackPanel x:Name="CfwAdvancedFieldsPanel" Margin="0,8,0,0"/>
                                     </Expander>
                                 </StackPanel>
@@ -209,7 +210,7 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0"
-                                           Text="每列对应一个图像通道，每行对应一个滤轮的端口位置。"
+                                           Text="{x:Static properties:Resources.DescriptionCFWChannelMapping}"
                                            FontSize="12"
                                            Opacity="0.62"
                                            Margin="0,0,0,10"
@@ -231,9 +232,9 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Grid.Column="1" Text="通道 1" Style="{StaticResource ChannelHeaderStyle}"/>
-                                    <TextBlock Grid.Column="2" Text="通道 2" Style="{StaticResource ChannelHeaderStyle}"/>
-                                    <TextBlock Grid.Column="3" Text="通道 3" Style="{StaticResource ChannelHeaderStyle}"/>
+                                    <TextBlock Grid.Column="1" Text="{x:Static properties:Resources.HeaderChannel1}" Style="{StaticResource ChannelHeaderStyle}"/>
+                                    <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.HeaderChannel2}" Style="{StaticResource ChannelHeaderStyle}"/>
+                                    <TextBlock Grid.Column="3" Text="{x:Static properties:Resources.HeaderChannel3}" Style="{StaticResource ChannelHeaderStyle}"/>
 
                                     <ComboBox Grid.Row="1" Grid.Column="1"
                                               x:Name="chType1"
@@ -254,7 +255,7 @@
                                               SelectedValuePath="Key"
                                               DisplayMemberPath="Value"/>
 
-                                    <TextBlock Grid.Row="2" Text="滤轮 1" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"/>
+                                    <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.HeaderFilterWheel1}" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"/>
                                     <hc:NumericUpDown Grid.Row="2" Grid.Column="1"
                                                       Margin="6,0,0,8"
                                                       MinHeight="30"
@@ -271,7 +272,7 @@
                                                       Value="{Binding EditConfig.CFW.ChannelCfgs[2].Cfwport}"
                                                       Minimum="0"/>
 
-                                    <TextBlock Grid.Row="3" Text="滤轮 2" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"
+                                    <TextBlock Grid.Row="3" Text="{x:Static properties:Resources.HeaderFilterWheel2}" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"
                                                Visibility="{Binding EditConfig.CFW.IsCFWNum2, Converter={StaticResource bool2VisibilityConverter}}"/>
                                     <hc:NumericUpDown Grid.Row="3" Grid.Column="1"
                                                       Margin="6,0,0,8"
@@ -292,7 +293,7 @@
                                                       Minimum="0"
                                                       Visibility="{Binding EditConfig.CFW.IsCFWNum2, Converter={StaticResource bool2VisibilityConverter}}"/>
 
-                                    <TextBlock Grid.Row="4" Text="滤轮 3" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"
+                                    <TextBlock Grid.Row="4" Text="{x:Static properties:Resources.HeaderFilterWheel3}" Style="{StaticResource DetailLabelStyle}" Margin="0,0,0,8"
                                                Visibility="{Binding EditConfig.CFW.IsCFWNum3, Converter={StaticResource bool2VisibilityConverter}}"/>
                                     <hc:NumericUpDown Grid.Row="4" Grid.Column="1"
                                                       Margin="6,0,0,8"
@@ -325,7 +326,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <TextBlock Text="CFW 未启用"
+                                    <TextBlock Text="{x:Static properties:Resources.LabelCFWDisabled}"
                                                HorizontalAlignment="Left"
                                                VerticalAlignment="Top"
                                                FontSize="13"
@@ -346,7 +347,7 @@
 
                     <Border Grid.Column="0" Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
                         <StackPanel>
-                            <TextBlock Text="文件服务" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.SectionFileService}" Style="{StaticResource SectionTitleStyle}"/>
                             <StackPanel x:Name="FileServerPanel"/>
                         </StackPanel>
                     </Border>
@@ -354,7 +355,7 @@
                     <StackPanel Grid.Column="2">
                         <Border Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="电机参数" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text="{x:Static properties:Resources.SectionMotorParams}" Style="{StaticResource SectionTitleStyle}"/>
                                 <Expander Header="MotorConfig" IsExpanded="True" Style="{StaticResource ExpanderHeaderStyle}">
                                     <StackPanel x:Name="MotorConfigPanel" Margin="0,8,0,0"/>
                                 </Expander>
@@ -363,7 +364,7 @@
 
                         <Border Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="参数限制" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text="{x:Static properties:Resources.SectionParamLimits}" Style="{StaticResource SectionTitleStyle}"/>
                                 <Expander Header="CameraParameterLimit" Style="{StaticResource ExpanderHeaderStyle}">
                                     <StackPanel x:Name="CameraParameterLimitPanel" Margin="0,8,0,0"/>
                                 </Expander>
@@ -375,18 +376,18 @@
         </ScrollViewer>
 
         <Grid Grid.Row="1" Margin="0,12,0,0">
-            <Button Content="属性编辑器"
+            <Button Content="{x:Static properties:Resources.PropertyEdit}"
                     Style="{StaticResource ToolbarButtonStyle}"
                     MinWidth="120"
                     HorizontalAlignment="Left"
                     Click="OpenPropertyEditor_Click"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="确定"
+                <Button Content="{x:Static properties:Resources.OK}"
                         Style="{StaticResource PrimaryToolbarButtonStyle}"
                         MinWidth="120"
                         Margin="0,0,8,0"
                         Click="OkButton_Click"/>
-                <Button Content="取消"
+                <Button Content="{x:Static properties:Resources.Cancel}"
                         Style="{StaticResource ToolbarButtonStyle}"
                         MinWidth="120"
                         Click="CancelButton_Click"/>

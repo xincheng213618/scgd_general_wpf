@@ -37,8 +37,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Cameras.Add(new CameraSearchCameraViewModel(camera, phyCameraManager, existingCodes.Contains(camera.MD5Id)));
             }
 
-            SummaryText = $"找到 {Cameras.Count} 台相机";
-            ElapsedText = $"总耗时 {FormatElapsed(summary.Elapsed)}";
+            SummaryText = string.Format(Properties.Resources.FoundCamerasCount, Cameras.Count);
+            ElapsedText = string.Format(Properties.Resources.SearchTotalElapsed, FormatElapsed(summary.Elapsed));
         }
 
         public static string FormatElapsed(TimeSpan elapsed)
@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             CameraModel = modelResult.CameraModel;
             CameraCount = modelResult.CameraCount;
             ElapsedText = CameraSearchResultViewModel.FormatElapsed(modelResult.Elapsed);
-            StatusText = modelResult.Success ? (modelResult.CameraCount > 0 ? "成功" : "未找到") : $"失败: {modelResult.ErrorMessage}";
+            StatusText = modelResult.Success ? (modelResult.CameraCount > 0 ? Properties.Resources.CameraSearchSuccess : Properties.Resources.CameraSearchNotFound) : string.Format(Properties.Resources.CameraSearchFailed, modelResult.ErrorMessage);
         }
     }
 
@@ -81,8 +81,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         private bool _IsCreated;
 
         public bool CanCreate => !IsCreated;
-        public string StatusText => IsCreated ? "在线" : "未创建";
-        public string ActionText => IsCreated ? "已创建" : "创建";
+        public string StatusText => IsCreated ? Properties.Resources.CameraStatusOnline : Properties.Resources.CameraStatusNotCreated;
+        public string ActionText => IsCreated ? Properties.Resources.CameraActionCreated : Properties.Resources.CameraActionCreate;
 
         public CameraSearchCameraViewModel(cvCameraCSLib.CameraDiscoveryItem camera, PhyCameraManager phyCameraManager, bool isCreated)
         {

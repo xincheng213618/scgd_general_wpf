@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:PhyCamera}"
              d:DesignHeight="620" d:DesignWidth="940">
@@ -150,10 +151,10 @@
 
                     <Button Grid.Column="1" Command="{Binding EditCommand}" Style="{StaticResource ToolbarButtonStyle}"
                             VerticalAlignment="Center" Margin="16,0,0,0"
-                                ToolTip="修改当前相机配置">
+                                ToolTip="{x:Static properties:Resources.ToolTipEditCameraConfig}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/>
-                            <TextBlock Text="编辑配置"/>
+                            <TextBlock Text="{x:Static properties:Resources.ButtonEditConfig}"/>
                         </StackPanel>
                     </Button>
                 </Grid>
@@ -172,7 +173,7 @@
                                Margin="0,0,8,0"/>
                     <Button Grid.Column="1" Command="{Binding UploadLicenseCommand}"
                             Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0"
-                            Content="更新许可证"/>
+                            Content="{x:Static properties:Resources.ButtonUpdateLicense}"/>
                 </Grid>
             </Border>
 
@@ -186,22 +187,22 @@
                 <Border Grid.Column="0" Style="{StaticResource SectionPanelStyle}" Margin="0">
                     <StackPanel>
                         <StackPanel>
-                            <TextBlock Text="配置" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.Configuration}" Style="{StaticResource ActionSectionTitleStyle}"/>
                             <UniformGrid Columns="3">
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding EditCommand}">
-                                    <TextBlock Text="修改配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ModifyConfiguration}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding PropertyEditorEditCommand}">
-                                    <TextBlock Text="属性编辑器" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CfwPortEditCommand}">
-                                    <TextBlock Text="CFW 配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.LabelCFWConfig}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
-                                    <TextBlock Text="打开配置文件" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ButtonOpenConfigFile}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding FilterWheelEditCommand}">
-                                    <TextBlock Text="滤光轮配置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.EditFilterWheelConfig}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                             </UniformGrid>
                         </StackPanel>
@@ -209,19 +210,19 @@
                         <Border Style="{StaticResource SectionDividerStyle}"/>
 
                         <StackPanel>
-                            <TextBlock Text="许可证" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.License}" Style="{StaticResource ActionSectionTitleStyle}"/>
                             <UniformGrid Columns="4">
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadLicenseCommand}">
-                                    <TextBlock Text="修改许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ModifyLicense}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadLicenseNetCommand}">
-                                    <TextBlock Text="在线下载许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.DownLicOnline}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CopyLicenseCommand}">
-                                    <TextBlock Text="复制许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.CopyLicense}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding ExportLicenseCommand}">
-                                    <TextBlock Text="导出许可证" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ExportLicense}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                             </UniformGrid>
                         </StackPanel>
@@ -229,16 +230,16 @@
                         <Border Style="{StaticResource SectionDividerStyle}"/>
 
                         <StackPanel>
-                            <TextBlock Text="校正" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.Calibration}" Style="{StaticResource ActionSectionTitleStyle}"/>
                             <UniformGrid Columns="3">
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadCalibrationCommand}">
-                                    <TextBlock Text="上传校正文件" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.UploadCalibrationFiles}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
-                                    <TextBlock Text="校正模板设置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.CaliTemplateSet}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationEditCommand}">
-                                    <TextBlock Text="校正编辑" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ButtonCalibrationEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                             </UniformGrid>
                         </StackPanel>
@@ -246,13 +247,13 @@
                         <Border Style="{StaticResource SectionDividerStyle}"/>
 
                         <StackPanel>
-                            <TextBlock Text="备份与恢复" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.SectionBackupRestore}" Style="{StaticResource ActionSectionTitleStyle}"/>
                             <UniformGrid Columns="2">
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CreatResotreCommand}">
-                                    <TextBlock Text="创建还原点" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.CreateRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding LoadResotreCommand}">
-                                    <TextBlock Text="加载还原点" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.LoadRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                             </UniformGrid>
                         </StackPanel>
@@ -260,13 +261,13 @@
                         <Border Style="{StaticResource SectionDividerStyle}"/>
 
                         <StackPanel>
-                            <TextBlock Text="危险操作" Style="{StaticResource ActionSectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.SectionDangerousOperations}" Style="{StaticResource ActionSectionTitleStyle}"/>
                             <UniformGrid Columns="2">
                                 <Button Style="{StaticResource WarningCommandButtonStyle}" Command="{Binding ResetCommand}">
-                                    <TextBlock Text="重置" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.Reset}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                                 <Button Style="{StaticResource CompactDangerCommandButtonStyle}" Command="{Binding DeleteCommand}">
-                                    <TextBlock Text="删除" Style="{StaticResource CommandButtonTextStyle}"/>
+                                    <TextBlock Text="{x:Static properties:Resources.Delete}" Style="{StaticResource CommandButtonTextStyle}"/>
                                 </Button>
                             </UniformGrid>
                         </StackPanel>
@@ -276,7 +277,7 @@
                 <Border Grid.Column="2" Style="{StaticResource SectionPanelStyle}" Margin="0">
                     <StackPanel>
                         <StackPanel Style="{StaticResource InfoSectionPanelStyle}">
-                            <TextBlock Text="配置信息" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.ConfigerInfo}" Style="{StaticResource SectionTitleStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="118"/>
@@ -315,7 +316,7 @@
                         <Border Style="{StaticResource SectionDividerStyle}"/>
 
                         <StackPanel Style="{StaticResource InfoSectionPanelStyle}">
-                            <TextBlock Text="许可证" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.License}" Style="{StaticResource SectionTitleStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="118"/>
@@ -349,13 +350,13 @@
                         <Border Style="{StaticResource SectionDividerStyle}"/>
 
                         <StackPanel Margin="0">
-                            <TextBlock Text="校正文件管理" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.CalibrationFileManagement}" Style="{StaticResource SectionTitleStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="118"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="资源数量" Style="{StaticResource DetailLabelStyle}"/>
+                                <TextBlock Text="{x:Static properties:Resources.LabelResourceCount}" Style="{StaticResource DetailLabelStyle}"/>
                                 <TextBox Grid.Column="1" Text="{Binding VisualChildren.Count, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}"/>
                             </Grid>

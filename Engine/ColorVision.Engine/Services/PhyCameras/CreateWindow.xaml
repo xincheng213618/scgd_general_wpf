@@ -9,7 +9,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CreateWindow}"
-        Title="创建设备"
+        Title="{x:Static properties:Resources.CreateDevice}"
         Height="660" Width="760" MinHeight="560" MinWidth="680"
         Background="{DynamicResource GlobalBackground}"
         WindowStartupLocation="CenterOwner"
@@ -105,8 +105,8 @@
                     <ColumnDefinition Width="220"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="创建设备" FontSize="22" FontWeight="SemiBold"/>
-                    <TextBlock Text="选择待登记相机后补全基础参数与滤光轮配置。"
+                    <TextBlock Text="{x:Static properties:Resources.CreateDevice}" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Static properties:Resources.DescriptionCreateDevice}"
                                FontSize="12" Opacity="0.62" Margin="0,5,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1">
@@ -187,7 +187,7 @@
                                              IsChecked="{Binding CreateConfig.CFW.IsUseCFW}"/>
                             <StackPanel>
                                 <TextBlock Text="{x:Static properties:Resources.FilterWheel}" Style="{StaticResource SectionTitleStyle}"/>
-                                <TextBlock Text="启用后配置串口、轮盘数量与通道位置映射。"
+                                <TextBlock Text="{x:Static properties:Resources.DescriptionCFWEnableNote}"
                                            FontSize="12" Opacity="0.62"/>
                             </StackPanel>
                         </DockPanel>
@@ -304,7 +304,7 @@
 
                 <Border Style="{StaticResource PanelBorderStyle}" Padding="14" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="高级配置" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock Text="{x:Static properties:Resources.AdvancedSettings}" Style="{StaticResource SectionTitleStyle}"/>
                         <StackPanel x:Name="GeneratedConfigPanel"/>
                     </StackPanel>
                 </Border>

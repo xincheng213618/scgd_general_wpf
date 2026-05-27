@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Services.RC
             Task.Run(async () =>
             {
                 bool IsConnect = await MqttRCService.GetInstance().TryRegist(rcServiceConfig);
-                _= Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision")); 
+                _= Dispatcher.BeginInvoke(() => MessageBox.Show($"{Properties.Resources.Connect}{(IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}", "ColorVision")); 
             });
         }
 

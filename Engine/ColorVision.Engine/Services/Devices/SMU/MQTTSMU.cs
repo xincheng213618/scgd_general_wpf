@@ -257,17 +257,17 @@ namespace ColorVision.Engine.Services.Devices.SMU
             {
                 if (V > 200)
                 {
-                    MessageBox.Show("Keithley 2450最大输出电压为200V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUKeithley2450MaxVoltage, 200), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
                 if ((V > 20 && V <= 200) && (I > 0.1))
                 {
-                    MessageBox.Show("Keithley 2450在输出电压大于20V时，最大输出电流为100mA，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUKeithley2450MaxCurrentAboveThreshold, 20, 100), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
                 if (V <= 20 && I > 1)
                 {
-                    MessageBox.Show("Keithley 2450在输出电压小于20V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUKeithley2450MaxCurrentBelowThreshold, 20, 1), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
             }
@@ -275,17 +275,17 @@ namespace ColorVision.Engine.Services.Devices.SMU
             {
                 if (V > 40)
                 {
-                    MessageBox.Show("Keithley 2600最大输出电压为40V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUKeithley2600MaxVoltage, 40), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
                 if ((V > 6 && V <= 40) && (I > 1))
                 {
-                    MessageBox.Show("Keithley 2600在输出电压大于6V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUKeithley2600MaxCurrentAboveThreshold, 6, 1), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
                 if (V <= 6 && I > 3)
                 {
-                    MessageBox.Show("Keithley 2600在输出电压小于6V时，最大输出电流为3A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUKeithley2600MaxCurrentBelowThreshold, 6, 3), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
             }
@@ -293,12 +293,12 @@ namespace ColorVision.Engine.Services.Devices.SMU
             {
                 if (V > 30)
                 {
-                    MessageBox.Show("Precise_S100最大输出电压为30V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUPreciseS100MaxVoltage, 30), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
                 if (V <= 30 && I > 1)
                 {
-                    MessageBox.Show("Precise_S100在输出电压小于30V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.SMUPreciseS100MaxCurrentBelowThreshold, 30, 1), Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
             }

@@ -7,7 +7,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CameraSearchResultViewModel}"
-        Title="相机搜索结果" Height="700" Width="1100" MinHeight="560" MinWidth="880"
+        Title="{x:Static properties:Resources.TitleCameraSearchResults}" Height="700" Width="1100" MinHeight="560" MinWidth="880"
         Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -53,8 +53,8 @@
                       Background="Transparent" BorderThickness="0">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding CameraModel}" Width="180"/>
-                    <DataGridTextColumn Header="耗时" Binding="{Binding ElapsedText}" Width="120"/>
-                    <DataGridTextColumn Header="数量" Binding="{Binding CameraCount}" Width="90"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Duration}" Binding="{Binding ElapsedText}" Width="120"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Count}" Binding="{Binding CameraCount}" Width="90"/>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Status}" Binding="{Binding StatusText}" Width="*"/>
                 </DataGrid.Columns>
             </DataGrid>
@@ -69,8 +69,8 @@
                     <DataGridTextColumn Header="{x:Static properties:Resources.Status}" Binding="{Binding StatusText}" Width="90"/>
                     <DataGridTextColumn Header="MD5" Binding="{Binding MD5Id}" Width="270"/>
                     <DataGridTextColumn Header="CameraId" Binding="{Binding CameraId}" Width="*"/>
-                    <DataGridTextColumn Header="耗时" Binding="{Binding SearchElapsedText}" Width="100"/>
-                    <DataGridTemplateColumn Header="操作" Width="120">
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Duration}" Binding="{Binding SearchElapsedText}" Width="100"/>
+                    <DataGridTemplateColumn Header="{x:Static properties:Resources.Operation}" Width="120">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="{Binding ActionText}" Command="{Binding CreateCommand}"
@@ -82,7 +82,7 @@
             </DataGrid>
         </Border>
 
-        <TextBlock Grid.Row="3" Text="使用操作列创建尚未登记的相机。"
+        <TextBlock Grid.Row="3" Text="{x:Static properties:Resources.DescriptionCreateUnregistered}"
                    FontSize="12" Opacity="0.55" Margin="2,10,0,0"/>
     </Grid>
 </Window>

@@ -30,17 +30,17 @@ namespace ColorVision.Engine.Services
         /// </summary>
         private static readonly (string PanelId, string Title, string? LogFilePrefix)[] X64ServiceLogs = new[]
         {
-            ("ServiceLog_x64",          "x64服务日志",         (string?)null),
-            ("ServiceLog_Camera",       "Camera服务日志",      "CVMainWindowsService_x64_camera"),
-            ("ServiceLog_Algorithm",    "Algorithm服务日志",   "CVMainWindowsService_x64_Algorithm"),
-            ("ServiceLog_CVOLED",       "CVOLED服务日志",      "CVMainWindowsService_x64_CVOLED"),
-            ("ServiceLog_Spectrum",     "Spectrum服务日志",     "CVMainWindowsService_x64_Spectrum"),
+            ("ServiceLog_x64",          Properties.Resources.ServiceLogX64,         (string?)null),
+            ("ServiceLog_Camera",       Properties.Resources.ServiceLogCamera,      "CVMainWindowsService_x64_camera"),
+            ("ServiceLog_Algorithm",    Properties.Resources.ServiceLogAlgorithm,   "CVMainWindowsService_x64_Algorithm"),
+            ("ServiceLog_CVOLED",       Properties.Resources.ServiceLogCVOLED,      "CVMainWindowsService_x64_CVOLED"),
+            ("ServiceLog_Spectrum",     Properties.Resources.ServiceLogSpectrum,     "CVMainWindowsService_x64_Spectrum"),
         };
 
         private static readonly (string PanelId, string Title, string? LogFilePrefix)[] DevServiceLogs = new[]
         {
-            ("ServiceLog_dev",          "dev服务日志",         (string?)null),
-            ("ServiceLog_SMU",          "SMU服务日志",         "CVMainWindowsService_dev_SMU"),
+            ("ServiceLog_dev",          Properties.Resources.ServiceLogDev,         (string?)null),
+            ("ServiceLog_SMU",          Properties.Resources.ServiceLogSMU,         "CVMainWindowsService_dev_SMU"),
         };
 
         private static readonly (string ServiceName, Func<string?> ConfiguredPathAccessor, (string PanelId, string Title, string? LogFilePrefix)[] Logs)[] ServiceGroups =

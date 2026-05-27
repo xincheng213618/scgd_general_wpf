@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         /// <summary>
         /// 提前多少天提示许可证即将过期（默认5天）
         /// </summary>
+        // NeedsReview: Category/DisplayName/Description attributes require compile-time constants, cannot use Properties.Resources
         [Category("许可证通知"), DisplayName("提前提示天数"), Description("许可证过期前多少天开始提示")]
         public int WarningDaysBeforeExpiry { get => _WarningDaysBeforeExpiry; set { _WarningDaysBeforeExpiry = value; OnPropertyChanged(); } }
         private int _WarningDaysBeforeExpiry = 5;
@@ -19,6 +20,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         /// <summary>
         /// 是否不再显示过期许可证提示
         /// </summary>
+        // NeedsReview: Category/DisplayName attributes require compile-time constants, cannot use Properties.Resources
         [Category("许可证通知"), DisplayName("是否不再显示过期许可证提示")]
         public bool DontShowExpiredAgain { get => _DontShowExpiredAgain; set { _DontShowExpiredAgain = value; OnPropertyChanged(); } }
         private bool _DontShowExpiredAgain = false;
@@ -26,6 +28,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         /// <summary>
         /// 是否不再显示即将过期许可证提示
         /// </summary>
+        // NeedsReview: Category/DisplayName attributes require compile-time constants, cannot use Properties.Resources
         [Category("许可证通知"), DisplayName("是否不再显示即将过期许可证提示")]
         public bool DontShowExpiringAgain { get => _DontShowExpiringAgain; set { _DontShowExpiringAgain = value; OnPropertyChanged(); } }
         private bool _DontShowExpiringAgain = false;

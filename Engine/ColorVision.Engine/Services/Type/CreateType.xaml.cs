@@ -33,12 +33,12 @@ namespace ColorVision.Engine.Services.Types
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
+            if (!ServicesHelper.IsInvalidPath(CreateCode.Text, Properties.Resources.ResourceIdentifier) || !ServicesHelper.IsInvalidPath(CreateName.Text, Properties.Resources.ResourceName))
                 return;
 
             if (TypeService.ServicesCodes.Contains(CreateCode.Text))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.DeviceIdentifierAlreadyExists);
                 return;
             }
 
@@ -66,12 +66,12 @@ namespace ColorVision.Engine.Services.Types
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
 
                 MqttRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功，正在重启服务", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.CreationSuccessRestartingService, "ColorVision");
                 Close();
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建失败，数据库插入失败，请联系开发人员", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.CreationFailedDatabaseInsertFailed, "ColorVision");
             }
 
         }

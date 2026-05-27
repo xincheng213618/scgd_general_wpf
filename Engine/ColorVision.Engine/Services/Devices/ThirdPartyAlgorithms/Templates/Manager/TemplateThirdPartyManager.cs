@@ -146,7 +146,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(ModThirdPartyManagerParam)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.DbCreateTemplateFailed, typeof(ModThirdPartyManagerParam)), "ColorVision");
             }
 
         }

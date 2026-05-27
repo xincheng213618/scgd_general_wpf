@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             var group = GroupResource.AddGroupResource(PhyCamera, calue);
             if (group == null)
             {
-                MessageBox.Show("创建失败");
+                MessageBox.Show(Properties.Resources.CreateGroupFailed);
             }
 
         }
@@ -170,11 +170,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     PhyCamera.VisualChildren.Remove(item);
                 }
 
-                MessageBox.Show("删除成功");
+                MessageBox.Show(Properties.Resources.DeleteSucceeded);
             }
             else
             {
-                MessageBox.Show("请选择要删除的项");
+                MessageBox.Show(Properties.Resources.SelectItemsToDelete);
             }
         }
 
@@ -307,7 +307,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     }
                 }
             }
-            MessageBox.Show($"{PhyCamera.Code}导出成功");
+            MessageBox.Show(string.Format(Properties.Resources.ExportCalibrationSuccess, PhyCamera.Code));
         }
 
     }

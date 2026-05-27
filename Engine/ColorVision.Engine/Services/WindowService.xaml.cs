@@ -98,15 +98,15 @@ namespace ColorVision.Engine.Services
                     break;
                 case 1:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    ListModeText.Text = "终端";
+                    ListModeText.Text = Properties.Resources.Terminal;
                     break;
                 case 2:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    ListModeText.Text = "设备";
+                    ListModeText.Text = Properties.Resources.Device;
                     break;
                 default:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    ListModeText.Text = "设备";
+                    ListModeText.Text = Properties.Resources.Device;
                     break;
             }
 

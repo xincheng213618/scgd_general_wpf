@@ -173,22 +173,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                         {
                             var proc = Process.Start(psi);
                             proc?.WaitForExit();
-                            MessageBox.Show("License 文件已通过管理员权限导出完成！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show(Properties.Resources.LicenseExportedByAdmin, Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Information);
                             return; // 提权执行后直接返回，不由下方统一提示
                         }
                         catch (System.ComponentModel.Win32Exception)
                         {
-                            MessageBox.Show("用户取消了操作或提权失败。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(Properties.Resources.UserCancelledOrElevationFailed, Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
                     }
                 }
 
-                MessageBox.Show("License 文件已导出完成！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.LicenseExportCompleted, Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.ExportFailedMessage, ex.Message), Properties.Resources.Failure, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -237,7 +237,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                     }
                     else
                     {
-                        MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox1.Show(Properties.Resources.GetCameraIdMd5Failed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 });
             }));
@@ -373,7 +373,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public int Id => Model.Id;
         public string? MacAddress => Model.MacAddress;
-        public string LiceTypeString => Model.LiceType == 0 ? "相机" : Model.LiceType == 1 ? "光谱仪" : "未知";
+        public string LiceTypeString => Model.LiceType == 0 ? Properties.Resources.LicenseTypeCamera : Model.LiceType == 1 ? Properties.Resources.LicenseTypeSpectrometer : Properties.Resources.LicenseTypeUnknown;
         public string? Model1 => this.Model.Model;
         public string? CusTomerName => this.Model.CusTomerName;
         public DateTime? ExpiryDate => this.Model.ExpiryDate;
@@ -396,10 +396,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             get
             {
                 if (ExpiryDate == null || ExpiryDate < DateTime.Now)
-                    return "已过期";
+                    return Properties.Resources.LicenseExpired;
                 if (ExpiryDate < DateTime.Now.AddDays(30))
-                    return "即将过期";
-                return "正常";
+                    return Properties.Resources.LicenseExpiringSoon;
+                return Properties.Resources.LicenseNormal;
             }
         }
     }

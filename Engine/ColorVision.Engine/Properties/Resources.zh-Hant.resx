@@ -1,110 +1,52 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -2715,4 +2657,183 @@
   <data name="NodeProperty" xml:space="preserve">
     <value>節點屬性</value>
   </data>
-</root>
+  <data name="AlreadySentPleaseWait" xml:space="preserve">
+    <value>已發送，請耐心等待</value>
+  </data>
+  <data name="FieldCannotBeEmpty" xml:space="preserve">
+    <value>{0}不能為空</value>
+  </data>
+  <data name="FieldCannotBeBlank" xml:space="preserve">
+    <value>{0}不能為空白</value>
+  </data>
+  <data name="FieldCannotContainSpecialChars" xml:space="preserve">
+    <value>{0}不能包含特殊字元</value>
+  </data>
+  <data name="NotConfigured" xml:space="preserve">
+    <value>未配置</value>
+  </data>
+  <data name="ServiceLogX64" xml:space="preserve">
+    <value>x64服務日誌</value>
+  </data>
+  <data name="ServiceLogCamera" xml:space="preserve">
+    <value>相機服務日誌</value>
+  </data>
+  <data name="ServiceLogAlgorithm" xml:space="preserve">
+    <value>演算法服務日誌</value>
+  </data>
+  <data name="ServiceLogCVOLED" xml:space="preserve">
+    <value>CVOLED服務日誌</value>
+  </data>
+  <data name="ServiceLogSpectrum" xml:space="preserve">
+    <value>光譜儀服務日誌</value>
+  </data>
+  <data name="ServiceLogDev" xml:space="preserve">
+    <value>dev服務日誌</value>
+  </data>
+  <data name="ServiceLogSMU" xml:space="preserve">
+    <value>SMU服務日誌</value>
+  </data>
+  <data name="Terminal" xml:space="preserve">
+    <value>終端</value>
+  </data>
+  <data name="Device" xml:space="preserve">
+    <value>裝置</value>
+  </data>
+  <data name="AvoidCreationUnlessNecessary" xml:space="preserve">
+    <value>非必要情況下，請勿建立新服務</value>
+  </data>
+  <data name="AvoidDeletionOfServiceUnlessNecessary" xml:space="preserve">
+    <value>非必要情況下，請勿刪除服務</value>
+  </data>
+  <data name="DeviceIdentifierAlreadyExists" xml:space="preserve">
+    <value>裝置識別碼已存在，不允許重複新增</value>
+  </data>
+  <data name="CreationSuccessRestartingService" xml:space="preserve">
+    <value>建立成功，正在重啟服務</value>
+  </data>
+  <data name="CreationFailedDatabaseInsertFailed" xml:space="preserve">
+    <value>建立失敗，資料庫插入失敗，請聯繫開發人員</value>
+  </data>
+  <data name="UnsupportedDeviceTypeCreation" xml:space="preserve">
+    <value>尚不支援建立 {0} 類型裝置</value>
+  </data>
+  <data name="ResourceIdentifier" xml:space="preserve">
+    <value>資源識別碼</value>
+  </data>
+  <data name="ResourceName" xml:space="preserve">
+    <value>資源名稱</value>
+  </data>
+  <data name="DeviceStatusUnknown" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  <data name="DeviceStatusUnauthorized" xml:space="preserve">
+    <value>未授權</value>
+  </data>
+  <data name="DeviceStatusUnInit" xml:space="preserve">
+    <value>未初始化</value>
+  </data>
+  <data name="DeviceStatusOffLine" xml:space="preserve">
+    <value>已斷線</value>
+  </data>
+  <data name="DeviceStatusClosed" xml:space="preserve">
+    <value>已關閉</value>
+  </data>
+  <data name="DeviceStatusClosing" xml:space="preserve">
+    <value>關閉中</value>
+  </data>
+  <data name="DeviceStatusOpened" xml:space="preserve">
+    <value>已開啟</value>
+  </data>
+  <data name="DeviceStatusOpening" xml:space="preserve">
+    <value>開啟中</value>
+  </data>
+  <data name="DeviceStatusBusy" xml:space="preserve">
+    <value>忙碌</value>
+  </data>
+  <data name="DeviceStatusFree" xml:space="preserve">
+    <value>閒置</value>
+  </data>
+  <data name="DeviceStatusLiveOpened" xml:space="preserve">
+    <value>視訊模式</value>
+  </data>
+  <data name="DeviceStatusSPContinuousMode" xml:space="preserve">
+    <value>光譜儀連續模式</value>
+  </data>
+<data name="AddNewLine" xml:space="preserve"><value>加回车换行</value></data><data name="AddPhysicalCameraFailed" xml:space="preserve"><value>添加物理相机失败</value></data><data name="AddPhysicalCameraSuccess" xml:space="preserve"><value>添加物理相机成功</value></data><data name="AllowSave" xml:space="preserve"><value>允许存盘</value></data><data name="AppSecretTooltip" xml:space="preserve"><value>App密钥</value></data><data name="AutoCopyFolderConfirm" xml:space="preserve"><value>自动复制文件夹 {0} to {1}</value></data><data name="AutoExposureFailedCheckLog" xml:space="preserve"><value>自动曝光失败，请检查服务日志{0}{1}</value></data><data name="AutoExposureParamSettings" xml:space="preserve"><value>自动曝光参数设置</value></data><data name="AutoExposureTimeoutCheckLog" xml:space="preserve"><value>自动曝光超时，请检查服务日志</value></data><data name="AutoFocusTest" xml:space="preserve"><value>自动对焦测试</value></data><data name="BasicParamSettings" xml:space="preserve"><value>基本参数设置</value></data><data name="BatchNumberCannotBeEmpty" xml:space="preserve"><value>批次号不能为空，请先输入批次号</value></data><data name="BatchNumberEmpty" xml:space="preserve"><value>批次号不能为空，请先输入批次号</value></data><data name="BindDLL" xml:space="preserve"><value>绑定DLL</value></data><data name="ButtonCFWConfig" xml:space="preserve"><value>CFW 配置</value></data><data name="ButtonCalibrationEdit" xml:space="preserve"><value>校正编辑</value></data><data name="ButtonCalibrationManual" xml:space="preserve"><value>校正手册</value></data><data name="ButtonCalibrationTemplateSettings" xml:space="preserve"><value>校正模板设置</value></data><data name="ButtonCancel" xml:space="preserve"><value>取消</value></data><data name="ButtonCopyLicense" xml:space="preserve"><value>复制许可证</value></data><data name="ButtonCreateRestorePoint" xml:space="preserve"><value>创建还原点</value></data><data name="ButtonDefault" xml:space="preserve"><value>默认</value></data><data name="ButtonDelete" xml:space="preserve"><value>删除</value></data><data name="ButtonEditConfig" xml:space="preserve"><value>编辑配置</value></data><data name="ButtonExportLicense" xml:space="preserve"><value>导出许可证</value></data><data name="ButtonFilterWheelConfig" xml:space="preserve"><value>滤光轮配置</value></data><data name="ButtonGoToCameraManager" xml:space="preserve"><value>前往相机管理器</value></data><data name="ButtonLoadRestorePoint" xml:space="preserve"><value>加载还原点</value></data><data name="ButtonModifyConfig" xml:space="preserve"><value>修改配置</value></data><data name="ButtonModifyLicense" xml:space="preserve"><value>修改许可证</value></data><data name="ButtonOK" xml:space="preserve"><value>确定</value></data><data name="ButtonOnlineDownloadLicense" xml:space="preserve"><value>在线下载许可证</value></data><data name="ButtonOpenConfigFile" xml:space="preserve"><value>打开配置文件</value></data><data name="ButtonPropertyEditor" xml:space="preserve"><value>属性编辑器</value></data><data name="ButtonPropertyEditorTooltip" xml:space="preserve"><value>属性编辑器</value></data><data name="ButtonReset" xml:space="preserve"><value>重置</value></data><data name="ButtonResetChannel" xml:space="preserve"><value>重置通道</value></data><data name="ButtonResetChannels" xml:space="preserve"><value>重置通道</value></data><data name="ButtonScanOnlineCameras" xml:space="preserve"><value>扫描在线相机</value></data><data name="ButtonSelectAll" xml:space="preserve"><value>全选</value></data><data name="ButtonSuppressWarning" xml:space="preserve"><value>不再提示此类警告</value></data><data name="ButtonUpdateLicense" xml:space="preserve"><value>更新许可证</value></data><data name="ButtonUploadCalibrationFile" xml:space="preserve"><value>上传校正文件</value></data><data name="CalcAutoExposure" xml:space="preserve"><value>计算自动曝光</value></data><data name="CalcPosition" xml:space="preserve"><value>计算位置</value></data><data name="CalculateEQE" xml:space="preserve"><value>计算 EQE</value></data><data name="CaliEditToolTipAngleShift" xml:space="preserve"><value>色差校正（AngleShift）：ColorDiff 的变种，用于角度相关的色差校正</value></data><data name="CaliEditToolTipAngleShiftShort" xml:space="preserve"><value>角度校正</value></data><data name="CaliEditToolTipColorDiff" xml:space="preserve"><value>色差校正（ColorDiff）：校正不同色彩通道间的色差偏移</value></data><data name="CaliEditToolTipColorDiffShort" xml:space="preserve"><value>消除不同色彩通道间的色差偏移</value></data><data name="CaliEditToolTipColorShift" xml:space="preserve"><value>色偏校正（ColorShift）：通道间空间偏移补偿
+算法：通过 OpenCV 仿射变换进行亚像素级通道平移
+配置文件：JSON 格式（含 fillOffset 和 offset/offsets 参数）</value></data><data name="CaliEditToolTipColorShiftShort" xml:space="preserve"><value>补偿多通道光学系统中不同色彩通道的空间偏移</value></data><data name="CaliEditToolTipDSNU" xml:space="preserve"><value>DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿
+算法：pixel_out = max(pixel_in - DSNU_ref, 0)
+配置文件：二进制格式（V0/V1 头 + ushort 暗帧基准数据）</value></data><data name="CaliEditToolTipDSNUShort" xml:space="preserve"><value>暗信号非均匀性补偿，通过预采集暗帧逐像素减法消除像素级暗电流差异</value></data><data name="CaliEditToolTipDarkNoise" xml:space="preserve"><value>暗电流校正（DarkNoise）：消除传感器在无光照条件下产生的暗电流噪声
+算法：pixel_out = pixel_in × DarkNoiseRatio
+配置文件：JSON 格式（含 bpp 和 DarkNoiseRatio）</value></data><data name="CaliEditToolTipDarkNoiseShort" xml:space="preserve"><value>消除传感器固有暗电流信号，通过预标定比率逐像素补偿</value></data><data name="CaliEditToolTipDefectPoint" xml:space="preserve"><value>坏点校正（DefectPoint）：检测并修复缺陷像素
+算法：对预标定坏点坐标使用 7×7 邻域中值滤波替代
+配置文件：二进制格式（4字节坏点数量 + 坐标列表）</value></data><data name="CaliEditToolTipDefectPointShort" xml:space="preserve"><value>检测并插值修复缺陷像素，7×7 邻域中值滤波</value></data><data name="CaliEditToolTipDistortion" xml:space="preserve"><value>畸变校正（Distortion）：镜头径向/切向畸变矫正
+算法：支持标准针孔模型(k1,k2,p1,p2,k3)和鱼眼模型
+配置文件：JSON 格式（含相机内参矩阵 fx,fy,cx,cy 和畸变系数）</value></data><data name="CaliEditToolTipDistortionShort" xml:space="preserve"><value>使用 OpenCV 相机标定模型矫正镜头畸变，支持标准针孔与鱼眼模型</value></data><data name="CaliEditToolTipFourColor" xml:space="preserve"><value>四色校正（LumFourColor）：3×3 矩阵（9 系数 a-i）
+算法：[X,Y,Z] = 3×3矩阵 × [R,G,B]（每通道经 Texp/Gain 归一化）
+配置文件：JSON 格式（含 a-i 共 9 个系数）
+精度高于单色校正</value></data><data name="CaliEditToolTipFourColorShort" xml:space="preserve"><value>3×3 矩阵完整通道混合，精度高于单色</value></data><data name="CaliEditToolTipLineArity" xml:space="preserve"><value>线性度校正（LineArity）：校正传感器的非线性响应特性
+确保输出灰度值与实际光照强度成线性关系</value></data><data name="CaliEditToolTipLineArityShort" xml:space="preserve"><value>校正传感器输出灰度值与实际光照强度之间的非线性关系</value></data><data name="CaliEditToolTipLuminance" xml:space="preserve"><value>亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换
+算法：Lv = (a / Texp) × pixel
+配置文件：JSON 格式（含 bpp、曝光时间和系数 a,b,c,d）
+输出：单通道 32 位浮点亮度图</value></data><data name="CaliEditToolTipLuminanceShort" xml:space="preserve"><value>Lv = (a / Texp) × pixel，仅输出单通道亮度值</value></data><data name="CaliEditToolTipMultiColor" xml:space="preserve"><value>多色校正（LumMultiColor）：动态 N/3×3 系数矩阵
+算法：支持高阶色彩转换拟合，系数数组长度动态
+配置文件：JSON 格式（含动态系数和增益数组）
+适用于需要更高精度的场景</value></data><data name="CaliEditToolTipMultiColorShort" xml:space="preserve"><value>动态大小系数矩阵，支持高阶色彩拟合</value></data><data name="CaliEditToolTipOneColor" xml:space="preserve"><value>单色校正（LumOneColor）：4 系数线性模型
+算法：X = aR+dB, Y = bG, Z = cB（经曝光/增益归一化）
+配置文件：JSON 格式（含 a,b,c,d 系数和 Texp/Gain）
+支持多线程加速</value></data><data name="CaliEditToolTipOneColorShort" xml:space="preserve"><value>4 系数模型：X=aR+dB, Y=bG, Z=cB</value></data><data name="CaliEditToolTipUniformity" xml:space="preserve"><value>均匀性校正（Uniformity）：补偿镜头渐晕和传感器灵敏度空间差异
+算法：pixel_out = pixel_in × Uniformity_factor
+配置文件：二进制格式（V0/V1 头 + float 因子矩阵）</value></data><data name="CaliEditToolTipUniformityShort" xml:space="preserve"><value>使用预标定乘法因子矩阵补偿镜头渐晕和传感器响应不均</value></data><data name="CalibrationFileFilter" xml:space="preserve"><value>校正文件(*.zip, *.cvcal)|*.zip;*.cvcal</value></data><data name="CalibrationFileNotConfiguredWithTemplate" xml:space="preserve"><value>使用{0}模板,需要确认校正文件已经配置</value></data><data name="CalibrationServiceRequiredForTemplate" xml:space="preserve"><value>使用校正模板需要先配置校正服务</value></data><data name="CalibrationTemplate" xml:space="preserve"><value>校正模板</value></data><data name="CameraActionCreate" xml:space="preserve"><value>创建</value></data><data name="CameraActionCreated" xml:space="preserve"><value>已创建</value></data><data name="CameraGetDataReturnedEmpty" xml:space="preserve"><value>相机 GetData 返回空</value></data><data name="CameraID" xml:space="preserve"><value>相机ID</value></data><data name="CameraNotConfiguredError" xml:space="preserve"><value>物理相机未配置</value></data><data name="CameraParamSettings" xml:space="preserve"><value>相机参数设置</value></data><data name="CameraReset" xml:space="preserve"><value>复位</value></data><data name="CameraSearchFailed" xml:space="preserve"><value>失败: {0}</value></data><data name="CameraSearchNotFound" xml:space="preserve"><value>未找到</value></data><data name="CameraSearchSuccess" xml:space="preserve"><value>成功</value></data><data name="CameraStatusNotCreated" xml:space="preserve"><value>未创建</value></data><data name="CameraStatusOnline" xml:space="preserve"><value>在线</value></data><data name="CameraTypeLabel" xml:space="preserve"><value>相机类型</value></data><data name="CannotCreateCameraWithoutCode" xml:space="preserve"><value>不允许创建没有Code的相机</value></data><data name="CaptureMode" xml:space="preserve"><value>取图模式</value></data><data name="CaptureSettings" xml:space="preserve"><value>取图设置</value></data><data name="CaptureTimeoutConfigureCalibration" xml:space="preserve"><value>取图超时,是否为物理相机配置校正</value></data><data name="CaptureTimeoutResetTime" xml:space="preserve"><value>取图超时,请重设超时时间</value></data><data name="ChannelCount" xml:space="preserve"><value>通道数</value></data><data name="ChannelOrder" xml:space="preserve"><value>通道顺序</value></data><data name="ChannelParamSettings" xml:space="preserve"><value>通道参数设置</value></data><data name="CheckBoxDoNotShowAgain" xml:space="preserve"><value>不再提示此类警告</value></data><data name="ClearDatabaseItems" xml:space="preserve"><value>是否清除数据库相关项</value></data><data name="CloseCamera" xml:space="preserve"><value>关闭相机</value></data><data name="CloseCameraTimeoutCheckLog" xml:space="preserve"><value>关闭相机超时,请查看日志并排查问题</value></data><data name="CloseLocalVideo" xml:space="preserve"><value>关闭本地视频</value></data><data name="CloseSMU" xml:space="preserve"><value>关闭源表</value></data><data name="CloseSourceMeter" xml:space="preserve"><value>关闭源表</value></data><data name="CloseWindowInSeconds" xml:space="preserve"><value>1s 后关闭窗口</value></data><data name="CommandSentPleaseWait" xml:space="preserve"><value>指令已经发送请稍等</value></data><data name="Configuration" xml:space="preserve"><value>配置</value></data><data name="ConfigureAssociatedDllFirst" xml:space="preserve"><value>请先在配置中配置关联的dll</value></data><data name="ConnectingRC" xml:space="preserve"><value>正在尝试连接注册中心</value></data><data name="CopyFileFailed" xml:space="preserve"><value>复制文件失败：{0}</value></data><data name="CreateDirectoryFailed" xml:space="preserve"><value>创建目录失败：{0}</value></data><data name="CreateGroupFailed" xml:space="preserve"><value>创建失败</value></data><data name="CreateRestoreFileFailed" xml:space="preserve"><value>创建Restore文件失败: {0}</value></data><data name="CreateServiceFailed" xml:space="preserve"><value>创建服务失败</value></data><data name="CurrentSource" xml:space="preserve"><value>电流源</value></data><data name="DatabaseResetFailed" xml:space="preserve"><value>无法重置，请检查数据库相关配置</value></data><data name="DbCreateTemplateFailed" xml:space="preserve"><value>数据库创建{0}模板失败</value></data><data name="DebugMode" xml:space="preserve"><value>调试模式</value></data><data name="DecimalPlaces" xml:space="preserve"><value>小数位:</value></data><data name="DeleteSucceeded" xml:space="preserve"><value>删除成功</value></data><data name="DescriptionAngleShiftShort" xml:space="preserve"><value>角度校正</value></data><data name="DescriptionBasicPipeline" xml:space="preserve"><value>校正流水线：原始图像 → 暗电流 → 坏点 → DSNU → 均匀性 → 色偏 → 畸变 → 校正后图像</value></data><data name="DescriptionBindNDNote" xml:space="preserve"><value>绑定时使用设备列表，不直接使用串口参数。</value></data><data name="DescriptionCFWChannelMapping" xml:space="preserve"><value>每列对应一个图像通道，每行对应一个滤轮的端口位置。</value></data><data name="DescriptionCFWDisableNote" xml:space="preserve"><value>关闭后保存时会清空通道映射。</value></data><data name="DescriptionCFWEnableNote" xml:space="preserve"><value>启用后配置串口、轮盘数量与通道位置映射。</value></data><data name="DescriptionCalibrationControl" xml:space="preserve"><value>选择校正组后勾选参与当前相机处理链路的校正文件。</value></data><data name="DescriptionCalibrationEdit" xml:space="preserve"><value>维护相机校正组、上传校正文件，并为当前组选择每类校正资源。</value></data><data name="DescriptionCameraListSort" xml:space="preserve"><value>按设备状态排序，优先显示在线相机</value></data><data name="DescriptionColorCalibration" xml:space="preserve"><value>将传感器灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值 Lv(cd/m²)，以下四种模式互斥</value></data><data name="DescriptionColorDiffShort" xml:space="preserve"><value>通道色差消除</value></data><data name="DescriptionColorShiftShort" xml:space="preserve"><value>通道空间偏移补偿</value></data><data name="DescriptionCreateDevice" xml:space="preserve"><value>选择待登记相机后补全基础参数与滤光轮配置。</value></data><data name="DescriptionCreateUnregistered" xml:space="preserve"><value>使用操作列创建尚未登记的相机。</value></data><data name="DescriptionDSNUShort" xml:space="preserve"><value>暗信号非均匀性补偿</value></data><data name="DescriptionDarkNoiseShort" xml:space="preserve"><value>消除暗电流噪声</value></data><data name="DescriptionDefectPointShort" xml:space="preserve"><value>缺陷像素中值修复</value></data><data name="DescriptionDistortionShort" xml:space="preserve"><value>镜头畸变矫正</value></data><data name="DescriptionFourColorShort" xml:space="preserve"><value>9系数3×3→CIE XYZ</value></data><data name="DescriptionLineArityShort" xml:space="preserve"><value>传感器线性度校正</value></data><data name="DescriptionLuminanceShort" xml:space="preserve"><value>灰度→亮度 Lv(cd/m²)</value></data><data name="DescriptionMultiColorShort" xml:space="preserve"><value>N系数高阶→CIE XYZ</value></data><data name="DescriptionOneColorShort" xml:space="preserve"><value>4系数→CIE XYZ</value></data><data name="DescriptionSelectCamera" xml:space="preserve"><value>从左侧选择一台物理相机以查看详情与管理操作</value></data><data name="DescriptionSelectCameraType" xml:space="preserve"><value>选择要参与在线搜索的相机型号</value></data><data name="DescriptionSerialPortNote" xml:space="preserve"><value>未绑定 ND 设备时显示串口与波特率。</value></data><data name="DescriptionUniformityShort" xml:space="preserve"><value>镜头渐晕/响应补偿</value></data><data name="DetectingLocalRC" xml:space="preserve"><value>检测到本地注册中心配置, 正在尝试启动</value></data><data name="DeviceSerialNumber" xml:space="preserve"><value>设备序列号: {0}</value></data><data name="DevicesDetected" xml:space="preserve"><value>检测到 {0} 台设备:</value></data><data name="DisplaySettings" xml:space="preserve"><value>显示设置</value></data><data name="EditTemplate" xml:space="preserve"><value>编辑模板</value></data><data name="EnterCurrentMA" xml:space="preserve"><value>请输入电流 (mA):</value></data><data name="EnterValidCurrent" xml:space="preserve"><value>请输入有效的电流数值。</value></data><data name="EnterValidVoltage" xml:space="preserve"><value>请输入有效的电压数值。</value></data><data name="EnterVoltageV" xml:space="preserve"><value>请输入电压 (V):</value></data><data name="ExecuteDisto" xml:space="preserve"><value>执行Disto</value></data><data name="ExecuteFOV" xml:space="preserve"><value>执行FOV</value></data><data name="ExecuteSFR" xml:space="preserve"><value>执行 SFR</value></data><data name="ExpiredCameraLicensesSummary" xml:space="preserve"><value>检测到 {0} 个相机许可证已过期</value></data><data name="ExpiringCameraLicensesSummary" xml:space="preserve"><value>检测到 {0} 个相机许可证即将过期</value></data><data name="ExpiryDateFormat" xml:space="preserve"><value>过期日期: {0}</value></data><data name="ExportCalibrationSuccess" xml:space="preserve"><value>{0}导出成功</value></data><data name="ExportFailedMessage" xml:space="preserve"><value>导出失败: {0}</value></data><data name="ExportSuccess" xml:space="preserve"><value>导出成功！</value></data><data name="ExposureBLabel" xml:space="preserve"><value>曝光 B</value></data><data name="ExposureGLabel" xml:space="preserve"><value>曝光 G</value></data><data name="ExposureRLabel" xml:space="preserve"><value>曝光 R</value></data><data name="ExtractingFilePleaseWait" xml:space="preserve"><value>正在解压文件： 请稍后...</value></data><data name="ExtractionFailedMessage" xml:space="preserve"><value>解压失败</value></data><data name="FileCopyServiceRestartHint" xml:space="preserve"><value>您需要手动重启服务，并且将原来文件夹复制到新的文件夹里，否则不起效果，如果未复制文件，请重置校正文件</value></data><data name="FileDeletionPermanent" xml:space="preserve"><value>文件删除后不可找回</value></data><data name="FileProcessFailed" xml:space="preserve"><value>处理文件失败: {0}</value></data><data name="FileServiceCleanupComplete" xml:space="preserve"><value>文件服务清理完成</value></data><data name="FolderCopyFailed" xml:space="preserve"><value>文件夹复制失败: {0}</value></data><data name="FolderCopySucceeded" xml:space="preserve"><value>文件夹复制成功！</value></data><data name="FontSizeLabel" xml:space="preserve"><value>字号:</value></data><data name="FoundCamerasCount" xml:space="preserve"><value>找到 {0} 台相机</value></data><data name="FrameSelect" xml:space="preserve"><value>框选</value></data><data name="GetCameraIdFailed" xml:space="preserve"><value>获取相机 ID 失败</value></data><data name="GetCameraIdMd5Failed" xml:space="preserve"><value>获取相机ID MD5失败</value></data><data name="HeaderBasicCalibrationPipeline" xml:space="preserve"><value>基础校正（按顺序依次执行）</value></data><data name="HeaderCFWAdvancedParams" xml:space="preserve"><value>CFW 高级参数</value></data><data name="HeaderChannel1" xml:space="preserve"><value>通道 1</value></data><data name="HeaderChannel2" xml:space="preserve"><value>通道 2</value></data><data name="HeaderChannel3" xml:space="preserve"><value>通道 3</value></data><data name="HeaderColorCalibrationMutual" xml:space="preserve"><value>色彩校正（四选一，互斥）</value></data><data name="HeaderFilterWheel1" xml:space="preserve"><value>滤轮 1</value></data><data name="HeaderFilterWheel2" xml:space="preserve"><value>滤轮 2</value></data><data name="HeaderFilterWheel3" xml:space="preserve"><value>滤轮 3</value></data><data name="HeartbeatTimeLabel" xml:space="preserve"><value>心跳时间</value></data><data name="HelpAlgorithmDescLabel" xml:space="preserve"><value>算法说明：</value></data><data name="HelpAlgorithmStepsLabel" xml:space="preserve"><value>算法步骤：</value></data><data name="HelpCalibrationSystemDesc" xml:space="preserve"><value>本系统提供从原始图像采集到 CIE 色彩空间（XYZ/xy/uv/CCT）转换的完整校正流水线</value></data><data name="HelpCalibrationSystemTitle" xml:space="preserve"><value>图像校正系统（Calibration System）参考手册</value></data><data name="HelpChromaticParamsLabel" xml:space="preserve"><value>支持的色度参数：</value></data><data name="HelpColorCalibrationTip" xml:space="preserve"><value>提示：色彩校正（亮度/单色/四色/多色）四选一互斥，选中一个会自动取消其他三个。</value></data><data name="HelpColorDiffDesc" xml:space="preserve"><value>原理：校正不同色彩通道间的色差偏移，消除由光学系统引起的通道间色彩误差。</value></data><data name="HelpColorDiffTitle" xml:space="preserve"><value>2.8 色差校正（ColorDiff）</value></data><data name="HelpColorShiftDesc" xml:space="preserve"><value>原理：在多通道光学系统中，不同色彩通道可能存在空间偏移。通过 OpenCV 仿射变换进行通道级平移补偿。</value></data><data name="HelpColorShiftTitle" xml:space="preserve"><value>2.5 色偏校正（ColorShift）</value></data><data name="HelpDSNUDesc" xml:space="preserve"><value>原理：暗信号非均匀性（Dark Signal Non-Uniformity）是传感器固有的像素级暗电流差异。通过预采集的暗帧基准图，逐像素做减法补偿。</value></data><data name="HelpDSNUTitle" xml:space="preserve"><value>2.2 暗信号非均匀性校正（DSNU）</value></data><data name="HelpDarkNoiseDesc" xml:space="preserve"><value>原理：在无光照条件下，传感器会产生暗电流信号。通过预先标定的暗电流比率对每个像素进行乘法补偿，消除暗电流噪声。</value></data><data name="HelpDarkNoiseNote" xml:space="preserve"><value>说明：在 ROI 区域内逐像素乘以暗电流系数，结果上溢截断至最大值。</value></data><data name="HelpDarkNoiseTitle" xml:space="preserve"><value>2.1 暗电流校正（DarkNoise）</value></data><data name="HelpDefectPointDesc" xml:space="preserve"><value>原理：预先标定坏点坐标列表，对每个坏点用其 7×7 邻域的中值滤波值替代。多通道独立处理。</value></data><data name="HelpDefectPointTitle" xml:space="preserve"><value>2.3 坏点校正（DefectPoint）</value></data><data name="HelpDistortionDesc" xml:space="preserve"><value>原理：使用 OpenCV 的相机标定模型，支持标准针孔模型和鱼眼模型。预计算重映射表后通过 cv::remap 执行像素重映射。</value></data><data name="HelpDistortionTitle" xml:space="preserve"><value>2.6 畸变校正（Distortion）</value></data><data name="HelpEngineFooter" xml:space="preserve"><value>— 基于 C++ DLL 校正引擎（CVCommCore.dll）—</value></data><data name="HelpFileFormatBinary" xml:space="preserve"><value>配置文件格式：二进制</value></data><data name="HelpFileFormatColorShift" xml:space="preserve"><value>统一偏移：{ "fillOffset": true, "offset": { "X": 2, "Y": -1 } }
+多通道独立偏移：{ "fillOffset": false, "offsets": [{"X":1,"Y":0}, {"X":0,"Y":-1}, ...] }</value></data><data name="HelpFileFormatDSNU" xml:space="preserve"><value>V0：[8字节头: height, width] + [ushort数据: height × width]
+V1：[20字节头: height, width, databpp, channels, typebpp] + [ushort数据: height × width × channels]</value></data><data name="HelpFileFormatDefectPoint" xml:space="preserve"><value>[4字节: 坏点数量 N]
+[4字节: y坐标][4字节: x坐标] × N</value></data><data name="HelpFileFormatJSON" xml:space="preserve"><value>配置文件格式：JSON</value></data><data name="HelpFileFormatUniformity" xml:space="preserve"><value>V0：[8字节头: height, width] + [float数据: height × width]
+V1：[20字节头: height, width, databpp, channels, typebpp] + [float数据: height × width × channels]</value></data><data name="HelpFilterDesc" xml:space="preserve"><value>滤波功能：支持阈值滤波、区域外滤波、XYZ 通道滤波、百分比滤波等多种异常像素排除机制。</value></data><data name="HelpFormulaChromatic" xml:space="preserve"><value>CIE xy 色度坐标：  x = X/(X+Y+Z),   y = Y/(X+Y+Z)
+CIE u'v' 色度坐标：u' = 4X/(X+15Y+3Z), v' = 9Y/(X+15Y+3Z)
+CCT（相关色温）和主波长</value></data><data name="HelpFormulaColorShift" xml:space="preserve"><value>构造 2×3 仿射变换矩阵：
+M = | 1  0  dx |
+    | 0  1  dy |
+
+调用 cv::warpAffine 执行亚像素级平移
+fillOffset=true 时，用边缘镜像数据填充平移后的空白区域</value></data><data name="HelpFormulaDSNU" xml:space="preserve"><value>pixel_out = max(pixel_in - DSNU_ref[i], 0)
+
+支持单通道和多通道（R/G/B 分别减对应通道的 DSNU 基准值）
+下溢截断至 0</value></data><data name="HelpFormulaDefectPoint" xml:space="preserve"><value>1. 读取坏点列表 (row, col)
+2. 对每个坏点取中心 ±3 范围内的邻域像素
+3. 对邻域像素排序，取中值作为修复值
+4. 多通道独立处理
+
+中值滤波窗口：7×7，边界处自动裁剪到图像边界</value></data><data name="HelpFormulaDistortion" xml:space="preserve"><value>1. 加载标定参数 (fx, fy, cx, cy, k1-k3, p1-p2)
+2. 后台线程预计算重映射表：
+   标准模型 → cv::initUndistortRectifyMap
+   鱼眼模型 → cv::fisheye::initUndistortRectifyMap
+3. 校正时使用 cv::remap 执行像素重映射
+4. alpha 参数控制缩放（0=无黑边，1=保留所有像素）
+
+畸变模型：
+  标准：k1, k2, p1, p2, k3（径向 + 切向）
+  鱼眼：4 个畸变系数</value></data><data name="HelpFormulaFourColor" xml:space="preserve"><value>| X |   | a/(Tx·Gx)  b/(Ty·Gy)  c/(Tz·Gz) |   | R |
+| Y | = | d/(Tx·Gx)  e/(Ty·Gy)  f/(Tz·Gz) | × | G |
+| Z |   | g/(Tx·Gx)  h/(Ty·Gy)  i/(Tz·Gz) |   | B |
+
+配置文件含 a-i 共 9 个系数，以及各通道曝光时间和增益
+同样支持多线程并行计算</value></data><data name="HelpFormulaLabel" xml:space="preserve"><value>算法公式：</value></data><data name="HelpFormulaLuminance" xml:space="preserve"><value>Lv[i] = (a / Texp) × pixel[i]
+
+线性转换，系数 a 经曝光时间归一化
+仅处理光学黑区（OB）外的有效像素
+输出：单通道 32 位浮点亮度图（cd/m²）</value></data><data name="HelpFormulaMultiColor" xml:space="preserve"><value>系数数组 pa[N]，增益数组 Gain[N/3]
+每 3 个系数为一组 (pa[3k], pa[3k+1], pa[3k+2])：
+  output[k] = pa[3k]×R + pa[3k+1]×G + pa[3k+2]×B
+
+适用于需要更高精度的特殊光学系统</value></data><data name="HelpFormulaOneColor" xml:space="preserve"><value>X[i] = (a / Tx·Gx) × R[i] + (d / Tz·Gz) × B[i]
+Y[i] = (b / Ty·Gy) × G[i]
+Z[i] = (c / Tz·Gz) × B[i]
+
+其中 Tx/Ty/Tz = 各通道曝光时间，Gx/Gy/Gz = 各通道增益
+支持 BGR 交错和通道分离两种输入布局
+多线程加速：图像按行分为 4 个线程块并行计算
+输出：3 个 32 位浮点通道 [CIE_X][CIE_Y][CIE_Z]</value></data><data name="HelpFormulaUniformity" xml:space="preserve"><value>pixel_out = min(pixel_in × Uniformity_factor[i], MaxValue)
+
+上溢截断至最大值（8-bit: 255, 16-bit: 65535）
+支持单通道和 RGB 三通道独立校正
+支持 BGR 交错和通道分离两种内存布局</value></data><data name="HelpFourColorDesc" xml:space="preserve"><value>原理：使用完整的 3×3 矩阵（9 个系数 a-i）实现通道混合色彩转换。每个输出通道由全部 3 个输入通道加权求和，精度高于单色校正。</value></data><data name="HelpFourColorTitle" xml:space="preserve"><value>3.3 四色校正（LumFourColor）— 3×3 矩阵（9 系数）</value></data><data name="HelpIndicatorChecked" xml:space="preserve"><value>● 复选框（勾选）：启用该校正步骤，执行校正时将应用此校正</value></data><data name="HelpIndicatorGray" xml:space="preserve"><value>● 灰色指示灯（灭）：校正文件未找到或无效，该校正步骤将被跳过</value></data><data name="HelpIndicatorGreen" xml:space="preserve"><value>● 绿色指示灯（亮）：校正文件已就绪，文件存在于服务器上且可用</value></data><data name="HelpIndicatorUnchecked" xml:space="preserve"><value>● 复选框（未勾选）：禁用该校正步骤，即使文件存在也不会应用</value></data><data name="HelpLineArityDesc" xml:space="preserve"><value>原理：校正传感器输出灰度值与实际光照强度之间的非线性响应关系，确保线性映射。</value></data><data name="HelpLineArityTitle" xml:space="preserve"><value>2.7 线性度校正（LineArity）</value></data><data name="HelpLuminanceDesc" xml:space="preserve"><value>原理：将单通道灰度值转换为绝对亮度值 Lv（cd/m²），输出 32 位浮点 CIE-Y 通道。</value></data><data name="HelpLuminanceTitle" xml:space="preserve"><value>3.1 亮度校正（Luminance）</value></data><data name="HelpMultiColorDesc" xml:space="preserve"><value>原理：使用动态大小的系数矩阵（N 个系数），支持更高阶的色彩转换模型。系数数组长度 N，增益数组长度 N/3，按每 3 个系数为一组对 RGB 做线性组合。</value></data><data name="HelpMultiColorTitle" xml:space="preserve"><value>3.4 多色校正（LumMultiColor）— 动态高阶矩阵</value></data><data name="HelpOneColorDesc" xml:space="preserve"><value>原理：使用 4 系数模型，将 3 通道（RGB）灰度图像转换为 CIE XYZ 三刺激值。假设 X 由 R 和 B 通道线性组合，Y 仅来自 G，Z 仅来自 B。</value></data><data name="HelpOneColorTitle" xml:space="preserve"><value>3.2 单色校正（LumOneColor）— 4 系数模型</value></data><data name="HelpPipelineAdvanced" xml:space="preserve"><value>  →  Uniformity(均匀性)  →  ColorShift(色偏)  →  Distortion(畸变)</value></data><data name="HelpPipelineBasic" xml:space="preserve"><value>  →  DarkNoise(暗电流)  →  DefectPoint(坏点)  →  DSNU(暗信号非均匀性)</value></data><data name="HelpPipelineColorConversion" xml:space="preserve"><value>  →  [亮度 / 单色 / 四色 / 多色] 色彩转换  →  </value></data><data name="HelpPipelineCorrectedImage" xml:space="preserve"><value>校正后图像</value></data><data name="HelpPipelineRawImage" xml:space="preserve"><value>原始图像</value></data><data name="HelpSection1Desc" xml:space="preserve"><value>校正按以下固定顺序依次执行。每一步的输出作为下一步的输入，跳过未启用的步骤。</value></data><data name="HelpSection1Title" xml:space="preserve"><value>1. 校正流水线总览</value></data><data name="HelpSection2Title" xml:space="preserve"><value>2. 基础校正项详解</value></data><data name="HelpSection3Desc" xml:space="preserve"><value>四种色彩校正模式互斥，每次只能启用其中一种。它们将传感器的灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值。</value></data><data name="HelpSection3Title" xml:space="preserve"><value>3. 色彩校正项详解（四选一，互斥）</value></data><data name="HelpSection4Desc" xml:space="preserve"><value>校正完成后，可在 CIE XYZ 浮点图像上提取色度数据。支持圆形和矩形 ROI 区域。</value></data><data name="HelpSection4Title" xml:space="preserve"><value>4. CIE 色度数据提取</value></data><data name="HelpSection5Title" xml:space="preserve"><value>5. 界面指示说明</value></data><data name="HelpUniformityDesc" xml:space="preserve"><value>原理：补偿镜头渐晕（Vignetting）和传感器灵敏度的空间差异。使用预标定的乘法因子矩阵，对每个像素乘以对应的校正系数。</value></data><data name="HelpUniformityTitle" xml:space="preserve"><value>2.4 均匀性校正（Uniformity）</value></data><data name="IgniteMeasurement" xml:space="preserve"><value>点亮测量</value></data><data name="ImageFileCannotBeEmpty" xml:space="preserve"><value>图像文件不能为空，请先选择图像文件</value></data><data name="ImageFileEmpty" xml:space="preserve"><value>图像文件不能为空，请先选择图像文件</value></data><data name="ImportLicenseConfirm" xml:space="preserve"><value>是否导入许可证{0}</value></data><data name="InvalidSerialPort" xml:space="preserve"><value>串口名称 {0} 无效或不存在。\n\n请检查串口设置。</value></data><data name="InvalidSerialPortTitle" xml:space="preserve"><value>无效串口</value></data><data name="JsonConfig" xml:space="preserve"><value>Json配置</value></data><data name="Keithley2450MaxCurrent100mA" xml:space="preserve"><value>Keithley 2450在输出电压大于20V时，最大输出电流为100mA，请调整测量参数后重试！</value></data><data name="Keithley2450MaxCurrent1A" xml:space="preserve"><value>Keithley 2450在输出电压小于20V时，最大输出电流为1A，请调整测量参数后重试！</value></data><data name="Keithley2450MaxVoltage200V" xml:space="preserve"><value>Keithley 2450最大输出电压为200V，请调整测量参数后重试！</value></data><data name="Keithley2600MaxCurrent1A" xml:space="preserve"><value>Keithley 2600在输出电压大于6V时，最大输出电流为1A，请调整测量参数后重试！</value></data><data name="Keithley2600MaxCurrent3A" xml:space="preserve"><value>Keithley 2600在输出电压小于6V时，最大输出电流为3A，请调整测量参数后重试！</value></data><data name="Keithley2600MaxVoltage40V" xml:space="preserve"><value>Keithley 2600最大输出电压为40V，请调整测量参数后重试！</value></data><data name="LabelAutoFocusTemplate" xml:space="preserve"><value>自动聚焦</value></data><data name="LabelBackupRestoreSection" xml:space="preserve"><value>备份与恢复</value></data><data name="LabelBasicCalibration" xml:space="preserve"><value>基础校正</value></data><data name="LabelBasicCalibrationHeader" xml:space="preserve"><value>基础校正（按顺序依次执行）</value></data><data name="LabelBindNDDevice" xml:space="preserve"><value>绑定 ND 设备</value></data><data name="LabelBindNDHint" xml:space="preserve"><value>绑定时使用设备列表，不直接使用串口参数。</value></data><data name="LabelCFWConfig" xml:space="preserve"><value>CFW 配置</value></data><data name="LabelCFWDisabled" xml:space="preserve"><value>CFW 未启用</value></data><data name="LabelCFWDisabledSaveHint" xml:space="preserve"><value>关闭后保存时会清空通道映射。</value></data><data name="LabelCFWMatrixHint" xml:space="preserve"><value>每列对应一个图像通道，每行对应一个滤轮的端口位置。</value></data><data name="LabelCFWNotEnabled" xml:space="preserve"><value>CFW 未启用</value></data><data name="LabelCalcEQE" xml:space="preserve"><value>计算 EQE</value></data><data name="LabelCalibrationEditHint" xml:space="preserve"><value>维护相机校正组、上传校正文件，并为当前组选择每类校正资源。</value></data><data name="LabelCalibrationFileManagement" xml:space="preserve"><value>校正文件管理</value></data><data name="LabelCalibrationGroupHint" xml:space="preserve"><value>选择校正组后勾选参与当前相机处理链路的校正文件。</value></data><data name="LabelCalibrationHelpDesc" xml:space="preserve"><value>本系统提供从原始图像采集到 CIE 色彩空间（XYZ/xy/uv/CCT）转换的完整校正流水线</value></data><data name="LabelCalibrationHelpTitle" xml:space="preserve"><value>图像校正系统（Calibration System）参考手册</value></data><data name="LabelCalibrationPipelineHint" xml:space="preserve"><value>校正流水线：原始图像 → 暗电流 → 坏点 → DSNU → 均匀性 → 色偏 → 畸变 → 校正后图像</value></data><data name="LabelCalibrationSection" xml:space="preserve"><value>校正</value></data><data name="LabelCameraConsole" xml:space="preserve"><value>相机控制台</value></data><data name="LabelCameraList" xml:space="preserve"><value>相机清单</value></data><data name="LabelCameraListHint" xml:space="preserve"><value>按设备状态排序，优先显示在线相机</value></data><data name="LabelCameraRunParams" xml:space="preserve"><value>相机参数</value></data><data name="LabelCameraType" xml:space="preserve"><value>相机类型</value></data><data name="LabelCamerasSuffix" xml:space="preserve"><value> 台相机</value></data><data name="LabelChannel1" xml:space="preserve"><value>通道 1</value></data><data name="LabelChannel2" xml:space="preserve"><value>通道 2</value></data><data name="LabelChannel3" xml:space="preserve"><value>通道 3</value></data><data name="LabelColorCalibration" xml:space="preserve"><value>色彩校正</value></data><data name="LabelColorCalibrationDesc" xml:space="preserve"><value>将传感器灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值 Lv(cd/m²)，以下四种模式互斥</value></data><data name="LabelColorCalibrationHeader" xml:space="preserve"><value>色彩校正（四选一，互斥）</value></data><data name="LabelConfigInfo" xml:space="preserve"><value>配置信息</value></data><data name="LabelConfigSection" xml:space="preserve"><value>配置</value></data><data name="LabelCreateDeviceHint" xml:space="preserve"><value>选择待登记相机后补全基础参数与滤光轮配置。</value></data><data name="LabelCreateDeviceTitle" xml:space="preserve"><value>创建设备</value></data><data name="LabelCropROI" xml:space="preserve"><value>画面裁切 ROI</value></data><data name="LabelDangerousOperations" xml:space="preserve"><value>危险操作</value></data><data name="LabelDeviceManagementConsole" xml:space="preserve"><value>设备管理控制台</value></data><data name="LabelEditConfigTooltip" xml:space="preserve"><value>修改当前相机配置</value></data><data name="LabelEnableCFW" xml:space="preserve"><value>启用 CFW</value></data><data name="LabelEnableCFWSerialHint" xml:space="preserve"><value>启用后配置串口、轮盘数量与通道位置映射。</value></data><data name="LabelEnableSerialPort" xml:space="preserve"><value>启用串口发送</value></data><data name="LabelEnterCurrent" xml:space="preserve"><value>请输入电流 (mA):</value></data><data name="LabelEnterValidCurrent" xml:space="preserve"><value>请输入有效的电流数值。</value></data><data name="LabelEnterValidVoltage" xml:space="preserve"><value>请输入有效的电压数值。</value></data><data name="LabelEnterVoltage" xml:space="preserve"><value>请输入电压 (V):</value></data><data name="LabelExportBatchID" xml:space="preserve"><value>批次ID</value></data><data name="LabelExportDataPoints" xml:space="preserve"><value>数据点数</value></data><data name="LabelExportDataType" xml:space="preserve"><value>数据类型</value></data><data name="LabelExportLimitValue" xml:space="preserve"><value>限制值</value></data><data name="LabelExportMeasuredCurrent" xml:space="preserve"><value>测量电流(A)</value></data><data name="LabelExportMeasuredVoltage" xml:space="preserve"><value>测量电压(V)</value></data><data name="LabelExportMeasurementType" xml:space="preserve"><value>测量类型</value></data><data name="LabelExportParamValue" xml:space="preserve"><value>参数,数值</value></data><data name="LabelExportScanEnd" xml:space="preserve"><value>扫描结束值</value></data><data name="LabelExportScanStart" xml:space="preserve"><value>扫描起始值</value></data><data name="LabelExportSeqVoltageCurrent" xml:space="preserve"><value>序号,电压(V),电流(A)</value></data><data name="LabelExportTime" xml:space="preserve"><value>创建时间</value></data><data name="LabelFilterWheel1" xml:space="preserve"><value>滤轮 1</value></data><data name="LabelFilterWheel2" xml:space="preserve"><value>滤轮 2</value></data><data name="LabelFilterWheel3" xml:space="preserve"><value>滤轮 3</value></data><data name="LabelFilterWheelCount" xml:space="preserve"><value>滤轮数量</value></data><data name="LabelFrameCropROI" xml:space="preserve"><value>画面裁切 ROI</value></data><data name="LabelJsonConfig" xml:space="preserve"><value>Json配置</value></data><data name="LabelLicenseExpiredNotification" xml:space="preserve"><value>许可证过期提醒</value></data><data name="LabelLicenseSection" xml:space="preserve"><value>许可证</value></data><data name="LabelLuminousEfficacy" xml:space="preserve"><value>光效</value></data><data name="LabelMeasurementTypeCurrent" xml:space="preserve"><value>电流源</value></data><data name="LabelMeasurementTypeVoltage" xml:space="preserve"><value>电压源</value></data><data name="LabelOpenCalibrationManual" xml:space="preserve"><value>打开校正系统参考手册</value></data><data name="LabelResetFailed" xml:space="preserve"><value>无法重置，请检查数据库相关配置</value></data><data name="LabelResourceCount" xml:space="preserve"><value>资源数量</value></data><data name="LabelSelectCameraHint" xml:space="preserve"><value>从左侧选择一台物理相机以查看详情与管理操作</value></data><data name="LabelSerialPortHint" xml:space="preserve"><value>未绑定 ND 设备时显示串口与波特率。</value></data><data name="LabelTools" xml:space="preserve"><value>工具</value></data><data name="LabelTotalCameras" xml:space="preserve"><value>共 {0} 台相机</value></data><data name="LabelTotalPrefix" xml:space="preserve"><value>共 </value></data><data name="LicenseAlertExpired" xml:space="preserve"><value>许可证已过期（{0}）</value></data><data name="LicenseAlertExpiringSoon" xml:space="preserve"><value>许可证即将到期（{0}）</value></data><data name="LicenseAlertInvalid" xml:space="preserve"><value>许可证状态异常，请检查许可证内容。</value></data><data name="LicenseAlertNoLicense" xml:space="preserve"><value>当前未检测到许可证，请导入或申请许可证。</value></data><data name="LicenseBadgeExpired" xml:space="preserve"><value>许可证已过期 {0}</value></data><data name="LicenseBadgeExpiringSoon" xml:space="preserve"><value>许可证即将到期 {0}</value></data><data name="LicenseBadgeInvalid" xml:space="preserve"><value>许可证异常</value></data><data name="LicenseBadgeValid" xml:space="preserve"><value>许可证有效</value></data><data name="LicenseExpired" xml:space="preserve"><value>已过期</value></data><data name="LicenseExpiredStatusMessage" xml:space="preserve"><value>许可证已过期</value></data><data name="LicenseExpiringSoon" xml:space="preserve"><value>即将过期</value></data><data name="LicenseExpiringSoonStatusMessage" xml:space="preserve"><value>许可证即将过期 (剩余 {0} 天)</value></data><data name="LicenseExpiryDaysRemaining" xml:space="preserve"><value>剩余 {0} 天 ({1})</value></data><data name="LicenseExpiryExpired" xml:space="preserve"><value>已过期 ({0})</value></data><data name="LicenseExpiryValidUntil" xml:space="preserve"><value>有效期至 {0}</value></data><data name="LicenseExportCompleted" xml:space="preserve"><value>License 文件已导出完成！</value></data><data name="LicenseExportedByAdmin" xml:space="preserve"><value>License 文件已通过管理员权限导出完成！</value></data><data name="LicenseListTagExpired" xml:space="preserve"><value>许可证过期</value></data><data name="LicenseListTagInvalid" xml:space="preserve"><value>许可证异常</value></data><data name="LicenseNormal" xml:space="preserve"><value>正常</value></data><data name="LicenseNotSupportedForCamera" xml:space="preserve"><value>该相机不支持此许可证</value></data><data name="LicenseStatusExpired" xml:space="preserve"><value>已过期</value></data><data name="LicenseStatusExpiringSoon" xml:space="preserve"><value>即将到期</value></data><data name="LicenseStatusInvalid" xml:space="preserve"><value>异常</value></data><data name="LicenseStatusUnlicensed" xml:space="preserve"><value>无许可证</value></data><data name="LicenseStatusValid" xml:space="preserve"><value>有效</value></data><data name="LicenseTypeCamera" xml:space="preserve"><value>相机</value></data><data name="LicenseTypeSpectrometer" xml:space="preserve"><value>光谱仪</value></data><data name="LicenseTypeUnknown" xml:space="preserve"><value>未知</value></data><data name="LimitEnd" xml:space="preserve"><value>结束值</value></data><data name="LineWidth" xml:space="preserve"><value>线宽:</value></data><data name="LocalCamera" xml:space="preserve"><value>本地相机</value></data><data name="LocalPortOpenFailedInVideoMode" xml:space="preserve"><value>视频模式下，本地端口打开失败</value></data><data name="LocalVideo" xml:space="preserve"><value>本地视频</value></data><data name="LuminousEfficacy" xml:space="preserve"><value>光效(lm/W)</value></data><data name="LuminousEfficiency" xml:space="preserve"><value>光效</value></data><data name="LuminousFlux" xml:space="preserve"><value>光通量(lm)</value></data><data name="Measure" xml:space="preserve"><value>测量</value></data><data name="MeasuredCurrentA" xml:space="preserve"><value>测量电流(A)</value></data><data name="MeasuredVoltageV" xml:space="preserve"><value>测量电压(V)</value></data><data name="MixedCameraLicensesSummary" xml:space="preserve"><value>检测到 {0} 个相机许可证已过期，{1} 个相机许可证即将过期</value></data><data name="MultipleDevicesDetected" xml:space="preserve"><value>检测到 {0} 台设备:\n{1}</value></data><data name="NoAvailableCameraDevice" xml:space="preserve"><value>未找到可用的相机设备</value></data><data name="NoCalibrationTypeSpecified" xml:space="preserve"><value>未指定上传的校正类型</value></data><data name="NoCameraId" xml:space="preserve"><value>没有相机ID!</value></data><data name="NoCameraToAdd" xml:space="preserve"><value>找不到可以添加的相机</value></data><data name="NoDeviceDetected" xml:space="preserve"><value>未检测到设备</value></data><data name="NoDevicesDetected" xml:space="preserve"><value>未检测到设备</value></data><data name="NoUncreatedCameraFound" xml:space="preserve"><value>找不到未创建的相机,请插上相机后在尝试</value></data><data name="OpenCamera" xml:space="preserve"><value>打开相机</value></data><data name="OpenSMU" xml:space="preserve"><value>打开源表</value></data><data name="OpenSourceMeter" xml:space="preserve"><value>打开源表</value></data><data name="OpenSuccess" xml:space="preserve"><value>打开成功</value></data><data name="ParsingCalibrationFilePleaseWait" xml:space="preserve"><value>正在解析校正文件： 请稍后...</value></data><data name="PhysicalCameraNotConfigured" xml:space="preserve"><value>物理相机未配置</value></data><data name="PhysicalCameraNotFound" xml:space="preserve"><value>找不到对应的物理相机</value></data><data name="PixelBits" xml:space="preserve"><value>像素位数</value></data><data name="PleaseConfigureDllFirst" xml:space="preserve"><value>请先在配置中配置关联的dll</value></data><data name="PleaseSelectDataFirst" xml:space="preserve"><value>您需要先选择数据</value></data><data name="PortConfigError" xml:space="preserve"><value>端口配置错误</value></data><data name="PreciseS100MaxCurrent1A" xml:space="preserve"><value>Precise_S100在输出电压小于30V时，最大输出电流为1A，请调整测量参数后重试！</value></data><data name="PreciseS100MaxVoltage30V" xml:space="preserve"><value>Precise_S100最大输出电压为30V，请调整测量参数后重试！</value></data><data name="PropertyEditorFallback" xml:space="preserve"><value>属性编辑器(备用)</value></data><data name="RadiantFlux" xml:space="preserve"><value>辐射通量(W)</value></data><data name="ReRendering" xml:space="preserve"><value>重新渲染</value></data><data name="RegisterAddress" xml:space="preserve"><value>寄存器地址</value></data><data name="ResetFailedCheckDbConfig" xml:space="preserve"><value>无法重置，请检查数据库相关配置</value></data><data name="RestoreSucceeded" xml:space="preserve"><value>还原成功</value></data><data name="SMUKeithley2450MaxCurrentAboveThreshold" xml:space="preserve"><value>Keithley 2450在输出电压大于{0}V时，最大输出电流为{1}mA，请调整测量参数后重试！</value></data><data name="SMUKeithley2450MaxCurrentBelowThreshold" xml:space="preserve"><value>Keithley 2450在输出电压小于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUKeithley2450MaxVoltage" xml:space="preserve"><value>Keithley 2450最大输出电压为{0}V，请调整测量参数后重试！</value></data><data name="SMUKeithley2600MaxCurrentAboveThreshold" xml:space="preserve"><value>Keithley 2600在输出电压大于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUKeithley2600MaxCurrentBelowThreshold" xml:space="preserve"><value>Keithley 2600在输出电压小于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUKeithley2600MaxVoltage" xml:space="preserve"><value>Keithley 2600最大输出电压为{0}V，请调整测量参数后重试！</value></data><data name="SMUPreciseS100MaxCurrentBelowThreshold" xml:space="preserve"><value>Precise_S100在输出电压小于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUPreciseS100MaxVoltage" xml:space="preserve"><value>Precise_S100最大输出电压为{0}V，请调整测量参数后重试！</value></data><data name="SMUSwitch" xml:space="preserve"><value>源表开关</value></data><data name="SaveChart" xml:space="preserve"><value>保存图表</value></data><data name="SaveDirectory" xml:space="preserve"><value>保存目录</value></data><data name="SaveFile" xml:space="preserve"><value>保存文件</value></data><data name="SaveResourceRecordFailed" xml:space="preserve"><value>保存资源记录失败</value></data><data name="SearchCameraType" xml:space="preserve"><value>搜索相机类型</value></data><data name="SearchOnlineCamerasFailed" xml:space="preserve"><value>搜索在线相机失败: {0}</value></data><data name="SearchTotalElapsed" xml:space="preserve"><value>总耗时 {0}</value></data><data name="SearchingOnlineCameras" xml:space="preserve"><value>正在搜索在线相机</value></data><data name="SectionAdvancedConfig" xml:space="preserve"><value>高级配置</value></data><data name="SectionBackupRestore" xml:space="preserve"><value>备份与恢复</value></data><data name="SectionBasicCalibration" xml:space="preserve"><value>基础校正</value></data><data name="SectionCFWAdvanced" xml:space="preserve"><value>CFW 高级参数</value></data><data name="SectionCFWConfig" xml:space="preserve"><value>CFW 配置</value></data><data name="SectionCameraList" xml:space="preserve"><value>相机清单</value></data><data name="SectionColorCalibration" xml:space="preserve"><value>色彩校正</value></data><data name="SectionDangerousOperations" xml:space="preserve"><value>危险操作</value></data><data name="SectionFileService" xml:space="preserve"><value>文件服务</value></data><data name="SectionMotorParams" xml:space="preserve"><value>电机参数</value></data><data name="SectionParamLimits" xml:space="preserve"><value>参数限制</value></data><data name="SelectCalibrationFileDialog" xml:space="preserve"><value>选择 {0} 校正文件</value></data><data name="SelectCalibrationFileFilter" xml:space="preserve"><value>校正文件 (*.cvcal;*.bin;*.json;*.txt;*.dat)|*.cvcal;*.bin;*.json;*.txt;*.dat|所有文件 (*.*)|*.*</value></data><data name="SelectCameraModelForSearch" xml:space="preserve"><value>选择要参与在线搜索的相机型号</value></data><data name="SelectCameraType" xml:space="preserve"><value>请选择至少一种相机类型</value></data><data name="SelectItemsToDelete" xml:space="preserve"><value>请选择要删除的项</value></data><data name="SelectLicenseFileWithCode" xml:space="preserve"><value>请选择许可证文件 {0}</value></data><data name="SelectSaveFolder" xml:space="preserve"><value>请选择保存文件的文件夹</value></data><data name="SerialPortError" xml:space="preserve"><value>串口 {0} 无法打开。\n\n异常信息：{1}</value></data><data name="SerialPortErrorTitle" xml:space="preserve"><value>串口异常</value></data><data name="SerialPortException" xml:space="preserve"><value>串口 {0} 无法打开。\n\n异常信息：{1}</value></data><data name="SerialPortExceptionTitle" xml:space="preserve"><value>串口异常</value></data><data name="SerialPortOccupied" xml:space="preserve"><value>串口 {0} 正在被其他程序占用，无法打开。\n\n请关闭相机或其他占用该串口的程序或检查设备连接。</value></data><data name="SerialPortOccupiedTitle" xml:space="preserve"><value>串口被占用</value></data><data name="ServiceAlreadyRunning" xml:space="preserve"><value>RegistrationCenterService 服务已在运行。</value></data><data name="ServiceNotInstalled" xml:space="preserve"><value>未检测到 RegistrationCenterService 服务，请确认已正确安装。</value></data><data name="SetCorrectParameters" xml:space="preserve"><value>请设置正确的参数！</value></data><data name="ShowCenterLine" xml:space="preserve"><value>显示中心线</value></data><data name="SkipRCConnection" xml:space="preserve"><value>跳过注册中心连接</value></data><data name="SourceMeterSwitch" xml:space="preserve"><value>源表开关</value></data><data name="StartupServiceFailed" xml:space="preserve"><value>以管理员权限启动 RegistrationCenterService 服务失败。</value></data><data name="SwapRB" xml:space="preserve"><value>交换 R/B</value></data><data name="SzComId" xml:space="preserve"><value>串口id</value></data><data name="Temperature" xml:space="preserve"><value>温度</value></data><data name="TemperatureAxisLabel" xml:space="preserve"><value>温度 (°C)</value></data><data name="TemperatureChart" xml:space="preserve"><value>温度曲线图</value></data><data name="TemperatureChartTitle" xml:space="preserve"><value>温度曲线图</value></data><data name="TemperatureChartTitleWithDate" xml:space="preserve"><value>温度曲线图 - {0}</value></data><data name="TemperatureLabel" xml:space="preserve"><value>温度</value></data><data name="TemperatureUnit" xml:space="preserve"><value>温度 (°C)</value></data><data name="TemplateCalibrationFileRequired" xml:space="preserve"><value>使用{0}模板,需要确认校正文件已经配置</value></data><data name="TemplateFileMissing" xml:space="preserve"><value>使用{0}模板, {1} 不存在</value></data><data name="TemplateFileNotExist" xml:space="preserve"><value>使用{0}模板, {1} 文件不存在</value></data><data name="ThirdPartyAlgorithm" xml:space="preserve"><value>第三方算法</value></data><data name="ThresholdRange" xml:space="preserve"><value>阈值(0-255)</value></data><data name="Time" xml:space="preserve"><value>时间</value></data><data name="TimeLabel" xml:space="preserve"><value>时间</value></data><data name="TitleCacheManagement" xml:space="preserve"><value>缓存管理</value></data><data name="TitleCalibrationHelp" xml:space="preserve"><value>校正系统参考手册</value></data><data name="TitleCameraSearchResults" xml:space="preserve"><value>相机搜索结果</value></data><data name="TitleCreateDevice" xml:space="preserve"><value>创建设备</value></data><data name="TitleEditCameraConfig" xml:space="preserve"><value>编辑相机配置</value></data><data name="TitleLicenseExpiryNotification" xml:space="preserve"><value>许可证过期提醒</value></data><data name="TitleSearchCameraType" xml:space="preserve"><value>搜索相机类型</value></data><data name="ToggleSpectrum" xml:space="preserve"><value>切换相对/绝对光谱</value></data><data name="ToolTipAngleShift" xml:space="preserve"><value>色差校正（AngleShift）：ColorDiff 的变种，角度相关色差校正</value></data><data name="ToolTipCalibrationHelpDetail" xml:space="preserve"><value>打开校正系统参考手册，查看各校正步骤的算法原理和配置说明</value></data><data name="ToolTipColorDiff" xml:space="preserve"><value>色差校正（ColorDiff）：校正不同色彩通道间的色差</value></data><data name="ToolTipColorShift" xml:space="preserve"><value>色偏校正（ColorShift）：通道间空间偏移补偿。配置文件格式：JSON（含 fillOffset 和 offset 参数）</value></data><data name="ToolTipDSNU" xml:space="preserve"><value>DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿。配置文件格式：二进制（V0/V1 头 + ushort 数据）</value></data><data name="ToolTipDarkNoise" xml:space="preserve"><value>暗电流校正（DarkNoise）：消除传感器暗电流噪声。配置文件格式：JSON（含 bpp 和 DarkNoiseRatio）</value></data><data name="ToolTipDefectPoint" xml:space="preserve"><value>坏点校正（DefectPoint）：检测并插值修复缺陷像素。配置文件格式：二进制（坏点数量 + 坐标列表）</value></data><data name="ToolTipDistortion" xml:space="preserve"><value>畸变校正（Distortion）：镜头径向/切向畸变矫正。配置文件格式：JSON（含相机内参矩阵和畸变系数）</value></data><data name="ToolTipEditCameraConfig" xml:space="preserve"><value>修改当前相机配置</value></data><data name="ToolTipFourColor" xml:space="preserve"><value>四色校正（LumFourColor）：3×3 矩阵实现完整的通道混合色彩转换。</value></data><data name="ToolTipLineArity" xml:space="preserve"><value>线性度校正（LineArity）：校正传感器的非线性响应特性</value></data><data name="ToolTipLuminance" xml:space="preserve"><value>亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换。配置文件格式：JSON（含 bpp、曝光时间和系数 a）</value></data><data name="ToolTipMultiColor" xml:space="preserve"><value>多色校正（LumMultiColor）：动态大小系数矩阵，支持更高阶的色彩转换模型。</value></data><data name="ToolTipOneColor" xml:space="preserve"><value>单色校正（LumOneColor）：4 系数模型将 3 通道灰度转换为 CIE XYZ 三刺激值。</value></data><data name="ToolTipOpenCalibrationHelp" xml:space="preserve"><value>打开校正系统参考手册</value></data><data name="ToolTipUniformity" xml:space="preserve"><value>均匀性校正（Uniformity）：补偿镜头渐晕及传感器响应不均。配置文件格式：二进制（V0/V1 头 + float 因子矩阵）</value></data><data name="TryRestartService" xml:space="preserve"><value>重启服务试试</value></data><data name="UnknownCalibrationType" xml:space="preserve"><value>未知的校正类型：{0}</value></data><data name="UnknownCamera" xml:space="preserve"><value>未知相机</value></data><data name="UpdateSuccess" xml:space="preserve"><value>更新成功</value></data><data name="UploadFinished" xml:space="preserve"><value>上传结束</value></data><data name="UploadingCalibrationFilePleaseWait" xml:space="preserve"><value>正在上传校正文件：{0} 请稍后...</value></data><data name="UserCancelledOrElevationFailed" xml:space="preserve"><value>用户取消了操作或提权失败。</value></data><data name="VIScan" xml:space="preserve"><value>VI 扫描</value></data><data name="VideoCaptureMode" xml:space="preserve"><value>视频模式</value></data><data name="VideoCaptureTimeoutCheckLog" xml:space="preserve"><value>视频模式打开超时，请检查日志</value></data><data name="VoltageSource" xml:space="preserve"><value>电压源</value></data><data name="WindowCloseAfter1s" xml:space="preserve"><value>1s 后关闭窗口</value></data></root>

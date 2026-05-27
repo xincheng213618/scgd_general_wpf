@@ -17,14 +17,14 @@
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigThirdPartyAlgorithms}" >
             <StackPanel>
-                <GroupBox Header="资源信息" Margin="0,5">
+                <GroupBox Header="{x:Static properties:Resources.ResourceInformation}" Margin="0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="界面展示名称" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Width="120"/>
                             <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="心跳时间"  Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.HeartbeatTimeLabel}"  Width="120"/>
                             <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
@@ -32,27 +32,27 @@
                             <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
                         </DockPanel>
                         <DockPanel >
-                            <TextBlock Text="绑定DLL" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.BindDLL}" Width="120"/>
                             <hc:ComboBox  x:Name="CobBingCode" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding BindCode}" hc:InfoElement.ShowClearButton="True"  />
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>
-                <GroupBox Header="配置信息" Margin="0,0,0,5">
+                <GroupBox Header="{x:Static properties:Resources.ConfigerInfo}" Margin="0,0,0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">
-                            <TextBlock  Text="数据目录"  Width="120"/>
+                            <TextBlock  Text="{x:Static properties:Resources.DataDirectory}"  Width="120"/>
                             <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding FileServerCfg.DataBasePath}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock  Text="端口地址" Width="120"/>
+                            <TextBlock  Text="{x:Static properties:Resources.PortAddress}" Width="120"/>
                             <TextBox  x:Name="TextBox_Endpoint" Text="{Binding FileServerCfg.Endpoint}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock  Text="端口范围" Width="120"/>
+                            <TextBlock  Text="{x:Static properties:Resources.PortRange}" Width="120"/>
                             <TextBox  x:Name="TextBox_PortRange" Text="{Binding FileServerCfg.PortRange}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="保存天数:" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.RetentionDays}" Width="120"/>
                             <TextBox Text="{Binding FileServerCfg.SaveDays}"/>
                         </DockPanel>
                     </StackPanel>

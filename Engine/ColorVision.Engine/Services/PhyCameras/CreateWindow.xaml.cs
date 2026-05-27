@@ -109,7 +109,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             else
             {
-                MessageBox.Show("找不到可以添加的相机");
+                MessageBox.Show(Properties.Resources.NoCameraToAdd);
             }
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues<TakeImageMode>().Cast<TakeImageMode>()
@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (string.IsNullOrWhiteSpace(CreateConfig.Code))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.CannotCreateCameraWithoutCode, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 

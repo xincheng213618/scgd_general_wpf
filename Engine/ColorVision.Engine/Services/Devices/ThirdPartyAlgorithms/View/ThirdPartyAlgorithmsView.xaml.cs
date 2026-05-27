@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
   
             if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not ViewResultAlg result)
             {
-                MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                MessageBox.Show(Application.Current.MainWindow, Properties.Resources.SelectDataFirst, "ColorVision");
                 return;
             }
             else
@@ -369,7 +369,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             if (listView1.SelectedItems.Count > 0)
             {
                 using var dialog = new System.Windows.Forms.FolderBrowserDialog();
-                dialog.Description = "请选择保存文件的文件夹";
+                dialog.Description = Properties.Resources.SelectSaveFolder;
                 dialog.ShowNewFolderButton = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 string selectedPath = dialog.SelectedPath;
@@ -384,7 +384,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             }
             else
             {
-                MessageBox.Show("您需要先选择数据");
+                MessageBox.Show(Properties.Resources.SelectDataFirst);
             }
         }
 

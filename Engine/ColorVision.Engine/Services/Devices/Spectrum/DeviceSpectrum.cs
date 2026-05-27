@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         internal static string FormatSerialNumberResult(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw))
-                return "未检测到设备";
+                return Properties.Resources.NoDeviceDetected;
 
             try
             {
@@ -239,12 +239,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
 
                 if (snList.Count == 0)
-                    return "未检测到设备";
+                    return Properties.Resources.NoDeviceDetected;
 
                 if (snList.Count == 1)
-                    return $"设备序列号: {snList[0]}";
+                    return string.Format(Properties.Resources.DeviceSerialNumber, snList[0]);
 
-                return $"检测到 {snList.Count} 台设备:\n" + string.Join("\n", snList.Select((sn, idx) => $"  {idx + 1}. {sn}"));
+                return string.Format(Properties.Resources.DevicesDetected, snList.Count) + "\n" + string.Join("\n", snList.Select((sn, idx) => $"  {idx + 1}. {sn}"));
             }
             catch
             {

@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Services.RC
         public override string ToString()
         {
             if (!Exists)
-                return $"{ServiceName}: 未安装";
+                return $"{ServiceName}: {Properties.Resources.NotInstalled}";
             return $"{ServiceName}: v{FileVersion} ({LastWriteTime:yyyy-MM-dd HH:mm:ss})";
         }
     }

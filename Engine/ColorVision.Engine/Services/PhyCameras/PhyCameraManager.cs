@@ -287,7 +287,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (_isSearchingCameras)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "正在搜索在线相机", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SearchingOnlineCameras, "ColorVision");
                 return;
             }
 
@@ -325,7 +325,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"搜索在线相机失败: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.SearchOnlineCamerasFailed, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -355,7 +355,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             if (Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到未创建的相机,请插上相机后在尝试",nameof(PhyCameraManager));
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoUncreatedCameraFound, nameof(PhyCameraManager));
                 SearchCameraIds();
                 return;
             }
@@ -377,7 +377,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 RestoreDirectory = true,
                 Multiselect = true,
                 Filter = "All files (*.*)|*.zip;*.lic",
-                Title = "请选择许可证文件",
+                Title = Properties.Resources.SelectLicenseFilePrompt,
                 FilterIndex = 1
             };
 
@@ -400,12 +400,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
                         else
                         {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, "ColorVision");
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"处理文件失败 :{ex.Message}", "ColorVision");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FileProcessFailed, ex.Message), "ColorVision");
                     }
                 }
             }
@@ -470,7 +470,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     CreatePhysicalCameraFloder(sysDictionaryModel.Code);
                 }
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddPhysicalCameraFailed : Properties.Resources.AddPhysicalCameraSuccess)}", "ColorVision");
             }
             else
             {

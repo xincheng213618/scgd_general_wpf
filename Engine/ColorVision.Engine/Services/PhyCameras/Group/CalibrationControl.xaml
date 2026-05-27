@@ -69,7 +69,7 @@
                         <StackPanel>
                             <TextBlock Text="{x:Static properties:Resources.CalibrationFileManagement}"
                                        FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="选择校正组后勾选参与当前相机处理链路的校正文件。"
+                            <TextBlock Text="{x:Static properties:Resources.DescriptionCalibrationControl}"
                                        FontSize="12" Opacity="0.62" Margin="0,4,0,0"/>
                         </StackPanel>
                         <WrapPanel x:Name="uploadbutton"
@@ -89,7 +89,7 @@
                             <Button Width="30" Margin="6,0,0,0"
                                     Click="Help_Click"
                                     Content="&#x2753;"
-                                    ToolTip="打开校正系统参考手册"/>
+                                    ToolTip="{x:Static properties:Resources.ToolTipOpenCalibrationHelp}"/>
                         </WrapPanel>
                         <hc:ComboBox x:Name="ComboBoxList"
                                      Grid.Row="1"
@@ -102,65 +102,65 @@
 
                 <Border Style="{StaticResource PanelBorderStyle}" Padding="12" Margin="0,0,0,10">
                     <StackPanel>
-                        <TextBlock Text="基础校正" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock Text="{x:Static properties:Resources.SectionBasicCalibration}" Style="{StaticResource SectionTitleStyle}"/>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="暗电流校正（DarkNoise）：消除传感器暗电流噪声。配置文件格式：JSON（含 bpp 和 DarkNoiseRatio）">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDarkNoise}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.DarkNoise.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.DarkNoise.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.DarkNoise}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.DarkNoise.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿。配置文件格式：二进制（V0/V1 头 + ushort 数据）">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDSNU}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.DSNU.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.DSNU.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="DSNU"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.DSNU.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="坏点校正（DefectPoint）：检测并插值修复缺陷像素。配置文件格式：二进制（坏点数量 + 坐标列表）">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDefectPoint}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.DefectPoint.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.DefectPoint.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.DefectPoint}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.DefectPoint.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="色偏校正（ColorShift）：通道间空间偏移补偿。配置文件格式：JSON（含 fillOffset 和 offset 参数）">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipColorShift}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.ColorShift.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.ColorShift.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.ColorShift}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.ColorShift.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="畸变校正（Distortion）：镜头径向/切向畸变矫正。配置文件格式：JSON（含相机内参矩阵和畸变系数）">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDistortion}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.Distortion.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.Distortion.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.Distortion}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.Distortion.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="均匀性校正（Uniformity）：补偿镜头渐晕及传感器响应不均。配置文件格式：二进制（V0/V1 头 + float 因子矩阵）">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipUniformity}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.Uniformity.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.Uniformity.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.Uniformity}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.Uniformity.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="线性度校正（LineArity）：校正传感器的非线性响应特性">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipLineArity}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.LineArity.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.LineArity.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="LineArity"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.LineArity.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="色差校正（ColorDiff）：校正不同色彩通道间的色差">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipColorDiff}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.ColorDiff.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.ColorDiff.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="ColorDiff"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.ColorDiff.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel ToolTip="色差校正（AngleShift）：ColorDiff 的变种，角度相关色差校正">
+                        <DockPanel ToolTip="{x:Static properties:Resources.ToolTipAngleShift}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.AngleShift.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.AngleShift.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="AngleShift"/>
@@ -171,30 +171,30 @@
 
                 <Border Style="{StaticResource PanelBorderStyle}" Padding="12">
                     <StackPanel>
-                        <TextBlock Text="色彩校正" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock Text="{x:Static properties:Resources.SectionColorCalibration}" Style="{StaticResource SectionTitleStyle}"/>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换。配置文件格式：JSON（含 bpp、曝光时间和系数 a）">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipLuminance}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.Luminance.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.Luminance.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.Brightness}"/>
                             <TextBox IsEnabled="False" Text="{Binding Color.Luminance.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="单色校正（LumOneColor）：4 系数模型将 3 通道灰度转换为 CIE XYZ 三刺激值。">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipOneColor}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.LumOneColor.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.LumOneColor.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.OneColor}"/>
                             <TextBox IsEnabled="False" Text="{Binding Color.LumOneColor.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="四色校正（LumFourColor）：3×3 矩阵实现完整的通道混合色彩转换。">
+                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipFourColor}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.LumFourColor.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.LumFourColor.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.FourColor}"/>
                             <TextBox IsEnabled="False" Text="{Binding Color.LumFourColor.FilePath}"/>
                         </DockPanel>
 
-                        <DockPanel ToolTip="多色校正（LumMultiColor）：动态大小系数矩阵，支持更高阶的色彩转换模型。">
+                        <DockPanel ToolTip="{x:Static properties:Resources.ToolTipMultiColor}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.LumMultiColor.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.LumMultiColor.IsSelected}"/>
                             <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.MultiColor}"/>

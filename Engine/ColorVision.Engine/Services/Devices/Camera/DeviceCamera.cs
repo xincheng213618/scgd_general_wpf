@@ -312,7 +312,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (PhyCamera == null)
             {
-                errorMessage = "物理相机未配置";
+                errorMessage = Properties.Resources.PhysicalCameraNotConfigured;
                 return false;
             }
 
@@ -324,7 +324,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             bool hasSelectedCalibration = CalibrationSlotDefinitions.AllSlots.Any(slot => slot.ParamGetter(param).IsSelected);
             if (groupResource == null || !hasSelectedCalibration)
             {
-                errorMessage = $"使用{param.Name}模板,需要确认校正文件已经配置";
+                errorMessage = string.Format(Properties.Resources.CalibrationFileNotConfiguredWithTemplate, param.Name);
                 return false;
             }
 
@@ -341,7 +341,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath))
                 {
                     string displayName = resource?.Name ?? slot.Key;
-                    errorMessage = $"使用{param.Name}模板, {displayName} 文件不存在";
+                    errorMessage = string.Format(Properties.Resources.TemplateFileNotExist, param.Name, displayName);
                     return false;
                 }
 

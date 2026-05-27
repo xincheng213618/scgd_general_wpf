@@ -6,6 +6,7 @@
     xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
     xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
     mc:Ignorable="d" Title="COLOR VISION" Width="1400" Height="900" Closing="Window_Closing"
     Loaded="Window_Loaded" WindowStartupLocation="CenterScreen">
     <Window.Resources>
@@ -22,14 +23,14 @@
 
         <!--  Menu Bar  -->
         <Menu Grid.Row="0">
-            <MenuItem Header="显示设置">
-                <MenuItem x:Name="MenuItem_ShowCenterLine" Header="显示中心线" IsCheckable="True" />
+            <MenuItem Header="{x:Static properties:Resources.DisplaySettings}">
+                <MenuItem x:Name="MenuItem_ShowCenterLine" Header="{x:Static properties:Resources.ShowCenterLine}" IsCheckable="True" />
             </MenuItem>
-            <MenuItem Header="基本参数设置">
-                <MenuItem Click="Camera_MenuItem_Click" Header="相机参数设置" />
-                <MenuItem Click="Channels_MenuItem_Click" Header="通道参数设置" />
-                <MenuItem Click="Calibration_MenuItem_Click" Header="校正参数设置" />
-                <MenuItem Click="ExpTime_MenuItem_Click" Header="自动曝光参数设置" />
+            <MenuItem Header="{x:Static properties:Resources.BasicParamSettings}">
+                <MenuItem Click="Camera_MenuItem_Click" Header="{x:Static properties:Resources.CameraParamSettings}" />
+                <MenuItem Click="Channels_MenuItem_Click" Header="{x:Static properties:Resources.ChannelParamSettings}" />
+                <MenuItem Click="Calibration_MenuItem_Click" Header="{x:Static properties:Resources.CaliberationParamSet}" />
+                <MenuItem Click="ExpTime_MenuItem_Click" Header="{x:Static properties:Resources.AutoExposureParamSettings}" />
             </MenuItem>
         </Menu>
 
@@ -42,10 +43,10 @@
             <!--  Left Panel - Controls  -->
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="10,5">
-                    <TextBlock Margin="0,0,0,6" FontSize="16" FontWeight="SemiBold" Text="本地相机" />
+                    <TextBlock Margin="0,0,0,6" FontSize="16" FontWeight="SemiBold" Text="{x:Static properties:Resources.LocalCamera}" />
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="相机型号" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.CameraType}" />
                         <ComboBox x:Name="cb_CM_TYPE" SelectionChanged="cb_CM_TYPE_SelectionChanged">
                             <ComboBoxItem Content="QHY_USB" />
                             <ComboBoxItem Content="HK_USB" />
@@ -60,7 +61,7 @@
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="相机模式" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.CamreaMode}" />
                         <ComboBox x:Name="cb_CM_MODE" SelectionChanged="cb_CM_MODE_SelectionChanged">
                             <ComboBoxItem Content="CV_MODE" />
                             <ComboBoxItem Content="BV_MODE" />
@@ -70,13 +71,13 @@
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <Button x:Name="btn_RefreshCameraId" Width="56" Margin="5,0,0,0" Padding="5,2" Click="RefreshCameraIds_Click" Content="刷新" DockPanel.Dock="Right" />
-                        <TextBlock Width="78" Text="相机ID" />
+                        <Button x:Name="btn_RefreshCameraId" Width="56" Margin="5,0,0,0" Padding="5,2" Click="RefreshCameraIds_Click" Content="{x:Static properties:Resources.Refresh}" DockPanel.Dock="Right" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.CameraID}" />
                         <ComboBox x:Name="cb_CM_ID" IsEditable="True" SelectionChanged="cb_CM_ID_SelectionChanged" />
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="取图模式" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.CaptureMode}" />
                         <ComboBox x:Name="cb_get_mode" SelectionChanged="cb_get_mode_SelectionChanged">
                             <ComboBoxItem Content="Measure_Normal" />
                             <ComboBoxItem Content="Live" />
@@ -86,7 +87,7 @@
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="像素位数" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.PixelBits}" />
                         <ComboBox x:Name="cb_bpp" SelectionChanged="cb_bpp_SelectionChanged">
                             <ComboBoxItem Content="8" />
                             <ComboBoxItem Content="16" />
@@ -94,7 +95,7 @@
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="通道数" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.ChannelCount}" />
                         <ComboBox x:Name="cb_Channels" IsEnabled="False" SelectionChanged="cb_Channels_SelectionChanged">
                             <ComboBoxItem Content="1" />
                             <ComboBoxItem Content="3" />
@@ -102,47 +103,47 @@
                     </DockPanel>
 
                     <UniformGrid Margin="0,6,0,3" Columns="3">
-                        <Button x:Name="btn_Connect" Margin="0,0,3,0" Padding="5" Click="btn_Connect_Click" Content="连接" />
-                        <Button x:Name="btn_reset" Margin="3,0,3,0" Padding="5" Click="btn_reset_Click" Content="复位" />
-                        <Button x:Name="btn_close" Margin="3,0,0,0" Padding="5" Click="btn_close_Click" Content="关闭" IsEnabled="False" />
+                        <Button x:Name="btn_Connect" Margin="0,0,3,0" Padding="5" Click="btn_Connect_Click" Content="{x:Static properties:Resources.Connect}" />
+                        <Button x:Name="btn_reset" Margin="3,0,3,0" Padding="5" Click="btn_reset_Click" Content="{x:Static properties:Resources.CameraReset}" />
+                        <Button x:Name="btn_close" Margin="3,0,0,0" Padding="5" Click="btn_close_Click" Content="{x:Static properties:Resources.Close}" IsEnabled="False" />
                     </UniformGrid>
 
                     <Separator Margin="0,8" />
 
-                    <TextBlock Margin="0,0,0,6" FontWeight="Bold" Text="取图设置" />
-                    <CheckBox Margin="0,0,0,6" Content="自动曝光" IsChecked="{Binding Config.IsAutoExpose, Mode=TwoWay}" />
+                    <TextBlock Margin="0,0,0,6" FontWeight="Bold" Text="{x:Static properties:Resources.CaptureSettings}" />
+                    <CheckBox Margin="0,0,0,6" Content="{x:Static properties:Resources.AutoExposure}" IsChecked="{Binding Config.IsAutoExpose, Mode=TwoWay}" />
 
                     <DockPanel Margin="0,3">
-                        <Button x:Name="btn_EditCalibrationTemplate" Width="70" Margin="5,0,0,0" Padding="5,2" Click="EditCalibrationTemplate_Click" Content="编辑模板" DockPanel.Dock="Right" />
-                        <TextBlock Width="78" Text="校正模板" />
+                        <Button x:Name="btn_EditCalibrationTemplate" Width="70" Margin="5,0,0,0" Padding="5,2" Click="EditCalibrationTemplate_Click" Content="{x:Static properties:Resources.EditTemplate}" DockPanel.Dock="Right" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.CalibrationTemplate}" />
                         <ComboBox x:Name="ComboxCalibrationTemplate" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" />
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="保存文件" />
-                        <CheckBox x:Name="check_SaveFile" Content="允许存盘" IsChecked="{Binding Config.UsingFileCaching, Mode=TwoWay}" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.SaveFile}" />
+                        <CheckBox x:Name="check_SaveFile" Content="{x:Static properties:Resources.AllowSave}" IsChecked="{Binding Config.UsingFileCaching, Mode=TwoWay}" />
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="通道顺序" />
-                        <CheckBox x:Name="check_SwapRedBlueChannels" Content="交换 R/B" IsChecked="{Binding Config.SwapRedBlueChannels, Mode=TwoWay}" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.ChannelOrder}" />
+                        <CheckBox x:Name="check_SwapRedBlueChannels" Content="{x:Static properties:Resources.SwapRB}" IsChecked="{Binding Config.SwapRedBlueChannels, Mode=TwoWay}" />
                     </DockPanel>
 
                     <DockPanel Margin="0,3" Visibility="{Binding Config.UsingFileCaching, Converter={StaticResource bool2VisibilityConverter}}">
-                        <TextBlock Width="78" Text="保存目录" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.SaveDirectory}" />
                         <TextBox IsReadOnly="True" Text="{Binding Config.FileServerCfg.DataBasePath}" />
                     </DockPanel>
 
                     <StackPanel Margin="0,6,0,0">
                         <DockPanel Margin="0,0,0,3">
-                            <TextBlock MinWidth="50" Margin="0,0,5,0" Text="增益" />
+                            <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.Gain}" />
                             <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" />
                             <hc:PreviewSlider TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" ValueChanged="PreviewSliderLocalGain_ValueChanged1" Value="{Binding DisplayConfig.Gain}" Minimum="{Binding Config.GainMin}" Maximum="{Binding Config.GainMax}" />
                         </DockPanel>
 
                         <StackPanel Visibility="{Binding Config.IsExpThree, Converter={StaticResource bool2VisibilityConverter1}}">
                             <DockPanel Margin="0,0,0,3">
-                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="曝光" />
+                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExpTime}" />
                                 <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTime, StringFormat=F2}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" ValueChanged="PreviewSliderLocalExp_ValueChanged" Value="{Binding DisplayConfig.ExpTimeLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
@@ -150,17 +151,17 @@
 
                         <StackPanel Visibility="{Binding Config.IsExpThree, Converter={StaticResource bool2VisibilityConverter}}">
                             <DockPanel Margin="0,0,0,3">
-                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="曝光 R" />
+                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExposureRLabel}" />
                                 <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeR, StringFormat=F2}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" Value="{Binding DisplayConfig.ExpTimeRLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,3">
-                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="曝光 G" />
+                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExposureGLabel}" />
                                 <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeG, StringFormat=F2}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" Value="{Binding DisplayConfig.ExpTimeGLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,3">
-                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="曝光 B" />
+                                <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExposureBLabel}" />
                                 <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeB, StringFormat=F2}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" Value="{Binding DisplayConfig.ExpTimeBLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
@@ -168,29 +169,29 @@
                     </StackPanel>
 
                     <UniformGrid Margin="0,8,0,3" Columns="2">
-                        <Button x:Name="btn_Meas" Margin="0,0,3,0" Padding="5" Click="btn_Meas_Click" Content="测量" IsEnabled="False" />
-                        <Button x:Name="btn_CalAutoExp" Margin="3,0,0,0" Padding="5" Click="btn_CalAutoExp_Click" Content="计算自动曝光" IsEnabled="False" />
+                        <Button x:Name="btn_Meas" Margin="0,0,3,0" Padding="5" Click="btn_Meas_Click" Content="{x:Static properties:Resources.Measure}" IsEnabled="False" />
+                        <Button x:Name="btn_CalAutoExp" Margin="3,0,0,0" Padding="5" Click="btn_CalAutoExp_Click" Content="{x:Static properties:Resources.CalcAutoExposure}" IsEnabled="False" />
                     </UniformGrid>
 
                     <DockPanel Margin="0,3">
-                        <Button x:Name="button1" Width="100" Padding="5" Click="button1_Click" Content="计算位置" DockPanel.Dock="Left" IsEnabled="False" />
-                        <TextBlock Margin="5,0,0,0" DockPanel.Dock="Right" Text="阈值(0-255)" />
+                        <Button x:Name="button1" Width="100" Padding="5" Click="button1_Click" Content="{x:Static properties:Resources.CalcPosition}" DockPanel.Dock="Left" IsEnabled="False" />
+                        <TextBlock Margin="5,0,0,0" DockPanel.Dock="Right" Text="{x:Static properties:Resources.ThresholdRange}" />
                         <TextBox x:Name="textBox1" Margin="5,0" Text="30" />
                     </DockPanel>
 
                     <Separator Margin="0,8" />
 
-                    <CheckBox x:Name="checkBox1" Margin="0,3" Checked="checkBox1_CheckedChanged" Content="框选" />
+                    <CheckBox x:Name="checkBox1" Margin="0,3" Checked="checkBox1_CheckedChanged" Content="{x:Static properties:Resources.FrameSelect}" />
                     <UniformGrid Margin="0,3" Columns="2">
-                        <Button Margin="0,0,3,0" Padding="5" Click="btn_FOV_Click" Content="执行FOV" />
-                        <Button Margin="3,0,0,0" Padding="5" Click="btn_SFR_Click" Content="执行 SFR" />
+                        <Button Margin="0,0,3,0" Padding="5" Click="btn_FOV_Click" Content="{x:Static properties:Resources.ExecuteFOV}" />
+                        <Button Margin="3,0,0,0" Padding="5" Click="btn_SFR_Click" Content="{x:Static properties:Resources.ExecuteSFR}" />
                     </UniformGrid>
                     <UniformGrid Margin="0,3" Columns="2">
-                        <Button Margin="0,0,3,0" Padding="5" Click="btn_Distortion_Click" Content="执行Disto" />
-                        <Button Margin="3,0,0,0" Padding="5" Click="button2_Click" Content="显示设置" />
+                        <Button Margin="0,0,3,0" Padding="5" Click="btn_Distortion_Click" Content="{x:Static properties:Resources.ExecuteDisto}" />
+                        <Button Margin="3,0,0,0" Padding="5" Click="button2_Click" Content="{x:Static properties:Resources.DisplaySettings}" />
                     </UniformGrid>
 
-                    <Button x:Name="btn_Test" Margin="0,3" Padding="5" Click="btn_Test_Click" Content="自动对焦测试" />
+                    <Button x:Name="btn_Test" Margin="0,3" Padding="5" Click="btn_Test_Click" Content="{x:Static properties:Resources.AutoFocusTest}" />
                 </StackPanel>
             </ScrollViewer>
 

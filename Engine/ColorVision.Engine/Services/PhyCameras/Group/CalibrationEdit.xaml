@@ -45,7 +45,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="{x:Static properties:Resources.CalibrationFileManagement}" FontSize="22" FontWeight="SemiBold" />
-                    <TextBlock Text="维护相机校正组、上传校正文件，并为当前组选择每类校正资源。"
+                    <TextBlock Text="{x:Static properties:Resources.DescriptionCalibrationEdit}"
                                FontSize="12" Opacity="0.62" Margin="0,5,0,0" />
                 </StackPanel>
                 <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -54,7 +54,7 @@
                     <Button Style="{StaticResource ToolbarButtonStyle}" Command="{Binding UploadCalibrationCommand}" Content="{x:Static properties:Resources.Upload}" />
                     <Button Style="{StaticResource ToolbarButtonStyle}" Click="Export_Click" Content="{x:Static properties:Resources.ExportCalibration}" />
                     <Button Style="{StaticResource ToolbarButtonStyle}" Command="{Binding OepnCalibrationToolCommand}" Content="{x:Static properties:Resources.CreateCalibration}" />
-                    <Button Style="{StaticResource ToolbarButtonStyle}" Click="Help_Click" Content="校正手册 &#x2753;" ToolTip="打开校正系统参考手册，查看各校正步骤的算法原理和配置说明" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Click="Help_Click" Content="{x:Static properties:Resources.ButtonCalibrationManual}" ToolTip="{x:Static properties:Resources.ToolTipCalibrationHelpDetail}" />
                 </WrapPanel>
             </Grid>
         </Border>
@@ -144,112 +144,112 @@
                         </Border>
 
                         <!--  基础校正项：按固定顺序依次执行 DarkNoise → DefectPoint → DSNU → Uniformity → ColorShift → Distortion  -->
-                        <GroupBox Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}" Header="基础校正（按顺序依次执行）">
+                        <GroupBox Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}" Header="{x:Static properties:Resources.HeaderBasicCalibrationPipeline}">
                             <StackPanel Margin="5">
-                                <TextBlock Margin="0,0,0,8" FontSize="11" Opacity="0.7" Text="校正流水线：原始图像 → 暗电流 → 坏点 → DSNU → 均匀性 → 色偏 → 畸变 → 校正后图像" TextWrapping="Wrap" />
-                                <DockPanel Margin="0,0,0,5" ToolTip="暗电流校正（DarkNoise）：消除传感器在无光照条件下产生的暗电流噪声&#x0a;算法：pixel_out = pixel_in × DarkNoiseRatio&#x0a;配置文件：JSON 格式（含 bpp 和 DarkNoiseRatio）">
+                                <TextBlock Margin="0,0,0,8" FontSize="11" Opacity="0.7" Text="{x:Static properties:Resources.DescriptionBasicPipeline}" TextWrapping="Wrap" />
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDarkNoise}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding DarkNoise.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DarkNoise" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DarkNoise" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="消除传感器固有暗电流信号，通过预标定比率逐像素补偿">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDarkNoiseShort}">
                                         <Run Text="{x:Static properties:Resources.DarkNoise}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="消除暗电流噪声" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDarkNoiseShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDarkNoise" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding DarkNoise}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿&#x0a;算法：pixel_out = max(pixel_in - DSNU_ref, 0)&#x0a;配置文件：二进制格式（V0/V1 头 + ushort 暗帧基准数据）">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDSNU}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding DSNU.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DSNU" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DSNU" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="暗信号非均匀性补偿，通过预采集暗帧逐像素减法消除像素级暗电流差异">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDSNUShort}">
                                         <Run Text="DSNU" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="暗信号非均匀性补偿" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDSNUShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDSNU" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding DSNU}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="坏点校正（DefectPoint）：检测并修复缺陷像素&#x0a;算法：对预标定坏点坐标使用 7×7 邻域中值滤波替代&#x0a;配置文件：二进制格式（4字节坏点数量 + 坐标列表）">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDefectPoint}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding DefectPoint.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DefectPoint" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DefectPoint" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding DefectPoint.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="检测并插值修复缺陷像素，7×7 邻域中值滤波">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDefectPointShort}">
                                         <Run Text="{x:Static properties:Resources.DefectPoint}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="缺陷像素中值修复" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDefectPointShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDefectPoint" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding DefectPoint}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="色偏校正（ColorShift）：通道间空间偏移补偿&#x0a;算法：通过 OpenCV 仿射变换进行亚像素级通道平移&#x0a;配置文件：JSON 格式（含 fillOffset 和 offset/offsets 参数）">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorShift}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding ColorShift.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="ColorShift" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="ColorShift" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="补偿多通道光学系统中不同色彩通道的空间偏移">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorShiftShort}">
                                         <Run Text="{x:Static properties:Resources.ColorShift}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="通道空间偏移补偿" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionColorShiftShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxColorShift" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding ColorShift}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="畸变校正（Distortion）：镜头径向/切向畸变矫正&#x0a;算法：支持标准针孔模型(k1,k2,p1,p2,k3)和鱼眼模型&#x0a;配置文件：JSON 格式（含相机内参矩阵 fx,fy,cx,cy 和畸变系数）">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDistortion}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding Distortion.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Distortion" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Distortion" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="使用 OpenCV 相机标定模型矫正镜头畸变，支持标准针孔与鱼眼模型">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDistortionShort}">
                                         <Run Text="{x:Static properties:Resources.Distortion}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="镜头畸变矫正" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDistortionShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDistortion" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding Distortion}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="均匀性校正（Uniformity）：补偿镜头渐晕和传感器灵敏度空间差异&#x0a;算法：pixel_out = pixel_in × Uniformity_factor&#x0a;配置文件：二进制格式（V0/V1 头 + float 因子矩阵）">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipUniformity}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding Uniformity.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Uniformity" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Uniformity" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="使用预标定乘法因子矩阵补偿镜头渐晕和传感器响应不均">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipUniformityShort}">
                                         <Run Text="{x:Static properties:Resources.Uniformity}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="镜头渐晕/响应补偿" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionUniformityShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxUniformity" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding Uniformity}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="线性度校正（LineArity）：校正传感器的非线性响应特性&#x0a;确保输出灰度值与实际光照强度成线性关系">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipLineArity}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LineArity.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LineArity" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LineArity" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="校正传感器输出灰度值与实际光照强度之间的非线性关系">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipLineArityShort}">
                                         <Run Text="LineArity" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="传感器线性度校正" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionLineArityShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLineArity" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding LineArity}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="色差校正（ColorDiff）：校正不同色彩通道间的色差偏移">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorDiff}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding ColorDiff.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="ColorDiff" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="ColorDiff" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="消除不同色彩通道间的色差偏移">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorDiffShort}">
                                         <Run Text="{x:Static properties:Resources.ColorDiff}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="通道色差消除" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionColorDiffShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxColorDiff" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding ColorDiff}" />
                                 </DockPanel>
                                 <!--  色差校正变种（AngleShift）：与 ColorDiff 一致，ServiceTypes=43  -->
-                                <DockPanel ToolTip="色差校正（AngleShift）：ColorDiff 的变种，用于角度相关的色差校正">
+                                <DockPanel ToolTip="{x:Static properties:Resources.CaliEditToolTipAngleShift}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding AngleShift.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="AngleShift" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="AngleShift" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="角度校正">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipAngleShiftShort}">
                                         <Run Text="AngleShift" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="角度校正" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionAngleShiftShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxAngleShift" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding AngleShift}" />
                                 </DockPanel>
@@ -257,54 +257,54 @@
                         </GroupBox>
 
                         <!--  色彩校正项：将灰度值转换为 CIE XYZ 色彩空间（四种模式互斥，仅可选其一）  -->
-                        <GroupBox Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}" Header="色彩校正（四选一，互斥）">
+                        <GroupBox Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}" Header="{x:Static properties:Resources.HeaderColorCalibrationMutual}">
                             <StackPanel Margin="5">
-                                <TextBlock Margin="0,0,0,8" FontSize="11" Opacity="0.7" Text="将传感器灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值 Lv(cd/m²)，以下四种模式互斥" TextWrapping="Wrap" />
-                                <DockPanel Margin="0,0,0,5" ToolTip="亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换&#x0a;算法：Lv = (a / Texp) × pixel&#x0a;配置文件：JSON 格式（含 bpp、曝光时间和系数 a,b,c,d）&#x0a;输出：单通道 32 位浮点亮度图">
+                                <TextBlock Margin="0,0,0,8" FontSize="11" Opacity="0.7" Text="{x:Static properties:Resources.DescriptionColorCalibration}" TextWrapping="Wrap" />
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipLuminance}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding Luminance.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Luminance" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Luminance" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="Lv = (a / Texp) × pixel，仅输出单通道亮度值">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipLuminanceShort}">
                                         <Run Text="{x:Static properties:Resources.Brightness}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="灰度→亮度 Lv(cd/m²)" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionLuminanceShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLuminance" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding Luminance}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="单色校正（LumOneColor）：4 系数线性模型&#x0a;算法：X = aR+dB, Y = bG, Z = cB（经曝光/增益归一化）&#x0a;配置文件：JSON 格式（含 a,b,c,d 系数和 Texp/Gain）&#x0a;支持多线程加速">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipOneColor}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LumOneColor.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumOneColor" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumOneColor" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="4 系数模型：X=aR+dB, Y=bG, Z=cB">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipOneColorShort}">
                                         <Run Text="{x:Static properties:Resources.OneColor}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="4系数→CIE XYZ" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionOneColorShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLumOneColor" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding LumOneColor}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="四色校正（LumFourColor）：3×3 矩阵（9 系数 a-i）&#x0a;算法：[X,Y,Z] = 3×3矩阵 × [R,G,B]（每通道经 Texp/Gain 归一化）&#x0a;配置文件：JSON 格式（含 a-i 共 9 个系数）&#x0a;精度高于单色校正">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipFourColor}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LumFourColor.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumFourColor" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumFourColor" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="3×3 矩阵完整通道混合，精度高于单色">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipFourColorShort}">
                                         <Run Text="{x:Static properties:Resources.FourColor}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="9系数3×3→CIE XYZ" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionFourColorShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLumFourColor" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding LumFourColor}" />
                                 </DockPanel>
-                                <DockPanel ToolTip="多色校正（LumMultiColor）：动态 N/3×3 系数矩阵&#x0a;算法：支持高阶色彩转换拟合，系数数组长度动态&#x0a;配置文件：JSON 格式（含动态系数和增益数组）&#x0a;适用于需要更高精度的场景">
+                                <DockPanel ToolTip="{x:Static properties:Resources.CaliEditToolTipMultiColor}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LumMultiColor.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumMultiColor" Content="上传" DockPanel.Dock="Right" />
+                                    <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumMultiColor" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="动态大小系数矩阵，支持高阶色彩拟合">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipMultiColorShort}">
                                         <Run Text="{x:Static properties:Resources.MultiColor}" />
                                         <LineBreak />
-                                        <Run FontSize="10" Foreground="Gray" Text="N系数高阶→CIE XYZ" />
+                                        <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionMultiColorShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLumMultiColor" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding LumMultiColor}" />
                                 </DockPanel>

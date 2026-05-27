@@ -34,12 +34,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
             if (data != null && data.Count > 0)
             {
                 // 设置窗口标题
-                this.Title = $"温度曲线图 - {data.First().CreateDate?.ToString("yyyy-MM-dd")}";
+                this.Title = string.Format(Properties.Resources.TemperatureChartTitleWithDate, data.First().CreateDate?.ToString("yyyy-MM-dd"));
                 TempatureText.Text = $"{data.Last()?.CreateDate}  {data.Last()?.TempValue} °C";
             }
             else
             {
-                this.Title = "温度曲线图";
+                this.Title = Properties.Resources.TemperatureChartTitle;
             }
 
             // Initialize the plot
@@ -53,13 +53,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
             WpfPlot.Plot.Clear();
 
             // Set Chinese font support (cache for reuse)
-            string fontSample = "温度";
+            string fontSample = Properties.Resources.Temperature;
             _detectedFont = ScottPlot.Fonts.Detect(fontSample);
 
             // Configure plot appearance
-            WpfPlot.Plot.Title("温度曲线图");
-            WpfPlot.Plot.XLabel("时间");
-            WpfPlot.Plot.YLabel("温度 (°C)");
+            WpfPlot.Plot.Title(Properties.Resources.TemperatureChartTitle);
+            WpfPlot.Plot.XLabel(Properties.Resources.Time);
+            WpfPlot.Plot.YLabel(Properties.Resources.TemperatureUnit);
 
             WpfPlot.Plot.Axes.Title.Label.FontName = _detectedFont;
             WpfPlot.Plot.Axes.Left.Label.FontName = _detectedFont;

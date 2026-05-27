@@ -229,27 +229,27 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 ButtonSourceMeter1,
                 "open-close",
                 Properties.Resources.Open,
-                "源表开关",
+                Properties.Resources.SourceMeterSwitch,
                 System.Windows.Media.Brushes.Red,
                 contentFactory: stats => DService.DeviceStatus == DeviceStatusType.Opened
                     ? ColorVision.Engine.Properties.Resources.Close
                     : TimedButtonOperationTextFormatter.BuildCompactContent(ColorVision.Engine.Properties.Resources.Open, stats),
                 tooltipFactory: stats => DService.DeviceStatus == DeviceStatusType.Opened
-                    ? "关闭源表"
-                    : TimedButtonOperationTextFormatter.BuildTooltip("打开源表", stats));
+                    ? Properties.Resources.CloseSourceMeter
+                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.OpenSourceMeter, stats));
 
             operations.Register(
                 MeasureDataButton,
                 "measure-data",
                 Properties.Resources.Ignite,
-                "点亮测量",
+                Properties.Resources.IgniteMeasurement,
                 System.Windows.Media.Brushes.Red);
 
             operations.Register(
                 VIScanButton,
                 "vi-scan",
                 Properties.Resources.Scan,
-                "VI 扫描",
+                Properties.Resources.VIScan,
                 System.Windows.Media.Brushes.Red);
 
             return operations;

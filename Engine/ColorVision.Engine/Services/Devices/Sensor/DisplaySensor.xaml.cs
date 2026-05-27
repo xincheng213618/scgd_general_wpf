@@ -121,8 +121,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 {
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
-                        $"串口 {portName} 正在被其他程序占用，无法打开。\n\n请关闭相机或其他占用该串口的程序或检查设备连接。",
-                        "串口被占用",
+                        string.Format(Properties.Resources.SerialPortOccupied, portName),
+                        Properties.Resources.SerialPortOccupiedTitle,
                         MessageBoxButton.OK,
                         MessageBoxImage.Error
                     );
@@ -132,8 +132,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 {
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
-                        $"串口名称 {portName} 无效或不存在。\n\n请检查串口设置。",
-                        "无效串口",
+                        string.Format(Properties.Resources.InvalidSerialPort, portName),
+                        Properties.Resources.InvalidSerialPortTitle,
                         MessageBoxButton.OK,
                         MessageBoxImage.Error
                     );
@@ -143,8 +143,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 {
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
-                        $"串口 {portName} 无法打开。\n\n异常信息：{ex.Message}",
-                        "串口异常",
+                        string.Format(Properties.Resources.SerialPortError, portName, ex.Message),
+                        Properties.Resources.SerialPortErrorTitle,
                         MessageBoxButton.OK,
                         MessageBoxImage.Error
                     );
@@ -159,7 +159,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             MsgRecord msgRecord = DeviceService.Open();
             msgRecord.MsgRecordStateChanged += (s,e) =>
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "打开成功");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.OpenSuccess);
             };
         }
 

@@ -7,7 +7,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CameraSearchTypeWindow}"
-        Title="搜索相机类型" Height="520" Width="460" MinHeight="420" MinWidth="380"
+        Title="{x:Static properties:Resources.TitleSearchCameraType}" Height="520" Width="460" MinHeight="420" MinWidth="380"
         Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -30,8 +30,8 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="2,0,2,12">
-            <TextBlock Text="相机类型" FontSize="20" FontWeight="SemiBold"/>
-            <TextBlock Text="选择要参与在线搜索的相机型号" FontSize="12"
+            <TextBlock Text="{x:Static properties:Resources.LabelCameraType}" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Text="{x:Static properties:Resources.DescriptionSelectCameraType}" FontSize="12"
                        Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.62"
                        Margin="0,4,0,0"/>
         </StackPanel>
@@ -55,8 +55,8 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal">
-                <Button Content="默认" MinWidth="68" Margin="0,0,6,0" Click="Default_Click"/>
-                <Button Content="全选" MinWidth="68" Margin="0,0,6,0" Click="SelectAll_Click"/>
+                <Button Content="{x:Static properties:Resources.ButtonDefault}" MinWidth="68" Margin="0,0,6,0" Click="Default_Click"/>
+                <Button Content="{x:Static properties:Resources.ButtonSelectAll}" MinWidth="68" Margin="0,0,6,0" Click="SelectAll_Click"/>
                 <Button Content="{x:Static properties:Resources.Clear}" MinWidth="68" Click="Clear_Click"/>
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">

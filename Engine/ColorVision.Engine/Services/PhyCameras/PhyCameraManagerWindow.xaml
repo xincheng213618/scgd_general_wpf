@@ -130,11 +130,11 @@
                     <TextBlock Text="{x:Static properties:Resources.PhysicalCameraManager}"
                                FontSize="22" FontWeight="SemiBold"/>
                     <TextBlock FontSize="12" Opacity="0.62" Margin="0,4,0,0">
-                        <Run Text="设备管理控制台"/>
+                        <Run Text="{x:Static properties:Resources.LabelDeviceManagementConsole}"/>
                         <Run Text="  "/>
-                        <Run Text="共 "/>
+                        <Run Text="{x:Static properties:Resources.LabelTotalPrefix}"/>
                         <Run Text="{Binding PhyCameras.Count, Mode=OneWay}"/>
-                        <Run Text=" 台相机"/>
+                        <Run Text="{x:Static properties:Resources.LabelCamerasSuffix}"/>
                     </TextBlock>
                 </StackPanel>
 
@@ -142,26 +142,26 @@
                     <hc:Badge Value="{Binding Count, Mode=OneWay}" BadgeMargin="0,-12,-8,0"
                               Style="{StaticResource BadgeDanger}" Margin="0,0,8,0">
                         <Button Style="{StaticResource PrimaryToolbarButtonStyle}"
-                                Content="添加未创建的相机"
+                                Content="{x:Static properties:Resources.AddUncreatedCamera}"
                                 Command="{Binding CreateCommand}"/>
                     </hc:Badge>
 
                     <Button Style="{StaticResource ToolbarButtonStyle}"
-                            Content="扫描在线相机"
+                            Content="{x:Static properties:Resources.ButtonScanOnlineCameras}"
                             Command="{Binding SearchCameraCommand}"/>
 
                     <Button Style="{StaticResource ToolbarMenuButtonStyle}"
                             Click="ToolbarMenuButton_Click">
                         <Button.ContextMenu>
                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                <MenuItem Header="许可证导入" Command="{Binding ImportCommand}"/>
-                                <MenuItem Header="许可证管理" Command="{Binding OpenLicenseManagerCommand}"/>
+                                <MenuItem Header="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
+                                <MenuItem Header="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
                                 <Separator/>
                                 <MenuItem Header="License Notice" Command="{Binding EditLicenseNotificationConfigCommand}"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="许可证"/>
+                            <TextBlock Text="{x:Static properties:Resources.License}"/>
                             <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Margin="6,0,0,0" FontSize="12"/>
                         </StackPanel>
                     </Button>
@@ -170,12 +170,12 @@
                             Click="ToolbarMenuButton_Click">
                         <Button.ContextMenu>
                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                <MenuItem Header="打开设备管理器" Command="{Binding OpenDeviceManagerCommand}"/>
+                                <MenuItem Header="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
                                 <MenuItem Header="MVS Log" Command="{Binding OpenMVSLogViewerCommand}"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="工具"/>
+                            <TextBlock Text="{x:Static properties:Resources.LabelTools}"/>
                             <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Margin="6,0,0,0" FontSize="12"/>
                         </StackPanel>
                     </Button>
@@ -224,8 +224,8 @@
                         <TextBlock DockPanel.Dock="Right" Text="{Binding PhyCameras.Count, Mode=OneWay, StringFormat={}{0}}"
                                    FontSize="13" FontWeight="SemiBold" Opacity="0.75"/>
                         <StackPanel>
-                            <TextBlock Text="相机清单" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock Text="按设备状态排序，优先显示在线相机" FontSize="11" Opacity="0.58" Margin="0,2,0,0"/>
+                            <TextBlock Text="{x:Static properties:Resources.SectionCameraList}" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="{x:Static properties:Resources.DescriptionCameraListSort}" FontSize="11" Opacity="0.58" Margin="0,2,0,0"/>
                         </StackPanel>
                     </DockPanel>
 
@@ -307,8 +307,8 @@
             <Grid x:Name="StackPanelShow" Grid.Column="2">
                 <Border Style="{StaticResource SectionPanelStyle}" Padding="24" Margin="0">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="相机控制台" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="从左侧选择一台物理相机以查看详情与管理操作"
+                        <TextBlock Text="{x:Static properties:Resources.LabelCameraConsole}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{x:Static properties:Resources.DescriptionSelectCamera}"
                                    FontSize="13" Opacity="0.6" Margin="0,6,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>

@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
             if (deviceCamera == null)
             {
                 // 记录错误或抛出异常，让 Listener 捕获失败
-                throw new JobExecutionException("未找到可用的相机设备");
+                throw new JobExecutionException(Properties.Resources.NoAvailableCameraDevice);
             }
 
             // 使用 TaskCompletionSource 来实现异步等待
@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
 
             if (msgRecord == null)
             {
-                throw new JobExecutionException("相机 GetData 返回空");
+                throw new JobExecutionException(Properties.Resources.CameraGetDataReturnedEmpty);
             }
 
             // 定义事件处理函数，方便后续解绑

@@ -220,7 +220,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 return;
             }
 
-            MessageBox1.Show("您需要手动重启服务，并且将原来文件夹复制到新的文件夹里，否则不起效果，如果未复制文件，请重置校正文件");
+            MessageBox1.Show(Properties.Resources.FileCopyServiceRestartHint);
 
             string sourceDir = Path.Combine(oldBasePath, PhyCamera.Code);
             string targetDir = Path.Combine(newBasePath, PhyCamera.Code);
@@ -234,7 +234,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 return;
             }
 
-            if (MessageBox1.Show($"自动复制文件夹 {sourceDir} to {newBasePath}", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox1.Show(string.Format(Properties.Resources.AutoCopyFolderConfirm, sourceDir, newBasePath), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 if (!Directory.Exists(newBasePath))
                 {
@@ -244,11 +244,11 @@ namespace ColorVision.Engine.Services.PhyCameras
                 try
                 {
                     Common.NativeMethods.ShellFileOperations.Move(sourceDir, newBasePath);
-                    MessageBox.Show("文件夹复制成功！");
+                    MessageBox.Show(Properties.Resources.FolderCopySucceeded);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("文件夹复制失败: " + ex.Message);
+                    MessageBox.Show(string.Format(Properties.Resources.FolderCopyFailed, ex.Message));
                 }
             }
         }
