@@ -20,7 +20,7 @@ namespace ColorVision.ImageEditor.Draw.Line
                 {
                     if (dVLine.Points == null || dVLine.Points.Count < 2)
                     {
-                        MessageBox.Show("该线没有足够的点来生成切面图。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(ColorVision.ImageEditor.Properties.Resources.Annotation_NotEnoughPoints, ColorVision.ImageEditor.Properties.Resources.Draw_Tip, MessageBoxButton.OK, MessageBoxImage.Information);
                         return;
                     }
 
@@ -32,12 +32,12 @@ namespace ColorVision.ImageEditor.Draw.Line
 
                         if (profileData.SampleCount == 0)
                         {
-                            MessageBox.Show("无法从图像中提取有效的截面数据。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(ColorVision.ImageEditor.Properties.Resources.Annotation_CannotExtractData, ColorVision.ImageEditor.Properties.Resources.Draw_Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
 
                         // 创建并显示图表窗口
-                        string chartTitle = $"切面图 ({profileData.SampleCount} 个采样点)";
+                        string chartTitle = $"{ColorVision.ImageEditor.Properties.Resources.Annotation_SectionalDrawingTitle} ({profileData.SampleCount} {ColorVision.ImageEditor.Properties.Resources.Annotation_SamplePoints})";
                         ProfileChartWindow profileChartWindow = new ProfileChartWindow(profileData, chartTitle)
                         {
                             Owner = Application.Current.GetActiveWindow()
@@ -46,7 +46,7 @@ namespace ColorVision.ImageEditor.Draw.Line
                     }
                     else
                     {
-                        MessageBox.Show("图像源不是可读的 WriteableBitmap 格式。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(ColorVision.ImageEditor.Properties.Resources.Annotation_SourceNotReadable, ColorVision.ImageEditor.Properties.Resources.Draw_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 };
                 MenuItems.Add(menuItem);

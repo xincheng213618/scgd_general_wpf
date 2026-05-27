@@ -576,7 +576,7 @@ namespace ColorVision.ImageEditor
                 case GraphicTypes.Circle:
                     if (Config.AreaCircleNum < 1)
                     {
-                        MessageBox.Show("绘制的个数不能小于1", "ColorVision");
+                        MessageBox.Show(Properties.Resources.Graphic_CountMin1, "ColorVision");
                         return;
                     }
 
@@ -722,7 +722,7 @@ namespace ColorVision.ImageEditor
 
             if (rows < 1 || cols < 1)
             {
-                MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
+                MessageBox.Show(Properties.Resources.Graphic_ArrayCountMin1, "ColorVision");
                 return;
             }
 

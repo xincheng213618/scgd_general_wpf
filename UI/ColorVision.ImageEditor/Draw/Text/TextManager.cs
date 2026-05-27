@@ -130,9 +130,9 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
-                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 10, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "默认字号" },
-                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.Brush), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "默认颜色" },
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.FollowZoom), Icon = CompactInspectorIcons.CreateText("⤢"), Order = 30, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "跟随缩放" },
+                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 10, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_DefaultFontSize },
+                new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.Brush), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_DefaultColor },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.FollowZoom), Icon = CompactInspectorIcons.CreateText("⤢"), Order = 30, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FollowZoom },
             };
         }
 

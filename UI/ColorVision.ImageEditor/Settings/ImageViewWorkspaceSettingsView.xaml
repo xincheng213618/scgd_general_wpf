@@ -1,7 +1,8 @@
 <UserControl x:Class="ColorVision.ImageEditor.Settings.ImageViewWorkspaceSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties">
     <UserControl.Resources>
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -13,33 +14,33 @@
             <Border Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1" Margin="0,0,0,12" CornerRadius="6">
                 <StackPanel Margin="10">
-                    <TextBlock Text="工具栏可见性" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <TextBlock Text="这些开关作用于当前 ImageView 实例，用来控制各区域工具栏是否显示。"
+                    <TextBlock Text="{x:Static properties:Resources.Settings_ToolbarVisibility}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="{x:Static properties:Resources.Settings_ToolbarVisibilityDesc}"
                                Opacity="0.75" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                     <DockPanel Margin="0,5">
                         <ui:ToggleSwitch IsChecked="{Binding Config.IsToolBarAlVisible}" DockPanel.Dock="Right" />
-                        <TextBlock Text="底部工具栏 (ToolBarAl)" Width="260"/>
+                        <TextBlock Text="{x:Static properties:Resources.Settings_BottomToolbar}" Width="260"/>
                     </DockPanel>
 
                     <DockPanel Margin="0,5">
                         <ui:ToggleSwitch IsChecked="{Binding Config.IsToolBarDrawVisible}" DockPanel.Dock="Right" />
-                        <TextBlock Text="绘制工具栏 (ToolBarDraw)" Width="260"/>
+                        <TextBlock Text="{x:Static properties:Resources.Settings_DrawToolbar}" Width="260"/>
                     </DockPanel>
 
                     <DockPanel Margin="0,5">
                         <ui:ToggleSwitch IsChecked="{Binding Config.IsToolBarTopVisible}" DockPanel.Dock="Right" />
-                        <TextBlock Text="顶部工具栏 (ToolBarTop)" Width="260"/>
+                        <TextBlock Text="{x:Static properties:Resources.Settings_TopToolbar}" Width="260"/>
                     </DockPanel>
 
                     <DockPanel Margin="0,5">
                         <ui:ToggleSwitch IsChecked="{Binding Config.IsToolBarLeftVisible}" DockPanel.Dock="Right" />
-                        <TextBlock Text="左侧工具栏 (ToolBarLeft)" Width="260"/>
+                        <TextBlock Text="{x:Static properties:Resources.Settings_LeftToolbar}" Width="260"/>
                     </DockPanel>
 
                     <DockPanel Margin="0,5">
                         <ui:ToggleSwitch IsChecked="{Binding Config.IsToolBarRightVisible}" DockPanel.Dock="Right" />
-                        <TextBlock Text="右侧工具栏 (ToolBarRight)" Width="260"/>
+                        <TextBlock Text="{x:Static properties:Resources.Settings_RightToolbar}" Width="260"/>
                     </DockPanel>
                 </StackPanel>
             </Border>
@@ -49,14 +50,14 @@
                 <StackPanel Margin="10">
                     <DockPanel Margin="0,0,0,10">
                         <StackPanel DockPanel.Dock="Left">
-                            <TextBlock Text="编辑器工具" FontWeight="Bold"/>
-                            <TextBlock Text="以下列表就是当前已加载的 IEditorTool；开关仅控制其在工具栏中的显示，不会影响程序集发现。"
+                            <TextBlock Text="{x:Static properties:Resources.Settings_EditorTools}" FontWeight="Bold"/>
+                            <TextBlock Text="{x:Static properties:Resources.Settings_EditorToolsDesc}"
                                        Opacity="0.75" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
                         </StackPanel>
 
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="全部显示" Click="ShowAll_Click" Margin="0,0,8,0" MinWidth="88"/>
-                            <Button Content="全部隐藏" Click="HideAll_Click" MinWidth="88"/>
+                            <Button Content="{x:Static properties:Resources.Settings_ShowAll}" Click="ShowAll_Click" Margin="0,0,8,0" MinWidth="88"/>
+                            <Button Content="{x:Static properties:Resources.Settings_HideAll}" Click="HideAll_Click" MinWidth="88"/>
                         </StackPanel>
                     </DockPanel>
 
@@ -87,8 +88,8 @@
             <Border Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1" CornerRadius="6">
                 <StackPanel Margin="10">
-                    <TextBlock Text="图像打开器" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <TextBlock Text="当前 ImageView 已注册的 IImageOpen 打开器及其支持的扩展名。"
+                    <TextBlock Text="{x:Static properties:Resources.Settings_ImageOpeners}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="{x:Static properties:Resources.Settings_ImageOpenersDesc}"
                                Opacity="0.75" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                     <ItemsControl ItemsSource="{Binding ImageOpens}">

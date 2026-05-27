@@ -1,110 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -245,5 +186,461 @@
   </data>
   <data name="MenuModelViewer3D" xml:space="preserve">
     <value>3D モデル ビューアー</value>
+  </data>
+  <data name="TifOpenConfig_ConvertToGray16_DisplayName" xml:space="preserve">
+    <value>Gray32Float を Gray16 に変換</value>
+  </data>
+  <data name="TifOpenConfig_ConvertToGray16_Description" xml:space="preserve">
+    <value>有効にすると、Gray32Float TIFF を開く際に現在の画像の最小値と最大値で正規化して Gray16 に変換します。無効にすると、元の Gray32Float 画像を保持します。</value>
+  </data>
+  <data name="Draw_Lock" xml:space="preserve">
+    <value>ロック</value>
+  </data>
+  <data name="Draw_ResetToImageCenter" xml:space="preserve">
+    <value>画像の中心にリセット</value>
+  </data>
+  <data name="Draw_Mode" xml:space="preserve">
+    <value>モード</value>
+  </data>
+  <data name="Draw_Color" xml:space="preserve">
+    <value>色</value>
+  </data>
+  <data name="Draw_LineWidth" xml:space="preserve">
+    <value>線幅</value>
+  </data>
+  <data name="Draw_Angle" xml:space="preserve">
+    <value>角度</value>
+  </data>
+  <data name="Draw_CenterX" xml:space="preserve">
+    <value>中心X</value>
+  </data>
+  <data name="Draw_CenterY" xml:space="preserve">
+    <value>中心Y</value>
+  </data>
+  <data name="Draw_MaskSettings" xml:space="preserve">
+    <value>マスク設定</value>
+  </data>
+  <data name="Draw_MaskShape" xml:space="preserve">
+    <value>マスク形状</value>
+  </data>
+  <data name="Draw_MaskTransparentSize" xml:space="preserve">
+    <value>マスク透明領域サイズ</value>
+  </data>
+  <data name="Draw_MaskOpacity" xml:space="preserve">
+    <value>マスク不透明度 (0-255)</value>
+  </data>
+  <data name="Draw_CenterOverlay" xml:space="preserve">
+    <value>中心オーバーレイ</value>
+  </data>
+  <data name="Draw_OverlayShape" xml:space="preserve">
+    <value>オーバーレイ形状</value>
+  </data>
+  <data name="Draw_OverlayColor" xml:space="preserve">
+    <value>オーバーレイ色</value>
+  </data>
+  <data name="Draw_OverlaySize" xml:space="preserve">
+    <value>オーバーレイサイズ</value>
+  </data>
+  <data name="Draw_PhysicalSize" xml:space="preserve">
+    <value>物理サイズ</value>
+  </data>
+  <data name="Draw_PhysicalSizeX" xml:space="preserve">
+    <value>物理サイズX (mm)</value>
+  </data>
+  <data name="Draw_PhysicalSizeY" xml:space="preserve">
+    <value>物理サイズY (mm)</value>
+  </data>
+  <data name="Draw_PixelPerUnit" xml:space="preserve">
+    <value>ピクセル/単位 (px/mm)</value>
+  </data>
+  <data name="Draw_Highlighter" xml:space="preserve">
+    <value>ハイライター</value>
+  </data>
+  <data name="Draw_SampleSpacing" xml:space="preserve">
+    <value>サンプル間隔</value>
+  </data>
+  <data name="Draw_StrokeWidth" xml:space="preserve">
+    <value>ストローク幅</value>
+  </data>
+  <data name="Draw_Text" xml:space="preserve">
+    <value>テキスト</value>
+  </data>
+  <data name="Draw_FontSize" xml:space="preserve">
+    <value>フォントサイズ</value>
+  </data>
+  <data name="Draw_FontSizeLabel" xml:space="preserve">
+    <value>フォントサイズ</value>
+  </data>
+  <data name="Draw_FontFamily" xml:space="preserve">
+    <value>フォント</value>
+  </data>
+  <data name="Draw_Position" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="Draw_Background" xml:space="preserve">
+    <value>背景</value>
+  </data>
+  <data name="Draw_Fill" xml:space="preserve">
+    <value>塗りつぶし</value>
+  </data>
+  <data name="Draw_DefaultFontSize" xml:space="preserve">
+    <value>デフォルトフォントサイズ</value>
+  </data>
+  <data name="Draw_DefaultColor" xml:space="preserve">
+    <value>デフォルト色</value>
+  </data>
+  <data name="Draw_FollowZoom" xml:space="preserve">
+    <value>ズームに追従</value>
+  </data>
+  <data name="Draw_HighlighterMode" xml:space="preserve">
+    <value>ハイライターモード</value>
+  </data>
+  <data name="Draw_ContinuousDraw" xml:space="preserve">
+    <value>連続描画</value>
+  </data>
+  <data name="Draw_LockDefaultRadius" xml:space="preserve">
+    <value>デフォルト半径をロック</value>
+  </data>
+  <data name="Draw_LockDefaultSize" xml:space="preserve">
+    <value>デフォルトサイズをロック</value>
+  </data>
+  <data name="Draw_CreateFromCenter" xml:space="preserve">
+    <value>中心から作成</value>
+  </data>
+  <data name="Draw_LineColor" xml:space="preserve">
+    <value>線の色</value>
+  </data>
+  <data name="Draw_Rasterize" xml:space="preserve">
+    <value>ラスタライズ</value>
+  </data>
+  <data name="Ruler_StartPoint" xml:space="preserve">
+    <value>始点</value>
+  </data>
+  <data name="Ruler_TotalLength" xml:space="preserve">
+    <value>総長</value>
+  </data>
+  <data name="Ruler_MeasureWithRealUnits" xml:space="preserve">
+    <value>測定に実際の単位を有効にする</value>
+  </data>
+  <data name="Ruler_Calculate" xml:space="preserve">
+    <value>計算</value>
+  </data>
+  <data name="Ruler_PhysicalScale" xml:space="preserve">
+    <value>物理スケール</value>
+  </data>
+  <data name="Ruler_PhysicalUnit" xml:space="preserve">
+    <value>物理単位</value>
+  </data>
+  <data name="Ruler_PixelRepresents" xml:space="preserve">
+    <value>1ピクセルは実際の</value>
+  </data>
+  <data name="Ruler_Pixel" xml:space="preserve">
+    <value>ピクセル</value>
+  </data>
+  <data name="Ruler_ActualDistance" xml:space="preserve">
+    <value>実際の距離</value>
+  </data>
+  <data name="Ruler_PhysicalLength" xml:space="preserve">
+    <value>物理長さ</value>
+  </data>
+  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+    <value>プロファイルチャートを生成するためのポイントが不足しています。</value>
+  </data>
+  <data name="Annotation_CannotExtractData" xml:space="preserve">
+    <value>画像から有効なプロファイルデータを抽出できません。</value>
+  </data>
+  <data name="Annotation_SectionalDrawingTitle" xml:space="preserve">
+    <value>プロファイルチャート</value>
+  </data>
+  <data name="Annotation_SamplePoints" xml:space="preserve">
+    <value>サンプルポイント</value>
+  </data>
+  <data name="Annotation_SourceNotReadable" xml:space="preserve">
+    <value>画像ソースは読み取り可能なWriteableBitmap形式ではありません。</value>
+  </data>
+  <data name="Draw_Tip" xml:space="preserve">
+    <value>ヒント</value>
+  </data>
+  <data name="Draw_Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="Draw_Error" xml:space="preserve">
+    <value>エラー</value>
+  </data>
+  <data name="ImageView_NoExportableAnnotations" xml:space="preserve">
+    <value>エクスポートできるアノテーションがありません。</value>
+  </data>
+  <data name="ImageView_ExportAnnotations" xml:space="preserve">
+    <value>アノテーションのエクスポート</value>
+  </data>
+  <data name="ImageView_NoAnnotationTypes" xml:space="preserve">
+    <value>アノテーションタイプが接続されたプリミティブが見つかりません。</value>
+  </data>
+  <data name="ImageView_ExportedAnnotationsWithSkip" xml:space="preserve">
+    <value>{0} 件のアノテーションをエクスポートしました。アノテーション未接続のプリミティブ {1} 件をスキップしました。</value>
+  </data>
+  <data name="ImageView_ExportedAnnotations" xml:space="preserve">
+    <value>{0} 件のアノテーションをエクスポートしました。</value>
+  </data>
+  <data name="ImageView_ImportAnnotations" xml:space="preserve">
+    <value>アノテーションのインポート</value>
+  </data>
+  <data name="ImageView_ImportedAnnotations" xml:space="preserve">
+    <value>{0} 件のアノテーションをインポートしました。</value>
+  </data>
+  <data name="ImageView_ImportAnnotationsFailed" xml:space="preserve">
+    <value>アノテーションのインポートに失敗しました: {0}</value>
+  </data>
+  <data name="ImageView_UnsupportedImageFormat" xml:space="preserve">
+    <value>未対応の画像形式: {0}</value>
+  </data>
+  <data name="ImageView_UnsupportedPixelFormat" xml:space="preserve">
+    <value>{0} は未対応の形式です。開発者にお問い合わせください。</value>
+  </data>
+  <data name="ImageView_MetadataDesc_FilePath" xml:space="preserve">
+    <value>現在開いている画像の絶対パス</value>
+  </data>
+  <data name="ImageView_MetadataDesc_FileSize" xml:space="preserve">
+    <value>現在開いているファイルのサイズ（バイト）</value>
+  </data>
+  <data name="ImageView_MetadataDesc_PixelFormat" xml:space="preserve">
+    <value>現在の画像ピクセル形式</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Cols" xml:space="preserve">
+    <value>現在の画像列数</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Rows" xml:space="preserve">
+    <value>現在の画像行数</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Channel" xml:space="preserve">
+    <value>現在の画像チャンネル数</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Depth" xml:space="preserve">
+    <value>現在の画像ビット深度</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Stride" xml:space="preserve">
+    <value>現在の画像ストライド</value>
+  </data>
+  <data name="ImageView_MetadataDesc_DpiX" xml:space="preserve">
+    <value>現在の画像水平 DPI</value>
+  </data>
+  <data name="ImageView_MetadataDesc_DpiY" xml:space="preserve">
+    <value>現在の画像垂直 DPI</value>
+  </data>
+  <data name="ImageView_Scope_ImageMetadata" xml:space="preserve">
+    <value>画像メタデータ</value>
+  </data>
+  <data name="ImageView_Scope_ViewState" xml:space="preserve">
+    <value>現在のビューステート</value>
+  </data>
+  <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
+    <value>オープナーランタイム</value>
+  </data>
+  <data name="ImageView_Scope_Legacy" xml:space="preserve">
+    <value>レガシー</value>
+  </data>
+  <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
+    <value>現在のファイルとピクセル内容によって決定されます。画像切り替え時に全体が更新されます。</value>
+  </data>
+  <data name="ImageView_ScopeDesc_ViewState" xml:space="preserve">
+    <value>現在の ImageView にのみ適用される一時的な状態です。グローバルデフォルトには書き戻されません。</value>
+  </data>
+  <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
+    <value>特定のオープナーワークフローでのみ意味を持つランタイム情報です。</value>
+  </data>
+  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
+    <value>明示的なスコープにまだ移行されていないレガシーキーです。整理をお勧めします。</value>
+  </data>
+  <data name="Cie_Title" xml:space="preserve">
+    <value>CIE 色度図</value>
+  </data>
+  <data name="Cie_CoordinateSystem" xml:space="preserve">
+    <value>座標系</value>
+  </data>
+  <data name="Cie_Fit" xml:space="preserve">
+    <value>フィット</value>
+  </data>
+  <data name="Cie_DisplayPresets" xml:space="preserve">
+    <value>表示プリセット</value>
+  </data>
+  <data name="Cie_Display" xml:space="preserve">
+    <value>ディスプレイ</value>
+  </data>
+  <data name="Cie_Cinema" xml:space="preserve">
+    <value>シネマ</value>
+  </data>
+  <data name="Cie_SelectAll" xml:space="preserve">
+    <value>すべて選択</value>
+  </data>
+  <data name="Cie_Clear" xml:space="preserve">
+    <value>クリア</value>
+  </data>
+  <data name="Cie_ColorGamut" xml:space="preserve">
+    <value>色域</value>
+  </data>
+  <data name="Cie_WhitePointLightSource" xml:space="preserve">
+    <value>白色点 / 光源</value>
+  </data>
+  <data name="Cie_ReferenceLines" xml:space="preserve">
+    <value>基準線</value>
+  </data>
+  <data name="Cie_CurrentPoint" xml:space="preserve">
+    <value>現在のポイント</value>
+  </data>
+  <data name="Settings_ImageSettingsTitle" xml:space="preserve">
+    <value>Image Settings</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Settings_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Settings_ScopeCurrentView" xml:space="preserve">
+    <value>Scope: Current View</value>
+  </data>
+  <data name="Settings_ScopeGlobalDefault" xml:space="preserve">
+    <value>Scope: Global Default</value>
+  </data>
+  <data name="Settings_ScopeLoaderDefault" xml:space="preserve">
+    <value>Scope: Loader Default</value>
+  </data>
+  <data name="Settings_ScopeWorkspace" xml:space="preserve">
+    <value>Scope: Workspace</value>
+  </data>
+  <data name="Settings_ScopeUncategorized" xml:space="preserve">
+    <value>Scope: Uncategorized</value>
+  </data>
+  <data name="Settings_ToolbarVisibility" xml:space="preserve">
+    <value>Toolbar Visibility</value>
+  </data>
+  <data name="Settings_ToolbarVisibilityDesc" xml:space="preserve">
+    <value>These switches control the visibility of toolbar areas in the current ImageView instance.</value>
+  </data>
+  <data name="Settings_BottomToolbar" xml:space="preserve">
+    <value>Bottom Toolbar (ToolBarAl)</value>
+  </data>
+  <data name="Settings_DrawToolbar" xml:space="preserve">
+    <value>Drawing Toolbar (ToolBarDraw)</value>
+  </data>
+  <data name="Settings_TopToolbar" xml:space="preserve">
+    <value>Top Toolbar (ToolBarTop)</value>
+  </data>
+  <data name="Settings_LeftToolbar" xml:space="preserve">
+    <value>Left Toolbar (ToolBarLeft)</value>
+  </data>
+  <data name="Settings_RightToolbar" xml:space="preserve">
+    <value>Right Toolbar (ToolBarRight)</value>
+  </data>
+  <data name="Settings_EditorTools" xml:space="preserve">
+    <value>Editor Tools</value>
+  </data>
+  <data name="Settings_EditorToolsDesc" xml:space="preserve">
+    <value>The following list shows currently loaded IEditorTools; toggles only control their visibility in toolbars and do not affect assembly discovery.</value>
+  </data>
+  <data name="Settings_ShowAll" xml:space="preserve">
+    <value>Show All</value>
+  </data>
+  <data name="Settings_HideAll" xml:space="preserve">
+    <value>Hide All</value>
+  </data>
+  <data name="Settings_ImageOpeners" xml:space="preserve">
+    <value>Image Openers</value>
+  </data>
+  <data name="Settings_ImageOpenersDesc" xml:space="preserve">
+    <value>Registered IImageOpen handlers for the current ImageView and their supported extensions.</value>
+  </data>
+  <data name="Settings_PropertySnapshot" xml:space="preserve">
+    <value>Current View Property Snapshot</value>
+  </data>
+  <data name="Settings_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Settings_NoContextProperties" xml:space="preserve">
+    <value>The current view has no context properties to display yet.</value>
+  </data>
+  <data name="Settings_DescriptionLabel" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Settings_NoPropertyContext" xml:space="preserve">
+    <value>The current view has not written any property context yet. After opening an image or running a tool, the actual state will be shown here by scope.</value>
+  </data>
+  <data name="Settings_PropertyContextSummary" xml:space="preserve">
+    <value>The current view has recorded {0} properties across {1} scope groups. This is a read-only snapshot to help diagnose whether current and default values are leaking across layers.</value>
+  </data>
+  <data name="Settings_EntryCount" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="Settings_GroupGeneral" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Settings_GroupDisplay" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="Settings_GroupContext" xml:space="preserve">
+    <value>Context</value>
+  </data>
+  <data name="Settings_GroupDefaults" xml:space="preserve">
+    <value>Defaults</value>
+  </data>
+  <data name="Settings_GroupWorkspace" xml:space="preserve">
+    <value>Workspace</value>
+  </data>
+  <data name="Settings_GroupLoader" xml:space="preserve">
+    <value>Loader</value>
+  </data>
+  <data name="Settings_CurrentImageContext" xml:space="preserve">
+    <value>Current Image Context</value>
+  </data>
+  <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
+    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, loader runtime state, and legacy keys pending migration.</value>
+  </data>
+  <data name="Settings_DefaultImageScaling" xml:space="preserve">
+    <value>Default Image Scaling</value>
+  </data>
+  <data name="Settings_DefaultImageScalingDesc" xml:space="preserve">
+    <value>Controls the BitmapScalingMode seeded during ImageView initialization. After initialization the current value is preserved and only changes when explicitly adjusted by the user or overridden by a specific loader.</value>
+  </data>
+  <data name="Settings_DefaultDisplayParams" xml:space="preserve">
+    <value>Default Display Parameters</value>
+  </data>
+  <data name="Settings_DefaultDisplayParamsDesc" xml:space="preserve">
+    <value>Controls the global max/min zoom of the Zoombox and the performance threshold for NearestNeighbor pixel value overlay.</value>
+  </data>
+  <data name="Settings_DefaultTextStyle" xml:space="preserve">
+    <value>Default Text Style</value>
+  </data>
+  <data name="Settings_DefaultTextStyleDesc" xml:space="preserve">
+    <value>Controls the default font, color, and layout for new text and text-bearing primitives.</value>
+  </data>
+  <data name="Settings_PhysicalSizeDefaults" xml:space="preserve">
+    <value>Physical Size Defaults</value>
+  </data>
+  <data name="Settings_PhysicalSizeDefaultsDesc" xml:space="preserve">
+    <value>Controls the default length and unit for physical size conversions such as rulers and grids.</value>
+  </data>
+  <data name="Settings_DefaultRealtimeCameraParams" xml:space="preserve">
+    <value>Default Realtime Camera Parameters</value>
+  </data>
+  <data name="Settings_DefaultRealtimeCameraParamsDesc" xml:space="preserve">
+    <value>Controls the shared display FPS, sharpness calculation, and ROI/status text style for realtime camera entries.</value>
+  </data>
+  <data name="Settings_ToolbarToolsAndOpeners" xml:space="preserve">
+    <value>Toolbars, Tools and Openers</value>
+  </data>
+  <data name="Settings_ToolbarToolsAndOpenersDesc" xml:space="preserve">
+    <value>Unified management of toolbar display, loaded IEditorTool visibility, and supported IImageOpen handlers for the current ImageView.</value>
+  </data>
+  <data name="Settings_TifOpener" xml:space="preserve">
+    <value>TIF Opener</value>
+  </data>
+  <data name="Settings_TifOpenerDesc" xml:space="preserve">
+    <value>Controls loading strategies such as converting Gray32Float TIFF to Gray16 when opening.</value>
+  </data>
+  <data name="Draw_Delete" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="Draw_Edit" xml:space="preserve">
+    <value>編集</value>
   </data>
 </root>

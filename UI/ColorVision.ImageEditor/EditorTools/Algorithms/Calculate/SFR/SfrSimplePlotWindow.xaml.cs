@@ -107,7 +107,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         {
             if (!double.TryParse(TxtFreq.Text, out var freq))
             {
-                TxtResult.Text = "频率输入错误";
+                TxtResult.Text = Properties.Resources.Sfr_FrequencyInputError;
                 return;
             }
 
@@ -126,7 +126,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             }
             else
             {
-                TxtResult.Text = "未找到对应MTF";
+                TxtResult.Text = Properties.Resources.Sfr_MtfNotFound;
             }
         }
 
@@ -134,7 +134,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         {
             if (!double.TryParse(TxtMtf.Text, out var m))
             {
-                TxtResult.Text = "MTF输入错误";
+                TxtResult.Text = Properties.Resources.Sfr_MtfInputError;
                 return;
             }
 
@@ -153,7 +153,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             }
             else
             {
-                TxtResult.Text = "未找到对应频率";
+                TxtResult.Text = Properties.Resources.Sfr_FreqNotFound;
             }
         }
 
@@ -220,11 +220,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                     }
                     
                     File.WriteAllText(saveDialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
-                    MessageBox.Show($"数据已成功导出到:\n{saveDialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"{Properties.Resources.Sfr_ExportSuccessMsg}\n{saveDialog.FileName}", Properties.Resources.Sfr_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"{Properties.Resources.Sfr_ExportFailed}: {ex.Message}", Properties.Resources.Sfr_ExportFailed, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

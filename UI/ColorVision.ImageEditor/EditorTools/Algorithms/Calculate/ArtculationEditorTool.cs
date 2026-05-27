@@ -67,14 +67,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 return menuItems;
             }
 
-            var cropSave = new MenuItem { Header = "清晰度评估" };
+            var cropSave = new MenuItem { Header = Properties.Resources.Artculation_MenuHeader };
             cropSave.Click += (s, e) =>
             {
 
                 ArtculationConfig sharpnessConfig = new ArtculationConfig();
                 PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
                 {
-                    Title = "清晰度评估参数设置",
+                    Title = Properties.Resources.Artculation_ParamSettings,
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
@@ -89,8 +89,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MessageBox.Show(
-                                $"图像清晰度评估结果: {articulation}",
-                                "清晰度评估",
+                                $"{Properties.Resources.Artculation_ResultMsg} {articulation}",
+                                Properties.Resources.Artculation_ResultTitle,
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Information);
                         });
@@ -124,7 +124,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             ArtculationConfig sharpnessConfig  = new ArtculationConfig();
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
             {
-                Title = "清晰度评估参数设置",
+                Title = Properties.Resources.Artculation_ParamSettings,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -138,8 +138,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(
-                            $"图像清晰度评估结果: {articulation}",
-                            "清晰度评估",
+                            $"{Properties.Resources.Artculation_ResultMsg} {articulation}",
+                            Properties.Resources.Artculation_ResultTitle,
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     });

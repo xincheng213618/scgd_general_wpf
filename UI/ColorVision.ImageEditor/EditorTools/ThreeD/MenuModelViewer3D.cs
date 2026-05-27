@@ -1,4 +1,4 @@
-using ColorVision.ImageEditor.Properties;
+﻿using ColorVision.ImageEditor.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
@@ -7,7 +7,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
     public class MenuModelViewer3D : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => Resources.MenuModelViewer3D;
+        public override string Header => Properties.Resources.MenuModelViewer3D;
         public override int Order => 10;
 
         public override void Execute()

@@ -290,13 +290,13 @@ namespace ColorVision.ImageEditor
             {
                 var p = hitPoint.Value;
                 tooltipText = $"X: {p.X:F1}  Y: {newHeight - 1 - p.Y:F1}\n";
-                tooltipText += $"Z: {p.Z:F2}  值: {hitValue}\n";
-                tooltipText += $"高度: {heightScale:F1}x  分辨率: {newWidth}x{newHeight}";
+                tooltipText += $"Z: {p.Z:F2}  {Properties.Resources.ThreeD_Value}: {hitValue}\n";
+                tooltipText += $"{Properties.Resources.ThreeD_Height}: {heightScale:F1}x  {Properties.Resources.ThreeD_Resolution}: {newWidth}x{newHeight}";
             }
             else
             {
-                tooltipText = $"鼠标: ({pos.X:F0}, {pos.Y:F0})\n";
-                tooltipText += $"高度: {heightScale:F1}x  分辨率: {newWidth}x{newHeight}";
+                tooltipText = $"{Properties.Resources.ThreeD_Mouse}: ({pos.X:F0}, {pos.Y:F0})\n";
+                tooltipText += $"{Properties.Resources.ThreeD_Height}: {heightScale:F1}x  {Properties.Resources.ThreeD_Resolution}: {newWidth}x{newHeight}";
             }
 
             HoverInfoText.Text = tooltipText;

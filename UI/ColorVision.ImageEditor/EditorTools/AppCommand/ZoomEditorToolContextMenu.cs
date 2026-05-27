@@ -19,9 +19,9 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             RelayCommand importAnnotationsCommand = new RelayCommand(a => context.ImageView?.ImportAnnotations());
             RelayCommand exportAnnotationsCommand = new RelayCommand(a => context.ImageView?.ExportAnnotations());
             RelayCommand openSettingsCommand = new RelayCommand(a => context.ImageView?.OpenSettingsWindow());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ImportAnnotations", Order = 301, Header = "导入标注", Command = importAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ExportAnnotations", Order = 302, Header = "导出标注", Command = exportAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DISave") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = "图像设置", Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ImportAnnotations", Order = 301, Header = Properties.Resources.Graphic_ImportAnnotationsMenu, Command = importAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ExportAnnotations", Order = 302, Header = Properties.Resources.Graphic_ExportAnnotationsMenu, Command = exportAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DISave") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = Properties.Resources.Graphic_ImageViewSettings, Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") });
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = ApplicationCommands.Close, Icon = MenuItemIcon.TryFindResource("DIDelete") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = Properties.Resources.Print, Command = ApplicationCommands.Print, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });

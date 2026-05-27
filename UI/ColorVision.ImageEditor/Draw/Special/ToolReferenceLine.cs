@@ -98,7 +98,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is ReferenceLine referenceLine)
             {
-                MenuItem menuItem = new() { Header = "锁定",IsChecked = referenceLine.IsLocked };
+                MenuItem menuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Lock,IsChecked = referenceLine.IsLocked };
                 menuItem.Click += (s, e) =>
                 {
                     referenceLine.IsLocked = !referenceLine.IsLocked;
@@ -106,7 +106,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 };
                 MenuItems.Add(menuItem);
                 
-                MenuItem resetMenuItem = new() { Header = "重置为图像中心" };
+                MenuItem resetMenuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_ResetToImageCenter };
                 resetMenuItem.Click += (s, e) =>
                 {
                     // Reset to image center and rotation angle to 0
@@ -457,7 +457,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             {
                 // 画一个小锁图标或者文字
                 FormattedText lockText = new(
-                    "锁定",
+                    ColorVision.ImageEditor.Properties.Resources.Draw_Lock,
                     CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight,
                     new Typeface("Segoe UI"),

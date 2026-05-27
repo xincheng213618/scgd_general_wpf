@@ -1,6 +1,6 @@
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Properties;
 using ColorVision.UI;
-using System.ComponentModel;
 
 namespace ColorVision.ImageEditor.Tif
 {
@@ -48,8 +48,8 @@ namespace ColorVision.ImageEditor.Tif
             }
         }
 
-        [DisplayName("Gray32Float 转为 Gray16")]
-        [Description("启用后，打开 Gray32Float TIFF 时按当前图像最小值和最大值归一化后转换为 Gray16；关闭后保留原始 Gray32Float 图像。")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Properties.Resources.TifOpenConfig_ConvertToGray16_DisplayName))]
+        [LocalizedDescription(typeof(Resources), nameof(Properties.Resources.TifOpenConfig_ConvertToGray16_Description))]
         public bool ConvertGray32FloatToGray16OnOpen
         {
             get => _convertGray32FloatToGray16OnOpen;

@@ -4,8 +4,9 @@
         xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         mc:Ignorable="d"
-        Title="CIE 色度图"
+        Title="{x:Static properties:Resources.Cie_Title}"
         Height="760"
         Width="1080"
         MinHeight="580"
@@ -59,7 +60,7 @@
                 BorderThickness="0,0,0,1">
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Margin="0,0,8,0" Text="坐标系" />
+                    <TextBlock Margin="0,0,8,0" Text="{x:Static properties:Resources.Cie_CoordinateSystem}" />
                     <ComboBox x:Name="ComboBoxDiagram"
                               Width="150"
                               SelectedIndex="0"
@@ -71,7 +72,7 @@
                     <Button Margin="8,0,0,0"
                             Padding="10,2"
                             Click="ButtonFit_Click"
-                            Content="适应" />
+                            Content="{x:Static properties:Resources.Cie_Fit}" />
                 </StackPanel>
                 <TextBlock x:Name="TextBlockDiagramSummary"
                            Margin="16,0,0,0"
@@ -94,28 +95,28 @@
                     BorderThickness="0,0,1,0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <GroupBox Header="显示预设" Style="{StaticResource PanelGroupBox}">
+                        <GroupBox Header="{x:Static properties:Resources.Cie_DisplayPresets}" Style="{StaticResource PanelGroupBox}">
                             <UniformGrid Columns="2">
-                                <Button Content="显示器"
+                                <Button Content="{x:Static properties:Resources.Cie_Display}"
                                         Click="PresetButton_Click"
                                         Style="{StaticResource PanelButton}"
                                         Tag="Display" />
-                                <Button Content="影视"
+                                <Button Content="{x:Static properties:Resources.Cie_Cinema}"
                                         Click="PresetButton_Click"
                                         Style="{StaticResource PanelButton}"
                                         Tag="Cinema" />
-                                <Button Content="全选"
+                                <Button Content="{x:Static properties:Resources.Cie_SelectAll}"
                                         Click="PresetButton_Click"
                                         Style="{StaticResource PanelButton}"
                                         Tag="All" />
-                                <Button Content="清空"
+                                <Button Content="{x:Static properties:Resources.Cie_Clear}"
                                         Click="PresetButton_Click"
                                         Style="{StaticResource PanelButton}"
                                         Tag="Clear" />
                             </UniformGrid>
                         </GroupBox>
 
-                        <GroupBox Header="色域" Style="{StaticResource PanelGroupBox}">
+                        <GroupBox Header="{x:Static properties:Resources.Cie_ColorGamut}" Style="{StaticResource PanelGroupBox}">
                             <UniformGrid Columns="2">
                                 <CheckBox x:Name="CheckBoxSRgb"
                                           Content="sRGB"
@@ -176,7 +177,7 @@
                             </UniformGrid>
                         </GroupBox>
 
-                        <GroupBox Header="白点 / 光源" Style="{StaticResource PanelGroupBox}">
+                        <GroupBox Header="{x:Static properties:Resources.Cie_WhitePointLightSource}" Style="{StaticResource PanelGroupBox}">
                             <UniformGrid Columns="2">
                                 <CheckBox x:Name="CheckBoxD65"
                                           Content="D65"
@@ -225,7 +226,7 @@
                             </UniformGrid>
                         </GroupBox>
 
-                        <GroupBox Header="参考线" Style="{StaticResource PanelGroupBox}">
+                        <GroupBox Header="{x:Static properties:Resources.Cie_ReferenceLines}" Style="{StaticResource PanelGroupBox}">
                             <StackPanel>
                                 <CheckBox x:Name="CheckBoxCct"
                                           Content="Tc(K)"
@@ -242,7 +243,7 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <GroupBox Header="当前点" Style="{StaticResource PanelGroupBox}">
+                        <GroupBox Header="{x:Static properties:Resources.Cie_CurrentPoint}" Style="{StaticResource PanelGroupBox}">
                             <StackPanel>
                                 <TextBlock x:Name="TextBlockSelectedXy"
                                            Style="{StaticResource ReadoutText}"

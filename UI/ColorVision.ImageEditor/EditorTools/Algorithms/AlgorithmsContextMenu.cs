@@ -43,7 +43,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "AlgorithmsCall",
                 GuidId = "SFR",
                 Order = 1,
-                Header = "SFR/MTF 分析",
+                Header = Properties.Resources.Algorithm_SfrMtfAnalysis,
                 Command = SFRCommand
             });
 
