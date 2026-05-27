@@ -60,6 +60,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "revoke_api_key": ["admin:*"],
     "rotate_api_key": ["admin:*"],
     "api_key_usage": ["admin:*"],
+    "perf_summary": ["stats:read"],
 }
 
 
@@ -77,6 +78,7 @@ class AdminApiContext:
     is_plugin_index_populated: Callable[..., bool]
     get_plugin_catalog_from_index: Callable[..., Any]
     human_size: Callable[[int], str]
+    get_slow_requests: Callable[[], list[dict[str, Any]]] | None = None
 
 
 admin_api = Blueprint("admin_api", __name__, url_prefix="/api/admin")
@@ -807,3 +809,38 @@ def _actor_id() -> str:
     if auth and auth.username:
         return auth.username
     return "system"
+
+
+# ---------------------------------------------------------------------------
+# Performance summary
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/perf/summary", methods=["GET"])
+def perf_summary():
+    ctx = _get_ctx()
+    db = ctx.get_db()
+    try:
+        # Recent slow requests from in-memory buffer
+        slow_requests = []
+        if ctx.get_slow_requests:
+            slow_requests = ctx.get_slow_requests()[-20:]
+
+        # Recent slow job runs
+        rows = db.execute(
+            "SELECT * FROM job_runs ORDER BY id DESC LIMIT 20"
+        ).fetchall()
+        slow_jobs = []
+        for row in rows:
+            r = dict(row)
+            if r.get("duration_ms", 0) >= 1000 or r.get("status") == "error":
+                slow_jobs.append(r)
+
+        return jsonify({
+            "slow_requests": slow_requests,
+            "slow_jobs": slow_jobs,
+            "threshold_ms": 500,
+        })
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    finally:
+        db.close()

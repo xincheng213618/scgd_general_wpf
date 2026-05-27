@@ -27,7 +27,6 @@ import json
 import re
 import sqlite3
 from datetime import datetime, timezone
-from functools import wraps
 from pathlib import Path
 from typing import Any
 
@@ -165,6 +164,12 @@ DB_PATH = BASE_DIR / "marketplace.db"
 _cache = CacheManager(DB_PATH)
 _cache.init_db()
 
+# Run schema migrations
+from db.schema_version import ensure_schema_version
+_db_conn = _cache.get_db()
+ensure_schema_version(_db_conn)
+_db_conn.close()
+
 # Thin wrappers that preserve the existing call signatures used throughout app.py.
 # These read DB_PATH at call time so tests can mutate it at runtime.
 def get_db() -> sqlite3.Connection:
@@ -175,6 +180,9 @@ def get_db() -> sqlite3.Connection:
 def init_db():
     _cache._db_path = DB_PATH
     _cache.init_db()
+    conn = _cache.get_db()
+    ensure_schema_version(conn)
+    conn.close()
 
 def _set_cache_entry(key: str, value, *, ttl_seconds: int, signature: str = ""):
     _cache.set_cache_entry(key, value, ttl_seconds=ttl_seconds, signature=signature)
@@ -242,51 +250,9 @@ def _unauthorized_response():
     return response
 
 
-def require_upload_auth(view_func):
-    @wraps(view_func)
-    def wrapper(*args, **kwargs):
-        # Check Bearer API Key first
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:].strip()
-            if token:
-                try:
-                    from services.api_key_service import verify_api_key
-                    key_info = verify_api_key(_cache, token, required_scopes=["plugin:publish"])
-                    if key_info:
-                        return view_func(*args, **kwargs)
-                except Exception:
-                    pass
-
-        # Fall back to Basic Auth
-        expected_username, expected_password = _get_upload_auth()
-        auth = request.authorization
-        if (
-            not auth
-            or (auth.type or "").lower() != "basic"
-            or not hmac.compare_digest(auth.username or "", expected_username)
-            or not hmac.compare_digest(auth.password or "", expected_password)
-        ):
-            return _unauthorized_response()
-        return view_func(*args, **kwargs)
-
-    return wrapper
-
-
-def _check_web_session_auth() -> bool:
-    """Return True if the current Flask session is authenticated."""
-    return bool(session.get("authenticated"))
-
-
-def require_web_auth(view_func):
-    """Decorator that requires web session auth, redirecting to login page on failure."""
-    @wraps(view_func)
-    def wrapper(*args, **kwargs):
-        if not _check_web_session_auth():
-            return redirect(url_for("login_page", next=request.url))
-        return view_func(*args, **kwargs)
-
-    return wrapper
+# Auth decorators from services.auth_middleware (single source of truth)
+from services.auth_middleware import check_web_session_auth, make_require_upload_auth, require_web_auth
+require_upload_auth = make_require_upload_auth(_cache, _get_upload_auth, _json_error)
 
 
 def _validate_runtime_config(config: dict[str, Any]) -> list[str]:
@@ -595,6 +561,39 @@ def handle_http_exception(exc: HTTPException):
         return _json_error(exc.description or exc.name, exc.code or 500)
     return exc
 
+
+# ---------------------------------------------------------------------------
+# Slow request logging
+# ---------------------------------------------------------------------------
+SLOW_REQUEST_THRESHOLD_MS = 500
+_slow_requests: list[dict[str, Any]] = []
+SLOW_REQUEST_BUFFER_SIZE = 100
+
+
+@app.before_request
+def _start_timer():
+    import time as _time
+    request._start_time = _time.monotonic()
+
+
+@app.after_request
+def _log_slow_request(response):
+    import time as _time
+    start = getattr(request, "_start_time", None)
+    if start is not None:
+        duration_ms = int((_time.monotonic() - start) * 1000)
+        if duration_ms >= SLOW_REQUEST_THRESHOLD_MS:
+            print(f"[slow] {request.method} {request.path} → {response.status_code} ({duration_ms}ms)")
+            _slow_requests.append({
+                "method": request.method,
+                "path": request.path,
+                "status": response.status_code,
+                "duration_ms": duration_ms,
+            })
+            if len(_slow_requests) > SLOW_REQUEST_BUFFER_SIZE:
+                _slow_requests.pop(0)
+    return response
+
 # ---------------------------------------------------------------------------
 # Scan top-level storage directories for the overview page
 # ---------------------------------------------------------------------------
@@ -852,7 +851,15 @@ def browse_page(subpath=""):
     if target.is_file():
         return send_from_directory(str(target.parent), target.name)
 
-    return render_template("browse.html", **build_browse_page_context(STORAGE, normalized))
+    # Pagination for large directories
+    default_limit = 200
+    limit = _parse_int_arg("limit", default=default_limit, minimum=1, maximum=1000)
+    offset = _parse_int_arg("offset", default=0, minimum=0)
+
+    return render_template(
+        "browse.html",
+        **build_browse_page_context(STORAGE, normalized, limit=limit, offset=offset),
+    )
 
 
 # ===================================================================
@@ -1055,65 +1062,19 @@ def api_cvwindowsservice_download(version):
     return send_from_directory(str(best_match.parent), best_match.name, as_attachment=True)
 
 
-# ===================================================================
-# Web Session Login / Logout
-# ===================================================================
+# Login/logout routes registered via public_pages module
+from routes.public_pages import PublicPageContext, register_public_pages
 
-def _safe_next_url(raw: str | None) -> str | None:
-    """Validate that a next URL is a safe internal path. Returns None if unsafe."""
-    if not raw:
-        return None
-    # Only allow relative paths starting with / and not //
-    if raw.startswith("/") and not raw.startswith("//"):
-        return raw
-    return None
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login_page():
-    """Web login page using Flask session (not Basic Auth)."""
-    if _check_web_session_auth():
-        next_url = _safe_next_url(request.args.get("next")) or url_for("upload_page")
-        return redirect(next_url)
-
-    error = None
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-        expected_username, expected_password = _get_upload_auth()
-        if (
-            hmac.compare_digest(username, expected_username)
-            and hmac.compare_digest(password, expected_password)
-        ):
-            session["authenticated"] = True
-            session["username"] = username
-            next_url = (
-                _safe_next_url(request.form.get("next"))
-                or _safe_next_url(request.args.get("next"))
-                or url_for("upload_page")
-            )
-            return redirect(next_url)
-        # Log failed login attempt (without leaking credentials)
-        _cache.write_audit(
-            actor_type="anonymous",
-            actor_id=username or "",
-            action="login_failed",
-            target_type="session",
-            detail="Invalid credentials",
-            ip=request.remote_addr or "",
-            user_agent=request.headers.get("User-Agent", "")[:200],
-        )
-        error = "用户名或密码错误"
-
-    next_url = _safe_next_url(request.args.get("next")) or ""
-    return render_template("login.html", error=error, next_url=next_url)
-
-
-@app.route("/logout", methods=["GET"])
-def logout_page():
-    """Clear the web session and redirect to home."""
-    session.clear()
-    return redirect(url_for("index"))
+register_public_pages(
+    app,
+    PublicPageContext(
+        cache=_cache,
+        storage=STORAGE,
+        config=CONFIG,
+        get_upload_auth=_get_upload_auth,
+        check_web_session_auth=check_web_session_auth,
+    ),
+)
 
 
 # ===================================================================
@@ -1221,18 +1182,14 @@ def cvwindowsservice_upload_page():
     if set_latest:
         update_cvws_latest_release(target_dir, version)
 
-    # Refresh caches
+    # Refresh caches and tool index via storage_events
     _cache.invalidate_cache_prefix("cvws_releases:")
     _cache.invalidate_cache_prefix("home_tool_preview:")
     _cache.invalidate_cache_prefix("storage_overview:")
     _cache.invalidate_cache_prefix(f"dir_file_count:Tool/CVWindowsService")
 
-    # Refresh tool index
-    try:
-        from services.artifact_index import refresh_tool_index
-        refresh_tool_index(_cache, STORAGE)
-    except Exception as exc:
-        print(f"[cvws] tool index refresh failed: {exc}")
+    from services.storage_events import on_storage_change
+    on_storage_change(_cache, STORAGE, "Tool/CVWindowsService")
 
     # Build success message
     latest_now = (read_text_file(target_dir / "LATEST_RELEASE") or "").strip()
@@ -1279,30 +1236,15 @@ def _get_request_username() -> str:
 
 def _refresh_plugin_index_on_publish(plugin_id: str):
     """Called after a successful plugin publish to update the index."""
-    try:
-        from services.plugin_index import refresh_plugin_index
-        download_counts = _get_download_counts()
-        refresh_plugin_index(_cache, STORAGE, plugin_id, download_counts=download_counts)
-        # Re-prewarm caches since refresh_plugin_index invalidated them
-        prewarm_plugin_metadata(
-            STORAGE,
-            plugin_id,
-            "",  # version not needed for prewarm
-            download_counts=download_counts,
-            get_cache_entry=_get_cache_entry,
-            set_cache_entry=_set_cache_entry,
-            ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-        )
-        _cache.write_audit(
-            actor_type="user",
-            actor_id=_get_request_username(),
-            action="index_refresh_plugin",
-            target_type="plugin_index",
-            target_id=plugin_id,
-            detail="Auto-refreshed after publish",
-        )
-    except Exception as exc:
-        print(f"[plugin_index] post-publish refresh failed for {plugin_id}: {exc}")
+    from services.storage_events import _refresh_plugin_index
+    _refresh_plugin_index(
+        _cache, STORAGE, f"Plugins/{plugin_id}",
+        get_download_counts=_get_download_counts,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+        get_request_username=_get_request_username,
+    )
 
 
 register_marketplace_api_routes(
@@ -1417,6 +1359,7 @@ register_admin_api_routes(
             "services.plugin_index", fromlist=["get_plugin_catalog_from_index"]
         ).get_plugin_catalog_from_index(cache, dc),
         human_size=human_size,
+        get_slow_requests=lambda: _slow_requests,
     ),
 )
 
@@ -1480,59 +1423,12 @@ def api_feedback():
 # ===================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="ColorVision Plugin Marketplace")
-    parser.add_argument("--storage", help="Override storage path")
-    parser.add_argument("--port", type=int, help="Override port")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument(
-        "--reconcile-history",
-        action="store_true",
-        help="Move old root ColorVision release packages into History and exit",
-    )
-    parser.add_argument(
-        "--reconcile-plugin-history",
-        action="store_true",
-        help="Move old plugin .cvxp packages into History/Plugins and exit",
-    )
-    parser.add_argument(
-        "--prune-updates",
-        action="store_true",
-        help="Prune incremental update packages, keeping only the latest and each branch's .1 package",
-    )
-    parser.add_argument(
-        "--refresh-index",
-        action="store_true",
-        help="Refresh the full plugin index and exit",
-    )
-    parser.add_argument(
-        "--refresh-plugin-index",
-        help="Refresh the index for a single plugin ID and exit",
-    )
-    parser.add_argument(
-        "--refresh-all-indexes",
-        action="store_true",
-        help="Refresh all indexes (plugins, releases, updates, tools) and exit",
-    )
-    parser.add_argument(
-        "--cleanup-cache",
-        action="store_true",
-        help="Clean up expired cache entries and exit",
-    )
-    parser.add_argument(
-        "--run-job",
-        help="Run a specific scheduled job by ID and exit",
-    )
-    parser.add_argument(
-        "--create-api-key",
-        help="Create an API key with the given name and exit",
-    )
-    parser.add_argument(
-        "--scopes",
-        default="admin:*",
-        help="Scopes for --create-api-key (comma-separated, default: admin:*)",
-    )
+    from cli import build_parser, handle_cli_args
+
+    parser = build_parser()
     args = parser.parse_args()
 
+    # Apply CLI overrides
     if args.storage:
         STORAGE = Path(args.storage)
     if args.port:
@@ -1540,116 +1436,18 @@ if __name__ == "__main__":
     if args.debug:
         CONFIG["debug"] = True
 
-    issues = _validate_runtime_config(CONFIG)
-    if issues:
-        if CONFIG.get("debug"):
-            print("WARNING: Insecure configuration detected (debug mode allows startup):")
-            for issue in issues:
-                print(f"  - {issue}")
-        else:
-            print("Refusing to start with insecure production configuration:")
-            for issue in issues:
-                print(f"  - {issue}")
-            raise SystemExit(2)
-
-    if args.reconcile_history:
-        moved = reconcile_app_release_history()
-        print(f"Reconciled {len(moved)} file(s) into History")
-        for item in moved[:20]:
-            print(f"  {item['from']} -> {item['to']}")
-        raise SystemExit(0)
-
-    if args.reconcile_plugin_history:
-        result = reconcile_all_plugin_package_histories()
-        moved_count = sum(len(items) for items in result.values())
-        print(f"Reconciled {moved_count} plugin package(s) across {len(result)} plugin(s)")
-        for plugin_id, items in list(result.items())[:20]:
-            print(f"[{plugin_id}] {len(items)} moved")
-            for item in items[:5]:
-                print(f"  {item['from']} -> {item['to']}")
-        raise SystemExit(0)
-
-    if args.prune_updates:
-        result = prune_update_packages(STORAGE)
-        print(f"Retained {len(result['retained'])} update package(s)")
-        print(f"Deleted {len(result['deleted'])} update package(s)")
-        for item in result["deleted"][:20]:
-            print(f"  removed {item}")
-        raise SystemExit(0)
-
-    if args.refresh_index:
-        from services.plugin_index import refresh_all_plugin_index
-        print("Refreshing full plugin index...")
-        result = refresh_all_plugin_index(_cache, STORAGE)
-        print(f"Indexed: {result['indexed_count']}, Deleted: {result['deleted_count']}, "
-              f"Duration: {result['duration_ms']}ms, Errors: {len(result['errors'])}")
-        for err in result["errors"]:
-            print(f"  ERROR: {err}")
-        raise SystemExit(0)
-
-    if args.refresh_plugin_index:
-        from services.plugin_index import refresh_plugin_index
-        plugin_id = args.refresh_plugin_index
-        print(f"Refreshing index for plugin: {plugin_id}")
-        result = refresh_plugin_index(_cache, STORAGE, plugin_id)
-        if result:
-            print(f"OK: {result.get('name', plugin_id)} v{result.get('latest_version', '?')}")
-        else:
-            print(f"Plugin not found: {plugin_id}")
-        raise SystemExit(0)
-
-    if args.refresh_all_indexes:
-        from services.plugin_index import refresh_all_plugin_index
-        from services.artifact_index import refresh_all_indexes as refresh_all_artifact_indexes
-        print("Refreshing all indexes...")
-        print("\n--- Plugin Index ---")
-        plugin_result = refresh_all_plugin_index(_cache, STORAGE)
-        print(f"Indexed: {plugin_result['indexed_count']}, Deleted: {plugin_result['deleted_count']}, "
-              f"Duration: {plugin_result['duration_ms']}ms")
-        print("\n--- Artifact Indexes ---")
-        artifact_result = refresh_all_artifact_indexes(_cache, STORAGE)
-        for scope, result in artifact_result["results"].items():
-            print(f"{scope}: {result['indexed_count']} items, {result['duration_ms']}ms")
-        print(f"\nTotal: {artifact_result['total_duration_ms']}ms, Errors: {artifact_result['total_errors']}")
-        raise SystemExit(0)
-
-    if args.cleanup_cache:
-        deleted = _cache.cleanup_expired_cache()
-        print(f"Cleaned up {deleted} expired cache entry(ies)")
-        raise SystemExit(0)
-
-    if args.run_job:
-        from services.scheduler import run_job_now
-        job_id = args.run_job
-        print(f"Running job: {job_id}")
-        result = run_job_now(_cache, STORAGE, lambda: CONFIG, get_db, job_id)
-        print(f"Status: {result['status']}")
-        print(f"Duration: {result['duration_ms']}ms")
-        if result.get("summary"):
-            print(f"Summary: {result['summary']}")
-        if result.get("error"):
-            print(f"Error: {result['error']}")
-        raise SystemExit(0)
-
-    if args.create_api_key:
-        from services.api_key_service import create_api_key
-        from routes.admin_api import validate_scopes, ALLOWED_SCOPES
-        name = args.create_api_key
-        scopes = args.scopes
-        if scopes:
-            _, invalid = validate_scopes(scopes)
-            if invalid:
-                print(f"ERROR: Invalid scopes: {', '.join(invalid)}")
-                print(f"Allowed scopes: {', '.join(sorted(ALLOWED_SCOPES))}")
-                raise SystemExit(1)
-        print(f"Creating API key: {name}")
-        print(f"Scopes: {scopes}")
-        result = create_api_key(_cache, name=name, scopes=scopes, created_by="cli")
-        print(f"\nKey ID: {result['id']}")
-        print(f"Key: {result['key']}")
-        print(f"Prefix: {result['key_prefix']}")
-        print(f"\nIMPORTANT: Save this key now. It will not be shown again.")
-        raise SystemExit(0)
+    # Handle CLI commands (raises SystemExit for early-exit commands)
+    handle_cli_args(
+        args,
+        cache=_cache,
+        storage=STORAGE,
+        config=CONFIG,
+        get_db=get_db,
+        validate_runtime_config=_validate_runtime_config,
+        reconcile_app_release_history=reconcile_app_release_history,
+        reconcile_all_plugin_package_histories=reconcile_all_plugin_package_histories,
+        prune_update_packages=prune_update_packages,
+    )
 
     print(f"Storage path: {STORAGE}")
     print(f"Listening on: http://{CONFIG['host']}:{CONFIG['port']}")

@@ -426,14 +426,23 @@ def build_upload_page_context(
     }
 
 
-def build_browse_page_context(storage: Path, relative_path: str) -> dict[str, Any]:
-    context = build_storage_page_context(storage, relative_path)
+def build_browse_page_context(
+    storage: Path,
+    relative_path: str,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> dict[str, Any]:
+    context = build_storage_page_context(storage, relative_path, limit=limit, offset=offset)
     return {
         "items": context["items"],
         "summary": context["summary"],
+        "total_count": context.get("total_count", len(context["items"])),
         "subpath": relative_path,
         "breadcrumbs": context["breadcrumbs"],
         "parent_subpath": context["parent_subpath"],
         "exists": context["exists"],
+        "limit": limit,
+        "offset": offset,
     }
 

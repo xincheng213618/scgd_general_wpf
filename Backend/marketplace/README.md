@@ -208,6 +208,50 @@ Signature-based check: each index check computes a directory signature and compa
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time.
 5. **Config**: Edit `config.json` to set `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
+## Disk Scan Points
+
+When indexes are populated, most API requests read from SQLite instead of scanning disk. The following are the remaining real-time disk access points:
+
+### Index-populated (no disk scan)
+- `GET /api/plugins`, `GET /plugins` — reads from `plugin_index` table
+- `GET /api/plugins/<id>` — reads from `plugin_index` + `package_index`
+- `GET /releases` — reads from `release_index` via `scan_app_release_artifacts`
+- `GET /updates` — reads from `update_index`
+- `GET /tools` — reads from `tool_index`
+- `GET /` (home page) — reads from `release_index`, `update_index`, `tool_index` for previews
+- `GET /api/tool/cvwindowsservice/releases` — cached with signature-based invalidation
+
+### Real-time disk access (by design)
+- `GET /browse/<path>` — always reads live directory listing (small directory, no recursion)
+- `GET /plugins/<id>/icon` — reads icon file for ETag/Last-Modified headers
+- `GET /download/<path>` — serves file directly from disk
+- `GET /api/app/changelog` — reads `CHANGELOG.md` (single file read)
+- `GET /api/app/latest-version` — reads `LATEST_RELEASE` (single file read)
+- `GET /api/health`, `GET /api/ready` — filesystem probes for liveness
+
+### Scheduler signature checks (lightweight)
+- `release_index_check` — two-level History walk (major/branch/file), no deep rglob
+- `update_index_check` — single `Update/` directory listing
+- `tool_index_check` — single `Tool/` directory listing
+- `plugin_index_check` — `plugin_catalog_signature()` over Plugins directory
+
+### Upload/publish (triggers index refresh)
+- `POST /api/packages/publish` → `refresh_plugin_index` for that plugin
+- `PUT /upload/<path>` → refreshes `release_index`, `update_index`, or `tool_index` based on path
+- `POST /upload/cvwindowsservice` → refreshes `tool_index`
+
+## New Modules
+
+| Module | Purpose |
+|--------|---------|
+| `services/auth_middleware.py` | Authentication decorators (Bearer, Basic, session) — single source of truth |
+| `services/storage_events.py` | Post-upload/publish index refresh dispatcher |
+| `cli.py` | CLI argument parsing and command execution |
+| `db/schema_version.py` | Schema version tracking and migrations |
+| `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, keys, perf) |
+| `routes/admin_pages.py` | Admin HTML pages |
+| `routes/public_pages.py` | Login/logout routes |
+
 ### Config Options
 
 ```json

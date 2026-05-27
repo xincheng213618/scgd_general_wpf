@@ -926,5 +926,231 @@ class UploadIndexRefreshTests(unittest.TestCase):
         self.assertTrue(any(r["version"] == "1.0.0.1" for r in releases))
 
 
+class BrowsePaginationTests(unittest.TestCase):
+    """Tests for /browse pagination behavior."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.storage = self.root / "storage"
+        self.storage.mkdir(parents=True, exist_ok=True)
+
+        self.original_storage = marketplace_app.STORAGE
+        self.original_db_path = marketplace_app.DB_PATH
+        self.original_config = copy.deepcopy(marketplace_app.CONFIG)
+        self.original_testing = marketplace_app.app.config.get("TESTING", False)
+        self.original_secret_key = marketplace_app.app.secret_key
+
+        marketplace_app.STORAGE = self.storage
+        marketplace_app.DB_PATH = self.root / "marketplace.db"
+        marketplace_app.CONFIG = copy.deepcopy(marketplace_app.CONFIG)
+        marketplace_app.CONFIG["storage_path"] = str(self.storage)
+        marketplace_app.CONFIG["upload_auth"] = {"username": "tester", "password": "secret"}
+        marketplace_app.CONFIG["secret_key"] = "test-secret-key"
+        marketplace_app.CONFIG["debug"] = False
+        marketplace_app.app.secret_key = marketplace_app.CONFIG["secret_key"]
+        marketplace_app.app.config["TESTING"] = True
+        marketplace_app.app.config["MAX_CONTENT_LENGTH"] = marketplace_app.MAX_UPLOAD_SIZE_BYTES
+        marketplace_app.init_db()
+
+        self.client = marketplace_app.app.test_client()
+
+    def tearDown(self):
+        marketplace_app.STORAGE = self.original_storage
+        marketplace_app.DB_PATH = self.original_db_path
+        marketplace_app.CONFIG = self.original_config
+        marketplace_app.app.secret_key = self.original_secret_key
+        marketplace_app.app.config["TESTING"] = self.original_testing
+        self.temp_dir.cleanup()
+
+    def test_browse_default_limit(self):
+        """Default limit should cap results for large directories."""
+        for i in range(300):
+            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+
+        response = self.client.get("/browse")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        # Should render successfully and show some files
+        self.assertIn("file_0000", html)
+
+    def test_browse_custom_limit(self):
+        """Custom limit parameter should be respected."""
+        for i in range(50):
+            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+
+        response = self.client.get("/browse?limit=10")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        # Should show first 10 files
+        self.assertIn("file_0000", html)
+        self.assertIn("file_0009", html)
+
+    def test_browse_offset(self):
+        """Offset parameter should skip items."""
+        for i in range(20):
+            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+
+        response = self.client.get("/browse?limit=5&offset=10")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("file_0010", html)
+
+
+class SchemaVersionTests(unittest.TestCase):
+    """Tests for schema migration mechanism."""
+
+    def test_schema_version_table_created(self):
+        from db.schema_version import ensure_schema_version, CURRENT_SCHEMA_VERSION
+        import sqlite3
+
+        temp_dir = tempfile.TemporaryDirectory()
+        db_path = Path(temp_dir.name) / "test.db"
+        db = sqlite3.connect(str(db_path))
+        db.row_factory = sqlite3.Row
+
+        version = ensure_schema_version(db)
+        self.assertEqual(version, CURRENT_SCHEMA_VERSION)
+
+        # Verify table exists
+        row = db.execute("SELECT value FROM schema_version WHERE key = 'version'").fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row["value"], CURRENT_SCHEMA_VERSION)
+
+        db.close()
+        temp_dir.cleanup()
+
+    def test_schema_migration_idempotent(self):
+        """Running migration twice should not fail."""
+        from db.schema_version import ensure_schema_version
+        import sqlite3
+
+        temp_dir = tempfile.TemporaryDirectory()
+        db_path = Path(temp_dir.name) / "test.db"
+        db = sqlite3.connect(str(db_path))
+        db.row_factory = sqlite3.Row
+
+        # Create the base tables first
+        db.execute("CREATE TABLE IF NOT EXISTS job_runs (id INTEGER PRIMARY KEY)")
+        db.commit()
+
+        # Run migration twice
+        ensure_schema_version(db)
+        ensure_schema_version(db)
+
+        # Verify columns exist
+        db.execute("SELECT scanned_count FROM job_runs")
+        db.execute("SELECT changed_count FROM job_runs")
+
+        db.close()
+        temp_dir.cleanup()
+
+    def test_schema_migration_reraises_non_duplicate_errors(self):
+        """Non-duplicate-column, non-missing-table errors should propagate."""
+        from db.schema_version import _add_column_if_missing
+        import sqlite3
+
+        temp_dir = tempfile.TemporaryDirectory()
+        db_path = Path(temp_dir.name) / "test.db"
+        db = sqlite3.connect(str(db_path))
+
+        # Create a table first, then try to add a column with invalid syntax
+        db.execute("CREATE TABLE test_table (id INTEGER)")
+        db.commit()
+
+        # This should raise an OperationalError (not about duplicate column or missing table)
+        with self.assertRaises(sqlite3.OperationalError):
+            _add_column_if_missing(db, "test_table", "INVALID SYNTAX!!!")
+
+        db.close()
+        temp_dir.cleanup()
+
+
+class AuthIntegrationTests(unittest.TestCase):
+    """Tests for auth middleware integration."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.storage = self.root / "storage"
+        (self.storage / "Plugins").mkdir(parents=True, exist_ok=True)
+
+        self.original_storage = marketplace_app.STORAGE
+        self.original_db_path = marketplace_app.DB_PATH
+        self.original_config = copy.deepcopy(marketplace_app.CONFIG)
+        self.original_testing = marketplace_app.app.config.get("TESTING", False)
+        self.original_secret_key = marketplace_app.app.secret_key
+
+        marketplace_app.STORAGE = self.storage
+        marketplace_app.DB_PATH = self.root / "marketplace.db"
+        marketplace_app.CONFIG = copy.deepcopy(marketplace_app.CONFIG)
+        marketplace_app.CONFIG["storage_path"] = str(self.storage)
+        marketplace_app.CONFIG["upload_auth"] = {"username": "tester", "password": "secret"}
+        marketplace_app.CONFIG["secret_key"] = "test-secret-key"
+        marketplace_app.CONFIG["debug"] = False
+        marketplace_app.app.secret_key = marketplace_app.CONFIG["secret_key"]
+        marketplace_app.app.config["TESTING"] = True
+        marketplace_app.app.config["MAX_CONTENT_LENGTH"] = marketplace_app.MAX_UPLOAD_SIZE_BYTES
+        marketplace_app.init_db()
+
+        self.client = marketplace_app.app.test_client()
+
+    def tearDown(self):
+        marketplace_app.STORAGE = self.original_storage
+        marketplace_app.DB_PATH = self.original_db_path
+        marketplace_app.CONFIG = self.original_config
+        marketplace_app.app.secret_key = self.original_secret_key
+        marketplace_app.app.config["TESTING"] = self.original_testing
+        self.temp_dir.cleanup()
+
+    def _auth_headers(self, username="tester", password="secret"):
+        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        return {"Authorization": f"Basic {token}"}
+
+    def test_login_page_renders(self):
+        response = self.client.get("/login")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("登录", response.get_data(as_text=True))
+
+    def test_login_success_redirects(self):
+        response = self.client.post("/login", data={
+            "username": "tester",
+            "password": "secret",
+        }, follow_redirects=False)
+        self.assertIn(response.status_code, [302, 303])
+
+    def test_login_failure_stays_on_page(self):
+        response = self.client.post("/login", data={
+            "username": "tester",
+            "password": "wrong",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("错误", response.get_data(as_text=True))
+
+    def test_login_failure_writes_audit(self):
+        self.client.post("/login", data={
+            "username": "hacker",
+            "password": "wrong",
+        })
+        entries = marketplace_app._cache.get_audit_log(action="login_failed")
+        self.assertGreaterEqual(len(entries), 1)
+        self.assertEqual(entries[0]["actor_id"], "hacker")
+
+    def test_logout_clears_session(self):
+        # Login first
+        self.client.post("/login", data={
+            "username": "tester",
+            "password": "secret",
+        })
+        # Logout
+        response = self.client.get("/logout", follow_redirects=False)
+        self.assertIn(response.status_code, [302, 303])
+
+    def test_upload_page_requires_login(self):
+        response = self.client.get("/upload", follow_redirects=False)
+        self.assertIn(response.status_code, [302, 303])
+        self.assertIn("login", response.headers.get("Location", ""))
+
+
 if __name__ == "__main__":
     unittest.main()

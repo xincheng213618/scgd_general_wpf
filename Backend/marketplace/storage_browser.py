@@ -55,22 +55,38 @@ def build_entry_record(storage: Path, entry: Path, relative_path: str) -> dict[s
     }
     item["modified_display"] = item["modified"]
     if item["is_dir"]:
-        item["file_count"] = sum(1 for child in entry.rglob("*") if child.is_file())
+        item["file_count"] = _fast_directory_file_count(entry)
     return item
 
 
-def list_directory_contents(target: Path, subpath: str, *, limit: int | None = None) -> list[dict[str, Any]]:
+def _sorted_visible_entries(target: Path) -> list[Path]:
+    return sorted(
+        (entry for entry in target.iterdir() if not entry.name.startswith(".")),
+        key=lambda e: (e.is_file(), e.name.lower()),
+    )
+
+
+def list_directory_contents(
+    target: Path,
+    subpath: str,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> tuple[list[dict[str, Any]], int]:
+    entries = _sorted_visible_entries(target)
+    total_count = len(entries)
+    if limit is not None:
+        entries = entries[offset:offset + limit]
+    elif offset:
+        entries = entries[offset:]
+
     items: list[dict[str, Any]] = []
-    for entry in sorted(target.iterdir(), key=lambda e: (e.is_file(), e.name.lower())):
-        if entry.name.startswith("."):
-            continue
+    for entry in entries:
         relative_path = f"{subpath}/{entry.name}" if subpath else entry.name
         info = _build_listing_item(entry, relative_path)
         if info:
             items.append(info)
-            if limit is not None and len(items) >= limit:
-                break
-    return items
+    return items, total_count
 
 
 def build_breadcrumbs(subpath: str, *, root_label: str = "Home") -> list[tuple[str, str]]:
@@ -205,31 +221,50 @@ def summarize_directory_items(items: list[dict[str, Any]]) -> dict[str, int]:
     }
 
 
-def build_storage_page_context(storage: Path, relative_path: str) -> dict[str, Any]:
+def build_storage_page_context(
+    storage: Path,
+    relative_path: str,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> dict[str, Any]:
     target = storage / Path(*[part for part in relative_path.split("/") if part])
-    items = list_directory_contents(target, relative_path) if target.exists() and target.is_dir() else []
+    if target.exists() and target.is_dir():
+        items, total_count = list_directory_contents(
+            target,
+            relative_path,
+            limit=limit,
+            offset=offset,
+        )
+    else:
+        items = []
+        total_count = 0
     return {
         "target": target,
         "items": items,
         "summary": summarize_directory_items(items),
+        "total_count": total_count,
         "subpath": relative_path,
         "breadcrumbs": build_breadcrumbs(relative_path),
         "exists": target.exists(),
         "parent_subpath": "/".join(relative_path.split("/")[:-1]) if relative_path else "",
+        "limit": limit,
+        "offset": offset,
     }
 
 
 def build_storage_preview_context(storage: Path, relative_path: str, *, limit: int = 8) -> dict[str, Any]:
     target = storage / Path(*[part for part in relative_path.split("/") if part])
-    items = (
-        list_directory_contents(target, relative_path, limit=limit)
-        if target.exists() and target.is_dir()
-        else []
-    )
+    total_count = 0
+    if target.exists() and target.is_dir():
+        items, total_count = list_directory_contents(target, relative_path, limit=limit)
+    else:
+        items = []
     return {
         "target": target,
         "items": items,
         "summary": summarize_directory_items(items),
+        "total_count": total_count,
         "subpath": relative_path,
         "breadcrumbs": build_breadcrumbs(relative_path),
         "exists": target.exists(),

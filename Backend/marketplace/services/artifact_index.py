@@ -52,12 +52,18 @@ def _scan_release_artifacts(storage: Path) -> list[dict[str, Any]]:
 
     history_dir = storage / "History"
     if history_dir.is_dir():
-        for entry in history_dir.rglob("*"):
-            if not entry.is_file():
+        for major_dir in history_dir.iterdir():
+            if not major_dir.is_dir():
                 continue
-            artifact = build_release_artifact(storage, entry, "archive")
-            if artifact:
-                artifacts.append(artifact)
+            for branch_dir in major_dir.iterdir():
+                if not branch_dir.is_dir():
+                    continue
+                for entry in branch_dir.iterdir():
+                    if not entry.is_file():
+                        continue
+                    artifact = build_release_artifact(storage, entry, "archive")
+                    if artifact:
+                        artifacts.append(artifact)
 
     from app_releases import release_sort_key
     artifacts.sort(key=release_sort_key, reverse=True)
@@ -65,7 +71,11 @@ def _scan_release_artifacts(storage: Path) -> list[dict[str, Any]]:
 
 
 def _release_signature(storage: Path) -> str:
-    """Lightweight signature for release artifacts."""
+    """Lightweight signature for release artifacts.
+
+    Uses a two-level directory walk instead of rglob to avoid deep recursion.
+    History layout: History/{major.minor}/{major.minor.patch}/file
+    """
     entries: list[tuple[str, int, float]] = []
     if storage.is_dir():
         for entry in storage.iterdir():
@@ -77,13 +87,33 @@ def _release_signature(storage: Path) -> str:
                     pass
     history_dir = storage / "History"
     if history_dir.is_dir():
-        for entry in history_dir.rglob("*"):
-            if entry.is_file():
+        try:
+            history_mtime = history_dir.stat().st_mtime
+        except OSError:
+            history_mtime = 0
+        entries.append(("_History_dir", 0, history_mtime))
+
+        for major_dir in history_dir.iterdir():
+            if not major_dir.is_dir():
+                continue
+            try:
+                entries.append((major_dir.name, 0, major_dir.stat().st_mtime))
+            except OSError:
+                continue
+            for branch_dir in major_dir.iterdir():
+                if not branch_dir.is_dir():
+                    continue
                 try:
-                    st = entry.stat()
-                    entries.append((entry.name, st.st_size, st.st_mtime))
+                    entries.append((branch_dir.name, 0, branch_dir.stat().st_mtime))
                 except OSError:
-                    pass
+                    continue
+                for file_entry in branch_dir.iterdir():
+                    if file_entry.is_file():
+                        try:
+                            st = file_entry.stat()
+                            entries.append((file_entry.name, st.st_size, st.st_mtime))
+                        except OSError:
+                            pass
     return _dir_signature_hash(entries)
 
 
@@ -383,7 +413,7 @@ def _scan_tool_entries(storage: Path) -> list[dict[str, Any]]:
 
         if entry.is_dir():
             try:
-                item["file_count"] = sum(1 for c in entry.rglob("*") if c.is_file())
+                item["file_count"] = sum(1 for c in entry.iterdir() if c.is_file())
             except OSError:
                 item["file_count"] = 0
             item["size"] = 0

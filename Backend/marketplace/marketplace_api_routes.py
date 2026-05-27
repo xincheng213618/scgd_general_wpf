@@ -55,30 +55,6 @@ class MarketplaceApiRouteContext:
     cache: Any = None
 
 
-def _refresh_artifact_index_on_upload(ctx: MarketplaceApiRouteContext, storage: Path, normalized_path: str):
-    """Refresh the appropriate artifact index after a successful upload."""
-    if ctx.cache is None:
-        return
-    parts = normalized_path.replace("\\", "/").split("/")
-    top_dir = parts[0] if parts else ""
-
-    try:
-        if top_dir == "Plugins":
-            return  # plugin_index handled by refresh_plugin_index_on_publish
-        if top_dir == "Update":
-            from services.artifact_index import refresh_update_index
-            refresh_update_index(ctx.cache, storage)
-        elif top_dir == "Tool":
-            from services.artifact_index import refresh_tool_index
-            refresh_tool_index(ctx.cache, storage)
-        else:
-            # Root-level file — likely a release artifact
-            from services.artifact_index import refresh_release_index
-            refresh_release_index(ctx.cache, storage)
-    except Exception as exc:
-        print(f"[upload] artifact index refresh failed for '{normalized_path}': {exc}")
-
-
 def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> None:
     @app.route("/api/plugins", methods=["GET"])
     def api_search_plugins():
@@ -322,7 +298,8 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
             storage = ctx.get_storage()
 
             def _on_upload_complete(normalized_path: str):
-                _refresh_artifact_index_on_upload(ctx, storage, normalized_path)
+                from services.storage_events import on_storage_change
+                on_storage_change(ctx.cache, storage, normalized_path)
 
             store_legacy_upload(
                 storage=storage,
