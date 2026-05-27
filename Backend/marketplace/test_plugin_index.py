@@ -184,6 +184,103 @@ class PluginIndexTests(unittest.TestCase):
         self.assertTrue(any(item["pluginId"] == "FallbackPlugin" for item in items))
 
     # -------------------------------------------------------------------
+    # Issue 1: Detail API compatibility after index refresh
+    # -------------------------------------------------------------------
+
+    def test_detail_api_compatible_after_index_refresh(self):
+        """After refresh_all_plugin_index, /api/plugins/<id> must return 200
+        with all required fields: latestVersion, requiresVersion, has_icon, etc."""
+        plugin_dir = self._create_plugin("DetailPlugin", "2.0.0")
+        (plugin_dir / "manifest.json").write_text(
+            json.dumps({
+                "id": "DetailPlugin",
+                "name": "Detail Plugin",
+                "description": "detail test",
+                "requires": "2026.01",
+                "author": "TestAuthor",
+                "category": "Tools",
+            }),
+            encoding="utf-8",
+        )
+
+        from services.plugin_index import refresh_all_plugin_index
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        response = self.client.get("/api/plugins/DetailPlugin")
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["latestVersion"], "2.0.0")
+        self.assertEqual(payload["requiresVersion"], "2026.01")
+        self.assertEqual(payload["pluginId"], "DetailPlugin")
+        self.assertEqual(payload["name"], "Detail Plugin")
+        self.assertEqual(payload["author"], "TestAuthor")
+        self.assertEqual(payload["category"], "Tools")
+        self.assertIn("totalDownloads", payload)
+        self.assertIn("readme", payload)
+        self.assertIn("changelog", payload)
+        self.assertIn("versions", payload)
+        self.assertIn("archivedVersions", payload)
+        self.assertIn("currentPackageCount", payload)
+        self.assertIn("historicalPackageCount", payload)
+        self.assertIn("iconUrl", payload)
+
+    # -------------------------------------------------------------------
+    # Issue 2: fileHash present in detail after index refresh
+    # -------------------------------------------------------------------
+
+    def test_detail_returns_file_hash_after_index_refresh(self):
+        """Detail endpoint must return fileHash even when reading from index."""
+        plugin_dir = self._create_plugin("HashPlugin", "1.0.0")
+        (plugin_dir / "manifest.json").write_text(
+            json.dumps({"id": "HashPlugin", "name": "Hash Plugin"}),
+            encoding="utf-8",
+        )
+
+        from services.plugin_index import refresh_all_plugin_index
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        response = self.client.get("/api/plugins/HashPlugin")
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["versions"], "Should have versions")
+        self.assertTrue(payload["versions"][0].get("fileHash"), "fileHash should be present")
+
+    # -------------------------------------------------------------------
+    # Issue 3: index_state.signature written after refresh
+    # -------------------------------------------------------------------
+
+    def test_index_state_signature_written_after_refresh(self):
+        """refresh_all_plugin_index should write plugin_catalog_signature."""
+        self._create_plugin("SigPlugin", "1.0.0")
+
+        from services.plugin_index import refresh_all_plugin_index, get_plugin_index_state
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        state = get_plugin_index_state(self.cache)
+        self.assertIsNotNone(state)
+        self.assertTrue(state.get("signature"), "signature should be non-empty")
+
+    def test_plugin_index_check_no_change_skips_refresh(self):
+        """Second plugin_index_check should detect no changes and skip refresh."""
+        self._create_plugin("CheckPlugin", "1.0.0")
+
+        from services.plugin_index import refresh_all_plugin_index
+        from services.scheduler import _run_plugin_index_check
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        # First check - signatures should match, no refresh needed
+        result1 = _run_plugin_index_check(self.cache, self.storage, lambda: self.cache.get_db())
+        self.assertIn("No changes detected", result1)
+
+        # Second check - still no changes
+        result2 = _run_plugin_index_check(self.cache, self.storage, lambda: self.cache.get_db())
+        self.assertIn("No changes detected", result2)
+
+    # -------------------------------------------------------------------
+    # Issue 5: Fine-grained scope enforcement
+    # -------------------------------------------------------------------
+
+    # -------------------------------------------------------------------
     # Publish triggers index refresh
     # -------------------------------------------------------------------
 
@@ -611,6 +708,7 @@ class PluginIndexTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_api_key_scope_enforcement(self):
+        """Key with insufficient scope should get 401."""
         # Create key with only plugin:read scope
         create_resp = self.client.post(
             "/api/admin/api-keys",
@@ -619,12 +717,78 @@ class PluginIndexTests(unittest.TestCase):
         )
         full_key = create_resp.get_json()["key"]
 
-        # Should fail for admin:* endpoint
+        # Should fail for cache:read endpoint (needs cache:read scope)
         response = self.client.get(
             "/api/admin/cache/status",
             headers={"Authorization": f"Bearer {full_key}"},
         )
         self.assertEqual(response.status_code, 401)
+
+    def test_api_key_cache_read_scope_works(self):
+        """Key with cache:read should access cache status."""
+        create_resp = self.client.post(
+            "/api/admin/api-keys",
+            headers=self._auth_headers(),
+            json={"name": "Cache Read Key", "scopes": "cache:read"},
+        )
+        full_key = create_resp.get_json()["key"]
+
+        response = self.client.get(
+            "/api/admin/cache/status",
+            headers={"Authorization": f"Bearer {full_key}"},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_api_key_cache_read_cannot_write(self):
+        """Key with cache:read should not be able to cleanup cache."""
+        create_resp = self.client.post(
+            "/api/admin/api-keys",
+            headers=self._auth_headers(),
+            json={"name": "Read Only Key", "scopes": "cache:read"},
+        )
+        full_key = create_resp.get_json()["key"]
+
+        response = self.client.post(
+            "/api/admin/cache/cleanup",
+            headers={"Authorization": f"Bearer {full_key}"},
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_api_key_jobs_read_can_list_but_not_run(self):
+        """Key with jobs:read can list but not run jobs."""
+        from services.scheduler import ensure_default_jobs
+        ensure_default_jobs(self.cache)
+
+        create_resp = self.client.post(
+            "/api/admin/api-keys",
+            headers=self._auth_headers(),
+            json={"name": "Jobs Read Key", "scopes": "jobs:read"},
+        )
+        full_key = create_resp.get_json()["key"]
+        headers = {"Authorization": f"Bearer {full_key}"}
+
+        # Can list
+        response = self.client.get("/api/admin/jobs", headers=headers)
+        self.assertEqual(response.status_code, 200)
+
+        # Cannot run
+        response = self.client.post("/api/admin/jobs/cache_cleanup/run", headers=headers)
+        self.assertEqual(response.status_code, 401)
+
+    def test_api_key_stats_read_scope(self):
+        """Key with stats:read can access stats overview."""
+        create_resp = self.client.post(
+            "/api/admin/api-keys",
+            headers=self._auth_headers(),
+            json={"name": "Stats Key", "scopes": "stats:read"},
+        )
+        full_key = create_resp.get_json()["key"]
+
+        response = self.client.get(
+            "/api/admin/stats/overview",
+            headers={"Authorization": f"Bearer {full_key}"},
+        )
+        self.assertEqual(response.status_code, 200)
 
     def test_api_key_last_used_at_updated(self):
         create_resp = self.client.post(

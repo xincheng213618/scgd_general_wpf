@@ -152,7 +152,8 @@ def verify_api_key(
         db.commit()
 
         return dict(row)
-    except Exception:
+    except Exception as exc:
+        print(f"[api_key] verify failed for prefix '{prefix}': {exc}")
         return None
     finally:
         db.close()

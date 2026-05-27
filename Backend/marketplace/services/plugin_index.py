@@ -178,9 +178,10 @@ def refresh_plugin_index(
                (plugin_id, name, description, author, category, latest_version,
                 requires_version, url, has_icon, current_package_count,
                 historical_package_count, total_downloads, modified,
+                readme, changelog,
                 source_manifest_path, source_archive_path, file_signature,
                 indexed_at, is_deleted)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                ON CONFLICT(plugin_id) DO UPDATE SET
                    name = excluded.name,
                    description = excluded.description,
@@ -194,6 +195,8 @@ def refresh_plugin_index(
                    historical_package_count = excluded.historical_package_count,
                    total_downloads = excluded.total_downloads,
                    modified = excluded.modified,
+                   readme = excluded.readme,
+                   changelog = excluded.changelog,
                    source_manifest_path = excluded.source_manifest_path,
                    source_archive_path = excluded.source_archive_path,
                    file_signature = excluded.file_signature,
@@ -214,6 +217,8 @@ def refresh_plugin_index(
                 summary.get("historical_package_count", 0),
                 summary.get("total_downloads", 0),
                 summary.get("modified", ""),
+                summary.get("readme", ""),
+                summary.get("changelog", ""),
                 summary.get("source_manifest_path", ""),
                 summary.get("source_archive_path", ""),
                 signature,
@@ -381,10 +386,19 @@ def refresh_all_plugin_index(
     elapsed_ms = int((time.monotonic() - started) * 1000)
     finished_at = _now_iso()
 
+    # Write the catalog signature so periodic checks can detect no-op
+    catalog_sig = ""
+    try:
+        from plugin_marketplace import plugin_catalog_signature
+        catalog_sig = plugin_catalog_signature(storage)
+    except Exception as exc:
+        print(f"[plugin_index] signature computation failed: {exc}")
+
     _update_index_state(
         cache,
         "plugins",
         status="ready",
+        signature=catalog_sig,
         finished_at=finished_at,
         item_count=indexed_count,
         duration_ms=elapsed_ms,
@@ -404,6 +418,7 @@ def _update_index_state(
     scope: str,
     *,
     status: str = "ready",
+    signature: str = "",
     started_at: str = "",
     finished_at: str = "",
     item_count: int = 0,
@@ -413,10 +428,11 @@ def _update_index_state(
     db = cache.get_db()
     try:
         db.execute(
-            """INSERT INTO index_state (scope, status, last_started_at, last_finished_at,
+            """INSERT INTO index_state (scope, signature, status, last_started_at, last_finished_at,
                                         last_error, item_count, duration_ms)
-               VALUES (?, ?, ?, ?, ?, ?, ?)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(scope) DO UPDATE SET
+                   signature = CASE WHEN excluded.signature != '' THEN excluded.signature ELSE index_state.signature END,
                    status = excluded.status,
                    last_started_at = COALESCE(excluded.last_started_at, index_state.last_started_at),
                    last_finished_at = COALESCE(excluded.last_finished_at, index_state.last_finished_at),
@@ -424,7 +440,7 @@ def _update_index_state(
                    item_count = excluded.item_count,
                    duration_ms = excluded.duration_ms
             """,
-            (scope, status, started_at or None, finished_at or None, error, item_count, duration_ms),
+            (scope, signature or "", status, started_at or None, finished_at or None, error, item_count, duration_ms),
         )
         db.commit()
     except Exception as exc:
@@ -460,7 +476,8 @@ def get_plugin_catalog_from_index(
             item["total_downloads"] = download_counts.get(item["plugin_id"], 0)
             items.append(item)
         return items
-    except Exception:
+    except Exception as exc:
+        print(f"[plugin_index] get_plugin_catalog_from_index failed: {exc}")
         return None
     finally:
         db.close()
@@ -470,8 +487,19 @@ def get_plugin_detail_from_index(
     cache: CacheManager,
     plugin_id: str,
     download_counts: dict[str, int],
+    *,
+    storage: Path | None = None,
 ) -> dict[str, Any] | None:
-    """Read plugin detail from plugin_index + package_index tables."""
+    """Read plugin detail from plugin_index + package_index tables.
+
+    Returns a dict compatible with the old get_plugin_detail API including:
+    id, version, latest_version, requires, requires_version, readme, changelog,
+    current_packages, historical_packages, all_packages, has_icon, total_downloads,
+    name, description, author, url, category, modified, etc.
+
+    If package_index has no file_hash for a package, computes it from disk
+    when storage is provided (detail-only cost, list endpoint unaffected).
+    """
     db = cache.get_db()
     try:
         row = db.execute(
@@ -482,8 +510,15 @@ def get_plugin_detail_from_index(
             return None
 
         detail = dict(row)
+        # Ensure all fields the old API returned are present
         detail["id"] = detail["plugin_id"]
+        # "version" alias for latest_version
+        detail["version"] = detail.get("latest_version", "")
+        # "requires" alias for requires_version
+        detail["requires"] = detail.get("requires_version", "")
         detail["total_downloads"] = download_counts.get(plugin_id, 0)
+        # Convert has_icon from int to bool
+        detail["has_icon"] = bool(detail.get("has_icon", 0))
 
         # Read packages
         pkg_rows = db.execute(
@@ -491,6 +526,7 @@ def get_plugin_detail_from_index(
             (plugin_id,),
         ).fetchall()
 
+        needs_hash_computation = False
         current_packages = []
         historical_packages = []
         for pkg_row in pkg_rows:
@@ -504,21 +540,62 @@ def get_plugin_detail_from_index(
             }
             if pkg_row["file_hash"]:
                 pkg["fileHash"] = pkg_row["file_hash"]
+            else:
+                needs_hash_computation = True
             if pkg_row["source"] == "current":
                 current_packages.append(pkg)
             else:
                 historical_packages.append(pkg)
 
+        # Compute missing file hashes from disk (detail-only, not list)
+        if needs_hash_computation and storage is not None:
+            _compute_missing_hashes(cache, storage, plugin_id, current_packages + historical_packages)
+
         detail["packages"] = current_packages
         detail["current_packages"] = current_packages
         detail["historical_packages"] = historical_packages
         detail["all_packages"] = current_packages + historical_packages
+        # readme/changelog already in detail from plugin_index row
         detail["readme"] = detail.get("readme", "")
         detail["changelog"] = detail.get("changelog", "")
 
         return detail
-    except Exception:
+    except Exception as exc:
+        print(f"[plugin_index] get_plugin_detail_from_index failed for {plugin_id}: {exc}")
         return None
+    finally:
+        db.close()
+
+
+def _compute_missing_hashes(
+    cache: CacheManager,
+    storage: Path,
+    plugin_id: str,
+    packages: list[dict[str, Any]],
+):
+    """Compute and store file hashes for packages missing them."""
+    from plugin_marketplace import _compute_file_hash
+    db = cache.get_db()
+    try:
+        for pkg in packages:
+            if pkg.get("fileHash"):
+                continue
+            rel_path = pkg.get("relative_path", "")
+            if not rel_path:
+                continue
+            file_path = storage / rel_path
+            if not file_path.is_file():
+                continue
+            file_hash = _compute_file_hash(file_path)
+            if file_hash:
+                pkg["fileHash"] = file_hash
+                db.execute(
+                    "UPDATE package_index SET file_hash = ? WHERE relative_path = ?",
+                    (file_hash, rel_path),
+                )
+        db.commit()
+    except Exception as exc:
+        print(f"[plugin_index] hash computation failed for {plugin_id}: {exc}")
     finally:
         db.close()
 

@@ -76,6 +76,8 @@ class CacheManager:
                 historical_package_count INTEGER DEFAULT 0,
                 total_downloads         INTEGER DEFAULT 0,
                 modified                TEXT,
+                readme                  TEXT DEFAULT '',
+                changelog               TEXT DEFAULT '',
                 source_manifest_path    TEXT,
                 source_archive_path     TEXT,
                 file_signature          TEXT,
@@ -205,8 +207,8 @@ class CacheManager:
             )
             db.commit()
             db.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[cache] set_cache_entry failed for '{key}': {exc}")
 
     def get_cache_entry(self, key: str, *, signature: str | None = None) -> dict | None:
         try:
@@ -216,7 +218,8 @@ class CacheManager:
                 (key,),
             ).fetchone()
             db.close()
-        except Exception:
+        except Exception as exc:
+            print(f"[cache] get_cache_entry failed for '{key}': {exc}")
             return None
 
         if not row or row["expires_at"] <= now_ts():
@@ -242,8 +245,8 @@ class CacheManager:
             db.execute("DELETE FROM cache_entry WHERE key LIKE ?", (f"{prefix}%",))
             db.commit()
             db.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[cache] invalidate_cache_prefix failed for '{prefix}': {exc}")
 
     def refresh_related_caches(
         self,

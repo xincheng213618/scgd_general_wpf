@@ -58,6 +58,26 @@ python app.py --refresh-plugin-index MyPlugin
 
 All admin endpoints require authentication (session login or Basic Auth or Bearer API Key).
 
+Session and Basic Auth always have full access. Bearer API Key access is controlled by per-endpoint scopes:
+
+### Endpoint Scopes
+
+| Endpoint | Required Scope |
+|----------|---------------|
+| GET `/api/admin/cache/status` | `cache:read` |
+| POST `/api/admin/cache/cleanup` | `cache:refresh` |
+| POST `/api/admin/index/plugins/refresh` | `cache:refresh` |
+| POST `/api/admin/index/plugins/<id>/refresh` | `cache:refresh` |
+| GET `/api/admin/jobs` | `jobs:read` |
+| POST `/api/admin/jobs/<id>/run` | `jobs:write` |
+| POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
+| POST `/api/admin/jobs/<id>/disable` | `jobs:write` |
+| GET `/api/admin/stats/overview` | `stats:read` |
+| GET `/api/admin/audit-log` | `admin:*` |
+| API Key management | `admin:*` |
+
+`admin:*` grants access to all endpoints. Session/Basic Auth always has full access.
+
 ### Cache Management
 
 | Method | Endpoint | Description |
@@ -161,9 +181,13 @@ curl -X POST http://localhost:9998/api/packages/publish \
 
 | Job | Interval | Description |
 |-----|----------|-------------|
-| `plugin_index_check` | 5 min | Check Plugins directory signature, refresh if changed |
+| `plugin_index_check` | 5 min | Compare Plugins directory signature with stored signature; refresh only if changed |
 | `cache_cleanup` | 1 hour | Delete expired cache entries |
 | `startup_index_check` | Once | Ensure plugin_index is populated on startup |
+
+The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.
+
+Signature-based check: `plugin_index_check` computes `plugin_catalog_signature(storage)` and compares it with the stored signature in `index_state`. If they match, no refresh is triggered. The signature is updated after each successful `refresh_all_plugin_index`.
 
 ## Deployment Notes
 
@@ -198,13 +222,15 @@ python -m pytest Backend/marketplace
 ## Existing API Compatibility
 
 All existing API endpoints remain unchanged:
-- `GET /api/plugins` — Search plugins (now reads from index)
-- `GET /api/plugins/<id>` — Plugin detail
+- `GET /api/plugins` — Search plugins (now reads from SQLite index, falls back to disk scan if index is empty)
+- `GET /api/plugins/<id>` — Plugin detail (reads from index; fileHash computed on-demand if missing)
 - `GET /api/plugins/<id>/latest-version` — Latest version
 - `GET /api/packages/<id>/<version>` — Download package
-- `POST /api/packages/publish` — Publish (now also supports Bearer auth)
+- `POST /api/packages/publish` — Publish (now also supports Bearer auth with `plugin:publish` scope)
 - `PUT /upload/<path>` — Legacy upload
 - `GET /api/health` — Health check
 - `GET /api/ready` — Readiness check
 - `GET /api/stats` — Download statistics
 - `GET /api/feedback` — Submit feedback
+
+The `/api/plugins/<id>` response structure is fully compatible with the old API: `latestVersion`, `requiresVersion`, `versions` (with `fileHash`), `archivedVersions`, `readme`, `changelog`, `iconUrl`, `totalDownloads`, etc.

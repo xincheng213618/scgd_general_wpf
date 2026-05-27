@@ -156,8 +156,8 @@ class MarketplaceDataService:
                     indexed = get_plugin_catalog_from_index(self._cache_manager, download_counts)
                     if indexed is not None:
                         return indexed
-                except Exception:
-                    pass
+                except Exception as exc:
+                    print(f"[plugin_index] catalog read fallback: {exc}")
             # Fallback to disk scan + cache
             return self.scan_plugins(download_counts=self.get_request_download_counts())
 
@@ -175,11 +175,14 @@ class MarketplaceDataService:
         if self._cache_manager is not None:
             try:
                 from services.plugin_index import get_plugin_detail_from_index
-                detail = get_plugin_detail_from_index(self._cache_manager, plugin_id, download_counts)
+                detail = get_plugin_detail_from_index(
+                    self._cache_manager, plugin_id, download_counts,
+                    storage=self._storage(),
+                )
                 if detail is not None:
                     return detail
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"[plugin_index] detail fallback for {plugin_id}: {exc}")
 
         return get_plugin_detail_impl(
             self._storage(),

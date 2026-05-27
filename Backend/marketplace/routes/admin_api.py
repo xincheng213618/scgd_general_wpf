@@ -2,7 +2,26 @@
 Admin API routes for ColorVision Marketplace.
 
 Provides management endpoints for cache, index, jobs, audit log, and stats.
-All endpoints require authentication (session or Basic Auth).
+All endpoints require authentication (session, Basic Auth, or Bearer API Key).
+
+Per-endpoint scope requirements:
+  - GET  /cache/status        → cache:read
+  - POST /cache/cleanup       → cache:refresh
+  - POST /index/plugins/*     → cache:refresh
+  - GET  /jobs                → jobs:read
+  - POST /jobs/*/run          → jobs:write
+  - POST /jobs/*/enable       → jobs:write
+  - POST /jobs/*/disable      → jobs:write
+  - GET  /audit-log           → admin:*
+  - GET  /stats/overview      → stats:read
+  - GET  /api-keys            → admin:*
+  - POST /api-keys            → admin:*
+  - POST /api-keys/*/revoke   → admin:*
+  - POST /api-keys/*/rotate   → admin:*
+  - GET  /api-keys/*/usage    → admin:*
+
+admin:* grants access to all endpoints.
+Session/Basic Auth always has full access.
 """
 
 from __future__ import annotations
@@ -18,13 +37,33 @@ from flask import Blueprint, jsonify, request
 from db_cache import CacheManager, now_iso
 
 
+# Per-endpoint scope requirements
+ENDPOINT_SCOPES: dict[str, list[str]] = {
+    "cache_status": ["cache:read"],
+    "cache_cleanup": ["cache:refresh"],
+    "refresh_all_plugins": ["cache:refresh"],
+    "refresh_single_plugin": ["cache:refresh"],
+    "list_jobs": ["jobs:read"],
+    "run_job": ["jobs:write"],
+    "enable_job": ["jobs:write"],
+    "disable_job": ["jobs:write"],
+    "audit_log": ["admin:*"],
+    "stats_overview": ["stats:read"],
+    "list_api_keys": ["admin:*"],
+    "create_api_key": ["admin:*"],
+    "revoke_api_key": ["admin:*"],
+    "rotate_api_key": ["admin:*"],
+    "api_key_usage": ["admin:*"],
+}
+
+
 @dataclass(frozen=True)
 class AdminApiContext:
     cache: CacheManager
     storage_getter: Callable[[], Path]
     config_getter: Callable[[], dict[str, Any]]
     get_db: Callable[[], Any]
-    check_auth: Callable[[], bool]
+    check_auth: Callable[[list[str] | None], bool]
     require_auth_decorator: Any
     refresh_plugin_index: Callable[..., Any]
     refresh_all_plugin_index: Callable[..., Any]
@@ -45,10 +84,10 @@ def _get_ctx() -> AdminApiContext:
     return _ctx
 
 
-def _require_admin_auth():
-    """Check authentication for admin endpoints."""
+def _require_admin_auth(required_scopes: list[str] | None = None):
+    """Check authentication for admin endpoints with optional scope check."""
     ctx = _get_ctx()
-    if not ctx.check_auth():
+    if not ctx.check_auth(required_scopes):
         return jsonify({"error": "Authentication required", "status": 401}), 401
     return None
 
@@ -60,9 +99,13 @@ def register_admin_api_routes(app, ctx: AdminApiContext):
 
     @app.before_request
     def _check_admin_auth():
-        """Require auth for all /api/admin requests."""
+        """Require auth for all /api/admin requests with per-endpoint scopes."""
         if request.path.startswith("/api/admin/"):
-            result = _require_admin_auth()
+            # Determine required scopes from the matched endpoint
+            endpoint = request.endpoint or ""
+            func_name = endpoint.split(".")[-1] if "." in endpoint else endpoint
+            required = ENDPOINT_SCOPES.get(func_name)
+            result = _require_admin_auth(required)
             if result is not None:
                 return result
 

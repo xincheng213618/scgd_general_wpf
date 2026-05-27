@@ -1330,26 +1330,32 @@ register_marketplace_api_routes(
 from routes.admin_api import AdminApiContext, register_admin_api_routes
 
 
-def _check_admin_auth() -> bool:
-    """Check if current request is authenticated for admin access."""
+def _check_admin_auth(required_scopes: list[str] | None = None) -> bool:
+    """Check if current request is authenticated for admin access.
+
+    Session and Basic Auth always have full access.
+    Bearer API Key is checked against required_scopes (or admin:* as fallback).
+    """
     from flask import session
     if session.get("authenticated"):
         return True
 
-    # Bearer API Key
+    # Bearer API Key — check against required scopes
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header[7:].strip()
         if token:
             try:
                 from services.api_key_service import verify_api_key
-                key_info = verify_api_key(_cache, token, required_scopes=["admin:*"])
+                # Use per-endpoint scopes; fallback to admin:*
+                scopes_to_check = required_scopes if required_scopes else ["admin:*"]
+                key_info = verify_api_key(_cache, token, required_scopes=scopes_to_check)
                 if key_info:
                     return True
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"[auth] Bearer key verification error: {exc}")
 
-    # Basic Auth
+    # Basic Auth — always full access
     auth = request.authorization
     if (
         auth
@@ -1560,6 +1566,19 @@ if __name__ == "__main__":
     # Ensure admin user exists from config
     from services.auth_service import ensure_admin_user
     ensure_admin_user(_cache, CONFIG)
+
+    # Start scheduler (production only, not in debug reloader parent or tests)
+    import os as _os
+    scheduler_enabled = CONFIG.get("scheduler_enabled", True)
+    is_reloader_child = _os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    is_debug = CONFIG.get("debug", False)
+    # In debug mode: only start in the reloader child process
+    # In production: always start
+    if scheduler_enabled and (not is_debug or is_reloader_child):
+        from services.scheduler import SchedulerThread
+        _scheduler_thread = SchedulerThread(_cache, lambda: STORAGE, lambda: CONFIG, get_db)
+        _scheduler_thread.start()
+        print("[scheduler] Background scheduler started")
 
     # Note: debug=True should only be used during development (--debug flag).
     # In production, use a WSGI server like gunicorn instead of app.run().
