@@ -784,20 +784,19 @@ namespace ProjectKB
         {
             var sb = new StringBuilder();
             string modelName = string.IsNullOrWhiteSpace(kmitemmaster.Model) ? "KB" : kmitemmaster.Model;
-            sb.AppendLine($"档案名称 (Model): {modelName}");
-            sb.AppendLine($"系列号 (SN): {kmitemmaster.SN}");
-            if (!string.IsNullOrWhiteSpace(kmitemmaster.KBTemplate))
-            {  
-                sb.AppendLine($"关注点 (POI Set): {kmitemmaster.KBTemplate}");
-            }
-            sb.AppendLine($"测试时间 (Time): {kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}");
+            sb.AppendLine($"型号: {modelName}");
+            sb.AppendLine($"系列号: {kmitemmaster.SN}");
+            sb.AppendLine($"测量设置: {GetSummaryMeasurementSetting(kmitemmaster)}");
+            sb.AppendLine($"关注点: {kmitemmaster.KBTemplate}");
+            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/M/d HH:mm:ss}");
             sb.AppendLine();
             sb.AppendLine($"{"PT",-15}{"Lv",-15}{"LC",-15}");
 
             foreach (var item in kmitemmaster.Items)
             {
                 string key = $"[{item.Name}]";
-                sb.AppendLine($"{key,-15}{item.Lv,-15:F3}{item.Lc * 100,-15:F2}");
+                string lcText = $"{item.Lc * 100:F2}%";
+                sb.AppendLine($"{key,-15}{item.Lv,-15:F3}{lcText,-15}");
             }
 
             sb.AppendLine();
@@ -815,6 +814,26 @@ namespace ProjectKB
             sb.AppendLine($"ColorDiff= 0.0000  ");
             sb.AppendLine(kmitemmaster.Result ? "PASS" : "FAIL");
             return sb.ToString();
+        }
+
+        private static string GetSummaryMeasurementSetting(KBItemMaster kmitemmaster)
+        {
+            if (!string.IsNullOrWhiteSpace(kmitemmaster.Exposure))
+            {
+                return kmitemmaster.Exposure;
+            }
+
+            if (!string.IsNullOrWhiteSpace(kmitemmaster.MesSpecGroup))
+            {
+                return kmitemmaster.MesSpecGroup;
+            }
+
+            if (!string.IsNullOrWhiteSpace(kmitemmaster.MesModel))
+            {
+                return kmitemmaster.MesModel;
+            }
+
+            return string.Empty;
         }
 
         private static void AppendBacklightAutotuneSummary(StringBuilder sb, KBItemMaster kmitemmaster)
