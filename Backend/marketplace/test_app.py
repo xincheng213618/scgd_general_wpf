@@ -422,6 +422,51 @@ class MarketplaceAppTests(unittest.TestCase):
         items = second_response.get_json()["items"]
         self.assertTrue(any(item["pluginId"] == "CachedListPlugin" for item in items))
 
+    def test_plugin_catalog_cache_hit_skips_filesystem_signature_scan(self):
+        self._create_plugin_archive_with_metadata(
+            "NoSignatureScanPlugin",
+            "1.0.0",
+            manifest_text='{"Id":"NoSignatureScanPlugin","Name":"No Signature Scan Plugin"}',
+        )
+
+        first_response = self.client.get("/api/plugins")
+        self.assertEqual(first_response.status_code, 200)
+
+        with patch("plugin_marketplace.plugin_catalog_signature", side_effect=AssertionError("catalog hit should not scan")), \
+             patch("plugin_marketplace.get_plugin_summary", side_effect=AssertionError("catalog hit should not rebuild summaries")):
+            second_response = self.client.get("/api/plugins")
+
+        self.assertEqual(second_response.status_code, 200)
+        items = second_response.get_json()["items"]
+        self.assertTrue(any(item["pluginId"] == "NoSignatureScanPlugin" for item in items))
+
+    def test_publish_updates_cached_catalog_without_rebuild(self):
+        self._create_plugin("SeedPlugin", "1.0.0")
+        seed_response = self.client.get("/api/plugins")
+        self.assertEqual(seed_response.status_code, 200)
+
+        publish_response = self.client.post(
+            "/api/packages/publish",
+            headers=self._auth_headers(),
+            data={
+                "PluginId": "PublishedFastPlugin",
+                "Version": "1.0.0",
+                "Name": "Published Fast Plugin",
+                "Description": "updates the cached catalog",
+                "package": (io.BytesIO(b"pkg"), "PublishedFastPlugin-1.0.0.cvxp"),
+            },
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(publish_response.status_code, 201)
+
+        with patch("plugin_marketplace.plugin_catalog_signature", side_effect=AssertionError("publish should update catalog cache")), \
+             patch("plugin_marketplace.get_plugin_summary", side_effect=AssertionError("publish should not force catalog rebuild")):
+            catalog_response = self.client.get("/api/plugins?pageSize=20")
+
+        self.assertEqual(catalog_response.status_code, 200)
+        items = catalog_response.get_json()["items"]
+        self.assertTrue(any(item["pluginId"] == "PublishedFastPlugin" for item in items))
+
     def test_plugin_detail_can_fallback_to_archive_readme_and_changelog(self):
         self._create_plugin_archive_with_metadata(
             "ZipDocPlugin",

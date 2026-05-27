@@ -115,7 +115,13 @@ class CacheManager:
         except Exception:
             pass
 
-    def refresh_related_caches(self, *, plugin_id: str | None = None, relative_path: str = ""):
+    def refresh_related_caches(
+        self,
+        *,
+        plugin_id: str | None = None,
+        relative_path: str = "",
+        invalidate_plugin_catalog: bool = True,
+    ):
         """Invalidate all caches that may be affected by a file change."""
         self.invalidate_cache_prefix("storage_overview:")
         self.invalidate_cache_prefix("app_releases:")
@@ -128,7 +134,8 @@ class CacheManager:
             self.invalidate_cache_prefix(f"dir_file_count:{top_level}")
 
         if plugin_id:
-            self.invalidate_cache_prefix("plugin_catalog:")
+            if invalidate_plugin_catalog:
+                self.invalidate_cache_prefix("plugin_catalog:")
             self.invalidate_cache_prefix("plugin_summary:")
             self.invalidate_cache_prefix("plugin_detail:")
             self.invalidate_cache_prefix(f"dir_file_count:Plugins/{plugin_id}")

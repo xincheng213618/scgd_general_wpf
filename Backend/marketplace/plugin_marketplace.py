@@ -11,6 +11,8 @@ from typing import Any, Callable
 
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
 _PACKAGE_HASH_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
+_PLUGIN_CATALOG_CACHE_KEY = "plugin_catalog:v1"
+_PLUGIN_CATALOG_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60
 
 
 def is_safe_plugin_id(value: str) -> bool:
@@ -266,6 +268,70 @@ def plugin_catalog_signature(storage: Path) -> str:
             continue
         parts.append(f"{entry.name}:{plugin_summary_signature(storage, entry.name)}")
     return "|".join(parts)
+
+
+def _apply_download_counts(
+    items: list[dict[str, Any]],
+    download_counts: dict[str, int],
+) -> list[dict[str, Any]]:
+    counted_items: list[dict[str, Any]] = []
+    for item in items:
+        counted_item = dict(item)
+        plugin_id = str(counted_item.get("id") or "")
+        counted_item["total_downloads"] = download_counts.get(plugin_id, 0)
+        counted_items.append(counted_item)
+    return counted_items
+
+
+def _cached_catalog_items(cached: dict[str, Any] | None) -> list[dict[str, Any]] | None:
+    if not cached:
+        return None
+    raw_items = cached.get("value")
+    if not isinstance(raw_items, list):
+        return None
+    return [dict(item) for item in raw_items if isinstance(item, dict)]
+
+
+def _set_plugin_catalog_cache(
+    items: list[dict[str, Any]],
+    *,
+    set_cache_entry: Callable[..., None],
+) -> None:
+    set_cache_entry(
+        _PLUGIN_CATALOG_CACHE_KEY,
+        items,
+        ttl_seconds=_PLUGIN_CATALOG_CACHE_TTL_SECONDS,
+    )
+
+
+def _upsert_cached_plugin_catalog_summary(
+    plugin_id: str,
+    summary: dict[str, Any] | None,
+    *,
+    get_cache_entry: Callable[..., dict[str, Any] | None],
+    set_cache_entry: Callable[..., None],
+) -> None:
+    if not summary:
+        return
+
+    items = _cached_catalog_items(get_cache_entry(_PLUGIN_CATALOG_CACHE_KEY))
+    if items is None:
+        return
+
+    summary_item = dict(summary)
+    summary_id = str(summary_item.get("id") or plugin_id)
+    replaced = False
+    for index, item in enumerate(items):
+        item_id = str(item.get("id") or "")
+        if item_id in {plugin_id, summary_id}:
+            items[index] = summary_item
+            replaced = True
+            break
+
+    if not replaced:
+        items.append(summary_item)
+
+    _set_plugin_catalog_cache(items, set_cache_entry=set_cache_entry)
 
 
 def _iter_package_files(directory: Path) -> list[Path]:
@@ -573,14 +639,9 @@ def scan_plugin_summaries(
     set_cache_entry: Callable[..., None],
     ttl_seconds: int,
 ) -> list[dict[str, Any]]:
-    signature = plugin_catalog_signature(storage)
-    cache_key = "plugin_catalog:v1"
-    cached = get_cache_entry(cache_key, signature=signature)
-    if cached:
-        items = list(cached["value"])
-        for item in items:
-            item["total_downloads"] = download_counts.get(item["id"], 0)
-        return items
+    cached_items = _cached_catalog_items(get_cache_entry(_PLUGIN_CATALOG_CACHE_KEY))
+    if cached_items is not None:
+        return _apply_download_counts(cached_items, download_counts)
 
     plugins_dir = storage / "Plugins"
     if not plugins_dir.is_dir():
@@ -600,7 +661,7 @@ def scan_plugin_summaries(
         )
         if summary:
             items.append(summary)
-    set_cache_entry(cache_key, items, ttl_seconds=ttl_seconds, signature=signature)
+    _set_plugin_catalog_cache(items, set_cache_entry=set_cache_entry)
     return items
 
 
@@ -676,7 +737,7 @@ def prewarm_plugin_metadata(
     set_cache_entry: Callable[..., None],
     ttl_seconds: int,
 ) -> None:
-    get_plugin_summary(
+    summary = get_plugin_summary(
         storage,
         plugin_id,
         download_counts=download_counts,
@@ -691,6 +752,12 @@ def prewarm_plugin_metadata(
         get_cache_entry=get_cache_entry,
         set_cache_entry=set_cache_entry,
         ttl_seconds=ttl_seconds,
+    )
+    _upsert_cached_plugin_catalog_summary(
+        plugin_id,
+        summary,
+        get_cache_entry=get_cache_entry,
+        set_cache_entry=set_cache_entry,
     )
 
 

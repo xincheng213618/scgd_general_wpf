@@ -240,7 +240,11 @@ def finalize_plugin_publish(
     set_cache_entry: Callable[..., None],
     ttl_seconds: int,
 ) -> None:
-    refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
+    refresh_related_caches(
+        plugin_id=plugin_id,
+        relative_path=f"Plugins/{plugin_id}",
+        invalidate_plugin_catalog=False,
+    )
     prewarm_plugin_metadata(
         storage,
         plugin_id,

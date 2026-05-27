@@ -185,8 +185,17 @@ def _get_cache_entry(key: str, *, signature: str | None = None) -> dict | None:
 def _invalidate_cache_prefix(prefix: str):
     _cache.invalidate_cache_prefix(prefix)
 
-def _refresh_related_caches(*, plugin_id: str | None = None, relative_path: str = ""):
-    _cache.refresh_related_caches(plugin_id=plugin_id, relative_path=relative_path)
+def _refresh_related_caches(
+    *,
+    plugin_id: str | None = None,
+    relative_path: str = "",
+    invalidate_plugin_catalog: bool = True,
+):
+    _cache.refresh_related_caches(
+        plugin_id=plugin_id,
+        relative_path=relative_path,
+        invalidate_plugin_catalog=invalidate_plugin_catalog,
+    )
 
 def _is_safe_id(value: str) -> bool:
     """Validate that a plugin ID contains only safe characters."""
