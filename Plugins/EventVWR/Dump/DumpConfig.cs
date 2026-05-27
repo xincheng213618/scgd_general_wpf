@@ -45,7 +45,7 @@ namespace EventVWR.Dump
         {
             if (!Tool.IsAdministrator())
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"操作需要使用管理员权限", Name);
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.EventVWR_AdminRequired, Name);
                 return;
             }
             using (RegistryKey key = Registry.LocalMachine.CreateSubKey(RegistryKeyPath))
@@ -70,7 +70,7 @@ namespace EventVWR.Dump
         {
             if (!Tool.IsAdministrator())
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"操作需要使用管理员权限", Name);
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.EventVWR_AdminRequired, Name);
                 return;
             }
             try

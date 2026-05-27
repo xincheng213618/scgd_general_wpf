@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EventVWR"
+        xmlns:properties="clr-namespace:EventVWR.Properties"
         mc:Ignorable="d"
         xmlns:event="clr-namespace:System.Diagnostics;assembly=System.Diagnostics.EventLog"
-        Title="事件查看器" Height="550" Width="1000" 
+        Title="{x:Static properties:Resources.EventVWR_Title}" Height="550" Width="1000"
         WindowStartupLocation="CenterScreen"
         Initialized="Window_Initialized">
 
@@ -63,7 +64,7 @@
             <Border Grid.Row="0" Background="#1976D2" Padding="16,12">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="📋" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="Windows 事件查看器" 
+                    <TextBlock Text="{x:Static properties:Resources.EventVWR_WinEvents}"
                            FontSize="18" 
                            FontWeight="SemiBold" 
                            Foreground="White" 
@@ -95,7 +96,7 @@
                         </Grid.RowDefinitions>
 
                         <Border Grid.Row="0" Background="#F8F9FA" CornerRadius="8,8,0,0" Padding="12,10">
-                            <TextBlock Text="事件列表" Style="{StaticResource HeaderStyle}" Margin="0"/>
+                            <TextBlock Text="{x:Static properties:Resources.EventVWR_EventList}" Style="{StaticResource HeaderStyle}" Margin="0"/>
                         </Border>
 
                         <ListView x:Name="ListViewEvent" 
@@ -106,7 +107,7 @@
                               ScrollViewer.HorizontalScrollBarVisibility="Auto">
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="时间" Width="160">
+                                    <GridViewColumn Header="{x:Static properties:Resources.EventVWR_Time}" Width="160">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type event:EventLogEntry}">
                                                 <TextBlock Text="{Binding TimeGenerated, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" 
@@ -115,7 +116,7 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="来源" Width="180">
+                                    <GridViewColumn Header="{x:Static properties:Resources.EventVWR_Source}" Width="180">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type event:EventLogEntry}">
                                                 <TextBlock Text="{Binding Source}" 
@@ -155,14 +156,14 @@
                         </Grid.RowDefinitions>
 
                         <Border Grid.Row="0" Background="#F8F9FA" CornerRadius="8,8,0,0" Padding="12,10">
-                            <TextBlock Text="事件详情" Style="{StaticResource HeaderStyle}" Margin="0"/>
+                            <TextBlock Text="{x:Static properties:Resources.EventVWR_EventDetail}" Style="{StaticResource HeaderStyle}" Margin="0"/>
                         </Border>
 
                         <ScrollViewer Grid.Row="1" 
                                   VerticalScrollBarVisibility="Auto" 
                                   Padding="16">
-                            <TextBlock x:Name="MessageText" 
-                                   Text="选择一个事件以查看详情..." 
+                            <TextBlock x:Name="MessageText"
+                                   Text="{x:Static properties:Resources.EventVWR_SelectEvent}"
                                    TextWrapping="Wrap" 
                                    Foreground="#666666"
                                    FontSize="13"
@@ -174,7 +175,7 @@
 
             <!-- 状态栏 -->
             <Border Grid.Row="2" Background="#F5F5F5" Padding="16,8" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
-                <TextBlock x:Name="StatusText" Text="就绪" Foreground="#666666" FontSize="12"/>
+                <TextBlock x:Name="StatusText" Text="{x:Static properties:Resources.EventVWR_Ready}" Foreground="#666666" FontSize="12"/>
             </Border>
     </Grid>
 </Window>

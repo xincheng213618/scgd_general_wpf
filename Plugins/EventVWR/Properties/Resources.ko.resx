@@ -126,4 +126,43 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>보관 파일 설정</value>
   </data>
+  <data name="EventVWR_Title" xml:space="preserve">
+    <value>이벤트 뷰어</value>
+  </data>
+  <data name="EventVWR_WinEvents" xml:space="preserve">
+    <value>Windows 이벤트 뷰어</value>
+  </data>
+  <data name="EventVWR_EventList" xml:space="preserve">
+    <value>이벤트 목록</value>
+  </data>
+  <data name="EventVWR_Time" xml:space="preserve">
+    <value>시간</value>
+  </data>
+  <data name="EventVWR_Source" xml:space="preserve">
+    <value>소스</value>
+  </data>
+  <data name="EventVWR_EventDetail" xml:space="preserve">
+    <value>이벤트 세부정보</value>
+  </data>
+  <data name="EventVWR_SelectEvent" xml:space="preserve">
+    <value>이벤트를 선택하여 세부정보를 확인하세요...</value>
+  </data>
+  <data name="EventVWR_Ready" xml:space="preserve">
+    <value>준비 완료</value>
+  </data>
+  <data name="EventVWR_PluginName" xml:space="preserve">
+    <value>이벤트 플러그인</value>
+  </data>
+  <data name="EventVWR_PluginDesc" xml:space="preserve">
+    <value>이벤트 플러그인 및 덤프 설정을 통한 향상된 예외 관리</value>
+  </data>
+  <data name="EventVWR_AdminRequired" xml:space="preserve">
+    <value>이 작업에는 관리자 권한이 필요합니다</value>
+  </data>
+  <data name="EventVWR_ClearDmp" xml:space="preserve">
+    <value>Dmp 지우기</value>
+  </data>
+  <data name="EventVWR_SaveDmp" xml:space="preserve">
+    <value>Dmp 저장</value>
+  </data>
 </root>

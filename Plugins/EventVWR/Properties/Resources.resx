@@ -126,4 +126,43 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>归档文件设置</value>
   </data>
+  <data name="EventVWR_Title" xml:space="preserve">
+    <value>事件查看器</value>
+  </data>
+  <data name="EventVWR_WinEvents" xml:space="preserve">
+    <value>Windows 事件查看器</value>
+  </data>
+  <data name="EventVWR_EventList" xml:space="preserve">
+    <value>事件列表</value>
+  </data>
+  <data name="EventVWR_Time" xml:space="preserve">
+    <value>时间</value>
+  </data>
+  <data name="EventVWR_Source" xml:space="preserve">
+    <value>来源</value>
+  </data>
+  <data name="EventVWR_EventDetail" xml:space="preserve">
+    <value>事件详情</value>
+  </data>
+  <data name="EventVWR_SelectEvent" xml:space="preserve">
+    <value>选择一个事件以查看详情...</value>
+  </data>
+  <data name="EventVWR_Ready" xml:space="preserve">
+    <value>就绪</value>
+  </data>
+  <data name="EventVWR_PluginName" xml:space="preserve">
+    <value>事件插件</value>
+  </data>
+  <data name="EventVWR_PluginDesc" xml:space="preserve">
+    <value>增强的异常管理,提供事件插件和Dump设置</value>
+  </data>
+  <data name="EventVWR_AdminRequired" xml:space="preserve">
+    <value>操作需要使用管理员权限</value>
+  </data>
+  <data name="EventVWR_ClearDmp" xml:space="preserve">
+    <value>清空Dmp</value>
+  </data>
+  <data name="EventVWR_SaveDmp" xml:space="preserve">
+    <value>保存Dmp</value>
+  </data>
 </root>

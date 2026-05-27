@@ -126,4 +126,43 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Paramètres des fichiers d'archive</value>
   </data>
+  <data name="EventVWR_Title" xml:space="preserve">
+    <value>Visionneuse d'événements</value>
+  </data>
+  <data name="EventVWR_WinEvents" xml:space="preserve">
+    <value>Visionneuse d'événements Windows</value>
+  </data>
+  <data name="EventVWR_EventList" xml:space="preserve">
+    <value>Liste des événements</value>
+  </data>
+  <data name="EventVWR_Time" xml:space="preserve">
+    <value>Heure</value>
+  </data>
+  <data name="EventVWR_Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="EventVWR_EventDetail" xml:space="preserve">
+    <value>Détails de l'événement</value>
+  </data>
+  <data name="EventVWR_SelectEvent" xml:space="preserve">
+    <value>Sélectionnez un événement pour voir les détails...</value>
+  </data>
+  <data name="EventVWR_Ready" xml:space="preserve">
+    <value>Prêt</value>
+  </data>
+  <data name="EventVWR_PluginName" xml:space="preserve">
+    <value>Plugin d'événements</value>
+  </data>
+  <data name="EventVWR_PluginDesc" xml:space="preserve">
+    <value>Gestion améliorée des exceptions avec plugin d'événements et paramètres de dump</value>
+  </data>
+  <data name="EventVWR_AdminRequired" xml:space="preserve">
+    <value>Cette opération nécessite des privilèges d'administrateur</value>
+  </data>
+  <data name="EventVWR_ClearDmp" xml:space="preserve">
+    <value>Effacer Dmp</value>
+  </data>
+  <data name="EventVWR_SaveDmp" xml:space="preserve">
+    <value>Enregistrer Dmp</value>
+  </data>
 </root>

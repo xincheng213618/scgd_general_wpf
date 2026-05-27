@@ -70,6 +70,123 @@ namespace EventVWR.Properties {
         }
         
         /// <summary>
+        ///   查找类似 操作需要使用管理员权限 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_AdminRequired {
+            get {
+                return ResourceManager.GetString("EventVWR_AdminRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空Dmp 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_ClearDmp {
+            get {
+                return ResourceManager.GetString("EventVWR_ClearDmp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 事件详情 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_EventDetail {
+            get {
+                return ResourceManager.GetString("EventVWR_EventDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 事件列表 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_EventList {
+            get {
+                return ResourceManager.GetString("EventVWR_EventList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 增强的异常管理,提供事件插件和Dump设置 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_PluginDesc {
+            get {
+                return ResourceManager.GetString("EventVWR_PluginDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 事件插件 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_PluginName {
+            get {
+                return ResourceManager.GetString("EventVWR_PluginName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 就绪 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_Ready {
+            get {
+                return ResourceManager.GetString("EventVWR_Ready", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存Dmp 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_SaveDmp {
+            get {
+                return ResourceManager.GetString("EventVWR_SaveDmp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择一个事件以查看详情... 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_SelectEvent {
+            get {
+                return ResourceManager.GetString("EventVWR_SelectEvent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 来源 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_Source {
+            get {
+                return ResourceManager.GetString("EventVWR_Source", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 时间 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_Time {
+            get {
+                return ResourceManager.GetString("EventVWR_Time", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 事件查看器 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_Title {
+            get {
+                return ResourceManager.GetString("EventVWR_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Windows 事件查看器 的本地化字符串。
+        /// </summary>
+        public static string EventVWR_WinEvents {
+            get {
+                return ResourceManager.GetString("EventVWR_WinEvents", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 事件查看器 的本地化字符串。
         /// </summary>
         public static string EventWindow {
