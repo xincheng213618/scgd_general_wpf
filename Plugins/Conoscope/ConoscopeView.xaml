@@ -306,7 +306,7 @@
                     </Border>
                     <Grid Grid.Row="1">
                         <ScottPlot:WpfPlot x:Name="wpfPlotReference" Margin="5" />
-                        <local:ConoscopePolarPlot x:Name="polarPlotReference" Margin="5" Visibility="Collapsed" IsHitTestVisible="False"/>
+                        <local:ConoscopePolarPlot x:Name="polarPlotReference" Margin="5" Visibility="Collapsed"/>
                     </Grid>
                 </Grid>
             </Border>
