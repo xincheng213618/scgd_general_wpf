@@ -196,7 +196,7 @@ namespace Conoscope
                 return true;
             }
 
-            string templateName = $"Conoscope关注点_{DateTime.Now:yyyyMMddHHmmss}";
+            string templateName = string.Format(Properties.Resources.Conoscope_FocusPointTemplateName, DateTime.Now.ToString("yyyyMMddHHmmss"));
             TemplatePoi templatePoi = new();
             templatePoi.Load();
             templatePoi.Create(templateName);
@@ -546,7 +546,7 @@ namespace Conoscope
             double azimuthDegrees = FocusPointMeasurementService.GetFullAzimuthAngle(circle.Attribute.Center, currentImageCenter);
             double polarDegrees = FocusPointMeasurementService.GetPolarRadiusAngle(circle.Attribute.Center, currentImageCenter, currentImageRadius, MaxAngle);
             double radiusDegrees = FocusPointMeasurementService.GetFocusCircleRadiusAngle(radiusPixels, currentPixelsPerDegree, currentImageRadius, MaxAngle);
-            string info = $"{circleName}  方位 {azimuthDegrees:F2}°  极角 {polarDegrees:F2}°  R {radiusPixels:F1}px/{radiusDegrees:F2}°";
+            string info = string.Format(Properties.Resources.Conoscope_FocusPointInfo, circleName, azimuthDegrees, polarDegrees, radiusPixels, radiusDegrees);
 
             if (includeMeasurement
                 && TryCalculateFocusPointAverage(circle.Attribute.Center, radiusPixels, out _, out double avgY, out _, out int sampleCount))

@@ -325,7 +325,7 @@ namespace Conoscope
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog
             {
-                Filter = "CVCIE 文件 (*.cvcie)|*.cvcie",
+                Filter = Properties.Resources.Conoscope_CvcieFileFilter,
                 DefaultExt = "cvcie",
                 RestoreDirectory = true,
                 Multiselect = true

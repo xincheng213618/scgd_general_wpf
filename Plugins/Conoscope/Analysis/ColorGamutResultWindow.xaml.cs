@@ -38,7 +38,7 @@ namespace Conoscope.Analysis
         {
             List<DisplayScopeOption> options = new()
             {
-                new DisplayScopeOption(string.Empty, "全部关注点")
+                new DisplayScopeOption(string.Empty, Properties.Resources.Conoscope_AllFocusPoints)
             };
 
             options.AddRange(rows.Select(row => new DisplayScopeOption(row.PointKey, $"{row.Index}. {row.PointName}")));

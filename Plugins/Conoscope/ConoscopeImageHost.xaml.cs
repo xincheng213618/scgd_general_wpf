@@ -218,7 +218,7 @@ namespace Conoscope
 
         private void InitializeFocusCircleContextMenu()
         {
-            editFocusCircleByPolarMenuItem.Header = "按角度/长度编辑...";
+            editFocusCircleByPolarMenuItem.Header = Properties.Resources.Conoscope_EditByAngleLength;
             editFocusCircleByPolarMenuItem.Click += EditFocusCircleByPolarMenuItem_Click;
             calculateFocusCircleMenuItem.Click += CalculateFocusCircleMenuItem_Click;
             clearFocusCircleMenuItem.Click += ClearFocusCircleMenuItem_Click;
@@ -380,8 +380,8 @@ namespace Conoscope
             }
 
             string focusCircleName = contextMenuFocusCircle == null ? string.Empty : ResolveFocusCircleName(contextMenuFocusCircle);
-            calculateFocusCircleMenuItem.Header = contextMenuFocusCircle == null ? "计算全部关注点" : $"计算关注点: {focusCircleName}";
-            clearFocusCircleMenuItem.Header = focusCircles.Count > 1 ? "清空全部关注点" : "清空关注点";
+            calculateFocusCircleMenuItem.Header = contextMenuFocusCircle == null ? Properties.Resources.Conoscope_CalculateAllFocusPoints : string.Format(Properties.Resources.Conoscope_CalculateFocusPoint, focusCircleName);
+            clearFocusCircleMenuItem.Header = focusCircles.Count > 1 ? Properties.Resources.Conoscope_ClearAllFocusPoints : Properties.Resources.Conoscope_ClearFocusPoint;
 
             if (contextMenuFocusCircle != null)
             {

@@ -48,7 +48,7 @@ namespace Conoscope.Analysis
                 {
                     new MeasurementPoint(
                         "ManualAverage",
-                        "整体平均",
+                        Properties.Resources.Conoscope_OverallAverage,
                         measurement,
                         null,
                         null,

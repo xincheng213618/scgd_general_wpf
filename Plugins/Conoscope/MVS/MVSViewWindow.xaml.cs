@@ -198,7 +198,7 @@ namespace Conoscope.MVS
             if (diameterMillimeters <= 0)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = "未显示测试区域";
+                tbGratingOverlayStatus.Text = Properties.Resources.Conoscope_TestAreaNotDisplayed;
                 return;
             }
 
@@ -207,7 +207,7 @@ namespace Conoscope.MVS
             if (scaleCoefficient <= double.Epsilon)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = "观察相机尺寸系数未配置";
+                tbGratingOverlayStatus.Text = Properties.Resources.Conoscope_ScaleCoefficientNotConfigured;
                 return;
             }
 
@@ -224,7 +224,7 @@ namespace Conoscope.MVS
                 double.IsInfinity(currentModelProfile.ObservationCameraCenterX) || double.IsInfinity(currentModelProfile.ObservationCameraCenterY))
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = "测试区域尺寸无效";
+                tbGratingOverlayStatus.Text = Properties.Resources.Conoscope_TestAreaSizeInvalid;
                 return;
             }
 

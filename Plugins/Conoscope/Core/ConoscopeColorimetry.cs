@@ -50,7 +50,7 @@ namespace Conoscope.Core
             {
                 throw new InvalidOperationException(channel == ExportChannel.ColorDifference
                     ? Properties.Resources.ColorDiffNeedsUVRef
-                    : "对比度通道需要先保存白场或黑场基准");
+                    : Properties.Resources.Conoscope_ContrastNeedsReference);
             }
 
             if (channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV)
@@ -118,7 +118,7 @@ namespace Conoscope.Core
 
         public static OpenCvSharp.Mat CreateContrastMat(OpenCvSharp.Mat currentYMat, OpenCvSharp.Mat referenceYMat, ContrastReferenceKind referenceKind)
         {
-            EnsureSameSize(currentYMat, referenceYMat, "对比度基准图");
+            EnsureSameSize(currentYMat, referenceYMat, Properties.Resources.Conoscope_ContrastReferenceImage);
             return referenceKind == ContrastReferenceKind.Black
                 ? DivideWithZeroGuard(currentYMat, referenceYMat)
                 : DivideWithZeroGuard(referenceYMat, currentYMat);
@@ -134,7 +134,7 @@ namespace Conoscope.Core
         private static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat uMat, OpenCvSharp.Mat vMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
         {
             EnsureSameSize(uMat, referenceUMat, Properties.Resources.UReferenceImage);
-            EnsureSameSize(vMat, referenceVMat, "v 基准图");
+            EnsureSameSize(vMat, referenceVMat, Properties.Resources.Conoscope_VReferenceImage);
 
             using OpenCvSharp.Mat referenceU = EnsureType(referenceUMat, uMat.Type());
             using OpenCvSharp.Mat referenceV = EnsureType(referenceVMat, vMat.Type());
@@ -221,7 +221,7 @@ namespace Conoscope.Core
                 ExportChannel.CieU => "u",
                 ExportChannel.CieV => "v",
                 ExportChannel.ColorDifference => "Δuv",
-                ExportChannel.Contrast => "对比度",
+                ExportChannel.Contrast => Properties.Resources.Conoscope_ContrastChannel,
                 _ => "Y"
             };
         }

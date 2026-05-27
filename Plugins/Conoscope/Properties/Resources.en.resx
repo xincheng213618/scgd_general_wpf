@@ -1,51 +1,51 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -1281,4 +1281,4 @@ Count: {2}</value>
     <value>Focus point {1} is missing in {0} data.
 Source: {2}</value>
   </data>
-</root>
+<data name="Conoscope_AllFocusPoints" xml:space="preserve"><value>All Focus Points</value></data><data name="Conoscope_AngleDegrees" xml:space="preserve"><value>Angle (°)</value></data><data name="Conoscope_CalculateAllFocusPoints" xml:space="preserve"><value>Calculate All Focus Points</value></data><data name="Conoscope_CalculateFocusPoint" xml:space="preserve"><value>Calculate Focus Point: {0}</value></data><data name="Conoscope_CircleAngleDegrees" xml:space="preserve"><value>Circle Angle (°)</value></data><data name="Conoscope_CircleDistributionTitle" xml:space="preserve"><value>Polar {0}° {1} Circle Distribution</value></data><data name="Conoscope_ClearAllFocusPoints" xml:space="preserve"><value>Clear All Focus Points</value></data><data name="Conoscope_ClearFocusPoint" xml:space="preserve"><value>Clear Focus Point</value></data><data name="Conoscope_ContrastChannel" xml:space="preserve"><value>Contrast</value></data><data name="Conoscope_ContrastNeedsReference" xml:space="preserve"><value>Contrast channel requires saving white or black field reference first</value></data><data name="Conoscope_ContrastReferenceImage" xml:space="preserve"><value>Contrast Reference Image</value></data><data name="Conoscope_CustomUv" xml:space="preserve"><value>Custom: u={0:F4}, v={1:F4}</value></data><data name="Conoscope_CvcieFileFilter" xml:space="preserve"><value>CVCIE Files (*.cvcie)|*.cvcie</value></data><data name="Conoscope_EditByAngleLength" xml:space="preserve"><value>Edit by Angle/Length...</value></data><data name="Conoscope_FocusPointInfo" xml:space="preserve"><value>{0}  Azimuth {1:F2}°  Polar {2:F2}°  R {3:F1}px/{4:F2}°</value></data><data name="Conoscope_FocusPointTemplateName" xml:space="preserve"><value>ConoscopeFocusPoint_{0}</value></data><data name="Conoscope_GlobalReference" xml:space="preserve"><value>Global Reference: {0}</value></data><data name="Conoscope_NoGlobalReference" xml:space="preserve"><value>No Global Color Difference Reference Saved</value></data><data name="Conoscope_OverallAverage" xml:space="preserve"><value>Overall Average</value></data><data name="Conoscope_PolarDistributionTitle" xml:space="preserve"><value>Azimuth {0}° {1} Distribution</value></data><data name="Conoscope_SaveGlobalReference" xml:space="preserve"><value>Save Global Reference</value></data><data name="Conoscope_ScaleCoefficientNotConfigured" xml:space="preserve"><value>Observation camera scale coefficient not configured</value></data><data name="Conoscope_TestAreaNotDisplayed" xml:space="preserve"><value>Test area not displayed</value></data><data name="Conoscope_UpdateGlobalReference" xml:space="preserve"><value>Update Global Reference</value></data><data name="Conoscope_VReferenceImage" xml:space="preserve"><value>v Reference Image</value></data><data name="Conoscope_TestAreaSizeInvalid" xml:space="preserve"><value>Test area size is invalid</value></data></root>

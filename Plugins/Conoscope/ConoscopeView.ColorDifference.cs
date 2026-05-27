@@ -249,13 +249,13 @@ namespace Conoscope
 
             if (GlobalReferences.HasColorDifferenceReference)
             {
-                btnSaveColorDifferenceReference.Content = "更新全局基准图";
+                btnSaveColorDifferenceReference.Content = Properties.Resources.Conoscope_UpdateGlobalReference;
                 btnSaveColorDifferenceReference.Background = Brushes.LightGreen;
                 btnSaveColorDifferenceReference.Foreground = Brushes.Black;
             }
             else
             {
-                btnSaveColorDifferenceReference.Content = "保存全局基准图";
+                btnSaveColorDifferenceReference.Content = Properties.Resources.Conoscope_SaveGlobalReference;
                 btnSaveColorDifferenceReference.ClearValue(BackgroundProperty);
                 btnSaveColorDifferenceReference.ClearValue(ForegroundProperty);
             }
@@ -270,10 +270,10 @@ namespace Conoscope
                 ColorDifferenceReferenceMode.A => "A: u=0.2560, v=0.5242",
                 ColorDifferenceReferenceMode.D75 => "D75: u=0.1952, v=0.4670",
                 ColorDifferenceReferenceMode.ImageCenter => Properties.Resources.MsgBaseCenter50px,
-                ColorDifferenceReferenceMode.Custom => $"自定义: u={ColorDifferenceConfig.CustomU:F4}, v={ColorDifferenceConfig.CustomV:F4}",
+                ColorDifferenceReferenceMode.Custom => string.Format(Properties.Resources.Conoscope_CustomUv, ColorDifferenceConfig.CustomU, ColorDifferenceConfig.CustomV),
                 ColorDifferenceReferenceMode.ReferenceImage => GlobalReferences.ColorDifferenceReferenceUMat == null
-                    ? "未保存全局色差基准图"
-                    : $"全局基准图: {Path.GetFileName(GlobalReferences.ColorDifferenceReferenceFileName)}",
+                    ? Properties.Resources.Conoscope_NoGlobalReference
+                    : string.Format(Properties.Resources.Conoscope_GlobalReference, Path.GetFileName(GlobalReferences.ColorDifferenceReferenceFileName)),
                 _ => string.Empty
             };
         }
