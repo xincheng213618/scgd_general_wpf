@@ -1,4 +1,3 @@
-using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
 using Conoscope.Presentation.Helpers;
 using System;
@@ -290,12 +289,12 @@ namespace Conoscope
             if (mode == ColorDifferenceReferenceMode.ReferenceImage)
             {
                 if (!EnsureColorDifferenceReferenceReady()) return null;
-                return ColorDifferenceMatFactory.Create(XMat, YMat, ZMat, GlobalReferences.ColorDifferenceReferenceUMat!, GlobalReferences.ColorDifferenceReferenceVMat!);
+                return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, GlobalReferences.ColorDifferenceReferenceUMat!, GlobalReferences.ColorDifferenceReferenceVMat!);
             }
 
             ConoscopeUvReference? reference = TryResolvePointColorDifferenceReference();
             if (reference == null) return null;
-            return ColorDifferenceMatFactory.Create(XMat, YMat, ZMat, reference.Value);
+            return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, reference.Value.U, reference.Value.V);
         }
 
         private bool CanRefreshColorDifferenceDisplay()
@@ -447,12 +446,14 @@ namespace Conoscope
                     return 0;
                 }
 
-                return ColorDifferenceMatFactory.GetValue(ix, iy, X, Y, Z, GlobalReferences.ColorDifferenceReferenceUMat, GlobalReferences.ColorDifferenceReferenceVMat);
+                int sx = ConoscopeNumericHelper.ClampToInt(ix, 0, GlobalReferences.ColorDifferenceReferenceUMat.Width - 1);
+                int sy = ConoscopeNumericHelper.ClampToInt(iy, 0, GlobalReferences.ColorDifferenceReferenceUMat.Height - 1);
+                return ConoscopeColorimetry.CalculateColorDifference(X, Y, Z, GlobalReferences.ColorDifferenceReferenceUMat.At<float>(sy, sx), GlobalReferences.ColorDifferenceReferenceVMat.At<float>(sy, sx));
             }
 
             ConoscopeUvReference? reference = TryResolvePointColorDifferenceReference();
             if (reference == null) return 0;
-            return ColorDifferenceMatFactory.GetValue(X, Y, Z, reference.Value);
+            return ConoscopeColorimetry.CalculateColorDifference(X, Y, Z, reference.Value.U, reference.Value.V);
         }
     }
 }

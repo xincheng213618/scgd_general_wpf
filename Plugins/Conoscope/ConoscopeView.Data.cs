@@ -254,8 +254,6 @@ namespace Conoscope
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                ArgumentNullException.ThrowIfNull(xMat);
-                ArgumentNullException.ThrowIfNull(zMat);
 
                 OpenCvSharp.Mat completedXMat = xMat;
                 OpenCvSharp.Mat completedZMat = zMat;

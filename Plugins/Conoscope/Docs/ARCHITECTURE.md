@@ -73,7 +73,6 @@ CONO-00  Bootstrap / Plugin Entry
 
 | 文件 | 层 | 说明 |
 |---|---|---|
-| `Application/Analysis/ColorDifferenceMatFactory.cs` | CONO-30 | 色差 Mat 创建工厂 |
 | `Application/Capture/ConoscopeCaptureWorkflow.cs` | CONO-30 | 采集工作流（Flow + Camera） |
 | `Application/Preprocess/ConoscopePreprocessPipeline.cs` | CONO-30 | 预处理管线 |
 | **`Application/Analysis/ConoscopeAnalysisWorkflow.cs`** | CONO-30 | **新增** - 色域/对比度分析工作流 |
