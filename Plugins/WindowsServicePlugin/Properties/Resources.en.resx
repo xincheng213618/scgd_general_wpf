@@ -138,6 +138,9 @@
   <data name="ManagementService" xml:space="preserve">
     <value>Management Services</value>
   </data>
+  <data name="ServiceManager" xml:space="preserve">
+    <value>Service Manager</value>
+  </data>
   <data name="Service" xml:space="preserve">
     <value>Service</value>
   </data>

@@ -178,6 +178,15 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 服务管理器 的本地化字符串。
+        /// </summary>
+        public static string ServiceManager {
+            get {
+                return ResourceManager.GetString("ServiceManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重启服务失败请手动重启服务 的本地化字符串。
         /// </summary>
         public static string ServiceRestartFailed_PleaseRestartManually {
