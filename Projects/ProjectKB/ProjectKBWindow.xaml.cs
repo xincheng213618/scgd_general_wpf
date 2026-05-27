@@ -790,28 +790,24 @@ namespace ProjectKB
             sb.AppendLine($"关注点: {kmitemmaster.KBTemplate}");
             sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/M/d HH:mm:ss}");
             sb.AppendLine();
-            sb.AppendLine($"{"PT",-15}{"Lv",-15}{"LC",-15}");
+            sb.AppendLine("PT\tLv\tLC");
 
             foreach (var item in kmitemmaster.Items)
             {
                 string key = $"[{item.Name}]";
-                string lcText = $"{item.Lc * 100:F2}%";
-                sb.AppendLine($"{key,-15}{item.Lv,-15:F3}{lcText,-15}");
+                sb.AppendLine($"{key}\t{item.Lv:F3}\t{item.Lc * 100:F2}%");
             }
 
             sb.AppendLine();
-            sb.AppendLine($"Min Lv= {kmitemmaster.MinLv:F2} cd/m2");
-            sb.AppendLine($"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2");
-            sb.AppendLine($"Darkest Key= [{kmitemmaster.DrakestKey}]");
-            sb.AppendLine($"Brightest Key= [{kmitemmaster.BrightestKey}]");
+            sb.AppendLine($"最小亮度= {kmitemmaster.MinLv:F3} cd/m²");
+            sb.AppendLine($"最大亮度= {kmitemmaster.MaxLv:F3} cd/m²");
+            sb.AppendLine($"最暗的键= [{kmitemmaster.DrakestKey}]");
+            sb.AppendLine($"最亮的键= [{kmitemmaster.BrightestKey}]");
             sb.AppendLine();
-            sb.AppendLine("Pass/Fail Criteria:");
-            sb.AppendLine($"Nbr Failed Points= {kmitemmaster.NbrFailPoints}");
-            sb.AppendLine($"Avg Lv= {kmitemmaster.AvgLv:F2} cd/m2 ");
-            sb.AppendLine($"Lv Uniformity= {kmitemmaster.LvUniformity * 100:F2} % ");
-            AppendBacklightAutotuneSummary(sb, kmitemmaster);
-            sb.AppendLine($"Avg CCT= 0.0000");
-            sb.AppendLine($"ColorDiff= 0.0000  ");
+            sb.AppendLine("合格/不合格标准:");
+            sb.AppendLine($"不合格点数= {kmitemmaster.NbrFailPoints}");
+            sb.AppendLine($"平均亮度= {kmitemmaster.AvgLv:F3} cd/m²");
+            sb.AppendLine($"亮度一致性= {kmitemmaster.LvUniformity * 100:F3}%");
             sb.AppendLine(kmitemmaster.Result ? "PASS" : "FAIL");
             return sb.ToString();
         }
