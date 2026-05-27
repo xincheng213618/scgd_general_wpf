@@ -1,12 +1,13 @@
+using ColorVision.FileIO;
 using Conoscope.Core;
-using Conoscope.Domain.Models;
 using Conoscope.ApplicationServices.Preprocess;
-using Conoscope.Infrastructure.FileIO;
 using Conoscope.Processing.Preprocess;
+using OpenCvSharp;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 
 namespace Conoscope
@@ -24,6 +25,66 @@ namespace Conoscope
 
         public bool HasCaptureExposureSummary => !string.IsNullOrWhiteSpace(captureExposureSummary);
         public string CaptureExposureSummary => captureExposureSummary ?? Properties.Resources.StatusNotRecorded;
+
+        private static CVCIEFile LoadCvcieFile(string filename)
+        {
+            CVFileUtil.Read(filename, out CVCIEFile fileInfo);
+
+            if (fileInfo.Bpp != 32)
+            {
+                throw new InvalidDataException($"Conoscope only supports 32-bit float CVCIE data. Bpp={fileInfo.Bpp}.");
+            }
+
+            if (fileInfo.Channels < 3)
+            {
+                throw new InvalidDataException($"Conoscope CVCIE data requires at least 3 channels. Channels={fileInfo.Channels}.");
+            }
+
+            int channelSize = GetCvcieChannelByteCount(fileInfo);
+            if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
+            {
+                throw new InvalidDataException("CVCIE data length is insufficient for X/Y/Z channels.");
+            }
+
+            return fileInfo;
+        }
+
+        private static int GetCvcieChannelByteCount(CVCIEFile fileInfo)
+        {
+            long channelSize = checked((long)fileInfo.Rows * fileInfo.Cols * 4);
+            if (channelSize > int.MaxValue)
+            {
+                throw new InvalidDataException("CVCIE channel data is too large.");
+            }
+
+            return (int)channelSize;
+        }
+
+        private static unsafe Mat CreateCvcieChannelMat(CVCIEFile fileInfo, int channelIndex)
+        {
+            int channelSize = GetCvcieChannelByteCount(fileInfo);
+            fixed (byte* data = fileInfo.Data)
+            {
+                using Mat raw = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.CV_32FC1, (nint)(data + channelSize * channelIndex));
+                return raw.Clone();
+            }
+        }
+
+        private static string? FormatExposureSummary(CVCIEFile fileInfo)
+        {
+            if (fileInfo.Exp == null || fileInfo.Exp.Length == 0)
+            {
+                return null;
+            }
+
+            string[] values = new string[fileInfo.Exp.Length];
+            for (int i = 0; i < fileInfo.Exp.Length; i++)
+            {
+                values[i] = fileInfo.Exp[i].ToString("F0");
+            }
+
+            return string.Join(",", values);
+        }
 
         public void OpenConoscope(string filename, string? exposureSummary = null)
         {
@@ -94,11 +155,11 @@ namespace Conoscope
             ClearMatData(cancelDeferredLoad: false);
 
             Stopwatch stageStopwatch = Stopwatch.StartNew();
-            CvcieImagePayload payload = CvcieImageLoader.LoadPayload(filename);
-            captureExposureSummary ??= payload.ExposureSummary;
+            CVCIEFile fileInfo = LoadCvcieFile(filename);
+            captureExposureSummary ??= FormatExposureSummary(fileInfo);
 
             ConoscopePreprocessOptions options = CreatePreprocessOptions();
-            OpenCvSharp.Mat yMat = CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.Y);
+            Mat yMat = CreateCvcieChannelMat(fileInfo, 1);
             ClampNonPositiveChannelIfEnabled(yMat, options);
             loadMilliseconds = stageStopwatch.Elapsed.TotalMilliseconds;
 
@@ -115,25 +176,23 @@ namespace Conoscope
 
             YMat = yMat;
 
-            log.Info($"已加载 CVCIE Y 数据: {payload.Width}x{payload.Height}, Bpp={payload.BitsPerPixel}");
+            log.Info($"已加载 CVCIE Y 数据: {fileInfo.Cols}x{fileInfo.Rows}, Bpp={fileInfo.Bpp}");
 
-            StartDeferredXyzLoad(payload, filename, options, autoPreprocessApplied, loadVersion);
+            StartDeferredXyzLoad(fileInfo, filename, options, autoPreprocessApplied, loadVersion);
             deferredXyzStarted = true;
         }
 
         private void LoadConoscopeData(string filename)
         {
             ClearMatData();
-            var payload = CvcieImageLoader.LoadPayload(filename);
-            using ConoscopeImageData data =new ConoscopeImageData(CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.X), CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.Y), CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.Z), payload.BitsPerPixel, payload.ExposureSummary);
-            (OpenCvSharp.Mat xMat, OpenCvSharp.Mat yMat, OpenCvSharp.Mat zMat) = data.Detach();
-            XMat = xMat;
-            YMat = yMat;
-            ZMat = zMat;
-            captureExposureSummary ??= data.ExposureSummary;
+            using CVCIEFile fileInfo = LoadCvcieFile(filename);
+            XMat = CreateCvcieChannelMat(fileInfo, 0);
+            YMat = CreateCvcieChannelMat(fileInfo, 1);
+            ZMat = CreateCvcieChannelMat(fileInfo, 2);
+            captureExposureSummary ??= FormatExposureSummary(fileInfo);
             ClampNonPositiveXyzValuesIfEnabled();
 
-            log.Info($"已加载 CVCIE XYZ 数据: {data.Width}x{data.Height}, Bpp={data.BitsPerPixel}");
+            log.Info($"已加载 CVCIE XYZ 数据: {fileInfo.Cols}x{fileInfo.Rows}, Bpp={fileInfo.Bpp}");
         }
 
         private void RestoreOriginalMats()
@@ -153,7 +212,7 @@ namespace Conoscope
         }
 
         private void StartDeferredXyzLoad(
-            CvcieImagePayload payload,
+            CVCIEFile fileInfo,
             string filename,
             ConoscopePreprocessOptions options,
             bool autoPreprocessApplied,
@@ -161,11 +220,11 @@ namespace Conoscope
         {
             CancellationTokenSource cts = new CancellationTokenSource();
             deferredXyzLoadCts = cts;
-            _ = Task.Run(() => LoadDeferredXyzChannels(payload, filename, options, autoPreprocessApplied, loadVersion, cts.Token), cts.Token);
+            _ = Task.Run(() => LoadDeferredXyzChannels(fileInfo, filename, options, autoPreprocessApplied, loadVersion, cts.Token), cts.Token);
         }
 
         private void LoadDeferredXyzChannels(
-            CvcieImagePayload payload,
+            CVCIEFile fileInfo,
             string filename,
             ConoscopePreprocessOptions options,
             bool autoPreprocessApplied,
@@ -181,9 +240,9 @@ namespace Conoscope
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                xMat = CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.X);
-                yMat = CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.Y);
-                zMat = CvcieImageLoader.CreateChannelMat(payload, CvcieChannel.Z);
+                xMat = CreateCvcieChannelMat(fileInfo, 0);
+                yMat = CreateCvcieChannelMat(fileInfo, 1);
+                zMat = CreateCvcieChannelMat(fileInfo, 2);
 
                 ClampNonPositiveChannelIfEnabled(xMat, options);
                 ClampNonPositiveChannelIfEnabled(yMat, options);
@@ -224,6 +283,7 @@ namespace Conoscope
                 yMat?.Dispose();
                 xMat?.Dispose();
                 zMat?.Dispose();
+                fileInfo.Dispose();
                 ReleaseDeferredXyzLoad(cancellationToken);
             }
         }

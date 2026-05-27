@@ -31,9 +31,7 @@ CONO-00  Bootstrap / Plugin Entry
 
 目录：`Domain/`
 
-| 文件 | 说明 |
-|---|---|
-| `Domain/Models/ConoscopeImageData.cs` | 图像 XYZ Mat 数据所有权模型 |
+当前没有独立 Domain 模型。只有单处使用、不能表达稳定业务概念的临时数据容器不放入此层。
 
 应迁入此层的类型（当前散落在 Core 中）：
 
@@ -88,7 +86,7 @@ CONO-00  Bootstrap / Plugin Entry
 
 | 文件 | 层 | 说明 |
 |---|---|---|
-| `Infrastructure/FileIO/CvcieImageLoader.cs` | CONO-40 | CVCIE 文件加载 |
+| `ConoscopeView.Data.cs` | CONO-40/50 | 当前视图数据加载；CVCIE 直接读取为 `CV_32FC1` Mat |
 
 MVS 相机相关代码位于 `MVS/` 目录，属于 CONO-40 但本次不触碰。
 
