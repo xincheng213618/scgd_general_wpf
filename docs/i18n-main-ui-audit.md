@@ -317,11 +317,91 @@ The following categories of Chinese text were found but intentionally not proces
 | ColorVision.UI | UpdateRecoveryService.cs | UpdateRecovery_Restored | 上次更新未完成，已恢复到更新前版本。 | Previous update was incomplete. System has been restored... | MessageBox |
 | ColorVision.UI | UpdateRecoveryService.cs | UpdateRecovery_Failed | 上次更新未完成，且自动恢复失败... | Previous update was incomplete and automatic recovery failed... | MessageBox |
 
+## ColorVision.UI.Desktop Project
+
+| Project | File | Resource Key | Chinese | English | 备注 |
+|---|---|---|---|---|---|
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml | ConfigManager_Columns | 列数: | Columns: | Label |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml | ConfigManager_Assembly | 程序集 | Assembly | Section header |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml | ConfigManager_ConfigList | 配置列表 | Config List | Section header |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml | ConfigManager_SelectConfig | 选择一个配置查看详情 | Select a config to view details | Placeholder |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml.cs | ConfigManager_Summary | 共计 {0} 个程序集，{1} 个配置类型 | {0} assemblies, {1} config types | Status bar |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml.cs | ConfigManager_ConfigPrefix | 配置: {0} | Config: {0} | Label |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml.cs | ConfigManager_CurrentSelection | 当前选择: {0} | Current: {0} | Label |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml.cs | ConfigManager_LoadFailed | 无法加载配置属性 | Failed to load config properties | Error text |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml.cs | ConfigManager_SaveSuccess | 保存成功 | Saved successfully | MessageBox |
+| ColorVision.UI.Desktop | ConfigManagerWindow.xaml.cs | ConfigManager_Prompt | 提示 | Prompt | MessageBox Title |
+| ColorVision.UI.Desktop | WizardWindow.xaml | Wizard_Configure | 配置 | Configure | Button Content |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_AddTitle | 添加自定义应用 | Add Custom Application | Window Title |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_Name | 名称 | Name | Label |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_Type | 类型 | Type | Label |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_Executable | 可执行文件 | Executable | ComboBoxItem |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_CmdScript | CMD 脚本 | CMD Script | ComboBoxItem |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_PsScript | PowerShell 脚本 | PowerShell Script | ComboBoxItem |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_Path | 路径 | Path | Label |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_Arguments | 参数 | Arguments | Label |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_WorkDir | 工作目录 | Working Directory | Label |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_Group | 分组 | Group | Label |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml | CustomApp_HintExe | 提示：可执行文件填写 exe 完整路径... | Hint: Enter the full path of the exe file... | Hint text |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml.cs | CustomApp_EditTitle | 编辑自定义应用 | Edit Custom Application | Window Title |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml.cs | CustomApp_Command | 命令 | Command | Label |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml.cs | CustomApp_NameRequired | 请填写应用名称 | Please enter the application name | MessageBox |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml.cs | CustomApp_PathRequired | 请填写路径或命令 | Please enter a path or command | MessageBox |
+| ColorVision.UI.Desktop | AddCustomAppWindow.xaml.cs | CustomApp_SelectApp | 选择应用程序 | Select Application | Dialog Title |
+| ColorVision.UI.Desktop | ThirdPartyAppsWindow.xaml | CustomApp_QuickActions | 快捷操作 | Quick Actions | Section label |
+| ColorVision.UI.Desktop | ThirdPartyAppsWindow.xaml.cs | CustomApp_AddTooltip | 添加自定义应用 | Add Custom Application | Tooltip |
+| ColorVision.UI.Desktop | ThirdPartyAppsWindow.xaml.cs | CustomApp_AddScriptTooltip | 添加快捷脚本 | Add Quick Script | Tooltip |
+| ColorVision.UI.Desktop | ThirdPartyAppsWindow.xaml.cs | CustomApp_Category | 分类 | Category | Label |
+| ColorVision.UI.Desktop | ThirdPartyAppsWindow.xaml.cs | CustomApp_ConfirmDelete | 确定要删除自定义应用 "{0}" 吗？ | Are you sure you want to delete custom application "{0}"? | MessageBox |
+| ColorVision.UI.Desktop | ThirdPartyAppsWindow.xaml.cs | CustomApp_ConfirmDeleteTitle | 确认删除 | Confirm Delete | MessageBox Title |
+| ColorVision.UI.Desktop | ThirdPartyAppsWindow.xaml.cs | CustomApp_AddScriptTitle | 添加快捷脚本 | Add Quick Script | Dialog Title |
+| ColorVision.UI.Desktop | StartMenuAppProvider.cs | CustomApp_LocalApps | 本机应用 | Local Apps | Group name |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Title | 按钮耗时统计 | Button Timing Stats | Window Title |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_OperationKey | 操作键 | Operation Key | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Start | 开始 | Start | Label |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_End | 结束 | End | Label |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Query | 查询 | Query | Button |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Refresh | 刷新 | Refresh | Button |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_ClearFilter | 清除筛选 | Clear Filter | Button |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_ExportCsv | 导出 CSV | Export CSV | Button |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_DeleteSelected | 删除选中 | Delete Selected | Button/MenuItem |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_ClearAll | 清空全部 | Clear All | Button |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Warmup | 预热 | Warmup | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Last | 上次 | Last | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Average | 平均 | Average | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Fastest | 最快 | Fastest | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_Slowest | 最慢 | Slowest | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_StableSamples | 稳定样本 | Stable | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_WarmupSamples | 预热样本 | Warmup | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml | Stats_LastCompleted | 最近完成 | Last Completed | Column Header |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml.cs | Stats_Summary | 共 {0} 个操作... | {0} operations... | Status bar |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml.cs | Stats_ExportSuccess | 已导出 {0} 条耗时统计到... | Exported {0} timing entries to... | MessageBox |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml.cs | Stats_ConfirmDeleteOne | 确定删除操作 {0} 的耗时统计吗？ | Delete timing stats for operation {0}? | MessageBox |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml.cs | Stats_ConfirmDeleteSelected | 确定删除当前选中的 {0} 条耗时统计吗？ | Delete {0} selected timing entries? | MessageBox |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml.cs | Stats_Deleted | 已删除 {0} 条耗时统计。 | Deleted {0} timing entries. | MessageBox |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml.cs | Stats_ConfirmClearAll | 确定清空全部 {0} 条耗时统计吗？ | Clear all {0} timing entries? | MessageBox |
+| ColorVision.UI.Desktop | TimedButtonOperationStatsWindow.xaml.cs | Stats_Cleared | 已清空 {0} 条耗时统计。 | Cleared {0} timing entries. | MessageBox |
+| ColorVision.UI.Desktop | MarketplaceWindow.xaml.cs | Marketplace_OpenConfig | 点击打开 {0} 配置界面 | Click to open {0} configuration | Tooltip |
+| ColorVision.UI.Desktop | MarketplaceWindow.xaml.cs | Marketplace_CreateShortcut | 创建快捷方式 | Create Shortcut | Button Content |
+| ColorVision.UI.Desktop | MenuConfigExport.cs | Config_ExportTitle | 选择导出文件位置 | Select Export File Location | Dialog Title |
+| ColorVision.UI.Desktop | MenuConfigImport.cs | Config_ImportTitle | 选择导入文件 | Select Import File | Dialog Title |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_Name | 名称 | Name | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_Group | 分组 | Group | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_Type | 类型 | Type | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_PathOrCmd | 路径/命令 | Path/Command | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_Arguments | 参数 | Arguments | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_WorkDir | 工作目录 | Working Directory | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_Sort | 排序 | Sort | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_ConfigTitle | 自定义应用配置 | Custom App Configuration | ClassName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_ListTitle | 自定义应用列表 | Custom App List | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_DefaultCustomGroup | 默认自定义分组名 | Default Custom Group Name | DisplayName |
+| ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_DefaultScriptGroup | 默认脚本分组名 | Default Script Group Name | DisplayName |
+
 ## Next Steps
 
 1. ~~Process remaining C# files in ColorVision/ project~~ ✓
 2. ~~Process UI/ColorVision.UI/ project~~ ✓
-3. Process UI/ColorVision.UI.Desktop/ project
+3. ~~Process UI/ColorVision.UI.Desktop/ project~~ ✓
 4. Process UI/ColorVision.Themes/ project
 5. Process UI/ColorVision.ImageEditor/ project
 6. Process Engine/ColorVision.Engine/ project

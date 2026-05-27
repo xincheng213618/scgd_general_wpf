@@ -258,7 +258,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                             Style = PropertyEditorHelper.ButtonCommandStyle,
                             Content = textBox,
                             Command = relayCommand,
-                            ToolTip = $"点击打开 {type.Name} 配置界面"
+                            ToolTip = string.Format(Properties.Resources.Marketplace_OpenConfig, type.Name)
                         };
                         uniformGrid.Children.Add(button);
                     }
@@ -287,7 +287,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                             var button = new Button
                             {
                                 Style = PropertyEditorHelper.ButtonCommandStyle,
-                                Content = "创建快捷方式",
+                                Content = Properties.Resources.Marketplace_CreateShortcut,
                                 Command = relayCommand
                             };
                             uniformGrid.Children.Add(button);

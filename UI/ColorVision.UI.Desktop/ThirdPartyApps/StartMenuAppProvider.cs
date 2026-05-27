@@ -343,8 +343,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         private static string GetLocalAppsGroupName()
         {
-            return Properties.Resources.ResourceManager.GetString("ThirdPartyAppsLocalApps", CultureInfo.CurrentUICulture)
-                   ?? "本机应用";
+            return Properties.Resources.CustomApp_LocalApps;
         }
 
         private sealed record ShortcutInfo(

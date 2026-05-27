@@ -46,10 +46,10 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             _allGroupsLabel = GetResourceString("ThirdPartyAppsAll", "All");
 
             SearchBox.ToolTip = Properties.Resources.Search;
-            BtnAddApp.ToolTip = GetResourceString("ThirdPartyAppsAddCustomApp", "添加自定义应用");
-            BtnAddScript.ToolTip = GetResourceString("ThirdPartyAppsAddQuickScript", "添加快捷脚本");
+            BtnAddApp.ToolTip = Properties.Resources.CustomApp_AddTooltip;
+            BtnAddScript.ToolTip = Properties.Resources.CustomApp_AddScriptTooltip;
             BtnRefresh.ToolTip = Properties.Resources.Refresh;
-            GroupsLabelText.Text = GetResourceString("ThirdPartyAppsGroups", "分类");
+            GroupsLabelText.Text = Properties.Resources.CustomApp_Category;
 
             var manager = ThirdPartyAppManager.GetInstance();
             _allApps = manager.Apps;
@@ -168,7 +168,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 {
                     contextMenu.Items.Add(new Separator());
 
-                    MenuItem editItem = new MenuItem { Header = GetResourceString("Edit", "编辑") };
+                    MenuItem editItem = new MenuItem { Header = Properties.Resources.Edit };
                     editItem.Click += (s, args) => EditCustomApp(customEntry, app);
                     contextMenu.Items.Add(editItem);
 
@@ -222,10 +222,10 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             string message = string.Format(
                 CultureInfo.CurrentUICulture,
-                GetResourceString("ThirdPartyAppsDeleteCustomAppMessage", "确定要删除自定义应用 \"{0}\" 吗？"),
+                Properties.Resources.CustomApp_ConfirmDelete,
                 entry.Name);
 
-            if (MessageBox.Show(message, GetResourceString("ConfirmDelete", "确认删除"),
+            if (MessageBox.Show(message, Properties.Resources.CustomApp_ConfirmDeleteTitle,
                 MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 _customConfig.Entries.Remove(entry);
@@ -253,7 +253,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             var entry = new CustomAppEntry { AppType = CustomAppType.CmdScript };
             var dlg = new AddCustomAppWindow(entry) { Owner = this };
-            dlg.Title = GetResourceString("ThirdPartyAppsAddQuickScript", "添加快捷脚本");
+            dlg.Title = Properties.Resources.CustomApp_AddScriptTitle;
             if (dlg.ShowDialog() == true && dlg.Result != null)
             {
                 _customConfig.Entries.Add(dlg.Result);

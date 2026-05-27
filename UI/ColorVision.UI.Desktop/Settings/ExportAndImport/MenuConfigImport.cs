@@ -13,7 +13,7 @@ namespace ColorVision.UI.Desktop.Settings.ExportAndImport
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "cvsettings files (*.cvsettings)|*.cvsettings|All files (*.*)|*.*",
-                Title = "选择导入文件"
+                Title = ColorVision.UI.Desktop.Properties.Resources.Config_ImportTitle
             };
 
             bool? result = openFileDialog.ShowDialog();

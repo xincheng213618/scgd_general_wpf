@@ -241,6 +241,159 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 参数 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_Arguments {
+            get {
+                return ResourceManager.GetString("CfgApp_Arguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CMD 脚本 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_CmdDesc {
+            get {
+                return ResourceManager.GetString("CfgApp_CmdDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自定义应用配置 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_ConfigTitle {
+            get {
+                return ResourceManager.GetString("CfgApp_ConfigTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自定义 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_Custom {
+            get {
+                return ResourceManager.GetString("CfgApp_Custom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认自定义分组名 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_DefaultCustomGroup {
+            get {
+                return ResourceManager.GetString("CfgApp_DefaultCustomGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认脚本分组名 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_DefaultScriptGroup {
+            get {
+                return ResourceManager.GetString("CfgApp_DefaultScriptGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可执行文件 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_ExeDesc {
+            get {
+                return ResourceManager.GetString("CfgApp_ExeDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分组 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_Group {
+            get {
+                return ResourceManager.GetString("CfgApp_Group", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自定义应用列表 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_ListTitle {
+            get {
+                return ResourceManager.GetString("CfgApp_ListTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 名称 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_Name {
+            get {
+                return ResourceManager.GetString("CfgApp_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 路径/命令 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_PathOrCmd {
+            get {
+                return ResourceManager.GetString("CfgApp_PathOrCmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可执行文件路径或脚本命令 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_PathOrCmdDesc {
+            get {
+                return ResourceManager.GetString("CfgApp_PathOrCmdDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 PowerShell 脚本 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_PsDesc {
+            get {
+                return ResourceManager.GetString("CfgApp_PsDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 快捷脚本 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_QuickScript {
+            get {
+                return ResourceManager.GetString("CfgApp_QuickScript", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 排序 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_Sort {
+            get {
+                return ResourceManager.GetString("CfgApp_Sort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类型 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_Type {
+            get {
+                return ResourceManager.GetString("CfgApp_Type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 工作目录 的本地化字符串。
+        /// </summary>
+        public static string CfgApp_WorkDir {
+            get {
+                return ResourceManager.GetString("CfgApp_WorkDir", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 正在检索是否存在附加项目 的本地化字符串。
         /// </summary>
         public static string CheckingForAdditionalProjects {
@@ -322,11 +475,119 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 选择导出文件位置 的本地化字符串。
+        /// </summary>
+        public static string Config_ExportTitle {
+            get {
+                return ResourceManager.GetString("Config_ExportTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择导入文件 的本地化字符串。
+        /// </summary>
+        public static string Config_ImportTitle {
+            get {
+                return ResourceManager.GetString("Config_ImportTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 配置已应用 的本地化字符串。
         /// </summary>
         public static string ConfigApplied {
             get {
                 return ResourceManager.GetString("ConfigApplied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 程序集 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_Assembly {
+            get {
+                return ResourceManager.GetString("ConfigManager_Assembly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 列数: 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_Columns {
+            get {
+                return ResourceManager.GetString("ConfigManager_Columns", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置列表 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_ConfigList {
+            get {
+                return ResourceManager.GetString("ConfigManager_ConfigList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置: {0} 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_ConfigPrefix {
+            get {
+                return ResourceManager.GetString("ConfigManager_ConfigPrefix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前选择: {0} 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_CurrentSelection {
+            get {
+                return ResourceManager.GetString("ConfigManager_CurrentSelection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无法加载配置属性 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_LoadFailed {
+            get {
+                return ResourceManager.GetString("ConfigManager_LoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_Prompt {
+            get {
+                return ResourceManager.GetString("ConfigManager_Prompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存成功 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_SaveSuccess {
+            get {
+                return ResourceManager.GetString("ConfigManager_SaveSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择一个配置查看详情 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_SelectConfig {
+            get {
+                return ResourceManager.GetString("ConfigManager_SelectConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 共计 {0} 个程序集，{1} 个配置类型 的本地化字符串。
+        /// </summary>
+        public static string ConfigManager_Summary {
+            get {
+                return ResourceManager.GetString("ConfigManager_Summary", resourceCulture);
             }
         }
         
@@ -399,6 +660,276 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string CurrentSpeed {
             get {
                 return ResourceManager.GetString("CurrentSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加快捷脚本 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_AddScriptTitle {
+            get {
+                return ResourceManager.GetString("CustomApp_AddScriptTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加快捷脚本 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_AddScriptTooltip {
+            get {
+                return ResourceManager.GetString("CustomApp_AddScriptTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加自定义应用 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_AddTitle {
+            get {
+                return ResourceManager.GetString("CustomApp_AddTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加自定义应用 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_AddTooltip {
+            get {
+                return ResourceManager.GetString("CustomApp_AddTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参数 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Arguments {
+            get {
+                return ResourceManager.GetString("CustomApp_Arguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分类 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Category {
+            get {
+                return ResourceManager.GetString("CustomApp_Category", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CMD 脚本 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_CmdScript {
+            get {
+                return ResourceManager.GetString("CustomApp_CmdScript", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 命令 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Command {
+            get {
+                return ResourceManager.GetString("CustomApp_Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要删除自定义应用 &quot;{0}&quot; 吗？ 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_ConfirmDelete {
+            get {
+                return ResourceManager.GetString("CustomApp_ConfirmDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认删除 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_ConfirmDeleteTitle {
+            get {
+                return ResourceManager.GetString("CustomApp_ConfirmDeleteTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑自定义应用 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_EditTitle {
+            get {
+                return ResourceManager.GetString("CustomApp_EditTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可执行文件 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Executable {
+            get {
+                return ResourceManager.GetString("CustomApp_Executable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可执行文件 (*.exe)|*.exe|批处理文件 (*.bat;*.cmd)|*.bat;*.cmd|所有文件 (*.*)|*.* 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_ExeFilter {
+            get {
+                return ResourceManager.GetString("CustomApp_ExeFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分组 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Group {
+            get {
+                return ResourceManager.GetString("CustomApp_Group", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示：直接填写 CMD 命令（如 ipconfig /all）。会通过 cmd /c 执行。 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_HintCmd {
+            get {
+                return ResourceManager.GetString("CustomApp_HintCmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示：可执行文件填写 exe 完整路径；脚本类型直接填写要执行的命令内容。分组为空时使用默认分组。 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_HintExe {
+            get {
+                return ResourceManager.GetString("CustomApp_HintExe", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示：填写 exe 文件的完整路径。分组为空时使用默认分组。 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_HintPath {
+            get {
+                return ResourceManager.GetString("CustomApp_HintPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示：填写 PowerShell 命令或 .ps1 脚本路径。会以 -NoProfile -ExecutionPolicy Bypass 执行。 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_HintPs {
+            get {
+                return ResourceManager.GetString("CustomApp_HintPs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本机应用 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_LocalApps {
+            get {
+                return ResourceManager.GetString("CustomApp_LocalApps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 名称 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Name {
+            get {
+                return ResourceManager.GetString("CustomApp_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请填写应用名称 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_NameRequired {
+            get {
+                return ResourceManager.GetString("CustomApp_NameRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 路径 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Path {
+            get {
+                return ResourceManager.GetString("CustomApp_Path", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请填写路径或命令 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_PathRequired {
+            get {
+                return ResourceManager.GetString("CustomApp_PathRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 PowerShell 脚本 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_PsScript {
+            get {
+                return ResourceManager.GetString("CustomApp_PsScript", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 快捷操作 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_QuickActions {
+            get {
+                return ResourceManager.GetString("CustomApp_QuickActions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择应用程序 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_SelectApp {
+            get {
+                return ResourceManager.GetString("CustomApp_SelectApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择此文件夹 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_SelectFolder {
+            get {
+                return ResourceManager.GetString("CustomApp_SelectFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择工作目录（选择该目录下任意文件） 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_SelectWorkDir {
+            get {
+                return ResourceManager.GetString("CustomApp_SelectWorkDir", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类型 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_Type {
+            get {
+                return ResourceManager.GetString("CustomApp_Type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 工作目录 的本地化字符串。
+        /// </summary>
+        public static string CustomApp_WorkDir {
+            get {
+                return ResourceManager.GetString("CustomApp_WorkDir", resourceCulture);
             }
         }
         
@@ -930,6 +1461,24 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Marketplace {
             get {
                 return ResourceManager.GetString("Marketplace", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建快捷方式 的本地化字符串。
+        /// </summary>
+        public static string Marketplace_CreateShortcut {
+            get {
+                return ResourceManager.GetString("Marketplace_CreateShortcut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 点击打开 {0} 配置界面 的本地化字符串。
+        /// </summary>
+        public static string Marketplace_OpenConfig {
+            get {
+                return ResourceManager.GetString("Marketplace_OpenConfig", resourceCulture);
             }
         }
         
@@ -2059,6 +2608,249 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 平均 的本地化字符串。
+        /// </summary>
+        public static string Stats_Average {
+            get {
+                return ResourceManager.GetString("Stats_Average", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空全部 的本地化字符串。
+        /// </summary>
+        public static string Stats_ClearAll {
+            get {
+                return ResourceManager.GetString("Stats_ClearAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已清空 {0} 条耗时统计。 的本地化字符串。
+        /// </summary>
+        public static string Stats_Cleared {
+            get {
+                return ResourceManager.GetString("Stats_Cleared", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清除筛选 的本地化字符串。
+        /// </summary>
+        public static string Stats_ClearFilter {
+            get {
+                return ResourceManager.GetString("Stats_ClearFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定清空全部 {0} 条耗时统计吗？ 的本地化字符串。
+        /// </summary>
+        public static string Stats_ConfirmClearAll {
+            get {
+                return ResourceManager.GetString("Stats_ConfirmClearAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定删除操作 {0} 的耗时统计吗？ 的本地化字符串。
+        /// </summary>
+        public static string Stats_ConfirmDeleteOne {
+            get {
+                return ResourceManager.GetString("Stats_ConfirmDeleteOne", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定删除当前选中的 {0} 条耗时统计吗？ 的本地化字符串。
+        /// </summary>
+        public static string Stats_ConfirmDeleteSelected {
+            get {
+                return ResourceManager.GetString("Stats_ConfirmDeleteSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CSV 文件|*.csv 的本地化字符串。
+        /// </summary>
+        public static string Stats_CsvFilter {
+            get {
+                return ResourceManager.GetString("Stats_CsvFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已删除 {0} 条耗时统计。 的本地化字符串。
+        /// </summary>
+        public static string Stats_Deleted {
+            get {
+                return ResourceManager.GetString("Stats_Deleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除或清空后，按钮提示会立即刷新。 的本地化字符串。
+        /// </summary>
+        public static string Stats_DeleteNote {
+            get {
+                return ResourceManager.GetString("Stats_DeleteNote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除选中 的本地化字符串。
+        /// </summary>
+        public static string Stats_DeleteSelected {
+            get {
+                return ResourceManager.GetString("Stats_DeleteSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 结束 的本地化字符串。
+        /// </summary>
+        public static string Stats_End {
+            get {
+                return ResourceManager.GetString("Stats_End", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出 CSV 的本地化字符串。
+        /// </summary>
+        public static string Stats_ExportCsv {
+            get {
+                return ResourceManager.GetString("Stats_ExportCsv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已导出 {0} 条耗时统计到:\n{1} 的本地化字符串。
+        /// </summary>
+        public static string Stats_ExportSuccess {
+            get {
+                return ResourceManager.GetString("Stats_ExportSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最快 的本地化字符串。
+        /// </summary>
+        public static string Stats_Fastest {
+            get {
+                return ResourceManager.GetString("Stats_Fastest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上次 的本地化字符串。
+        /// </summary>
+        public static string Stats_Last {
+            get {
+                return ResourceManager.GetString("Stats_Last", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最近完成 的本地化字符串。
+        /// </summary>
+        public static string Stats_LastCompleted {
+            get {
+                return ResourceManager.GetString("Stats_LastCompleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 操作键 的本地化字符串。
+        /// </summary>
+        public static string Stats_OperationKey {
+            get {
+                return ResourceManager.GetString("Stats_OperationKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询 的本地化字符串。
+        /// </summary>
+        public static string Stats_Query {
+            get {
+                return ResourceManager.GetString("Stats_Query", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Stats_Refresh {
+            get {
+                return ResourceManager.GetString("Stats_Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最慢 的本地化字符串。
+        /// </summary>
+        public static string Stats_Slowest {
+            get {
+                return ResourceManager.GetString("Stats_Slowest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 稳定样本 的本地化字符串。
+        /// </summary>
+        public static string Stats_StableSamples {
+            get {
+                return ResourceManager.GetString("Stats_StableSamples", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始 的本地化字符串。
+        /// </summary>
+        public static string Stats_Start {
+            get {
+                return ResourceManager.GetString("Stats_Start", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 共 {0} 个操作，当前显示 {1} 条，稳定样本 {2}，预热样本 {3} 的本地化字符串。
+        /// </summary>
+        public static string Stats_Summary {
+            get {
+                return ResourceManager.GetString("Stats_Summary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按钮耗时统计 的本地化字符串。
+        /// </summary>
+        public static string Stats_Title {
+            get {
+                return ResourceManager.GetString("Stats_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预热 的本地化字符串。
+        /// </summary>
+        public static string Stats_Warmup {
+            get {
+                return ResourceManager.GetString("Stats_Warmup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预热样本 的本地化字符串。
+        /// </summary>
+        public static string Stats_WarmupSamples {
+            get {
+                return ResourceManager.GetString("Stats_WarmupSamples", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 状态 的本地化字符串。
         /// </summary>
         public static string StatusHeader {
@@ -2334,6 +3126,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Wizard {
             get {
                 return ResourceManager.GetString("Wizard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Configure {
+            get {
+                return ResourceManager.GetString("Wizard_Configure", resourceCulture);
             }
         }
         

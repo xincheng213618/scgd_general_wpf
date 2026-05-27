@@ -675,4 +675,93 @@
   <data name="MenuTimedButtonOperationStats" xml:space="preserve">
     <value>按鈕耗時統計</value>
   </data>
+  <data name="ConfigManager_Columns" xml:space="preserve"><value>Columns:</value></data>
+  <data name="ConfigManager_Assembly" xml:space="preserve"><value>Assembly</value></data>
+  <data name="ConfigManager_ConfigList" xml:space="preserve"><value>Config List</value></data>
+  <data name="ConfigManager_SelectConfig" xml:space="preserve"><value>Select a config to view details</value></data>
+  <data name="ConfigManager_Summary" xml:space="preserve"><value>{0} assemblies, {1} config types</value></data>
+  <data name="ConfigManager_ConfigPrefix" xml:space="preserve"><value>Config: {0}</value></data>
+  <data name="ConfigManager_CurrentSelection" xml:space="preserve"><value>Current: {0}</value></data>
+  <data name="ConfigManager_LoadFailed" xml:space="preserve"><value>Failed to load config properties</value></data>
+  <data name="ConfigManager_SaveSuccess" xml:space="preserve"><value>Saved successfully</value></data>
+  <data name="ConfigManager_Prompt" xml:space="preserve"><value>Prompt</value></data>
+  <data name="Wizard_Configure" xml:space="preserve"><value>Configure</value></data>
+  <data name="CustomApp_AddTitle" xml:space="preserve"><value>Add Custom Application</value></data>
+  <data name="CustomApp_EditTitle" xml:space="preserve"><value>Edit Custom Application</value></data>
+  <data name="CustomApp_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="CustomApp_Type" xml:space="preserve"><value>Type</value></data>
+  <data name="CustomApp_Executable" xml:space="preserve"><value>Executable</value></data>
+  <data name="CustomApp_CmdScript" xml:space="preserve"><value>CMD Script</value></data>
+  <data name="CustomApp_PsScript" xml:space="preserve"><value>PowerShell Script</value></data>
+  <data name="CustomApp_Path" xml:space="preserve"><value>Path</value></data>
+  <data name="CustomApp_Command" xml:space="preserve"><value>Command</value></data>
+  <data name="CustomApp_Arguments" xml:space="preserve"><value>Arguments</value></data>
+  <data name="CustomApp_WorkDir" xml:space="preserve"><value>Working Directory</value></data>
+  <data name="CustomApp_Group" xml:space="preserve"><value>Group</value></data>
+  <data name="CustomApp_HintExe" xml:space="preserve"><value>Hint: Enter the full path of the exe file. If group is empty, the default group is used.</value></data>
+  <data name="CustomApp_HintPath" xml:space="preserve"><value>Hint: Enter the full path of the exe file. If group is empty, the default group is used.</value></data>
+  <data name="CustomApp_HintCmd" xml:space="preserve"><value>Hint: Enter CMD commands directly (e.g. ipconfig /all). Executed via cmd /c.</value></data>
+  <data name="CustomApp_HintPs" xml:space="preserve"><value>Hint: Enter PowerShell commands or .ps1 script path. Executed with -NoProfile -ExecutionPolicy Bypass.</value></data>
+  <data name="CustomApp_NameRequired" xml:space="preserve"><value>Please enter the application name</value></data>
+  <data name="CustomApp_PathRequired" xml:space="preserve"><value>Please enter a path or command</value></data>
+  <data name="CustomApp_SelectApp" xml:space="preserve"><value>Select Application</value></data>
+  <data name="CustomApp_SelectWorkDir" xml:space="preserve"><value>Select Working Directory (select any file in the directory)</value></data>
+  <data name="CustomApp_SelectFolder" xml:space="preserve"><value>Select This Folder</value></data>
+  <data name="CustomApp_AddTooltip" xml:space="preserve"><value>Add Custom Application</value></data>
+  <data name="CustomApp_AddScriptTooltip" xml:space="preserve"><value>Add Quick Script</value></data>
+  <data name="CustomApp_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="CustomApp_ConfirmDelete" xml:space="preserve"><value>Are you sure you want to delete custom application "{0}"?</value></data>
+  <data name="CustomApp_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="CustomApp_AddScriptTitle" xml:space="preserve"><value>Add Quick Script</value></data>
+  <data name="CustomApp_LocalApps" xml:space="preserve"><value>Local Apps</value></data>
+  <data name="CustomApp_QuickActions" xml:space="preserve"><value>Quick Actions</value></data>
+  <data name="CustomApp_ExeFilter" xml:space="preserve"><value>Executable (*.exe)|*.exe|Batch (*.bat;*.cmd)|*.bat;*.cmd|All Files (*.*)|*.*</value></data>
+  <data name="Stats_Title" xml:space="preserve"><value>Button Timing Stats</value></data>
+  <data name="Stats_OperationKey" xml:space="preserve"><value>Operation Key</value></data>
+  <data name="Stats_Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Stats_End" xml:space="preserve"><value>End</value></data>
+  <data name="Stats_Query" xml:space="preserve"><value>Query</value></data>
+  <data name="Stats_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Stats_ClearFilter" xml:space="preserve"><value>Clear Filter</value></data>
+  <data name="Stats_ExportCsv" xml:space="preserve"><value>Export CSV</value></data>
+  <data name="Stats_DeleteSelected" xml:space="preserve"><value>Delete Selected</value></data>
+  <data name="Stats_ClearAll" xml:space="preserve"><value>Clear All</value></data>
+  <data name="Stats_DeleteNote" xml:space="preserve"><value>Button tooltips refresh immediately after delete or clear.</value></data>
+  <data name="Stats_Warmup" xml:space="preserve"><value>Warmup</value></data>
+  <data name="Stats_Last" xml:space="preserve"><value>Last</value></data>
+  <data name="Stats_Average" xml:space="preserve"><value>Average</value></data>
+  <data name="Stats_Fastest" xml:space="preserve"><value>Fastest</value></data>
+  <data name="Stats_Slowest" xml:space="preserve"><value>Slowest</value></data>
+  <data name="Stats_StableSamples" xml:space="preserve"><value>Stable</value></data>
+  <data name="Stats_WarmupSamples" xml:space="preserve"><value>Warmup</value></data>
+  <data name="Stats_LastCompleted" xml:space="preserve"><value>Last Completed</value></data>
+  <data name="Stats_Summary" xml:space="preserve"><value>{0} operations, {1} shown, {2} stable, {3} warmup</value></data>
+  <data name="Stats_CsvFilter" xml:space="preserve"><value>CSV Files|*.csv</value></data>
+  <data name="Stats_ExportSuccess" xml:space="preserve"><value>Exported {0} timing entries to:\n{1}</value></data>
+  <data name="Stats_ConfirmDeleteOne" xml:space="preserve"><value>Delete timing stats for operation {0}?</value></data>
+  <data name="Stats_ConfirmDeleteSelected" xml:space="preserve"><value>Delete {0} selected timing entries?</value></data>
+  <data name="Stats_Deleted" xml:space="preserve"><value>Deleted {0} timing entries.</value></data>
+  <data name="Stats_ConfirmClearAll" xml:space="preserve"><value>Clear all {0} timing entries?</value></data>
+  <data name="Stats_Cleared" xml:space="preserve"><value>Cleared {0} timing entries.</value></data>
+  <data name="Marketplace_OpenConfig" xml:space="preserve"><value>Click to open {0} configuration</value></data>
+  <data name="Marketplace_CreateShortcut" xml:space="preserve"><value>Create Shortcut</value></data>
+  <data name="Config_ExportTitle" xml:space="preserve"><value>Select Export File Location</value></data>
+  <data name="Config_ImportTitle" xml:space="preserve"><value>Select Import File</value></data>
+  <data name="CfgApp_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="CfgApp_Group" xml:space="preserve"><value>Group</value></data>
+  <data name="CfgApp_Type" xml:space="preserve"><value>Type</value></data>
+  <data name="CfgApp_PathOrCmd" xml:space="preserve"><value>Path/Command</value></data>
+  <data name="CfgApp_PathOrCmdDesc" xml:space="preserve"><value>Executable path or script command</value></data>
+  <data name="CfgApp_Arguments" xml:space="preserve"><value>Arguments</value></data>
+  <data name="CfgApp_WorkDir" xml:space="preserve"><value>Working Directory</value></data>
+  <data name="CfgApp_Sort" xml:space="preserve"><value>Sort</value></data>
+  <data name="CfgApp_ExeDesc" xml:space="preserve"><value>Executable</value></data>
+  <data name="CfgApp_CmdDesc" xml:space="preserve"><value>CMD Script</value></data>
+  <data name="CfgApp_PsDesc" xml:space="preserve"><value>PowerShell Script</value></data>
+  <data name="CfgApp_ConfigTitle" xml:space="preserve"><value>Custom App Configuration</value></data>
+  <data name="CfgApp_ListTitle" xml:space="preserve"><value>Custom App List</value></data>
+  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>Default Custom Group Name</value></data>
+  <data name="CfgApp_Custom" xml:space="preserve"><value>Custom</value></data>
+  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>
+  <data name="CfgApp_QuickScript" xml:space="preserve"><value>Quick Script</value></data>
 </root>

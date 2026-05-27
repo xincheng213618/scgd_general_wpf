@@ -359,7 +359,7 @@
                 </Border>
 
                 <TextBlock Grid.Row="2"
-                           Text="快捷操作"
+                           Text="{x:Static properties:Resources.CustomApp_QuickActions}"
                            Margin="0,26,0,10"
                            Style="{StaticResource SectionLabelStyle}"/>
 

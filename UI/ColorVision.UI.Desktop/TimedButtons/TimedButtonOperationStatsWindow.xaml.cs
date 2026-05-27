@@ -123,7 +123,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
 
             int totalSuccess = viewItems.Sum(item => item.SuccessCount);
             int totalWarmup = viewItems.Sum(item => item.WarmupCount);
-            SummaryText.Text = $"共 {allEntries.Count} 个操作，当前显示 {viewItems.Count} 条，稳定样本 {totalSuccess}，预热样本 {totalWarmup}";
+            SummaryText.Text = string.Format(Properties.Resources.Stats_Summary, allEntries.Count, viewItems.Count, totalSuccess, totalWarmup);
 
             UpdateButtonStates();
         }
@@ -184,7 +184,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
 
             SaveFileDialog dialog = new SaveFileDialog
             {
-                Filter = "CSV 文件|*.csv",
+                Filter = Properties.Resources.Stats_CsvFilter,
                 FileName = $"TimedButtonStats_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
             };
 
@@ -209,7 +209,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
                 .ToList();
 
             CsvWriter.WriteToCsv(rows, dialog.FileName);
-            MessageBox.Show(Application.Current.GetActiveWindow(), $"已导出 {_items.Count} 条耗时统计到:\n{dialog.FileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Stats_ExportSuccess, _items.Count, dialog.FileName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void DeleteSelected_Click(object sender, RoutedEventArgs e)
@@ -224,8 +224,8 @@ namespace ColorVision.UI.Desktop.TimedButtons
             }
 
             string message = selectedItems.Count == 1
-                ? $"确定删除操作 {selectedItems[0].OperationKey} 的耗时统计吗？"
-                : $"确定删除当前选中的 {selectedItems.Count} 条耗时统计吗？";
+                ? string.Format(Properties.Resources.Stats_ConfirmDeleteOne, selectedItems[0].OperationKey)
+                : string.Format(Properties.Resources.Stats_ConfirmDeleteSelected, selectedItems.Count);
 
             MessageBoxResult result = MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes)
@@ -244,7 +244,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
 
             if (deletedCount > 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"已删除 {deletedCount} 条耗时统计。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Stats_Deleted, deletedCount), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
@@ -257,7 +257,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
 
             MessageBoxResult result = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                $"确定清空全部 {_items.Count} 条耗时统计吗？",
+                string.Format(Properties.Resources.Stats_ConfirmClearAll, _items.Count),
                 "ColorVision",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
@@ -268,7 +268,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
             }
 
             int cleared = TimedButtonOperationStatsManager.Clear();
-            MessageBox.Show(Application.Current.GetActiveWindow(), $"已清空 {cleared} 条耗时统计。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Stats_Cleared, cleared), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }
