@@ -322,7 +322,7 @@ namespace ColorVision.Core
                     depth = 32; // 16 bits per channel
                     break;
                 default:
-                    MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
+                    MessageBox.Show(string.Format(Properties.Resources.Core_UnsupportedFormat, writeableBitmap.Format));
                     throw new NotSupportedException("The pixel format is not supported.");
             }
 
@@ -383,7 +383,7 @@ namespace ColorVision.Core
                     depth = 32; // 16 bits per channel
                     break;
                 default:
-                    MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
+                    MessageBox.Show(string.Format(Properties.Resources.Core_UnsupportedFormat, writeableBitmap.Format));
                     throw new NotSupportedException("The pixel format is not supported.");
             }
 
