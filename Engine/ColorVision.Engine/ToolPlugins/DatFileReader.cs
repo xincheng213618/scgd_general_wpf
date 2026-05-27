@@ -36,7 +36,7 @@ namespace ColorVision.Engine.ToolPlugins
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Filter = "DAT Files (*.dat)|*.dat|All Files (*.*)|*.*",
-                Title = "选择要读取的 DAT 文件"
+                Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_SelectDatFile
             };
 
             if (openFileDialog.ShowDialog() != true)

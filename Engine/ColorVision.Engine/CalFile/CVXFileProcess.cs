@@ -59,7 +59,7 @@ namespace ColorVision.Engine.CalFile
                                 }
                                 catch (Exception jsonEx)
                                 {
-                                    MessageBox.Show($"配置文件格式错误: {jsonEx.Message}", "解析错误");
+                                    MessageBox.Show($"{ColorVision.Engine.Properties.Resources.Engine_Msg_ConfigFileFormatError}: {jsonEx.Message}", ColorVision.Engine.Properties.Resources.Engine_Msg_ParseError);
                                     return;
                                 }
 
@@ -79,7 +79,7 @@ namespace ColorVision.Engine.CalFile
                 catch (Exception ex)
                 {
                     log.Error($"导入流程异常: {ex.Message}");
-                    MessageBox.Show($"处理文件时发生错误: {ex.Message}");
+                    MessageBox.Show($"{ColorVision.Engine.Properties.Resources.Engine_Msg_FileProcessError}: {ex.Message}");
                 }
                 finally
                 {

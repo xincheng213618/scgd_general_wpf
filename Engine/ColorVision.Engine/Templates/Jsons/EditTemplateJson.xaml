@@ -46,9 +46,9 @@
             <Button x:Name="AskCopilotButton" Content="问 Copilot" Click="AskCopilotButton_Click" Margin="12,0,0,0">
                 <Button.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="解释当前模板" Click="AskCopilotExplainTemplate_Click" />
-                        <MenuItem Header="解释当前参数含义" Click="AskCopilotExplainParameters_Click" />
-                        <MenuItem Header="检查配置是否异常" Click="AskCopilotDiagnoseTemplate_Click" />
+                        <MenuItem Header="{x:Static properties:Resources.ExplainTemplate}" Click="AskCopilotExplainTemplate_Click" />
+                        <MenuItem Header="{x:Static properties:Resources.ExplainParameters}" Click="AskCopilotExplainParameters_Click" />
+                        <MenuItem Header="{x:Static properties:Resources.CheckConfigAnomaly}" Click="AskCopilotDiagnoseTemplate_Click" />
                         <Separator />
                         <MenuItem Header="发送到 Copilot..." Click="AskCopilotOpenPanel_Click" />
                     </ContextMenu>

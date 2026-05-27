@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.ARVR.SFR"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         Title="WindowSFR" Height="450" Width="900" Initialized="Window_Initialized">
     <Grid>
@@ -20,18 +21,18 @@
         
         <!-- Control Panel -->
         <StackPanel Grid.Column="1" Width="200" Margin="5">
-            <TextBlock Text="SFR 信息" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBlock Text="{x:Static properties:Resources.SFRInfo}" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             
             <!-- Line Selection -->
-            <TextBlock Text="选择数据线" FontSize="12" FontWeight="Bold" Margin="0,8,0,4"/>
+            <TextBlock Text="{x:Static properties:Resources.SelectDataLine}" FontSize="12" FontWeight="Bold" Margin="0,8,0,4"/>
             <ComboBox x:Name="CmbLineSelect" Margin="0,4,0,0" SelectionChanged="CmbLineSelect_SelectionChanged"/>
             
             <Separator Margin="0,16,0,8"/>
             
             <!-- MTF@Freq Query -->
-            <TextBlock Text="MTF@Freq 查询" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBlock Text="{x:Static properties:Resources.MtfAtFreqQuery}" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="频率:" VerticalAlignment="Center" Width="50"/>
+                <TextBlock VerticalAlignment="Center" Width="50"><Run Text="{x:Static properties:Resources.Frequency}"/><Run Text=":"/></TextBlock>
                 <TextBox x:Name="TxtFreq" Width="80" Text="0.5"/>
             </StackPanel>
             <Button Content="MTF@Freq" Margin="0,4,0,0" Click="BtnMtfAtFreq_Click"/>
@@ -39,7 +40,7 @@
             <Separator Margin="0,16,0,8"/>
             
             <!-- Freq@MTF Query -->
-            <TextBlock Text="Freq@MTF 查询" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBlock Text="{x:Static properties:Resources.FreqAtMtfQuery}" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                 <TextBlock Text="MTF:" VerticalAlignment="Center" Width="50"/>
                 <TextBox x:Name="TxtMtf" Width="80" Text="0.5"/>
@@ -50,8 +51,8 @@
             
             <Separator Margin="0,16,0,8"/>
             
-            <Button Content="保存图表" Margin="0,4,0,0" Click="BtnSaveChart_Click"/>
-            <Button Content="导出 CSV" Margin="0,4,0,0" Click="BtnExportCsv_Click"/>
+            <Button Content="{x:Static properties:Resources.SaveChart}" Margin="0,4,0,0" Click="BtnSaveChart_Click"/>
+            <Button Content="{x:Static properties:Resources.ExportCSV}" Margin="0,4,0,0" Click="BtnExportCsv_Click"/>
         </StackPanel>
     </Grid>
 </Window>

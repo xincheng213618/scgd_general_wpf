@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,7 +46,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
-        [DisplayName("修改保存提示")]
+        [Display(Name = "Engine_PG_EditSavePrompt", ResourceType = typeof(Properties.Resources))]
         public bool IsAutoEditSave { get => _IsAutoEditSave; set { _IsAutoEditSave = value; OnPropertyChanged(); } }
         private bool _IsAutoEditSave;
 

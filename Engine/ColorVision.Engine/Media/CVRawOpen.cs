@@ -192,7 +192,7 @@ namespace ColorVision.Engine.Media
             string? filePath = GetCurrentFilePath();
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "当前没有可计算的 CVRAW 文件。", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_NoCalculableCvRaw, "ColorVision");
                 return;
             }
 
@@ -200,7 +200,7 @@ namespace ColorVision.Engine.Media
                 || rawHeader.FileExtType != CVType.Raw
                 || rawHeader.Channels != 3)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "仅支持三通道 CVRAW 计算 CIE。", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_OnlyThreeChannelCvRaw, "ColorVision");
                 return;
             }
 
@@ -244,7 +244,7 @@ namespace ColorVision.Engine.Media
                 log.Error("Manual CIE calculation failed.", ex);
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"计算 CIE 失败: {ex.Message}", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_CalculateCieFailed, ex.Message), "ColorVision");
                 });
             }
         }
@@ -542,7 +542,7 @@ namespace ColorVision.Engine.Media
             {
                 menuItems.Add(new MenuItemMetadata()
                 {
-                    Header = "计算CIE",
+                    Header = ColorVision.Engine.Properties.Resources.Engine_Msg_CalculateCie,
                     GuidId = "CVRawCalculateCIE",
                     Order = 302,
                     Command = new RelayCommand(_ => ShowManualCieDialog())

@@ -138,4 +138,701 @@ Z[i] = (c / Tz·Gz) × B[i]
 支持单通道和 RGB 三通道独立校正
 支持 BGR 交错和通道分离两种内存布局</value></data><data name="HelpFourColorDesc" xml:space="preserve"><value>原理：使用完整的 3×3 矩阵（9 个系数 a-i）实现通道混合色彩转换。每个输出通道由全部 3 个输入通道加权求和，精度高于单色校正。</value></data><data name="HelpFourColorTitle" xml:space="preserve"><value>3.3 四色校正（LumFourColor）— 3×3 矩阵（9 系数）</value></data><data name="HelpIndicatorChecked" xml:space="preserve"><value>● 复选框（勾选）：启用该校正步骤，执行校正时将应用此校正</value></data><data name="HelpIndicatorGray" xml:space="preserve"><value>● 灰色指示灯（灭）：校正文件未找到或无效，该校正步骤将被跳过</value></data><data name="HelpIndicatorGreen" xml:space="preserve"><value>● 绿色指示灯（亮）：校正文件已就绪，文件存在于服务器上且可用</value></data><data name="HelpIndicatorUnchecked" xml:space="preserve"><value>● 复选框（未勾选）：禁用该校正步骤，即使文件存在也不会应用</value></data><data name="HelpLineArityDesc" xml:space="preserve"><value>原理：校正传感器输出灰度值与实际光照强度之间的非线性响应关系，确保线性映射。</value></data><data name="HelpLineArityTitle" xml:space="preserve"><value>2.7 线性度校正（LineArity）</value></data><data name="HelpLuminanceDesc" xml:space="preserve"><value>原理：将单通道灰度值转换为绝对亮度值 Lv（cd/m²），输出 32 位浮点 CIE-Y 通道。</value></data><data name="HelpLuminanceTitle" xml:space="preserve"><value>3.1 亮度校正（Luminance）</value></data><data name="HelpMultiColorDesc" xml:space="preserve"><value>原理：使用动态大小的系数矩阵（N 个系数），支持更高阶的色彩转换模型。系数数组长度 N，增益数组长度 N/3，按每 3 个系数为一组对 RGB 做线性组合。</value></data><data name="HelpMultiColorTitle" xml:space="preserve"><value>3.4 多色校正（LumMultiColor）— 动态高阶矩阵</value></data><data name="HelpOneColorDesc" xml:space="preserve"><value>原理：使用 4 系数模型，将 3 通道（RGB）灰度图像转换为 CIE XYZ 三刺激值。假设 X 由 R 和 B 通道线性组合，Y 仅来自 G，Z 仅来自 B。</value></data><data name="HelpOneColorTitle" xml:space="preserve"><value>3.2 单色校正（LumOneColor）— 4 系数模型</value></data><data name="HelpPipelineAdvanced" xml:space="preserve"><value>  →  Uniformity(均匀性)  →  ColorShift(色偏)  →  Distortion(畸变)</value></data><data name="HelpPipelineBasic" xml:space="preserve"><value>  →  DarkNoise(暗电流)  →  DefectPoint(坏点)  →  DSNU(暗信号非均匀性)</value></data><data name="HelpPipelineColorConversion" xml:space="preserve"><value>  →  [亮度 / 单色 / 四色 / 多色] 色彩转换  →  </value></data><data name="HelpPipelineCorrectedImage" xml:space="preserve"><value>校正后图像</value></data><data name="HelpPipelineRawImage" xml:space="preserve"><value>原始图像</value></data><data name="HelpSection1Desc" xml:space="preserve"><value>校正按以下固定顺序依次执行。每一步的输出作为下一步的输入，跳过未启用的步骤。</value></data><data name="HelpSection1Title" xml:space="preserve"><value>1. 校正流水线总览</value></data><data name="HelpSection2Title" xml:space="preserve"><value>2. 基础校正项详解</value></data><data name="HelpSection3Desc" xml:space="preserve"><value>四种色彩校正模式互斥，每次只能启用其中一种。它们将传感器的灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值。</value></data><data name="HelpSection3Title" xml:space="preserve"><value>3. 色彩校正项详解（四选一，互斥）</value></data><data name="HelpSection4Desc" xml:space="preserve"><value>校正完成后，可在 CIE XYZ 浮点图像上提取色度数据。支持圆形和矩形 ROI 区域。</value></data><data name="HelpSection4Title" xml:space="preserve"><value>4. CIE 色度数据提取</value></data><data name="HelpSection5Title" xml:space="preserve"><value>5. 界面指示说明</value></data><data name="HelpUniformityDesc" xml:space="preserve"><value>原理：补偿镜头渐晕（Vignetting）和传感器灵敏度的空间差异。使用预标定的乘法因子矩阵，对每个像素乘以对应的校正系数。</value></data><data name="HelpUniformityTitle" xml:space="preserve"><value>2.4 均匀性校正（Uniformity）</value></data><data name="HideAll" xml:space="preserve"><value>全部隐藏</value></data><data name="HideGroup" xml:space="preserve"><value>隐藏分组</value></data><data name="HighSpeedHoming" xml:space="preserve"><value>高速回原点</value></data><data name="Hint" xml:space="preserve"><value>提示</value></data><data name="HistoricalDataQuery" xml:space="preserve"><value>历史数据查询</value></data><data name="HistoryCache" xml:space="preserve"><value>历史缓存</value></data><data name="HomePosition" xml:space="preserve"><value>返回原点</value></data><data name="HomingAcceleration" xml:space="preserve"><value>回原点时的加速度</value></data><data name="HomingMethod" xml:space="preserve"><value>回原点方式</value></data><data name="HomingTimeout" xml:space="preserve"><value>回原点超时时间</value></data><data name="Host" xml:space="preserve"><value>主机</value></data><data name="I" xml:space="preserve"><value>电流(mA)</value></data><data name="IPAddress" xml:space="preserve"><value>IP地址</value></data><data name="Ignite" xml:space="preserve"><value>点亮</value></data><data name="IgniteMeasurement" xml:space="preserve"><value>点亮测量</value></data><data name="Image" xml:space="preserve"><value>图像</value></data><data name="ImageCrop" xml:space="preserve"><value>图像裁剪</value></data><data name="ImageCroppingTemplateSettings" xml:space="preserve"><value>发光区裁剪模板</value></data><data name="ImageEdit" xml:space="preserve"><value>图形编辑</value></data><data name="ImageFile" xml:space="preserve"><value>图片文件</value></data><data name="ImageFileCannotBeEmpty" xml:space="preserve"><value>图像文件不能为空，请先选择图像文件</value></data><data name="ImageFileEmpty" xml:space="preserve"><value>图像文件不能为空，请先选择图像文件</value></data><data name="ImageFileIsnotCVCIE" xml:space="preserve"><value>图像文件不是CVCIE</value></data><data name="ImageFileNotFound" xml:space="preserve"><value>找不到图像文件</value></data><data name="ImageFileOpenFailed" xml:space="preserve"><value>图像文件打开失败</value></data><data name="ImageFlip" xml:space="preserve"><value>图像翻转</value></data><data name="ImageImport" xml:space="preserve"><value>图像导入</value></data><data name="ImageInfo" xml:space="preserve"><value>图像信息</value></data><data name="ImageSource" xml:space="preserve"><value>图像源</value></data><data name="ImageStitching" xml:space="preserve"><value>图像拼接</value></data><data name="ImageStitchingTemplateManagement" xml:space="preserve"><value>图像拼接模板管理</value></data><data name="Import" xml:space="preserve"><value>导入</value></data><data name="ImportException" xml:space="preserve"><value>导入异常</value></data><data name="ImportFlow" xml:space="preserve"><value>导入流程</value></data><data name="ImportLatestImages" xml:space="preserve"><value>导入最新的图像</value></data><data name="ImportLicense" xml:space="preserve"><value>导入许可证</value></data><data name="ImportLicenseConfirm" xml:space="preserve"><value>是否导入许可证{0}</value></data><data name="Info" xml:space="preserve"><value>信息</value></data><data name="InitialStepSize" xml:space="preserve"><value>第一次的步径</value></data><data name="InputTemplateName" xml:space="preserve"><value>请输入模板名称</value></data><data name="Inquire" xml:space="preserve"><value>查询</value></data><data name="InsertAtBeginning" xml:space="preserve"><value>在开头插入</value></data><data name="InstallTools" xml:space="preserve"><value>安装工具</value></data><data name="Integer" xml:space="preserve"><value>整数</value></data><data name="IntegratedQuery" xml:space="preserve"><value>综合查询</value></data><data name="IntegrationStartTime" xml:space="preserve"><value>积分起始时间</value></data><data name="IntegrationTime" xml:space="preserve"><value>积分时间</value></data><data name="InternalTools" xml:space="preserve"><value>内置工具</value></data><data name="IntervalTime" xml:space="preserve"><value>间隔时间</value></data><data name="InvalidSerialPort" xml:space="preserve"><value>串口名称 {0} 无效或不存在。\n\n请检查串口设置。</value></data><data name="InvalidSerialPortTitle" xml:space="preserve"><value>无效串口</value></data><data name="Is4Wire" xml:space="preserve"><value>启用4线</value></data><data name="IsDefaultOpenService" xml:space="preserve"><value>软件启动时打开服务</value></data><data name="IsEnable" xml:space="preserve"><value>启用</value></data><data name="IsEnableNd" xml:space="preserve"><value>启用ND</value></data><data name="IsFront" xml:space="preserve"><value>启用前面板</value></data><data name="IsRetorePlayControls" xml:space="preserve"><value>恢复上次关闭时采集窗口</value></data><data name="IsShowListView" xml:space="preserve"><value>是否显示列表视图</value></data><data name="IsSyncFrequencyEnabled" xml:space="preserve"><value>是否开启同步频率</value></data><data name="IsVoltageSource" xml:space="preserve"><value>是否是电压源</value></data><data name="JNDTemplateManagement" xml:space="preserve"><value>JND模板管理</value></data><data name="JsonConfig" xml:space="preserve"><value>Json配置</value></data><data name="Keithley2450MaxCurrent100mA" xml:space="preserve"><value>Keithley 2450在输出电压大于20V时，最大输出电流为100mA，请调整测量参数后重试！</value></data><data name="Keithley2450MaxCurrent1A" xml:space="preserve"><value>Keithley 2450在输出电压小于20V时，最大输出电流为1A，请调整测量参数后重试！</value></data><data name="Keithley2450MaxVoltage200V" xml:space="preserve"><value>Keithley 2450最大输出电压为200V，请调整测量参数后重试！</value></data><data name="Keithley2600MaxCurrent1A" xml:space="preserve"><value>Keithley 2600在输出电压大于6V时，最大输出电流为1A，请调整测量参数后重试！</value></data><data name="Keithley2600MaxCurrent3A" xml:space="preserve"><value>Keithley 2600在输出电压小于6V时，最大输出电流为3A，请调整测量参数后重试！</value></data><data name="Keithley2600MaxVoltage40V" xml:space="preserve"><value>Keithley 2600最大输出电压为40V，请调整测量参数后重试！</value></data><data name="LabelAutoFocusTemplate" xml:space="preserve"><value>自动聚焦</value></data><data name="LabelBackupRestoreSection" xml:space="preserve"><value>备份与恢复</value></data><data name="LabelBasicCalibration" xml:space="preserve"><value>基础校正</value></data><data name="LabelBasicCalibrationHeader" xml:space="preserve"><value>基础校正（按顺序依次执行）</value></data><data name="LabelBindNDDevice" xml:space="preserve"><value>绑定 ND 设备</value></data><data name="LabelBindNDHint" xml:space="preserve"><value>绑定时使用设备列表，不直接使用串口参数。</value></data><data name="LabelCFWConfig" xml:space="preserve"><value>CFW 配置</value></data><data name="LabelCFWDisabled" xml:space="preserve"><value>CFW 未启用</value></data><data name="LabelCFWDisabledSaveHint" xml:space="preserve"><value>关闭后保存时会清空通道映射。</value></data><data name="LabelCFWMatrixHint" xml:space="preserve"><value>每列对应一个图像通道，每行对应一个滤轮的端口位置。</value></data><data name="LabelCFWNotEnabled" xml:space="preserve"><value>CFW 未启用</value></data><data name="LabelCalcEQE" xml:space="preserve"><value>计算 EQE</value></data><data name="LabelCalibrationEditHint" xml:space="preserve"><value>维护相机校正组、上传校正文件，并为当前组选择每类校正资源。</value></data><data name="LabelCalibrationFileManagement" xml:space="preserve"><value>校正文件管理</value></data><data name="LabelCalibrationGroupHint" xml:space="preserve"><value>选择校正组后勾选参与当前相机处理链路的校正文件。</value></data><data name="LabelCalibrationHelpDesc" xml:space="preserve"><value>本系统提供从原始图像采集到 CIE 色彩空间（XYZ/xy/uv/CCT）转换的完整校正流水线</value></data><data name="LabelCalibrationHelpTitle" xml:space="preserve"><value>图像校正系统（Calibration System）参考手册</value></data><data name="LabelCalibrationPipelineHint" xml:space="preserve"><value>校正流水线：原始图像 → 暗电流 → 坏点 → DSNU → 均匀性 → 色偏 → 畸变 → 校正后图像</value></data><data name="LabelCalibrationSection" xml:space="preserve"><value>校正</value></data><data name="LabelCameraConsole" xml:space="preserve"><value>相机控制台</value></data><data name="LabelCameraList" xml:space="preserve"><value>相机清单</value></data><data name="LabelCameraListHint" xml:space="preserve"><value>按设备状态排序，优先显示在线相机</value></data><data name="LabelCameraRunParams" xml:space="preserve"><value>相机参数</value></data><data name="LabelCameraType" xml:space="preserve"><value>相机类型</value></data><data name="LabelCamerasSuffix" xml:space="preserve"><value> 台相机</value></data><data name="LabelChannel1" xml:space="preserve"><value>通道 1</value></data><data name="LabelChannel2" xml:space="preserve"><value>通道 2</value></data><data name="LabelChannel3" xml:space="preserve"><value>通道 3</value></data><data name="LabelColorCalibration" xml:space="preserve"><value>色彩校正</value></data><data name="LabelColorCalibrationDesc" xml:space="preserve"><value>将传感器灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值 Lv(cd/m²)，以下四种模式互斥</value></data><data name="LabelColorCalibrationHeader" xml:space="preserve"><value>色彩校正（四选一，互斥）</value></data><data name="LabelConfigInfo" xml:space="preserve"><value>配置信息</value></data><data name="LabelConfigSection" xml:space="preserve"><value>配置</value></data><data name="LabelCreateDeviceHint" xml:space="preserve"><value>选择待登记相机后补全基础参数与滤光轮配置。</value></data><data name="LabelCreateDeviceTitle" xml:space="preserve"><value>创建设备</value></data><data name="LabelCropROI" xml:space="preserve"><value>画面裁切 ROI</value></data><data name="LabelDangerousOperations" xml:space="preserve"><value>危险操作</value></data><data name="LabelDeviceManagementConsole" xml:space="preserve"><value>设备管理控制台</value></data><data name="LabelEditConfigTooltip" xml:space="preserve"><value>修改当前相机配置</value></data><data name="LabelEnableCFW" xml:space="preserve"><value>启用 CFW</value></data><data name="LabelEnableCFWSerialHint" xml:space="preserve"><value>启用后配置串口、轮盘数量与通道位置映射。</value></data><data name="LabelEnableSerialPort" xml:space="preserve"><value>启用串口发送</value></data><data name="LabelEnterCurrent" xml:space="preserve"><value>请输入电流 (mA):</value></data><data name="LabelEnterValidCurrent" xml:space="preserve"><value>请输入有效的电流数值。</value></data><data name="LabelEnterValidVoltage" xml:space="preserve"><value>请输入有效的电压数值。</value></data><data name="LabelEnterVoltage" xml:space="preserve"><value>请输入电压 (V):</value></data><data name="LabelExportBatchID" xml:space="preserve"><value>批次ID</value></data><data name="LabelExportDataPoints" xml:space="preserve"><value>数据点数</value></data><data name="LabelExportDataType" xml:space="preserve"><value>数据类型</value></data><data name="LabelExportLimitValue" xml:space="preserve"><value>限制值</value></data><data name="LabelExportMeasuredCurrent" xml:space="preserve"><value>测量电流(A)</value></data><data name="LabelExportMeasuredVoltage" xml:space="preserve"><value>测量电压(V)</value></data><data name="LabelExportMeasurementType" xml:space="preserve"><value>测量类型</value></data><data name="LabelExportParamValue" xml:space="preserve"><value>参数,数值</value></data><data name="LabelExportScanEnd" xml:space="preserve"><value>扫描结束值</value></data><data name="LabelExportScanStart" xml:space="preserve"><value>扫描起始值</value></data><data name="LabelExportSeqVoltageCurrent" xml:space="preserve"><value>序号,电压(V),电流(A)</value></data><data name="LabelExportTime" xml:space="preserve"><value>创建时间</value></data><data name="LabelFilterWheel1" xml:space="preserve"><value>滤轮 1</value></data><data name="LabelFilterWheel2" xml:space="preserve"><value>滤轮 2</value></data><data name="LabelFilterWheel3" xml:space="preserve"><value>滤轮 3</value></data><data name="LabelFilterWheelCount" xml:space="preserve"><value>滤轮数量</value></data><data name="LabelFrameCropROI" xml:space="preserve"><value>画面裁切 ROI</value></data><data name="LabelJsonConfig" xml:space="preserve"><value>Json配置</value></data><data name="LabelLicenseExpiredNotification" xml:space="preserve"><value>许可证过期提醒</value></data><data name="LabelLicenseSection" xml:space="preserve"><value>许可证</value></data><data name="LabelLuminousEfficacy" xml:space="preserve"><value>光效</value></data><data name="LabelMeasurementTypeCurrent" xml:space="preserve"><value>电流源</value></data><data name="LabelMeasurementTypeVoltage" xml:space="preserve"><value>电压源</value></data><data name="LabelOpenCalibrationManual" xml:space="preserve"><value>打开校正系统参考手册</value></data><data name="LabelResetFailed" xml:space="preserve"><value>无法重置，请检查数据库相关配置</value></data><data name="LabelResourceCount" xml:space="preserve"><value>资源数量</value></data><data name="LabelSelectCameraHint" xml:space="preserve"><value>从左侧选择一台物理相机以查看详情与管理操作</value></data><data name="LabelSerialPortHint" xml:space="preserve"><value>未绑定 ND 设备时显示串口与波特率。</value></data><data name="LabelTools" xml:space="preserve"><value>工具</value></data><data name="LabelTotalCameras" xml:space="preserve"><value>共 {0} 台相机</value></data><data name="LabelTotalPrefix" xml:space="preserve"><value>共 </value></data><data name="LaunchSoftwareWithLocalService" xml:space="preserve"><value>软件启动时打开本地服务</value></data><data name="LaunchSuccess" xml:space="preserve"><value>启动成功</value></data><data name="Layers" xml:space="preserve"><value>图层</value></data><data name="Ld" xml:space="preserve"><value>主波长Ld(nm)</value></data><data name="LedBandDetectorManagement" xml:space="preserve"><value>灯条检测模板管理</value></data><data name="LedCheck" xml:space="preserve"><value>灯珠检测</value></data><data name="LedDataFIle" xml:space="preserve"><value>灯珠数据文件</value></data><data name="LedDataFileNotFound" xml:space="preserve"><value>找不到灯珠数据文件</value></data><data name="LedStripCheck" xml:space="preserve"><value>灯带检测</value></data><data name="LedStripCheckV2" xml:space="preserve"><value>灯带检测V2</value></data><data name="LedStripDetectionV2TemplateManagement" xml:space="preserve"><value>LEDStripDetectionV2模板管理</value></data><data name="Left" xml:space="preserve"><value>左</value></data><data name="License" xml:space="preserve"><value>许可证</value></data><data name="LicenseAlertExpired" xml:space="preserve"><value>许可证已过期（{0}）</value></data><data name="LicenseAlertExpiringSoon" xml:space="preserve"><value>许可证即将到期（{0}）</value></data><data name="LicenseAlertInvalid" xml:space="preserve"><value>许可证状态异常，请检查许可证内容。</value></data><data name="LicenseAlertNoLicense" xml:space="preserve"><value>当前未检测到许可证，请导入或申请许可证。</value></data><data name="LicenseBadgeExpired" xml:space="preserve"><value>许可证已过期 {0}</value></data><data name="LicenseBadgeExpiringSoon" xml:space="preserve"><value>许可证即将到期 {0}</value></data><data name="LicenseBadgeInvalid" xml:space="preserve"><value>许可证异常</value></data><data name="LicenseBadgeValid" xml:space="preserve"><value>许可证有效</value></data><data name="LicenseCopiedToClipboard" xml:space="preserve"><value>许可证已复制到剪贴板</value></data><data name="LicenseExpired" xml:space="preserve"><value>已过期</value></data><data name="LicenseExpiredStatusMessage" xml:space="preserve"><value>许可证已过期</value></data><data name="LicenseExpiringSoon" xml:space="preserve"><value>即将过期</value></data><data name="LicenseExpiringSoonStatusMessage" xml:space="preserve"><value>许可证即将过期 (剩余 {0} 天)</value></data><data name="LicenseExpiryDaysRemaining" xml:space="preserve"><value>剩余 {0} 天 ({1})</value></data><data name="LicenseExpiryExpired" xml:space="preserve"><value>已过期 ({0})</value></data><data name="LicenseExpiryValidUntil" xml:space="preserve"><value>有效期至 {0}</value></data><data name="LicenseExportCompleted" xml:space="preserve"><value>License 文件已导出完成！</value></data><data name="LicenseExportedByAdmin" xml:space="preserve"><value>License 文件已通过管理员权限导出完成！</value></data><data name="LicenseExportedSuccessfully" xml:space="preserve"><value>许可证导出成功</value></data><data name="LicenseImport" xml:space="preserve"><value>许可证导入</value></data><data name="LicenseListTagExpired" xml:space="preserve"><value>许可证过期</value></data><data name="LicenseListTagInvalid" xml:space="preserve"><value>许可证异常</value></data><data name="LicenseManagement" xml:space="preserve"><value>许可证管理</value></data><data name="LicenseManager" xml:space="preserve"><value>许可证管理</value></data><data name="LicenseNormal" xml:space="preserve"><value>正常</value></data><data name="LicenseNotSupportedForCamera" xml:space="preserve"><value>该相机不支持此许可证</value></data><data name="LicenseStatusExpired" xml:space="preserve"><value>已过期</value></data><data name="LicenseStatusExpiringSoon" xml:space="preserve"><value>即将到期</value></data><data name="LicenseStatusInvalid" xml:space="preserve"><value>异常</value></data><data name="LicenseStatusUnlicensed" xml:space="preserve"><value>无许可证</value></data><data name="LicenseStatusValid" xml:space="preserve"><value>有效</value></data><data name="LicenseTypeCamera" xml:space="preserve"><value>相机</value></data><data name="LicenseTypeSpectrometer" xml:space="preserve"><value>光谱仪</value></data><data name="LicenseTypeUnknown" xml:space="preserve"><value>未知</value></data><data name="LightAreaLocation" xml:space="preserve"><value>发光区定位</value></data><data name="LightBandDetection" xml:space="preserve"><value>灯带检测</value></data><data name="LightBar" xml:space="preserve"><value>灯条</value></data><data name="LightBarDetectionV2" xml:space="preserve"><value>灯条检测V2</value></data><data name="LimitEnd" xml:space="preserve"><value>结束值</value></data><data name="LimitStart" xml:space="preserve"><value>起始值</value></data><data name="LimitVal" xml:space="preserve"><value>限值(V/mA)</value></data><data name="LimitValue" xml:space="preserve"><value>限值</value></data><data name="LineWidth" xml:space="preserve"><value>线宽:</value></data><data name="ListHeight" xml:space="preserve"><value>列表高度</value></data><data name="LoadRestorePoint" xml:space="preserve"><value>加载还原点</value></data><data name="Loading" xml:space="preserve"><value>加载</value></data><data name="LoadingTempate" xml:space="preserve"><value>正在加载模板</value></data><data name="Local" xml:space="preserve"><value>本地</value></data><data name="LocalCamera" xml:space="preserve"><value>本地相机</value></data><data name="LocalPortOpenFailedInVideoMode" xml:space="preserve"><value>视频模式下，本地端口打开失败</value></data><data name="LocalVideo" xml:space="preserve"><value>本地视频</value></data><data name="Lock" xml:space="preserve"><value>锁定</value></data><data name="LowSpeedHoming" xml:space="preserve"><value>低速回原点</value></data><data name="Lp" xml:space="preserve"><value>峰值波长Lp(nm)</value></data><data name="LuminousEfficacy" xml:space="preserve"><value>光效(lm/W)</value></data><data name="LuminousEfficiency" xml:space="preserve"><value>光效</value></data><data name="LuminousFlux" xml:space="preserve"><value>光通量(lm)</value></data><data name="Lv" xml:space="preserve"><value>亮度Lv(cd/m2)</value></data><data name="MQTTLog" xml:space="preserve"><value>MQTT日志</value></data><data name="MTFTemplateManagement" xml:space="preserve"><value>MTF模板管理</value></data><data name="MTFToolTip" xml:space="preserve"><value>调制传递函数</value></data><data name="Male" xml:space="preserve"><value>男</value></data><data name="ManagePhysicalCamera" xml:space="preserve"><value>管理物理相机</value></data><data name="Manager" xml:space="preserve"><value>管理</value></data><data name="MaxExpTime" xml:space="preserve"><value>曝光最大值</value></data><data name="MaxExposureTimeMs" xml:space="preserve"><value>最大曝光时间(ms)</value></data><data name="MaxGain" xml:space="preserve"><value>增益最大值</value></data><data name="MaxIntegrationTime_Ms" xml:space="preserve"><value>最大积分时间(ms)</value></data><data name="MaxNumber" xml:space="preserve"><value>最大数量</value></data><data name="MaxPercent" xml:space="preserve"><value>最大值百分比</value></data><data name="Measure" xml:space="preserve"><value>测量</value></data><data name="MeasureType" xml:space="preserve"><value>测量类型</value></data><data name="MeasuredCurrentA" xml:space="preserve"><value>测量电流(A)</value></data><data name="MeasuredVoltageV" xml:space="preserve"><value>测量电压(V)</value></data><data name="MeasurementType" xml:space="preserve"><value>测量属性</value></data><data name="MenuAlgorithm" xml:space="preserve"><value>算法(_A)</value></data><data name="MenuBuildPOI" xml:space="preserve"><value>BuildPOI模板设置(_B)</value></data><data name="MenuCalibrationTool" xml:space="preserve"><value>校正生成工具(_C)</value></data><data name="MenuCameraExp" xml:space="preserve"><value>相机曝光模板设置(_B)</value></data><data name="MenuCopy" xml:space="preserve"><value>复制(_C)</value></data><data name="MenuCut" xml:space="preserve"><value>剪切(_T)</value></data><data name="MenuDelete" xml:space="preserve"><value>删除(_D)</value></data><data name="MenuDevice" xml:space="preserve"><value>设备配置(_D)</value></data><data name="MenuDistortion" xml:space="preserve"><value>畸变模板设置(_D)</value></data><data name="MenuEdit" xml:space="preserve"><value>编辑(_E)</value></data><data name="MenuEngine" xml:space="preserve"><value>引擎(_N)</value></data><data name="MenuFOV" xml:space="preserve"><value>_FOV模板设置</value></data><data name="MenuFile" xml:space="preserve"><value>文件(_F)</value></data><data name="MenuFlow" xml:space="preserve"><value>流程(_L)</value></data><data name="MenuFocusPoints" xml:space="preserve"><value>发光区检测模板设置(_P)</value></data><data name="MenuGhost" xml:space="preserve"><value>鬼影模板设置(_G)</value></data><data name="MenuLogin" xml:space="preserve"><value>登录账号(_L)</value></data><data name="MenuMTF" xml:space="preserve"><value>_MTF模板设置</value></data><data name="MenuMeasure" xml:space="preserve"><value>测量模板设置</value></data><data name="MenuNew" xml:space="preserve"><value>新建(_N)</value></data><data name="MenuOpen" xml:space="preserve"><value>打开(_O)</value></data><data name="MenuOptions" xml:space="preserve"><value>选项(_O)</value></data><data name="MenuPhyCameraManager" xml:space="preserve"><value>物理相机管理(_P)</value></data><data name="MenuPoi" xml:space="preserve"><value>POI模板设置(_P)</value></data><data name="MenuRename" xml:space="preserve"><value>重命名(_M)</value></data><data name="MenuSFR" xml:space="preserve"><value>_SFR模板设置</value></data><data name="MenuSUM" xml:space="preserve"><value>源表模板设置(_S)</value></data><data name="MenuSensor" xml:space="preserve"><value>传感器模板(_S)</value></data><data name="MenuSensorHeYuan" xml:space="preserve"><value>河源指令集</value></data><data name="MenuService" xml:space="preserve"><value>管理员服务配置(_S)</value></data><data name="MenuSettings" xml:space="preserve"><value>设置(_S)</value></data><data name="MenuTemplate" xml:space="preserve"><value>模板(_M)</value></data><data name="MenuTheme" xml:space="preserve"><value>主题(_H)</value></data><data name="MenuTool" xml:space="preserve"><value>工具(_T)</value></data><data name="MenuUndo" xml:space="preserve"><value>撤销(_U)</value></data><data name="MenuUpdate" xml:space="preserve"><value>检查更新(_U)</value></data><data name="MenuValidue" xml:space="preserve"><value>校验模板设置(_B)</value></data><data name="MenuView" xml:space="preserve"><value>视图(_V)</value></data><data name="MessageRetention" xml:space="preserve"><value>消息保留</value></data><data name="MinEvaluationValue" xml:space="preserve"><value>最低评价值</value></data><data name="MinExpTime" xml:space="preserve"><value>曝光最小值</value></data><data name="MinExposureTimeMs" xml:space="preserve"><value>最小曝光时间(ms)</value></data><data name="MinGain" xml:space="preserve"><value>增益最小值</value></data><data name="Minimize" xml:space="preserve"><value>最小化</value></data><data name="MixedCameraLicensesSummary" xml:space="preserve"><value>检测到 {0} 个相机许可证已过期，{1} 个相机许可证即将过期</value></data><data name="Model" xml:space="preserve"><value>型号</value></data><data name="ModifyConfiguration" xml:space="preserve"><value>修改配置</value></data><data name="ModifyLicense" xml:space="preserve"><value>修改许可证</value></data><data name="MotorAcceleration" xml:space="preserve"><value>电机运行加速度</value></data><data name="MotorConfig" xml:space="preserve"><value>电机配置</value></data><data name="MotorDeceleration" xml:space="preserve"><value>电机减速度</value></data><data name="MotorMoveRangeLowerLimit" xml:space="preserve"><value>电机移动区间下限</value></data><data name="MotorMoveRangeupperLimit" xml:space="preserve"><value>电机移动区间上限</value></data><data name="MotorSteadySpeed" xml:space="preserve"><value>电机平稳运行速度</value></data><data name="Move" xml:space="preserve"><value>移动</value></data><data name="MoveDown" xml:space="preserve"><value>下移</value></data><data name="MoveUp" xml:space="preserve"><value>上移</value></data><data name="MqttConfig" xml:space="preserve"><value>Mqtt配置</value></data><data name="MqttConfigId" xml:space="preserve"><value>MQTT配置ID</value></data><data name="MqttConnection" xml:space="preserve"><value>MQTT连接</value></data><data name="MqttConnectionConfiguration" xml:space="preserve"><value>MQTT连接配置</value></data><data name="MsgList" xml:space="preserve"><value>消息列表</value></data><data name="MsgLogWin" xml:space="preserve"><value>消息日志窗口</value></data><data name="MsgLogWindow" xml:space="preserve"><value>Msg记录窗口</value></data><data name="MtfV2TemplateManagement" xml:space="preserve"><value>MTFV2模板管理</value></data><data name="MultiColor" xml:space="preserve"><value>多色</value></data><data name="MultipleDevicesDetected" xml:space="preserve"><value>检测到 {0} 台设备:\n{1}</value></data><data name="MyLicense_R" xml:space="preserve"><value>我的许可证(_R)</value></data><data name="Name" xml:space="preserve"><value>名称</value></data><data name="Network" xml:space="preserve"><value>网络</value></data><data name="New" xml:space="preserve"><value>新建</value></data><data name="NoAvailableCameraDevice" xml:space="preserve"><value>未找到可用的相机设备</value></data><data name="NoCalibrationTypeSpecified" xml:space="preserve"><value>未指定上传的校正类型</value></data><data name="NoCameraId" xml:space="preserve"><value>没有相机ID!</value></data><data name="NoCameraToAdd" xml:space="preserve"><value>找不到可以添加的相机</value></data><data name="NoDeviceDetected" xml:space="preserve"><value>未检测到设备</value></data><data name="NoDevicesDetected" xml:space="preserve"><value>未检测到设备</value></data><data name="NoLicenseAvailable" xml:space="preserve"><value>没有可用的许可证</value></data><data name="NoRelatedItemsFound" xml:space="preserve"><value>未找到相关项目</value></data><data name="NoServicesRequireCachePathConfiguration" xml:space="preserve"><value>没有服务需要配置缓存路径</value></data><data name="NoUncreatedCameraFound" xml:space="preserve"><value>找不到未创建的相机,请插上相机后在尝试</value></data><data name="NodeProperty" xml:space="preserve"><value>节点属性</value></data><data name="NotConfigured" xml:space="preserve"><value>未配置</value></data><data name="NotInstalled" xml:space="preserve"><value>未安装</value></data><data name="OK" xml:space="preserve"><value>确定</value></data><data name="Once" xml:space="preserve"><value>一次</value></data><data name="OneColor" xml:space="preserve"><value>单色</value></data><data name="Online" xml:space="preserve"><value>在线</value></data><data name="Open" xml:space="preserve"><value>打开</value></data><data name="OpenCamera" xml:space="preserve"><value>打开相机</value></data><data name="OpenCmd" xml:space="preserve"><value>打开命令</value></data><data name="OpenConfigFolder" xml:space="preserve"><value>打开配置文件夹</value></data><data name="OpenDeviceManager" xml:space="preserve"><value>打开设备管理器</value></data><data name="OpenDirectory" xml:space="preserve"><value>打开目录</value></data><data name="OpenEditTool" xml:space="preserve"><value>编辑工具</value></data><data name="OpenFailed" xml:space="preserve"><value>打开失败</value></data><data name="OpenFile" xml:space="preserve"><value>打开文件</value></data><data name="OpenFileFailed" xml:space="preserve"><value>打开文件失败</value></data><data name="OpenFolder" xml:space="preserve"><value>打开文件夹</value></data><data name="OpenFullEditor" xml:space="preserve"><value>打开完整编辑器</value></data><data name="OpenInCalibTools" xml:space="preserve"><value>在 CalibTools 中打开</value></data><data name="OpenItem" xml:space="preserve"><value>打开项目</value></data><data name="OpenSMU" xml:space="preserve"><value>打开源表</value></data><data name="OpenSourceMeter" xml:space="preserve"><value>打开源表</value></data><data name="OpenSuccess" xml:space="preserve"><value>打开成功</value></data><data name="Opening" xml:space="preserve"><value>打开中</value></data><data name="Operation" xml:space="preserve"><value>操作</value></data><data name="OriginalFileNotFound" xml:space="preserve"><value>找不到原始文件</value></data><data name="OutputView" xml:space="preserve"><value>输出视图</value></data><data name="PGCommand" xml:space="preserve"><value>画面指令</value></data><data name="PGParamConfig" xml:space="preserve"><value>PGParam设置</value></data><data name="POIAnalysis" xml:space="preserve"><value>POI分析</value></data><data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve"><value>POI修正标定参数模板设置</value></data><data name="POICorrectionTemplateSettings" xml:space="preserve"><value>POI修正模板设置</value></data><data name="POIEdit" xml:space="preserve"><value>POI编辑</value></data><data name="POIFile" xml:space="preserve"><value>关注点文件</value></data><data name="POIFileOutputTemplateSettings" xml:space="preserve"><value>POI文件输出模板设置</value></data><data name="POIFilter" xml:space="preserve"><value>POI过滤</value></data><data name="POIFilterTemplateSetting" xml:space="preserve"><value>POI过滤模板设置</value></data><data name="POIFilterTemplateSettings" xml:space="preserve"><value>POI过滤模板设置</value></data><data name="POIPlacementTemplateSettings" xml:space="preserve"><value>POI布点模板设置</value></data><data name="POIRevise" xml:space="preserve"><value>POI修正</value></data><data name="POIReviseCalib" xml:space="preserve"><value>POI修正标定</value></data><data name="POISetting" xml:space="preserve"><value>POI设置</value></data><data name="POITemplate" xml:space="preserve"><value>POI模板</value></data><data name="POITemplateSettings" xml:space="preserve"><value>POI模板设置</value></data><data name="ParamInput" xml:space="preserve"><value>输入参数</value></data><data name="ParamTemplate" xml:space="preserve"><value>参数模板</value></data><data name="Parameter" xml:space="preserve"><value>参数</value></data><data name="ParameterTemplate" xml:space="preserve"><value>参数模板</value></data><data name="Parsing" xml:space="preserve"><value>解析</value></data><data name="ParsingCalibrationFilePleaseWait" xml:space="preserve"><value>正在解析校正文件： 请稍后...</value></data><data name="ParsingManagement" xml:space="preserve"><value>解析管理</value></data><data name="Password" xml:space="preserve"><value>密码</value></data><data name="PgTemplateConfig" xml:space="preserve"><value>PG模板配置</value></data><data name="PhySpectrum" xml:space="preserve"><value>物理光谱仪</value></data><data name="PhysicalCamera" xml:space="preserve"><value>物理相机Code</value></data><data name="PhysicalCameraManager" xml:space="preserve"><value>物理相机管理</value></data><data name="PhysicalCameraNotConfigured" xml:space="preserve"><value>物理相机未配置</value></data><data name="PhysicalCameraNotFound" xml:space="preserve"><value>找不到对应的物理相机</value></data><data name="Pin" xml:space="preserve"><value>置顶</value></data><data name="PixelBits" xml:space="preserve"><value>像素位数</value></data><data name="PixelLedCheck" xml:space="preserve"><value>像素级灯珠检测</value></data><data name="PixelLedDetect" xml:space="preserve"><value>像素级灯珠检测</value></data><data name="PleaseConfigureCameraIDFirst" xml:space="preserve"><value>请先配置相机ID</value></data><data name="PleaseConfigureDllFirst" xml:space="preserve"><value>请先在配置中配置关联的dll</value></data><data name="PleaseSelectDataFirst" xml:space="preserve"><value>您需要先选择数据</value></data><data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve"><value>请选择一个模板以查看和编辑</value></data><data name="PoiAnalysis" xml:space="preserve"><value>PoiAnalysis</value></data><data name="PoiAnalysisTemplateManagement" xml:space="preserve"><value>POI分析模板管理</value></data><data name="PoiFileOutputTemplateSetting" xml:space="preserve"><value>POI文件输出模板设置</value></data><data name="PointCount" xml:space="preserve"><value>点数</value></data><data name="PointLayoutAreaDisplay" xml:space="preserve"><value>显示布点区域</value></data><data name="PointOfInterestTemplete" xml:space="preserve"><value>POI模板</value></data><data name="Polyline" xml:space="preserve"><value>折线</value></data><data name="Port" xml:space="preserve"><value>端口</value></data><data name="PortAddress" xml:space="preserve"><value>端口地址</value></data><data name="PortConfigError" xml:space="preserve"><value>端口配置错误</value></data><data name="PortRange" xml:space="preserve"><value>端口范围</value></data><data name="PortableTools" xml:space="preserve"><value>便携工具</value></data><data name="Position" xml:space="preserve"><value>位置</value></data><data name="PowerOff" xml:space="preserve"><value>下电</value></data><data name="PowerOn" xml:space="preserve"><value>上电</value></data><data name="PreciseS100MaxCurrent1A" xml:space="preserve"><value>Precise_S100在输出电压小于30V时，最大输出电流为1A，请调整测量参数后重试！</value></data><data name="PreciseS100MaxVoltage30V" xml:space="preserve"><value>Precise_S100最大输出电压为30V，请调整测量参数后重试！</value></data><data name="PreprocessManager" xml:space="preserve"><value>预处理管理</value></data><data name="ProcessHandlingConfig" xml:space="preserve"><value>流程处理配置</value></data><data name="Processing" xml:space="preserve"><value>处理中...</value></data><data name="ProductBrochure" xml:space="preserve"><value>产品宣传手册</value></data><data name="ProjectManagerWindow" xml:space="preserve"><value>项目管理器窗口</value></data><data name="ProjectName" xml:space="preserve"><value>项目名称</value></data><data name="Property" xml:space="preserve"><value>属性</value></data><data name="PropertyEdit" xml:space="preserve"><value>属性编辑</value></data><data name="PropertyEditorFallback" xml:space="preserve"><value>属性编辑器(备用)</value></data><data name="Quadrilateral" xml:space="preserve"><value>四边形</value></data><data name="QuaryMethods" xml:space="preserve"><value>查询方法</value></data><data name="QueryCount" xml:space="preserve"><value>查询数量</value></data><data name="QuickPreview" xml:space="preserve"><value>快速预览</value></data><data name="RCConnecteCfg" xml:space="preserve"><value>注册中心连接配置</value></data><data name="RCName" xml:space="preserve"><value>注册中心名称</value></data><data name="RESTAddress" xml:space="preserve"><value>REST地址</value></data><data name="Ra" xml:space="preserve"><value>显色性指数Ra</value></data><data name="RadiantFlux" xml:space="preserve"><value>辐射通量(W)</value></data><data name="Radius" xml:space="preserve"><value>半径</value></data><data name="RcConfigInfoNotFound" xml:space="preserve"><value>找不到RC配置信息</value></data><data name="ReRender" xml:space="preserve"><value>重渲染</value></data><data name="ReRendering" xml:space="preserve"><value>重新渲染</value></data><data name="ReceiveChannel" xml:space="preserve"><value>接收信道</value></data><data name="Rect" xml:space="preserve"><value>矩形</value></data><data name="Refresh" xml:space="preserve"><value>刷新</value></data><data name="RefreshDeviceList" xml:space="preserve"><value>刷新设备列表</value></data><data name="RefreshDeviceListFailed" xml:space="preserve"><value>刷新设备列表失败</value></data><data name="RefreshService" xml:space="preserve"><value>刷新服务</value></data><data name="RegisterAddress" xml:space="preserve"><value>寄存器地址</value></data><data name="RegistryCenter" xml:space="preserve"><value>注册中心</value></data><data name="RegistryCenterConfig" xml:space="preserve"><value>注册中心配置</value></data><data name="RegistryCenterNotConnected" xml:space="preserve"><value>注册中心没有连接</value></data><data name="RelatedItems" xml:space="preserve"><value>相关项</value></data><data name="Relative" xml:space="preserve"><value>相对</value></data><data name="RelativeSpectrum" xml:space="preserve"><value>相对光谱</value></data><data name="RelativeSpectrumCurve" xml:space="preserve"><value>相对光谱曲线</value></data><data name="ReleaseDate" xml:space="preserve"><value>发布日期</value></data><data name="Reset" xml:space="preserve"><value>重置</value></data><data name="ResetDatabasePrompt" xml:space="preserve"><value>是否重置数据库</value></data><data name="ResetFailedCheckDbConfig" xml:space="preserve"><value>无法重置，请检查数据库相关配置</value></data><data name="ResetService" xml:space="preserve"><value>重置服务</value></data><data name="Reseted" xml:space="preserve"><value>已重置</value></data><data name="ResourceIdentifier" xml:space="preserve"><value>资源标识</value></data><data name="ResourceInformation" xml:space="preserve"><value>资源信息</value></data><data name="ResourceName" xml:space="preserve"><value>资源名称</value></data><data name="RestartService" xml:space="preserve"><value>重启服务</value></data><data name="RestartWindowsService" xml:space="preserve"><value>重启WindowsService</value></data><data name="Restore" xml:space="preserve"><value>向下还原</value></data><data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve"><value>恢复Mysql AutoFocus模板设置</value></data><data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve"><value>恢复MysqlCameraRunParam模板设置</value></data><data name="RestorePointCreatedSuccessfully" xml:space="preserve"><value>还原点创建成功</value></data><data name="RestoreSucceeded" xml:space="preserve"><value>还原成功</value></data><data name="Result" xml:space="preserve"><value>结果</value></data><data name="RetentionDays" xml:space="preserve"><value>保存天数</value></data><data name="RetryCount" xml:space="preserve"><value>重试次数</value></data><data name="RevCmd" xml:space="preserve"><value>返回指令</value></data><data name="Right" xml:space="preserve"><value>右</value></data><data name="RowCount" xml:space="preserve"><value>行数</value></data><data name="SFRFindRoi" xml:space="preserve"><value>SFR_ROI搜索</value></data><data name="SFRTemplateManagement" xml:space="preserve"><value>SFR模板管理</value></data><data name="SMUAddr" xml:space="preserve"><value>源表地址</value></data><data name="SMUKeithley2450MaxCurrentAboveThreshold" xml:space="preserve"><value>Keithley 2450在输出电压大于{0}V时，最大输出电流为{1}mA，请调整测量参数后重试！</value></data><data name="SMUKeithley2450MaxCurrentBelowThreshold" xml:space="preserve"><value>Keithley 2450在输出电压小于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUKeithley2450MaxVoltage" xml:space="preserve"><value>Keithley 2450最大输出电压为{0}V，请调整测量参数后重试！</value></data><data name="SMUKeithley2600MaxCurrentAboveThreshold" xml:space="preserve"><value>Keithley 2600在输出电压大于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUKeithley2600MaxCurrentBelowThreshold" xml:space="preserve"><value>Keithley 2600在输出电压小于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUKeithley2600MaxVoltage" xml:space="preserve"><value>Keithley 2600最大输出电压为{0}V，请调整测量参数后重试！</value></data><data name="SMUParamSetting" xml:space="preserve"><value>SMUParam设置</value></data><data name="SMUPreciseS100MaxCurrentBelowThreshold" xml:space="preserve"><value>Precise_S100在输出电压小于{0}V时，最大输出电流为{1}A，请调整测量参数后重试！</value></data><data name="SMUPreciseS100MaxVoltage" xml:space="preserve"><value>Precise_S100最大输出电压为{0}V，请调整测量参数后重试！</value></data><data name="SMUSimulator" xml:space="preserve"><value>源表模拟器</value></data><data name="SMUSwitch" xml:space="preserve"><value>源表开关</value></data><data name="SMUView" xml:space="preserve"><value>源表视图</value></data><data name="SSCOMTool" xml:space="preserve"><value>SSCOM串口调试助手</value></data><data name="Saturation" xml:space="preserve"><value>饱和度</value></data><data name="SaturationDifference" xml:space="preserve"><value>饱和度差值</value></data><data name="SaturationPercent" xml:space="preserve"><value>饱和度(%)</value></data><data name="Save" xml:space="preserve"><value>保存</value></data><data name="SaveChangesPrompt" xml:space="preserve"><value>是否保存修改</value></data><data name="SaveChart" xml:space="preserve"><value>保存图表</value></data><data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve"><value>保存当前的曝光等参数</value></data><data name="SaveCurrentExposureConfigPrompt" xml:space="preserve"><value>是否保存当前界面的曝光配置</value></data><data name="SaveDataColumn" xml:space="preserve"><value>保存数据列</value></data><data name="SaveDirectory" xml:space="preserve"><value>保存目录</value></data><data name="SaveFile" xml:space="preserve"><value>保存文件</value></data><data name="SavePOI" xml:space="preserve"><value>保存POI</value></data><data name="SaveResourceRecordFailed" xml:space="preserve"><value>保存资源记录失败</value></data><data name="SaveSucess" xml:space="preserve"><value>保存成功</value></data><data name="SaveToFile" xml:space="preserve"><value>保存到文件</value></data><data name="SaveToLoacal" xml:space="preserve"><value>保存到本地</value></data><data name="SaveWindowLayout" xml:space="preserve"><value>保存窗口布局</value></data><data name="Scan" xml:space="preserve"><value>扫描</value></data><data name="Search" xml:space="preserve"><value>搜索</value></data><data name="SearchCameraType" xml:space="preserve"><value>搜索相机类型</value></data><data name="SearchLimit" xml:space="preserve"><value>搜索条数限制</value></data><data name="SearchOnlineCamerasFailed" xml:space="preserve"><value>搜索在线相机失败: {0}</value></data><data name="SearchResults" xml:space="preserve"><value>搜索结果</value></data><data name="SearchTotalElapsed" xml:space="preserve"><value>总耗时 {0}</value></data><data name="SearchingOnlineCameras" xml:space="preserve"><value>正在搜索在线相机</value></data><data name="SecondStepFactor" xml:space="preserve"><value>第二次的步径系数</value></data><data name="SectionAdvancedConfig" xml:space="preserve"><value>高级配置</value></data><data name="SectionBackupRestore" xml:space="preserve"><value>备份与恢复</value></data><data name="SectionBasicCalibration" xml:space="preserve"><value>基础校正</value></data><data name="SectionCFWAdvanced" xml:space="preserve"><value>CFW 高级参数</value></data><data name="SectionCFWConfig" xml:space="preserve"><value>CFW 配置</value></data><data name="SectionCameraList" xml:space="preserve"><value>相机清单</value></data><data name="SectionColorCalibration" xml:space="preserve"><value>色彩校正</value></data><data name="SectionDangerousOperations" xml:space="preserve"><value>危险操作</value></data><data name="SectionFileService" xml:space="preserve"><value>文件服务</value></data><data name="SectionMotorParams" xml:space="preserve"><value>电机参数</value></data><data name="SectionParamLimits" xml:space="preserve"><value>参数限制</value></data><data name="SelectCalibToolsExe" xml:space="preserve"><value>选择 CalibTools.exe</value></data><data name="SelectCalibrationFileDialog" xml:space="preserve"><value>选择 {0} 校正文件</value></data><data name="SelectCalibrationFileFilter" xml:space="preserve"><value>校正文件 (*.cvcal;*.bin;*.json;*.txt;*.dat)|*.cvcal;*.bin;*.json;*.txt;*.dat|所有文件 (*.*)|*.*</value></data><data name="SelectCameraModelForSearch" xml:space="preserve"><value>选择要参与在线搜索的相机型号</value></data><data name="SelectCameraType" xml:space="preserve"><value>请选择至少一种相机类型</value></data><data name="SelectDataFirst" xml:space="preserve"><value>您需要先选择数据</value></data><data name="SelectExportFileLocation" xml:space="preserve"><value>选择导出文件位置</value></data><data name="SelectFileInFolder" xml:space="preserve"><value>在文件夹中选中文件</value></data><data name="SelectItemsToDelete" xml:space="preserve"><value>请选择要删除的项</value></data><data name="SelectLicenseFilePrompt" xml:space="preserve"><value>请选择许可证文件</value></data><data name="SelectLicenseFileWithCode" xml:space="preserve"><value>请选择许可证文件 {0}</value></data><data name="SelectProjectSaveLocation" xml:space="preserve"><value>选择项目保存位置</value></data><data name="SelectResourceToLoad" xml:space="preserve"><value>请选择您要加载的资源：</value></data><data name="SelectSaveFolder" xml:space="preserve"><value>请选择保存文件的文件夹</value></data><data name="SelectSaveLocation" xml:space="preserve"><value>选择要保存到得位置</value></data><data name="SelectTemplateToViewDetails" xml:space="preserve"><value>选择一个模板查看详情</value></data><data name="SelectUpzipDirectry" xml:space="preserve"><value>请选择解压缩目录</value></data><data name="Selected" xml:space="preserve"><value>选中</value></data><data name="Send" xml:space="preserve"><value>发送</value></data><data name="SendChannel" xml:space="preserve"><value>发送信道:</value></data><data name="SendCmd" xml:space="preserve"><value>发送指令</value></data><data name="Sended" xml:space="preserve"><value>已经发送</value></data><data name="SensorCfgInfo" xml:space="preserve"><value>传感器配置信息</value></data><data name="SensorDicEdit" xml:space="preserve"><value>传感器字典编辑</value></data><data name="Serial" xml:space="preserve"><value>串口</value></data><data name="SerialNumber" xml:space="preserve"><value>序列号</value></data><data name="SerialNumber1" xml:space="preserve"><value>序号</value></data><data name="SerialPortCom" xml:space="preserve"><value>串口通讯</value></data><data name="SerialPortError" xml:space="preserve"><value>串口 {0} 无法打开。\n\n异常信息：{1}</value></data><data name="SerialPortErrorTitle" xml:space="preserve"><value>串口异常</value></data><data name="SerialPortException" xml:space="preserve"><value>串口 {0} 无法打开。\n\n异常信息：{1}</value></data><data name="SerialPortExceptionTitle" xml:space="preserve"><value>串口异常</value></data><data name="SerialPortOccupied" xml:space="preserve"><value>串口 {0} 正在被其他程序占用，无法打开。\n\n请关闭相机或其他占用该串口的程序或检查设备连接。</value></data><data name="SerialPortOccupiedTitle" xml:space="preserve"><value>串口被占用</value></data><data name="ServerMonitorConfig" xml:space="preserve"><value>服务监控配置</value></data><data name="Service" xml:space="preserve"><value>服务</value></data><data name="ServiceAlreadyRunning" xml:space="preserve"><value>RegistrationCenterService 服务已在运行。</value></data><data name="ServiceCach" xml:space="preserve"><value>服务缓存</value></data><data name="ServiceCode" xml:space="preserve"><value>服务代码</value></data><data name="ServiceConfiguration" xml:space="preserve"><value>服务配置</value></data><data name="ServiceIdentifier" xml:space="preserve"><value>服务标识</value></data><data name="ServiceLogAlgorithm" xml:space="preserve"><value>Algorithm服务日志</value></data><data name="ServiceLogCVOLED" xml:space="preserve"><value>CVOLED服务日志</value></data><data name="ServiceLogCamera" xml:space="preserve"><value>Camera服务日志</value></data><data name="ServiceLogDev" xml:space="preserve"><value>dev服务日志</value></data><data name="ServiceLogSMU" xml:space="preserve"><value>SMU服务日志</value></data><data name="ServiceLogSpectrum" xml:space="preserve"><value>Spectrum服务日志</value></data><data name="ServiceLogX64" xml:space="preserve"><value>x64服务日志</value></data><data name="ServiceName" xml:space="preserve"><value>服务名称</value></data><data name="ServiceNotInstalled" xml:space="preserve"><value>未检测到 RegistrationCenterService 服务，请确认已正确安装。</value></data><data name="ServiceRegistryCenterConfig" xml:space="preserve"><value>服务注册中心配置</value></data><data name="SetCorrectParameters" xml:space="preserve"><value>请设置正确的参数！</value></data><data name="SetEmissionSP100Config" xml:space="preserve"><value>EmissionSP100设置</value></data><data name="SetPointLayoutArea" xml:space="preserve"><value>设置布点区域</value></data><data name="SetSegmentation" xml:space="preserve"><value>设定分割</value></data><data name="SetSnFirst" xml:space="preserve"><value>请先配置SN</value></data><data name="SetToGlobalCache" xml:space="preserve"><value>设为全局缓存</value></data><data name="Settings" xml:space="preserve"><value>设置</value></data><data name="SeviceClosed" xml:space="preserve"><value>服务已经关闭</value></data><data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve"><value>SFR寻边模板管理</value></data><data name="SfrV2TemplateManagement" xml:space="preserve"><value>SFRV2模板管理</value></data><data name="Shape" xml:space="preserve"><value>形状</value></data><data name="ShowAll" xml:space="preserve"><value>全部显示</value></data><data name="ShowCenterLine" xml:space="preserve"><value>显示中心线</value></data><data name="ShowDataColumns" xml:space="preserve"><value>显示数据列</value></data><data name="ShowGroup" xml:space="preserve"><value>显示分组</value></data><data name="ShowList" xml:space="preserve"><value>显示列表</value></data><data name="ShowSidebar" xml:space="preserve"><value>显示侧边栏</value></data><data name="ShowSiteInfo" xml:space="preserve"><value>显示位点信息</value></data><data name="SimulateReceive" xml:space="preserve"><value>模拟接受</value></data><data name="SimulateSend" xml:space="preserve"><value>模拟发送</value></data><data name="SingleTest" xml:space="preserve"><value>单次测试</value></data><data name="SingleZeroCalibration" xml:space="preserve"><value>单次校零</value></data><data name="Size" xml:space="preserve"><value>大小</value></data><data name="SkipRCConnection" xml:space="preserve"><value>跳过注册中心连接</value></data><data name="SortByType" xml:space="preserve"><value>按类型排序</value></data><data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve"><value>源表保护的限值,电压源单位V,电流源单位mA</value></data><data name="SourceMeterSwitch" xml:space="preserve"><value>源表开关</value></data><data name="SourceValue" xml:space="preserve"><value>源值</value></data><data name="Spectrometer" xml:space="preserve"><value>光谱仪</value></data><data name="SpectrumInfo" xml:space="preserve"><value>光谱仪信息</value></data><data name="SpectrumView" xml:space="preserve"><value>光谱仪视图</value></data><data name="Start" xml:space="preserve"><value>起始</value></data><data name="StartExecition" xml:space="preserve"><value>开始执行</value></data><data name="StartIntegrationTime_Ms" xml:space="preserve"><value>起始积分时间(ms)</value></data><data name="StartMeasurementValue_V_mA" xml:space="preserve"><value>开始测量值(V/mA)</value></data><data name="StartRC" xml:space="preserve"><value>启用RC</value></data><data name="StartTime" xml:space="preserve"><value>开始时间</value></data><data name="StartTimeMs" xml:space="preserve"><value>开始时间(ms)</value></data><data name="StartingService" xml:space="preserve"><value>正在启动服务</value></data><data name="StartupServiceFailed" xml:space="preserve"><value>以管理员权限启动 RegistrationCenterService 服务失败。</value></data><data name="Status" xml:space="preserve"><value>状态</value></data><data name="Step" xml:space="preserve"><value>步数</value></data><data name="StepReductionFactor" xml:space="preserve"><value>步径每次缩减系数</value></data><data name="StepSwingRange" xml:space="preserve"><value>步径摆动范围</value></data><data name="StepSwingRangeDiscription" xml:space="preserve"><value>第二次的步径 实际第二次步径为 forwardparam</value></data><data name="StereoFusion" xml:space="preserve"><value>双目融合</value></data><data name="StereoFusionTemplateManagement" xml:space="preserve"><value>双目融合模板管理</value></data><data name="StopExecution" xml:space="preserve"><value>停止执行</value></data><data name="StopProcess" xml:space="preserve"><value>停止流程</value></data><data name="StopStepSize" xml:space="preserve"><value>停止步径</value></data><data name="StorageType" xml:space="preserve"><value>存储类型</value></data><data name="String" xml:space="preserve"><value>字符串</value></data><data name="SubPixel" xml:space="preserve"><value>亚像素</value></data><data name="SubPixelLedCheck" xml:space="preserve"><value>亚像素灯珠检测</value></data><data name="SubPixelLedDetectionTemplateManagement" xml:space="preserve"><value>亚像素级灯珠检测模板管理</value></data><data name="Submit" xml:space="preserve"><value>提交</value></data><data name="Subscribe" xml:space="preserve"><value>订阅</value></data><data name="SubscribedTopic" xml:space="preserve"><value>订阅的主题</value></data><data name="Success" xml:space="preserve"><value>成功</value></data><data name="SwapRB" xml:space="preserve"><value>交换 R/B</value></data><data name="Switch" xml:space="preserve"><value>切换</value></data><data name="Symbol" xml:space="preserve"><value>符号</value></data><data name="Syncfreq" xml:space="preserve"><value>同步频率</value></data><data name="SyncfreqFactor" xml:space="preserve"><value>同步频率系数</value></data><data name="SzComId" xml:space="preserve"><value>串口id</value></data><data name="SzComName" xml:space="preserve"><value>串口号</value></data><data name="TbSettingsStartBoot" xml:space="preserve"><value>开机启动(可能会不成功)</value></data><data name="TempQuaryInterval_S" xml:space="preserve"><value>温度查询时间间隔(s)</value></data><data name="Temperature" xml:space="preserve"><value>温度</value></data><data name="TemperatureAxisLabel" xml:space="preserve"><value>温度 (°C)</value></data><data name="TemperatureChart" xml:space="preserve"><value>温度曲线图</value></data><data name="TemperatureChartTitle" xml:space="preserve"><value>温度曲线图</value></data><data name="TemperatureChartTitleWithDate" xml:space="preserve"><value>温度曲线图 - {0}</value></data><data name="TemperatureCtrl" xml:space="preserve"><value>温控</value></data><data name="TemperatureDataNotFound" xml:space="preserve"><value>未获得温度数据</value></data><data name="TemperatureLabel" xml:space="preserve"><value>温度</value></data><data name="TemperatureTarget" xml:space="preserve"><value>目标温度</value></data><data name="TemperatureUnit" xml:space="preserve"><value>温度 (°C)</value></data><data name="Template" xml:space="preserve"><value>模板</value></data><data name="TemplateCalibrationFileRequired" xml:space="preserve"><value>使用{0}模板,需要确认校正文件已经配置</value></data><data name="TemplateEdit" xml:space="preserve"><value>模板编辑</value></data><data name="TemplateEditorLoadFailed" xml:space="preserve"><value>无法加载模板编辑器</value></data><data name="TemplateExists_PleaseRename" xml:space="preserve"><value>已经存在改模板，请修改模板名称</value></data><data name="TemplateFailed" xml:space="preserve"><value>模板失败</value></data><data name="TemplateFileMissing" xml:space="preserve"><value>使用{0}模板, {1} 不存在</value></data><data name="TemplateFileNotExist" xml:space="preserve"><value>使用{0}模板, {1} 文件不存在</value></data><data name="TemplateList" xml:space="preserve"><value>模板列表</value></data><data name="TemplateManagementWindow" xml:space="preserve"><value>模板管理窗口</value></data><data name="TemplateMatching" xml:space="preserve"><value>模板匹配</value></data><data name="TemplateName" xml:space="preserve"><value>模板名称</value></data><data name="TemplatesCount" xml:space="preserve"><value>个模板</value></data><data name="TenantId" xml:space="preserve"><value>租户ID</value></data><data name="Terminal" xml:space="preserve"><value>终端</value></data><data name="TesConnection" xml:space="preserve"><value>测试连接</value></data><data name="TextEdit" xml:space="preserve"><value>文本编辑</value></data><data name="ThirdPartAlgView" xml:space="preserve"><value>第三方算法视图</value></data><data name="ThirdPartAlgorithmConfig" xml:space="preserve"><value>配置第三方算法</value></data><data name="ThirdPartyAlgorithm" xml:space="preserve"><value>第三方算法</value></data><data name="ThirdPartyApps" xml:space="preserve"><value>第三方应用管理</value></data><data name="Threshold" xml:space="preserve"><value>阈值</value></data><data name="ThresholdRange" xml:space="preserve"><value>阈值(0-255)</value></data><data name="Time" xml:space="preserve"><value>时间</value></data><data name="TimeLabel" xml:space="preserve"><value>时间</value></data><data name="TimeLeft" xml:space="preserve"><value>剩余时间：</value></data><data name="TimeOut_Ms" xml:space="preserve"><value>超时(ms)</value></data><data name="Timeout" xml:space="preserve"><value>超时(ms)</value></data><data name="TimeoutDuration" xml:space="preserve"><value>超时时间(ms)</value></data><data name="TitleCacheManagement" xml:space="preserve"><value>缓存管理</value></data><data name="TitleCalibrationHelp" xml:space="preserve"><value>校正系统参考手册</value></data><data name="TitleCameraSearchResults" xml:space="preserve"><value>相机搜索结果</value></data><data name="TitleCreateDevice" xml:space="preserve"><value>创建设备</value></data><data name="TitleEditCameraConfig" xml:space="preserve"><value>编辑相机配置</value></data><data name="TitleLicenseExpiryNotification" xml:space="preserve"><value>许可证过期提醒</value></data><data name="TitleSearchCameraType" xml:space="preserve"><value>搜索相机类型</value></data><data name="ToggleList" xml:space="preserve"><value>切换列表</value></data><data name="ToggleSpectrum" xml:space="preserve"><value>切换相对/绝对光谱</value></data><data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve"><value>Token为空，正在刷新token,请重试</value></data><data name="ToolTipAngleShift" xml:space="preserve"><value>色差校正（AngleShift）：ColorDiff 的变种，角度相关色差校正</value></data><data name="ToolTipCalibrationHelpDetail" xml:space="preserve"><value>打开校正系统参考手册，查看各校正步骤的算法原理和配置说明</value></data><data name="ToolTipColorDiff" xml:space="preserve"><value>色差校正（ColorDiff）：校正不同色彩通道间的色差</value></data><data name="ToolTipColorShift" xml:space="preserve"><value>色偏校正（ColorShift）：通道间空间偏移补偿。配置文件格式：JSON（含 fillOffset 和 offset 参数）</value></data><data name="ToolTipDSNU" xml:space="preserve"><value>DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿。配置文件格式：二进制（V0/V1 头 + ushort 数据）</value></data><data name="ToolTipDarkNoise" xml:space="preserve"><value>暗电流校正（DarkNoise）：消除传感器暗电流噪声。配置文件格式：JSON（含 bpp 和 DarkNoiseRatio）</value></data><data name="ToolTipDefectPoint" xml:space="preserve"><value>坏点校正（DefectPoint）：检测并插值修复缺陷像素。配置文件格式：二进制（坏点数量 + 坐标列表）</value></data><data name="ToolTipDistortion" xml:space="preserve"><value>畸变校正（Distortion）：镜头径向/切向畸变矫正。配置文件格式：JSON（含相机内参矩阵和畸变系数）</value></data><data name="ToolTipEditCameraConfig" xml:space="preserve"><value>修改当前相机配置</value></data><data name="ToolTipFourColor" xml:space="preserve"><value>四色校正（LumFourColor）：3×3 矩阵实现完整的通道混合色彩转换。</value></data><data name="ToolTipLineArity" xml:space="preserve"><value>线性度校正（LineArity）：校正传感器的非线性响应特性</value></data><data name="ToolTipLuminance" xml:space="preserve"><value>亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换。配置文件格式：JSON（含 bpp、曝光时间和系数 a）</value></data><data name="ToolTipMultiColor" xml:space="preserve"><value>多色校正（LumMultiColor）：动态大小系数矩阵，支持更高阶的色彩转换模型。</value></data><data name="ToolTipOneColor" xml:space="preserve"><value>单色校正（LumOneColor）：4 系数模型将 3 通道灰度转换为 CIE XYZ 三刺激值。</value></data><data name="ToolTipOpenCalibrationHelp" xml:space="preserve"><value>打开校正系统参考手册</value></data><data name="ToolTipUniformity" xml:space="preserve"><value>均匀性校正（Uniformity）：补偿镜头渐晕及传感器响应不均。配置文件格式：二进制（V0/V1 头 + float 因子矩阵）</value></data><data name="TopLeft" xml:space="preserve"><value>左上</value></data><data name="TopRight" xml:space="preserve"><value>右上</value></data><data name="Topic" xml:space="preserve"><value>话题</value></data><data name="TransmitChannel" xml:space="preserve"><value>发送信道</value></data><data name="TransparentWindow" xml:space="preserve"><value>透明窗口</value></data><data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve"><value>true是电压源，false是电流源</value></data><data name="TryRestartService" xml:space="preserve"><value>重启服务试试</value></data><data name="Type" xml:space="preserve"><value>类型</value></data><data name="UnableToInstantiateProcessType" xml:space="preserve"><value>无法实例化进程类型</value></data><data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve"><value>未授权或者相机许可证过期</value></data><data name="UnauthorizedOrLicenseExpired" xml:space="preserve"><value>未授权或者许可证过期</value></data><data name="UnderDevelopment" xml:space="preserve"><value>开发中</value></data><data name="Uniformity" xml:space="preserve"><value>均匀场</value></data><data name="UnknownCalibrationType" xml:space="preserve"><value>未知的校正类型：{0}</value></data><data name="UnknownCamera" xml:space="preserve"><value>未知相机</value></data><data name="UnknownStatus" xml:space="preserve"><value>未知状态，请重启服务</value></data><data name="Unregistered" xml:space="preserve"><value>未注册</value></data><data name="Unsubscribe" xml:space="preserve"><value>退订</value></data><data name="UnsupportedDeviceTypeCreation" xml:space="preserve"><value>暂不支持创建 {0} 类型设备</value></data><data name="UnsupportedLicenseFileExtension" xml:space="preserve"><value>不支持的许可文件后缀</value></data><data name="Up" xml:space="preserve"><value>上</value></data><data name="UpdataSucess" xml:space="preserve"><value>更新成功</value></data><data name="UpdateProcessMeta" xml:space="preserve"><value>更新 ProcessMeta</value></data><data name="UpdateSuccess" xml:space="preserve"><value>更新成功</value></data><data name="Upload" xml:space="preserve"><value>上传</value></data><data name="UploadCalibrationFiles" xml:space="preserve"><value>上传校正文件</value></data><data name="UploadCalibrationGroup" xml:space="preserve"><value>上传校正组</value></data><data name="UploadFinished" xml:space="preserve"><value>上传结束</value></data><data name="UploadLic" xml:space="preserve"><value>上传许可证</value></data><data name="UploadThridPartPlusIn" xml:space="preserve"><value>上传第三方插件</value></data><data name="UploadingCalibrationFilePleaseWait" xml:space="preserve"><value>正在上传校正文件：{0} 请稍后...</value></data><data name="UseHDR" xml:space="preserve"><value>启用HDR</value></data><data name="UseNodePrompt" xml:space="preserve"><value>是否使用节点</value></data><data name="UseSystemDefaultTemplate" xml:space="preserve"><value>使用系统默认模板</value></data><data name="UserCancelledOrElevationFailed" xml:space="preserve"><value>用户取消了操作或提权失败。</value></data><data name="UserName" xml:space="preserve"><value>用户</value></data><data name="UserPwd" xml:space="preserve"><value>密码</value></data><data name="V" xml:space="preserve"><value>电压(_V)</value></data><data name="VIScan" xml:space="preserve"><value>VI 扫描</value></data><data name="Value" xml:space="preserve"><value>值</value></data><data name="VerifyJson" xml:space="preserve"><value>校验Json</value></data><data name="Version" xml:space="preserve"><value>版本</value></data><data name="Video" xml:space="preserve"><value>视频模式</value></data><data name="VideoCaptureMode" xml:space="preserve"><value>视频模式</value></data><data name="VideoCaptureTimeoutCheckLog" xml:space="preserve"><value>视频模式打开超时，请检查日志</value></data><data name="ViewImageReadDelay" xml:space="preserve"><value>查看图像读取延迟</value></data><data name="ViewReceivedData" xml:space="preserve"><value>查看接受数据</value></data><data name="ViewSentData" xml:space="preserve"><value>查看发送数据</value></data><data name="Visible" xml:space="preserve"><value>可见</value></data><data name="Voltage" xml:space="preserve"><value>电压(V)</value></data><data name="VoltageCurve" xml:space="preserve"><value>电压曲线</value></data><data name="VoltageSource" xml:space="preserve"><value>电压源</value></data><data name="VoltageSourceCurrentSourceSelection" xml:space="preserve"><value>电压源,电流源选择</value></data><data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve"><value>电压源单位V,电流源单位mA</value></data><data name="WaveLengthFile" xml:space="preserve"><value>波长文件</value></data><data name="Wavelength" xml:space="preserve"><value>波长</value></data><data name="WavelengthNm" xml:space="preserve"><value>波长[nm]</value></data><data name="Width" xml:space="preserve"><value>宽度</value></data><data name="WindowCloseAfter1s" xml:space="preserve"><value>1s 后关闭窗口</value></data><data name="WindowHidden" xml:space="preserve"><value>隐藏</value></data><data name="WindowSingle" xml:space="preserve"><value>独立窗口</value></data><data name="Workflow" xml:space="preserve"><value>工作流程</value></data><data name="WorkflowEngine" xml:space="preserve"><value>流程引擎(_F)</value></data><data name="WorkflowEngineDebugWindow" xml:space="preserve"><value>流程引擎调试窗口</value></data><data name="WorkflowEngineTemplateManagement" xml:space="preserve"><value>流程引擎模板管理</value></data><data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve"><value>找不到流程启动结点，运行失败</value></data><data name="WorkflowTemplate" xml:space="preserve"><value>流程模板:</value></data><data name="fu" xml:space="preserve"><value>色度u</value></data><data name="fv" xml:space="preserve"><value>色度v</value></data><data name="fx" xml:space="preserve"><value>色度x</value></data><data name="fy" xml:space="preserve"><value>色度y</value></data><data name="height" xml:space="preserve"><value>高度</value></data><data name="offline" xml:space="preserve"><value>离线</value></data><data name="offset" xml:space="preserve"><value>偏移</value></data><data name="singleChannel" xml:space="preserve"><value>单通道</value></data><data name="subPixelDetect" xml:space="preserve"><value>亚像素级灯珠检测</value></data><data name="threeChannels" xml:space="preserve"><value>三通道</value></data><data name="usbTraffic" xml:space="preserve"><value>传输速率</value></data><data name="Configuration" xml:space="preserve"><value>配置</value></data><data name="Flow_ConfirmDeleteFlow" xml:space="preserve"><value>确认删除流程 "{0}" ?</value></data><data name="Flow_ExportFlow" xml:space="preserve"><value>导出流程</value></data><data name="Flow_GetCanvasDataFailed" xml:space="preserve"><value>获取画布数据失败</value></data><data name="Flow_ImportFlow" xml:space="preserve"><value>导入流程</value></data><data name="Flow_ImportModuleFailed" xml:space="preserve"><value>导入模块失败: {0}</value></data><data name="Flow_ImportTemplateAsModule" xml:space="preserve"><value>导入模板为模块</value></data><data name="Flow_Module" xml:space="preserve"><value> 模块</value></data><data name="Flow_NewFlow" xml:space="preserve"><value>新建流程</value></data><data name="Flow_NoFlowParamSelected" xml:space="preserve"><value>当前未选择流程参数, 无法保存</value></data><data name="Flow_NoFlowTemplate" xml:space="preserve"><value>没有可用的流程模板</value></data><data name="Flow_NodeTimeAnalysis" xml:space="preserve"><value>节点时间分析</value></data><data name="Flow_RunFlowFirst" xml:space="preserve"><value>请先执行流程</value></data><data name="Flow_SaveFailed" xml:space="preserve"><value>保存失败: {0}</value></data><data name="Flow_TemplateNoFlowData" xml:space="preserve"><value>所选模板没有流程数据</value></data><data name="Flow_PreProcess_Title" xml:space="preserve"><value>预处理配置</value></data><data name="Flow_PreProcess_SaveNow" xml:space="preserve"><value>立即保存</value></data><data name="Flow_PreProcess_ProcessorCountFormat" xml:space="preserve"><value>{0} 个处理器</value></data><data name="Flow_PreProcess_EnabledCountFormat" xml:space="preserve"><value>已启用 {0} 个</value></data><data name="Flow_PreProcess_Processor" xml:space="preserve"><value>处理器</value></data><data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve"><value>应用模板</value></data><data name="Flow_PreProcess_SelectProcessorToViewConfig" xml:space="preserve"><value>请选择一个预处理器查看配置</value></data><data name="Flow_PreProcess_EnabledStatus" xml:space="preserve"><value>启用</value></data><data name="Flow_PreProcess_DisabledStatus" xml:space="preserve"><value>停用</value></data><data name="Flow_PreProcess_AllTemplates" xml:space="preserve"><value>全部模板</value></data><data name="Flow_PreProcess_ProcessorConfig" xml:space="preserve"><value>预处理器配置</value></data><data name="Flow_PreProcess_Category" xml:space="preserve"><value>类别</value></data><data name="Flow_MeasureBatch_PostProcessExecution" xml:space="preserve"><value>后处理执行</value></data><data name="Flow_MeasureBatch_SelectProcessType" xml:space="preserve"><value>选择处理类型:</value></data><data name="Flow_MeasureBatch_SelectedBatch" xml:space="preserve"><value>选中批次:</value></data><data name="Flow_MeasureBatch_NotSelected" xml:space="preserve"><value>未选择</value></data><data name="Flow_MeasureBatch_SelectProcessTypeToViewConfig" xml:space="preserve"><value>请选择处理类型查看配置</value></data><data name="Flow_MeasureBatch_ExecutePostProcess" xml:space="preserve"><value>执行后处理</value></data><data name="Flow_MeasureBatch_ProcessResult" xml:space="preserve"><value>处理结果</value></data><data name="Flow_MeasureBatch_ProcessSuccess" xml:space="preserve"><value>处理成功: {0}</value></data><data name="Flow_MeasureBatch_ProcessFailed" xml:space="preserve"><value>处理失败: {0}</value></data><data name="Flow_MeasureBatch_ProcessError" xml:space="preserve"><value>处理出错: {0}</value></data><data name="Flow_MeasureBatch_ProcessInfo" xml:space="preserve"><value>处理信息</value></data><data name="Flow_MeasureBatch_NameLabel" xml:space="preserve"><value>名称:</value></data><data name="Flow_MeasureBatch_DescriptionLabel" xml:space="preserve"><value>描述:</value></data><data name="Flow_MeasureBatch_ClassificationLabel" xml:space="preserve"><value>分类:</value></data><data name="Flow_MeasureBatch_ConfigOptions" xml:space="preserve"><value>配置选项</value></data><data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve"><value>归档指令已经发送</value></data><data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve"><value>全部归档指令已经发送</value></data><data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve"><value>批次 {0} 结果</value></data><data name="Flow_Display_NoTemplateSelected" xml:space="preserve"><value>未选择有效的流程模板</value></data><data name="Flow_Display_PreprocessFailed" xml:space="preserve"><value>预处理失败，流程取消执行</value></data><data name="Flow_Display_SelectTemplateFirst" xml:space="preserve"><value>再选择之前请先创建对映的模板</value></data><data name="Flow_MessageList_All" xml:space="preserve"><value>全部</value></data><data name="Flow_MessageList_ClearRecords" xml:space="preserve"><value>清空记录</value></data><data name="Flow_MessageList_DisplayCount" xml:space="preserve"><value>当前显示:</value></data><data name="Flow_MessageList_ElapsedMs" xml:space="preserve"><value>耗时(ms)</value></data><data name="Flow_MessageList_LoadCount" xml:space="preserve"><value>加载条数:</value></data><data name="Flow_MessageList_Node" xml:space="preserve"><value>节点:</value></data><data name="Flow_MessageList_NodeHeader" xml:space="preserve"><value>节点</value></data><data name="Flow_MessageList_Query" xml:space="preserve"><value>查询</value></data><data name="Flow_MessageList_RecvData" xml:space="preserve"><value>接收数据 (Receive)</value></data><data name="Flow_MessageList_RecvTime" xml:space="preserve"><value>接收时间</value></data><data name="Flow_MessageList_Refresh" xml:space="preserve"><value>刷新</value></data><data name="Flow_MessageList_SendData" xml:space="preserve"><value>发送数据 (Send)</value></data><data name="Flow_MessageList_SendTime" xml:space="preserve"><value>发送时间</value></data><data name="Flow_MessageList_State" xml:space="preserve"><value>状态:</value></data><data name="Flow_MessageList_StateHeader" xml:space="preserve"><value>状态</value></data><data name="Flow_MessageList_StatusCode" xml:space="preserve"><value>状态码</value></data><data name="Flow_MessageList_Title" xml:space="preserve"><value>流程MQTT消息查询</value></data><data name="Flow_MessageList_TotalCount" xml:space="preserve"><value>总条数:</value></data><data name="Flow_NodeAnalysis_All" xml:space="preserve"><value>全部</value></data><data name="Flow_NodeAnalysis_BatchSelection" xml:space="preserve"><value>批次选择:</value></data><data name="Flow_NodeAnalysis_Compare" xml:space="preserve"><value>对比</value></data><data name="Flow_NodeAnalysis_CsvHeader" xml:space="preserve"><value>BatchId,节点名称,节点类型,开始时间,结束时间,耗时(ms),SN</value></data><data name="Flow_NodeAnalysis_ElapsedMs" xml:space="preserve"><value>耗时(ms)</value></data><data name="Flow_NodeAnalysis_EndTime" xml:space="preserve"><value>结束时间</value></data><data name="Flow_NodeAnalysis_Export" xml:space="preserve"><value>导出</value></data><data name="Flow_NodeAnalysis_FileNamePrefix" xml:space="preserve"><value>节点时间分析_</value></data><data name="Flow_NodeAnalysis_GanttCompareTitle" xml:space="preserve"><value>流程节点对比 (多批次)</value></data><data name="Flow_NodeAnalysis_GanttTitle" xml:space="preserve"><value>流程节点甘特图</value></data><data name="Flow_NodeAnalysis_Load" xml:space="preserve"><value>加载</value></data><data name="Flow_NodeAnalysis_MessageQueryWindow" xml:space="preserve"><value>消息查询窗口</value></data><data name="Flow_NodeAnalysis_MqttCsvHeader" xml:space="preserve"><value>BatchId,节点,NodeId,EventName,MsgId,发送Topic,发送时间,接收Topic,接收时间,耗时(ms),状态码,状态消息,状态</value></data><data name="Flow_NodeAnalysis_MqttMessageTrace" xml:space="preserve"><value>MQTT消息追踪</value></data><data name="Flow_NodeAnalysis_NoDataToExport" xml:space="preserve"><value>没有数据可导出，请先加载批次数据</value></data><data name="Flow_NodeAnalysis_Node" xml:space="preserve"><value>节点</value></data><data name="Flow_NodeAnalysis_NodeFilter" xml:space="preserve"><value>节点筛选:</value></data><data name="Flow_NodeAnalysis_NodeName" xml:space="preserve"><value>节点名称</value></data><data name="Flow_NodeAnalysis_NodeType" xml:space="preserve"><value>节点类型</value></data><data name="Flow_NodeAnalysis_RecvData" xml:space="preserve"><value>接收数据 (Receive)</value></data><data name="Flow_NodeAnalysis_RecvTime" xml:space="preserve"><value>接收时间</value></data><data name="Flow_NodeAnalysis_SelectAtLeastOneBatch" xml:space="preserve"><value>请选择至少一个批次</value></data><data name="Flow_NodeAnalysis_SelectAtLeastTwoBatches" xml:space="preserve"><value>请选择至少两个批次进行对比</value></data><data name="Flow_NodeAnalysis_SendData" xml:space="preserve"><value>发送数据 (Send)</value></data><data name="Flow_NodeAnalysis_SendTime" xml:space="preserve"><value>发送时间</value></data><data name="Flow_NodeAnalysis_StartTime" xml:space="preserve"><value>开始时间</value></data><data name="Flow_NodeAnalysis_State" xml:space="preserve"><value>状态</value></data><data name="Flow_NodeAnalysis_StateFilter" xml:space="preserve"><value>状态筛选:</value></data><data name="Flow_NodeAnalysis_Title" xml:space="preserve"><value>流程节点时间分析</value></data><data name="Flow_NodeAnalysis_TotalTime" xml:space="preserve"><value>总时间</value></data><data name="Flow_NodeAnalysis_XLabelElapsed" xml:space="preserve"><value>耗时 (ms)</value></data><data name="Flow_NodeAnalysis_XLabelTime" xml:space="preserve"><value>时间 (ms)</value></data><data name="Flow_CreateTemplateBeforeSelection" xml:space="preserve"><value>再选择之前请先创建对映的模板</value></data><data name="Flow_NodeLabel" xml:space="preserve"><value>节点:</value></data><data name="Flow_ExecutingNodeLabel" xml:space="preserve"><value>正在执行节点:</value></data><data name="Flow_ElapsedTimeLabel" xml:space="preserve"><value>已经执行：</value></data><data name="Flow_LastExecutionLabel" xml:space="preserve"><value>上次执行：</value></data><data name="Flow_EstimatedRemainingLabel" xml:space="preserve"><value>预计还需要：</value></data><data name="Flow_NoValidFlowTemplateSelected" xml:space="preserve"><value>未选择有效的流程模板</value></data><data name="Flow_PreprocessFailedCancelled" xml:space="preserve"><value>预处理失败，流程取消执行</value></data><data name="Flow_Elapsed" xml:space="preserve"><value>耗时:</value></data><data name="Flow_StartupException" xml:space="preserve"><value>启动异常</value></data><data name="Flow_NotStarted" xml:space="preserve"><value>未启动</value></data><data name="Flow_FlowNotStartedMessage" xml:space="preserve"><value>流程未能启动：可能验证失败、流程正在运行中或未选中模板</value></data><data name="Flow_NoAvailableTemplates" xml:space="preserve"><value>(无可用模板)</value></data><data name="Flow_StartNodeNotFound" xml:space="preserve"><value>找不到流程起始结点</value></data><data name="Flow_EndNodeNotFound" xml:space="preserve"><value>找不到流程结束结点</value></data><data name="Flow_NoPathFromStartToEnd" xml:space="preserve"><value>无法找到从起始结点到结束结点的有效路径</value></data><data name="Flow_ExportFlowFilter" xml:space="preserve"><value>流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn</value></data><data name="Flow_ImportFlowFilter" xml:space="preserve"><value>流程文件 (*.cvflow;*.stn)|*.cvflow;*.stn|流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn</value></data><data name="Flow_ParseFlowSampleError" xml:space="preserve"><value>解析流程样例时出错: {0}</value></data><data name="Flow_ImportFlowPackageError" xml:space="preserve"><value>导入流程包时出错: {0}</value></data><data name="Flow_MessageList_ConfirmClearAll" xml:space="preserve"><value>确定要清空所有流程MQTT消息记录吗？</value></data><data name="Flow_NodeAnalysis_ComparisonTitle" xml:space="preserve"><value>流程节点对比 (多批次)</value></data><data name="Flow_NodeAnalysis_ElapsedMsLabel" xml:space="preserve"><value>耗时 (ms)</value></data><data name="Flow_NodeAnalysis_ExportSuccess" xml:space="preserve"><value>导出成功</value></data><data name="Flow_NodeAnalysis_TimeMs" xml:space="preserve"><value>时间 (ms)</value></data><data name="Flow_NodeAnalysis_Timeout" xml:space="preserve"><value>超时</value></data><data name="Flow_MeasureBatch_AllArchiveSent" xml:space="preserve"><value>全部归档指令已经发送</value></data><data name="Flow_MeasureBatch_ArchiveSent" xml:space="preserve"><value>归档指令已经发送</value></data><data name="Flow_MeasureBatch_BatchResult" xml:space="preserve"><value>批次 {0} 结果</value></data><data name="Flow_MeasureBatch_Description" xml:space="preserve"><value>描述:</value></data><data name="Flow_MeasureBatch_Name" xml:space="preserve"><value>名称:</value></data><data name="Flow_MeasureBatch_NodeTimeAnalysis" xml:space="preserve"><value>节点时间分析</value></data><data name="Flow_MeasureBatch_SelectProcessTypeLabel" xml:space="preserve"><value>选择处理类型:</value></data><data name="Flow_MeasureBatch_SelectToViewConfig" xml:space="preserve"><value>请选择处理类型查看配置</value></data><data name="Flow_MeasureBatch_Title" xml:space="preserve"><value>流程批次配置</value></data><data name="Flow_NoEndNode" xml:space="preserve"><value>找不到流程结束结点</value></data><data name="Flow_NoStartNode" xml:space="preserve"><value>找不到流程起始结点</value></data><data name="Flow_NoTemplateAvailable" xml:space="preserve"><value>(无可用模板)</value></data><data name="Flow_PreProcess_AutoSaved" xml:space="preserve"><value>已自动保存 {0}</value></data><data name="Flow_PreProcess_BasicInfo" xml:space="preserve"><value>基本信息</value></data><data name="Flow_PreProcess_Close" xml:space="preserve"><value>关闭</value></data><data name="Flow_PreProcess_Config" xml:space="preserve"><value>预处理器配置</value></data><data name="Flow_PreProcess_ConfigLoaded" xml:space="preserve"><value>已加载配置 {0}</value></data><data name="Flow_PreProcess_ConfigNotFound" xml:space="preserve"><value>未找到配置文件</value></data><data name="Flow_PreProcess_Description" xml:space="preserve"><value>描述:</value></data><data name="Flow_PreProcess_Disabled" xml:space="preserve"><value>停用</value></data><data name="Flow_PreProcess_Enabled" xml:space="preserve"><value>启用</value></data><data name="Flow_PreProcess_LoadFailed" xml:space="preserve"><value>加载配置失败</value></data><data name="Flow_PreProcess_NotSaved" xml:space="preserve"><value>尚未保存</value></data><data name="Flow_PreProcess_ProcessClass" xml:space="preserve"><value>处理类:</value></data><data name="Flow_PreProcess_SaveFailed" xml:space="preserve"><value>保存失败，请查看日志</value></data><data name="Flow_PreProcess_SelectProcessor" xml:space="preserve"><value>请选择一个预处理器查看配置</value></data><data name="Flow_PreProcess_Type" xml:space="preserve"><value>类型:</value></data><data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>算法调用</value></data><data name="BilateralFilter" xml:space="preserve"><value>双边滤波</value></data><data name="Blur" xml:space="preserve"><value>均值滤波</value></data><data name="Dilate" xml:space="preserve"><value>膨胀</value></data><data name="Erode" xml:space="preserve"><value>腐蚀</value></data><data name="FilterDenoise" xml:space="preserve"><value>滤波/去噪</value></data><data name="ImageProcessing" xml:space="preserve"><value>图像处理</value></data><data name="KernelSize" xml:space="preserve"><value>核大小</value></data><data name="MorphologyEx" xml:space="preserve"><value>形态学操作</value></data><data name="OpenWithImageJ" xml:space="preserve"><value>通过ImageJ打开</value></data><data name="GaussianBlur" xml:space="preserve"><value>高斯模糊</value></data><data name="MedianFilter" xml:space="preserve"><value>中值滤波</value></data><data name="ThresholdProcessing" xml:space="preserve"><value>阈值处理</value></data><data name="DownloadingOpenCvSharpFix" xml:space="preserve"><value>正在下载 OpenCvSharp 修复补丁...</value></data><data name="FixOpenCvSharpExportCrash" xml:space="preserve"><value>修复 OpenCvSharp 导出崩溃</value></data><data name="OpenCvSharpFixBackupFailed" xml:space="preserve"><value>备份现有 DLL 失败：{0}</value></data><data name="OpenCvSharpFixDllLocked" xml:space="preserve"><value>DLL 被占用无法替换，请关闭 ColorVision 后重试。
 
-错误详情：{0}</value></data><data name="OpenCvSharpFixFailed" xml:space="preserve"><value>修复补丁安装失败：{0}</value></data><data name="OpenCvSharpFixSuccess" xml:space="preserve"><value>修复补丁已安装，请重启 ColorVision 后生效。</value></data><data name="OpenCvSharpFixConfirmClose" xml:space="preserve"><value>修复补丁下载完成。将关闭 ColorVision 以安装补丁，安装后会自动重启。是否继续？</value></data></root>
+错误详情：{0}</value></data><data name="OpenCvSharpFixFailed" xml:space="preserve"><value>修复补丁安装失败：{0}</value></data><data name="OpenCvSharpFixSuccess" xml:space="preserve"><value>修复补丁已安装，请重启 ColorVision 后生效。</value></data><data name="OpenCvSharpFixConfirmClose" xml:space="preserve"><value>修复补丁下载完成。将关闭 ColorVision 以安装补丁，安装后会自动重启。是否继续？</value></data>
+  <data name="Engine_Msg_ConfigFileFormatError" xml:space="preserve">
+    <value>配置文件格式错误: {0}</value>
+  </data>
+  <data name="Engine_Msg_ParseError" xml:space="preserve">
+    <value>解析错误</value>
+  </data>
+  <data name="Engine_Msg_FileProcessError" xml:space="preserve">
+    <value>处理文件时发生错误: {0}</value>
+  </data>
+  <data name="Engine_Msg_RCConfigInfoNotFound" xml:space="preserve">
+    <value>找不到{0}配置信息</value>
+  </data>
+  <data name="Engine_Msg_ConfirmDeleteAllRecords" xml:space="preserve">
+    <value>确定要删除数据库中所有记录吗？此操作不可恢复。</value>
+  </data>
+  <data name="Engine_Msg_ConfirmDeleteTitle" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="Engine_Msg_ConfirmResetDatabase" xml:space="preserve">
+    <value>确定要重置数据库吗？将删除数据库文件并重新创建。此操作不可恢复。</value>
+  </data>
+  <data name="Engine_Msg_ConfirmResetTitle" xml:space="preserve">
+    <value>确认重置</value>
+  </data>
+  <data name="Engine_Msg_MessageRecord" xml:space="preserve">
+    <value>消息记录</value>
+  </data>
+  <data name="Engine_Msg_MqttHistoryCleared" xml:space="preserve">
+    <value>MQTT历史记录清理完毕</value>
+  </data>
+  <data name="Engine_Msg_ConnectSuccess" xml:space="preserve">
+    <value>连接成功</value>
+  </data>
+  <data name="Engine_Msg_ConnectFailed" xml:space="preserve">
+    <value>连接失败</value>
+  </data>
+  <data name="Engine_Msg_RestoreSuccessRestartRequired" xml:space="preserve">
+    <value>还原成功,资源文件加载需要重启服务</value>
+  </data>
+  <data name="Engine_Msg_LoadingResultTableStats" xml:space="preserve">
+    <value>加载结果表统计失败: {0}</value>
+  </data>
+  <data name="Engine_Msg_DataCleanupComplete" xml:space="preserve">
+    <value>数据表清理完成</value>
+  </data>
+  <data name="Engine_Msg_CleanupHistoryFailed" xml:space="preserve">
+    <value>清理历史结果失败: {0}</value>
+  </data>
+  <data name="Engine_Msg_AllTablesCleared" xml:space="preserve">
+    <value>数据表已经全部清空。</value>
+  </data>
+  <data name="Engine_Msg_ClearResultTablesFailed" xml:space="preserve">
+    <value>清空结果表失败: {0}</value>
+  </data>
+  <data name="Engine_Msg_BackupInProgress" xml:space="preserve">
+    <value>正在执行备份程序</value>
+  </data>
+  <data name="Engine_Msg_BackupSuccess" xml:space="preserve">
+    <value>备份成功</value>
+  </data>
+  <data name="Engine_Msg_RestoreSuccessRestarting" xml:space="preserve">
+    <value>还原成功,正在重启服务</value>
+  </data>
+  <data name="Engine_Msg_ServiceRestartSuccess" xml:space="preserve">
+    <value>服务重启成功，重启软件</value>
+  </data>
+  <data name="Engine_Msg_ServiceRestartFailed" xml:space="preserve">
+    <value>服务重启失败</value>
+  </data>
+  <data name="Engine_Msg_EnterValidKeepMonths" xml:space="preserve">
+    <value>请输入大于 0 的保留月数</value>
+  </data>
+  <data name="Engine_Msg_NoCalculableCvRaw" xml:space="preserve">
+    <value>当前没有可计算的 CVRAW 文件。</value>
+  </data>
+  <data name="Engine_Msg_OnlyThreeChannelCvRaw" xml:space="preserve">
+    <value>仅支持三通道 CVRAW 计算 CIE。</value>
+  </data>
+  <data name="Engine_Msg_CalculateCieFailed" xml:space="preserve">
+    <value>计算 CIE 失败: {0}</value>
+  </data>
+  <data name="Engine_Msg_CalculateCie" xml:space="preserve">
+    <value>计算CIE</value>
+  </data>
+  <data name="Engine_Msg_ResultOnlyYNoColorCoords" xml:space="preserve">
+    <value>当前结果只有 Y，没有色坐标，无法显示到 CIE 图。</value>
+  </data>
+  <data name="Engine_Msg_NoDisplayableCiePoints" xml:space="preserve">
+    <value>当前没有可显示的 CIE 点。</value>
+  </data>
+  <data name="Engine_Msg_SelectCalibrationFileFirst" xml:space="preserve">
+    <value>请先选择一个相机校正文件。</value>
+  </data>
+  <data name="Engine_Msg_ImportFourColorCalFailed" xml:space="preserve">
+    <value>导入四色校正文件失败。</value>
+  </data>
+  <data name="Engine_Msg_Prompt" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Engine_Msg_FileReadFailedUnsupported" xml:space="preserve">
+    <value>文件读取失败或不支持的格式。</value>
+  </data>
+  <data name="Engine_Msg_NotSingleChannelImage" xml:space="preserve">
+    <value>无法提取：该文件不是单通道图像。</value>
+  </data>
+  <data name="Engine_Msg_TiffReadFailed" xml:space="preserve">
+    <value>文件读取失败或损坏的 TIFF 文件。</value>
+  </data>
+  <data name="Engine_Msg_UnsupportedFileType" xml:space="preserve">
+    <value>不支持的文件类型。</value>
+  </data>
+  <data name="Engine_Msg_ConvertToMatFailed" xml:space="preserve">
+    <value>转换为 Mat 失败。</value>
+  </data>
+  <data name="Engine_Msg_SaveSuccessTo" xml:space="preserve">
+    <value>成功保存到: {0}</value>
+  </data>
+  <data name="Engine_Msg_ErrorWithDetail" xml:space="preserve">
+    <value>发生错误: {0}</value>
+  </data>
+  <data name="Engine_Msg_FilePathEmpty" xml:space="preserve">
+    <value>文件夹路径不能为空</value>
+  </data>
+  <data name="Engine_Dlg_ExportTemplate" xml:space="preserve">
+    <value>导出模板</value>
+  </data>
+  <data name="Engine_Dlg_ImportTemplate" xml:space="preserve">
+    <value>导入模板</value>
+  </data>
+  <data name="Engine_Dlg_SelectCalibrationFile" xml:space="preserve">
+    <value>选择标定文件</value>
+  </data>
+  <data name="Engine_Dlg_SelectProjectLocation" xml:space="preserve">
+    <value>为新项目选择位置</value>
+  </data>
+  <data name="Engine_Dlg_SelectSingleChannelFile" xml:space="preserve">
+    <value>选择要转换的 单通道 文件</value>
+  </data>
+  <data name="Engine_Dlg_SaveCsvFile" xml:space="preserve">
+    <value>保存 CSV 文件</value>
+  </data>
+  <data name="Engine_Dlg_SelectDatFile" xml:space="preserve">
+    <value>选择要读取的 DAT 文件</value>
+  </data>
+  <data name="Engine_Dlg_OpenFile" xml:space="preserve">
+    <value>打开文件</value>
+  </data>
+  <data name="Engine_PG_DecimalPlaces" xml:space="preserve">
+    <value>小数位数</value>
+  </data>
+  <data name="Engine_PG_FontSize" xml:space="preserve">
+    <value>字体大小</value>
+  </data>
+  <data name="Engine_PG_PenThickness" xml:space="preserve">
+    <value>线条粗细</value>
+  </data>
+  <data name="Engine_PG_Render" xml:space="preserve">
+    <value>渲染</value>
+  </data>
+  <data name="Engine_PG_Tag" xml:space="preserve">
+    <value>标签</value>
+  </data>
+  <data name="Engine_PG_TagDesc" xml:space="preserve">
+    <value>用户自定义标签信息</value>
+  </data>
+  <data name="Engine_PG_CleanupFolder" xml:space="preserve">
+    <value>清理文件夹</value>
+  </data>
+  <data name="Engine_PG_FileExtensions" xml:space="preserve">
+    <value>文件扩展名</value>
+  </data>
+  <data name="Engine_PG_FilePattern" xml:space="preserve">
+    <value>文件名模式</value>
+  </data>
+  <data name="Engine_PG_IncludeSubfolders" xml:space="preserve">
+    <value>包含子文件夹</value>
+  </data>
+  <data name="Engine_PG_KeepRecentFiles" xml:space="preserve">
+    <value>保留最近N个文件</value>
+  </data>
+  <data name="Engine_PG_DeleteOlderThanDays" xml:space="preserve">
+    <value>仅删除旧于N天的文件</value>
+  </data>
+  <data name="Engine_PG_Enabled" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="Engine_PG_DeleteEmptyFolders" xml:space="preserve">
+    <value>删除空文件夹</value>
+  </data>
+  <data name="Engine_PG_SaveCSV" xml:space="preserve">
+    <value>保存CSV</value>
+  </data>
+  <data name="Engine_PG_ShowWindow" xml:space="preserve">
+    <value>显示窗口</value>
+  </data>
+  <data name="Engine_PG_SaveCameraCsv" xml:space="preserve">
+    <value>保存相机CSV</value>
+  </data>
+  <data name="Engine_PG_SaveSpectrumCsv" xml:space="preserve">
+    <value>保存光谱CSV</value>
+  </data>
+  <data name="Engine_PG_ShowPlot" xml:space="preserve">
+    <value>显示图表</value>
+  </data>
+  <data name="Engine_PG_MonitorFolder" xml:space="preserve">
+    <value>监控文件夹</value>
+  </data>
+  <data name="Engine_PG_TriggerSize" xml:space="preserve">
+    <value>触发上限</value>
+  </data>
+  <data name="Engine_PG_CleanupLimit" xml:space="preserve">
+    <value>清理下限</value>
+  </data>
+  <data name="Engine_PG_ApplyTemplate" xml:space="preserve">
+    <value>应用模板</value>
+  </data>
+  <data name="Engine_PG_SampleShape" xml:space="preserve">
+    <value>取样形状</value>
+  </data>
+  <data name="Engine_PG_SampleRadius" xml:space="preserve">
+    <value>取样半径</value>
+  </data>
+  <data name="Engine_PG_RectWidth" xml:space="preserve">
+    <value>矩形宽度</value>
+  </data>
+  <data name="Engine_PG_RectHeight" xml:space="preserve">
+    <value>矩形高度</value>
+  </data>
+  <data name="Engine_PG_InputNorm" xml:space="preserve">
+    <value>输入归一化</value>
+  </data>
+  <data name="Engine_PG_MatrixXRow" xml:space="preserve">
+    <value>矩阵 X 行</value>
+  </data>
+  <data name="Engine_PG_MatrixYRow" xml:space="preserve">
+    <value>矩阵 Y 行</value>
+  </data>
+  <data name="Engine_PG_MatrixZRow" xml:space="preserve">
+    <value>矩阵 Z 行</value>
+  </data>
+  <data name="Engine_PG_ShowRecordData" xml:space="preserve">
+    <value>是否显示记录数据</value>
+  </data>
+  <data name="Engine_PG_DataTemplate" xml:space="preserve">
+    <value>数据显示模板</value>
+  </data>
+  <data name="Engine_PG_CameraSettings" xml:space="preserve">
+    <value>相机设置</value>
+  </data>
+  <data name="Engine_PG_CameraDeviceName" xml:space="preserve">
+    <value>相机设备名称</value>
+  </data>
+  <data name="Engine_PG_CameraDeviceNameDesc" xml:space="preserve">
+    <value>输入要使用的相机设备名称</value>
+  </data>
+  <data name="Engine_PG_CameraTask" xml:space="preserve">
+    <value>相机拍摄任务</value>
+  </data>
+  <data name="Engine_PG_RegisterAddress" xml:space="preserve">
+    <value>寄存器地址</value>
+  </data>
+  <data name="Engine_PG_AutoIntegration" xml:space="preserve">
+    <value>自动积分</value>
+  </data>
+  <data name="Engine_PG_MaxIntegrationTime" xml:space="preserve">
+    <value>积分时间最大值</value>
+  </data>
+  <data name="Engine_PG_MaxAverageCount" xml:space="preserve">
+    <value>平均次数最大值</value>
+  </data>
+  <data name="Engine_PG_NegativeLuminanceGuard" xml:space="preserve">
+    <value>防负亮度</value>
+  </data>
+  <data name="Engine_PG_MinLuminanceValue" xml:space="preserve">
+    <value>亮度最小值</value>
+  </data>
+  <data name="Engine_PG_SpectrumSettings" xml:space="preserve">
+    <value>光谱仪设置</value>
+  </data>
+  <data name="Engine_PG_SpectrumDeviceName" xml:space="preserve">
+    <value>光谱仪设备名称</value>
+  </data>
+  <data name="Engine_PG_SpectrumDeviceNameDesc" xml:space="preserve">
+    <value>输入要使用的光谱仪设备名称</value>
+  </data>
+  <data name="Engine_PG_SpectrumTask" xml:space="preserve">
+    <value>光谱仪单次测试</value>
+  </data>
+  <data name="Engine_PG_Voltage" xml:space="preserve">
+    <value>电压</value>
+  </data>
+  <data name="Engine_PG_Current" xml:space="preserve">
+    <value>电流</value>
+  </data>
+  <data name="Engine_PG_LicenseNotify" xml:space="preserve">
+    <value>许可证通知</value>
+  </data>
+  <data name="Engine_PG_WarningDays" xml:space="preserve">
+    <value>提前提示天数</value>
+  </data>
+  <data name="Engine_PG_WarningDaysDesc" xml:space="preserve">
+    <value>许可证过期前多少天开始提示</value>
+  </data>
+  <data name="Engine_PG_HideExpiredPrompt" xml:space="preserve">
+    <value>是否不再显示过期许可证提示</value>
+  </data>
+  <data name="Engine_PG_HideExpiringPrompt" xml:space="preserve">
+    <value>是否不再显示即将过期许可证提示</value>
+  </data>
+  <data name="Engine_PG_PoiTransform" xml:space="preserve">
+    <value>POI变换参数</value>
+  </data>
+  <data name="Engine_PG_XOffset" xml:space="preserve">
+    <value>X偏移</value>
+  </data>
+  <data name="Engine_PG_YOffset" xml:space="preserve">
+    <value>Y偏移</value>
+  </data>
+  <data name="Engine_PG_XScale" xml:space="preserve">
+    <value>X缩放</value>
+  </data>
+  <data name="Engine_PG_YScale" xml:space="preserve">
+    <value>Y缩放</value>
+  </data>
+  <data name="Engine_PG_ScaleSize" xml:space="preserve">
+    <value>缩放尺寸</value>
+  </data>
+  <data name="Engine_PG_PositionOffset" xml:space="preserve">
+    <value>位置偏移</value>
+  </data>
+  <data name="Engine_PG_Scale" xml:space="preserve">
+    <value>缩放</value>
+  </data>
+  <data name="Engine_PG_Threshold" xml:space="preserve">
+    <value>阈值</value>
+  </data>
+  <data name="Engine_PG_Area" xml:space="preserve">
+    <value>面积</value>
+  </data>
+  <data name="Engine_PG_ShapeCircle" xml:space="preserve">
+    <value>形状圆控制</value>
+  </data>
+  <data name="Engine_PG_ShapeGap" xml:space="preserve">
+    <value>形状豁口控制</value>
+  </data>
+  <data name="Engine_PG_ShapeEllipse" xml:space="preserve">
+    <value>形状椭圆控制</value>
+  </data>
+  <data name="Engine_PG_Global" xml:space="preserve">
+    <value>全局</value>
+  </data>
+  <data name="Engine_PG_AutoEditSave" xml:space="preserve">
+    <value>修改保存提示</value>
+  </data>
+  <data name="Engine_PG_FilePath" xml:space="preserve">
+    <value>文件路径</value>
+  </data>
+  <data name="Engine_PG_LocalImage" xml:space="preserve">
+    <value>本地图片</value>
+  </data>
+  <data name="Engine_PG_Diff" xml:space="preserve">
+    <value>差值</value>
+  </data>
+  <data name="Engine_PG_Ratio" xml:space="preserve">
+    <value>比例</value>
+  </data>
+  <data name="Engine_PG_NoCorrection" xml:space="preserve">
+    <value>不修正</value>
+  </data>
+  <data name="Engine_PG_BrightnessOnly" xml:space="preserve">
+    <value>只修亮度</value>
+  </data>
+  <data name="Engine_PG_ChromaOnly" xml:space="preserve">
+    <value>只修色度</value>
+  </data>
+  <data name="Engine_PG_BrightnessAndChroma" xml:space="preserve">
+    <value>亮色度均修正</value>
+  </data>
+  <data name="Engine_PG_BatchConfig" xml:space="preserve">
+    <value>流程批次配置</value>
+  </data>
+  <data name="Engine_Msg_ResultTableStatsLoaded" xml:space="preserve">
+    <value>已加载 {0} 张可清理结果表。</value>
+  </data>
+  <data name="Engine_Msg_NoCleanableResultTables" xml:space="preserve">
+    <value>未找到可清理结果表，请确认数据库连接和表结构。</value>
+  </data>
+  <data name="Engine_Msg_LoadResultTableStatsFailed" xml:space="preserve">
+    <value>加载结果表统计失败</value>
+  </data>
+  <data name="Engine_Msg_LoadResultTableStatsFailedDetail" xml:space="preserve">
+    <value>加载结果表统计失败：{0}</value>
+  </data>
+  <data name="Engine_Msg_DataTableCleanupComplete" xml:space="preserve">
+    <value>数据表清理完成</value>
+  </data>
+  <data name="Engine_Msg_CleanupHistoryFailedDetail" xml:space="preserve">
+    <value>清理历史结果失败：{0}</value>
+  </data>
+  <data name="Engine_Msg_ClearingResultTables" xml:space="preserve">
+    <value>正在清空结果表...</value>
+  </data>
+  <data name="Engine_Msg_AllResultTablesCleared" xml:space="preserve">
+    <value>数据表已经全部清空。</value>
+  </data>
+  <data name="Engine_Msg_ClearResultTablesFailedDetail" xml:space="preserve">
+    <value>清空结果表失败：{0}</value>
+  </data>
+  <data name="Engine_Msg_SavedSuccessfully" xml:space="preserve">
+    <value>成功保存到：{0}</value>
+  </data>
+  <data name="Engine_Msg_FileReadFailedCorruptedTiff" xml:space="preserve">
+    <value>文件读取失败或损坏的 TIFF 文件。</value>
+  </data>
+  <data name="CalcCIE" xml:space="preserve">
+    <value>计算CIE</value>
+  </data>
+  <data name="OriginalImage" xml:space="preserve">
+    <value>原图</value>
+  </data>
+  <data name="ColorSigma" xml:space="preserve">
+    <value>色彩Sigma</value>
+  </data>
+  <data name="Iterations" xml:space="preserve">
+    <value>迭代次数</value>
+  </data>
+  <data name="ShowOnCieDiagram" xml:space="preserve">
+    <value>显示到CIE图</value>
+  </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>MySQL工具</value>
+  </data>
+  <data name="SFRInfo" xml:space="preserve">
+    <value>SFR 信息</value>
+  </data>
+  <data name="SelectTemplateAsModule" xml:space="preserve">
+    <value>选择模板作为模块导入</value>
+  </data>
+  <data name="ExplainTemplate" xml:space="preserve">
+    <value>解释当前模板</value>
+  </data>
+  <data name="DisplayType" xml:space="preserve">
+    <value>显示类型</value>
+  </data>
+  <data name="POITransform" xml:space="preserve">
+    <value>POI变换</value>
+  </data>
+  <data name="KeyboardTemplateEdit" xml:space="preserve">
+    <value>键盘模板编辑</value>
+  </data>
+  <data name="NoAreaError" xml:space="preserve">
+    <value>三个全为False时执行会报错</value>
+  </data>
+  <data name="CorrectionMethod" xml:space="preserve">
+    <value>修正方式</value>
+  </data>
+  <data name="BenchmarkParams" xml:space="preserve">
+    <value>对标参数</value>
+  </data>
+  <data name="CreateSource" xml:space="preserve">
+    <value>创建来源</value>
+  </data>
+  <data name="SampleGroup" xml:space="preserve">
+    <value>样例组</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="AutoCreateGroupHint" xml:space="preserve">
+    <value>输入不存在的组名会在保存时自动创建</value>
+  </data>
+  <data name="AutoDetectKeyRegions" xml:space="preserve">
+    <value>自动检测键区</value>
+  </data>
+  <data name="AutoDetectKeyRegionsToolTip" xml:space="preserve">
+    <value>自动识别图像中的发光按键区域并创建POI</value>
+  </data>
+  <data name="Background" xml:space="preserve">
+    <value>背景</value>
+  </data>
+  <data name="CalcMethod" xml:space="preserve">
+    <value>计算方式</value>
+  </data>
+  <data name="CameraFourColorCalFile" xml:space="preserve">
+    <value>相机四色校正文件</value>
+  </data>
+  <data name="CapturePhoto" xml:space="preserve">
+    <value>拍摄</value>
+  </data>
+  <data name="ChannelB" xml:space="preserve">
+    <value>B通道</value>
+  </data>
+  <data name="ChannelG" xml:space="preserve">
+    <value>G通道</value>
+  </data>
+  <data name="ChannelR" xml:space="preserve">
+    <value>R通道</value>
+  </data>
+  <data name="ChannelX" xml:space="preserve">
+    <value>X通道</value>
+  </data>
+  <data name="ChannelY" xml:space="preserve">
+    <value>Y通道</value>
+  </data>
+  <data name="ChannelZ" xml:space="preserve">
+    <value>Z通道</value>
+  </data>
+  <data name="CheckConfigAnomaly" xml:space="preserve">
+    <value>检查配置是否异常</value>
+  </data>
+  <data name="CleanupHistory" xml:space="preserve">
+    <value>清理历史数据</value>
+  </data>
+  <data name="ClearAllData" xml:space="preserve">
+    <value>清空全部数据</value>
+  </data>
+  <data name="CurveName" xml:space="preserve">
+    <value>曲线名:</value>
+  </data>
+  <data name="DataCleanupDesc" xml:space="preserve">
+    <value>独立窗口统一展示...</value>
+  </data>
+  <data name="DefaultUseInitialMatrix" xml:space="preserve">
+    <value>默认值直接使用类里的初始矩阵。</value>
+  </data>
+  <data name="EditConfigInWindow" xml:space="preserve">
+    <value>在独立窗口编辑配置</value>
+  </data>
+  <data name="ExecuteHalo" xml:space="preserve">
+    <value>执行Halo</value>
+  </data>
+  <data name="ExecuteKey" xml:space="preserve">
+    <value>执行Key</value>
+  </data>
+  <data name="ExplainParameters" xml:space="preserve">
+    <value>解释当前参数含义</value>
+  </data>
+  <data name="ExportCSV" xml:space="preserve">
+    <value>导出 CSV</value>
+  </data>
+  <data name="FileName_Mysql" xml:space="preserve">
+    <value>文件名</value>
+  </data>
+  <data name="FileName_Poi" xml:space="preserve">
+    <value>文件名称</value>
+  </data>
+  <data name="FilterEnabled" xml:space="preserve">
+    <value>关注点过滤启用</value>
+  </data>
+  <data name="FrameSelectArea" xml:space="preserve">
+    <value>框选区域</value>
+  </data>
+  <data name="FrameSelectAreaToolTip" xml:space="preserve">
+    <value>在图像上框选设置布点区域</value>
+  </data>
+  <data name="FreqAtMtfQuery" xml:space="preserve">
+    <value>Freq@MTF 查询</value>
+  </data>
+  <data name="Frequency" xml:space="preserve">
+    <value>频率:</value>
+  </data>
+  <data name="FullBackup" xml:space="preserve">
+    <value>全盘备份</value>
+  </data>
+  <data name="ImportSelected" xml:space="preserve">
+    <value>导入所选</value>
+  </data>
+  <data name="IntermediateVariables" xml:space="preserve">
+    <value>中间变量</value>
+  </data>
+  <data name="LayoutAreaDisplay" xml:space="preserve">
+    <value>布点区域显示</value>
+  </data>
+  <data name="LoadBackup" xml:space="preserve">
+    <value>加载备份</value>
+  </data>
+  <data name="MarginCalc" xml:space="preserve">
+    <value>边距计算</value>
+  </data>
+  <data name="MarginSettings" xml:space="preserve">
+    <value>边距设置</value>
+  </data>
+  <data name="MigrationBackup" xml:space="preserve">
+    <value>迁移数据库备份(只包含流程和资源)</value>
+  </data>
+  <data name="MtfAtFreqQuery" xml:space="preserve">
+    <value>MTF@Freq 查询</value>
+  </data>
+  <data name="MysqlMovedToWindow" xml:space="preserve">
+    <value>MySQL 结果表清理已移到独立窗口...</value>
+  </data>
+  <data name="NewTemplateName" xml:space="preserve">
+    <value>新模板名称</value>
+  </data>
+  <data name="PoiParamHeader" xml:space="preserve">
+    <value>   点的描述                         坐标</value>
+  </data>
+  <data name="PointDescCoordinates" xml:space="preserve">
+    <value>HaloOutMOVE  HaloThreadV HaloScale...</value>
+  </data>
+  <data name="ProcessOrderHint" xml:space="preserve">
+    <value>(同一流程模板可配置多个处理...)</value>
+  </data>
+  <data name="PropertyConfig" xml:space="preserve">
+    <value>属性配置</value>
+  </data>
+  <data name="RefreshStats" xml:space="preserve">
+    <value>刷新统计</value>
+  </data>
+  <data name="ResetToClassDefault" xml:space="preserve">
+    <value>重置到类默认值</value>
+  </data>
+  <data name="ResetToDefault" xml:space="preserve">
+    <value>恢复到默认</value>
+  </data>
+  <data name="Restore_Mysql" xml:space="preserve">
+    <value>还原</value>
+  </data>
+  <data name="RetainMonths" xml:space="preserve">
+    <value>保留月数</value>
+  </data>
+  <data name="SampleGroupPlaceholder" xml:space="preserve">
+    <value>选择已有组或输入新组</value>
+  </data>
+  <data name="SampleName" xml:space="preserve">
+    <value>样例名</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>另存为</value>
+  </data>
+  <data name="SaveFocusPoints" xml:space="preserve">
+    <value>保存关注点</value>
+  </data>
+  <data name="SelectDataLine" xml:space="preserve">
+    <value>选择数据线</value>
+  </data>
+  <data name="SelectFlowTemplateToImport" xml:space="preserve">
+    <value>选择要导入的流程模板:</value>
+  </data>
+  <data name="SelectProcessToViewConfig" xml:space="preserve">
+    <value>请选择一个处理项查看配置</value>
+  </data>
+  <data name="ShowOnCieDiagramToolTip" xml:space="preserve">
+    <value>在 CIE 色度图中显示当前结果点</value>
+  </data>
+  <data name="Size_Column" xml:space="preserve">
+    <value>占用</value>
+  </data>
+  <data name="TableName" xml:space="preserve">
+    <value>表名</value>
+  </data>
+  <data name="Tag_Column" xml:space="preserve">
+    <value>创建时间</value>
+  </data>
+  <data name="ThresholdPercentEnable" xml:space="preserve">
+    <value>阈值启用百分比</value>
+  </data>
+  <data name="UseCCT" xml:space="preserve">
+    <value>使用CCT</value>
+  </data>
+  <data name="UseDrawToAddLayoutArea" xml:space="preserve">
+    <value>使用绘图添加布点区域</value>
+  </data>
+  <data name="UseLab" xml:space="preserve">
+    <value>使用Lab</value>
+  </data>
+  <data name="UseU" xml:space="preserve">
+    <value>使用u</value>
+  </data>
+  <data name="UseV" xml:space="preserve">
+    <value>使用v</value>
+  </data>
+  <data name="UseWave" xml:space="preserve">
+    <value>使用Wave</value>
+  </data>
+  <data name="UseX" xml:space="preserve">
+    <value>使用X</value>
+  </data>
+  <data name="UseXLower" xml:space="preserve">
+    <value>使用x</value>
+  </data>
+  <data name="UseXYZ" xml:space="preserve">
+    <value>使用XYZ</value>
+  </data>
+  <data name="UseY" xml:space="preserve">
+    <value>使用Y</value>
+  </data>
+  <data name="UseYLower" xml:space="preserve">
+    <value>使用y</value>
+  </data>
+  <data name="UseZ" xml:space="preserve">
+    <value>使用Z</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>更新</value>
+  </data>
+</root>

@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Templates.POI
             using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
                 saveFileDialog.Filter = "标定文件 (*.dat)|*.dat";
-                saveFileDialog.Title = "选择标定文件";
+                saveFileDialog.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_SelectCalibrationFile;
                 saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 saveFileDialog.RestoreDirectory = true;
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

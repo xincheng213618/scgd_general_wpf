@@ -157,7 +157,7 @@ namespace ColorVision.Engine.Messages
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             MsgRecords.Clear();
-            MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
+            MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_MqttHistoryCleared, "ColorVision");
         }
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)

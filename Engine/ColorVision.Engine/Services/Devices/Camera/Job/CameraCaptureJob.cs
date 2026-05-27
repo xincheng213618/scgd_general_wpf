@@ -3,6 +3,7 @@ using ColorVision.Scheduler;
 using Quartz;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,7 +11,7 @@ using System.Windows;
 namespace ColorVision.Engine.Services.Devices.Camera.Job
 {
 
-    [DisplayName("相机拍摄任务")]
+    [Display(Name = "Engine_PG_CameraCaptureJob", ResourceType = typeof(Properties.Resources))]
     public class CameraCaptureJob : IJob, IConfigurableJob
     {
         public System.Type ConfigType => typeof(CameraCaptureJobConfig);

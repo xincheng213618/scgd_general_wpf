@@ -58,7 +58,7 @@
                                         </BeginStoryboard>
                                     </EventTrigger>
                                 </Button.Triggers>
-                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}"  FontSize="20" ToolTip="刷新">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}"  FontSize="20" ToolTip="{x:Static properties:Resources.Refresh}">
                                     <TextBlock.RenderTransform>
                                         <RotateTransform x:Name="rotateTransform1" CenterX="10" CenterY="10"/>
                                     </TextBlock.RenderTransform>

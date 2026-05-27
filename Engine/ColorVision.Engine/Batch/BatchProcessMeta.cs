@@ -2,6 +2,7 @@
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Windows;
 
@@ -20,8 +21,7 @@ namespace ColorVision.Engine.Batch
         /// <summary>
         /// Gets or sets user-defined tag/label for this batch process.
         /// </summary>
-        [DisplayName("标签")]
-        [Description("用户自定义标签信息")]
+        [Display(Name = "Engine_PG_Tag", Description = "Engine_PG_TagDescription", ResourceType = typeof(Properties.Resources))]
         public string Tag { get => _Tag; set { _Tag = value; OnPropertyChanged(); } }
         private string _Tag;
 

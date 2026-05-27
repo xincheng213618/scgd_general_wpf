@@ -14321,5 +14321,1808 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("usbTraffic", resourceCulture);
             }
         }
-    }
+
+        // ===== Engine_Msg_* =====
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_AllTablesCleared {
+            get {
+                return ResourceManager.GetString("Engine_Msg_AllTablesCleared", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_BackupInProgress {
+            get {
+                return ResourceManager.GetString("Engine_Msg_BackupInProgress", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_BackupSuccess {
+            get {
+                return ResourceManager.GetString("Engine_Msg_BackupSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_CalculateCie {
+            get {
+                return ResourceManager.GetString("Engine_Msg_CalculateCie", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_CalculateCieFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_CalculateCieFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ClearResultTablesFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ClearResultTablesFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_CleanupHistoryFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_CleanupHistoryFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConfigFileFormatError {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConfigFileFormatError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConfirmDeleteAllRecords {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConfirmDeleteAllRecords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConfirmDeleteTitle {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConfirmDeleteTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConfirmResetDatabase {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConfirmResetDatabase", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConfirmResetTitle {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConfirmResetTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConnectFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConnectFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConnectSuccess {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConnectSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ConvertToMatFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ConvertToMatFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_DataCleanupComplete {
+            get {
+                return ResourceManager.GetString("Engine_Msg_DataCleanupComplete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_EnterValidKeepMonths {
+            get {
+                return ResourceManager.GetString("Engine_Msg_EnterValidKeepMonths", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ErrorWithDetail {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ErrorWithDetail", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_FilePathEmpty {
+            get {
+                return ResourceManager.GetString("Engine_Msg_FilePathEmpty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_FileProcessError {
+            get {
+                return ResourceManager.GetString("Engine_Msg_FileProcessError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_FileReadFailedUnsupported {
+            get {
+                return ResourceManager.GetString("Engine_Msg_FileReadFailedUnsupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ImportFourColorCalFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ImportFourColorCalFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_LoadingResultTableStats {
+            get {
+                return ResourceManager.GetString("Engine_Msg_LoadingResultTableStats", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_MessageRecord {
+            get {
+                return ResourceManager.GetString("Engine_Msg_MessageRecord", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_MqttHistoryCleared {
+            get {
+                return ResourceManager.GetString("Engine_Msg_MqttHistoryCleared", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_NoCalculableCvRaw {
+            get {
+                return ResourceManager.GetString("Engine_Msg_NoCalculableCvRaw", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_NoDisplayableCiePoints {
+            get {
+                return ResourceManager.GetString("Engine_Msg_NoDisplayableCiePoints", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_NotSingleChannelImage {
+            get {
+                return ResourceManager.GetString("Engine_Msg_NotSingleChannelImage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_OnlyThreeChannelCvRaw {
+            get {
+                return ResourceManager.GetString("Engine_Msg_OnlyThreeChannelCvRaw", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ParseError {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ParseError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_Prompt {
+            get {
+                return ResourceManager.GetString("Engine_Msg_Prompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_RCConfigInfoNotFound {
+            get {
+                return ResourceManager.GetString("Engine_Msg_RCConfigInfoNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_RestoreSuccessRestartRequired {
+            get {
+                return ResourceManager.GetString("Engine_Msg_RestoreSuccessRestartRequired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_RestoreSuccessRestarting {
+            get {
+                return ResourceManager.GetString("Engine_Msg_RestoreSuccessRestarting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ResultOnlyYNoColorCoords {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ResultOnlyYNoColorCoords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_SaveSuccessTo {
+            get {
+                return ResourceManager.GetString("Engine_Msg_SaveSuccessTo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_SelectCalibrationFileFirst {
+            get {
+                return ResourceManager.GetString("Engine_Msg_SelectCalibrationFileFirst", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ServiceRestartFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ServiceRestartFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_ServiceRestartSuccess {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ServiceRestartSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_TiffReadFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_TiffReadFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Msg_UnsupportedFileType {
+            get {
+                return ResourceManager.GetString("Engine_Msg_UnsupportedFileType", resourceCulture);
+            }
+        }
+
+        // ===== Engine_Dlg_* =====
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_ExportTemplate {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_ExportTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_ImportTemplate {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_ImportTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_OpenFile {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_OpenFile", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_SaveCsvFile {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_SaveCsvFile", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_SelectCalibrationFile {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_SelectCalibrationFile", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_SelectDatFile {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_SelectDatFile", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_SelectProjectLocation {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_SelectProjectLocation", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_Dlg_SelectSingleChannelFile {
+            get {
+                return ResourceManager.GetString("Engine_Dlg_SelectSingleChannelFile", resourceCulture);
+            }
+        }
+
+        // ===== Engine_PG_* =====
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Area {
+            get {
+                return ResourceManager.GetString("Engine_PG_Area", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ApplyTemplate {
+            get {
+                return ResourceManager.GetString("Engine_PG_ApplyTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_AutoEditSave {
+            get {
+                return ResourceManager.GetString("Engine_PG_AutoEditSave", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_AutoIntegration {
+            get {
+                return ResourceManager.GetString("Engine_PG_AutoIntegration", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_BatchConfig {
+            get {
+                return ResourceManager.GetString("Engine_PG_BatchConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_BrightnessAndChroma {
+            get {
+                return ResourceManager.GetString("Engine_PG_BrightnessAndChroma", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_BrightnessOnly {
+            get {
+                return ResourceManager.GetString("Engine_PG_BrightnessOnly", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_CameraDeviceName {
+            get {
+                return ResourceManager.GetString("Engine_PG_CameraDeviceName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_CameraDeviceNameDesc {
+            get {
+                return ResourceManager.GetString("Engine_PG_CameraDeviceNameDesc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_CameraSettings {
+            get {
+                return ResourceManager.GetString("Engine_PG_CameraSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_CameraTask {
+            get {
+                return ResourceManager.GetString("Engine_PG_CameraTask", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ChromaOnly {
+            get {
+                return ResourceManager.GetString("Engine_PG_ChromaOnly", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_CleanupFolder {
+            get {
+                return ResourceManager.GetString("Engine_PG_CleanupFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_CleanupLimit {
+            get {
+                return ResourceManager.GetString("Engine_PG_CleanupLimit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_DataTemplate {
+            get {
+                return ResourceManager.GetString("Engine_PG_DataTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_DecimalPlaces {
+            get {
+                return ResourceManager.GetString("Engine_PG_DecimalPlaces", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_DeleteEmptyFolders {
+            get {
+                return ResourceManager.GetString("Engine_PG_DeleteEmptyFolders", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_DeleteOlderThanDays {
+            get {
+                return ResourceManager.GetString("Engine_PG_DeleteOlderThanDays", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Diff {
+            get {
+                return ResourceManager.GetString("Engine_PG_Diff", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Enabled {
+            get {
+                return ResourceManager.GetString("Engine_PG_Enabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_FileExtensions {
+            get {
+                return ResourceManager.GetString("Engine_PG_FileExtensions", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_FilePath {
+            get {
+                return ResourceManager.GetString("Engine_PG_FilePath", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_FilePattern {
+            get {
+                return ResourceManager.GetString("Engine_PG_FilePattern", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_FontSize {
+            get {
+                return ResourceManager.GetString("Engine_PG_FontSize", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Global {
+            get {
+                return ResourceManager.GetString("Engine_PG_Global", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_HideExpiredPrompt {
+            get {
+                return ResourceManager.GetString("Engine_PG_HideExpiredPrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_HideExpiringPrompt {
+            get {
+                return ResourceManager.GetString("Engine_PG_HideExpiringPrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_IncludeSubfolders {
+            get {
+                return ResourceManager.GetString("Engine_PG_IncludeSubfolders", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_InputNorm {
+            get {
+                return ResourceManager.GetString("Engine_PG_InputNorm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_KeepRecentFiles {
+            get {
+                return ResourceManager.GetString("Engine_PG_KeepRecentFiles", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_LicenseNotify {
+            get {
+                return ResourceManager.GetString("Engine_PG_LicenseNotify", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_LocalImage {
+            get {
+                return ResourceManager.GetString("Engine_PG_LocalImage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MatrixXRow {
+            get {
+                return ResourceManager.GetString("Engine_PG_MatrixXRow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MatrixYRow {
+            get {
+                return ResourceManager.GetString("Engine_PG_MatrixYRow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MatrixZRow {
+            get {
+                return ResourceManager.GetString("Engine_PG_MatrixZRow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MaxAverageCount {
+            get {
+                return ResourceManager.GetString("Engine_PG_MaxAverageCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MaxIntegrationTime {
+            get {
+                return ResourceManager.GetString("Engine_PG_MaxIntegrationTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MinLuminanceValue {
+            get {
+                return ResourceManager.GetString("Engine_PG_MinLuminanceValue", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MonitorFolder {
+            get {
+                return ResourceManager.GetString("Engine_PG_MonitorFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_NegativeLuminanceGuard {
+            get {
+                return ResourceManager.GetString("Engine_PG_NegativeLuminanceGuard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_NoCorrection {
+            get {
+                return ResourceManager.GetString("Engine_PG_NoCorrection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_PenThickness {
+            get {
+                return ResourceManager.GetString("Engine_PG_PenThickness", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_PoiTransform {
+            get {
+                return ResourceManager.GetString("Engine_PG_PoiTransform", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_PositionOffset {
+            get {
+                return ResourceManager.GetString("Engine_PG_PositionOffset", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Ratio {
+            get {
+                return ResourceManager.GetString("Engine_PG_Ratio", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_RectHeight {
+            get {
+                return ResourceManager.GetString("Engine_PG_RectHeight", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_RectWidth {
+            get {
+                return ResourceManager.GetString("Engine_PG_RectWidth", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_RegisterAddress {
+            get {
+                return ResourceManager.GetString("Engine_PG_RegisterAddress", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Render {
+            get {
+                return ResourceManager.GetString("Engine_PG_Render", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SampleRadius {
+            get {
+                return ResourceManager.GetString("Engine_PG_SampleRadius", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SampleShape {
+            get {
+                return ResourceManager.GetString("Engine_PG_SampleShape", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SaveCameraCsv {
+            get {
+                return ResourceManager.GetString("Engine_PG_SaveCameraCsv", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SaveCSV {
+            get {
+                return ResourceManager.GetString("Engine_PG_SaveCSV", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SaveSpectrumCsv {
+            get {
+                return ResourceManager.GetString("Engine_PG_SaveSpectrumCsv", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Scale {
+            get {
+                return ResourceManager.GetString("Engine_PG_Scale", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ScaleSize {
+            get {
+                return ResourceManager.GetString("Engine_PG_ScaleSize", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ShapeCircle {
+            get {
+                return ResourceManager.GetString("Engine_PG_ShapeCircle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ShapeEllipse {
+            get {
+                return ResourceManager.GetString("Engine_PG_ShapeEllipse", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ShapeGap {
+            get {
+                return ResourceManager.GetString("Engine_PG_ShapeGap", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ShowPlot {
+            get {
+                return ResourceManager.GetString("Engine_PG_ShowPlot", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ShowRecordData {
+            get {
+                return ResourceManager.GetString("Engine_PG_ShowRecordData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ShowWindow {
+            get {
+                return ResourceManager.GetString("Engine_PG_ShowWindow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SpectrumDeviceName {
+            get {
+                return ResourceManager.GetString("Engine_PG_SpectrumDeviceName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SpectrumDeviceNameDesc {
+            get {
+                return ResourceManager.GetString("Engine_PG_SpectrumDeviceNameDesc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SpectrumSettings {
+            get {
+                return ResourceManager.GetString("Engine_PG_SpectrumSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SpectrumTask {
+            get {
+                return ResourceManager.GetString("Engine_PG_SpectrumTask", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Tag {
+            get {
+                return ResourceManager.GetString("Engine_PG_Tag", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_TagDesc {
+            get {
+                return ResourceManager.GetString("Engine_PG_TagDesc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Threshold {
+            get {
+                return ResourceManager.GetString("Engine_PG_Threshold", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_TriggerSize {
+            get {
+                return ResourceManager.GetString("Engine_PG_TriggerSize", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Voltage {
+            get {
+                return ResourceManager.GetString("Engine_PG_Voltage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_WarningDays {
+            get {
+                return ResourceManager.GetString("Engine_PG_WarningDays", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_WarningDaysDesc {
+            get {
+                return ResourceManager.GetString("Engine_PG_WarningDaysDesc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_XOffset {
+            get {
+                return ResourceManager.GetString("Engine_PG_XOffset", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_XScale {
+            get {
+                return ResourceManager.GetString("Engine_PG_XScale", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_YOffset {
+            get {
+                return ResourceManager.GetString("Engine_PG_YOffset", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_YScale {
+            get {
+                return ResourceManager.GetString("Engine_PG_YScale", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_Current {
+            get {
+                return ResourceManager.GetString("Engine_PG_Current", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_ResultTableStatsLoaded {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ResultTableStatsLoaded", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_NoCleanableResultTables {
+            get {
+                return ResourceManager.GetString("Engine_Msg_NoCleanableResultTables", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_LoadResultTableStatsFailed {
+            get {
+                return ResourceManager.GetString("Engine_Msg_LoadResultTableStatsFailed", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_LoadResultTableStatsFailedDetail {
+            get {
+                return ResourceManager.GetString("Engine_Msg_LoadResultTableStatsFailedDetail", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_DataTableCleanupComplete {
+            get {
+                return ResourceManager.GetString("Engine_Msg_DataTableCleanupComplete", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_CleanupHistoryFailedDetail {
+            get {
+                return ResourceManager.GetString("Engine_Msg_CleanupHistoryFailedDetail", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_ClearingResultTables {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ClearingResultTables", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_AllResultTablesCleared {
+            get {
+                return ResourceManager.GetString("Engine_Msg_AllResultTablesCleared", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_ClearResultTablesFailedDetail {
+            get {
+                return ResourceManager.GetString("Engine_Msg_ClearResultTablesFailedDetail", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_SavedSuccessfully {
+            get {
+                return ResourceManager.GetString("Engine_Msg_SavedSuccessfully", resourceCulture);
+            }
+        }
+
+        public static string Engine_Msg_FileReadFailedCorruptedTiff {
+            get {
+                return ResourceManager.GetString("Engine_Msg_FileReadFailedCorruptedTiff", resourceCulture);
+            }
+        }
+
+        public static string CalcCIE {
+            get {
+                return ResourceManager.GetString("CalcCIE", resourceCulture);
+            }
+        }
+
+        public static string OriginalImage {
+            get {
+                return ResourceManager.GetString("OriginalImage", resourceCulture);
+            }
+        }
+
+        public static string ColorSigma {
+            get {
+                return ResourceManager.GetString("ColorSigma", resourceCulture);
+            }
+        }
+
+        public static string Iterations {
+            get {
+                return ResourceManager.GetString("Iterations", resourceCulture);
+            }
+        }
+
+        public static string ShowOnCieDiagram {
+            get {
+                return ResourceManager.GetString("ShowOnCieDiagram", resourceCulture);
+            }
+        }
+
+        public static string MysqlTool {
+            get {
+                return ResourceManager.GetString("MysqlTool", resourceCulture);
+            }
+        }
+
+        public static string SFRInfo {
+            get {
+                return ResourceManager.GetString("SFRInfo", resourceCulture);
+            }
+        }
+
+        public static string SelectTemplateAsModule {
+            get {
+                return ResourceManager.GetString("SelectTemplateAsModule", resourceCulture);
+            }
+        }
+
+        public static string ExplainTemplate {
+            get {
+                return ResourceManager.GetString("ExplainTemplate", resourceCulture);
+            }
+        }
+
+        public static string DisplayType {
+            get {
+                return ResourceManager.GetString("DisplayType", resourceCulture);
+            }
+        }
+
+        public static string POITransform {
+            get {
+                return ResourceManager.GetString("POITransform", resourceCulture);
+            }
+        }
+
+        public static string KeyboardTemplateEdit {
+            get {
+                return ResourceManager.GetString("KeyboardTemplateEdit", resourceCulture);
+            }
+        }
+
+        public static string NoAreaError {
+            get {
+                return ResourceManager.GetString("NoAreaError", resourceCulture);
+            }
+        }
+
+        public static string CorrectionMethod {
+            get {
+                return ResourceManager.GetString("CorrectionMethod", resourceCulture);
+            }
+        }
+
+        public static string BenchmarkParams {
+            get {
+                return ResourceManager.GetString("BenchmarkParams", resourceCulture);
+            }
+        }
+
+        public static string CreateSource {
+            get {
+                return ResourceManager.GetString("CreateSource", resourceCulture);
+            }
+        }
+
+        public static string SampleGroup {
+            get {
+                return ResourceManager.GetString("SampleGroup", resourceCulture);
+            }
+        }
+
+        public static string Apply {
+            get {
+                return ResourceManager.GetString("Apply", resourceCulture);
+            }
+        }
+
+        public static string AutoCreateGroupHint {
+            get {
+                return ResourceManager.GetString("AutoCreateGroupHint", resourceCulture);
+            }
+        }
+
+        public static string AutoDetectKeyRegions {
+            get {
+                return ResourceManager.GetString("AutoDetectKeyRegions", resourceCulture);
+            }
+        }
+
+        public static string AutoDetectKeyRegionsToolTip {
+            get {
+                return ResourceManager.GetString("AutoDetectKeyRegionsToolTip", resourceCulture);
+            }
+        }
+
+        public static string Background {
+            get {
+                return ResourceManager.GetString("Background", resourceCulture);
+            }
+        }
+
+        public static string CalcMethod {
+            get {
+                return ResourceManager.GetString("CalcMethod", resourceCulture);
+            }
+        }
+
+        public static string CameraFourColorCalFile {
+            get {
+                return ResourceManager.GetString("CameraFourColorCalFile", resourceCulture);
+            }
+        }
+
+        public static string CapturePhoto {
+            get {
+                return ResourceManager.GetString("CapturePhoto", resourceCulture);
+            }
+        }
+
+        public static string ChannelB {
+            get {
+                return ResourceManager.GetString("ChannelB", resourceCulture);
+            }
+        }
+
+        public static string ChannelG {
+            get {
+                return ResourceManager.GetString("ChannelG", resourceCulture);
+            }
+        }
+
+        public static string ChannelR {
+            get {
+                return ResourceManager.GetString("ChannelR", resourceCulture);
+            }
+        }
+
+        public static string ChannelX {
+            get {
+                return ResourceManager.GetString("ChannelX", resourceCulture);
+            }
+        }
+
+        public static string ChannelY {
+            get {
+                return ResourceManager.GetString("ChannelY", resourceCulture);
+            }
+        }
+
+        public static string ChannelZ {
+            get {
+                return ResourceManager.GetString("ChannelZ", resourceCulture);
+            }
+        }
+
+        public static string CheckConfigAnomaly {
+            get {
+                return ResourceManager.GetString("CheckConfigAnomaly", resourceCulture);
+            }
+        }
+
+        public static string CleanupHistory {
+            get {
+                return ResourceManager.GetString("CleanupHistory", resourceCulture);
+            }
+        }
+
+        public static string ClearAllData {
+            get {
+                return ResourceManager.GetString("ClearAllData", resourceCulture);
+            }
+        }
+
+        public static string CurveName {
+            get {
+                return ResourceManager.GetString("CurveName", resourceCulture);
+            }
+        }
+
+        public static string DataCleanupDesc {
+            get {
+                return ResourceManager.GetString("DataCleanupDesc", resourceCulture);
+            }
+        }
+
+        public static string DefaultUseInitialMatrix {
+            get {
+                return ResourceManager.GetString("DefaultUseInitialMatrix", resourceCulture);
+            }
+        }
+
+        public static string EditConfigInWindow {
+            get {
+                return ResourceManager.GetString("EditConfigInWindow", resourceCulture);
+            }
+        }
+
+        public static string ExecuteHalo {
+            get {
+                return ResourceManager.GetString("ExecuteHalo", resourceCulture);
+            }
+        }
+
+        public static string ExecuteKey {
+            get {
+                return ResourceManager.GetString("ExecuteKey", resourceCulture);
+            }
+        }
+
+        public static string ExplainParameters {
+            get {
+                return ResourceManager.GetString("ExplainParameters", resourceCulture);
+            }
+        }
+
+        public static string ExportCSV {
+            get {
+                return ResourceManager.GetString("ExportCSV", resourceCulture);
+            }
+        }
+
+        public static string FileName_Mysql {
+            get {
+                return ResourceManager.GetString("FileName_Mysql", resourceCulture);
+            }
+        }
+
+        public static string FileName_Poi {
+            get {
+                return ResourceManager.GetString("FileName_Poi", resourceCulture);
+            }
+        }
+
+        public static string FilterEnabled {
+            get {
+                return ResourceManager.GetString("FilterEnabled", resourceCulture);
+            }
+        }
+
+        public static string FrameSelectArea {
+            get {
+                return ResourceManager.GetString("FrameSelectArea", resourceCulture);
+            }
+        }
+
+        public static string FrameSelectAreaToolTip {
+            get {
+                return ResourceManager.GetString("FrameSelectAreaToolTip", resourceCulture);
+            }
+        }
+
+        public static string FreqAtMtfQuery {
+            get {
+                return ResourceManager.GetString("FreqAtMtfQuery", resourceCulture);
+            }
+        }
+
+        public static string Frequency {
+            get {
+                return ResourceManager.GetString("Frequency", resourceCulture);
+            }
+        }
+
+        public static string FullBackup {
+            get {
+                return ResourceManager.GetString("FullBackup", resourceCulture);
+            }
+        }
+
+        public static string ImportSelected {
+            get {
+                return ResourceManager.GetString("ImportSelected", resourceCulture);
+            }
+        }
+
+        public static string IntermediateVariables {
+            get {
+                return ResourceManager.GetString("IntermediateVariables", resourceCulture);
+            }
+        }
+
+        public static string LayoutAreaDisplay {
+            get {
+                return ResourceManager.GetString("LayoutAreaDisplay", resourceCulture);
+            }
+        }
+
+        public static string LoadBackup {
+            get {
+                return ResourceManager.GetString("LoadBackup", resourceCulture);
+            }
+        }
+
+        public static string MarginCalc {
+            get {
+                return ResourceManager.GetString("MarginCalc", resourceCulture);
+            }
+        }
+
+        public static string MarginSettings {
+            get {
+                return ResourceManager.GetString("MarginSettings", resourceCulture);
+            }
+        }
+
+        public static string MigrationBackup {
+            get {
+                return ResourceManager.GetString("MigrationBackup", resourceCulture);
+            }
+        }
+
+        public static string MtfAtFreqQuery {
+            get {
+                return ResourceManager.GetString("MtfAtFreqQuery", resourceCulture);
+            }
+        }
+
+        public static string MysqlMovedToWindow {
+            get {
+                return ResourceManager.GetString("MysqlMovedToWindow", resourceCulture);
+            }
+        }
+
+        public static string NewTemplateName {
+            get {
+                return ResourceManager.GetString("NewTemplateName", resourceCulture);
+            }
+        }
+
+        public static string PoiParamHeader {
+            get {
+                return ResourceManager.GetString("PoiParamHeader", resourceCulture);
+            }
+        }
+
+        public static string PointDescCoordinates {
+            get {
+                return ResourceManager.GetString("PointDescCoordinates", resourceCulture);
+            }
+        }
+
+        public static string ProcessOrderHint {
+            get {
+                return ResourceManager.GetString("ProcessOrderHint", resourceCulture);
+            }
+        }
+
+        public static string PropertyConfig {
+            get {
+                return ResourceManager.GetString("PropertyConfig", resourceCulture);
+            }
+        }
+
+        public static string RefreshStats {
+            get {
+                return ResourceManager.GetString("RefreshStats", resourceCulture);
+            }
+        }
+
+        public static string ResetToClassDefault {
+            get {
+                return ResourceManager.GetString("ResetToClassDefault", resourceCulture);
+            }
+        }
+
+        public static string ResetToDefault {
+            get {
+                return ResourceManager.GetString("ResetToDefault", resourceCulture);
+            }
+        }
+
+        public static string Restore_Mysql {
+            get {
+                return ResourceManager.GetString("Restore_Mysql", resourceCulture);
+            }
+        }
+
+        public static string RetainMonths {
+            get {
+                return ResourceManager.GetString("RetainMonths", resourceCulture);
+            }
+        }
+
+        public static string SampleGroupPlaceholder {
+            get {
+                return ResourceManager.GetString("SampleGroupPlaceholder", resourceCulture);
+            }
+        }
+
+        public static string SampleName {
+            get {
+                return ResourceManager.GetString("SampleName", resourceCulture);
+            }
+        }
+
+        public static string SaveAs {
+            get {
+                return ResourceManager.GetString("SaveAs", resourceCulture);
+            }
+        }
+
+        public static string SaveFocusPoints {
+            get {
+                return ResourceManager.GetString("SaveFocusPoints", resourceCulture);
+            }
+        }
+
+        public static string SelectDataLine {
+            get {
+                return ResourceManager.GetString("SelectDataLine", resourceCulture);
+            }
+        }
+
+        public static string SelectFlowTemplateToImport {
+            get {
+                return ResourceManager.GetString("SelectFlowTemplateToImport", resourceCulture);
+            }
+        }
+
+        public static string SelectProcessToViewConfig {
+            get {
+                return ResourceManager.GetString("SelectProcessToViewConfig", resourceCulture);
+            }
+        }
+
+        public static string ShowOnCieDiagramToolTip {
+            get {
+                return ResourceManager.GetString("ShowOnCieDiagramToolTip", resourceCulture);
+            }
+        }
+
+        public static string Size_Column {
+            get {
+                return ResourceManager.GetString("Size_Column", resourceCulture);
+            }
+        }
+
+        public static string TableName {
+            get {
+                return ResourceManager.GetString("TableName", resourceCulture);
+            }
+        }
+
+        public static string Tag_Column {
+            get {
+                return ResourceManager.GetString("Tag_Column", resourceCulture);
+            }
+        }
+
+        public static string ThresholdPercentEnable {
+            get {
+                return ResourceManager.GetString("ThresholdPercentEnable", resourceCulture);
+            }
+        }
+
+        public static string UseCCT {
+            get {
+                return ResourceManager.GetString("UseCCT", resourceCulture);
+            }
+        }
+
+        public static string UseDrawToAddLayoutArea {
+            get {
+                return ResourceManager.GetString("UseDrawToAddLayoutArea", resourceCulture);
+            }
+        }
+
+        public static string UseLab {
+            get {
+                return ResourceManager.GetString("UseLab", resourceCulture);
+            }
+        }
+
+        public static string UseU {
+            get {
+                return ResourceManager.GetString("UseU", resourceCulture);
+            }
+        }
+
+        public static string UseV {
+            get {
+                return ResourceManager.GetString("UseV", resourceCulture);
+            }
+        }
+
+        public static string UseWave {
+            get {
+                return ResourceManager.GetString("UseWave", resourceCulture);
+            }
+        }
+
+        public static string UseX {
+            get {
+                return ResourceManager.GetString("UseX", resourceCulture);
+            }
+        }
+
+        public static string UseXLower {
+            get {
+                return ResourceManager.GetString("UseXLower", resourceCulture);
+            }
+        }
+
+        public static string UseXYZ {
+            get {
+                return ResourceManager.GetString("UseXYZ", resourceCulture);
+            }
+        }
+
+        public static string UseY {
+            get {
+                return ResourceManager.GetString("UseY", resourceCulture);
+            }
+        }
+
+        public static string UseYLower {
+            get {
+                return ResourceManager.GetString("UseYLower", resourceCulture);
+            }
+        }
+
+        public static string UseZ {
+            get {
+                return ResourceManager.GetString("UseZ", resourceCulture);
+            }
+        }
+
+        public static string ProcessClass {
+            get {
+                return ResourceManager.GetString("ProcessClass", resourceCulture);
+            }
+        }
+
+        public static string MaxValue {
+            get {
+                return ResourceManager.GetString("MaxValue", resourceCulture);
+            }
+        }
+
+        public static string ResetDatabase {
+            get {
+                return ResourceManager.GetString("ResetDatabase", resourceCulture);
+            }
+        }
+
+        public static string DataCleanup {
+            get {
+                return ResourceManager.GetString("DataCleanup", resourceCulture);
+            }
+        }
+
+        public static string Update {
+            get {
+                return ResourceManager.GetString("Update", resourceCulture);
+            }
+        }
+}
 }

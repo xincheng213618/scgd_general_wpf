@@ -90,7 +90,7 @@ namespace ColorVision.Engine.Archive.Dao
             ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
             if (configArchivedModel == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"找不到归档配置信息","ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.ArchiveConfigInfoNotFound,"ColorVision");
                 return;
             }
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };

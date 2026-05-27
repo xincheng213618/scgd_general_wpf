@@ -1,12 +1,13 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
     public enum MeasurementType
     {
-        [Description("电压")]
+        [Display(Name = "Engine_PG_Voltage", ResourceType = typeof(Properties.Resources))]
         Voltage,
-        [Description("电流")]
+        [Display(Name = "Engine_PG_Current", ResourceType = typeof(Properties.Resources))]
         Current
     }
 }

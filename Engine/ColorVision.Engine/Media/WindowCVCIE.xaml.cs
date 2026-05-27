@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,10 +29,10 @@ namespace ColorVision.Engine.Media
         {
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
-        [DisplayName("是否显示记录数据")]
+        [Display(Name = "Engine_PG_ShowRecordData", ResourceType = typeof(Properties.Resources))]
         public bool IsShowString { get => _IsShowString; set { _IsShowString = value; OnPropertyChanged(); } }
         private bool _IsShowString = true;
-        [DisplayName("数据显示模板")]
+        [Display(Name = "Engine_PG_DataDisplayTemplate", ResourceType = typeof(Properties.Resources))]
         public string Template { get => _Template;set { _Template = value;  OnPropertyChanged(); } }
         private string _Template = "X:@X:F1 Y:@Y:F1 Z:@Z:F1\\nx:@x:F4 y:@y:F4 u:@u:F4 v:@v:F4\\nCCT:@CCT:F1 Wave:@Wave:F1";
     }
@@ -258,14 +259,14 @@ namespace ColorVision.Engine.Media
         {
             if (!IsPoiResultCIExyuvDatas)
             {
-                MessageBox.Show(this, "当前结果只有 Y，没有色坐标，无法显示到 CIE 图。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, ColorVision.Engine.Properties.Resources.Engine_Msg_ResultOnlyYNoColorCoords, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             IReadOnlyList<CieMarker> markers = BuildCieMarkers();
             if (markers.Count == 0)
             {
-                MessageBox.Show(this, "当前没有可显示的 CIE 点。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, ColorVision.Engine.Properties.Resources.Engine_Msg_NoDisplayableCiePoints, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 

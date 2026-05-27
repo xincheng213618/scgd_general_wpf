@@ -40,13 +40,13 @@ namespace ColorVision.Engine.Media
         {
             if (CalibrationFileList.SelectedItem is not LumFourColorCalibrationFileItem selectedItem)
             {
-                MessageBox.Show(this, "请先选择一个相机校正文件。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, ColorVision.Engine.Properties.Resources.Engine_Msg_SelectCalibrationFileFirst, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             if (!CVRawManualCieCalculator.TryLoadLumFourColorCalibrationDefaults(selectedItem.FilePath, out CVRawManualCieConfig importedConfig, out string? errorMessage))
             {
-                MessageBox.Show(this, errorMessage ?? "导入四色校正文件失败。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, errorMessage ?? ColorVision.Engine.Properties.Resources.Engine_Msg_ImportFourColorCalFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 

@@ -9,6 +9,7 @@ using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -107,7 +108,7 @@ namespace ColorVision.Engine
         }
     }
 
-    [DisplayName("流程批次配置")]
+    [Display(Name = "Engine_PG_BatchProcessConfig", ResourceType = typeof(Properties.Resources))]
     public class MeasureBatchManagerPageConfig : ViewConfigBase, IConfig
     {
         public static MeasureBatchManagerPageConfig Instance => ConfigService.Instance.GetRequiredService<MeasureBatchManagerPageConfig>();

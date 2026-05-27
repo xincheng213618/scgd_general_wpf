@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        Title="保存为样例" Height="280" Width="440" MinWidth="400"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        Title="{x:Static properties:Resources.CreateSample}" Height="280" Width="440" MinWidth="400"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}">
     <Grid Margin="12">
@@ -21,18 +22,18 @@
                 <ColumnDefinition Width="72"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="样例组" VerticalAlignment="Center"/>
-            <hc:ComboBox x:Name="GroupComboBox" Grid.Column="1" IsEditable="True" Height="30" hc:InfoElement.Placeholder="选择已有组或输入新组"/>
+            <TextBlock Text="{x:Static properties:Resources.SampleGroup}" VerticalAlignment="Center"/>
+            <hc:ComboBox x:Name="GroupComboBox" Grid.Column="1" IsEditable="True" Height="30" hc:InfoElement.Placeholder="{x:Static properties:Resources.SampleGroupPlaceholder}"/>
         </Grid>
 
-        <TextBlock Grid.Row="1" Grid.Column="1" Text="输入不存在的组名会在保存时自动创建" Foreground="{DynamicResource ThirdlyTextBrush}" FontSize="11" Margin="72,32,0,0"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Static properties:Resources.AutoCreateGroupHint}" Foreground="{DynamicResource ThirdlyTextBrush}" FontSize="11" Margin="72,32,0,0"/>
 
         <Grid Grid.Row="2" Margin="0,8,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="72"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="样例名" VerticalAlignment="Center"/>
+            <TextBlock Text="{x:Static properties:Resources.SampleName}" VerticalAlignment="Center"/>
             <TextBox x:Name="NameTextBox" Grid.Column="1" Height="30" VerticalContentAlignment="Center"/>
         </Grid>
 
@@ -41,13 +42,13 @@
                 <ColumnDefinition Width="72"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="说明" VerticalAlignment="Top" Margin="0,5,0,0"/>
+            <TextBlock Text="{x:Static properties:Resources.Description}" VerticalAlignment="Top" Margin="0,5,0,0"/>
             <TextBox x:Name="DescriptionTextBox" Grid.Column="1" Height="56" AcceptsReturn="True" TextWrapping="Wrap"/>
         </Grid>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="取消" Width="72" Margin="0,0,8,0" Click="Cancel_Click"/>
-            <Button Content="保存" Width="72" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Save_Click"/>
+            <Button Content="{x:Static properties:Resources.Cancel}" Width="72" Margin="0,0,8,0" Click="Cancel_Click"/>
+            <Button Content="{x:Static properties:Resources.Save}" Width="72" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Save_Click"/>
         </StackPanel>
     </Grid>
 </Window>

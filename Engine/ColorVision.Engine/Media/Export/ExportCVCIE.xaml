@@ -36,33 +36,33 @@
                               ItemsSource="{Binding RecentImageSaveList}"/>
             </DockPanel>
             <DockPanel  Margin="0,3">
-                <hc:ComboBox x:Name="ExportImageFormatComboBox" IsEditable="True" SelectedIndex="0"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding ExportImageFormat}"  hc:InfoElement.Title="类型"
+                <hc:ComboBox x:Name="ExportImageFormatComboBox" IsEditable="True" SelectedIndex="0"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding ExportImageFormat}"  hc:InfoElement.Title="{x:Static properties:Resources.Type}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               />
             </DockPanel>
             <DockPanel>
-                <TextBlock Text="图像信息：" Width="80" />
+                <TextBlock Width="80"><Run Text="{x:Static properties:Resources.ImageInfo}"/><Run Text="："/></TextBlock>
                 <TextBlock Text="{Binding Rows}"/>
                 <TextBlock Text="x"/>
                 <TextBlock Text="{Binding Cols}"/>
             </DockPanel>
             <DockPanel>
-                <TextBlock Text="通道：" Width="80"/>
+                <TextBlock Width="80"><Run Text="{x:Static properties:Resources.ChannelCount}"/><Run Text="："/></TextBlock>
                 <TextBlock Text="{Binding Channels}"/>
             </DockPanel>
 
 
 
             <UniformGrid  Columns="4" Margin="0,10" Visibility="{Binding IsCanExportSrc ,Converter={StaticResource bool2VisibilityConverter}}">
-                <CheckBox Margin="2" Content="原图" IsChecked="{Binding IsExportSrc}"/>
-                <CheckBox Margin="2" Content="R通道" IsChecked="{Binding IsExportChannelR}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                <CheckBox Margin="2" Content="G通道" IsChecked="{Binding IsExportChannelG}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                <CheckBox Margin="2" Content="B通道" IsChecked="{Binding IsExportChannelB}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                <CheckBox Margin="2" Content="{x:Static properties:Resources.OriginalImage}" IsChecked="{Binding IsExportSrc}"/>
+                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelR}" IsChecked="{Binding IsExportChannelR}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelG}" IsChecked="{Binding IsExportChannelG}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelB}" IsChecked="{Binding IsExportChannelB}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
             </UniformGrid>
             <UniformGrid Columns="4" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}">
-                <CheckBox Margin="2" Content="X通道" IsChecked="{Binding IsExportChannelX}"/>
-                <CheckBox Margin="2" Content="Y通道" IsChecked="{Binding IsExportChannelY}"/>
-                <CheckBox Margin="2" Content="Z通道" IsChecked="{Binding IsExportChannelZ}"/>
+                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelX}" IsChecked="{Binding IsExportChannelX}"/>
+                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelY}" IsChecked="{Binding IsExportChannelY}"/>
+                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelZ}" IsChecked="{Binding IsExportChannelZ}"/>
             </UniformGrid>
 
         </StackPanel>

@@ -39,11 +39,11 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="10,8,10,4">
-                        <TextBlock Text="创建来源" FontWeight="Bold" FontSize="14" />
+                        <TextBlock Text="{x:Static properties:Resources.CreateSource}" FontWeight="Bold" FontSize="14" />
                         <TextBlock x:Name="TemplateSourceCountText" DockPanel.Dock="Right" Foreground="{DynamicResource ThirdlyTextBrush}" />
                     </DockPanel>
                     <DockPanel x:Name="GroupFilterPanel" Grid.Row="1" Margin="10,0,10,6">
-                        <TextBlock Text="组别" Margin="0,0,8,0" Foreground="{DynamicResource ThirdlyTextBrush}" />
+                        <TextBlock Text="{x:Static properties:Resources.Group}" Margin="0,0,8,0" Foreground="{DynamicResource ThirdlyTextBrush}" />
                         <hc:ComboBox x:Name="SourceGroupComboBox" Width="180" Height="28" SelectionChanged="SourceGroupComboBox_SelectionChanged" />
                     </DockPanel>
                     <ScrollViewer Grid.Row="2" Margin="8,0,8,8" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -54,7 +54,7 @@
 
             <Border Grid.Row="1" Margin="0,8,0,0" Background="{DynamicResource RegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
                 <StackPanel>
-                    <TextBlock Text="新模板名称" Margin="0,0,0,5" Foreground="{DynamicResource ThirdlyTextBrush}" />
+                    <TextBlock Text="{x:Static properties:Resources.NewTemplateName}" Margin="0,0,0,5" Foreground="{DynamicResource ThirdlyTextBrush}" />
                     <DockPanel Grid.Row="1">
                         <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                     </DockPanel>

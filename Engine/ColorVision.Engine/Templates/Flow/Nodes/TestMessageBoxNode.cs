@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Windows.Media.Imaging;
 
@@ -35,8 +36,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
 
         private string _ImageFileUrl;
 
-        [DisplayName("文件路径")]
-        [Category("本地图片")]
+        [Display(Name = "Engine_PG_FilePath", GroupName = "Engine_PG_LocalImage", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         [STNodeProperty("文件路径", "本地图片文件路径", true)]
         public string ImageFileUrl

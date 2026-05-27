@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Archive.Dao
                     string fullName = Path.Combine(configArchivedModel.Path + "\\" + filepath, fileName);
                     if (!File.Exists(fullName))
                     {
-                        MessageBox.Show("找不到文件");
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.FileNotFound);
                         return;
                     }
 
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Archive.Dao
                     {
                         saveFileDialog.FileName = fileName;
                         saveFileDialog.Filter = "All files (*.tif)|*.*";
-                        saveFileDialog.Title = "选择导出文件位置";
+                        saveFileDialog.Title = ColorVision.Engine.Properties.Resources.SelectExportFileLocation;
                         saveFileDialog.FileName = fileName;
                         if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {

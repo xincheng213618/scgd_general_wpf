@@ -1,25 +1,26 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Templates.POI.POIGenCali
 {
     public enum GenCalibrationType
     {
-        [Description("不修正")]
+        [Display(Name = "Engine_PG_NoCorrection", ResourceType = typeof(Properties.Resources))]
         None = -1,
         /// <summary>
         /// 只修亮度
         /// </summary>
-        [Description("只修亮度")]
+        [Display(Name = "Engine_PG_BrightnessOnly", ResourceType = typeof(Properties.Resources))]
         BrightnessOnly,
         /// <summary>
         /// 只修色度
         /// </summary>
-        [Description("只修色度")]
+        [Display(Name = "Engine_PG_ChromaOnly", ResourceType = typeof(Properties.Resources))]
         ChromaOnly,
         /// <summary>
         /// 亮色度均修正
         /// </summary>
-        [Description("亮色度均修正")]
+        [Display(Name = "Engine_PG_BrightnessAndChroma", ResourceType = typeof(Properties.Resources))]
         BrightnessAndChroma
     }
 }

@@ -35,7 +35,7 @@ namespace ColorVision.Engine.ToolPlugins
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Filter = "Supported Image Files (*.cvraw;*.cvcie;*.tif;*.tiff)|*.cvraw;*.cvcie;*.tif;*.tiff|CVRaw/CVCIE Files (*.cvraw;*.cvcie)|*.cvraw;*.cvcie|TIFF Files (*.tif;*.tiff)|*.tif;*.tiff|All Files (*.*)|*.*",
-                Title = "选择要转换的 单通道 文件"
+                Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_SelectSingleChannelFile
             };
 
             if (openFileDialog.ShowDialog() != true)
@@ -54,12 +54,12 @@ namespace ColorVision.Engine.ToolPlugins
                     using CVCIEFile cvcieFile = CVFileUtil.OpenLocalCVFile(filePath);
                     if (cvcieFile == null)
                     {
-                        MessageBox.Show("文件读取失败或不支持的格式。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_FileReadFailedUnsupported, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
                     if (cvcieFile.Channels != 1)
                     {
-                        MessageBox.Show("无法提取：该文件不是单通道图像。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_NotSingleChannelImage, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                     mat = cvcieFile.ToMat();
@@ -71,19 +71,19 @@ namespace ColorVision.Engine.ToolPlugins
                     if (mat.Empty())
                     {
                         mat.Dispose();
-                        MessageBox.Show("文件读取失败或损坏的 TIFF 文件。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_FileReadFailedCorruptedTiff, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
                     if (mat.Channels() != 1)
                     {
                         mat.Dispose();
-                        MessageBox.Show("无法提取：该文件不是单通道图像。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_NotSingleChannelImage, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                 }
                 else
                 {
-                    MessageBox.Show("不支持的文件类型。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_UnsupportedFileType, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -92,7 +92,7 @@ namespace ColorVision.Engine.ToolPlugins
                 {
                     if (mat == null || mat.Empty())
                     {
-                        MessageBox.Show("转换为 Mat 失败。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_ConvertToMatFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
@@ -101,7 +101,7 @@ namespace ColorVision.Engine.ToolPlugins
                     {
                         Filter = "CSV Files (*.csv)|*.csv",
                         FileName = Path.GetFileNameWithoutExtension(filePath) + ".csv",
-                        Title = "保存 CSV 文件"
+                        Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_SaveCsvFile
                     };
 
                     if (saveFileDialog.ShowDialog() != true)
@@ -112,12 +112,12 @@ namespace ColorVision.Engine.ToolPlugins
                     // 5. 把 mat 中的数组转换成 csv 保存到提示位置
                     SaveMatToCsv(mat, savePath);
 
-                    MessageBox.Show($"成功保存到:\n{savePath}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_SavedSuccessfully, savePath), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"发生错误: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_ErrorWithDetail, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

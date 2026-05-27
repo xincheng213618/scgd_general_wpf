@@ -166,7 +166,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 sfd.Filter = "*.cfg|*.cfg";
                 sfd.AddExtension = false;
                 sfd.RestoreDirectory = true;
-                sfd.Title = "导出模板";
+                sfd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ExportTemplate;
                 sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
                 if (sfd.FileName.Contains('.'))
                     sfd.FileName = sfd.FileName + ".cfg";
@@ -180,7 +180,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 sfd.Filter = "*.zip|*.zip";
                 sfd.AddExtension = true;
                 sfd.RestoreDirectory = true;
-                sfd.Title = "导出";
+                sfd.Title = ColorVision.Engine.Properties.Resources.Export;
                 sfd.FileName = $"{Code}.zip";
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -230,7 +230,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.cfg|*.cfg";
-            ofd.Title = "导入模板";
+            ofd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ImportTemplate;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
 

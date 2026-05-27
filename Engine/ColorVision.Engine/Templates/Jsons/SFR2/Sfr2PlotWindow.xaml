@@ -2,16 +2,17 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.SFR2"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         Title="SFR2 Plot" Height="900" Width="1400">
     <DockPanel>
         <StackPanel DockPanel.Dock="Right" Width="320" Margin="8">
             <TextBlock Text="POIs" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             <ListBox x:Name="PoiList" Height="180" SelectionChanged="PoiList_SelectionChanged"/>
-            <CheckBox x:Name="ChkAll" Content="显示所有 POI" Margin="0,8,0,0" Checked="ChkAll_Checked" Unchecked="ChkAll_Unchecked"/>
+            <CheckBox x:Name="ChkAll" Margin="0,8,0,0" Checked="ChkAll_Checked" Unchecked="ChkAll_Unchecked"><TextBlock><Run Text="{x:Static properties:Resources.ShowAll}"/><Run Text=" POI"/></TextBlock></CheckBox>
 
             <Separator Margin="0,8,0,8"/>
 
-            <TextBlock Text="显示类型" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBlock Text="{x:Static properties:Resources.DisplayType}" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             <ComboBox x:Name="CmbShowType" SelectionChanged="CmbShowType_SelectionChanged">
                 <ComboBoxItem Content="All" IsSelected="True"/>
                 <ComboBoxItem Content="Left"/>
@@ -24,14 +25,14 @@
 
             <Separator Margin="0,8,0,8"/>
 
-            <TextBlock Text="查询" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBlock Text="{x:Static properties:Resources.Inquire}" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="曲线名:" VerticalAlignment="Center" Width="60"/>
+                <TextBlock VerticalAlignment="Center" Width="60"><Run Text="{x:Static properties:Resources.CurveName}"/><Run Text=":"/></TextBlock>
                 <TextBox x:Name="TxtSeries" Width="220" ToolTip="例如: Point_1-Left 或 Point_1-horAverage"/>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="频率:" VerticalAlignment="Center" Width="60"/>
+                <TextBlock VerticalAlignment="Center" Width="60"><Run Text="{x:Static properties:Resources.Frequency}"/><Run Text=":"/></TextBlock>
                 <TextBox x:Name="TxtFreq" Width="120" Text="0.5"/>
                 <Button Content="MTF@Freq" Width="100" Margin="8,0,0,0" Click="BtnMtfAtFreq_Click"/>
             </StackPanel>

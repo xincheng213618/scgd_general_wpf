@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 
@@ -23,13 +24,11 @@ namespace ColorVision.Engine.Batch.IVL
     /// </summary>
     public class IVLSprectrumProcessConfig : ViewModelBase
     {
-        [DisplayName("保存CSV")]
-        [Description("是否将光谱数据保存到CSV文件")]
+        [Display(Name = "Engine_PG_SaveCSV", Description = "Engine_PG_SaveCSV_Spectrum_Desc", ResourceType = typeof(Properties.Resources))]
         public bool SaveToCsv { get => _SaveToCsv; set { _SaveToCsv = value; OnPropertyChanged(); } }
         private bool _SaveToCsv = true;
 
-        [DisplayName("显示图表")]
-        [Description("是否显示I-Lv曲线图表窗口")]
+        [Display(Name = "Engine_PG_ShowPlot", Description = "Engine_PG_ShowPlotDesc", ResourceType = typeof(Properties.Resources))]
         public bool ShowPlot { get => _ShowPlot; set { _ShowPlot = value; OnPropertyChanged(); } }
         private bool _ShowPlot = true;
     }

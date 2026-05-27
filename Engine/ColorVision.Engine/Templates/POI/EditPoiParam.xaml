@@ -76,7 +76,7 @@
                         <Button x:Name="button3" ToolTip="{x:Static properties:Resources.ClearPOI}" Click="Button3_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
-                        <Button x:Name="buttonTransform" Content="POI变换" ToolTip="批量调整POI点的位置和尺寸" Click="ButtonTransform_Click" HorizontalAlignment="Right" />
+                        <Button x:Name="buttonTransform" Content="{x:Static properties:Resources.POITransform}" ToolTip="批量调整POI点的位置和尺寸" Click="ButtonTransform_Click" HorizontalAlignment="Right" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -175,7 +175,7 @@
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
                                 <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
                                 <TextBlock   HorizontalAlignment="Left"  Text="{x:Static properties:Resources.PointLayoutAreaDisplay}"/>
-                                <Button Content="框选区域" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="在图像上框选设置布点区域"/>
+                                <Button Content="{x:Static properties:Resources.FrameSelectArea}" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="{x:Static properties:Resources.FrameSelectAreaToolTip}"/>
                             </StackPanel>
                             <StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
@@ -243,25 +243,25 @@
                                     <Grid >
                                         <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                         <StackPanel  HorizontalAlignment="Right">
-                                            <Button x:Name="ButtonImportMarin1" Content="边距设置" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
+                                            <Button x:Name="ButtonImportMarin1" Content="{x:Static properties:Resources.MarginSettings}" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
                                             <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
                                                 <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
                                                     <StackPanel Margin="5">
                                                         <UniformGrid Columns="2" >
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
+                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Up}"/><Run Text=":"/></TextBlock>
                                                                 <TextBox  x:Name="TextBoxUp2" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
+                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Left}"/><Run Text=":"/></TextBlock>
                                                                 <TextBox   x:Name="TextBoxLeft2" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
+                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Down}"/><Run Text=":"/></TextBlock>
                                                                 <TextBox  x:Name="TextBoxDown2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
+                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Right}"/><Run Text=":"/></TextBlock>
                                                                 <TextBox  x:Name="TextBoxRight2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                         </UniformGrid>
@@ -330,13 +330,13 @@
                                             </DockPanel>
                                         </StackPanel>
                                         <StackPanel  HorizontalAlignment="Right">
-                                            <Button x:Name="ButtonImportMarin" Content="边距设置" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
+                                            <Button x:Name="ButtonImportMarin" Content="{x:Static properties:Resources.MarginSettings}" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
                                             <Popup  x:Name="ImportMarinPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin}">
                                                 <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
                                                     <StackPanel Margin="5">
                                                         <UniformGrid Columns="2" >
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
+                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Up}"/><Run Text=":"/></TextBlock>
                                                                 <TextBox  x:Name="TextBoxUp1" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
@@ -458,7 +458,7 @@
                             <ComboBox x:Name="ComboBoxBorderType2"  Visibility="{Binding ElementName=RadioButtonAreaMask,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="5,3"/>
                             <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="{x:Static properties:Resources.Draw}" Click="Button2_Click"/>
                             <DockPanel Margin="5,2">
-                                <Button Content="自动检测键区" Click="DetectKeyRegions_Click" ToolTip="自动识别图像中的发光按键区域并创建POI" Style="{StaticResource ButtonDefault.Small}" />
+                                <Button Content="{x:Static properties:Resources.AutoDetectKeyRegions}" Click="DetectKeyRegions_Click" ToolTip="{x:Static properties:Resources.AutoDetectKeyRegionsToolTip}" Style="{StaticResource ButtonDefault.Small}" />
                                 <Button Margin="5,0,0,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.DetectKeyRegionsEditCommand}" Padding="2" Height="25" Width="25" >
                                     <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}"/>
                                 </Button>
@@ -555,7 +555,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn x:Name="NameColumn" Header="名称" Width="200">
+                            <GridViewColumn x:Name="NameColumn" Header="{x:Static properties:Resources.Name}" Width="200">
                                 <GridViewColumn.CellTemplateSelector>
                                     <local:PoiTextColumnTemplateSelector
                                         CircleTextTemplate="{StaticResource TextColumnCircleTextTemplate}"

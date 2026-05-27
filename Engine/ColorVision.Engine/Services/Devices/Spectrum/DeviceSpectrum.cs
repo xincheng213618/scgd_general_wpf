@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -47,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private double _Divisor = 1.0;
 
 
-        [DisplayName("自动积分")]
+        [Display(Name = "Engine_PG_AutoIntegration", ResourceType = typeof(Properties.Resources))]
         public bool IsAutoIntTime { get => _IsAutoIntTime; set { _IsAutoIntTime = value; OnPropertyChanged(); } }
         private bool _IsAutoIntTime;
 
@@ -64,14 +65,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private double _IntTime = 100;
 
-        [DisplayName("积分时间最大值")]
+        [Display(Name = "Engine_PG_MaxIntegrationTime", ResourceType = typeof(Properties.Resources))]
         public double MaxIntTime { get => _MaxIntTime; set { _MaxIntTime = value; OnPropertyChanged(); } }
         private double _MaxIntTime = 6000;
 
         public int AveNum { get => _AveNum; set { _AveNum = value; OnPropertyChanged(); } }
         private int _AveNum = 1;
 
-        [DisplayName("平均次数最大值")]
+        [Display(Name = "Engine_PG_MaxAveragingCount", ResourceType = typeof(Properties.Resources))]
         public int MaxAveNum { get => _MaxAveNum; set { _MaxAveNum = value; OnPropertyChanged(); } }
         private int _MaxAveNum = 10;
 

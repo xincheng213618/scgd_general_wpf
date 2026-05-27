@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="计算CIE"
+        Title="{x:Static properties:Resources.CalcCIE}"
         Height="560"
         Width="720"
         MinHeight="480"
@@ -39,7 +40,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="相机四色校正文件"
+                    <TextBlock Text="{x:Static properties:Resources.CameraFourColorCalFile}"
                                FontWeight="Bold"
                                Foreground="{DynamicResource GlobalTextBrush}"
                                Margin="0,0,0,6"/>
@@ -58,13 +59,13 @@
                                  Background="{DynamicResource SecondaryRegionBrush}"/>
 
                         <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Top">
-                            <Button Content="导入所选"
+                            <Button Content="{x:Static properties:Resources.ImportSelected}"
                                     Foreground="White"
                                     Background="{StaticResource PrimaryBrush}"
                                     BorderThickness="0"
                                     Click="ImportSelected_Click"
                                     Margin="0,0,0,5"/>
-                            <TextBlock Text="默认值直接使用类里的初始矩阵。"
+                            <TextBlock Text="{x:Static properties:Resources.DefaultUseInitialMatrix}"
                                        Width="150"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -88,28 +89,28 @@
 
         <Grid Grid.Row="1" Margin="5">
             <DockPanel>
-                <Button Content="重置"
+                <Button Content="{x:Static properties:Resources.Reset}"
                         Foreground="White"
                         Background="{StaticResource PrimaryBrush}"
                         BorderThickness="0"
                         Click="Reset_Click"
                         Margin="5,0,0,0" />
-                <Button Content="恢复到默认"
+                <Button Content="{x:Static properties:Resources.ResetToDefault}"
                         Foreground="White"
                         Background="{StaticResource PrimaryBrush}"
                         BorderThickness="0"
                         Click="ResetToFactory_Click"
-                        ToolTip="重置到类默认值"
+                        ToolTip="{x:Static properties:Resources.ResetToClassDefault}"
                         Margin="5,0,0,0"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="确定"
+                    <Button Content="{x:Static properties:Resources.OK}"
                             Foreground="White"
                             Background="{StaticResource PrimaryBrush}"
                             BorderThickness="0"
                             Click="OK_Click"
                             Margin="5,0,0,0"/>
-                    <Button Content="取消"
+                    <Button Content="{x:Static properties:Resources.Cancel}"
                             Foreground="White"
                             Background="{StaticResource PrimaryBrush}"
                             BorderThickness="0"

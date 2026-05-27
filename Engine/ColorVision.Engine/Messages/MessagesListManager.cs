@@ -68,12 +68,12 @@ namespace ColorVision.Engine.Messages
             SelectDbFileCommand = new RelayCommand(_ => PlatformHelper.OpenFolderAndSelectFile(Config.SqliteDbPath));
             DeleteAllCommand = new RelayCommand(_ =>
             {
-                if (MessageBox.Show("确定要删除数据库中所有记录吗？此操作不可恢复。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                if (MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_ConfirmDeleteAllRecords, ColorVision.Engine.Properties.Resources.Engine_Msg_ConfirmDeleteTitle, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     DeleteAllRecords();
             });
             ResetDatabaseCommand = new RelayCommand(_ =>
             {
-                if (MessageBox.Show("确定要重置数据库吗？将删除数据库文件并重新创建。此操作不可恢复。", "确认重置", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                if (MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_ConfirmResetDatabase, ColorVision.Engine.Properties.Resources.Engine_Msg_ConfirmResetTitle, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     ResetDatabase();
             });
             ReloadCommand = new RelayCommand(_ => ReloadData());
@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Messages
             MsgRecordDataBaseHelper.EnsureDatabaseInitialized(Config);
                 DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
                     "sqlite.msgrecords",
-                    "消息记录",
+                    ColorVision.Engine.Properties.Resources.Engine_Msg_MessageRecord,
                     () => Config.SqliteDbPath,
                     dbPath => new SqlSugarClient(new ConnectionConfig
                     {

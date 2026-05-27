@@ -161,7 +161,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.cfg|*.cfg";
-            ofd.Title = "导入模板";
+            ofd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ImportTemplate;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
             //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))

@@ -3,6 +3,7 @@ using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
@@ -24,11 +25,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 
-        [DisplayName("防负亮度"), Category("Spectrum")]
+        [Display(Name = "Engine_PG_NegativeLuminanceGuard", GroupName = "Spectrum", ResourceType = typeof(Properties.Resources))]
         public bool EnableNegativeLuminanceGuard { get => _EnableNegativeLuminanceGuard; set { _EnableNegativeLuminanceGuard = value; OnPropertyChanged(); } }
         private bool _EnableNegativeLuminanceGuard = true;
 
-        [DisplayName("亮度最小值"), Category("Spectrum")]
+        [Display(Name = "Engine_PG_MinLuminanceValue", GroupName = "Spectrum", ResourceType = typeof(Properties.Resources))]
         public double MinLuminanceValue { get => _MinLuminanceValue; set { _MinLuminanceValue = value; OnPropertyChanged(); } }
         private double _MinLuminanceValue = 0.0001;
     }
