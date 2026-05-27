@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 GuidId = "AlgorithmsCall",
                 Order = 104,
-                Header = "AlgorithmsCall",
+                Header = Properties.Resources.Algorithm_AlgorithmCalls,
             });
 
             RelayCommand SFRCommand = new(o =>
@@ -60,7 +60,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "AlgorithmsCall",
                 GuidId = "Artculation",
                 Order = 1,
-                Header = "Calculate Sharpness (ROI)",
+                Header = Properties.Resources.Artculation_MenuHeader,
                 Command = ArtculationCommand
             });
 

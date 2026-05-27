@@ -107,7 +107,7 @@
     <value>Save as Image</value>
   </data>
   <data name="BitmapScalingMode" xml:space="preserve">
-    <value>Bitmap Scaling Mode</value>
+    <value>Scaling Quality</value>
   </data>
   <data name="Invert" xml:space="preserve">
     <value>Invert</value>
@@ -1102,4 +1102,4 @@
   <data name="Draw_Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
-</root>
+<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data></root>

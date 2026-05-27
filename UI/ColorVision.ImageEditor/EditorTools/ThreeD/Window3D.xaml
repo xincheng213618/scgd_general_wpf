@@ -95,10 +95,16 @@
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
 
                     <!-- Action Buttons -->
-                    <Button Style="{StaticResource ActionBtn}" Content="&#x21BB; {x:Static properties:Resources.ThreeD_ResetView}" ToolTip="{x:Static properties:Resources.ThreeD_ResetViewToolTip}" Click="ResetViewButton_Click"/>
-                    <Button Style="{StaticResource ActionBtn}" Content="&#x1F4F7; {x:Static properties:Resources.ThreeD_Screenshot}" ToolTip="{x:Static properties:Resources.ThreeD_ScreenshotToolTip}" Click="ScreenshotButton_Click"/>
+                    <Button Style="{StaticResource ActionBtn}" ToolTip="{x:Static properties:Resources.ThreeD_ResetViewToolTip}" Click="ResetViewButton_Click">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#x21BB;" Margin="0,0,4,0"/><TextBlock Text="{x:Static properties:Resources.ThreeD_ResetView}"/></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ActionBtn}" ToolTip="{x:Static properties:Resources.ThreeD_ScreenshotToolTip}" Click="ScreenshotButton_Click">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#x1F4F7;" Margin="0,0,4,0"/><TextBlock Text="{x:Static properties:Resources.ThreeD_Screenshot}"/></StackPanel>
+                    </Button>
                     <Button Style="{StaticResource ActionBtn}" Content="{x:Static properties:Resources.ThreeD_ExportModel}" ToolTip="{x:Static properties:Resources.ThreeD_ExportModelToolTip}" Click="ExportModelButton_Click"/>
-                    <Button Style="{StaticResource ActionBtn}" Content="&#x2699; {x:Static properties:Resources.ThreeD_Settings}" ToolTip="{x:Static properties:Resources.ThreeD_SettingsToolTip}" Click="SettingsButton_Click"/>
+                    <Button Style="{StaticResource ActionBtn}" ToolTip="{x:Static properties:Resources.ThreeD_SettingsToolTip}" Click="SettingsButton_Click">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#x2699;" Margin="0,0,4,0"/><TextBlock Text="{x:Static properties:Resources.ThreeD_Settings}"/></StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
 

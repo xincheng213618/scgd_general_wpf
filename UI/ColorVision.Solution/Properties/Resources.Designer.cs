@@ -412,6 +412,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 多图浏览器 的本地化字符串。
+        /// </summary>
+        public static string MultiImageViewer {
+            get {
+                return ResourceManager.GetString("MultiImageViewer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 新建文件夹 的本地化字符串。
         /// </summary>
         public static string NewFolder {

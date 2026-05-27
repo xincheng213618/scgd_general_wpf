@@ -12,7 +12,7 @@
 		<AnalysisMode>Recommended</AnalysisMode>
 		<TargetFrameworks>net10.0-windows</TargetFrameworks>
 		<NoWarn>CS8002</NoWarn>
-	    <VersionPrefix>1.4.8.21</VersionPrefix> 
+	    <VersionPrefix>1.4.8.22</VersionPrefix> 
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 		<CETCompat>false</CETCompat>
 	</PropertyGroup>

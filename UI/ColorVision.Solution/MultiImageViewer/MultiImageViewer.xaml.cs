@@ -32,7 +32,7 @@ namespace ColorVision.Solution.MultiImageViewer
                         window.Show();
                         multiImageViewer.LoadFromFolderAsync(DirectoryPath);
                     });
-                    MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MultiImageViewerEditor", Order = 10, Header = "MultiImageViewer", Command = OpenMultiImageViewerEditorCommand });
+                    MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MultiImageViewerEditor", Order = 10, Header = Properties.Resources.MultiImageViewer, Command = OpenMultiImageViewerEditorCommand });
                 }
             }
             return MenuItemMetadatas;

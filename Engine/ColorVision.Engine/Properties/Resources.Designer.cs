@@ -328,6 +328,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 算法调用 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_AlgorithmCalls {
+            get {
+                return ResourceManager.GetString("Algorithm_AlgorithmCalls", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 别名 的本地化字符串。
         /// </summary>
         public static string Alias {
@@ -823,6 +832,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 双边滤波 的本地化字符串。
+        /// </summary>
+        public static string BilateralFilter {
+            get {
+                return ResourceManager.GetString("BilateralFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 绑定DLL 的本地化字符串。
         /// </summary>
         public static string BindDLL {
@@ -873,6 +891,15 @@ namespace ColorVision.Engine.Properties {
         public static string Blue {
             get {
                 return ResourceManager.GetString("Blue", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 均值滤波 的本地化字符串。
+        /// </summary>
+        public static string Blur {
+            get {
+                return ResourceManager.GetString("Blur", resourceCulture);
             }
         }
 
@@ -3820,6 +3847,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 膨胀 的本地化字符串。
+        /// </summary>
+        public static string Dilate {
+            get {
+                return ResourceManager.GetString("Dilate", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 显示 的本地化字符串。
         /// </summary>
         public static string Dispaly {
@@ -4185,6 +4221,15 @@ namespace ColorVision.Engine.Properties {
         public static string Enum {
             get {
                 return ResourceManager.GetString("Enum", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 腐蚀 的本地化字符串。
+        /// </summary>
+        public static string Erode {
+            get {
+                return ResourceManager.GetString("Erode", resourceCulture);
             }
         }
 
@@ -4743,6 +4788,15 @@ namespace ColorVision.Engine.Properties {
         public static string FilterBW {
             get {
                 return ResourceManager.GetString("FilterBW", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 滤波/去噪 的本地化字符串。
+        /// </summary>
+        public static string FilterDenoise {
+            get {
+                return ResourceManager.GetString("FilterDenoise", resourceCulture);
             }
         }
 
@@ -6403,6 +6457,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 高斯模糊 的本地化字符串。
+        /// </summary>
+        public static string GaussianBlur {
+            get {
+                return ResourceManager.GetString("GaussianBlur", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 获取相机 ID 失败 的本地化字符串。
         /// </summary>
         public static string GetCameraIdFailed {
@@ -7456,6 +7519,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 图像处理 的本地化字符串。
+        /// </summary>
+        public static string ImageProcessing {
+            get {
+                return ResourceManager.GetString("ImageProcessing", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 图像源 的本地化字符串。
         /// </summary>
         public static string ImageSource {
@@ -7812,6 +7884,15 @@ namespace ColorVision.Engine.Properties {
         public static string Keithley2600MaxVoltage40V {
             get {
                 return ResourceManager.GetString("Keithley2600MaxVoltage40V", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 核大小 的本地化字符串。
+        /// </summary>
+        public static string KernelSize {
+            get {
+                return ResourceManager.GetString("KernelSize", resourceCulture);
             }
         }
 
@@ -9301,6 +9382,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 中值滤波 的本地化字符串。
+        /// </summary>
+        public static string MedianFilter {
+            get {
+                return ResourceManager.GetString("MedianFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 算法(_A) 的本地化字符串。
         /// </summary>
         public static string MenuAlgorithm {
@@ -9729,6 +9819,15 @@ namespace ColorVision.Engine.Properties {
         public static string ModifyLicense {
             get {
                 return ResourceManager.GetString("ModifyLicense", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 形态学操作 的本地化字符串。
+        /// </summary>
+        public static string MorphologyEx {
+            get {
+                return ResourceManager.GetString("MorphologyEx", resourceCulture);
             }
         }
 
@@ -10242,6 +10341,15 @@ namespace ColorVision.Engine.Properties {
         public static string OpenSuccess {
             get {
                 return ResourceManager.GetString("OpenSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 通过ImageJ打开 的本地化字符串。
+        /// </summary>
+        public static string OpenWithImageJ {
+            get {
+                return ResourceManager.GetString("OpenWithImageJ", resourceCulture);
             }
         }
 
@@ -13140,6 +13248,15 @@ namespace ColorVision.Engine.Properties {
         public static string Threshold {
             get {
                 return ResourceManager.GetString("Threshold", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 阈值处理 的本地化字符串。
+        /// </summary>
+        public static string ThresholdProcessing {
+            get {
+                return ResourceManager.GetString("ThresholdProcessing", resourceCulture);
             }
         }
 
