@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}审计日志 - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header-title"><i class="bi bi-journal-text"></i> 审计日志</h1>
+    <p class="page-header-desc">查看所有管理操作记录</p>
+</div>
+
+<!-- Filter -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form class="row g-2 align-items-end" method="GET">
+            <div class="col-md-4">
+                <label class="form-label">操作类型过滤</label>
+                <select name="action" class="form-select form-select-sm">
+                    <option value="">全部</option>
+                    <option value="cache_cleanup" {{ 'selected' if action_filter == 'cache_cleanup' }}>缓存清理</option>
+                    <option value="index_refresh_all" {{ 'selected' if action_filter == 'index_refresh_all' }}>全量刷新</option>
+                    <option value="index_refresh_plugin" {{ 'selected' if action_filter == 'index_refresh_plugin' }}>单插件刷新</option>
+                    <option value="api_key_create" {{ 'selected' if action_filter == 'api_key_create' }}>创建 Key</option>
+                    <option value="api_key_revoke" {{ 'selected' if action_filter == 'api_key_revoke' }}>吊销 Key</option>
+                    <option value="api_key_rotate" {{ 'selected' if action_filter == 'api_key_rotate' }}>轮换 Key</option>
+                    <option value="job_run" {{ 'selected' if action_filter == 'job_run' }}>运行任务</option>
+                    <option value="job_enable" {{ 'selected' if action_filter == 'job_enable' }}>启用任务</option>
+                    <option value="job_disable" {{ 'selected' if action_filter == 'job_disable' }}>禁用任务</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">筛选</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Log Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>操作</th>
+                        <th>操作者</th>
+                        <th>目标</th>
+                        <th>详情</th>
+                        <th>IP</th>
+                        <th>时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.id }}</td>
+                    <td><span class="badge bg-info">{{ entry.action }}</span></td>
+                    <td style="font-size:0.78rem">{{ entry.actor_type }}:{{ entry.actor_id }}</td>
+                    <td style="font-size:0.78rem">{{ entry.target_type }}:{{ entry.target_id or '' }}</td>
+                    <td style="font-size:0.78rem;max-width:300px;overflow:hidden;text-overflow:ellipsis">{{ entry.detail or '' }}</td>
+                    <td style="font-size:0.75rem">{{ entry.ip or '' }}</td>
+                    <td style="font-size:0.75rem">{{ (entry.created_at or '')[:19] }}</td>
+                </tr>
+                {% endfor %}
+                {% if not entries %}
+                <tr><td colspan="7" class="text-muted text-center">暂无记录</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">显示 {{ offset + 1 }}-{{ offset + entries|length }} 条</small>
+            <div class="d-flex gap-1">
+                {% if offset > 0 %}
+                <a href="?action={{ action_filter }}&offset={{ [0, offset - limit]|max }}&limit={{ limit }}" class="btn btn-outline-secondary btn-sm">上一页</a>
+                {% endif %}
+                {% if entries|length == limit %}
+                <a href="?action={{ action_filter }}&offset={{ offset + limit }}&limit={{ limit }}" class="btn btn-outline-secondary btn-sm">下一页</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

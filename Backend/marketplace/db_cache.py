@@ -19,6 +19,11 @@ def now_ts() -> int:
     return int(datetime.now(timezone.utc).timestamp())
 
 
+def now_iso() -> str:
+    """Current UTC time as ISO 8601 string."""
+    return datetime.now(timezone.utc).isoformat()
+
+
 class CacheManager:
     """SQLite-backed key-value cache with TTL and optional signature invalidation."""
 
@@ -26,8 +31,11 @@ class CacheManager:
         self._db_path = db_path
 
     def get_db(self) -> sqlite3.Connection:
-        db = sqlite3.connect(str(self._db_path))
+        db = sqlite3.connect(str(self._db_path), timeout=15)
         db.row_factory = sqlite3.Row
+        db.execute("PRAGMA journal_mode=WAL")
+        db.execute("PRAGMA busy_timeout=5000")
+        db.execute("PRAGMA foreign_keys=ON")
         return db
 
     def init_db(self):
@@ -52,6 +60,128 @@ class CacheManager:
                 updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
             );
             CREATE INDEX IF NOT EXISTS idx_cache_expiry ON cache_entry(expires_at);
+
+            -- Plugin index: persistent read-model for plugin catalog
+            CREATE TABLE IF NOT EXISTS plugin_index (
+                plugin_id               TEXT PRIMARY KEY,
+                name                    TEXT,
+                description             TEXT,
+                author                  TEXT,
+                category                TEXT,
+                latest_version          TEXT,
+                requires_version        TEXT,
+                url                     TEXT,
+                has_icon                INTEGER DEFAULT 0,
+                current_package_count   INTEGER DEFAULT 0,
+                historical_package_count INTEGER DEFAULT 0,
+                total_downloads         INTEGER DEFAULT 0,
+                modified                TEXT,
+                source_manifest_path    TEXT,
+                source_archive_path     TEXT,
+                file_signature          TEXT,
+                indexed_at              TEXT,
+                is_deleted              INTEGER DEFAULT 0
+            );
+
+            -- Package index: persistent read-model for plugin package versions
+            CREATE TABLE IF NOT EXISTS package_index (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                plugin_id       TEXT NOT NULL,
+                version         TEXT NOT NULL,
+                filename        TEXT,
+                relative_path   TEXT UNIQUE,
+                size            INTEGER DEFAULT 0,
+                source          TEXT,
+                modified        TEXT,
+                file_hash       TEXT,
+                file_signature  TEXT,
+                indexed_at      TEXT,
+                is_deleted      INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_pkg_plugin ON package_index(plugin_id);
+            CREATE INDEX IF NOT EXISTS idx_pkg_deleted ON package_index(is_deleted);
+
+            -- Index state: tracks refresh status per scope
+            CREATE TABLE IF NOT EXISTS index_state (
+                scope           TEXT PRIMARY KEY,
+                signature       TEXT,
+                status          TEXT DEFAULT 'ready',
+                last_started_at TEXT,
+                last_finished_at TEXT,
+                last_error      TEXT,
+                item_count      INTEGER DEFAULT 0,
+                duration_ms     INTEGER DEFAULT 0
+            );
+
+            -- Users: admin/operator/viewer accounts
+            CREATE TABLE IF NOT EXISTS users (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                username        TEXT UNIQUE NOT NULL,
+                password_hash   TEXT NOT NULL,
+                role            TEXT DEFAULT 'admin',
+                is_active       INTEGER DEFAULT 1,
+                created_at      TEXT NOT NULL,
+                updated_at      TEXT,
+                last_login_at   TEXT
+            );
+
+            -- API keys: lifecycle-managed keys with scopes
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT NOT NULL,
+                key_prefix      TEXT UNIQUE NOT NULL,
+                key_hash        TEXT NOT NULL,
+                scopes          TEXT DEFAULT '',
+                created_by      TEXT,
+                created_at      TEXT NOT NULL,
+                expires_at      TEXT,
+                last_used_at    TEXT,
+                revoked_at      TEXT,
+                is_active       INTEGER DEFAULT 1
+            );
+
+            -- Audit log: records all admin operations
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                actor_type      TEXT,
+                actor_id        TEXT,
+                action          TEXT NOT NULL,
+                target_type     TEXT,
+                target_id       TEXT,
+                ip              TEXT,
+                user_agent      TEXT,
+                detail          TEXT,
+                created_at      TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action);
+            CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+
+            -- Scheduled jobs: persistent job definitions
+            CREATE TABLE IF NOT EXISTS scheduled_jobs (
+                id              TEXT PRIMARY KEY,
+                name            TEXT NOT NULL,
+                job_type        TEXT NOT NULL,
+                enabled         INTEGER DEFAULT 1,
+                interval_seconds INTEGER DEFAULT 300,
+                next_run_at     TEXT,
+                config          TEXT DEFAULT '{}',
+                created_at      TEXT NOT NULL,
+                updated_at      TEXT
+            );
+
+            -- Job runs: execution history
+            CREATE TABLE IF NOT EXISTS job_runs (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id          TEXT NOT NULL,
+                status          TEXT DEFAULT 'running',
+                started_at      TEXT NOT NULL,
+                finished_at     TEXT,
+                duration_ms     INTEGER DEFAULT 0,
+                summary         TEXT,
+                error           TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_job_runs_job ON job_runs(job_id);
+            CREATE INDEX IF NOT EXISTS idx_job_runs_status ON job_runs(status);
         """
         )
         db.commit()
@@ -144,6 +274,115 @@ class CacheManager:
         if normalized_relative:
             self.invalidate_cache_prefix(f"plugin_package_hash:v1:{normalized_relative}")
             self.invalidate_cache_prefix(f"plugin_archive_meta:v1:{normalized_relative}")
+
+    # -------------------------------------------------------------------
+    # Audit log helpers
+    # -------------------------------------------------------------------
+
+    def write_audit(
+        self,
+        *,
+        actor_type: str = "system",
+        actor_id: str = "",
+        action: str,
+        target_type: str = "",
+        target_id: str = "",
+        ip: str = "",
+        user_agent: str = "",
+        detail: str = "",
+    ):
+        try:
+            db = self.get_db()
+            db.execute(
+                """INSERT INTO audit_log
+                   (actor_type, actor_id, action, target_type, target_id, ip, user_agent, detail, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (actor_type, actor_id, action, target_type, target_id, ip, user_agent, detail, now_iso()),
+            )
+            db.commit()
+            db.close()
+        except Exception as exc:
+            print(f"[audit_log] write failed: {exc}")
+
+    def get_audit_log(
+        self,
+        *,
+        action: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        try:
+            db = self.get_db()
+            if action:
+                rows = db.execute(
+                    "SELECT * FROM audit_log WHERE action = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+                    (action, limit, offset),
+                ).fetchall()
+            else:
+                rows = db.execute(
+                    "SELECT * FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?",
+                    (limit, offset),
+                ).fetchall()
+            db.close()
+            return [dict(r) for r in rows]
+        except Exception:
+            return []
+
+    # -------------------------------------------------------------------
+    # Cache cleanup
+    # -------------------------------------------------------------------
+
+    def cleanup_expired_cache(self) -> int:
+        """Delete expired cache_entry rows. Returns count deleted."""
+        try:
+            db = self.get_db()
+            cursor = db.execute(
+                "DELETE FROM cache_entry WHERE expires_at <= ?", (now_ts(),)
+            )
+            deleted = cursor.rowcount
+            db.commit()
+            db.close()
+            return deleted
+        except Exception as exc:
+            print(f"[cache] cleanup failed: {exc}")
+            return 0
+
+    # -------------------------------------------------------------------
+    # DB status helpers
+    # -------------------------------------------------------------------
+
+    def get_db_status(self) -> dict[str, Any]:
+        """Return database status information for admin dashboard."""
+        status: dict[str, Any] = {}
+        try:
+            db = self.get_db()
+            status["db_path"] = str(self._db_path)
+            try:
+                status["db_size_bytes"] = self._db_path.stat().st_size
+            except OSError:
+                status["db_size_bytes"] = 0
+
+            row = db.execute("SELECT COUNT(*) AS cnt FROM cache_entry").fetchone()
+            status["cache_entry_count"] = row["cnt"] if row else 0
+
+            row = db.execute(
+                "SELECT COUNT(*) AS cnt FROM cache_entry WHERE expires_at <= ?", (now_ts(),)
+            ).fetchone()
+            status["expired_cache_entry_count"] = row["cnt"] if row else 0
+
+            row = db.execute("SELECT COUNT(*) AS cnt FROM plugin_index WHERE is_deleted = 0").fetchone()
+            status["plugin_index_count"] = row["cnt"] if row else 0
+
+            row = db.execute("SELECT COUNT(*) AS cnt FROM package_index WHERE is_deleted = 0").fetchone()
+            status["package_index_count"] = row["cnt"] if row else 0
+
+            row = db.execute("SELECT * FROM index_state WHERE scope = 'plugins'").fetchone()
+            status["plugin_index_state"] = dict(row) if row else None
+
+            db.close()
+        except Exception as exc:
+            status["error"] = str(exc)
+        return status
 
 
 # ---------------------------------------------------------------------------

@@ -63,6 +63,7 @@ class MarketplaceDataService:
         read_text_file: Callable[[Path], str | None],
         render_markdown_cached: Callable[..., Any],
         cache_settings: MarketplaceCacheSettings,
+        cache_manager: Any = None,
     ):
         self._storage_getter = storage_getter
         self._config_getter = config_getter
@@ -73,6 +74,7 @@ class MarketplaceDataService:
         self._read_text_file = read_text_file
         self._render_markdown_cached = render_markdown_cached
         self._cache = cache_settings
+        self._cache_manager = cache_manager
 
     def _storage(self) -> Path:
         return self._storage_getter()
@@ -145,10 +147,21 @@ class MarketplaceDataService:
         )
 
     def get_request_plugin_catalog(self) -> list[dict]:
-        return self.request_cached_value(
-            "plugin_catalog",
-            lambda: self.scan_plugins(download_counts=self.get_request_download_counts()),
-        )
+        def _load():
+            # Try plugin_index first (fast, no disk scan)
+            if self._cache_manager is not None:
+                try:
+                    from services.plugin_index import get_plugin_catalog_from_index
+                    download_counts = self.get_request_download_counts()
+                    indexed = get_plugin_catalog_from_index(self._cache_manager, download_counts)
+                    if indexed is not None:
+                        return indexed
+                except Exception:
+                    pass
+            # Fallback to disk scan + cache
+            return self.scan_plugins(download_counts=self.get_request_download_counts())
+
+        return self.request_cached_value("plugin_catalog", _load)
 
     def get_plugin_info(
         self,
@@ -157,6 +170,17 @@ class MarketplaceDataService:
     ) -> dict[str, Any] | None:
         if download_counts is None:
             download_counts = self.get_download_counts()
+
+        # Try plugin_index first (fast, no disk scan)
+        if self._cache_manager is not None:
+            try:
+                from services.plugin_index import get_plugin_detail_from_index
+                detail = get_plugin_detail_from_index(self._cache_manager, plugin_id, download_counts)
+                if detail is not None:
+                    return detail
+            except Exception:
+                pass
+
         return get_plugin_detail_impl(
             self._storage(),
             plugin_id,

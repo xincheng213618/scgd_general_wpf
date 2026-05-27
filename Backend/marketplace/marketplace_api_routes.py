@@ -51,6 +51,7 @@ class MarketplaceApiRouteContext:
     reconcile_app_release_history: Callable[..., Any]
     reconcile_plugin_package_history: Callable[..., Any]
     require_upload_auth: Any
+    refresh_plugin_index_on_publish: Callable[[str], None] | None = None
 
 
 def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> None:
@@ -224,6 +225,14 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
                 set_cache_entry=ctx.set_cache_entry,
                 ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
             )
+
+            # Update plugin index after successful publish
+            if ctx.refresh_plugin_index_on_publish:
+                try:
+                    ctx.refresh_plugin_index_on_publish(upload_request.plugin_id)
+                except Exception:
+                    pass
+
         except PackageValidationError as exc:
             return jsonify({"error": str(exc)}), 400
 

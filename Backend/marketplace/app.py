@@ -245,6 +245,20 @@ def _unauthorized_response():
 def require_upload_auth(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
+        # Check Bearer API Key first
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+            if token:
+                try:
+                    from services.api_key_service import verify_api_key
+                    key_info = verify_api_key(_cache, token, required_scopes=["plugin:publish"])
+                    if key_info:
+                        return view_func(*args, **kwargs)
+                except Exception:
+                    pass
+
+        # Fall back to Basic Auth
         expected_username, expected_password = _get_upload_auth()
         auth = request.authorization
         if (
@@ -434,6 +448,7 @@ SERVICES = MarketplaceDataService(
         release_timeline_cache_key=RELEASE_TIMELINE_CACHE_KEY,
         release_timeline_cache_ttl_seconds=RELEASE_TIMELINE_CACHE_TTL_SECONDS,
     ),
+    cache_manager=_cache,
 )
 
 
@@ -689,13 +704,52 @@ def plugin_detail_page(plugin_id):
 
 @app.route("/plugins/<plugin_id>/icon")
 def plugin_icon(plugin_id):
-    """Serve plugin icon image."""
+    """Serve plugin icon image with ETag/Last-Modified caching."""
     if not _is_safe_id(plugin_id):
         abort(404)
+
+    # Determine icon source path for Last-Modified
+    plugin_dir = STORAGE / "Plugins" / plugin_id
+    icon_path = plugin_dir / "PackageIcon.png"
+    last_modified_ts = 0.0
+    if icon_path.is_file():
+        try:
+            last_modified_ts = icon_path.stat().st_mtime
+        except OSError:
+            pass
+
     payload, content_type = load_plugin_icon_payload(STORAGE, plugin_id)
-    if payload is not None and content_type:
-        return app.response_class(payload, mimetype=content_type)
-    abort(404)
+    if payload is None or not content_type:
+        abort(404)
+
+    # Compute ETag from content hash
+    import hashlib
+    etag = hashlib.md5(payload).hexdigest()
+
+    # Check If-None-Match
+    if_none_match = request.headers.get("If-None-Match", "")
+    if if_none_match and if_none_match.strip('"') == etag:
+        return app.response_class(status=304)
+
+    # Check If-Modified-Since
+    if last_modified_ts > 0:
+        from email.utils import formatdate, parsedate_to_datetime
+        if_modified_since = request.headers.get("If-Modified-Since", "")
+        if if_modified_since:
+            try:
+                ims_dt = parsedate_to_datetime(if_modified_since)
+                if last_modified_ts <= ims_dt.timestamp():
+                    return app.response_class(status=304)
+            except (ValueError, TypeError):
+                pass
+
+    response = app.response_class(payload, mimetype=content_type)
+    response.headers["ETag"] = f'"{etag}"'
+    if last_modified_ts > 0:
+        from email.utils import formatdate
+        response.headers["Last-Modified"] = formatdate(last_modified_ts, usegmt=True)
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 @app.route("/upload", methods=["GET", "POST"])
@@ -745,6 +799,7 @@ def upload_page():
             set_cache_entry=_set_cache_entry,
             ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
         )
+        _refresh_plugin_index_on_publish(upload_request.plugin_id)
     except PackageValidationError as exc:
         return render_template(
             "upload.html",
@@ -1193,6 +1248,44 @@ def api_ready():
     return jsonify(payload), (200 if payload["ready"] else 503)
 
 
+def _get_request_username() -> str:
+    from flask import session
+    if session.get("username"):
+        return session["username"]
+    auth = request.authorization
+    if auth and auth.username:
+        return auth.username
+    return "system"
+
+
+def _refresh_plugin_index_on_publish(plugin_id: str):
+    """Called after a successful plugin publish to update the index."""
+    try:
+        from services.plugin_index import refresh_plugin_index
+        download_counts = _get_download_counts()
+        refresh_plugin_index(_cache, STORAGE, plugin_id, download_counts=download_counts)
+        # Re-prewarm caches since refresh_plugin_index invalidated them
+        prewarm_plugin_metadata(
+            STORAGE,
+            plugin_id,
+            "",  # version not needed for prewarm
+            download_counts=download_counts,
+            get_cache_entry=_get_cache_entry,
+            set_cache_entry=_set_cache_entry,
+            ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+        )
+        _cache.write_audit(
+            actor_type="user",
+            actor_id=_get_request_username(),
+            action="index_refresh_plugin",
+            target_type="plugin_index",
+            target_id=plugin_id,
+            detail="Auto-refreshed after publish",
+        )
+    except Exception as exc:
+        print(f"[plugin_index] post-publish refresh failed for {plugin_id}: {exc}")
+
+
 register_marketplace_api_routes(
     app,
     MarketplaceApiRouteContext(
@@ -1226,6 +1319,93 @@ register_marketplace_api_routes(
         reconcile_app_release_history=reconcile_app_release_history,
         reconcile_plugin_package_history=reconcile_plugin_package_history,
         require_upload_auth=require_upload_auth,
+        refresh_plugin_index_on_publish=_refresh_plugin_index_on_publish,
+    ),
+)
+
+# ---------------------------------------------------------------------------
+# Admin API registration
+# ---------------------------------------------------------------------------
+
+from routes.admin_api import AdminApiContext, register_admin_api_routes
+
+
+def _check_admin_auth() -> bool:
+    """Check if current request is authenticated for admin access."""
+    from flask import session
+    if session.get("authenticated"):
+        return True
+
+    # Bearer API Key
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+        if token:
+            try:
+                from services.api_key_service import verify_api_key
+                key_info = verify_api_key(_cache, token, required_scopes=["admin:*"])
+                if key_info:
+                    return True
+            except Exception:
+                pass
+
+    # Basic Auth
+    auth = request.authorization
+    if (
+        auth
+        and (auth.type or "").lower() == "basic"
+        and auth.username
+        and auth.password
+    ):
+        expected_username, expected_password = _get_upload_auth()
+        if (
+            hmac.compare_digest(auth.username, expected_username)
+            and hmac.compare_digest(auth.password, expected_password)
+        ):
+            return True
+    return False
+
+
+register_admin_api_routes(
+    app,
+    AdminApiContext(
+        cache=_cache,
+        storage_getter=lambda: STORAGE,
+        config_getter=lambda: CONFIG,
+        get_db=get_db,
+        check_auth=_check_admin_auth,
+        require_auth_decorator=require_upload_auth,
+        refresh_plugin_index=lambda cache, storage, plugin_id, **kw: __import__(
+            "services.plugin_index", fromlist=["refresh_plugin_index"]
+        ).refresh_plugin_index(cache, storage, plugin_id, **kw),
+        refresh_all_plugin_index=lambda cache, storage, **kw: __import__(
+            "services.plugin_index", fromlist=["refresh_all_plugin_index"]
+        ).refresh_all_plugin_index(cache, storage, **kw),
+        get_plugin_index_state=lambda cache: __import__(
+            "services.plugin_index", fromlist=["get_plugin_index_state"]
+        ).get_plugin_index_state(cache),
+        is_plugin_index_populated=lambda cache: __import__(
+            "services.plugin_index", fromlist=["is_plugin_index_populated"]
+        ).is_plugin_index_populated(cache),
+        get_plugin_catalog_from_index=lambda cache, dc: __import__(
+            "services.plugin_index", fromlist=["get_plugin_catalog_from_index"]
+        ).get_plugin_catalog_from_index(cache, dc),
+        human_size=human_size,
+    ),
+)
+
+# Admin page routes
+from routes.admin_pages import AdminPageContext, register_admin_pages
+
+register_admin_pages(
+    app,
+    AdminPageContext(
+        cache=_cache,
+        storage_getter=lambda: STORAGE,
+        config_getter=lambda: CONFIG,
+        get_db=get_db,
+        check_auth=_check_admin_auth,
+        human_size=human_size,
     ),
 )
 
@@ -1293,6 +1473,15 @@ if __name__ == "__main__":
         action="store_true",
         help="Prune incremental update packages, keeping only the latest and each branch's .1 package",
     )
+    parser.add_argument(
+        "--refresh-index",
+        action="store_true",
+        help="Refresh the full plugin index and exit",
+    )
+    parser.add_argument(
+        "--refresh-plugin-index",
+        help="Refresh the index for a single plugin ID and exit",
+    )
     args = parser.parse_args()
 
     if args.storage:
@@ -1339,9 +1528,38 @@ if __name__ == "__main__":
             print(f"  removed {item}")
         raise SystemExit(0)
 
+    if args.refresh_index:
+        from services.plugin_index import refresh_all_plugin_index
+        print("Refreshing full plugin index...")
+        result = refresh_all_plugin_index(_cache, STORAGE)
+        print(f"Indexed: {result['indexed_count']}, Deleted: {result['deleted_count']}, "
+              f"Duration: {result['duration_ms']}ms, Errors: {len(result['errors'])}")
+        for err in result["errors"]:
+            print(f"  ERROR: {err}")
+        raise SystemExit(0)
+
+    if args.refresh_plugin_index:
+        from services.plugin_index import refresh_plugin_index
+        plugin_id = args.refresh_plugin_index
+        print(f"Refreshing index for plugin: {plugin_id}")
+        result = refresh_plugin_index(_cache, STORAGE, plugin_id)
+        if result:
+            print(f"OK: {result.get('name', plugin_id)} v{result.get('latest_version', '?')}")
+        else:
+            print(f"Plugin not found: {plugin_id}")
+        raise SystemExit(0)
+
     print(f"Storage path: {STORAGE}")
     print(f"Listening on: http://{CONFIG['host']}:{CONFIG['port']}")
     print(f"Plugins dir:  {STORAGE / 'Plugins'}")
+
+    # Ensure default scheduled jobs exist
+    from services.scheduler import ensure_default_jobs
+    ensure_default_jobs(_cache)
+
+    # Ensure admin user exists from config
+    from services.auth_service import ensure_admin_user
+    ensure_admin_user(_cache, CONFIG)
 
     # Note: debug=True should only be used during development (--debug flag).
     # In production, use a WSGI server like gunicorn instead of app.run().
