@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using ColorVision.Database.Properties;
 
 namespace ColorVision.Database
 {
@@ -183,7 +184,7 @@ ORDER BY ORDINAL_POSITION";
         protected override string QuoteIdentifier(string identifier)
         {
             if (string.IsNullOrWhiteSpace(identifier))
-                throw new ArgumentException("数据库标识符不能为空。", nameof(identifier));
+                throw new ArgumentException(Properties.Resources.DB_DbIdEmpty, nameof(identifier));
 
             return $"`{identifier.Replace("`", "``")}`";
         }

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Text;
+using ColorVision.Database.Properties;
 
 namespace ColorVision.Database
 {
@@ -123,7 +124,7 @@ namespace ColorVision.Database
                 .ToList();
 
             if (writableColumns.Count == 0)
-                throw new InvalidOperationException("没有可插入的列。");
+                throw new InvalidOperationException(Properties.Resources.DB_NoInsertableColumn);
 
             var columnNames = new List<string>();
             var parameterNames = new List<string>();

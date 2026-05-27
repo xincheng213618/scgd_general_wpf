@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database.Properties;
 using log4net;
 using MySqlConnector;
 using SqlSugar;
@@ -158,7 +159,7 @@ namespace ColorVision.Database
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "数据库名不能为空");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_DbNameEmpty);
                         });
                     }
 
@@ -174,7 +175,7 @@ namespace ColorVision.Database
                                 log.Info("Database exists.");
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "连接成功");
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_ConnectSuccess);
                                 });
                             }
                             else
@@ -182,7 +183,7 @@ namespace ColorVision.Database
                                 log.Warn("Database does not exist.");
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库不存在。");
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_DbNotExist);
                                 });
                             }
                         }
@@ -197,13 +198,13 @@ namespace ColorVision.Database
                     switch (ex.Number)
                     {
                         case 1045:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "账号或密码错误，请检查！");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_AuthError);
                             break;
                         case 1049:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "指定的数据库不存在！");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_SpecifiedDbNotExist);
                             break;
                         case 2003:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "无法连接到MySQL服务器，请检查端口和网络！");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_ConnectFailed);
                             break;
                         default:
                             MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库连接失败，错误码：{ex.Number}");
@@ -216,7 +217,7 @@ namespace ColorVision.Database
                 log.Error(ex);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接发生未知错误！");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_UnknownError);
                 });
             }
         }

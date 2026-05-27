@@ -1,10 +1,12 @@
 ﻿#pragma warning disable CA1725,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database.Properties;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
 using SqlSugar;
+using System.ComponentModel.DataAnnotations;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -45,11 +47,11 @@ namespace ColorVision.Database
 
     public class GenericQueryBaseConfig:ViewModelBase
     {
-        [DisplayName("查询数量"), Category("View")]
+        [Display(Name = "DB_QueryCount", ResourceType = typeof(Properties.Resources)), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 100;
 
-        [DisplayName("按类型排序"), Category("View")]
+        [Display(Name = "DB_SortByType", ResourceType = typeof(Properties.Resources)), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
     }
@@ -216,7 +218,7 @@ namespace ColorVision.Database
                 Height = 22,
                 Padding = new Thickness(0),
                 Margin = new Thickness(5, 0, 0, 0),
-                ToolTip = "移除此条件",
+                ToolTip = Properties.Resources.DB_RemoveCondition,
                 Tag = queryCondition
             };
             removeBtn.Click += RemoveCondition_Click;
@@ -510,7 +512,7 @@ namespace ColorVision.Database
                 Height = 22,
                 Padding = new Thickness(0),
                 Margin = new Thickness(5, 0, 0, 0),
-                ToolTip = "移除此条件",
+                ToolTip = Properties.Resources.DB_RemoveCondition,
                 Tag = queryCondition
             };
             removeBtn.Click += RemoveCondition_Click;
@@ -608,7 +610,7 @@ namespace ColorVision.Database
         {
             base.QueryDB();
             Stopwatch _stopwatch = Stopwatch.StartNew();
-            
+
 
             ViewResluts.Clear();
             var query = Db.Queryable<T>();
@@ -724,20 +726,20 @@ namespace ColorVision.Database
 
             GenericQueryBase.QueryCompleted += (s, args) =>
             {
-                StatusText.Text = $"查询完成: {args.ResultCount} 条记录, 耗时 {args.Elapsed.TotalMilliseconds:F0}ms";
+                StatusText.Text = string.Format(Properties.Resources.DB_QueryComplete, $"{args.ResultCount} 条记录, 耗时 {args.Elapsed.TotalMilliseconds:F0}ms");
             };
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
-            StatusText.Text = "查询中...";
+            StatusText.Text = Properties.Resources.DB_Querying;
             try
             {
                 GenericQueryBase.QueryDB();
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"查询失败: {ex.Message}";
+                StatusText.Text = string.Format(Properties.Resources.DB_QueryFailed, ex.Message);
             }
         }
 
@@ -757,7 +759,7 @@ namespace ColorVision.Database
         private void ResetConditions_Click(object sender, RoutedEventArgs e)
         {
             GenericQueryBase.ResetConditions();
-            StatusText.Text = "已重置所有查询条件";
+            StatusText.Text = Properties.Resources.DB_ResetDone;
         }
     }
 }

@@ -258,4 +258,247 @@
   <data name="MenuMySqlInitTables" xml:space="preserve">
     <value>MySQL 테이블 초기화(디버그)</value>
   </data>
+  <data name="DB_Browser_Title" xml:space="preserve">
+    <value>Database Browser</value>
+  </data>
+  <data name="DB_DataSource" xml:space="preserve">
+    <value>Data Source</value>
+  </data>
+  <data name="DB_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="DB_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="DB_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="DB_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="DB_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="DB_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="DB_Query" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="DB_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="DB_SelectTable" xml:space="preserve">
+    <value>Please select a table</value>
+  </data>
+  <data name="DB_ExpandHint" xml:space="preserve">
+    <value>Expand data sources, databases and tables from the left.</value>
+  </data>
+  <data name="DB_NoData" xml:space="preserve">
+    <value>No data</value>
+  </data>
+  <data name="DB_RecordCount" xml:space="preserve">
+    <value>{0} records</value>
+  </data>
+  <data name="DB_Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="DB_PageSuffix" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DB_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="DB_ConfirmDelete" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="DB_ConfirmDeleteRows" xml:space="preserve">
+    <value>Delete selected rows from table {0}?</value>
+  </data>
+  <data name="DB_DeleteSuccess" xml:space="preserve">
+    <value>Deleted successfully</value>
+  </data>
+  <data name="DB_DeleteFailed" xml:space="preserve">
+    <value>Delete failed: {0}</value>
+  </data>
+  <data name="DB_InsertSuccess" xml:space="preserve">
+    <value>Inserted successfully</value>
+  </data>
+  <data name="DB_InsertFailed" xml:space="preserve">
+    <value>Insert failed: {0}</value>
+  </data>
+  <data name="DB_SaveComplete" xml:space="preserve">
+    <value>Save completed: {0}</value>
+  </data>
+  <data name="DB_SaveFailed" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
+  <data name="DB_Undone" xml:space="preserve">
+    <value>Undid unsaved changes</value>
+  </data>
+  <data name="DB_SelectRowFirst" xml:space="preserve">
+    <value>Please select a row first</value>
+  </data>
+  <data name="DB_Inserting" xml:space="preserve">
+    <value>Inserting...</value>
+  </data>
+  <data name="DB_Saving" xml:space="preserve">
+    <value>Saving...</value>
+  </data>
+  <data name="DB_Deleting" xml:space="preserve">
+    <value>Deleting...</value>
+  </data>
+  <data name="DB_Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="DB_Querying" xml:space="preserve">
+    <value>Querying...</value>
+  </data>
+  <data name="DB_QueryFailed" xml:space="preserve">
+    <value>Query failed: {0}</value>
+  </data>
+  <data name="DB_QueryComplete" xml:space="preserve">
+    <value>Query complete: {0}</value>
+  </data>
+  <data name="DB_NoDataSource" xml:space="preserve">
+    <value>No database browser data sources registered</value>
+  </data>
+  <data name="DB_LoadFailed" xml:space="preserve">
+    <value>Load failed</value>
+  </data>
+  <data name="DB_NoDatabase" xml:space="preserve">
+    <value>No databases to browse</value>
+  </data>
+  <data name="DB_NoTable" xml:space="preserve">
+    <value>No data tables</value>
+  </data>
+  <data name="DB_NoInsertableColumn" xml:space="preserve">
+    <value>Current table has no insertable columns.</value>
+  </data>
+  <data name="DB_PrimaryKey" xml:space="preserve">
+    <value>Primary Key</value>
+  </data>
+  <data name="DB_AdvancedQuery" xml:space="preserve">
+    <value>Advanced Query</value>
+  </data>
+  <data name="DB_ClearTable" xml:space="preserve">
+    <value>Clear Table</value>
+  </data>
+  <data name="DB_TruncateTable" xml:space="preserve">
+    <value>Truncate Table</value>
+  </data>
+  <data name="DB_Add" xml:space="preserve">
+    <value>+ Add</value>
+  </data>
+  <data name="DB_AddTooltip" xml:space="preserve">
+    <value>Add selected field to query conditions</value>
+  </data>
+  <data name="DB_AddAll" xml:space="preserve">
+    <value>Add All</value>
+  </data>
+  <data name="DB_AddAllTooltip" xml:space="preserve">
+    <value>Add all available fields at once</value>
+  </data>
+  <data name="DB_Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="DB_ResetTooltip" xml:space="preserve">
+    <value>Clear all query conditions</value>
+  </data>
+  <data name="DB_SqlPreview" xml:space="preserve">
+    <value>SQL Preview</value>
+  </data>
+  <data name="DB_QueryCount" xml:space="preserve">
+    <value>Query Count</value>
+  </data>
+  <data name="DB_SortByType" xml:space="preserve">
+    <value>Sort by Type</value>
+  </data>
+  <data name="DB_RemoveCondition" xml:space="preserve">
+    <value>Remove this condition</value>
+  </data>
+  <data name="DB_ResetDone" xml:space="preserve">
+    <value>All query conditions have been reset</value>
+  </data>
+  <data name="DB_MysqlConfig" xml:space="preserve">
+    <value>MySQL Configuration</value>
+  </data>
+  <data name="DB_MysqlConfigDesc" xml:space="preserve">
+    <value>Configure database connection here</value>
+  </data>
+  <data name="DB_DbNameEmpty" xml:space="preserve">
+    <value>Database name cannot be empty</value>
+  </data>
+  <data name="DB_ConnectSuccess" xml:space="preserve">
+    <value>Connected successfully</value>
+  </data>
+  <data name="DB_DbNotExist" xml:space="preserve">
+    <value>Database does not exist.</value>
+  </data>
+  <data name="DB_AuthError" xml:space="preserve">
+    <value>Authentication error, please check!</value>
+  </data>
+  <data name="DB_SpecifiedDbNotExist" xml:space="preserve">
+    <value>Specified database does not exist!</value>
+  </data>
+  <data name="DB_ConnectFailed" xml:space="preserve">
+    <value>Cannot connect to MySQL server, please check port and network!</value>
+  </data>
+  <data name="DB_UnknownError" xml:space="preserve">
+    <value>Unknown database connection error!</value>
+  </data>
+  <data name="DB_InitFailed" xml:space="preserve">
+    <value>MySQL table initialization failed, please check logs.</value>
+  </data>
+  <data name="DB_InitSuccess" xml:space="preserve">
+    <value>MySQL table initialization completed.</value>
+  </data>
+  <data name="DB_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="DB_Success" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="DB_EnableLogging" xml:space="preserve">
+    <value>Enable Logging</value>
+  </data>
+  <data name="DB_EnableCompress" xml:space="preserve">
+    <value>Enable Compressed Archive</value>
+  </data>
+  <data name="DB_EnableCompressDesc" xml:space="preserve">
+    <value>If enabled, logs will be compressed when exceeding size limit.</value>
+  </data>
+  <data name="DB_FileSizeLimit" xml:space="preserve">
+    <value>Single File Size Limit (MB)</value>
+  </data>
+  <data name="DB_ArchiveCount" xml:space="preserve">
+    <value>Archive Retention Count</value>
+  </data>
+  <data name="DB_ArchiveCountDesc" xml:space="preserve">
+    <value>Oldest archives will be deleted when exceeding this count.</value>
+  </data>
+  <data name="DB_SqliteLogTable" xml:space="preserve">
+    <value>SQLite Log</value>
+  </data>
+  <data name="DB_ProviderIdEmpty" xml:space="preserve">
+    <value>ProviderId cannot be empty.</value>
+  </data>
+  <data name="DB_DbIdEmpty" xml:space="preserve">
+    <value>Database identifier cannot be empty.</value>
+  </data>
+  <data name="DB_PageSize10" xml:space="preserve">
+    <value>10/page</value>
+  </data>
+  <data name="DB_PageSize20" xml:space="preserve">
+    <value>20/page</value>
+  </data>
+  <data name="DB_PageSize50" xml:space="preserve">
+    <value>50/page</value>
+  </data>
+  <data name="DB_PageSize100" xml:space="preserve">
+    <value>100/page</value>
+  </data>
+  <data name="DB_EditRow" xml:space="preserve">
+    <value>Edit Row</value>
+  </data>
 </root>

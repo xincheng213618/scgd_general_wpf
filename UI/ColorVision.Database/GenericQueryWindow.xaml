@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Database"
+        xmlns:properties="clr-namespace:ColorVision.Database.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:GenericQueryBase}"
-        Title="高级查询" Height="550" Width="680" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.DB_AdvancedQuery}" Height="550" Width="680" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -25,15 +26,15 @@
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="5">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Content="清空表" Command="{Binding DeleteAllCommand}" Margin="5,0,0,0" Foreground="#E53935"/>
-                    <Button Content="截断表" Command="{Binding TruncateTableCommand}" Margin="5,0,0,0" Foreground="#E53935"/>
+                    <Button Content="{x:Static properties:Resources.DB_ClearTable}" Command="{Binding DeleteAllCommand}" Margin="5,0,0,0" Foreground="#E53935"/>
+                    <Button Content="{x:Static properties:Resources.DB_TruncateTable}" Command="{Binding TruncateTableCommand}" Margin="5,0,0,0" Foreground="#E53935"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal">
                     <ComboBox x:Name="PropertyInfoCB" DisplayMemberPath="Key" SelectedValuePath="Value" Width="180" VerticalAlignment="Center"/>
-                    <Button Content="+ 添加" Click="AddPropertyInfo_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="添加选中字段到查询条件"/>
-                    <Button Content="全部添加" Click="AddAllPropertyInfo_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="一次添加所有可用字段"/>
-                    <Button Content="重置" Click="ResetConditions_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="清除所有查询条件"/>
+                    <Button Content="{x:Static properties:Resources.DB_Add}" Click="AddPropertyInfo_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="{x:Static properties:Resources.DB_AddTooltip}"/>
+                    <Button Content="{x:Static properties:Resources.DB_AddAll}" Click="AddAllPropertyInfo_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="{x:Static properties:Resources.DB_AddAllTooltip}"/>
+                    <Button Content="{x:Static properties:Resources.DB_Reset}" Click="ResetConditions_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="{x:Static properties:Resources.DB_ResetTooltip}"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -46,7 +47,7 @@
         </ScrollViewer>
 
         <!-- SQL preview (collapsible) -->
-        <Expander Grid.Row="2" Header="SQL 预览" Margin="5,5,5,0" IsExpanded="False">
+        <Expander Grid.Row="2" Header="{x:Static properties:Resources.DB_SqlPreview}" Margin="5,5,5,0" IsExpanded="False">
             <TextBox TextWrapping="WrapWithOverflow" Text="{Binding Sql}" MaxHeight="80"
                      ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                      BorderThickness="1" VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"
@@ -55,12 +56,12 @@
 
         <!-- Status bar -->
         <Border Grid.Row="3" Margin="5,5,5,0" Padding="5,3">
-            <TextBlock x:Name="StatusText" Text="就绪" Foreground="{DynamicResource GlobalTextBrush}" FontSize="12"/>
+            <TextBlock x:Name="StatusText" Text="{x:Static properties:Resources.DB_Ready}" Foreground="{DynamicResource GlobalTextBrush}" FontSize="12"/>
         </Border>
 
         <!-- Query button -->
         <Border Grid.Row="4" Margin="5">
-            <Button Height="38" Content="查询" Background="{DynamicResource PrimaryBrush}" Foreground="White" FontSize="16" Click="Query_Click"/>
+            <Button Height="38" Content="{x:Static properties:Resources.DB_Query}" Background="{DynamicResource PrimaryBrush}" Foreground="White" FontSize="16" Click="Query_Click"/>
         </Border>
     </Grid>
 </Window>

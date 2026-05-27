@@ -35,12 +35,12 @@ namespace ColorVision.Database
                 if (t.IsFaulted)
                 {
                     log.Error("初始化Mysql表失败", t.Exception);
-                    MessageBox.Show("初始化Mysql表失败，请查看日志。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(Resources.DB_InitFailed, Resources.DB_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 else
                 {
                     log.Info("Mysql表初始化完成");
-                    MessageBox.Show("Mysql表初始化完成。", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Resources.DB_InitSuccess, Resources.DB_Success, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             });
 

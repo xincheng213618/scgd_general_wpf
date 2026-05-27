@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Database.Properties;
 
 namespace ColorVision.Database
 {
@@ -61,7 +62,7 @@ namespace ColorVision.Database
                     ToolTip = column.StoreType
                 };
                 if (column.IsPrimaryKey)
-                    editor.ToolTip = string.IsNullOrWhiteSpace(column.StoreType) ? "主键" : $"主键, {column.StoreType}";
+                    editor.ToolTip = string.IsNullOrWhiteSpace(column.StoreType) ? Properties.Resources.DB_PrimaryKey : $"{Properties.Resources.DB_PrimaryKey}, {column.StoreType}";
 
                 Grid.SetRow(editor, rowIndex);
                 Grid.SetColumn(editor, 1);
@@ -76,7 +77,7 @@ namespace ColorVision.Database
                 EditorGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 var text = new TextBlock
                 {
-                    Text = "当前表没有可插入的列。",
+                    Text = Properties.Resources.DB_NoInsertableColumn,
                     Opacity = 0.72,
                     Margin = new Thickness(0, 4, 0, 4)
                 };

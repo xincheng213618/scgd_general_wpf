@@ -258,4 +258,247 @@
   <data name="MenuMySqlInitTables" xml:space="preserve">
     <value>初始化 MySQL 資料表(偵錯)</value>
   </data>
+  <data name="DB_Browser_Title" xml:space="preserve">
+    <value>資料庫瀏覽器</value>
+  </data>
+  <data name="DB_DataSource" xml:space="preserve">
+    <value>資料來源</value>
+  </data>
+  <data name="DB_Refresh" xml:space="preserve">
+    <value>重新整理</value>
+  </data>
+  <data name="DB_New" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="DB_Save" xml:space="preserve">
+    <value>儲存</value>
+  </data>
+  <data name="DB_Undo" xml:space="preserve">
+    <value>撤銷</value>
+  </data>
+  <data name="DB_Delete" xml:space="preserve">
+    <value>刪除</value>
+  </data>
+  <data name="DB_Search" xml:space="preserve">
+    <value>搜尋</value>
+  </data>
+  <data name="DB_Query" xml:space="preserve">
+    <value>查詢</value>
+  </data>
+  <data name="DB_Clear" xml:space="preserve">
+    <value>清空</value>
+  </data>
+  <data name="DB_SelectTable" xml:space="preserve">
+    <value>請選擇一個表</value>
+  </data>
+  <data name="DB_ExpandHint" xml:space="preserve">
+    <value>從左側展開資料來源、庫和表。</value>
+  </data>
+  <data name="DB_NoData" xml:space="preserve">
+    <value>暫無資料</value>
+  </data>
+  <data name="DB_RecordCount" xml:space="preserve">
+    <value>{0} 條記錄</value>
+  </data>
+  <data name="DB_Page" xml:space="preserve">
+    <value>第</value>
+  </data>
+  <data name="DB_PageSuffix" xml:space="preserve">
+    <value>頁</value>
+  </data>
+  <data name="DB_Ready" xml:space="preserve">
+    <value>就緒</value>
+  </data>
+  <data name="DB_ConfirmDelete" xml:space="preserve">
+    <value>確認刪除</value>
+  </data>
+  <data name="DB_ConfirmDeleteRows" xml:space="preserve">
+    <value>確定刪除表 {0} 中的選取行嗎？</value>
+  </data>
+  <data name="DB_DeleteSuccess" xml:space="preserve">
+    <value>刪除成功</value>
+  </data>
+  <data name="DB_DeleteFailed" xml:space="preserve">
+    <value>刪除失敗: {0}</value>
+  </data>
+  <data name="DB_InsertSuccess" xml:space="preserve">
+    <value>新增成功</value>
+  </data>
+  <data name="DB_InsertFailed" xml:space="preserve">
+    <value>新增失敗: {0}</value>
+  </data>
+  <data name="DB_SaveComplete" xml:space="preserve">
+    <value>儲存完成: {0}</value>
+  </data>
+  <data name="DB_SaveFailed" xml:space="preserve">
+    <value>儲存失敗: {0}</value>
+  </data>
+  <data name="DB_Undone" xml:space="preserve">
+    <value>已撤銷未儲存變更</value>
+  </data>
+  <data name="DB_SelectRowFirst" xml:space="preserve">
+    <value>請先選擇一行</value>
+  </data>
+  <data name="DB_Inserting" xml:space="preserve">
+    <value>插入中...</value>
+  </data>
+  <data name="DB_Saving" xml:space="preserve">
+    <value>儲存中...</value>
+  </data>
+  <data name="DB_Deleting" xml:space="preserve">
+    <value>刪除中...</value>
+  </data>
+  <data name="DB_Loading" xml:space="preserve">
+    <value>載入中...</value>
+  </data>
+  <data name="DB_Querying" xml:space="preserve">
+    <value>查詢中...</value>
+  </data>
+  <data name="DB_QueryFailed" xml:space="preserve">
+    <value>查詢失敗: {0}</value>
+  </data>
+  <data name="DB_QueryComplete" xml:space="preserve">
+    <value>查詢完成: {0}</value>
+  </data>
+  <data name="DB_NoDataSource" xml:space="preserve">
+    <value>沒有註冊資料庫瀏覽器資料來源</value>
+  </data>
+  <data name="DB_LoadFailed" xml:space="preserve">
+    <value>載入失敗</value>
+  </data>
+  <data name="DB_NoDatabase" xml:space="preserve">
+    <value>沒有可瀏覽的庫</value>
+  </data>
+  <data name="DB_NoTable" xml:space="preserve">
+    <value>沒有資料表</value>
+  </data>
+  <data name="DB_NoInsertableColumn" xml:space="preserve">
+    <value>當前表沒有可插入的欄位。</value>
+  </data>
+  <data name="DB_PrimaryKey" xml:space="preserve">
+    <value>主鍵</value>
+  </data>
+  <data name="DB_AdvancedQuery" xml:space="preserve">
+    <value>進階查詢</value>
+  </data>
+  <data name="DB_ClearTable" xml:space="preserve">
+    <value>清空表</value>
+  </data>
+  <data name="DB_TruncateTable" xml:space="preserve">
+    <value>截斷表</value>
+  </data>
+  <data name="DB_Add" xml:space="preserve">
+    <value>+ 新增</value>
+  </data>
+  <data name="DB_AddTooltip" xml:space="preserve">
+    <value>新增選取欄位到查詢條件</value>
+  </data>
+  <data name="DB_AddAll" xml:space="preserve">
+    <value>全部新增</value>
+  </data>
+  <data name="DB_AddAllTooltip" xml:space="preserve">
+    <value>一次新增所有可用欄位</value>
+  </data>
+  <data name="DB_Reset" xml:space="preserve">
+    <value>重設</value>
+  </data>
+  <data name="DB_ResetTooltip" xml:space="preserve">
+    <value>清除所有查詢條件</value>
+  </data>
+  <data name="DB_SqlPreview" xml:space="preserve">
+    <value>SQL 預覽</value>
+  </data>
+  <data name="DB_QueryCount" xml:space="preserve">
+    <value>查詢數量</value>
+  </data>
+  <data name="DB_SortByType" xml:space="preserve">
+    <value>按類型排序</value>
+  </data>
+  <data name="DB_RemoveCondition" xml:space="preserve">
+    <value>移除此條件</value>
+  </data>
+  <data name="DB_ResetDone" xml:space="preserve">
+    <value>已重設所有查詢條件</value>
+  </data>
+  <data name="DB_MysqlConfig" xml:space="preserve">
+    <value>Mysql配置</value>
+  </data>
+  <data name="DB_MysqlConfigDesc" xml:space="preserve">
+    <value>使用者可以在這裡配置資料庫的連線</value>
+  </data>
+  <data name="DB_DbNameEmpty" xml:space="preserve">
+    <value>資料庫名稱不能為空</value>
+  </data>
+  <data name="DB_ConnectSuccess" xml:space="preserve">
+    <value>連線成功</value>
+  </data>
+  <data name="DB_DbNotExist" xml:space="preserve">
+    <value>資料庫不存在。</value>
+  </data>
+  <data name="DB_AuthError" xml:space="preserve">
+    <value>帳號或密碼錯誤，請檢查！</value>
+  </data>
+  <data name="DB_SpecifiedDbNotExist" xml:space="preserve">
+    <value>指定的資料庫不存在！</value>
+  </data>
+  <data name="DB_ConnectFailed" xml:space="preserve">
+    <value>無法連線到MySQL伺服器，請檢查埠和網路！</value>
+  </data>
+  <data name="DB_UnknownError" xml:space="preserve">
+    <value>資料庫連線發生未知錯誤！</value>
+  </data>
+  <data name="DB_InitFailed" xml:space="preserve">
+    <value>初始化Mysql表失敗，請查看日誌。</value>
+  </data>
+  <data name="DB_InitSuccess" xml:space="preserve">
+    <value>Mysql表初始化完成。</value>
+  </data>
+  <data name="DB_Error" xml:space="preserve">
+    <value>錯誤</value>
+  </data>
+  <data name="DB_Success" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="DB_EnableLogging" xml:space="preserve">
+    <value>啟用日誌記錄</value>
+  </data>
+  <data name="DB_EnableCompress" xml:space="preserve">
+    <value>啟用壓縮歸檔</value>
+  </data>
+  <data name="DB_EnableCompressDesc" xml:space="preserve">
+    <value>如果啟用，日誌超過大小限制後將被壓縮保存。</value>
+  </data>
+  <data name="DB_FileSizeLimit" xml:space="preserve">
+    <value>單檔案大小限制 (MB)</value>
+  </data>
+  <data name="DB_ArchiveCount" xml:space="preserve">
+    <value>歸檔保留數量</value>
+  </data>
+  <data name="DB_ArchiveCountDesc" xml:space="preserve">
+    <value>超過該數量後將自動刪除最舊的歸檔。</value>
+  </data>
+  <data name="DB_SqliteLogTable" xml:space="preserve">
+    <value>SQLite 日誌</value>
+  </data>
+  <data name="DB_ProviderIdEmpty" xml:space="preserve">
+    <value>ProviderId 不能為空。</value>
+  </data>
+  <data name="DB_DbIdEmpty" xml:space="preserve">
+    <value>資料庫識別碼不能為空。</value>
+  </data>
+  <data name="DB_PageSize10" xml:space="preserve">
+    <value>10 條/頁</value>
+  </data>
+  <data name="DB_PageSize20" xml:space="preserve">
+    <value>20 條/頁</value>
+  </data>
+  <data name="DB_PageSize50" xml:space="preserve">
+    <value>50 條/頁</value>
+  </data>
+  <data name="DB_PageSize100" xml:space="preserve">
+    <value>100 條/頁</value>
+  </data>
+  <data name="DB_EditRow" xml:space="preserve">
+    <value>編輯行</value>
+  </data>
 </root>
