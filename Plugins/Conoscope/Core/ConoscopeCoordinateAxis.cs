@@ -4,6 +4,7 @@ using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
@@ -13,10 +14,10 @@ namespace Conoscope.Core
 {
     public enum ConoscopeCoordinateReferenceMode
     {
-        [Description("方位角直线")]
+        [Display(Name = "Con_Axis_AzimuthLine", ResourceType = typeof(Properties.Resources))]
         AzimuthLine = 0,
 
-        [Description("极角圆")]
+        [Display(Name = "Con_Axis_PolarCircle", ResourceType = typeof(Properties.Resources))]
         PolarCircle = 1
     }
 
@@ -46,11 +47,11 @@ namespace Conoscope.Core
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen = new Pen(Brushes.Yellow, 1.0);
 
-        [Category("坐标轴"), DisplayName("启用交互")]
+        [Display(Name = "Con_Axis_EnableInteract", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public bool IsInteractionEnabled { get => _IsInteractionEnabled; set { _IsInteractionEnabled = value; OnPropertyChanged(); } }
         private bool _IsInteractionEnabled = true;
 
-        [Category("坐标轴"), DisplayName("最大角度")]
+        [Display(Name = "Con_Axis_MaxAngle", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double MaxAngle { get => _MaxAngle; set { _MaxAngle = value; OnPropertyChanged(); } }
         private double _MaxAngle = 60;
 
@@ -58,75 +59,75 @@ namespace Conoscope.Core
         public double ConoscopeCoefficient { get => _ConoscopeCoefficient; set { _ConoscopeCoefficient = value; OnPropertyChanged(); } }
         private double _ConoscopeCoefficient;
 
-        [Category("坐标轴"), DisplayName("圆心X")]
+        [Display(Name = "Con_Axis_CenterX", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double CenterX { get => _CenterX; set { _CenterX = value; OnPropertyChanged(); } }
         private double _CenterX;
 
-        [Category("坐标轴"), DisplayName("圆心Y")]
+        [Display(Name = "Con_Axis_CenterY", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double CenterY { get => _CenterY; set { _CenterY = value; OnPropertyChanged(); } }
         private double _CenterY;
 
-        [Category("坐标轴"), DisplayName("坐标半径")]
+        [Display(Name = "Con_Axis_Radius", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double AxisRadius { get => _AxisRadius; set { _AxisRadius = value; OnPropertyChanged(); } }
         private double _AxisRadius;
 
-        [Category("坐标轴"), DisplayName("方位角步进")]
+        [Display(Name = "Con_Axis_AzimuthStep", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double AzimuthStep { get => _AzimuthStep; set { _AzimuthStep = Math.Max(1, value); OnPropertyChanged(); } }
         private double _AzimuthStep = 30;
 
-        [Category("坐标轴"), DisplayName("极角步进")]
+        [Display(Name = "Con_Axis_PolarStep", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double PolarStep { get => _PolarStep; set { _PolarStep = Math.Max(1, value); OnPropertyChanged(); } }
         private double _PolarStep = 10;
 
-        [Category("坐标轴"), DisplayName("线宽")]
+        [Display(Name = "Con_Axis_LineWidth", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double LineWidth { get => _LineWidth; set { _LineWidth = Math.Max(0.1, value); OnPropertyChanged(); } }
         private double _LineWidth = 1.0;
 
-        [Category("坐标轴"), DisplayName("坐标轴颜色"), JsonIgnore]
+        [Display(Name = "Con_Axis_Color", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public Brush AxisBrush { get => _AxisBrush; set { _AxisBrush = value; OnPropertyChanged(); if (Pen != null) Pen.Brush = value; } }
         private Brush _AxisBrush = Brushes.Yellow;
 
-        [Category("参考线"), DisplayName("参考模式")]
+        [Display(Name = "Con_Axis_RefMode", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
         public ConoscopeCoordinateReferenceMode ReferenceMode { get => _ReferenceMode; set { _ReferenceMode = value; OnPropertyChanged(); } }
         private ConoscopeCoordinateReferenceMode _ReferenceMode = ConoscopeCoordinateReferenceMode.AzimuthLine;
 
-        [Category("参考线"), DisplayName("参考方位角")]
+        [Display(Name = "Con_Axis_RefAzimuth", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
         public double ReferenceAngle { get => _ReferenceAngle; set { _ReferenceAngle = NormalizeAzimuthAngle(value); OnPropertyChanged(); } }
         private double _ReferenceAngle = 90;
 
-        [Category("参考线"), DisplayName("参考极角")]
+        [Display(Name = "Con_Axis_RefPolar", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
         public double ReferenceRadiusAngle { get => _ReferenceRadiusAngle; set { _ReferenceRadiusAngle = value; OnPropertyChanged(); } }
         private double _ReferenceRadiusAngle = 30;
 
-        [Category("参考线"), DisplayName("参考线宽")]
+        [Display(Name = "Con_Axis_RefLineWidth", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
         public double ReferenceLineWidth { get => _ReferenceLineWidth; set { _ReferenceLineWidth = Math.Max(0.1, value); OnPropertyChanged(); } }
         private double _ReferenceLineWidth = 2.0;
 
-        [Category("参考线"), DisplayName("参考线颜色"), JsonIgnore]
+        [Display(Name = "Con_Axis_RefColor", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public Brush ReferenceBrush { get => _ReferenceBrush; set { _ReferenceBrush = value; OnPropertyChanged(); } }
         private Brush _ReferenceBrush = Brushes.Red;
 
-        [Category("遮罩"), DisplayName("显示遮罩")]
+        [Display(Name = "Con_Axis_ShowMask", GroupName = "Con_Category_Mask", ResourceType = typeof(Properties.Resources))]
         public bool IsMaskVisible { get => _IsMaskVisible; set { _IsMaskVisible = value; OnPropertyChanged(); } }
         private bool _IsMaskVisible = true;
 
-        [Category("遮罩"), DisplayName("遮罩不透明度(0-255)")]
+        [Display(Name = "Con_Axis_MaskOpacity", GroupName = "Con_Category_Mask", ResourceType = typeof(Properties.Resources))]
         public byte MaskOpacity { get => _MaskOpacity; set { _MaskOpacity = value; OnPropertyChanged(); } }
         private byte _MaskOpacity = 255;
 
-        [Category("遮罩"), DisplayName("遮罩颜色")]
+        [Display(Name = "Con_Axis_MaskColor", GroupName = "Con_Category_Mask", ResourceType = typeof(Properties.Resources))]
         public Color MaskColor { get => _MaskColor; set { _MaskColor = value; OnPropertyChanged(); } }
         private Color _MaskColor = Color.FromRgb(0, 0, 0);
 
-        [Category("文字"), DisplayName("显示文字")]
+        [Display(Name = "Con_Axis_ShowText", GroupName = "Con_Category_Text", ResourceType = typeof(Properties.Resources))]
         public bool IsTextVisible { get => _IsTextVisible; set { _IsTextVisible = value; OnPropertyChanged(); } }
         private bool _IsTextVisible = true;
 
-        [Category("文字"), DisplayName("文字大小")]
+        [Display(Name = "Con_Axis_TextSize", GroupName = "Con_Category_Text", ResourceType = typeof(Properties.Resources))]
         public double FontSize { get => _FontSize; set { _FontSize = Math.Max(1, value); OnPropertyChanged(); } }
         private double _FontSize = 24;
 
-        [Category("文字"), DisplayName("文字颜色"), JsonIgnore]
+        [Display(Name = "Con_Axis_TextColor", GroupName = "Con_Category_Text", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public Brush TextBrush { get => _TextBrush; set { _TextBrush = value; OnPropertyChanged(); } }
         private Brush _TextBrush = Brushes.Yellow;
 

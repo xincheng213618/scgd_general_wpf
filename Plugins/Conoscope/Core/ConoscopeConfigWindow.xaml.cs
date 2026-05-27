@@ -3,6 +3,7 @@ using ColorVision.Core;
 using Conoscope;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -56,42 +57,42 @@ namespace Conoscope.Core
                 export = config.Export;
             }
 
-            [Category("显示"), DisplayName("显示通道")]
+            [Display(Name = "Con_Cfg_DisplayChannel", GroupName = "Con_Category_Display", ResourceType = typeof(Properties.Resources))]
             public ExportChannel DisplayChannel
             {
                 get => rendering.DisplayChannel;
                 set => rendering.DisplayChannel = value;
             }
 
-            [Category("显示"), DisplayName("伪彩色映射")]
+            [Display(Name = "Con_Cfg_PseudoColor", GroupName = "Con_Category_Display", ResourceType = typeof(Properties.Resources))]
             public ColormapTypes PseudoColorMap
             {
                 get => rendering.PseudoColorMap;
                 set => rendering.PseudoColorMap = value;
             }
 
-            [Category("显示"), DisplayName("使用伪彩色")]
+            [Display(Name = "Con_Cfg_UsePseudoColor", GroupName = "Con_Category_Display", ResourceType = typeof(Properties.Resources))]
             public bool UsePseudoColor
             {
                 get => rendering.UsePseudoColor;
                 set => rendering.UsePseudoColor = value;
             }
 
-            [Category("导出"), DisplayName("当前曲线采样间隔(度)"), Description("当前曲线 CSV 导出的默认采样间隔。")]
+            [Display(Name = "Con_Cfg_SampleInterval", GroupName = "Con_Category_Export", Description = "当前曲线 CSV 导出的默认采样间隔。", ResourceType = typeof(Properties.Resources))]
             public double CurrentCurveExportStepDegrees
             {
                 get => export.CurrentCurveStepDegrees;
                 set => export.CurrentCurveStepDegrees = value;
             }
 
-            [Category("导出"), DisplayName("当前曲线导出元数据"), Description("是否在当前曲线 CSV 顶部写入标题和元数据。")]
+            [Display(Name = "Con_Cfg_ExportMetadata", GroupName = "Con_Category_Export", Description = "是否在当前曲线 CSV 顶部写入标题和元数据。", ResourceType = typeof(Properties.Resources))]
             public bool CurrentCurveExportIncludeMetadata
             {
                 get => export.IncludeMetadata;
                 set => export.IncludeMetadata = value;
             }
 
-            [Category("导出"), DisplayName("导出数据小数位数"), Description("CSV 导出时数据值默认保留的小数位数。")]
+            [Display(Name = "Con_Cfg_Decimals", GroupName = "Con_Category_Export", Description = "CSV 导出时数据值默认保留的小数位数。", ResourceType = typeof(Properties.Resources))]
             public int ExportDecimalPlaces
             {
                 get => export.DecimalPlaces;

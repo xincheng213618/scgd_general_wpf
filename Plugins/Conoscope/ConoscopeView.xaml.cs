@@ -9,6 +9,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -588,21 +589,21 @@ namespace Conoscope
                 this.modelProfile = modelProfile;
             }
 
-            [Category("视场"), DisplayName("视场角(度)"), Description("设计视场角。分析半径 = 视场角 * 生效视场系数。")]
+            [Display(Name = "Con_FOV_Angle", GroupName = "Con_Category_FOV", Description = "设计视场角。分析半径 = 视场角 * 生效视场系数。", ResourceType = typeof(Properties.Resources))]
             public int MaxAngle
             {
                 get => modelProfile.MaxAngle;
                 set => modelProfile.MaxAngle = value;
             }
 
-            [Category("视场"), DisplayName("完整像素数(px)"), Description("对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 使用图像短边一半。输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 计算。")]
+            [Display(Name = "Con_FOV_Pixels", GroupName = "Con_Category_FOV", Description = "对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 使用图像短边一半。输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 计算。", ResourceType = typeof(Properties.Resources))]
             public double FullScalePixelCount
             {
                 get => modelProfile.FullScalePixelCount;
                 set => modelProfile.FullScalePixelCount = value;
             }
 
-            [Category("视场"), DisplayName("ConoscopeCoefficient(度/像素)"), Description("可直接输入 60/3100 这类小数。填 0 表示按完整像素数自动计算。分析半径 = 视场角 / 该系数。")]
+            [Display(Name = "Con_FOV_Coefficient", GroupName = "Con_Category_FOV", Description = "可直接输入 60/3100 这类小数。填 0 表示按完整像素数自动计算。分析半径 = 视场角 / 该系数。", ResourceType = typeof(Properties.Resources))]
             public double DirectConoscopeCoefficient
             {
                 get => modelProfile.DirectConoscopeCoefficient;

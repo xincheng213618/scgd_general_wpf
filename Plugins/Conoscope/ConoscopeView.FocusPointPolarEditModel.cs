@@ -4,6 +4,7 @@ using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Windows;
 
 namespace Conoscope
@@ -33,7 +34,7 @@ namespace Conoscope
                 SyncFromCircle();
             }
 
-            [Category("关注点"), DisplayName("名称")]
+            [Display(Name = "Con_FP_Name", GroupName = "Con_Category_FocusPoint", ResourceType = typeof(Properties.Resources))]
             public string Name
             {
                 get => name;
@@ -56,7 +57,7 @@ namespace Conoscope
                 }
             }
 
-            [Category("位置"), DisplayName("方位角(°)")]
+            [Display(Name = "Con_FP_Azimuth", GroupName = "Con_Category_Position", ResourceType = typeof(Properties.Resources))]
             public double AzimuthDegrees
             {
                 get => azimuthDegrees;
@@ -74,7 +75,7 @@ namespace Conoscope
                 }
             }
 
-            [Category("位置"), DisplayName("极角(°)")]
+            [Display(Name = "Con_FP_Polar", GroupName = "Con_Category_Position", ResourceType = typeof(Properties.Resources))]
             public double PolarDegrees
             {
                 get => polarDegrees;
@@ -94,7 +95,7 @@ namespace Conoscope
                 }
             }
 
-            [Category("位置"), DisplayName("距离(px)")]
+            [Display(Name = "Con_FP_Distance", GroupName = "Con_Category_Position", ResourceType = typeof(Properties.Resources))]
             public double DistancePixels
             {
                 get => distancePixels;
@@ -114,7 +115,7 @@ namespace Conoscope
                 }
             }
 
-            [Category("大小"), DisplayName("半径(px)")]
+            [Display(Name = "Con_FP_RadiusPx", GroupName = "Con_Category_Size", ResourceType = typeof(Properties.Resources))]
             public double RadiusPixels
             {
                 get => radiusPixels;
@@ -134,7 +135,7 @@ namespace Conoscope
                 }
             }
 
-            [Category("大小"), DisplayName("半径(°)")]
+            [Display(Name = "Con_FP_RadiusDeg", GroupName = "Con_Category_Size", ResourceType = typeof(Properties.Resources))]
             public double RadiusDegrees
             {
                 get => radiusDegrees;

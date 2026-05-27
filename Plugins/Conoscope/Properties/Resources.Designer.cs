@@ -15,6 +15,10 @@ namespace Conoscope.Properties {
     /// <summary>
     ///   一个强类型的资源类，用于查找本地化的字符串等。
     /// </summary>
+    // 此类是由 StronglyTypedResourceBuilder
+    // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
+    // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
+    // (以 /str 作为命令选项)，或重新生成 VS 项目。
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
@@ -28,6 +32,9 @@ namespace Conoscope.Properties {
         internal Resources() {
         }
         
+        /// <summary>
+        ///   返回此类使用的缓存的 ResourceManager 实例。
+        /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
@@ -39,6 +46,10 @@ namespace Conoscope.Properties {
             }
         }
         
+        /// <summary>
+        ///   重写当前线程的 CurrentUICulture 属性，对
+        ///   使用此强类型资源类的所有资源查找执行重写。
+        /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         public static global::System.Globalization.CultureInfo Culture {
             get {
@@ -48,6 +59,7 @@ namespace Conoscope.Properties {
                 resourceCulture = value;
             }
         }
+        
         /// <summary>
         ///   查找类似 双边滤波 的本地化字符串。
         /// </summary>
@@ -56,7 +68,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BilateralFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 黑场亮度必须大于 0，才能计算对比度 的本地化字符串。
         /// </summary>
@@ -65,7 +77,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BlackLuminanceMustBePositive", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 添加尺寸 的本地化字符串。
         /// </summary>
@@ -74,7 +86,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnAddSize", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位导出 的本地化字符串。
         /// </summary>
@@ -83,7 +95,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnAzimuthExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 黑基准 的本地化字符串。
         /// </summary>
@@ -92,7 +104,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnBlackReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
@@ -101,7 +113,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnCancel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 拍照 的本地化字符串。
         /// </summary>
@@ -110,7 +122,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnCapturePhoto", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清空 的本地化字符串。
         /// </summary>
@@ -119,7 +131,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnClear", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 关闭 的本地化字符串。
         /// </summary>
@@ -128,7 +140,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnClose", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 关闭设备 的本地化字符串。
         /// </summary>
@@ -137,7 +149,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnCloseDevice", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色差基准 的本地化字符串。
         /// </summary>
@@ -146,7 +158,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnColorDifferenceReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 计算色差 的本地化字符串。
         /// </summary>
@@ -155,7 +167,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnComputeColorDiff", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 计算对比度 的本地化字符串。
         /// </summary>
@@ -164,7 +176,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnComputeContrast", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 计算色域 的本地化字符串。
         /// </summary>
@@ -173,7 +185,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnComputeGamut", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 删除当前 的本地化字符串。
         /// </summary>
@@ -182,7 +194,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnDeleteCurrent", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 执行 的本地化字符串。
         /// </summary>
@@ -191,7 +203,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnExecute", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出 的本地化字符串。
         /// </summary>
@@ -200,7 +212,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出当前 的本地化字符串。
         /// </summary>
@@ -209,7 +221,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnExportCurrent", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 查找设备 的本地化字符串。
         /// </summary>
@@ -218,7 +230,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnFindDevice", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 获取参数 的本地化字符串。
         /// </summary>
@@ -227,7 +239,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnGetParams", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 观察相机 的本地化字符串。
         /// </summary>
@@ -236,7 +248,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnObservationCamera", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开设备 的本地化字符串。
         /// </summary>
@@ -245,7 +257,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnOpenDevice", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开观察相机设置 的本地化字符串。
         /// </summary>
@@ -254,7 +266,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnOpenObservationSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极坐标 的本地化字符串。
         /// </summary>
@@ -263,7 +275,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnPolarCoord", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角导出 的本地化字符串。
         /// </summary>
@@ -272,7 +284,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnPolarExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 重新应用 的本地化字符串。
         /// </summary>
@@ -281,7 +293,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnReapply", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存色差基准图 的本地化字符串。
         /// </summary>
@@ -290,7 +302,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnSaveBaseImage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 设置参数 的本地化字符串。
         /// </summary>
@@ -299,7 +311,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnSetParams", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 设置 的本地化字符串。
         /// </summary>
@@ -308,7 +320,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 软触发一次 的本地化字符串。
         /// </summary>
@@ -317,7 +329,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnSoftTriggerOnce", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 开始采集 的本地化字符串。
         /// </summary>
@@ -326,7 +338,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnStartCapture", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 停止采集 的本地化字符串。
         /// </summary>
@@ -335,7 +347,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnStopCapture", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 白基准 的本地化字符串。
         /// </summary>
@@ -344,7 +356,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("BtnWhiteReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 校正 的本地化字符串。
         /// </summary>
@@ -353,7 +365,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Calibration", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 A 光源 的本地化字符串。
         /// </summary>
@@ -362,7 +374,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiA", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 按方位角导出 的本地化字符串。
         /// </summary>
@@ -371,7 +383,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiAzimuthExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暗斑 + 亮斑 的本地化字符串。
         /// </summary>
@@ -380,7 +392,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiBothSpots", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 亮斑 的本地化字符串。
         /// </summary>
@@ -389,7 +401,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiBrightSpot", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 图像中心 50px 的本地化字符串。
         /// </summary>
@@ -398,7 +410,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiCenter50px", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 自定义坐标 的本地化字符串。
         /// </summary>
@@ -407,7 +419,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiCustomCoord", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 D50 光源 的本地化字符串。
         /// </summary>
@@ -416,7 +428,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiD50", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 D65 光源 的本地化字符串。
         /// </summary>
@@ -425,7 +437,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiD65", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 D75 光源 的本地化字符串。
         /// </summary>
@@ -434,7 +446,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiD75", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暗斑 的本地化字符串。
         /// </summary>
@@ -443,7 +455,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiDarkSpot", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 实测基准图 的本地化字符串。
         /// </summary>
@@ -452,7 +464,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiMeasuredBase", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 按极角导出 的本地化字符串。
         /// </summary>
@@ -461,7 +473,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CbiPolarExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 u 色度 的本地化字符串。
         /// </summary>
@@ -470,7 +482,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieU", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 u色度 的本地化字符串。
         /// </summary>
@@ -479,7 +491,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieUShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 v 色度 的本地化字符串。
         /// </summary>
@@ -488,7 +500,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieV", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 v色度 的本地化字符串。
         /// </summary>
@@ -497,7 +509,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieVShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 x 色度 的本地化字符串。
         /// </summary>
@@ -506,7 +518,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieX", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 x色度 的本地化字符串。
         /// </summary>
@@ -515,7 +527,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieXShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 y 色度 的本地化字符串。
         /// </summary>
@@ -524,7 +536,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieY", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 y色度 的本地化字符串。
         /// </summary>
@@ -533,7 +545,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelCieYShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度 的本地化字符串。
         /// </summary>
@@ -542,7 +554,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelContrast", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色差 Δuv 的本地化字符串。
         /// </summary>
@@ -551,7 +563,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelDeltaUV", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色差Δuv 的本地化字符串。
         /// </summary>
@@ -560,7 +572,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelDeltaUVShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 X 通道 的本地化字符串。
         /// </summary>
@@ -569,7 +581,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelX", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 X通道 的本地化字符串。
         /// </summary>
@@ -578,7 +590,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelXShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Y 通道 的本地化字符串。
         /// </summary>
@@ -587,7 +599,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelY", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Y通道 的本地化字符串。
         /// </summary>
@@ -596,7 +608,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelYShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Z 通道 的本地化字符串。
         /// </summary>
@@ -605,7 +617,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelZ", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Z通道 的本地化字符串。
         /// </summary>
@@ -614,7 +626,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChannelZShort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用灰尘滤除 的本地化字符串。
         /// </summary>
@@ -623,7 +635,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkEnableDustRemoval", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用滤波 的本地化字符串。
         /// </summary>
@@ -632,7 +644,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkEnableFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用预处理 的本地化字符串。
         /// </summary>
@@ -641,7 +653,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkEnablePreprocess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用截面导出 的本地化字符串。
         /// </summary>
@@ -650,7 +662,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkEnableSectionExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出标题和元数据 的本地化字符串。
         /// </summary>
@@ -659,7 +671,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkExportTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 仅显示 CS200 设备 的本地化字符串。
         /// </summary>
@@ -668,7 +680,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkOnlyShowCs200Devices", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 伪彩显示 的本地化字符串。
         /// </summary>
@@ -677,7 +689,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkPseudoColor", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 范围限制 的本地化字符串。
         /// </summary>
@@ -686,7 +698,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkRangeLimit", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 流程/拍图结果复用当前视图 的本地化字符串。
         /// </summary>
@@ -695,7 +707,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkReuseActiveView", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 软触发 的本地化字符串。
         /// </summary>
@@ -704,7 +716,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChkSoftTrigger", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 x={0}, y={1} 的本地化字符串。
         /// </summary>
@@ -713,7 +725,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ChromaticityFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角(°) 的本地化字符串。
         /// </summary>
@@ -722,7 +734,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColAzimuthDeg", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 B 色坐标 的本地化字符串。
         /// </summary>
@@ -731,7 +743,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColBChromaticity", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 黑色坐标 的本地化字符串。
         /// </summary>
@@ -740,7 +752,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColBlackChromaticity", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 黑亮度 的本地化字符串。
         /// </summary>
@@ -749,7 +761,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColBlackLuminance", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度 的本地化字符串。
         /// </summary>
@@ -758,7 +770,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColContrast", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 关注点 的本地化字符串。
         /// </summary>
@@ -767,16 +779,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColFocusPoint", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 G 色坐标 的本地化字符串。
-        /// </summary>
-        public static string ColGChromaticity {
-            get {
-                return ResourceManager.GetString("ColGChromaticity", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 色域值(%) 的本地化字符串。
         /// </summary>
@@ -785,7 +788,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColGamutValue", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 G 色坐标 的本地化字符串。
+        /// </summary>
+        public static string ColGChromaticity {
+            get {
+                return ResourceManager.GetString("ColGChromaticity", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 编号 的本地化字符串。
         /// </summary>
@@ -794,52 +806,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColNumber", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 极角(°) 的本地化字符串。
-        /// </summary>
-        public static string ColPolarDeg {
-            get {
-                return ResourceManager.GetString("ColPolarDeg", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 R 色坐标 的本地化字符串。
-        /// </summary>
-        public static string ColRChromaticity {
-            get {
-                return ResourceManager.GetString("ColRChromaticity", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 半径(°) 的本地化字符串。
-        /// </summary>
-        public static string ColRadiusDeg {
-            get {
-                return ResourceManager.GetString("ColRadiusDeg", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 白色坐标 的本地化字符串。
-        /// </summary>
-        public static string ColWhiteChromaticity {
-            get {
-                return ResourceManager.GetString("ColWhiteChromaticity", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 白亮度 的本地化字符串。
-        /// </summary>
-        public static string ColWhiteLuminance {
-            get {
-                return ResourceManager.GetString("ColWhiteLuminance", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 色差通道需要指定 uv 基准 的本地化字符串。
         /// </summary>
@@ -848,7 +815,709 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ColorDiffNeedsUVRef", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 极角(°) 的本地化字符串。
+        /// </summary>
+        public static string ColPolarDeg {
+            get {
+                return ResourceManager.GetString("ColPolarDeg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 半径(°) 的本地化字符串。
+        /// </summary>
+        public static string ColRadiusDeg {
+            get {
+                return ResourceManager.GetString("ColRadiusDeg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 R 色坐标 的本地化字符串。
+        /// </summary>
+        public static string ColRChromaticity {
+            get {
+                return ResourceManager.GetString("ColRChromaticity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 白色坐标 的本地化字符串。
+        /// </summary>
+        public static string ColWhiteChromaticity {
+            get {
+                return ResourceManager.GetString("ColWhiteChromaticity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 白亮度 的本地化字符串。
+        /// </summary>
+        public static string ColWhiteLuminance {
+            get {
+                return ResourceManager.GetString("ColWhiteLuminance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 方位角直线 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_AzimuthLine {
+            get {
+                return ResourceManager.GetString("Con_Axis_AzimuthLine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 方位角步进 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_AzimuthStep {
+            get {
+                return ResourceManager.GetString("Con_Axis_AzimuthStep", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 圆心X 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_CenterX {
+            get {
+                return ResourceManager.GetString("Con_Axis_CenterX", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 圆心Y 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_CenterY {
+            get {
+                return ResourceManager.GetString("Con_Axis_CenterY", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 坐标轴颜色 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_Color {
+            get {
+                return ResourceManager.GetString("Con_Axis_Color", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用交互 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_EnableInteract {
+            get {
+                return ResourceManager.GetString("Con_Axis_EnableInteract", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 线宽 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_LineWidth {
+            get {
+                return ResourceManager.GetString("Con_Axis_LineWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 遮罩颜色 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_MaskColor {
+            get {
+                return ResourceManager.GetString("Con_Axis_MaskColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 遮罩不透明度(0-255) 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_MaskOpacity {
+            get {
+                return ResourceManager.GetString("Con_Axis_MaskOpacity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最大角度 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_MaxAngle {
+            get {
+                return ResourceManager.GetString("Con_Axis_MaxAngle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 极角圆 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_PolarCircle {
+            get {
+                return ResourceManager.GetString("Con_Axis_PolarCircle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 极角步进 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_PolarStep {
+            get {
+                return ResourceManager.GetString("Con_Axis_PolarStep", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 坐标半径 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_Radius {
+            get {
+                return ResourceManager.GetString("Con_Axis_Radius", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参考方位角 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_RefAzimuth {
+            get {
+                return ResourceManager.GetString("Con_Axis_RefAzimuth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参考线颜色 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_RefColor {
+            get {
+                return ResourceManager.GetString("Con_Axis_RefColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参考线宽 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_RefLineWidth {
+            get {
+                return ResourceManager.GetString("Con_Axis_RefLineWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参考模式 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_RefMode {
+            get {
+                return ResourceManager.GetString("Con_Axis_RefMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参考极角 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_RefPolar {
+            get {
+                return ResourceManager.GetString("Con_Axis_RefPolar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示遮罩 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_ShowMask {
+            get {
+                return ResourceManager.GetString("Con_Axis_ShowMask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示文字 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_ShowText {
+            get {
+                return ResourceManager.GetString("Con_Axis_ShowText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文字颜色 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_TextColor {
+            get {
+                return ResourceManager.GetString("Con_Axis_TextColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文字大小 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_TextSize {
+            get {
+                return ResourceManager.GetString("Con_Axis_TextSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 坐标轴 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_CoordAxis {
+            get {
+                return ResourceManager.GetString("Con_Category_CoordAxis", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Display {
+            get {
+                return ResourceManager.GetString("Con_Category_Display", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 灰尘滤除 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Dust {
+            get {
+                return ResourceManager.GetString("Con_Category_Dust", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Export {
+            get {
+                return ResourceManager.GetString("Con_Category_Export", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 滤波 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Filter {
+            get {
+                return ResourceManager.GetString("Con_Category_Filter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关注点 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_FocusPoint {
+            get {
+                return ResourceManager.GetString("Con_Category_FocusPoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视场 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_FOV {
+            get {
+                return ResourceManager.GetString("Con_Category_FOV", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 遮罩 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Mask {
+            get {
+                return ResourceManager.GetString("Con_Category_Mask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 型号 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Model {
+            get {
+                return ResourceManager.GetString("Con_Category_Model", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 观察相机 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_ObserveCam {
+            get {
+                return ResourceManager.GetString("Con_Category_ObserveCam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 位置 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Position {
+            get {
+                return ResourceManager.GetString("Con_Category_Position", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预处理 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Preprocess {
+            get {
+                return ResourceManager.GetString("Con_Category_Preprocess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参考线 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_RefLine {
+            get {
+                return ResourceManager.GetString("Con_Category_RefLine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 大小 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Size {
+            get {
+                return ResourceManager.GetString("Con_Category_Size", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文字 的本地化字符串。
+        /// </summary>
+        public static string Con_Category_Text {
+            get {
+                return ResourceManager.GetString("Con_Category_Text", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 双边 d 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_BilateralD {
+            get {
+                return ResourceManager.GetString("Con_Cfg_BilateralD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 双边 SigmaColor 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_BilateralSigmaColor {
+            get {
+                return ResourceManager.GetString("Con_Cfg_BilateralSigmaColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 双边 SigmaSpace 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_BilateralSigmaSpace {
+            get {
+                return ResourceManager.GetString("Con_Cfg_BilateralSigmaSpace", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出数据小数位数 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_Decimals {
+            get {
+                return ResourceManager.GetString("Con_Cfg_Decimals", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 检测阈值(%) 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_DetectThreshold {
+            get {
+                return ResourceManager.GetString("Con_Cfg_DetectThreshold", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示通道 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_DisplayChannel {
+            get {
+                return ResourceManager.GetString("Con_Cfg_DisplayChannel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 灰尘类型 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_DustType {
+            get {
+                return ResourceManager.GetString("Con_Cfg_DustType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用灰尘滤除 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_EnableDust {
+            get {
+                return ResourceManager.GetString("Con_Cfg_EnableDust", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前曲线导出元数据 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_ExportMetadata {
+            get {
+                return ResourceManager.GetString("Con_Cfg_ExportMetadata", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 滤波类型 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_FilterType {
+            get {
+                return ResourceManager.GetString("Con_Cfg_FilterType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载时修正非正 XYZ 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_FixNonPositiveXYZ {
+            get {
+                return ResourceManager.GetString("Con_Cfg_FixNonPositiveXYZ", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高斯 Sigma 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_GaussianSigma {
+            get {
+                return ResourceManager.GetString("Con_Cfg_GaussianSigma", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 核大小 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_KernelSize {
+            get {
+                return ResourceManager.GetString("Con_Cfg_KernelSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最大面积(px) 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_MaxArea {
+            get {
+                return ResourceManager.GetString("Con_Cfg_MaxArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最小面积(px) 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_MinArea {
+            get {
+                return ResourceManager.GetString("Con_Cfg_MinArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 伪彩色映射 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_PseudoColor {
+            get {
+                return ResourceManager.GetString("Con_Cfg_PseudoColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修复半径(px) 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_RepairRadius {
+            get {
+                return ResourceManager.GetString("Con_Cfg_RepairRadius", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前曲线采样间隔(度) 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_SampleInterval {
+            get {
+                return ResourceManager.GetString("Con_Cfg_SampleInterval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 使用伪彩色 的本地化字符串。
+        /// </summary>
+        public static string Con_Cfg_UsePseudoColor {
+            get {
+                return ResourceManager.GetString("Con_Cfg_UsePseudoColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视场角(度) 的本地化字符串。
+        /// </summary>
+        public static string Con_FOV_Angle {
+            get {
+                return ResourceManager.GetString("Con_FOV_Angle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视场角 的本地化字符串。
+        /// </summary>
+        public static string Con_FOV_AngleDesc {
+            get {
+                return ResourceManager.GetString("Con_FOV_AngleDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ConoscopeCoefficient(度/像素) 的本地化字符串。
+        /// </summary>
+        public static string Con_FOV_Coefficient {
+            get {
+                return ResourceManager.GetString("Con_FOV_Coefficient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 完整像素数(px) 的本地化字符串。
+        /// </summary>
+        public static string Con_FOV_Pixels {
+            get {
+                return ResourceManager.GetString("Con_FOV_Pixels", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 方位角(°) 的本地化字符串。
+        /// </summary>
+        public static string Con_FP_Azimuth {
+            get {
+                return ResourceManager.GetString("Con_FP_Azimuth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 距离(px) 的本地化字符串。
+        /// </summary>
+        public static string Con_FP_Distance {
+            get {
+                return ResourceManager.GetString("Con_FP_Distance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 名称 的本地化字符串。
+        /// </summary>
+        public static string Con_FP_Name {
+            get {
+                return ResourceManager.GetString("Con_FP_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 极角(°) 的本地化字符串。
+        /// </summary>
+        public static string Con_FP_Polar {
+            get {
+                return ResourceManager.GetString("Con_FP_Polar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 半径(°) 的本地化字符串。
+        /// </summary>
+        public static string Con_FP_RadiusDeg {
+            get {
+                return ResourceManager.GetString("Con_FP_RadiusDeg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 半径(px) 的本地化字符串。
+        /// </summary>
+        public static string Con_FP_RadiusPx {
+            get {
+                return ResourceManager.GetString("Con_FP_RadiusPx", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 中心点X(像素) 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_CenterX {
+            get {
+                return ResourceManager.GetString("Con_Model_CenterX", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 中心点Y(像素) 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_CenterY {
+            get {
+                return ResourceManager.GetString("Con_Model_CenterY", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ConoscopeCoefficient(度/像素) 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_Coefficient {
+            get {
+                return ResourceManager.GetString("Con_Model_Coefficient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用观察相机 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_EnableObsCam {
+            get {
+                return ResourceManager.GetString("Con_Model_EnableObsCam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视场角(度) 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_FOV {
+            get {
+                return ResourceManager.GetString("Con_Model_FOV", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 完整像素数(px) 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_Pixels {
+            get {
+                return ResourceManager.GetString("Con_Model_Pixels", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 尺寸系数(mm/像素) 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_SizeCoeff {
+            get {
+                return ResourceManager.GetString("Con_Model_SizeCoeff", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 全部关注点 的本地化字符串。
         /// </summary>
@@ -857,7 +1526,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_AllFocusPoints", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 角度 (°) 的本地化字符串。
         /// </summary>
@@ -866,7 +1535,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_AngleDegrees", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 计算全部关注点 的本地化字符串。
         /// </summary>
@@ -875,7 +1544,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_CalculateAllFocusPoints", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 计算关注点: {0} 的本地化字符串。
         /// </summary>
@@ -884,7 +1553,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_CalculateFocusPoint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 圆周角度 (°) 的本地化字符串。
         /// </summary>
@@ -893,7 +1562,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_CircleAngleDegrees", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角 {0}° {1}圆周分布曲线 的本地化字符串。
         /// </summary>
@@ -902,7 +1571,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_CircleDistributionTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清空全部关注点 的本地化字符串。
         /// </summary>
@@ -911,7 +1580,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_ClearAllFocusPoints", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清空关注点 的本地化字符串。
         /// </summary>
@@ -920,7 +1589,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_ClearFocusPoint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度 的本地化字符串。
         /// </summary>
@@ -929,7 +1598,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_ContrastChannel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度通道需要先保存白场或黑场基准 的本地化字符串。
         /// </summary>
@@ -938,7 +1607,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_ContrastNeedsReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度基准图 的本地化字符串。
         /// </summary>
@@ -947,7 +1616,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_ContrastReferenceImage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 自定义: u={0:F4}, v={1:F4} 的本地化字符串。
         /// </summary>
@@ -956,7 +1625,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_CustomUv", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 CVCIE 文件 (*.cvcie)|*.cvcie 的本地化字符串。
         /// </summary>
@@ -965,7 +1634,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_CvcieFileFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 按角度/长度编辑... 的本地化字符串。
         /// </summary>
@@ -974,7 +1643,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_EditByAngleLength", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0}  方位 {1:F2}°  极角 {2:F2}°  R {3:F1}px/{4:F2}° 的本地化字符串。
         /// </summary>
@@ -983,7 +1652,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_FocusPointInfo", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Conoscope关注点_{0} 的本地化字符串。
         /// </summary>
@@ -992,7 +1661,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_FocusPointTemplateName", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 全局基准图: {0} 的本地化字符串。
         /// </summary>
@@ -1001,7 +1670,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_GlobalReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未保存全局色差基准图 的本地化字符串。
         /// </summary>
@@ -1010,7 +1679,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_NoGlobalReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 整体平均 的本地化字符串。
         /// </summary>
@@ -1019,7 +1688,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_OverallAverage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角 {0}° {1}分布曲线 的本地化字符串。
         /// </summary>
@@ -1028,7 +1697,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_PolarDistributionTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存全局基准图 的本地化字符串。
         /// </summary>
@@ -1037,7 +1706,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_SaveGlobalReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 观察相机尺寸系数未配置 的本地化字符串。
         /// </summary>
@@ -1046,7 +1715,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_ScaleCoefficientNotConfigured", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未显示测试区域 的本地化字符串。
         /// </summary>
@@ -1055,7 +1724,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_TestAreaNotDisplayed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 测试区域尺寸无效 的本地化字符串。
         /// </summary>
@@ -1064,7 +1733,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_TestAreaSizeInvalid", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 更新全局基准图 的本地化字符串。
         /// </summary>
@@ -1073,7 +1742,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_UpdateGlobalReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 v 基准图 的本地化字符串。
         /// </summary>
@@ -1082,7 +1751,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Conoscope_VReferenceImage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暗图 的本地化字符串。
         /// </summary>
@@ -1091,7 +1760,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ContrastImageBlack", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 亮图 的本地化字符串。
         /// </summary>
@@ -1100,7 +1769,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ContrastImageWhite", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 黑场 的本地化字符串。
         /// </summary>
@@ -1109,7 +1778,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ContrastReferenceBlackField", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 白场 的本地化字符串。
         /// </summary>
@@ -1118,7 +1787,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ContrastReferenceWhiteField", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前型号 的本地化字符串。
         /// </summary>
@@ -1127,7 +1796,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("CurrentModel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暗斑+亮斑 的本地化字符串。
         /// </summary>
@@ -1136,7 +1805,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("DustBoth", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 亮斑 的本地化字符串。
         /// </summary>
@@ -1145,7 +1814,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("DustBrightSpot", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暗斑 的本地化字符串。
         /// </summary>
@@ -1154,7 +1823,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("DustDarkSpot", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 灰尘 的本地化字符串。
         /// </summary>
@@ -1163,7 +1832,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("DustLabel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 灰尘关闭 的本地化字符串。
         /// </summary>
@@ -1172,7 +1841,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("DustOff", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 预计 的本地化字符串。
         /// </summary>
@@ -1181,7 +1850,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Estimated", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 双边 d{0} 的本地化字符串。
         /// </summary>
@@ -1190,7 +1859,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FilterBilateral", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 使用默认参数 的本地化字符串。
         /// </summary>
@@ -1199,7 +1868,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FilterDefaultParams", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 高斯 核{0} 的本地化字符串。
         /// </summary>
@@ -1208,7 +1877,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FilterGaussian", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 低通 核{0} 的本地化字符串。
         /// </summary>
@@ -1217,7 +1886,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FilterLowPass", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 均值 核{0} 的本地化字符串。
         /// </summary>
@@ -1226,7 +1895,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FilterMean", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 中值 核{0} 的本地化字符串。
         /// </summary>
@@ -1235,7 +1904,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FilterMedian", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 不过滤 的本地化字符串。
         /// </summary>
@@ -1244,7 +1913,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FilterNone", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 共 {0} 个关注点，平均对比度 {1}:1，最小 {2}:1，最大 {3}:1 的本地化字符串。
         /// </summary>
@@ -1253,7 +1922,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FocusPointCountAndAverageContrast", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 共 {0} 个关注点，平均色域值 {1}% 的本地化字符串。
         /// </summary>
@@ -1262,7 +1931,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FocusPointCountAndAverageGamut", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 [关注点] {0} - {1} 的本地化字符串。
         /// </summary>
@@ -1271,7 +1940,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FocusPointLabel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 多组关注点之间没有可对应的编号，请在同一套关注点下记录 R/G/B 或白/黑 数据。 的本地化字符串。
         /// </summary>
@@ -1280,7 +1949,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FocusPointMismatchError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Y:{0}  u:{1}  v:{2} 的本地化字符串。
         /// </summary>
@@ -1289,7 +1958,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("FocusPointYUV", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0} 色域至少需要三个顶点 的本地化字符串。
         /// </summary>
@@ -1298,7 +1967,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GamutNeedsAtLeastThreeVertices", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 高斯滤波 的本地化字符串。
         /// </summary>
@@ -1307,7 +1976,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GaussianFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 分析参数 的本地化字符串。
         /// </summary>
@@ -1316,7 +1985,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupAnalysisParameters", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角设置 的本地化字符串。
         /// </summary>
@@ -1325,7 +1994,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxAzimuthSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 通道选择 (可多选) 的本地化字符串。
         /// </summary>
@@ -1334,7 +2003,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxChannelSelection", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出模式 的本地化字符串。
         /// </summary>
@@ -1343,7 +2012,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxExportMode", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 文件设置 的本地化字符串。
         /// </summary>
@@ -1352,7 +2021,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxFileSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 全局设置 的本地化字符串。
         /// </summary>
@@ -1361,7 +2030,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxGlobalSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 型号参数 的本地化字符串。
         /// </summary>
@@ -1370,7 +2039,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxModelParams", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角设置 的本地化字符串。
         /// </summary>
@@ -1379,7 +2048,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxPolarSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 预处理设置 的本地化字符串。
         /// </summary>
@@ -1388,7 +2057,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxPreprocessSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 采样设置 的本地化字符串。
         /// </summary>
@@ -1397,7 +2066,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxSamplingSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 截面导出 (可选) 的本地化字符串。
         /// </summary>
@@ -1406,7 +2075,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxSectionExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 测试区域 的本地化字符串。
         /// </summary>
@@ -1415,7 +2084,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxTestArea", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 标题设置 的本地化字符串。
         /// </summary>
@@ -1424,7 +2093,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupBoxTitleSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色差 的本地化字符串。
         /// </summary>
@@ -1433,7 +2102,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupColorDifference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 计算动作 的本地化字符串。
         /// </summary>
@@ -1442,7 +2111,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupComputeActions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 配置 的本地化字符串。
         /// </summary>
@@ -1451,7 +2120,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupConfig", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度 的本地化字符串。
         /// </summary>
@@ -1460,7 +2129,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupContrast", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前视图 的本地化字符串。
         /// </summary>
@@ -1469,7 +2138,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupCurrentView", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 文件 的本地化字符串。
         /// </summary>
@@ -1478,7 +2147,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 视图功能 的本地化字符串。
         /// </summary>
@@ -1487,7 +2156,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 显示 的本地化字符串。
         /// </summary>
@@ -1496,7 +2165,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupDisplay", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用 的本地化字符串。
         /// </summary>
@@ -1505,7 +2174,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupEnable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出 的本地化字符串。
         /// </summary>
@@ -1514,7 +2183,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 滤波 的本地化字符串。
         /// </summary>
@@ -1523,7 +2192,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 流程采集 的本地化字符串。
         /// </summary>
@@ -1532,7 +2201,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupFlowCapture", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色域 的本地化字符串。
         /// </summary>
@@ -1541,7 +2210,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupGamut", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 测量相机 的本地化字符串。
         /// </summary>
@@ -1550,7 +2219,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupMeasurementCamera", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 型号与观察 的本地化字符串。
         /// </summary>
@@ -1559,7 +2228,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupModel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开 的本地化字符串。
         /// </summary>
@@ -1568,7 +2237,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupOpen", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 主题与语言 的本地化字符串。
         /// </summary>
@@ -1577,7 +2246,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("GroupThemeAndLanguage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 灰尘滤除 的本地化字符串。
         /// </summary>
@@ -1586,7 +2255,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HeaderDustRemoval", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 滤波 的本地化字符串。
         /// </summary>
@@ -1595,7 +2264,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HeaderFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 提示: 方位角步进控制角度方向采样密度，径向采样步进控制从中心到边缘的采样密度 的本地化字符串。
         /// </summary>
@@ -1604,7 +2273,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintAzimuthSampling", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 提示: 可以同时选择两种模式导出 的本地化字符串。
         /// </summary>
@@ -1613,7 +2282,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintBothExportModes", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 提示: 每个选中的通道将生成一个单独的文件 的本地化字符串。
         /// </summary>
@@ -1622,7 +2291,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintChannelPerFile", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 默认 4，可调 的本地化字符串。
         /// </summary>
@@ -1631,7 +2300,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintDecimalPlacesDefault4", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 默认 4，可调并保存 的本地化字符串。
         /// </summary>
@@ -1640,7 +2309,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintDecimalPlacesDefault4Saved", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 取消勾选后，CSV 将直接输出带单位的列头和数据，不再写入顶部说明行。 的本地化字符串。
         /// </summary>
@@ -1649,16 +2318,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintExportTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 提示: 导出的文件将使用 '前缀_通道_时间戳.csv' 格式命名 的本地化字符串。
+        ///   查找类似 提示: 导出的文件将使用 &apos;前缀_通道_时间戳.csv&apos; 格式命名 的本地化字符串。
         /// </summary>
         public static string HintFileNaming {
             get {
                 return ResourceManager.GetString("HintFileNaming", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 提示: 圆环步进控制圆环数量（半径方向），圆周角步进控制每个圆环上的采样密度 的本地化字符串。
         /// </summary>
@@ -1667,7 +2336,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintPolarSampling", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 默认 1，可调并保存 的本地化字符串。
         /// </summary>
@@ -1676,7 +2345,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintSamplingDefault", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角模式会按 -MaxAngle 到 +MaxAngle 采样，极角模式会按 0 到 360 采样。 的本地化字符串。
         /// </summary>
@@ -1685,7 +2354,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintSamplingDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 提示: 截面导出将仅导出指定角度的单一截面数据 的本地化字符串。
         /// </summary>
@@ -1694,7 +2363,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("HintSectionExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 无效 的本地化字符串。
         /// </summary>
@@ -1703,7 +2372,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Invalid", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 核大小 的本地化字符串。
         /// </summary>
@@ -1712,7 +2381,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("KernelSize", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角(°) 的本地化字符串。
         /// </summary>
@@ -1721,7 +2390,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelAzimuthDeg", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角 (度): 的本地化字符串。
         /// </summary>
@@ -1730,7 +2399,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelAzimuthDegLabel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角步进 (度): 的本地化字符串。
         /// </summary>
@@ -1739,7 +2408,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelAzimuthStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 基准: 的本地化字符串。
         /// </summary>
@@ -1748,7 +2417,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelBaseRef", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 中心 X(px) 的本地化字符串。
         /// </summary>
@@ -1757,7 +2426,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelCenterXPx", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 中心 Y(px) 的本地化字符串。
         /// </summary>
@@ -1766,7 +2435,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelCenterYPx", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 通道 的本地化字符串。
         /// </summary>
@@ -1775,7 +2444,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelChannel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 圆周角步进 (度): 的本地化字符串。
         /// </summary>
@@ -1784,7 +2453,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelCircularStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色差计算 的本地化字符串。
         /// </summary>
@@ -1793,7 +2462,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelColorDiffCalc", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前图像 的本地化字符串。
         /// </summary>
@@ -1802,7 +2471,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelCurrentImage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前型号 的本地化字符串。
         /// </summary>
@@ -1811,7 +2480,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelCurrentModel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前值 的本地化字符串。
         /// </summary>
@@ -1820,7 +2489,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelCurrentValue", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 数据小数位数: 的本地化字符串。
         /// </summary>
@@ -1829,7 +2498,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelDecimalPlaces", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 灰尘类型 的本地化字符串。
         /// </summary>
@@ -1838,7 +2507,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelDustType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 曝光 的本地化字符串。
         /// </summary>
@@ -1847,7 +2516,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelExposure", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 曝光(ms) 的本地化字符串。
         /// </summary>
@@ -1856,7 +2525,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelExposureMs", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 文件前缀: 的本地化字符串。
         /// </summary>
@@ -1865,7 +2534,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelFilePrefix", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 滤波类型: 的本地化字符串。
         /// </summary>
@@ -1874,7 +2543,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelFilterType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 帧率 的本地化字符串。
         /// </summary>
@@ -1883,7 +2552,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelFrameRate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 增益 的本地化字符串。
         /// </summary>
@@ -1892,7 +2561,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelGain", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 图形 的本地化字符串。
         /// </summary>
@@ -1901,7 +2570,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelGraph", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 语言 的本地化字符串。
         /// </summary>
@@ -1910,7 +2579,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelLanguage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 最大面积 的本地化字符串。
         /// </summary>
@@ -1919,7 +2588,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelMaxArea", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 最小面积 的本地化字符串。
         /// </summary>
@@ -1928,7 +2597,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelMinArea", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 模式 的本地化字符串。
         /// </summary>
@@ -1937,7 +2606,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelMode", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 观察相机 的本地化字符串。
         /// </summary>
@@ -1946,7 +2615,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelObservationCamera", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Pixel 类型 的本地化字符串。
         /// </summary>
@@ -1955,7 +2624,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelPixelType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角(°) 的本地化字符串。
         /// </summary>
@@ -1964,7 +2633,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelPolarDeg", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角 (度): 的本地化字符串。
         /// </summary>
@@ -1973,7 +2642,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelPolarDegLabel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 径向采样步进 (度): 的本地化字符串。
         /// </summary>
@@ -1982,7 +2651,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelRadialStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 参考曲线 的本地化字符串。
         /// </summary>
@@ -1991,16 +2660,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelRefCurve", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 参考模式: 的本地化字符串。
-        /// </summary>
-        public static string LabelRefMode {
-            get {
-                return ResourceManager.GetString("LabelRefMode", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 参考 的本地化字符串。
         /// </summary>
@@ -2009,7 +2669,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelReference", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 参考模式: 的本地化字符串。
+        /// </summary>
+        public static string LabelRefMode {
+            get {
+                return ResourceManager.GetString("LabelRefMode", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 修复半径 的本地化字符串。
         /// </summary>
@@ -2018,7 +2687,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelRepairRadius", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 圆环步进 (度): 的本地化字符串。
         /// </summary>
@@ -2027,7 +2696,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelRingStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 采样间隔 (度): 的本地化字符串。
         /// </summary>
@@ -2036,7 +2705,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelSamplingInterval", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.* 的本地化字符串。
         /// </summary>
@@ -2045,7 +2714,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelSaveFilterCsv", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 选择区域 的本地化字符串。
         /// </summary>
@@ -2054,7 +2723,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelSelectArea", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 尺寸系数(mm/px) 的本地化字符串。
         /// </summary>
@@ -2063,7 +2732,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelSizeCoeff", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 标准 的本地化字符串。
         /// </summary>
@@ -2072,7 +2741,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelStandard", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
@@ -2081,7 +2750,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelTheme", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 阈值% 的本地化字符串。
         /// </summary>
@@ -2090,7 +2759,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LabelThresholdPct", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 低通滤波 的本地化字符串。
         /// </summary>
@@ -2099,7 +2768,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("LowPassFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 实测 {0} 的本地化字符串。
         /// </summary>
@@ -2108,7 +2777,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Measured", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 中值滤波 的本地化字符串。
         /// </summary>
@@ -2117,7 +2786,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MedianFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 通过 Conoscope 打开 的本地化字符串。
         /// </summary>
@@ -2126,7 +2795,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MenuOpenWithConoscope", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 显示状态栏 的本地化字符串。
         /// </summary>
@@ -2135,7 +2804,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MenuShowStatusBar", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 显示功能栏 的本地化字符串。
         /// </summary>
@@ -2144,7 +2813,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MenuShowToolbar", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 视图 的本地化字符串。
         /// </summary>
@@ -2153,7 +2822,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MenuView", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 移动平均 的本地化字符串。
         /// </summary>
@@ -2162,7 +2831,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MovingAverage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前图像尚未准备好 3D 视图 的本地化字符串。
         /// </summary>
@@ -2171,7 +2840,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Msg3DViewNotReady", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开 3D 视图失败: {0} 的本地化字符串。
         /// </summary>
@@ -2180,7 +2849,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Msg3DViewOpenFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 高级导出失败: {0} 的本地化字符串。
         /// </summary>
@@ -2189,7 +2858,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgAdvancedExportFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角模式导出失败: {0} 的本地化字符串。
         /// </summary>
@@ -2198,7 +2867,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgAzimuthExportFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角 {0}° 导出成功 的本地化字符串。
         /// </summary>
@@ -2207,7 +2876,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgAzimuthExportSuccess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 基准: 当前图像中心直径 50px 关注点平均 uv 的本地化字符串。
         /// </summary>
@@ -2216,7 +2885,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgBaseCenter50px", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 拍照完成，但结果中没有找到 .cvcie 文件 的本地化字符串。
         /// </summary>
@@ -2225,16 +2894,17 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgCaptureCvcieNotFoundDetail", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 拍照失败: {0} {1} 的本地化字符串。
+        ///   查找类似 拍照失败: {0}
+        ///{1} 的本地化字符串。
         /// </summary>
         public static string MsgCaptureFailedDetail {
             get {
                 return ResourceManager.GetString("MsgCaptureFailedDetail", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色差通道需要先设置色差基准 的本地化字符串。
         /// </summary>
@@ -2243,16 +2913,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgColorDifferenceReferenceRequired", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 配置保存失败 的本地化字符串。
-        /// </summary>
-        public static string MsgConfigSaveFailed {
-            get {
-                return ResourceManager.GetString("MsgConfigSaveFailed", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 配置已保存 的本地化字符串。
         /// </summary>
@@ -2261,7 +2922,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgConfigSaved", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 配置保存失败 的本地化字符串。
+        /// </summary>
+        public static string MsgConfigSaveFailed {
+            get {
+                return ResourceManager.GetString("MsgConfigSaveFailed", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 {0}基准图尺寸与当前图像不一致，请重新保存基准图 的本地化字符串。
         /// </summary>
@@ -2270,7 +2940,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgContrastReferenceImageSizeMismatch", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前{0}缺少{1}基准。 的本地化字符串。
         /// </summary>
@@ -2279,7 +2949,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgContrastReferenceMissingStatus", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度通道需要先保存白场或黑场基准 的本地化字符串。
         /// </summary>
@@ -2288,7 +2958,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgContrastReferenceRequired", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前{0}对应的{1}基准尺寸与当前图像不一致。 的本地化字符串。
         /// </summary>
@@ -2297,16 +2967,18 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgContrastReferenceSizeMismatchStatus", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 {0} {1}: {2} {3}: {4} 的本地化字符串。
+        ///   查找类似 {0}
+        ///{1}: {2}
+        ///{3}: {4} 的本地化字符串。
         /// </summary>
         public static string MsgContrastReferenceSummary {
             get {
                 return ResourceManager.GetString("MsgContrastReferenceSummary", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前{0}将使用{1}基准。 的本地化字符串。
         /// </summary>
@@ -2315,7 +2987,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgContrastReferenceUsingStatus", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先绘制关注点圆。 的本地化字符串。
         /// </summary>
@@ -2324,7 +2996,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgDrawFocusPointsFirst", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 存在空的测量数据，无法对齐关注点 的本地化字符串。
         /// </summary>
@@ -2333,7 +3005,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgEmptyMeasurementDataCannotAlignFocusPoints", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请输入文件前缀 的本地化字符串。
         /// </summary>
@@ -2342,16 +3014,17 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgEnterFilePrefix", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 导出完成，共导出 {0} 个文件到: {1} 的本地化字符串。
+        ///   查找类似 导出完成，共导出 {0} 个文件到:
+        ///{1} 的本地化字符串。
         /// </summary>
         public static string MsgExportDone {
             get {
                 return ResourceManager.GetString("MsgExportDone", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出失败: {0} 的本地化字符串。
         /// </summary>
@@ -2360,16 +3033,17 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgExportFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 数据已成功导出到: {0} 的本地化字符串。
+        ///   查找类似 数据已成功导出到:
+        ///{0} 的本地化字符串。
         /// </summary>
         public static string MsgExportSuccess {
             get {
                 return ResourceManager.GetString("MsgExportSuccess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 流程执行完成，但结果中没有找到 .cvcie 文件 的本地化字符串。
         /// </summary>
@@ -2378,7 +3052,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgFlowCvcieNotFoundDetail", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 流程执行失败: {0} 的本地化字符串。
         /// </summary>
@@ -2387,52 +3061,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgFlowFailedDetail", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 创建 POI 模板失败。 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateCreateFailed {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateCreateFailed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 保存失败，具体报错信息请查看日志。 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaveFailedCheckLog {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedCheckLog", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 保存失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaveFailedDetail {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedDetail", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 数据库未连接，无法保存 POI 模板。 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaveRequiresDatabase {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaveRequiresDatabase", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 已保存关注点到 POI 模板: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgFocusPoiTemplateSaved {
-            get {
-                return ResourceManager.GetString("MsgFocusPoiTemplateSaved", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 未找到关注点 {0} 的显示信息。 的本地化字符串。
         /// </summary>
@@ -2441,7 +3070,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgFocusPointDisplayInfoNotFound", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0} 没有可用像素。 的本地化字符串。
         /// </summary>
@@ -2450,7 +3079,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgFocusPointNoPixels", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前图像尚未准备好关注点计算。 的本地化字符串。
         /// </summary>
@@ -2459,7 +3088,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgFocusPointNotReady", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前关注点不可用。 的本地化字符串。
         /// </summary>
@@ -2468,7 +3097,52 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgFocusPointsUnavailable", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 创建 POI 模板失败。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateCreateFailed {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateCreateFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已保存关注点到 POI 模板: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaved {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存失败，具体报错信息请查看日志。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveFailedCheckLog {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedCheckLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveFailedDetail {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveFailedDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库未连接，无法保存 POI 模板。 的本地化字符串。
+        /// </summary>
+        public static string MsgFocusPoiTemplateSaveRequiresDatabase {
+            get {
+                return ResourceManager.GetString("MsgFocusPoiTemplateSaveRequiresDatabase", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 请先保存全局色差基准图 的本地化字符串。
         /// </summary>
@@ -2477,7 +3151,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgGlobalColorDifferenceReferenceRequired", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前图像尺寸与色差基准图不一致，无法逐点计算 的本地化字符串。
         /// </summary>
@@ -2486,7 +3160,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgImageSizeMismatch", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前 ImageView 没有关联的文件路径 的本地化字符串。
         /// </summary>
@@ -2495,7 +3169,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgImageViewFilePathUnavailable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角截面角度必须是0-180之间的数值 的本地化字符串。
         /// </summary>
@@ -2504,7 +3178,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidAzimuthSection", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角步进必须是0.01-180之间的数值 的本地化字符串。
         /// </summary>
@@ -2513,7 +3187,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidAzimuthStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 圆周角步进必须是0.01-360之间的数值 的本地化字符串。
         /// </summary>
@@ -2522,7 +3196,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidCircularStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请输入有效的自定义 u/v 基准坐标 的本地化字符串。
         /// </summary>
@@ -2531,7 +3205,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidCustomUV", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请输入有效的自定义 u/v 基准坐标 的本地化字符串。
         /// </summary>
@@ -2540,7 +3214,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidCustomUvReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 小数位数必须是 0-8 之间的整数。 的本地化字符串。
         /// </summary>
@@ -2549,7 +3223,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidDecimalPlaces", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角截面角度必须是0-80之间的数值 的本地化字符串。
         /// </summary>
@@ -2558,7 +3232,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidPolarSection", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 径向采样步进必须是0.01-80之间的数值 的本地化字符串。
         /// </summary>
@@ -2567,7 +3241,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidRadialStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 圆环步进必须是0.01-80之间的数值 的本地化字符串。
         /// </summary>
@@ -2576,7 +3250,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidRingStep", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 采样间隔必须是 0.01 到 360 之间的数值 的本地化字符串。
         /// </summary>
@@ -2585,7 +3259,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgInvalidSamplingInterval", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先加载图像 的本地化字符串。
         /// </summary>
@@ -2594,7 +3268,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgLoadImageFirst", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先加载一张实测图 的本地化字符串。
         /// </summary>
@@ -2603,7 +3277,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgLoadImageFirstColorDiff", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 实测基准图需要保存基准图后逐点计算 的本地化字符串。
         /// </summary>
@@ -2612,16 +3286,17 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgMeasuredBaseNeedsSave", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 {0} 数据中缺少关注点 {1}。 来源: {2} 的本地化字符串。
+        ///   查找类似 {0} 数据中缺少关注点 {1}。
+        ///来源: {2} 的本地化字符串。
         /// </summary>
         public static string MsgMeasurementCaptureMissingFocusPoint {
             get {
                 return ResourceManager.GetString("MsgMeasurementCaptureMissingFocusPoint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先记录或导入 R/G/B 三组数据。 的本地化字符串。
         /// </summary>
@@ -2630,7 +3305,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgNeedRGBData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先记录白/黑两组数据。 的本地化字符串。
         /// </summary>
@@ -2639,7 +3314,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgNeedWhiteBlackData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先打开或新建一个 Conoscope 视图 的本地化字符串。
         /// </summary>
@@ -2648,7 +3323,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgNoActiveView", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前色差基准不是固定光源 的本地化字符串。
         /// </summary>
@@ -2657,7 +3332,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgNoFixedLightSource", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 没有可用于计算的关注点像素。 的本地化字符串。
         /// </summary>
@@ -2666,7 +3341,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgNoFocusPointPixelsCalc", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 没有可对齐的测量数据 的本地化字符串。
         /// </summary>
@@ -2675,7 +3350,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgNoMeasurementDataToAlign", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 图像中心 50px 关注点内没有可用像素 的本地化字符串。
         /// </summary>
@@ -2684,16 +3359,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgNoPixelsInCenter", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 打开Conoscope图像失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string MsgOpenImageFailed {
-            get {
-                return ResourceManager.GetString("MsgOpenImageFailed", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 已打开 的本地化字符串。
         /// </summary>
@@ -2702,7 +3368,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgOpened", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 打开Conoscope图像失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string MsgOpenImageFailed {
+            get {
+                return ResourceManager.GetString("MsgOpenImageFailed", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 已恢复原始数据 的本地化字符串。
         /// </summary>
@@ -2711,7 +3386,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgOriginalDataRestored", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角模式导出失败: {0} 的本地化字符串。
         /// </summary>
@@ -2720,7 +3395,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgPolarExportFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角 {0}° 导出成功 的本地化字符串。
         /// </summary>
@@ -2729,7 +3404,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgPolarExportSuccess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 创建极角线失败: {0} 的本地化字符串。
         /// </summary>
@@ -2738,7 +3413,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgPolarLineCreateFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 已应用当前预处理预设 的本地化字符串。
         /// </summary>
@@ -2747,7 +3422,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgPreprocessApplied", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存前处理配置失败: {0} 的本地化字符串。
         /// </summary>
@@ -2756,7 +3431,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgPreprocessConfigSaveFailedDetail", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 应用前处理失败: {0} 的本地化字符串。
         /// </summary>
@@ -2765,7 +3440,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgPreprocessFailedDetail", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存色差基准图失败: {0} 的本地化字符串。
         /// </summary>
@@ -2774,7 +3449,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSaveBaseImageFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存 Conoscope 配置失败: {0} 的本地化字符串。
         /// </summary>
@@ -2783,7 +3458,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSaveConfigFailedDetail", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先保存{0}基准图 的本地化字符串。
         /// </summary>
@@ -2792,7 +3467,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSaveContrastReferenceRequired", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先选择一个方位角 的本地化字符串。
         /// </summary>
@@ -2801,7 +3476,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectAzimuthFirst", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请选择相机设备 的本地化字符串。
         /// </summary>
@@ -2810,7 +3485,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectCamera", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 选择导出文件夹 的本地化字符串。
         /// </summary>
@@ -2819,7 +3494,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectExportFolder", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请选择流程 的本地化字符串。
         /// </summary>
@@ -2828,7 +3503,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectFlow", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请选择色域标准。 的本地化字符串。
         /// </summary>
@@ -2837,7 +3512,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectGamutStandard", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请至少选择一个通道 的本地化字符串。
         /// </summary>
@@ -2846,7 +3521,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectOneChannel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请至少选择一种导出模式 的本地化字符串。
         /// </summary>
@@ -2855,7 +3530,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectOneExportMode", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先选择一个极角 的本地化字符串。
         /// </summary>
@@ -2864,7 +3539,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSelectPolarFirst", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 设置错误: {0} 的本地化字符串。
         /// </summary>
@@ -2873,16 +3548,18 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgSettingsError", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 {0} 已记录 来源: {1} 数量: {2} 的本地化字符串。
+        ///   查找类似 {0} 已记录
+        ///来源: {1}
+        ///数量: {2} 的本地化字符串。
         /// </summary>
         public static string MsgSlotRecordedDetail {
             get {
                 return ResourceManager.GetString("MsgSlotRecordedDetail", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 XYZ 数据未加载 的本地化字符串。
         /// </summary>
@@ -2891,7 +3568,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("MsgXyzNotLoaded", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 无滤波 的本地化字符串。
         /// </summary>
@@ -2900,7 +3577,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("NoFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未打开 的本地化字符串。
         /// </summary>
@@ -2909,7 +3586,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("NotOpened", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 观察相机设置 的本地化字符串。
         /// </summary>
@@ -2918,7 +3595,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ObservationCameraSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 观察相机状态 的本地化字符串。
         /// </summary>
@@ -2927,7 +3604,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ObservationCameraStatus", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色差 的本地化字符串。
         /// </summary>
@@ -2936,7 +3613,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("PanelColorDiff", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 像素: X={0}, Y={1} 的本地化字符串。
         /// </summary>
@@ -2945,7 +3622,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("PixelCoordFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请选择 CVCIE XYZ 图像文件 的本地化字符串。
         /// </summary>
@@ -2954,7 +3631,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("PleaseSelectCVCIEFile", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极坐标: 方位={0}°, 极角={1}° 的本地化字符串。
         /// </summary>
@@ -2963,7 +3640,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("PolarCoordFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 提示 的本地化字符串。
         /// </summary>
@@ -2972,7 +3649,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Prompt", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 半径: {0} 的本地化字符串。
         /// </summary>
@@ -2981,7 +3658,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("RadiusFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角截面 的本地化字符串。
         /// </summary>
@@ -2990,7 +3667,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("RbAzimuthSection", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 连续模式 的本地化字符串。
         /// </summary>
@@ -2999,7 +3676,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("RbContinuousMode", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 极角截面 的本地化字符串。
         /// </summary>
@@ -3008,7 +3685,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("RbPolarSection", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 触发模式 的本地化字符串。
         /// </summary>
@@ -3017,7 +3694,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("RbTriggerMode", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 方位角直线 的本地化字符串。
         /// </summary>
@@ -3026,16 +3703,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("RefAzimuthLine", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 极角圆 的本地化字符串。
-        /// </summary>
-        public static string RefPolarCircle {
-            get {
-                return ResourceManager.GetString("RefPolarCircle", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 参考曲线 (Reference Distribution) 的本地化字符串。
         /// </summary>
@@ -3044,7 +3712,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ReferenceCurve", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 参考: {0} 的本地化字符串。
         /// </summary>
@@ -3053,7 +3721,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ReferenceFormat", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 极角圆 的本地化字符串。
+        /// </summary>
+        public static string RefPolarCircle {
+            get {
+                return ResourceManager.GetString("RefPolarCircle", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 {0}尺寸与当前图像不一致 的本地化字符串。
         /// </summary>
@@ -3062,7 +3739,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("SizeMismatchFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 黑 的本地化字符串。
         /// </summary>
@@ -3071,7 +3748,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("SlotBlack", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 白 的本地化字符串。
         /// </summary>
@@ -3080,7 +3757,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("SlotWhite", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0} 标准色域面积无效 的本地化字符串。
         /// </summary>
@@ -3089,7 +3766,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StandardGamutAreaInvalid", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未保存 的本地化字符串。
         /// </summary>
@@ -3098,7 +3775,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StateNotSaved", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 已保存 的本地化字符串。
         /// </summary>
@@ -3107,7 +3784,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StateSaved", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 拍照中 的本地化字符串。
         /// </summary>
@@ -3116,7 +3793,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusCapturing", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 执行中 的本地化字符串。
         /// </summary>
@@ -3125,7 +3802,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusExecuting", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 曝光:  的本地化字符串。
         /// </summary>
@@ -3134,7 +3811,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusExposure", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 文件类型 的本地化字符串。
         /// </summary>
@@ -3143,7 +3820,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusFileType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 帧率:  的本地化字符串。
         /// </summary>
@@ -3152,7 +3829,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusFrameRate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 增益:  的本地化字符串。
         /// </summary>
@@ -3161,7 +3838,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusGain", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 图像数:  的本地化字符串。
         /// </summary>
@@ -3170,7 +3847,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusImageCount", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 图像尺寸 的本地化字符串。
         /// </summary>
@@ -3179,7 +3856,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusImageSize", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未记录 的本地化字符串。
         /// </summary>
@@ -3188,7 +3865,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("StatusNotRecorded", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 分析 的本地化字符串。
         /// </summary>
@@ -3197,7 +3874,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TabAnalysis", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 采集 的本地化字符串。
         /// </summary>
@@ -3206,7 +3883,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TabCapture", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 主页 的本地化字符串。
         /// </summary>
@@ -3215,7 +3892,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TabHome", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 处理 的本地化字符串。
         /// </summary>
@@ -3224,7 +3901,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TabPreprocess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 系统 的本地化字符串。
         /// </summary>
@@ -3233,7 +3910,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TabSystem", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 测试区域 的本地化字符串。
         /// </summary>
@@ -3242,7 +3919,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TabTestArea", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 计算全部关注点 的本地化字符串。
         /// </summary>
@@ -3251,7 +3928,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbCalcTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 按有效圆区适应 的本地化字符串。
         /// </summary>
@@ -3260,7 +3937,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbCircleFitTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 仅绘制新的关注点圆 的本地化字符串。
         /// </summary>
@@ -3269,7 +3946,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbCircleTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清 的本地化字符串。
         /// </summary>
@@ -3278,7 +3955,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbClearAll", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清空全部关注点 的本地化字符串。
         /// </summary>
@@ -3287,7 +3964,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbClearAllTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 编辑 的本地化字符串。
         /// </summary>
@@ -3296,7 +3973,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbEdit", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 开启后进入关注点工具模式... 的本地化字符串。
         /// </summary>
@@ -3305,7 +3982,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbEditFocusPointTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 选中并拖拽已有关注点圆 的本地化字符串。
         /// </summary>
@@ -3314,7 +3991,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbEditTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 框选擦除关注点圆 的本地化字符串。
         /// </summary>
@@ -3323,7 +4000,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TbEraserTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请输入大于 0 的测试区域尺寸。 的本地化字符串。
         /// </summary>
@@ -3332,7 +4009,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TestAreaSizeMustBePositive", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 测试区域: {0} mm | 等待图像 的本地化字符串。
         /// </summary>
@@ -3341,7 +4018,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TestAreaWaitingForImage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 测试区域: {0} mm | 中心: ({1}, {2}) 的本地化字符串。
         /// </summary>
@@ -3350,7 +4027,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TestAreaWithCenter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 青色 的本地化字符串。
         /// </summary>
@@ -3359,7 +4036,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ThemeCyan", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暗色 的本地化字符串。
         /// </summary>
@@ -3368,7 +4045,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ThemeDark", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 亮色 的本地化字符串。
         /// </summary>
@@ -3377,7 +4054,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ThemeLight", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 粉色 的本地化字符串。
         /// </summary>
@@ -3386,7 +4063,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ThemePink", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 系统 的本地化字符串。
         /// </summary>
@@ -3395,7 +4072,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("ThemeSystem", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开高级导出 的本地化字符串。
         /// </summary>
@@ -3404,7 +4081,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipAdvancedExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 按当前预处理预设处理激活视图 的本地化字符串。
         /// </summary>
@@ -3413,7 +4090,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipApplyPreprocess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 使用当前相机与校正模板拍照 的本地化字符串。
         /// </summary>
@@ -3422,7 +4099,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipCapturePhoto", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清空当前对比度记录 的本地化字符串。
         /// </summary>
@@ -3431,7 +4108,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipClearContrast", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清空当前色域记录 的本地化字符串。
         /// </summary>
@@ -3440,7 +4117,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipClearGamut", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对当前记录的白/黑数据执行计算，并弹出结果窗口 的本地化字符串。
         /// </summary>
@@ -3449,7 +4126,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipComputeContrast", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对当前记录的 R/G/B 数据执行计算，并弹出结果窗口 的本地化字符串。
         /// </summary>
@@ -3458,7 +4135,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipComputeGamut", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前型号参数会直接作用到当前测试区域叠加。 的本地化字符串。
         /// </summary>
@@ -3467,7 +4144,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipCurrentModelApplies", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用后，打开图像时会自动应用当前预处理预设。 的本地化字符串。
         /// </summary>
@@ -3476,7 +4153,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipEnablePreprocess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 输入方位角并回车应用 的本地化字符串。
         /// </summary>
@@ -3485,7 +4162,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipEnterAzimuth", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 输入 0-{0} 的极角并回车应用 的本地化字符串。
         /// </summary>
@@ -3494,7 +4171,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipEnterPolarAngle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 执行当前流程并打开结果图像 的本地化字符串。
         /// </summary>
@@ -3503,7 +4180,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipExecuteFlow", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出方位模式数据 的本地化字符串。
         /// </summary>
@@ -3512,7 +4189,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipExportAzimuthData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 导出极角模式数据 的本地化字符串。
         /// </summary>
@@ -3521,7 +4198,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipExportPolarData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 关注点 POI 模板 的本地化字符串。
         /// </summary>
@@ -3530,7 +4207,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipFocusPoiTemplate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前全局色差基准图: {0}，再次点击可清除 的本地化字符串。
         /// </summary>
@@ -3539,7 +4216,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipGlobalColorDifferenceReferenceSaved", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前全局{0}基准: {1}，再次点击可清除 的本地化字符串。
         /// </summary>
@@ -3548,7 +4225,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipGlobalContrastReferenceSaved", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 管理 POI 模板 的本地化字符串。
         /// </summary>
@@ -3557,7 +4234,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipManageFocusPoiTemplate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用后，观察相机列表只显示型号中包含 CS200 的设备。 的本地化字符串。
         /// </summary>
@@ -3566,7 +4243,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOnlyShowCs200Devices", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开当前图像的 3D 视图 的本地化字符串。
         /// </summary>
@@ -3575,7 +4252,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpen3DView", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开当前相机的校正模板管理 的本地化字符串。
         /// </summary>
@@ -3584,7 +4261,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpenCalibrationMgmt", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开当前图像的 CIE 色度图 的本地化字符串。
         /// </summary>
@@ -3593,7 +4270,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpenCieDiagram", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开 Conoscope 设置 的本地化字符串。
         /// </summary>
@@ -3602,7 +4279,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpenConoscopeSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开一个或多个 Conoscope 图像 的本地化字符串。
         /// </summary>
@@ -3611,7 +4288,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpenFile", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开流程模板管理 的本地化字符串。
         /// </summary>
@@ -3620,7 +4297,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpenFlowTemplateMgmt", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开观察相机窗口 的本地化字符串。
         /// </summary>
@@ -3629,7 +4306,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpenObservationCamera", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开完整滤波和灰尘滤除参数 的本地化字符串。
         /// </summary>
@@ -3638,7 +4315,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipOpenPreprocessSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用后只在有效圆域内做显示映射；关闭后整图显示。 的本地化字符串。
         /// </summary>
@@ -3647,7 +4324,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipRangeLimit", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 从当前活动 View 的全部关注点记录 B 数据 的本地化字符串。
         /// </summary>
@@ -3656,7 +4333,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipRecordBData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 从当前活动 View 的全部关注点记录黑场数据 的本地化字符串。
         /// </summary>
@@ -3665,7 +4342,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipRecordBlackData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 从当前活动 View 的全部关注点记录 G 数据 的本地化字符串。
         /// </summary>
@@ -3674,7 +4351,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipRecordGData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 从当前活动 View 的全部关注点记录 R 数据 的本地化字符串。
         /// </summary>
@@ -3683,7 +4360,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipRecordRData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 从当前活动 View 的全部关注点记录白场数据 的本地化字符串。
         /// </summary>
@@ -3692,7 +4369,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipRecordWhiteData", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 刷新相机与校正模板列表 的本地化字符串。
         /// </summary>
@@ -3701,7 +4378,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipRefreshCameraList", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 勾选后，流程结果和相机拍图结果都会直接刷新当前活动 View，减少额外内存占用 的本地化字符串。
         /// </summary>
@@ -3710,7 +4387,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipReuseActiveView", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存当前关注点到 POI 模板 的本地化字符串。
         /// </summary>
@@ -3719,7 +4396,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipSaveFocusPoiTemplate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 将当前视图保存为全局色差基准图 的本地化字符串。
         /// </summary>
@@ -3728,7 +4405,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipSaveGlobalColorDifferenceReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 将当前视图保存为全局{0}基准 的本地化字符串。
         /// </summary>
@@ -3737,7 +4414,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipSaveGlobalContrastReference", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存窗口配置 的本地化字符串。
         /// </summary>
@@ -3746,7 +4423,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipSaveWindowConfig", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前选中关注点 的本地化字符串。
         /// </summary>
@@ -3755,7 +4432,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TipSelectedFocusPoint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 高级导出设置 的本地化字符串。
         /// </summary>
@@ -3764,7 +4441,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleAdvancedExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 分析记录 的本地化字符串。
         /// </summary>
@@ -3773,7 +4450,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleAnalysisRecord", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色域计算结果 的本地化字符串。
         /// </summary>
@@ -3782,7 +4459,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleColorGamutResult", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Conoscope 设置 的本地化字符串。
         /// </summary>
@@ -3791,7 +4468,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleConoscopeSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度计算 的本地化字符串。
         /// </summary>
@@ -3800,7 +4477,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleContrastCalc", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 对比度结果 的本地化字符串。
         /// </summary>
@@ -3809,7 +4486,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleContrastResult", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前曲线导出设置 的本地化字符串。
         /// </summary>
@@ -3818,7 +4495,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleCurrentCurveExport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 错误 的本地化字符串。
         /// </summary>
@@ -3827,7 +4504,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 关注点极坐标编辑 的本地化字符串。
         /// </summary>
@@ -3836,7 +4513,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleFocusPointPolarEditor", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 色域计算 的本地化字符串。
         /// </summary>
@@ -3845,7 +4522,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleGamutCalc", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 提示 的本地化字符串。
         /// </summary>
@@ -3854,7 +4531,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 MVS相机视图 的本地化字符串。
         /// </summary>
@@ -3863,7 +4540,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleMvsCameraView", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 观察相机设置 的本地化字符串。
         /// </summary>
@@ -3872,7 +4549,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleObservationCameraSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 预处理设置 的本地化字符串。
         /// </summary>
@@ -3881,7 +4558,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitlePreprocessSettings", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 成功 的本地化字符串。
         /// </summary>
@@ -3890,7 +4567,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("TitleSuccess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 u 基准图 的本地化字符串。
         /// </summary>
@@ -3899,7 +4576,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("UReferenceImage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Conoscope 的本地化字符串。
         /// </summary>
@@ -3908,7 +4585,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("WindowTitleConoscope", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Conoscope {0} 的本地化字符串。
         /// </summary>
@@ -3917,7 +4594,7 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("WindowTitleConoscopeWithVersion", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 XYZ 数据未加载 的本地化字符串。
         /// </summary>
