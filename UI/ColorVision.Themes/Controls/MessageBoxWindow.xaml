@@ -32,7 +32,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <CheckBox x:Name="show_again" Visibility="Collapsed" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,18,0" IsChecked="{Binding Path=DontShowAgain}" Content="不在提示(_O)"/>
+                <CheckBox x:Name="show_again" Visibility="Collapsed" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,18,0" IsChecked="{Binding Path=DontShowAgain}" Content="{x:Static properties:Resources.MsgBox_DontShowAgain}"/>
                 <Button x:Name="ButtonOK" Visibility="Collapsed" Grid.Column="1" Content="{x:Static properties:Resources.OK}"  FontSize="13" Padding="20,3" Margin="0,0,18,0"  VerticalAlignment="Center"  Click="ButtonOK_Click" ></Button>
                 <Button x:Name="ButtonYes"  Visibility="Collapsed"  Grid.Column="2" Content="{x:Static properties:Resources.Yes}"  Padding="20,3"   Margin="0,0,18,0" VerticalAlignment="Center"  Click="ButtonYes_Click" ></Button>
                 <Button x:Name="ButtonNo"  Visibility="Collapsed"  Grid.Column="3" Content="{x:Static properties:Resources.No}"  Padding="20,3" Margin="0,0,18,0"  VerticalAlignment="Center"  Click="ButtonNo_Click" ></Button>

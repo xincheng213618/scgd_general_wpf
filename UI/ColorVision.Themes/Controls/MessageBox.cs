@@ -10,8 +10,9 @@ namespace ColorVision.Themes.Controls
         //icon 的部分建议移除，目前采用了已经淘汰的system.drawing.Common,如果放在其他地方，需要重置图像
         //参考了一些代码，并不是显示上的最优解，这里可以做一些调整
 
-        private static MessageBoxResult Initialize(string messageBoxText, string caption = "提示", MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None, MessageBoxResult defaultResult = MessageBoxResult.None)
+        private static MessageBoxResult Initialize(string messageBoxText, string caption = null, MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None, MessageBoxResult defaultResult = MessageBoxResult.None)
         {
+            caption ??= Properties.Resources.MsgBox_Prompt;
             MessageBoxResult MessageBoxResult = MessageBoxResult.None;
             Application.Current.Dispatcher.Invoke(delegate
             {
@@ -71,8 +72,9 @@ namespace ColorVision.Themes.Controls
             return MessageBox.Show(messageBoxText, caption, button, icon, defaultResult);
         }
 
-        private static MessageBoxResult Initialize(Window? owner, string messageBoxText, string caption = "提示", MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None, MessageBoxResult defaultResult = MessageBoxResult.None)
+        private static MessageBoxResult Initialize(Window? owner, string messageBoxText, string caption = null, MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None, MessageBoxResult defaultResult = MessageBoxResult.None)
         {
+            caption ??= Properties.Resources.MsgBox_Prompt;
             Controls.MessageBoxWindow messageBox1 = new Controls.MessageBoxWindow(messageBoxText, caption, button, icon, defaultResult);
             messageBox1.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             messageBox1.Owner = owner;

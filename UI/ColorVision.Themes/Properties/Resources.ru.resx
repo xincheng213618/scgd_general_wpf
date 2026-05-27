@@ -168,4 +168,34 @@
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
   </data>
+  <data name="MsgBox_DontShowAgain" xml:space="preserve">
+    <value>Don't show again(_O)</value>
+  </data>
+  <data name="MsgBox_Prompt" xml:space="preserve">
+    <value>Prompt</value>
+  </data>
+  <data name="Upload_DragHint" xml:space="preserve">
+    <value>Drag here to upload</value>
+  </data>
+  <data name="Upload_SelectFile" xml:space="preserve">
+    <value>Select File</value>
+  </data>
+  <data name="Upload_Title" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="Upload_Upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="Upload_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Upload_FileSize" xml:space="preserve">
+    <value>File Size</value>
+  </data>
+  <data name="Upload_Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Upload_NoFileSelected" xml:space="preserve">
+    <value>No file selected</value>
+  </data>
 </root>

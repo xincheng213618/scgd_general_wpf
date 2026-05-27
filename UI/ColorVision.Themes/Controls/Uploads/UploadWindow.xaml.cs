@@ -37,7 +37,7 @@ namespace ColorVision.Themes.Controls.Uploads
                     {
                         if (string.IsNullOrEmpty(Upload1.UploadFileName) || string.IsNullOrEmpty(Upload1.UploadFilePath))
                         {
-                            MessageBox.Show("您未选择文件");
+                            MessageBox.Show(Properties.Resources.Upload_NoFileSelected);
                             Close();
                             return;
                         }
@@ -63,7 +63,7 @@ namespace ColorVision.Themes.Controls.Uploads
         {
             if (string.IsNullOrEmpty(Upload1.UploadFileName)|| string.IsNullOrEmpty(Upload1.UploadFilePath))
             {
-                MessageBox.Show("您未选择文件");
+                MessageBox.Show(Properties.Resources.Upload_NoFileSelected);
                 Close();
                 return;
             }
