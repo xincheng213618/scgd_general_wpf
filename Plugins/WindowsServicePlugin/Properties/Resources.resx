@@ -118,6 +118,12 @@
   <data name="ManagementService" xml:space="preserve">
     <value>管理服务</value>
   </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>读取服务的配置</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>替换服务的CFG</value>
+  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>服务管理器</value>
   </data>

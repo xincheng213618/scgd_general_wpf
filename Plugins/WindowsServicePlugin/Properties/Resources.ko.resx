@@ -138,6 +138,12 @@
   <data name="ManagementService" xml:space="preserve">
     <value>관리 서비스</value>
   </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>서비스 구성 읽기</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>서비스 CFG 바꾸기</value>
+  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>서비스 관리자</value>
   </data>

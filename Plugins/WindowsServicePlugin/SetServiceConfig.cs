@@ -14,7 +14,7 @@ namespace WindowsServicePlugin
     {
         public override int Order => 98;
 
-        public override string Header => "替换服务的CFG";
+        public override string Header => Properties.Resources.ReplaceServiceCfg;
         public override string Description => "如果已经正确配置服务管理工具，使用该命令会中读取配置的文件并应用";
 
         Dictionary<string, string> dic = new Dictionary<string, string>();

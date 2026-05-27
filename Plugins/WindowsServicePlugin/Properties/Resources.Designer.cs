@@ -122,6 +122,24 @@ namespace WindowsServicePlugin.Properties {
                 return ResourceManager.GetString("ManagementService", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 读取服务的配置 的本地化字符串。
+        /// </summary>
+        public static string ReadServiceConfig {
+            get {
+                return ResourceManager.GetString("ReadServiceConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 替换服务的CFG 的本地化字符串。
+        /// </summary>
+        public static string ReplaceServiceCfg {
+            get {
+                return ResourceManager.GetString("ReplaceServiceCfg", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 打开BeyondCompare 的本地化字符串。

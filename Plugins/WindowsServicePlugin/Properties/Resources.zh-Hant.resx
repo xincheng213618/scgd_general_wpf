@@ -138,6 +138,12 @@
   <data name="ManagementService" xml:space="preserve">
     <value>管理服務</value>
   </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>讀取服務設定</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>替換服務CFG</value>
+  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>服務管理器</value>
   </data>

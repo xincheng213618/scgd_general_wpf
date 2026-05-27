@@ -138,6 +138,12 @@
   <data name="ManagementService" xml:space="preserve">
     <value>Management Services</value>
   </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>Read service configuration</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>Replace service CFG</value>
+  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>Service Manager</value>
   </data>

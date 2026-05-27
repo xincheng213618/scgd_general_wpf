@@ -138,6 +138,12 @@
   <data name="ManagementService" xml:space="preserve">
     <value>Управленческие услуги</value>
   </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>Прочитать конфигурацию службы</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>Заменить CFG службы</value>
+  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>Диспетчер служб</value>
   </data>
