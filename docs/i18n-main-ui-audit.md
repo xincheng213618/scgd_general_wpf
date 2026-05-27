@@ -397,11 +397,36 @@ The following categories of Chinese text were found but intentionally not proces
 | ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_DefaultCustomGroup | 默认自定义分组名 | Default Custom Group Name | DisplayName |
 | ColorVision.UI.Desktop | CustomAppsConfig.cs | CfgApp_DefaultScriptGroup | 默认脚本分组名 | Default Script Group Name | DisplayName |
 
+## Engine Layer
+
+| Project | File | Resource Key | Chinese | English | 备注 |
+|---|---|---|---|---|---|
+| ColorVision.Engine | BatchProcessManagerWindow.xaml | Engine_Batch_Title | 流程处理配置 | Process Configuration | Window Title |
+| ColorVision.Engine | MessagesListWindow.xaml | Engine_Msg_All | 全部 | All | Button |
+| ColorVision.Engine | MySqlToolWindow.xaml | Engine_Mysql_Tool | MySQL工具 | MySQL Tool | Window Title |
+| ColorVision.Engine | DatabaseCleanupWindow.xaml | Engine_Mysql_Cleanup | 数据清理 | Data Cleanup | Window Title |
+| ColorVision.Engine | ~50 XAML files | Engine_Tpl_*/Engine_POI_* | Various | Various | Template/POI UI |
+| ColorVision.Engine | ~21 C# files | Engine_Msg_* | Various | Various | MessageBox messages |
+| ColorVision.Engine | ~25 C# files | Engine_PG_* | Various | Various | PropertyGrid attributes |
+| ColorVision.Engine | ~8 C# files | Engine_Dlg_* | Various | Various | Dialog titles |
+
+## Plugins
+
+| Project | File | Resource Key | Chinese | English | 备注 |
+|---|---|---|---|---|---|
+| EventVWR | EventWindow.xaml | EventVWR_Title | 事件查看器 | Event Viewer | Window Title |
+| EventVWR | EventVWRPlugins.cs | EventVWR_PluginName | 事件插件 | Event Plugin | Plugin Header |
+| EventVWR | DumpConfig.cs | EventVWR_AdminRequired | 操作需要使用管理员权限 | This operation requires admin | MessageBox |
+| Conoscope | ~6 C# files | Con_* | Various | Various | PropertyGrid attributes |
+
 ## Next Steps
 
 1. ~~Process remaining C# files in ColorVision/ project~~ ✓
 2. ~~Process UI/ColorVision.UI/ project~~ ✓
 3. ~~Process UI/ColorVision.UI.Desktop/ project~~ ✓
-4. Process UI/ColorVision.Themes/ project
-5. Process UI/ColorVision.ImageEditor/ project
-6. Process Engine/ColorVision.Engine/ project
+4. ~~Process UI/ColorVision.Themes/ project~~ ✓
+5. Process UI/ColorVision.ImageEditor/ project (pending)
+6. ~~Process Engine/ColorVision.Engine/ project~~ ✓
+7. ~~Process Plugins/EventVWR/~~ ✓
+8. Process Plugins/SystemMonitor/ (0 instances - already clean)
+9. ~~Process Plugins/Conoscope/~~ ✓
