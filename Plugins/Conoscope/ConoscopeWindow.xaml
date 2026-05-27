@@ -143,7 +143,7 @@
                                                 <Button x:Name="btnActiveOpen3D" Content="3D" Click="btnActiveOpen3D_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpen3DView}" />
                                                 <Button x:Name="btnActiveOpenCie" Content="CIE" Click="btnActiveOpenCie_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDescription}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDescription}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
 
@@ -158,7 +158,7 @@
                                                 <Button x:Name="btnActiveExportCircle" Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnActiveExportCircle_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipExportPolarData}" />
                                                 <Button x:Name="btnActiveAdvancedExport" Content="{x:Static properties:Resources.TitleAdvancedExport}" Click="btnActiveAdvancedExport_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.TipAdvancedExport}" />
                                             </WrapPanel>
-                                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupExport}" Style="{StaticResource CompactRibbonGroupHeaderStyle}" />
+                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupExport}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                         </Grid>
                                     </Border>
                                 </StackPanel>
@@ -195,7 +195,7 @@
                                                       Content="{x:Static properties:Resources.ChkReuseActiveView}"
                                                       ToolTip="{x:Static properties:Resources.TipReuseActiveView}" />
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupFlowCapture}" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupFlowCapture}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
 
@@ -242,7 +242,7 @@
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupMeasurementCamera}" Style="{StaticResource RibbonGroupHeaderStyle}" />
+                                    <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupMeasurementCamera}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
