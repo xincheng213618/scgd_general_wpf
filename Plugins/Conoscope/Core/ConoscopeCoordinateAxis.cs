@@ -478,6 +478,12 @@ namespace Conoscope.Core
                 return;
             }
 
+            if (IsReferenceInteractionBypassed())
+            {
+                PointerLeft?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
             Point point = e.GetPosition(drawCanvas);
             if (!Axis.ContainsInteractivePoint(point))
             {
@@ -497,6 +503,16 @@ namespace Conoscope.Core
         {
             if (!Axis.Attribute.IsInteractionEnabled)
             {
+                return;
+            }
+
+            if (IsReferenceInteractionBypassed())
+            {
+                if (!isDragging)
+                {
+                    PointerLeft?.Invoke(this, EventArgs.Empty);
+                }
+
                 return;
             }
 
@@ -552,6 +568,11 @@ namespace Conoscope.Core
             Axis.ActualWidth = drawCanvas.ActualWidth;
             Axis.ActualHeight = drawCanvas.ActualHeight;
             Axis.Render();
+        }
+
+        private static bool IsReferenceInteractionBypassed()
+        {
+            return (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
         }
 
         private void RaiseReferenceChanged(bool isFinal, Point position, bool isValueChanged)
