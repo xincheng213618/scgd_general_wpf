@@ -38,7 +38,7 @@ namespace ColorVision.Engine
 
         private void PopulateContextMenu()
         {
-            var nodeAnalysisMenuItem = new MenuItem { Header = "节点时间分析" };
+            var nodeAnalysisMenuItem = new MenuItem { Header = Properties.Resources.Flow_NodeTimeAnalysis };
             nodeAnalysisMenuItem.Click += (s, e) =>
             {
                 var window = new FlowNodeAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -49,7 +49,7 @@ namespace ColorVision.Engine
             var batchManager = ColorVision.Engine.Batch.BatchManager.GetInstance();
             if (batchManager.Processes.Count > 0)
             {
-                var processMenuItem = new MenuItem { Header = "处理结果" };
+                var processMenuItem = new MenuItem { Header = Properties.Resources.Flow_MeasureBatch_ProcessResult };
                 
                 foreach (var process in batchManager.Processes)
                 {
@@ -92,17 +92,17 @@ namespace ColorVision.Engine
                 if (success)
                 {
                     var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
-                    MessageBox.Show($"处理成功: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessSuccess, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
                     var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
-                    MessageBox.Show($"处理失败: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessFailed, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"处理出错: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessError, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
@@ -262,7 +262,7 @@ namespace ColorVision.Engine
             }
             else
             {
-                SelectedBatchText.Text = "未选择";
+                SelectedBatchText.Text = Properties.Resources.Flow_MeasureBatch_NotSelected;
                 SelectedBatchText.Foreground = System.Windows.Media.Brushes.Gray;
             }
         }
@@ -306,19 +306,19 @@ namespace ColorVision.Engine
                 
                 infoStack.Children.Add(new TextBlock 
                 { 
-                    Text = "处理信息", 
+                    Text = Properties.Resources.Flow_MeasureBatch_ProcessInfo,
                     FontWeight = FontWeights.Bold, 
                     Margin = new Thickness(0, 0, 0, 8) 
                 });
                 
-                AddLabeledText(infoStack, "名称:", metadata.DisplayName);
+                AddLabeledText(infoStack, Properties.Resources.Flow_MeasureBatch_NameLabel, metadata.DisplayName);
                 if (!string.IsNullOrEmpty(metadata.Description))
                 {
-                    AddLabeledText(infoStack, "描述:", metadata.Description);
+                    AddLabeledText(infoStack, Properties.Resources.Flow_MeasureBatch_DescriptionLabel, metadata.Description);
                 }
                 if (!string.IsNullOrEmpty(metadata.Category))
                 {
-                    AddLabeledText(infoStack, "分类:", metadata.Category);
+                    AddLabeledText(infoStack, Properties.Resources.Flow_MeasureBatch_ClassificationLabel, metadata.Category);
                 }
                 
                 ProcessConfigPanel.Children.Add(infoBorder);
@@ -341,7 +341,7 @@ namespace ColorVision.Engine
                     
                     configStack.Children.Add(new TextBlock 
                     { 
-                        Text = "配置选项", 
+                        Text = Properties.Resources.Flow_MeasureBatch_ConfigOptions,
                         FontWeight = FontWeights.Bold, 
                         Margin = new Thickness(0, 0, 0, 8) 
                     });
@@ -358,7 +358,7 @@ namespace ColorVision.Engine
                 _selectedProcess = null;
                 ProcessConfigPanel.Children.Add(new TextBlock 
                 { 
-                    Text = "请选择处理类型查看配置", 
+                    Text = Properties.Resources.Flow_MeasureBatch_SelectProcessTypeToViewConfig,
                     Foreground = System.Windows.Media.Brushes.Gray, 
                     HorizontalAlignment = HorizontalAlignment.Center, 
                     Margin = new Thickness(0, 20, 0, 0) 
@@ -406,16 +406,16 @@ namespace ColorVision.Engine
                     var metadata = BatchProcessMetadata.FromProcess(_selectedProcess);
                     if (success)
                     {
-                        MessageBox.Show($"处理成功: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessSuccess, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
-                        MessageBox.Show($"处理失败: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessFailed, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"处理出错: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessError, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -444,7 +444,7 @@ namespace ColorVision.Engine
             if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult && viewBatchResult.MeasureBatchModel.Code !=null)
             {
                 MqttRCService.GetInstance().Archived(viewBatchResult.MeasureBatchModel.Code);
-                MessageBox.Show("归档指令已经发送");
+                MessageBox.Show(Properties.Resources.Flow_MeasureBatch_ArchiveCommandSent);
                 Frame.Refresh();
             }
         }
@@ -452,7 +452,7 @@ namespace ColorVision.Engine
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             MqttRCService.GetInstance().ArchivedAll();
-            MessageBox.Show("全部归档指令已经发送");
+            MessageBox.Show(Properties.Resources.Flow_MeasureBatch_AllArchiveCommandSent);
         }
 
         private void AdvanceQuery_Click(object sender, RoutedEventArgs e)

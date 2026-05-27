@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (!string.IsNullOrEmpty(eventName))
                 filtered = filtered.Where(m => m.EventName != null && m.EventName.Contains(eventName, StringComparison.OrdinalIgnoreCase));
 
-            if (FilterState.SelectedItem is ComboBoxItem stateItem && stateItem.Content?.ToString() != "全部")
+            if (FilterState.SelectedItem is ComboBoxItem stateItem && stateItem.Tag?.ToString() != "All")
             {
                 if (Enum.TryParse<FlowMessageState>(stateItem.Content.ToString(), out var state))
                     filtered = filtered.Where(m => m.State == state);
@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void DeleteAllButton_Click(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("确定要清空所有流程MQTT消息记录吗？", "ColorVision",
+            if (MessageBox.Show(Properties.Resources.Flow_MessageList_ConfirmClearAll, "ColorVision",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 FlowNodeRecordDataBaseHelper.DeleteAllMessages();

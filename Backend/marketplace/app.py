@@ -324,6 +324,7 @@ def _build_ready_payload() -> dict[str, Any]:
         config=CONFIG,
         get_db=get_db,
         get_upload_auth=_get_upload_auth,
+        cache_manager=_cache,
     )
 
 
@@ -656,13 +657,13 @@ def changelog_page():
 @app.route("/updates")
 def updates_page():
     """Incremental update package page."""
-    return render_template("updates.html", **build_updates_page_context(STORAGE))
+    return render_template("updates.html", **build_updates_page_context(STORAGE, cache_manager=_cache))
 
 
 @app.route("/tools")
 def tools_page():
     """Tool/software distribution page."""
-    return render_template("tools.html", **build_tools_page_context(STORAGE))
+    return render_template("tools.html", **build_tools_page_context(STORAGE, cache_manager=_cache))
 
 
 @app.route("/download/<path:relative_path>")
@@ -1091,6 +1092,16 @@ def login_page():
                 or url_for("upload_page")
             )
             return redirect(next_url)
+        # Log failed login attempt (without leaking credentials)
+        _cache.write_audit(
+            actor_type="anonymous",
+            actor_id=username or "",
+            action="login_failed",
+            target_type="session",
+            detail="Invalid credentials",
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
         error = "用户名或密码错误"
 
     next_url = _safe_next_url(request.args.get("next")) or ""
@@ -1488,6 +1499,29 @@ if __name__ == "__main__":
         "--refresh-plugin-index",
         help="Refresh the index for a single plugin ID and exit",
     )
+    parser.add_argument(
+        "--refresh-all-indexes",
+        action="store_true",
+        help="Refresh all indexes (plugins, releases, updates, tools) and exit",
+    )
+    parser.add_argument(
+        "--cleanup-cache",
+        action="store_true",
+        help="Clean up expired cache entries and exit",
+    )
+    parser.add_argument(
+        "--run-job",
+        help="Run a specific scheduled job by ID and exit",
+    )
+    parser.add_argument(
+        "--create-api-key",
+        help="Create an API key with the given name and exit",
+    )
+    parser.add_argument(
+        "--scopes",
+        default="admin:*",
+        help="Scopes for --create-api-key (comma-separated, default: admin:*)",
+    )
     args = parser.parse_args()
 
     if args.storage:
@@ -1553,6 +1587,52 @@ if __name__ == "__main__":
             print(f"OK: {result.get('name', plugin_id)} v{result.get('latest_version', '?')}")
         else:
             print(f"Plugin not found: {plugin_id}")
+        raise SystemExit(0)
+
+    if args.refresh_all_indexes:
+        from services.plugin_index import refresh_all_plugin_index
+        from services.artifact_index import refresh_all_indexes as refresh_all_artifact_indexes
+        print("Refreshing all indexes...")
+        print("\n--- Plugin Index ---")
+        plugin_result = refresh_all_plugin_index(_cache, STORAGE)
+        print(f"Indexed: {plugin_result['indexed_count']}, Deleted: {plugin_result['deleted_count']}, "
+              f"Duration: {plugin_result['duration_ms']}ms")
+        print("\n--- Artifact Indexes ---")
+        artifact_result = refresh_all_artifact_indexes(_cache, STORAGE)
+        for scope, result in artifact_result["results"].items():
+            print(f"{scope}: {result['indexed_count']} items, {result['duration_ms']}ms")
+        print(f"\nTotal: {artifact_result['total_duration_ms']}ms, Errors: {artifact_result['total_errors']}")
+        raise SystemExit(0)
+
+    if args.cleanup_cache:
+        deleted = _cache.cleanup_expired_cache()
+        print(f"Cleaned up {deleted} expired cache entry(ies)")
+        raise SystemExit(0)
+
+    if args.run_job:
+        from services.scheduler import run_job_now
+        job_id = args.run_job
+        print(f"Running job: {job_id}")
+        result = run_job_now(_cache, STORAGE, lambda: CONFIG, get_db, job_id)
+        print(f"Status: {result['status']}")
+        print(f"Duration: {result['duration_ms']}ms")
+        if result.get("summary"):
+            print(f"Summary: {result['summary']}")
+        if result.get("error"):
+            print(f"Error: {result['error']}")
+        raise SystemExit(0)
+
+    if args.create_api_key:
+        from services.api_key_service import create_api_key
+        name = args.create_api_key
+        scopes = args.scopes
+        print(f"Creating API key: {name}")
+        print(f"Scopes: {scopes}")
+        result = create_api_key(_cache, name=name, scopes=scopes, created_by="cli")
+        print(f"\nKey ID: {result['id']}")
+        print(f"Key: {result['key']}")
+        print(f"Prefix: {result['key_prefix']}")
+        print(f"\nIMPORTANT: Save this key now. It will not be shown again.")
         raise SystemExit(0)
 
     print(f"Storage path: {STORAGE}")

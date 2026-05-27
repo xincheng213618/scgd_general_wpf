@@ -10,16 +10,20 @@
         </div>
         <div class="page-header-stats">
             <div class="page-header-stat">
-                <strong>{{ status.get('plugin_index_count', 0) }}</strong>
-                <span>插件索引</span>
+                <strong>{{ index_summary.get('counts', {}).get('plugins', 0) }}</strong>
+                <span>插件</span>
             </div>
             <div class="page-header-stat">
-                <strong>{{ status.get('package_index_count', 0) }}</strong>
-                <span>包索引</span>
+                <strong>{{ index_summary.get('counts', {}).get('releases', 0) }}</strong>
+                <span>版本</span>
             </div>
             <div class="page-header-stat">
-                <strong>{{ status.get('cache_entry_count', 0) }}</strong>
-                <span>缓存条目</span>
+                <strong>{{ index_summary.get('counts', {}).get('updates', 0) }}</strong>
+                <span>更新包</span>
+            </div>
+            <div class="page-header-stat">
+                <strong>{{ index_summary.get('counts', {}).get('tools', 0) }}</strong>
+                <span>工具</span>
             </div>
         </div>
     </div>
@@ -42,37 +46,44 @@
                         {% endif %}
                     </td></tr>
                     <tr><td class="text-muted">过期缓存</td><td>{{ status.get('expired_cache_entry_count', 0) }} 条</td></tr>
+                    <tr><td class="text-muted">缓存条目</td><td>{{ status.get('cache_entry_count', 0) }}</td></tr>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Index State -->
+    <!-- Index States Overview -->
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-body">
-                <h6 class="card-title"><i class="bi bi-database me-1"></i>插件索引状态</h6>
-                {% if index_state %}
-                <table class="table table-sm mb-0">
-                    <tr><td class="text-muted">状态</td><td>
-                        {% if index_state.status == 'ready' %}
-                            <span class="badge bg-success">就绪</span>
-                        {% elif index_state.status == 'refreshing' %}
-                            <span class="badge bg-warning">刷新中</span>
-                        {% else %}
-                            <span class="badge bg-danger">{{ index_state.status }}</span>
-                        {% endif %}
-                    </td></tr>
-                    <tr><td class="text-muted">索引数量</td><td>{{ index_state.item_count }}</td></tr>
-                    <tr><td class="text-muted">最后完成</td><td>{{ index_state.last_finished_at or '从未' }}</td></tr>
-                    <tr><td class="text-muted">耗时</td><td>{{ index_state.duration_ms }}ms</td></tr>
-                    {% if index_state.last_error %}
-                    <tr><td class="text-muted">错误</td><td class="text-danger">{{ index_state.last_error }}</td></tr>
-                    {% endif %}
-                </table>
-                {% else %}
-                <p class="text-muted mb-0">索引尚未初始化</p>
-                {% endif %}
+                <h6 class="card-title"><i class="bi bi-database me-1"></i>索引状态总览</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>索引</th><th>状态</th><th>数量</th><th>耗时</th><th>最后刷新</th></tr></thead>
+                        <tbody>
+                        {% for scope in ['plugins', 'releases', 'updates', 'tools'] %}
+                        {% set state = index_summary.get('states', {}).get(scope, {}) %}
+                        <tr>
+                            <td>{{ scope }}</td>
+                            <td>
+                                {% if state.get('status') == 'ready' %}
+                                    <span class="badge bg-success">就绪</span>
+                                {% elif state.get('status') == 'refreshing' %}
+                                    <span class="badge bg-warning">刷新中</span>
+                                {% elif state.get('status') == 'not_initialized' %}
+                                    <span class="badge bg-secondary">未初始化</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ state.get('status', '未知') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ state.get('item_count', 0) }}</td>
+                            <td>{{ state.get('duration_ms', 0) }}ms</td>
+                            <td style="font-size:0.75rem">{{ (state.get('last_finished_at', '') or '从未')[:16] }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -83,11 +94,26 @@
     <div class="card-body">
         <h6 class="card-title"><i class="bi bi-lightning me-1"></i>快速操作</h6>
         <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-primary btn-sm" onclick="refreshAllPlugins()">
-                <i class="bi bi-arrow-clockwise me-1"></i>刷新插件索引
+            <button class="btn btn-primary btn-sm" onclick="refreshAllIndexes()">
+                <i class="bi bi-arrow-clockwise me-1"></i>刷新全部索引
+            </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshPlugins()">
+                <i class="bi bi-puzzle me-1"></i>刷新插件
+            </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshReleases()">
+                <i class="bi bi-box-seam me-1"></i>刷新版本
+            </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshUpdates()">
+                <i class="bi bi-arrow-repeat me-1"></i>刷新更新包
+            </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshTools()">
+                <i class="bi bi-tools me-1"></i>刷新工具
             </button>
             <button class="btn btn-outline-secondary btn-sm" onclick="cleanupCache()">
                 <i class="bi bi-trash me-1"></i>清理过期缓存
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="backupDb()">
+                <i class="bi bi-download me-1"></i>备份数据库
             </button>
             <a href="/admin/cache" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-hdd me-1"></i>缓存管理
@@ -147,13 +173,14 @@
                 {% if recent_audit %}
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
-                        <thead><tr><th>操作</th><th>目标</th><th>时间</th></tr></thead>
+                        <thead><tr><th>操作</th><th>操作者</th><th>目标</th><th>时间</th></tr></thead>
                         <tbody>
                         {% for entry in recent_audit[:5] %}
                         <tr>
                             <td><span class="badge bg-info">{{ entry.action }}</span></td>
-                            <td>{{ entry.target_id or '' }}</td>
-                            <td class="text-muted" style="font-size:0.75rem">{{ entry.created_at[:16] }}</td>
+                            <td style="font-size:0.78rem">{{ entry.actor_type }}:{{ entry.actor_id }}</td>
+                            <td style="font-size:0.78rem">{{ entry.target_id or '' }}</td>
+                            <td class="text-muted" style="font-size:0.75rem">{{ (entry.created_at or '')[:16] }}</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -189,8 +216,8 @@
                         {% endif %}
                     </td>
                     <td>{{ run.duration_ms }}ms</td>
-                    <td>{{ run.summary or '' }}</td>
-                    <td class="text-muted" style="font-size:0.75rem">{{ run.started_at[:16] }}</td>
+                    <td style="font-size:0.78rem">{{ run.summary or '' }}</td>
+                    <td class="text-muted" style="font-size:0.75rem">{{ (run.started_at or '')[:16] }}</td>
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -200,40 +227,100 @@
 </div>
 {% endif %}
 
+<!-- Index Errors -->
+{% set has_errors = false %}
+{% for scope in ['plugins', 'releases', 'updates', 'tools'] %}
+    {% if index_summary.get('states', {}).get(scope, {}).get('last_error', '') %}
+        {% set has_errors = true %}
+    {% endif %}
+{% endfor %}
+{% if has_errors %}
+<div class="card mt-3">
+    <div class="card-body">
+        <h6 class="card-title text-danger"><i class="bi bi-exclamation-triangle me-1"></i>索引错误</h6>
+        {% for scope in ['plugins', 'releases', 'updates', 'tools'] %}
+        {% set err = index_summary.get('states', {}).get(scope, {}).get('last_error', '') %}
+        {% if err %}
+        <div class="alert alert-danger py-1 mb-1" style="font-size:0.82rem">
+            <strong>{{ scope }}:</strong> {{ err }}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <div id="action-result" class="mt-3"></div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-async function refreshAllPlugins() {
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>刷新中...';
+function showResult(html) {
+    document.getElementById('action-result').innerHTML = html;
+    setTimeout(() => document.getElementById('action-result').innerHTML = '', 5000);
+}
+
+async function refreshAllIndexes() {
+    if (!confirm('确认刷新全部索引？这将扫描磁盘上的所有文件。')) return;
+    showResult('<div class="alert alert-info"><span class="spinner-border spinner-border-sm me-1"></span>刷新全部索引中...</div>');
     try {
-        const resp = await fetch('/api/admin/index/plugins/refresh', { method: 'POST' });
+        const resp = await fetch('/api/admin/index/refresh-all', { method: 'POST' });
         const data = await resp.json();
-        document.getElementById('action-result').innerHTML =
-            `<div class="alert alert-success">刷新完成: ${data.indexed_count} 个插件, ${data.deleted_count} 个删除, ${data.duration_ms}ms</div>`;
+        showResult(`<div class="alert alert-success">全部索引刷新完成</div>`);
         setTimeout(() => location.reload(), 1500);
     } catch (e) {
-        document.getElementById('action-result').innerHTML =
-            `<div class="alert alert-danger">刷新失败: ${e.message}</div>`;
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>刷新插件索引';
+        showResult(`<div class="alert alert-danger">刷新失败: ${e.message}</div>`);
     }
 }
 
+async function refreshPlugins() {
+    showResult('<div class="alert alert-info">刷新插件索引...</div>');
+    const resp = await fetch('/api/admin/index/plugins/refresh', { method: 'POST' });
+    const data = await resp.json();
+    showResult(`<div class="alert alert-success">插件: ${data.indexed_count} 个, ${data.duration_ms}ms</div>`);
+    setTimeout(() => location.reload(), 1500);
+}
+
+async function refreshReleases() {
+    showResult('<div class="alert alert-info">刷新版本索引...</div>');
+    const resp = await fetch('/api/admin/index/releases/refresh', { method: 'POST' });
+    const data = await resp.json();
+    showResult(`<div class="alert alert-success">版本: ${data.indexed_count} 个, ${data.duration_ms}ms</div>`);
+    setTimeout(() => location.reload(), 1500);
+}
+
+async function refreshUpdates() {
+    showResult('<div class="alert alert-info">刷新更新包索引...</div>');
+    const resp = await fetch('/api/admin/index/updates/refresh', { method: 'POST' });
+    const data = await resp.json();
+    showResult(`<div class="alert alert-success">更新包: ${data.indexed_count} 个, ${data.duration_ms}ms</div>`);
+    setTimeout(() => location.reload(), 1500);
+}
+
+async function refreshTools() {
+    showResult('<div class="alert alert-info">刷新工具索引...</div>');
+    const resp = await fetch('/api/admin/index/tools/refresh', { method: 'POST' });
+    const data = await resp.json();
+    showResult(`<div class="alert alert-success">工具: ${data.indexed_count} 个, ${data.duration_ms}ms</div>`);
+    setTimeout(() => location.reload(), 1500);
+}
+
 async function cleanupCache() {
+    if (!confirm('确认清理过期缓存？')) return;
+    const resp = await fetch('/api/admin/cache/cleanup', { method: 'POST' });
+    const data = await resp.json();
+    showResult(`<div class="alert alert-success">已清理 ${data.deleted_count} 条过期缓存</div>`);
+    setTimeout(() => location.reload(), 1500);
+}
+
+async function backupDb() {
+    showResult('<div class="alert alert-info">备份中...</div>');
     try {
-        const resp = await fetch('/api/admin/cache/cleanup', { method: 'POST' });
+        const resp = await fetch('/api/admin/backup/db', { method: 'POST' });
         const data = await resp.json();
-        document.getElementById('action-result').innerHTML =
-            `<div class="alert alert-success">已清理 ${data.deleted_count} 条过期缓存</div>`;
-        setTimeout(() => location.reload(), 1500);
+        showResult(`<div class="alert alert-success">备份完成: ${data.backup_path}</div>`);
     } catch (e) {
-        document.getElementById('action-result').innerHTML =
-            `<div class="alert alert-danger">清理失败: ${e.message}</div>`;
+        showResult(`<div class="alert alert-danger">备份失败: ${e.message}</div>`);
     }
 }
 </script>

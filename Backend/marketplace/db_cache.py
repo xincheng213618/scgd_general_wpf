@@ -30,6 +30,10 @@ class CacheManager:
     def __init__(self, db_path: Path):
         self._db_path = db_path
 
+    @property
+    def db_path(self) -> Path:
+        return self._db_path
+
     def get_db(self) -> sqlite3.Connection:
         db = sqlite3.connect(str(self._db_path), timeout=15)
         db.row_factory = sqlite3.Row
@@ -102,6 +106,61 @@ class CacheManager:
             );
             CREATE INDEX IF NOT EXISTS idx_pkg_plugin ON package_index(plugin_id);
             CREATE INDEX IF NOT EXISTS idx_pkg_deleted ON package_index(is_deleted);
+
+            -- Release index: persistent read-model for app release artifacts
+            CREATE TABLE IF NOT EXISTS release_index (
+                relative_path   TEXT PRIMARY KEY,
+                version         TEXT NOT NULL,
+                filename        TEXT,
+                size            INTEGER DEFAULT 0,
+                kind            TEXT,
+                kind_label      TEXT,
+                era             TEXT,
+                era_label       TEXT,
+                source          TEXT,
+                major_minor     TEXT,
+                branch          TEXT,
+                modified        TEXT,
+                modified_display TEXT,
+                display_title   TEXT,
+                file_signature  TEXT,
+                indexed_at      TEXT,
+                is_deleted      INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_rel_deleted ON release_index(is_deleted);
+            CREATE INDEX IF NOT EXISTS idx_rel_version ON release_index(version);
+
+            -- Update index: persistent read-model for incremental update packages
+            CREATE TABLE IF NOT EXISTS update_index (
+                filename        TEXT PRIMARY KEY,
+                version         TEXT NOT NULL,
+                branch          TEXT,
+                fix             INTEGER DEFAULT 0,
+                size            INTEGER DEFAULT 0,
+                modified        TEXT,
+                relative_path   TEXT,
+                file_signature  TEXT,
+                indexed_at      TEXT,
+                is_deleted      INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_upd_deleted ON update_index(is_deleted);
+            CREATE INDEX IF NOT EXISTS idx_upd_version ON update_index(version);
+
+            -- Tool index: persistent read-model for Tool directory contents
+            CREATE TABLE IF NOT EXISTS tool_index (
+                relative_path   TEXT PRIMARY KEY,
+                name            TEXT,
+                filename        TEXT,
+                size            INTEGER DEFAULT 0,
+                modified        TEXT,
+                modified_display TEXT,
+                is_dir          INTEGER DEFAULT 0,
+                file_count      INTEGER DEFAULT 0,
+                file_signature  TEXT,
+                indexed_at      TEXT,
+                is_deleted      INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_tool_deleted ON tool_index(is_deleted);
 
             -- Index state: tracks refresh status per scope
             CREATE TABLE IF NOT EXISTS index_state (
@@ -311,25 +370,59 @@ class CacheManager:
         self,
         *,
         action: str | None = None,
+        actor: str | None = None,
+        target: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         try:
             db = self.get_db()
+            conditions: list[str] = []
+            params: list[Any] = []
+
             if action:
-                rows = db.execute(
-                    "SELECT * FROM audit_log WHERE action = ? ORDER BY id DESC LIMIT ? OFFSET ?",
-                    (action, limit, offset),
-                ).fetchall()
-            else:
-                rows = db.execute(
-                    "SELECT * FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?",
-                    (limit, offset),
-                ).fetchall()
+                conditions.append("action = ?")
+                params.append(action)
+            if actor:
+                conditions.append("(actor_id LIKE ? OR actor_type LIKE ?)")
+                params.extend([f"%{actor}%", f"%{actor}%"])
+            if target:
+                conditions.append("(target_id LIKE ? OR target_type LIKE ?)")
+                params.extend([f"%{target}%", f"%{target}%"])
+            if since:
+                conditions.append("created_at >= ?")
+                params.append(since)
+            if until:
+                conditions.append("created_at <= ?")
+                params.append(until)
+
+            where = " AND ".join(conditions) if conditions else "1=1"
+            params.extend([limit, offset])
+
+            rows = db.execute(
+                f"SELECT * FROM audit_log WHERE {where} ORDER BY id DESC LIMIT ? OFFSET ?",
+                params,
+            ).fetchall()
             db.close()
             return [dict(r) for r in rows]
         except Exception:
             return []
+
+    # -------------------------------------------------------------------
+    # Index state helpers
+    # -------------------------------------------------------------------
+
+    def get_all_index_states(self) -> dict[str, dict[str, Any]]:
+        """Return all index_state rows keyed by scope."""
+        try:
+            db = self.get_db()
+            rows = db.execute("SELECT * FROM index_state").fetchall()
+            db.close()
+            return {row["scope"]: dict(row) for row in rows}
+        except Exception:
+            return {}
 
     # -------------------------------------------------------------------
     # Cache cleanup
@@ -353,6 +446,16 @@ class CacheManager:
     # -------------------------------------------------------------------
     # DB status helpers
     # -------------------------------------------------------------------
+
+    def backup_db(self, dest_path: Path) -> bool:
+        """Create a backup of the database file. Returns True on success."""
+        import shutil
+        try:
+            shutil.copy2(str(self._db_path), str(dest_path))
+            return True
+        except Exception as exc:
+            print(f"[db] backup failed: {exc}")
+            return False
 
     def get_db_status(self) -> dict[str, Any]:
         """Return database status information for admin dashboard."""
@@ -379,8 +482,21 @@ class CacheManager:
             row = db.execute("SELECT COUNT(*) AS cnt FROM package_index WHERE is_deleted = 0").fetchone()
             status["package_index_count"] = row["cnt"] if row else 0
 
+            row = db.execute("SELECT COUNT(*) AS cnt FROM release_index WHERE is_deleted = 0").fetchone()
+            status["release_index_count"] = row["cnt"] if row else 0
+
+            row = db.execute("SELECT COUNT(*) AS cnt FROM update_index WHERE is_deleted = 0").fetchone()
+            status["update_index_count"] = row["cnt"] if row else 0
+
+            row = db.execute("SELECT COUNT(*) AS cnt FROM tool_index WHERE is_deleted = 0").fetchone()
+            status["tool_index_count"] = row["cnt"] if row else 0
+
             row = db.execute("SELECT * FROM index_state WHERE scope = 'plugins'").fetchone()
             status["plugin_index_state"] = dict(row) if row else None
+
+            # All index states for dashboard
+            rows = db.execute("SELECT * FROM index_state").fetchall()
+            status["index_states"] = {row["scope"]: dict(row) for row in rows}
 
             db.close()
         except Exception as exc:

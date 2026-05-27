@@ -280,7 +280,37 @@ def build_index_page_context(
     }
 
 
-def build_updates_page_context(storage: Path) -> dict[str, Any]:
+def build_updates_page_context(storage: Path, *, cache_manager=None) -> dict[str, Any]:
+    # Try reading from update_index first (fast, no disk scan)
+    if cache_manager is not None:
+        try:
+            from services.artifact_index import get_updates_from_index
+            indexed = get_updates_from_index(cache_manager)
+            if indexed is not None:
+                # Map index rows to template-expected format
+                canonical_packages = []
+                for item in indexed:
+                    canonical_packages.append({
+                        "filename": item["filename"],
+                        "version": item["version"],
+                        "branch": item.get("branch", ""),
+                        "fix": item.get("fix", 0),
+                        "size": item.get("size", 0),
+                        "modified": item.get("modified", ""),
+                        "relative_path": item.get("relative_path", f"Update/{item['filename']}"),
+                    })
+                other_files = []
+                other_update_items = []
+                return {
+                    "update_packages": canonical_packages,
+                    "other_update_files": other_files,
+                    "other_update_items": other_update_items,
+                    "update_summary": build_update_summary(canonical_packages, other_files),
+                    "retention_note": RETENTION_NOTE,
+                }
+        except Exception as exc:
+            print(f"[update_index] page read fallback: {exc}")
+
     canonical_packages, other_files = scan_update_packages(storage)
     other_update_items = [
         {
@@ -302,7 +332,44 @@ def build_updates_page_context(storage: Path) -> dict[str, Any]:
     }
 
 
-def build_tools_page_context(storage: Path) -> dict[str, Any]:
+def build_tools_page_context(storage: Path, *, cache_manager=None) -> dict[str, Any]:
+    # Try reading from tool_index first (fast, no disk scan)
+    if cache_manager is not None:
+        try:
+            from services.artifact_index import get_tools_from_index
+            indexed = get_tools_from_index(cache_manager)
+            if indexed is not None:
+                items = []
+                for item in indexed:
+                    items.append({
+                        "name": item["name"],
+                        "is_dir": bool(item.get("is_dir", 0)),
+                        "path": item["relative_path"],
+                        "relative_path": item["relative_path"],
+                        "modified": (item.get("modified_display") or item.get("modified", ""))[:19],
+                        "size": item.get("size", 0),
+                        "file_count": item.get("file_count", 0),
+                    })
+                total_size = sum(i.get("size", 0) for i in items)
+                dir_count = sum(1 for i in items if i.get("is_dir"))
+                file_count = len(items) - dir_count
+                summary = {
+                    "total_items": len(items),
+                    "dir_count": dir_count,
+                    "file_count": file_count,
+                    "total_size": total_size,
+                }
+                return {
+                    "items": items,
+                    "summary": summary,
+                    "subpath": "Tool",
+                    "breadcrumbs": [{"name": "Tool", "path": "Tool"}],
+                    "exists": True,
+                    "parent_subpath": "",
+                }
+        except Exception as exc:
+            print(f"[tool_index] page read fallback: {exc}")
+
     context = build_storage_page_context(storage, "Tool")
     return {
         "items": context["items"],

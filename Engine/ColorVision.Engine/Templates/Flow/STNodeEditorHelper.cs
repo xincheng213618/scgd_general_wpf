@@ -600,8 +600,8 @@ namespace ColorVision.Engine.Templates.Flow
                 if (item is STNode node)
                 {
                     node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                    node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
-                    node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+                    node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
+                    node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
                     node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
                     node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
                 }
@@ -613,8 +613,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNode node = e.Node;
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
-            node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
+            node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
             node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
             node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
         }
@@ -788,7 +788,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void AddImportModuleContextMenu()
         {
             STNodeEditor.ContextMenuStrip.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-            var importModuleItem = new System.Windows.Forms.ToolStripMenuItem("导入模板为模块");
+            var importModuleItem = new System.Windows.Forms.ToolStripMenuItem(Properties.Resources.Flow_ImportTemplateAsModule);
             importModuleItem.DropDownOpening += (s, e) =>
             {
                 importModuleItem.DropDownItems.Clear();
@@ -812,7 +812,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 if (importModuleItem.DropDownItems.Count == 0)
                 {
-                    var emptyItem = new System.Windows.Forms.ToolStripMenuItem("(无可用模板)") { Enabled = false };
+                    var emptyItem = new System.Windows.Forms.ToolStripMenuItem(Properties.Resources.Flow_NoTemplateAvailable) { Enabled = false };
                     importModuleItem.DropDownItems.Add(emptyItem);
                 }
             };
@@ -909,14 +909,14 @@ namespace ColorVision.Engine.Templates.Flow
             if (!isContainsMQTTStartNode)
             {
                 log.Warn("CheckFlow: 找不到流程起始结点 (MQTTStartNode)");
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程起始结点");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoStartNode);
                 return false;
             }
 
             if (!isContainsCVEndNode)
             {
                 log.Warn("CheckFlow: 找不到流程结束结点 (CVEndNode)");
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程结束结点");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoEndNode);
                 return false;
             }
 
@@ -924,7 +924,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (!IsPathExists(startNode, endNode))
             {
                 log.Warn("CheckFlow: 无法找到从起始结点到结束结点的有效路径");
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法找到从起始结点到结束结点的有效路径");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoPathFromStartToEnd);
                 return false;
             }
             log.Debug("CheckFlow: 流程验证通过");

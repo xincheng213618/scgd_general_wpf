@@ -4909,6 +4909,1356 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 确认删除流程 &quot;{0}&quot; ? 的本地化字符串。
+        /// </summary>
+        public static string Flow_ConfirmDeleteFlow {
+            get {
+                return ResourceManager.GetString("Flow_ConfirmDeleteFlow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 再选择之前请先创建对映的模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_CreateTemplateBeforeSelection {
+            get {
+                return ResourceManager.GetString("Flow_CreateTemplateBeforeSelection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未选择有效的流程模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_Display_NoTemplateSelected {
+            get {
+                return ResourceManager.GetString("Flow_Display_NoTemplateSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 预处理失败，流程取消执行 的本地化字符串。
+        /// </summary>
+        public static string Flow_Display_PreprocessFailed {
+            get {
+                return ResourceManager.GetString("Flow_Display_PreprocessFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 再选择之前请先创建对映的模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_Display_SelectTemplateFirst {
+            get {
+                return ResourceManager.GetString("Flow_Display_SelectTemplateFirst", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 耗时: 的本地化字符串。
+        /// </summary>
+        public static string Flow_Elapsed {
+            get {
+                return ResourceManager.GetString("Flow_Elapsed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已经执行： 的本地化字符串。
+        /// </summary>
+        public static string Flow_ElapsedTimeLabel {
+            get {
+                return ResourceManager.GetString("Flow_ElapsedTimeLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 找不到流程结束结点 的本地化字符串。
+        /// </summary>
+        public static string Flow_EndNodeNotFound {
+            get {
+                return ResourceManager.GetString("Flow_EndNodeNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 预计还需要： 的本地化字符串。
+        /// </summary>
+        public static string Flow_EstimatedRemainingLabel {
+            get {
+                return ResourceManager.GetString("Flow_EstimatedRemainingLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在执行节点: 的本地化字符串。
+        /// </summary>
+        public static string Flow_ExecutingNodeLabel {
+            get {
+                return ResourceManager.GetString("Flow_ExecutingNodeLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导出流程 的本地化字符串。
+        /// </summary>
+        public static string Flow_ExportFlow {
+            get {
+                return ResourceManager.GetString("Flow_ExportFlow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn 的本地化字符串。
+        /// </summary>
+        public static string Flow_ExportFlowFilter {
+            get {
+                return ResourceManager.GetString("Flow_ExportFlowFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程未能启动：可能验证失败、流程正在运行中或未选中模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_FlowNotStartedMessage {
+            get {
+                return ResourceManager.GetString("Flow_FlowNotStartedMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 获取画布数据失败 的本地化字符串。
+        /// </summary>
+        public static string Flow_GetCanvasDataFailed {
+            get {
+                return ResourceManager.GetString("Flow_GetCanvasDataFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导入流程 的本地化字符串。
+        /// </summary>
+        public static string Flow_ImportFlow {
+            get {
+                return ResourceManager.GetString("Flow_ImportFlow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程文件 (*.cvflow;*.stn)|*.cvflow;*.stn|流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn 的本地化字符串。
+        /// </summary>
+        public static string Flow_ImportFlowFilter {
+            get {
+                return ResourceManager.GetString("Flow_ImportFlowFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导入流程包时出错: {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_ImportFlowPackageError {
+            get {
+                return ResourceManager.GetString("Flow_ImportFlowPackageError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导入模块失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_ImportModuleFailed {
+            get {
+                return ResourceManager.GetString("Flow_ImportModuleFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导入模板为模块 的本地化字符串。
+        /// </summary>
+        public static string Flow_ImportTemplateAsModule {
+            get {
+                return ResourceManager.GetString("Flow_ImportTemplateAsModule", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 上次执行： 的本地化字符串。
+        /// </summary>
+        public static string Flow_LastExecutionLabel {
+            get {
+                return ResourceManager.GetString("Flow_LastExecutionLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全部归档指令已经发送 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_AllArchiveCommandSent {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_AllArchiveCommandSent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全部归档指令已经发送 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_AllArchiveSent {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_AllArchiveSent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 归档指令已经发送 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ArchiveCommandSent {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ArchiveCommandSent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 归档指令已经发送 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ArchiveSent {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ArchiveSent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 批次 {0} 结果 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_BatchResult {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_BatchResult", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 批次 {0} 结果 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_BatchResultTitle {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_BatchResultTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 分类: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ClassificationLabel {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ClassificationLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 配置选项 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ConfigOptions {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ConfigOptions", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 描述: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_Description {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 描述: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_DescriptionLabel {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_DescriptionLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 执行后处理 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ExecutePostProcess {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ExecutePostProcess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 名称: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_Name {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 名称: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_NameLabel {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_NameLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点时间分析 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_NodeTimeAnalysis {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_NodeTimeAnalysis", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未选择 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_NotSelected {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_NotSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 后处理执行 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_PostProcessExecution {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_PostProcessExecution", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理出错: {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ProcessError {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ProcessError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ProcessFailed {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ProcessFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理信息 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ProcessInfo {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ProcessInfo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理结果 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ProcessResult {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ProcessResult", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理成功: {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_ProcessSuccess {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_ProcessSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 选择处理类型: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_SelectProcessType {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_SelectProcessType", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 选择处理类型: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_SelectProcessTypeLabel {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_SelectProcessTypeLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择处理类型查看配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_SelectProcessTypeToViewConfig {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_SelectProcessTypeToViewConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择处理类型查看配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_SelectToViewConfig {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_SelectToViewConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 选中批次: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_SelectedBatch {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_SelectedBatch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程批次配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_MeasureBatch_Title {
+            get {
+                return ResourceManager.GetString("Flow_MeasureBatch_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全部 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_All {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_All", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清空记录 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_ClearRecords {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_ClearRecords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 确定要清空所有流程MQTT消息记录吗？ 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_ConfirmClearAll {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_ConfirmClearAll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 当前显示: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_DisplayCount {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_DisplayCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 耗时(ms) 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_ElapsedMs {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_ElapsedMs", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 加载条数: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_LoadCount {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_LoadCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_Node {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_Node", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_NodeHeader {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_NodeHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 查询 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_Query {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_Query", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 接收数据 (Receive) 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_RecvData {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_RecvData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 接收时间 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_RecvTime {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_RecvTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_Refresh {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_Refresh", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发送数据 (Send) 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_SendData {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_SendData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发送时间 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_SendTime {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_SendTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 状态: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_State {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_State", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 状态 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_StateHeader {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_StateHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 状态码 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_StatusCode {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_StatusCode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程MQTT消息查询 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_Title {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 总条数: 的本地化字符串。
+        /// </summary>
+        public static string Flow_MessageList_TotalCount {
+            get {
+                return ResourceManager.GetString("Flow_MessageList_TotalCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似  模块 的本地化字符串。
+        /// </summary>
+        public static string Flow_Module {
+            get {
+                return ResourceManager.GetString("Flow_Module", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 新建流程 的本地化字符串。
+        /// </summary>
+        public static string Flow_NewFlow {
+            get {
+                return ResourceManager.GetString("Flow_NewFlow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 (无可用模板) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoAvailableTemplates {
+            get {
+                return ResourceManager.GetString("Flow_NoAvailableTemplates", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 找不到流程结束结点 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoEndNode {
+            get {
+                return ResourceManager.GetString("Flow_NoEndNode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 当前未选择流程参数, 无法保存 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoFlowParamSelected {
+            get {
+                return ResourceManager.GetString("Flow_NoFlowParamSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 没有可用的流程模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoFlowTemplate {
+            get {
+                return ResourceManager.GetString("Flow_NoFlowTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 无法找到从起始结点到结束结点的有效路径 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoPathFromStartToEnd {
+            get {
+                return ResourceManager.GetString("Flow_NoPathFromStartToEnd", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 找不到流程起始结点 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoStartNode {
+            get {
+                return ResourceManager.GetString("Flow_NoStartNode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 (无可用模板) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoTemplateAvailable {
+            get {
+                return ResourceManager.GetString("Flow_NoTemplateAvailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未选择有效的流程模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_NoValidFlowTemplateSelected {
+            get {
+                return ResourceManager.GetString("Flow_NoValidFlowTemplateSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全部 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_All {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_All", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 批次选择: 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_BatchSelection {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_BatchSelection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 对比 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_Compare {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_Compare", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程节点对比 (多批次) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_ComparisonTitle {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_ComparisonTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 BatchId,节点名称,节点类型,开始时间,结束时间,耗时(ms),SN 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_CsvHeader {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_CsvHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 耗时(ms) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_ElapsedMs {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_ElapsedMs", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 耗时 (ms) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_ElapsedMsLabel {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_ElapsedMsLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 结束时间 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_EndTime {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_EndTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导出 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_Export {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_Export", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导出成功 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_ExportSuccess {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_ExportSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点时间分析_ 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_FileNamePrefix {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_FileNamePrefix", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程节点对比 (多批次) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_GanttCompareTitle {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_GanttCompareTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程节点甘特图 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_GanttTitle {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_GanttTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 加载 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_Load {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_Load", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 消息查询窗口 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_MessageQueryWindow {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_MessageQueryWindow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 BatchId,节点,NodeId,EventName,MsgId,发送Topic,发送时间,接收Topic,接收时间,耗时(ms),状态码,状态消息,状态 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_MqttCsvHeader {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_MqttCsvHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 MQTT消息追踪 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_MqttMessageTrace {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_MqttMessageTrace", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 没有数据可导出，请先加载批次数据 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_NoDataToExport {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_NoDataToExport", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_Node {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_Node", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点筛选: 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_NodeFilter {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_NodeFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点名称 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_NodeName {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_NodeName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点类型 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_NodeType {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_NodeType", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 接收数据 (Receive) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_RecvData {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_RecvData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 接收时间 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_RecvTime {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_RecvTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择至少一个批次 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_SelectAtLeastOneBatch {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_SelectAtLeastOneBatch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择至少两个批次进行对比 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_SelectAtLeastTwoBatches {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_SelectAtLeastTwoBatches", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发送数据 (Send) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_SendData {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_SendData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发送时间 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_SendTime {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_SendTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 开始时间 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_StartTime {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_StartTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 状态 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_State {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_State", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 状态筛选: 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_StateFilter {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_StateFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 时间 (ms) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_TimeMs {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_TimeMs", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 超时 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_Timeout {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_Timeout", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 流程节点时间分析 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_Title {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 总时间 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_TotalTime {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_TotalTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 耗时 (ms) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_XLabelElapsed {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_XLabelElapsed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 时间 (ms) 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeAnalysis_XLabelTime {
+            get {
+                return ResourceManager.GetString("Flow_NodeAnalysis_XLabelTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点: 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeLabel {
+            get {
+                return ResourceManager.GetString("Flow_NodeLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 节点时间分析 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeTimeAnalysis {
+            get {
+                return ResourceManager.GetString("Flow_NodeTimeAnalysis", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未启动 的本地化字符串。
+        /// </summary>
+        public static string Flow_NotStarted {
+            get {
+                return ResourceManager.GetString("Flow_NotStarted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 解析流程样例时出错: {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_ParseFlowSampleError {
+            get {
+                return ResourceManager.GetString("Flow_ParseFlowSampleError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全部模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_AllTemplates {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_AllTemplates", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 应用模板 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_AppliedTemplates {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_AppliedTemplates", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已自动保存 {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_AutoSaved {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_AutoSaved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 基本信息 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_BasicInfo {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_BasicInfo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 类别 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Category {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Category", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Close {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Close", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 预处理器配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Config {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Config", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已加载配置 {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_ConfigLoaded {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_ConfigLoaded", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未找到配置文件 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_ConfigNotFound {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_ConfigNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 描述: 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Description {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 停用 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Disabled {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Disabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 停用 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_DisabledStatus {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_DisabledStatus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 启用 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Enabled {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Enabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已启用 {0} 个 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_EnabledCountFormat {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_EnabledCountFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 启用 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_EnabledStatus {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_EnabledStatus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 加载配置失败 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_LoadFailed {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_LoadFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 尚未保存 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_NotSaved {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_NotSaved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理类: 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_ProcessClass {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_ProcessClass", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理器 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Processor {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Processor", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 预处理器配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_ProcessorConfig {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_ProcessorConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 {0} 个处理器 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_ProcessorCountFormat {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_ProcessorCountFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 保存失败，请查看日志 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_SaveFailed {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_SaveFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 立即保存 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_SaveNow {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_SaveNow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择一个预处理器查看配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_SelectProcessor {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_SelectProcessor", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择一个预处理器查看配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_SelectProcessorToViewConfig {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_SelectProcessorToViewConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 预处理配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Title {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 类型: 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_Type {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_Type", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 预处理失败，流程取消执行 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreprocessFailedCancelled {
+            get {
+                return ResourceManager.GetString("Flow_PreprocessFailedCancelled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请先执行流程 的本地化字符串。
+        /// </summary>
+        public static string Flow_RunFlowFirst {
+            get {
+                return ResourceManager.GetString("Flow_RunFlowFirst", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 保存失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Flow_SaveFailed {
+            get {
+                return ResourceManager.GetString("Flow_SaveFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 找不到流程起始结点 的本地化字符串。
+        /// </summary>
+        public static string Flow_StartNodeNotFound {
+            get {
+                return ResourceManager.GetString("Flow_StartNodeNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 启动异常 的本地化字符串。
+        /// </summary>
+        public static string Flow_StartupException {
+            get {
+                return ResourceManager.GetString("Flow_StartupException", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 所选模板没有流程数据 的本地化字符串。
+        /// </summary>
+        public static string Flow_TemplateNoFlowData {
+            get {
+                return ResourceManager.GetString("Flow_TemplateNoFlowData", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 焦距 的本地化字符串。
         /// </summary>
         public static string Focus {

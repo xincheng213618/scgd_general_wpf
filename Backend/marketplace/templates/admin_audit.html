@@ -11,22 +11,42 @@
 <div class="card mb-3">
     <div class="card-body">
         <form class="row g-2 align-items-end" method="GET">
-            <div class="col-md-4">
-                <label class="form-label">操作类型过滤</label>
+            <div class="col-md-3">
+                <label class="form-label">操作类型</label>
                 <select name="action" class="form-select form-select-sm">
                     <option value="">全部</option>
                     <option value="cache_cleanup" {{ 'selected' if action_filter == 'cache_cleanup' }}>缓存清理</option>
                     <option value="index_refresh_all" {{ 'selected' if action_filter == 'index_refresh_all' }}>全量刷新</option>
                     <option value="index_refresh_plugin" {{ 'selected' if action_filter == 'index_refresh_plugin' }}>单插件刷新</option>
+                    <option value="index_refresh_releases" {{ 'selected' if action_filter == 'index_refresh_releases' }}>版本刷新</option>
+                    <option value="index_refresh_updates" {{ 'selected' if action_filter == 'index_refresh_updates' }}>更新包刷新</option>
+                    <option value="index_refresh_tools" {{ 'selected' if action_filter == 'index_refresh_tools' }}>工具刷新</option>
                     <option value="api_key_create" {{ 'selected' if action_filter == 'api_key_create' }}>创建 Key</option>
                     <option value="api_key_revoke" {{ 'selected' if action_filter == 'api_key_revoke' }}>吊销 Key</option>
                     <option value="api_key_rotate" {{ 'selected' if action_filter == 'api_key_rotate' }}>轮换 Key</option>
                     <option value="job_run" {{ 'selected' if action_filter == 'job_run' }}>运行任务</option>
                     <option value="job_enable" {{ 'selected' if action_filter == 'job_enable' }}>启用任务</option>
                     <option value="job_disable" {{ 'selected' if action_filter == 'job_disable' }}>禁用任务</option>
+                    <option value="db_backup" {{ 'selected' if action_filter == 'db_backup' }}>数据库备份</option>
                 </select>
             </div>
             <div class="col-md-2">
+                <label class="form-label">操作者</label>
+                <input type="text" name="actor" class="form-control form-control-sm" value="{{ actor_filter }}" placeholder="user / api_key">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">目标</label>
+                <input type="text" name="target" class="form-control form-control-sm" value="{{ target_filter }}" placeholder="target_id">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">开始时间</label>
+                <input type="text" name="since" class="form-control form-control-sm" value="{{ since_filter }}" placeholder="2026-01-01">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">结束时间</label>
+                <input type="text" name="until" class="form-control form-control-sm" value="{{ until_filter }}" placeholder="2026-12-31">
+            </div>
+            <div class="col-md-1">
                 <button type="submit" class="btn btn-primary btn-sm w-100">筛选</button>
             </div>
         </form>
@@ -54,7 +74,16 @@
                 <tr>
                     <td>{{ entry.id }}</td>
                     <td><span class="badge bg-info">{{ entry.action }}</span></td>
-                    <td style="font-size:0.78rem">{{ entry.actor_type }}:{{ entry.actor_id }}</td>
+                    <td style="font-size:0.78rem">
+                        {% if entry.actor_type == 'api_key' %}
+                            <span class="badge bg-warning text-dark">{{ entry.actor_type }}</span>
+                        {% elif entry.actor_type == 'user' %}
+                            <span class="badge bg-primary">{{ entry.actor_type }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ entry.actor_type }}</span>
+                        {% endif %}
+                        {{ entry.actor_id }}
+                    </td>
                     <td style="font-size:0.78rem">{{ entry.target_type }}:{{ entry.target_id or '' }}</td>
                     <td style="font-size:0.78rem;max-width:300px;overflow:hidden;text-overflow:ellipsis">{{ entry.detail or '' }}</td>
                     <td style="font-size:0.75rem">{{ entry.ip or '' }}</td>
@@ -73,10 +102,10 @@
             <small class="text-muted">显示 {{ offset + 1 }}-{{ offset + entries|length }} 条</small>
             <div class="d-flex gap-1">
                 {% if offset > 0 %}
-                <a href="?action={{ action_filter }}&offset={{ [0, offset - limit]|max }}&limit={{ limit }}" class="btn btn-outline-secondary btn-sm">上一页</a>
+                <a href="?action={{ action_filter }}&actor={{ actor_filter }}&target={{ target_filter }}&since={{ since_filter }}&until={{ until_filter }}&offset={{ [0, offset - limit]|max }}&limit={{ limit }}" class="btn btn-outline-secondary btn-sm">上一页</a>
                 {% endif %}
                 {% if entries|length == limit %}
-                <a href="?action={{ action_filter }}&offset={{ offset + limit }}&limit={{ limit }}" class="btn btn-outline-secondary btn-sm">下一页</a>
+                <a href="?action={{ action_filter }}&actor={{ actor_filter }}&target={{ target_filter }}&since={{ since_filter }}&until={{ until_filter }}&offset={{ offset + limit }}&limit={{ limit }}" class="btn btn-outline-secondary btn-sm">下一页</a>
                 {% endif %}
             </div>
         </div>

@@ -156,12 +156,12 @@
                 
                 <!-- Header -->
                 <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="12,8">
-                    <TextBlock Text="后处理执行" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MeasureBatch_PostProcessExecution}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                 </Border>
                 
                 <!-- Process Selection -->
                 <StackPanel Grid.Row="1" Margin="10">
-                    <TextBlock Text="选择处理类型:" Margin="0,0,0,5"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MeasureBatch_SelectProcessType}" Margin="0,0,0,5"/>
                     <ComboBox x:Name="ProcessComboBox" SelectionChanged="ProcessComboBox_SelectionChanged">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
@@ -171,20 +171,20 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                     
-                    <TextBlock Text="选中批次:" Margin="0,10,0,5"/>
-                    <TextBlock x:Name="SelectedBatchText" Text="未选择" Foreground="Gray"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MeasureBatch_SelectedBatch}" Margin="0,10,0,5"/>
+                    <TextBlock x:Name="SelectedBatchText" Text="{x:Static properties:Resources.Flow_MeasureBatch_NotSelected}" Foreground="Gray"/>
                 </StackPanel>
                 
                 <!-- Config Panel -->
                 <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="10,0,10,10">
                     <StackPanel x:Name="ProcessConfigPanel">
-                        <TextBlock Text="请选择处理类型查看配置" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Flow_MeasureBatch_SelectProcessTypeToViewConfig}" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
                 
                 <!-- Execute Button -->
                 <Border Grid.Row="3" Padding="10">
-                    <Button x:Name="ExecuteButton" Content="执行后处理" Height="35" Click="ExecuteProcess_Click" IsEnabled="False"/>
+                    <Button x:Name="ExecuteButton" Content="{x:Static properties:Resources.Flow_MeasureBatch_ExecutePostProcess}" Height="35" Click="ExecuteProcess_Click" IsEnabled="False"/>
                 </Border>
             </Grid>
         </Border>

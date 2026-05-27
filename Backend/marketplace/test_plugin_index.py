@@ -594,14 +594,14 @@ class PluginIndexTests(unittest.TestCase):
         response = self.client.post(
             "/api/admin/api-keys",
             headers=self._auth_headers(),
-            json={"name": "Test Key", "scopes": "plugin:read,plugin:publish"},
+            json={"name": "Test Key", "scopes": "cache:read,plugin:publish"},
         )
         self.assertEqual(response.status_code, 201)
         payload = response.get_json()
         self.assertIn("key", payload)
         self.assertTrue(payload["key"].startswith("cvmp_"))
         self.assertEqual(payload["name"], "Test Key")
-        self.assertIn("plugin:read", payload["scopes"])
+        self.assertIn("cache:read", payload["scopes"])
 
     def test_api_key_list_does_not_expose_hash(self):
         self.client.post(
@@ -639,7 +639,7 @@ class PluginIndexTests(unittest.TestCase):
         create_resp = self.client.post(
             "/api/admin/api-keys",
             headers=self._auth_headers(),
-            json={"name": "Rotate Key", "scopes": "plugin:read"},
+            json={"name": "Rotate Key", "scopes": "cache:read"},
         )
         key_id = create_resp.get_json()["id"]
 
@@ -708,13 +708,14 @@ class PluginIndexTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_api_key_scope_enforcement(self):
-        """Key with insufficient scope should get 401."""
-        # Create key with only plugin:read scope
+        """Key with insufficient scope should get 403."""
+        # Create key with only stats:read scope (valid but insufficient for cache:read)
         create_resp = self.client.post(
             "/api/admin/api-keys",
             headers=self._auth_headers(),
-            json={"name": "Limited Key", "scopes": "plugin:read"},
+            json={"name": "Limited Key", "scopes": "stats:read"},
         )
+        self.assertEqual(create_resp.status_code, 201)
         full_key = create_resp.get_json()["key"]
 
         # Should fail for cache:read endpoint (needs cache:read scope)
@@ -722,7 +723,7 @@ class PluginIndexTests(unittest.TestCase):
             "/api/admin/cache/status",
             headers={"Authorization": f"Bearer {full_key}"},
         )
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 403)
 
     def test_api_key_cache_read_scope_works(self):
         """Key with cache:read should access cache status."""
@@ -752,7 +753,7 @@ class PluginIndexTests(unittest.TestCase):
             "/api/admin/cache/cleanup",
             headers={"Authorization": f"Bearer {full_key}"},
         )
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 403)
 
     def test_api_key_jobs_read_can_list_but_not_run(self):
         """Key with jobs:read can list but not run jobs."""
@@ -773,7 +774,7 @@ class PluginIndexTests(unittest.TestCase):
 
         # Cannot run
         response = self.client.post("/api/admin/jobs/cache_cleanup/run", headers=headers)
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 403)
 
     def test_api_key_stats_read_scope(self):
         """Key with stats:read can access stats overview."""

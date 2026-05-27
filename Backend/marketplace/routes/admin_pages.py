@@ -62,7 +62,9 @@ def overview():
     storage = ctx.storage_getter()
 
     from services.plugin_index import get_plugin_index_state
+    from services.artifact_index import get_all_index_states_summary
     index_state = get_plugin_index_state(ctx.cache)
+    index_summary = get_all_index_states_summary(ctx.cache)
 
     from services.scheduler import ensure_default_jobs
     ensure_default_jobs(ctx.cache)
@@ -71,7 +73,7 @@ def overview():
     try:
         jobs = db.execute("SELECT * FROM scheduled_jobs ORDER BY id").fetchall()
         recent_runs = db.execute(
-            "SELECT * FROM job_runs ORDER BY id DESC LIMIT 5"
+            "SELECT * FROM job_runs ORDER BY id DESC LIMIT 10"
         ).fetchall()
         recent_audit = db.execute(
             "SELECT * FROM audit_log ORDER BY id DESC LIMIT 10"
@@ -84,6 +86,7 @@ def overview():
         status=status,
         storage=storage,
         index_state=index_state,
+        index_summary=index_summary,
         jobs=[dict(j) for j in jobs],
         recent_runs=[dict(r) for r in recent_runs],
         recent_audit=[dict(a) for a in recent_audit],
@@ -97,14 +100,14 @@ def cache_page():
     status = ctx.cache.get_db_status()
     storage = ctx.storage_getter()
 
-    from services.plugin_index import get_plugin_index_state
-    index_state = get_plugin_index_state(ctx.cache)
+    from services.artifact_index import get_all_index_states_summary
+    index_summary = get_all_index_states_summary(ctx.cache)
 
     return render_template(
         "admin_cache.html",
         status=status,
         storage=storage,
-        index_state=index_state,
+        index_summary=index_summary,
         human_size=ctx.human_size,
     )
 
@@ -142,14 +145,26 @@ def jobs_page():
 def audit_page():
     ctx = _get_ctx()
     action = request.args.get("action", "").strip() or None
+    actor = request.args.get("actor", "").strip() or None
+    target = request.args.get("target", "").strip() or None
+    since = request.args.get("since", "").strip() or None
+    until = request.args.get("until", "").strip() or None
     limit = min(int(request.args.get("limit", 100)), 500)
     offset = int(request.args.get("offset", 0))
 
-    entries = ctx.cache.get_audit_log(action=action, limit=limit, offset=offset)
+    entries = ctx.cache.get_audit_log(
+        action=action, actor=actor, target=target,
+        since=since, until=until,
+        limit=limit, offset=offset,
+    )
     return render_template(
         "admin_audit.html",
         entries=entries,
         action_filter=action or "",
+        actor_filter=actor or "",
+        target_filter=target or "",
+        since_filter=since or "",
+        until_filter=until or "",
         limit=limit,
         offset=offset,
     )

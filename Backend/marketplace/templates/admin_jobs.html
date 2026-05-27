@@ -20,10 +20,15 @@
                         <span class="badge bg-secondary ms-1">禁用</span>
                     {% endif %}
                 </h6>
-                <small class="text-muted">ID: {{ job.id }} | 类型: {{ job.job_type }} | 间隔: {{ job.interval_seconds }}s</small>
+                <small class="text-muted">
+                    ID: {{ job.id }} | 类型: {{ job.job_type }} | 间隔: {{ job.interval_seconds }}s
+                    {% if job.next_run_at %}
+                        | 下次运行: {{ (job.next_run_at or '')[:19] }}
+                    {% endif %}
+                </small>
             </div>
             <div class="d-flex gap-1">
-                <button class="btn btn-primary btn-sm" onclick="runJob('{{ job.id }}', this)">
+                <button class="btn btn-primary btn-sm" onclick="runJob('{{ job.id }}', this)" title="手动运行">
                     <i class="bi bi-play me-1"></i>运行
                 </button>
                 {% if job.enabled %}
@@ -37,9 +42,9 @@
         {% if job.recent_runs %}
         <div class="table-responsive">
             <table class="table table-sm mb-0">
-                <thead><tr><th>状态</th><th>耗时</th><th>摘要</th><th>时间</th></tr></thead>
+                <thead><tr><th>状态</th><th>耗时</th><th>摘要</th><th>错误</th><th>时间</th></tr></thead>
                 <tbody>
-                {% for run in job.recent_runs[:3] %}
+                {% for run in job.recent_runs[:5] %}
                 <tr>
                     <td>
                         {% if run.status == 'success' %}
@@ -51,8 +56,9 @@
                         {% endif %}
                     </td>
                     <td>{{ run.duration_ms }}ms</td>
-                    <td style="font-size:0.78rem">{{ run.summary or '' }}</td>
-                    <td class="text-muted" style="font-size:0.75rem">{{ (run.started_at or '')[:16] }}</td>
+                    <td style="font-size:0.78rem;max-width:300px;overflow:hidden;text-overflow:ellipsis">{{ run.summary or '' }}</td>
+                    <td style="font-size:0.78rem" class="text-danger">{{ run.error or '' }}</td>
+                    <td class="text-muted" style="font-size:0.75rem">{{ (run.started_at or '')[:19] }}</td>
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -81,7 +87,8 @@ async function runJob(jobId, btn) {
     try {
         const resp = await fetch(`/api/admin/jobs/${jobId}/run`, { method: 'POST' });
         const data = await resp.json();
-        showResult(`<div class="alert alert-success">${data.job_id}: ${data.status} (${data.duration_ms}ms) - ${data.summary || ''}</div>`);
+        const statusClass = data.status === 'success' ? 'success' : 'danger';
+        showResult(`<div class="alert alert-${statusClass}">${data.job_id}: ${data.status} (${data.duration_ms}ms) - ${data.summary || ''}</div>`);
         setTimeout(() => location.reload(), 2000);
     } catch (e) {
         showResult(`<div class="alert alert-danger">运行失败: ${e.message}</div>`);

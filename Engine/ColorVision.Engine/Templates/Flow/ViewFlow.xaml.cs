@@ -182,7 +182,7 @@ namespace ColorVision.Engine.Services.Flow
             if (flowParam == null) return;
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(),
-                $"确认删除流程 \"{flowParam.Name}\" ?", "ColorVision",
+                string.Format(Properties.Resources.Flow_ConfirmDeleteFlow, flowParam.Name), "ColorVision",
                 MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
                 return;
 
@@ -229,7 +229,7 @@ namespace ColorVision.Engine.Services.Flow
             var items = templateFlow.TemplateParams;
             if (items.Count == 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "没有可用的流程模板", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoFlowTemplate, "ColorVision");
                 return;
             }
 
@@ -244,7 +244,7 @@ namespace ColorVision.Engine.Services.Flow
                 string base64 = dialog.SelectedTemplate.Value.DataBase64;
                 if (string.IsNullOrEmpty(base64))
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "所选模板没有流程数据", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_TemplateNoFlowData, "ColorVision");
                     return;
                 }
 
@@ -256,7 +256,7 @@ namespace ColorVision.Engine.Services.Flow
                 catch (Exception ex)
                 {
                     log.Error("ImportModule failed", ex);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"导入模块失败: {ex.Message}", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_ImportModuleFailed, ex.Message), "ColorVision");
                 }
             }
         }
@@ -294,7 +294,7 @@ namespace ColorVision.Engine.Services.Flow
                 if (flowParam == null)
                 {
                     log.Error("Save: SlectFlowParam 为 null, 无法保存");
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前未选择流程参数, 无法保存");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoFlowParamSelected);
                     return;
                 }
 
@@ -302,7 +302,7 @@ namespace ColorVision.Engine.Services.Flow
                 if (canvasData == null || canvasData.Length == 0)
                 {
                     log.Error("Save: GetCanvasData 返回空数据");
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "获取画布数据失败");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_GetCanvasDataFailed);
                     return;
                 }
 
@@ -314,7 +314,7 @@ namespace ColorVision.Engine.Services.Flow
             catch (Exception ex)
             {
                 log.Error("Save: 保存流程时发生异常", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"保存失败: {ex.Message}");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_SaveFailed, ex.Message));
             }
         }
 
@@ -541,7 +541,7 @@ namespace ColorVision.Engine.Services.Flow
             }
             else
             {
-                MessageBox.Show("请先执行流程");
+                MessageBox.Show(Properties.Resources.Flow_RunFlowFirst);
             }
         }
 

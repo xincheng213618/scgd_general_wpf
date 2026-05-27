@@ -43,6 +43,12 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "cache_cleanup": ["cache:refresh"],
     "refresh_all_plugins": ["cache:refresh"],
     "refresh_single_plugin": ["cache:refresh"],
+    "refresh_all_releases": ["cache:refresh"],
+    "refresh_all_updates": ["cache:refresh"],
+    "refresh_all_tools": ["cache:refresh"],
+    "refresh_all_indexes": ["cache:refresh"],
+    "index_status": ["cache:read"],
+    "backup_db": ["admin:*"],
     "list_jobs": ["jobs:read"],
     "run_job": ["jobs:write"],
     "enable_job": ["jobs:write"],
@@ -87,9 +93,54 @@ def _get_ctx() -> AdminApiContext:
 def _require_admin_auth(required_scopes: list[str] | None = None):
     """Check authentication for admin endpoints with optional scope check."""
     ctx = _get_ctx()
-    if not ctx.check_auth(required_scopes):
-        return jsonify({"error": "Authentication required", "status": 401}), 401
-    return None
+
+    # First check if authenticated at all
+    from flask import session
+    if session.get("authenticated"):
+        return None  # Session auth always has full access
+
+    # Check Basic Auth
+    auth = request.authorization
+    if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
+        return None  # Basic Auth always has full access
+
+    # Check Bearer API Key
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+        if token:
+            from services.api_key_service import verify_api_key
+            scopes_to_check = required_scopes if required_scopes else ["admin:*"]
+            key_info = verify_api_key(ctx.cache, token, required_scopes=scopes_to_check)
+            if key_info:
+                return None
+            # Token was provided but invalid or insufficient scope
+            # Check if token is valid at all (without scope check)
+            key_info_no_scope = verify_api_key(ctx.cache, token, required_scopes=None)
+            if key_info_no_scope:
+                # Valid key but insufficient scope
+                ctx.cache.write_audit(
+                    actor_type="api_key",
+                    actor_id=f"key:{token.split('_')[1] if '_' in token else 'unknown'}",
+                    action="auth_forbidden",
+                    target_type="admin_endpoint",
+                    detail=f"Insufficient scope. Required: {required_scopes}",
+                    ip=request.remote_addr or "",
+                    user_agent=request.headers.get("User-Agent", "")[:200],
+                )
+                return jsonify({"error": "Insufficient scope", "required": required_scopes, "status": 403}), 403
+
+    # No valid authentication at all
+    ctx.cache.write_audit(
+        actor_type="anonymous",
+        actor_id="",
+        action="auth_unauthorized",
+        target_type="admin_endpoint",
+        detail=f"Path: {request.path}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify({"error": "Authentication required", "status": 401}), 401
 
 
 def register_admin_api_routes(app, ctx: AdminApiContext):
@@ -250,6 +301,139 @@ def refresh_single_plugin(plugin_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Artifact index management
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/index/releases/refresh", methods=["POST"])
+def refresh_all_releases():
+    ctx = _get_ctx()
+    from services.artifact_index import refresh_release_index
+    result = refresh_release_index(ctx.cache, ctx.storage_getter())
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="index_refresh_releases",
+        target_type="release_index",
+        detail=f"indexed={result['indexed_count']} errors={len(result['errors'])}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(result)
+
+
+@admin_api.route("/index/updates/refresh", methods=["POST"])
+def refresh_all_updates():
+    ctx = _get_ctx()
+    from services.artifact_index import refresh_update_index
+    result = refresh_update_index(ctx.cache, ctx.storage_getter())
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="index_refresh_updates",
+        target_type="update_index",
+        detail=f"indexed={result['indexed_count']} errors={len(result['errors'])}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(result)
+
+
+@admin_api.route("/index/tools/refresh", methods=["POST"])
+def refresh_all_tools():
+    ctx = _get_ctx()
+    from services.artifact_index import refresh_tool_index
+    result = refresh_tool_index(ctx.cache, ctx.storage_getter())
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="index_refresh_tools",
+        target_type="tool_index",
+        detail=f"indexed={result['indexed_count']} errors={len(result['errors'])}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(result)
+
+
+@admin_api.route("/index/refresh-all", methods=["POST"])
+def refresh_all_indexes():
+    ctx = _get_ctx()
+    from services.artifact_index import refresh_all_indexes as _refresh_all
+    from services.plugin_index import refresh_all_plugin_index
+
+    results = {}
+
+    # Plugin index
+    download_counts: dict[str, int] = {}
+    try:
+        from download_stats import get_download_counts
+        download_counts = get_download_counts(ctx.get_db)
+    except Exception:
+        pass
+    plugin_result = refresh_all_plugin_index(ctx.cache, ctx.storage_getter(), download_counts=download_counts)
+    results["plugins"] = plugin_result
+
+    # Artifact indexes
+    artifact_results = _refresh_all(ctx.cache, ctx.storage_getter())
+    results.update(artifact_results["results"])
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="index_refresh_all",
+        target_type="all_indexes",
+        detail=f"All indexes refreshed",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+
+    return jsonify(results)
+
+
+@admin_api.route("/index/status", methods=["GET"])
+def index_status():
+    ctx = _get_ctx()
+    from services.artifact_index import get_all_index_states_summary
+    summary = get_all_index_states_summary(ctx.cache)
+    return jsonify(summary)
+
+
+# ---------------------------------------------------------------------------
+# DB backup
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/backup/db", methods=["POST"])
+def backup_db():
+    ctx = _get_ctx()
+    from datetime import datetime, timezone
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    backup_path = ctx.cache.db_path.parent / f"marketplace_backup_{timestamp}.db"
+
+    success = ctx.cache.backup_db(backup_path)
+    if not success:
+        return jsonify({"error": "Backup failed"}), 500
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="db_backup",
+        target_type="database",
+        detail=f"Backup to {backup_path.name}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+
+    return jsonify({
+        "status": "ok",
+        "backup_path": str(backup_path),
+        "backup_size_bytes": backup_path.stat().st_size if backup_path.exists() else 0,
+    })
+
+
+# ---------------------------------------------------------------------------
 # Jobs management
 # ---------------------------------------------------------------------------
 
@@ -368,10 +552,18 @@ def disable_job(job_id: str):
 def audit_log():
     ctx = _get_ctx()
     action = request.args.get("action", "").strip() or None
+    actor = request.args.get("actor", "").strip() or None
+    target = request.args.get("target", "").strip() or None
+    since = request.args.get("since", "").strip() or None
+    until = request.args.get("until", "").strip() or None
     limit = min(int(request.args.get("limit", 100)), 500)
     offset = int(request.args.get("offset", 0))
 
-    entries = ctx.cache.get_audit_log(action=action, limit=limit, offset=offset)
+    entries = ctx.cache.get_audit_log(
+        action=action, actor=actor, target=target,
+        since=since, until=until,
+        limit=limit, offset=offset,
+    )
     return jsonify({"entries": entries, "limit": limit, "offset": offset})
 
 
@@ -437,6 +629,18 @@ def list_api_keys():
     return jsonify(keys)
 
 
+# Allowed scopes for API key creation
+ALLOWED_SCOPES = {
+    "admin:*",
+    "cache:read",
+    "cache:refresh",
+    "jobs:read",
+    "jobs:write",
+    "stats:read",
+    "plugin:publish",
+}
+
+
 @admin_api.route("/api-keys", methods=["POST"])
 def create_api_key():
     from services.api_key_service import create_api_key as _create_key
@@ -449,7 +653,25 @@ def create_api_key():
     scopes = data.get("scopes", "")
     if isinstance(scopes, list):
         scopes = ",".join(scopes)
+
+    # Validate scopes against whitelist
+    if scopes:
+        requested_scopes = {s.strip() for s in scopes.split(",") if s.strip()}
+        invalid = requested_scopes - ALLOWED_SCOPES
+        if invalid:
+            return jsonify({
+                "error": f"Invalid scopes: {', '.join(sorted(invalid))}",
+                "allowed_scopes": sorted(ALLOWED_SCOPES),
+            }), 400
+
+    description = (data.get("description") or "").strip()
     expires_at = data.get("expires_at")
+
+    # Default expiry suggestion: 90 days from now
+    if not expires_at:
+        from datetime import timedelta
+        default_expiry = datetime.now(timezone.utc) + timedelta(days=90)
+        expires_at = default_expiry.isoformat()
 
     result = _create_key(
         ctx.cache,
@@ -458,6 +680,19 @@ def create_api_key():
         created_by=_actor_id(),
         expires_at=expires_at,
     )
+
+    # Store description if provided
+    if description:
+        db = ctx.cache.get_db()
+        try:
+            db.execute(
+                "UPDATE api_keys SET name = ? WHERE id = ?",
+                (f"{name} ({description})" if description else name, result["id"]),
+            )
+            db.commit()
+        finally:
+            db.close()
+        result["description"] = description
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
@@ -534,6 +769,9 @@ def _actor_type() -> str:
     from flask import session
     if session.get("authenticated"):
         return "user"
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return "api_key"
     auth = request.authorization
     if auth and auth.type and auth.type.lower() == "basic":
         return "user"
@@ -544,6 +782,14 @@ def _actor_id() -> str:
     from flask import session
     if session.get("username"):
         return session["username"]
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+        # Return key_prefix for identification (never the full key)
+        parts = token.split("_", 2)
+        if len(parts) >= 2:
+            return f"key:{parts[1]}"
+        return "key:unknown"
     auth = request.authorization
     if auth and auth.username:
         return auth.username

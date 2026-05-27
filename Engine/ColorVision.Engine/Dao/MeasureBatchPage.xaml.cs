@@ -31,7 +31,7 @@ namespace ColorVision.Engine
         private void Page_Initialized(object sender, EventArgs e)
         {
             
-            Title = "批次 " + MeasureBatchModel.Code +" 结果";
+            Title = string.Format(Properties.Resources.Flow_MeasureBatch_BatchResultTitle, MeasureBatchModel.Code);
 
             listView1.ItemsSource = ViewResultImages;
             listView2.ItemsSource = ViewResultAlgs;

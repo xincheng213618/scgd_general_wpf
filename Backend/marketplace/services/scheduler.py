@@ -35,6 +35,27 @@ DEFAULT_JOBS = [
         "config": "{}",
     },
     {
+        "id": "release_index_check",
+        "name": "Release Index Check",
+        "job_type": "index_check",
+        "interval_seconds": 600,
+        "config": "{}",
+    },
+    {
+        "id": "update_index_check",
+        "name": "Update Index Check",
+        "job_type": "index_check",
+        "interval_seconds": 600,
+        "config": "{}",
+    },
+    {
+        "id": "tool_index_check",
+        "name": "Tool Index Check",
+        "job_type": "index_check",
+        "interval_seconds": 600,
+        "config": "{}",
+    },
+    {
         "id": "cache_cleanup",
         "name": "Cache Cleanup",
         "job_type": "cache_cleanup",
@@ -105,6 +126,12 @@ def run_job_now(
     try:
         if job_id == "plugin_index_check":
             summary = _run_plugin_index_check(cache, storage, get_db)
+        elif job_id == "release_index_check":
+            summary = _run_artifact_index_check(cache, storage, "releases")
+        elif job_id == "update_index_check":
+            summary = _run_artifact_index_check(cache, storage, "updates")
+        elif job_id == "tool_index_check":
+            summary = _run_artifact_index_check(cache, storage, "tools")
         elif job_id == "cache_cleanup":
             summary = _run_cache_cleanup(cache)
         elif job_id == "startup_index_check":
@@ -185,28 +212,76 @@ def _run_plugin_index_check(cache: CacheManager, storage: Path, get_db: Callable
     return f"Refreshed: {result['indexed_count']} indexed, {result['deleted_count']} deleted"
 
 
+def _run_artifact_index_check(cache: CacheManager, storage: Path, scope: str) -> str:
+    """Lightweight check: compare artifact directory signature with index state."""
+    from services.artifact_index import (
+        get_index_state,
+        refresh_release_index,
+        refresh_update_index,
+        refresh_tool_index,
+        _release_signature,
+        _update_signature,
+        _tool_signature,
+    )
+
+    sig_fn_map = {
+        "releases": _release_signature,
+        "updates": _update_signature,
+        "tools": _tool_signature,
+    }
+    refresh_fn_map = {
+        "releases": refresh_release_index,
+        "updates": refresh_update_index,
+        "tools": refresh_tool_index,
+    }
+
+    sig_fn = sig_fn_map.get(scope)
+    refresh_fn = refresh_fn_map.get(scope)
+    if not sig_fn or not refresh_fn:
+        return f"Unknown scope: {scope}"
+
+    current_sig = sig_fn(storage)
+    state = get_index_state(cache, scope)
+    stored_sig = state.get("signature", "") if state else ""
+
+    if current_sig == stored_sig:
+        return f"{scope}: No changes detected"
+
+    result = refresh_fn(cache, storage)
+    return f"{scope}: Refreshed {result['indexed_count']} items in {result['duration_ms']}ms"
+
+
 def _run_cache_cleanup(cache: CacheManager) -> str:
     deleted = cache.cleanup_expired_cache()
     return f"Cleaned {deleted} expired cache entries"
 
 
 def _run_startup_check(cache: CacheManager, storage: Path, get_db: Callable) -> str:
-    """If plugin_index is empty, do a full refresh."""
+    """If plugin_index is empty, do a full refresh. Also check artifact indexes."""
     from services.plugin_index import is_plugin_index_populated
+    from services.artifact_index import startup_check_all_indexes
 
-    if is_plugin_index_populated(cache):
-        return "Index already populated"
+    parts = []
 
-    from services.plugin_index import refresh_all_plugin_index
-    download_counts: dict[str, int] = {}
-    try:
-        from download_stats import get_download_counts
-        download_counts = get_download_counts(get_db)
-    except Exception:
-        pass
+    # Plugin index
+    if not is_plugin_index_populated(cache):
+        from services.plugin_index import refresh_all_plugin_index
+        download_counts: dict[str, int] = {}
+        try:
+            from download_stats import get_download_counts
+            download_counts = get_download_counts(get_db)
+        except Exception:
+            pass
+        result = refresh_all_plugin_index(cache, storage, download_counts=download_counts)
+        parts.append(f"plugins: {result['indexed_count']}")
+    else:
+        parts.append("plugins: already populated")
 
-    result = refresh_all_plugin_index(cache, storage, download_counts=download_counts)
-    return f"Initial index: {result['indexed_count']} plugins"
+    # Artifact indexes
+    artifact_summary = startup_check_all_indexes(cache, storage)
+    parts.append(artifact_summary)
+
+    return "; ".join(parts)
 
 
 # ---------------------------------------------------------------------------

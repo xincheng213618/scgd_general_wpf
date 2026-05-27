@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PreProcessManager}"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        Title="预处理配置" Height="720" Width="1120" MinHeight="520" MinWidth="900" Background="{DynamicResource GlobalBackground}">
+        Title="{x:Static properties:Resources.Flow_PreProcess_Title}" Height="720" Width="1120" MinHeight="520" MinWidth="900" Background="{DynamicResource GlobalBackground}">
     <Window.Resources>
         <local:PreTypeNameConverter x:Key="TypeNameConverter"/>
         <local:PreProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
@@ -23,12 +23,12 @@
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{Binding LastSaveStatus}" VerticalAlignment="Center" Foreground="Gray" ToolTip="{Binding PersistPath}"/>
-                    <Button Content="立即保存" Padding="12,4" Margin="12,0,0,0" Command="{Binding SaveCommand}"/>
+                    <Button Content="{x:Static properties:Resources.Flow_PreProcess_SaveNow}" Padding="12,4" Margin="12,0,0,0" Command="{Binding SaveCommand}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="预处理配置" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding ProcessCount, StringFormat={}{0} 个处理器}" Margin="16,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding EnabledCount, StringFormat=已启用 {0} 个}" Margin="12,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_Title}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ProcessCount, StringFormat={x:Static properties:Resources.Flow_PreProcess_ProcessorCountFormat}}" Margin="16,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding EnabledCount, StringFormat={x:Static properties:Resources.Flow_PreProcess_EnabledCountFormat}}" Margin="12,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -47,28 +47,28 @@
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
-                <Button Content="上移" Padding="12,4" Command="{Binding MoveUpCommand}"/>
-                <Button Content="下移" Padding="12,4" Margin="8,0,0,0" Command="{Binding MoveDownCommand}"/>
+                <Button Content="{x:Static properties:Resources.MoveUp}" Padding="12,4" Command="{Binding MoveUpCommand}"/>
+                <Button Content="{x:Static properties:Resources.MoveDown}" Padding="12,4" Margin="8,0,0,0" Command="{Binding MoveDownCommand}"/>
             </StackPanel>
 
             <ListView Grid.Row="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" x:Name="lvProcesses" SelectionChanged="ListView_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="序号" Width="50">
+                        <GridViewColumn Header="{x:Static properties:Resources.SerialNumber1}" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Converter={StaticResource TypeNameConverter}, ConverterParameter=Index}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="状态" Width="64">
+                        <GridViewColumn Header="{x:Static properties:Resources.Status}" Width="64">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Enabled}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="处理器" Width="150">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_PreProcess_Processor}" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
@@ -76,14 +76,14 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="应用模板" Width="130">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_PreProcess_AppliedTemplates}" Width="130">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Templates}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Templates}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="描述" Width="260">
+                        <GridViewColumn Header="{x:Static properties:Resources.Description}" Width="260">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}" TextTrimming="CharacterEllipsis"/>
@@ -105,12 +105,12 @@
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="12,8">
-                    <TextBlock Text="属性" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.Property}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                 </Border>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
                     <StackPanel x:Name="PropertyPanel">
-                        <TextBlock Text="请选择一个预处理器查看配置" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
+                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_SelectProcessorToViewConfig}" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
                                    x:Name="PlaceholderText"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -119,7 +119,7 @@
         </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="关闭" Padding="18,5" Click="CloseButton_Click"/>
+            <Button Content="{x:Static properties:Resources.Close}" Padding="18,5" Click="CloseButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>

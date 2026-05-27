@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Templates.Flow.Job
 
         public override string ToString()
         {
-            string text = $"{Status} | 耗时: {TotalTimeMs}ms";
+            string text = $"{Status} | {ColorVision.Engine.Properties.Resources.Flow_Elapsed}{TotalTimeMs}ms";
             if (!string.IsNullOrEmpty(Message))
                 text += $" | {Message}";
             return text;
@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Templates.Flow.Job
                 context.Result = new FlowJobResult
                 {
                     Success = false,
-                    Status = "启动异常",
+                    Status = ColorVision.Engine.Properties.Resources.Flow_StartupException,
                     Message = ex.Message
                 };
                 return;
@@ -65,8 +65,8 @@ namespace ColorVision.Engine.Templates.Flow.Job
                 context.Result = new FlowJobResult
                 {
                     Success = false,
-                    Status = "未启动",
-                    Message = "流程未能启动：可能验证失败、流程正在运行中或未选中模板"
+                    Status = ColorVision.Engine.Properties.Resources.Flow_NotStarted,
+                    Message = ColorVision.Engine.Properties.Resources.Flow_FlowNotStartedMessage
                 };
                 return;
             }

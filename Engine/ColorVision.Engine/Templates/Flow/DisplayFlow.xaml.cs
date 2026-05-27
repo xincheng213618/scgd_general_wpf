@@ -179,7 +179,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 if (string.IsNullOrEmpty(flowParam.DataBase64))
                 {
-                    MessageBox.Show("再选择之前请先创建对映的模板");
+                    MessageBox.Show(ColorVision.Engine.Properties.Resources.Flow_CreateTemplateBeforeSelection);
                     View.FlowEngineControl.LoadFromBase64(string.Empty);
                     return;
                 }
@@ -306,7 +306,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             string lastNodes = _runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values);
             _runningNodeNames.Clear();
-            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
+            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
             FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
@@ -391,7 +391,7 @@ namespace ColorVision.Engine.Templates.Flow
                 string msg;
                 if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                 {
-                    msg = $"{FlowName}{Environment.NewLine}正在执行节点:{runningNodes}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
+                    msg = $"{FlowName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}";
                 }
                 else
                 {
@@ -399,7 +399,7 @@ namespace ColorVision.Engine.Templates.Flow
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = $"{FlowName}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{runningNodes}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                    msg = $"{FlowName}{ColorVision.Engine.Properties.Resources.Flow_LastExecutionLabel}{LastFlowTime} ms{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_EstimatedRemainingLabel}{remainingTime}";
                 }
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
@@ -589,7 +589,7 @@ namespace ColorVision.Engine.Templates.Flow
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
-                View.logTextBox.Text = "未选择有效的流程模板";
+                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.Flow_NoValidFlowTemplateSelected;
                 log.Warn("未选择有效的流程模板");
                 return;
             }
@@ -606,7 +606,7 @@ namespace ColorVision.Engine.Templates.Flow
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
-                View.logTextBox.Text = "预处理失败，流程取消执行";
+                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled;
                 log.Warn("预处理失败，流程取消执行");
                 return;
             }
