@@ -51,7 +51,7 @@ def login_page():
     """Web login page using Flask session (not Basic Auth)."""
     ctx = _get_ctx()
     if ctx.check_web_session_auth():
-        next_url = _safe_next_url(request.args.get("next")) or url_for("upload_page")
+        next_url = _safe_next_url(request.args.get("next")) or url_for("pages.upload_page")
         return redirect(next_url)
 
     error = None
@@ -68,7 +68,7 @@ def login_page():
             next_url = (
                 _safe_next_url(request.form.get("next"))
                 or _safe_next_url(request.args.get("next"))
-                or url_for("upload_page")
+                or url_for("pages.upload_page")
             )
             return redirect(next_url)
         # Log failed login attempt (without leaking credentials)
@@ -91,7 +91,7 @@ def login_page():
 def logout_page():
     """Clear the web session and redirect to home."""
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(url_for("pages.index"))
 
 
 def register_public_pages(app, ctx: PublicPageContext):

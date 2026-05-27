@@ -3973,6 +3973,15 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
+        ///   查找类似 正在下载 OpenCvSharp 修复补丁... 的本地化字符串。
+        /// </summary>
+        public static string DownloadingOpenCvSharpFix {
+            get {
+                return ResourceManager.GetString("DownloadingOpenCvSharpFix", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 绘制 的本地化字符串。
         /// </summary>
         public static string Draw {
@@ -4896,6 +4905,15 @@ namespace ColorVision.Engine.Properties {
         public static string FindLuminousAreaCorners {
             get {
                 return ResourceManager.GetString("FindLuminousAreaCorners", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 修复 OpenCvSharp 导出崩溃 的本地化字符串。
+        /// </summary>
+        public static string FixOpenCvSharpExportCrash {
+            get {
+                return ResourceManager.GetString("FixOpenCvSharpExportCrash", resourceCulture);
             }
         }
 
@@ -10224,6 +10242,42 @@ namespace ColorVision.Engine.Properties {
         public static string OpenConfigFolder {
             get {
                 return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 备份现有 DLL 失败：{0} 的本地化字符串。
+        /// </summary>
+        public static string OpenCvSharpFixBackupFailed {
+            get {
+                return ResourceManager.GetString("OpenCvSharpFixBackupFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 DLL 被占用无法替换，请关闭 ColorVision 后重试。  错误详情：{0} 的本地化字符串。
+        /// </summary>
+        public static string OpenCvSharpFixDllLocked {
+            get {
+                return ResourceManager.GetString("OpenCvSharpFixDllLocked", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 修复补丁安装失败：{0} 的本地化字符串。
+        /// </summary>
+        public static string OpenCvSharpFixFailed {
+            get {
+                return ResourceManager.GetString("OpenCvSharpFixFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 修复补丁已安装，请重启 ColorVision 后生效。 的本地化字符串。
+        /// </summary>
+        public static string OpenCvSharpFixSuccess {
+            get {
+                return ResourceManager.GetString("OpenCvSharpFixSuccess", resourceCulture);
             }
         }
 
