@@ -77,7 +77,7 @@
     <value>正常</value>
   </data>
   <data name="HotkeyConflict" xml:space="preserve">
-    <value>衝突</value>
+    <value>冲突</value>
   </data>
   <data name="HotKeySet1" xml:space="preserve">
     <value>Set Hotkeys by Pressing Keys</value>
@@ -86,10 +86,10 @@
     <value>クリックしてホットキーを設定する</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文 (簡体字中国語)</value>
+    <value>简体中文</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文 (繁体字中国語)</value>
+    <value>繁體中文（繁体中文）</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>システムのテーマを使用する</value>
@@ -98,16 +98,16 @@
     <value>新しい言語設定を使用するためには、再起動が必要です</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>English (英語)</value>
+    <value>English（英语）</value>
   </data>
   <data name="fr" xml:space="preserve">
     <value>Français (フランス語)</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>日本語</value>
+    <value>日本語（日语）</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>한국어 (韓国語)</value>
+    <value>한국어（韩语）</value>
   </data>
   <data name="ru" xml:space="preserve">
     <value>Русский (ロシア語)</value>
@@ -119,10 +119,10 @@
     <value>列幅を自動的に調整する</value>
   </data>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>言語(_L)</value>
+    <value>语言(_L)</value>
   </data>
   <data name="Language" xml:space="preserve">
-    <value>言語</value>
+    <value>ユーザーインターフェース言語</value>
   </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>選択したビューを自動的に切り替える</value>
@@ -131,7 +131,7 @@
     <value>ショートカットキー</value>
   </data>
   <data name="WindowHidden" xml:space="preserve">
-    <value>非表示</value>
+    <value>Hide</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>独立したウィンドウ</value>
@@ -179,7 +179,7 @@
     <value>開く (_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
-    <value>保存(_S)</value>
+    <value>Save(_S)</value>
   </data>
   <data name="MenuSaveAs" xml:space="preserve">
     <value>名前を付けて保存(_A)</value>
@@ -191,7 +191,7 @@
     <value>リセット</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>閉鎖</value>
+    <value>Close</value>
   </data>
   <data name="MenuPaste" xml:space="preserve">
     <value>ペースト(_P)</value>
@@ -203,7 +203,7 @@
     <value>取り消す (_U)</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>表示 (_V)</value>
+    <value>View(_V)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>編集する (_E)</value>
@@ -218,10 +218,10 @@
     <value>コピーする (_C)</value>
   </data>
   <data name="MenuPrint" xml:space="preserve">
-    <value>印刷(_P)</value>
+    <value>打印(_P)</value>
   </data>
   <data name="MenuNew" xml:space="preserve">
-    <value>新規作成 (_N)</value>
+    <value>New(_N)</value>
   </data>
   <data name="MenuClose" xml:space="preserve">
     <value>閉じる_C)</value>
@@ -242,13 +242,13 @@
     <value>プラグイン名</value>
   </data>
   <data name="Search" xml:space="preserve">
-    <value>検索</value>
+    <value>Search</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>更新する</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>消去</value>
+    <value>Delete</value>
   </data>
   <data name="Version" xml:space="preserve">
     <value>バージョン</value>
@@ -305,13 +305,13 @@
     <value>{0}で並べ替え</value>
   </data>
   <data name="Ascending" xml:space="preserve">
-    <value>昇順</value>
+    <value>升序</value>
   </data>
   <data name="Descending" xml:space="preserve">
-    <value>降順</value>
+    <value>降序</value>
   </data>
   <data name="ConfirmUpdate" xml:space="preserve">
-    <value>更新</value>
+    <value>Confirm Update</value>
   </data>
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>プラグイン{0}を削除しますか？</value>
@@ -335,7 +335,7 @@
     <value>構成ファイル{0}の書き込みに失敗しました</value>
   </data>
   <data name="Execute" xml:space="preserve">
-    <value>実行</value>
+    <value>执行</value>
   </data>
   <data name="OpenContainingFolder" xml:space="preserve">
     <value>格納フォルダーを開く</value>
@@ -470,7 +470,7 @@
     <value>プロパティエディターウィンドウ</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>編集</value>
+    <value>Edit</value>
   </data>
   <data name="Theme" xml:space="preserve">
     <value>テーマ</value>

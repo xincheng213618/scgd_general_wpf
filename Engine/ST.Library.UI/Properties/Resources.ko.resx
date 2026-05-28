@@ -706,7 +706,7 @@
     <value>초점 포인트 및 배포</value>
   </data>
   <data name="03_1 关注点" xml:space="preserve">
-    <value>031 포커스</value>
+    <value>03_1 포커스</value>
   </data>
   <data name="通用相机" xml:space="preserve">
     <value>일반 카메라</value>
@@ -1040,5 +1040,11 @@
   </data>
   <data name="Bit8" xml:space="preserve">
     <value>Bit8</value>
+  </data>
+  <data name="LockOption" xml:space="preserve">
+    <value>포트 잠금</value>
+  </data>
+  <data name="LockLocation" xml:space="preserve">
+    <value>위치 잠금</value>
   </data>
 </root>

@@ -193,10 +193,10 @@
     <value>Trier par {0}</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文 (Chinois traditionnel)</value>
+    <value>繁體中文（繁体中文）</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文 (Chinois simplifié)</value>
+    <value>简体中文</value>
   </data>
   <data name="WriteConfigFileFailed" xml:space="preserve">
     <value>Échec de l'écriture du fichier de configuration {0}</value>

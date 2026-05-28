@@ -706,7 +706,7 @@
     <value>Точки фокусировки и развертывание</value>
   </data>
   <data name="03_1 关注点" xml:space="preserve">
-    <value>031 Фокус</value>
+    <value>03_1 Фокус</value>
   </data>
   <data name="通用相机" xml:space="preserve">
     <value>общая камера</value>
@@ -1040,5 +1040,11 @@
   </data>
   <data name="Bit8" xml:space="preserve">
     <value>Bit8</value>
+  </data>
+  <data name="LockOption" xml:space="preserve">
+    <value>Заблокировать порты</value>
+  </data>
+  <data name="LockLocation" xml:space="preserve">
+    <value>Заблокировать позицию</value>
   </data>
 </root>

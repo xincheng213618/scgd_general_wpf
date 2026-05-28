@@ -75,10 +75,10 @@
     <value>開ける</value>
   </data>
   <data name="Import" xml:space="preserve">
-    <value>輸入</value>
+    <value>Import</value>
   </data>
   <data name="Export" xml:space="preserve">
-    <value>輸出</value>
+    <value>Export</value>
   </data>
   <data name="Edit" xml:space="preserve">
     <value>編集する</value>
@@ -87,7 +87,7 @@
     <value>作成する</value>
   </data>
   <data name="Apply" xml:space="preserve">
-    <value>応用</value>
+    <value>適用</value>
   </data>
   <data name="OpenSolution" xml:space="preserve">
     <value>プロジェクトを開く</value>
@@ -99,7 +99,7 @@
     <value>ローカルプロジェクトまたはファイルを開きます</value>
   </data>
   <data name="NewSolution" xml:space="preserve">
-    <value>新築</value>
+    <value>新規プロジェクト</value>
   </data>
   <data name="NewProjectFormat" xml:space="preserve">
     <value>新しいプロジェクト形式</value>
@@ -111,7 +111,7 @@
     <value>プロジェクト設定</value>
   </data>
   <data name="Property" xml:space="preserve">
-    <value>属性</value>
+    <value>Property</value>
   </data>
   <data name="Reseted" xml:space="preserve">
     <value>リセット完了</value>
@@ -135,10 +135,10 @@
     <value>キャッシュの消去</value>
   </data>
   <data name="Save" xml:space="preserve">
-    <value>保存</value>
+    <value>Save</value>
   </data>
   <data name="Search" xml:space="preserve">
-    <value>検索</value>
+    <value>Search</value>
   </data>
   <data name="CreateProject" xml:space="preserve">
     <value>プロジェクトの作成</value>
@@ -168,16 +168,16 @@
     <value>およびそのすべての内容が永久に削除されます。</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>削除</value>
+    <value>Delete</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
     <value>開ける</value>
   </data>
   <data name="MenuProperty" xml:space="preserve">
-    <value>属性(_R)</value>
+    <value>Property(_R)</value>
   </data>
   <data name="MenuAdd" xml:space="preserve">
-    <value>追加</value>
+    <value>添加(_D)</value>
   </data>
   <data name="Password" xml:space="preserve">
     <value>パスワード</value>
@@ -237,7 +237,7 @@
     <value>ユーザーセンター</value>
   </data>
   <data name="Role" xml:space="preserve">
-    <value>役割</value>
+    <value>角色</value>
   </data>
   <data name="PermissionMode" xml:space="preserve">
     <value>許可モード</value>
@@ -249,19 +249,19 @@
     <value>ユーザー管理システム</value>
   </data>
   <data name="EditInfo" xml:space="preserve">
-    <value>編集情報</value>
+    <value>EditInfo</value>
   </data>
   <data name="UserManagement" xml:space="preserve">
     <value>ユーザー管理</value>
   </data>
   <data name="Status" xml:space="preserve">
-    <value>状態</value>
+    <value>Состояние</value>
   </data>
   <data name="LoginOrSwitch" xml:space="preserve">
     <value>ログイン/切り替え</value>
   </data>
   <data name="Unknown" xml:space="preserve">
-    <value>未知</value>
+    <value>Unknown</value>
   </data>
   <data name="WelcomeBack" xml:space="preserve">
     <value>おかえり</value>
@@ -300,11 +300,11 @@
     <value>ウィンドウ レイアウトの適用</value>
   </data>
   <data name="MenuFusion" xml:space="preserve">
-    <value>深度合成(_F)</value>
+    <value>景深融合(_F)</value>
   </data>
 <data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
   <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>ファイルリストを表示</value></data>
-  <data name="Sol_MivCfg_View" xml:space="preserve"><value>表示</value></data>
+  <data name="Sol_MivCfg_View" xml:space="preserve"><value>View</value></data>
   <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>リストの高さ</value></data>
   <data name="Sol_MivCfg_ThumbSize" xml:space="preserve"><value>サムネイルサイズ</value></data>
   <data name="Sol_MivCfg_Thumbnail" xml:space="preserve"><value>サムネイル</value></data>
@@ -318,35 +318,35 @@
   <data name="Sol_FileInfo_Path" xml:space="preserve"><value>ファイルパス</value></data>
   <data name="Sol_FileInfo_Name" xml:space="preserve"><value>ファイル名</value></data>
   <data name="Sol_FileInfo_Dir" xml:space="preserve"><value>ディレクトリ</value></data>
-  <data name="Sol_FileInfo_Ext" xml:space="preserve"><value>拡張子</value></data>
+  <data name="Sol_FileInfo_Ext" xml:space="preserve"><value>扩展名</value></data>
   <data name="Sol_FileInfo_FileSize" xml:space="preserve"><value>ファイルサイズ</value></data>
   <data name="Sol_FileInfo_Size" xml:space="preserve"><value>サイズ</value></data>
-  <data name="Sol_FileInfo_Modified" xml:space="preserve"><value>更新日時</value></data>
-  <data name="Sol_FileInfo_Width" xml:space="preserve"><value>幅</value></data>
+  <data name="Sol_FileInfo_Modified" xml:space="preserve"><value>修改时间</value></data>
+  <data name="Sol_FileInfo_Width" xml:space="preserve"><value>Width</value></data>
   <data name="Sol_FileInfo_Height" xml:space="preserve"><value>高さ</value></data>
   <data name="Sol_FileInfo_Resolution" xml:space="preserve"><value>解像度</value></data>
   <data name="Sol_FileInfo_Exists" xml:space="preserve"><value>存在</value></data>
   <data name="Sol_FileInfo_FileNameLabel" xml:space="preserve"><value>ファイル名:</value></data>
   <data name="Sol_FileInfo_PathLabel" xml:space="preserve"><value>パス:</value></data>
   <data name="Sol_FileInfo_SizeLabel" xml:space="preserve"><value>サイズ:</value></data>
-  <data name="Sol_FileInfo_ResLabel" xml:space="preserve"><value>解像度:</value></data>
-  <data name="Sol_FileInfo_ModLabel" xml:space="preserve"><value>更新日時:</value></data>
-  <data name="Sol_FileInfo_Unknown" xml:space="preserve"><value>不明</value></data>
+  <data name="Sol_FileInfo_ResLabel" xml:space="preserve"><value>分辨率:</value></data>
+  <data name="Sol_FileInfo_ModLabel" xml:space="preserve"><value>修改时间:</value></data>
+  <data name="Sol_FileInfo_Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Sol_Editor_WebView2" xml:space="preserve"><value>WebView2エディタ</value></data>
   <data name="Sol_Editor_Image" xml:space="preserve"><value>画像エディタ</value></data>
   <data name="Sol_Editor_Text" xml:space="preserve"><value>テキストエディタ</value></data>
   <data name="Sol_Editor_Hex" xml:space="preserve"><value>Hexテキストエディタ</value></data>
   <data name="Sol_Editor_Project" xml:space="preserve"><value>画像エディタ</value></data>
   <data name="Sol_Editor_System" xml:space="preserve"><value>システムデフォルト</value></data>
-  <data name="Sol_Fusion_CudaAvail" xml:space="preserve"><value>CUDA: 利用可能</value></data>
-  <data name="Sol_Fusion_CudaUnavail" xml:space="preserve"><value>CUDA: 利用不可</value></data>
-  <data name="Sol_Fusion_Executing" xml:space="preserve"><value>融合実行中...</value></data>
+  <data name="Sol_Fusion_CudaAvail" xml:space="preserve"><value>CUDA: 可用</value></data>
+  <data name="Sol_Fusion_CudaUnavail" xml:space="preserve"><value>CUDA: 不可用</value></data>
+  <data name="Sol_Fusion_Executing" xml:space="preserve"><value>正在执行融合...</value></data>
   <data name="Sol_Fusion_Failed" xml:space="preserve"><value>融合失敗: {0}</value></data>
-  <data name="Sol_Fusion_Converting" xml:space="preserve"><value>融合完了、結果変換中...</value></data>
-  <data name="Sol_Fusion_Done" xml:space="preserve"><value>完了  融合: {0}</value></data>
+  <data name="Sol_Fusion_Converting" xml:space="preserve"><value>融合完成，正在转换结果...</value></data>
+  <data name="Sol_Fusion_Done" xml:space="preserve"><value>完成  融合: {0}</value></data>
   <data name="Sol_Fusion_MissingLib" xml:space="preserve"><value>ランタイムライブラリが見つかりません</value></data>
   <data name="Sol_Fusion_Error" xml:space="preserve"><value>融合エラー</value></data>
-  <data name="Sol_Fusion_Result" xml:space="preserve"><value>融合結果 - {0}</value></data>
+  <data name="Sol_Fusion_Result" xml:space="preserve"><value>融合结果 - {0}</value></data>
   <data name="Sol_Fusion_SelectMin2" xml:space="preserve"><value>少なくとも2つの画像ファイルを選択してください。</value></data>
   <data name="Sol_Fusion_Hint" xml:space="preserve"><value>ヒント</value></data>
   <data name="Sol_Fusion_FileNotExist" xml:space="preserve"><value>ファイルが存在しません: {0}</value></data>
@@ -357,10 +357,10 @@
   <data name="Sol_Fusion_AllFiles" xml:space="preserve"><value>すべてのファイル</value></data>
   <data name="Sol_Workspace_Home" xml:space="preserve"><value>  ホーム</value></data>
   <data name="Sol_Hex_LoadFailed" xml:space="preserve"><value>ファイルの読み込みに失敗しました: {0}</value></data>  <data name="Sol_Fusion_Title" xml:space="preserve">
-    <value>深度合成 (Fusion)</value>
+    <value>景深融合 (Fusion)</value>
   </data>
   <data name="Sol_Fusion_Label" xml:space="preserve">
-    <value>深度合成</value>
+    <value>景深融合</value>
   </data>
   <data name="Sol_Fusion_FileList" xml:space="preserve">
     <value>画像ファイルリスト（順番に）</value>
@@ -381,7 +381,7 @@
     <value>下へ ↓</value>
   </data>
   <data name="Sol_Fusion_Config" xml:space="preserve">
-    <value>合成設定</value>
+    <value>融合設定</value>
   </data>
   <data name="Sol_Fusion_Mode" xml:space="preserve">
     <value>計算モード：</value>
@@ -390,7 +390,7 @@
     <value>自動 (CUDA利用可能な場合GPUを使用)</value>
   </data>
   <data name="Sol_Fusion_Async" xml:space="preserve">
-    <value>GPU非同期 (CUDA Async)</value>
+    <value>GPU 异步 (CUDA Async)</value>
   </data>
   <data name="Sol_Fusion_Perf" xml:space="preserve">
     <value>パフォーマンス統計</value>
@@ -402,16 +402,16 @@
     <value>読み込み(ms)</value>
   </data>
   <data name="Sol_Fusion_FusionMs" xml:space="preserve">
-    <value>合成(ms)</value>
+    <value>融合(ms)</value>
   </data>
   <data name="Sol_Fusion_ConvertMs" xml:space="preserve">
-    <value>変換(ms)</value>
+    <value>转换(ms)</value>
   </data>
   <data name="Sol_Fusion_TotalMs" xml:space="preserve">
-    <value>合計(ms)</value>
+    <value>总计(ms)</value>
   </data>
   <data name="Sol_Fusion_ImageCount" xml:space="preserve">
-    <value>画像数</value>
+    <value>图像数</value>
   </data>
   <data name="Sol_Fusion_ClearBtn" xml:space="preserve">
     <value>クリア</value>
@@ -420,7 +420,7 @@
     <value>キャンセル</value>
   </data>
   <data name="Sol_Fusion_Execute" xml:space="preserve">
-    <value>合成実行</value>
+    <value>执行融合</value>
   </data>
   <data name="Sol_Miv_Loading" xml:space="preserve">
     <value>読み込み中...</value>
@@ -429,10 +429,10 @@
     <value>ファイルが存在しません</value>
   </data>
   <data name="Sol_Miv_Refresh" xml:space="preserve">
-    <value>更新</value>
+    <value>Refresh</value>
   </data>
   <data name="Sol_Miv_Settings" xml:space="preserve">
-    <value>設定</value>
+    <value>Settings</value>
   </data>
   <data name="Sol_Miv_OpenInExplorer" xml:space="preserve">
     <value>エクスプローラーで開く</value>
@@ -462,19 +462,19 @@
     <value>プロジェクトテンプレートを検索...</value>
   </data>
   <data name="Sol_AddProject_Name" xml:space="preserve">
-    <value>名前</value>
+    <value>Имя</value>
   </data>
   <data name="Sol_AddProject_CategoryCol" xml:space="preserve">
     <value>カテゴリ</value>
   </data>
   <data name="Sol_AddProject_Desc" xml:space="preserve">
-    <value>説明</value>
+    <value>Description</value>
   </data>
   <data name="Sol_AddProject_ProjectName" xml:space="preserve">
     <value>プロジェクト名：</value>
   </data>
   <data name="Sol_AddProject_Create" xml:space="preserve">
-    <value>作成</value>
+    <value>Create</value>
   </data>
   <data name="Sol_AddProject_Cancel" xml:space="preserve">
     <value>キャンセル</value>
@@ -489,19 +489,19 @@
     <value>テンプレートを検索...</value>
   </data>
   <data name="Sol_AddItem_Extension" xml:space="preserve">
-    <value>拡張子</value>
+    <value>扩展名</value>
   </data>
   <data name="Sol_AddItem_Name" xml:space="preserve">
-    <value>名前：</value>
+    <value>Name:</value>
   </data>
   <data name="Sol_AddItem_Add" xml:space="preserve">
-    <value>追加</value>
+    <value>Добавить</value>
   </data>
   <data name="Sol_AddItem_Cancel" xml:space="preserve">
     <value>キャンセル</value>
   </data>
   <data name="Sol_TreeView_New" xml:space="preserve">
-    <value>新規</value>
+    <value>New</value>
   </data>
   <data name="Sol_OpenAs" xml:space="preserve">
     <value>プログラムから開く</value>
@@ -531,7 +531,7 @@
     <value>画面クリア</value>
   </data>
   <data name="Sol_Terminate" xml:space="preserve">
-    <value>終了</value>
+    <value>终止</value>
   </data>
   <data name="Sol_TerminateTooltip" xml:space="preserve">
     <value>現在のターミナルプロセスを終了</value>
@@ -570,7 +570,7 @@
     <value>パスワードを再入力</value>
   </data>
   <data name="Sol_Register_Register" xml:space="preserve">
-    <value>登録</value>
+    <value>注册</value>
   </data>
   <data name="Sol_Register_Terms" xml:space="preserve">
     <value>登録によりColorVision利用規約に同意したものとみなされます</value>
@@ -591,7 +591,7 @@
     <value>新しいパスワード</value>
   </data>
   <data name="Sol_ChangePwd_NewPlaceholder" xml:space="preserve">
-    <value>6文字以上</value>
+    <value>至少6个字符</value>
   </data>
   <data name="Sol_ChangePwd_Confirm" xml:space="preserve">
     <value>新しいパスワードを確認</value>
@@ -600,7 +600,7 @@
     <value>新しいパスワードを再入力</value>
   </data>
   <data name="Sol_ChangePwd_Save" xml:space="preserve">
-    <value>保存</value>
+    <value>Save</value>
   </data>
   <data name="Sol_ChangePwd_Cancel" xml:space="preserve">
     <value>キャンセル</value>
@@ -621,16 +621,16 @@
     <value>パスワード</value>
   </data>
   <data name="Sol_CreateUser_PasswordDesc" xml:space="preserve">
-    <value>6文字以上</value>
+    <value>至少6个字符</value>
   </data>
   <data name="Sol_CreateUser_Role" xml:space="preserve">
-    <value>役割</value>
+    <value>角色</value>
   </data>
   <data name="Sol_CreateUser_RoleDesc" xml:space="preserve">
     <value>ユーザーの初期役割を選択</value>
   </data>
   <data name="Sol_CreateUser_Remark" xml:space="preserve">
-    <value>備考</value>
+    <value>备注</value>
   </data>
   <data name="Sol_CreateUser_RemarkDesc" xml:space="preserve">
     <value>ユーザーの説明（任意）</value>
@@ -666,7 +666,7 @@
     <value>役割管理</value>
   </data>
   <data name="Sol_UserMgr_RoleName" xml:space="preserve">
-    <value>役割名：</value>
+    <value>役割名:</value>
   </data>
   <data name="Sol_UserMgr_RoleNameTooltip" xml:space="preserve">
     <value>役割の表示名を入力</value>
@@ -678,7 +678,7 @@
     <value>役割の一意識別コードを入力</value>
   </data>
   <data name="Sol_UserMgr_Remark" xml:space="preserve">
-    <value>備考：</value>
+    <value>备注:</value>
   </data>
   <data name="Sol_UserMgr_RemarkTooltip" xml:space="preserve">
     <value>役割の説明</value>
@@ -690,19 +690,19 @@
     <value>権限管理</value>
   </data>
   <data name="Sol_UserMgr_Col_RoleName" xml:space="preserve">
-    <value>役割名</value>
+    <value>角色名称</value>
   </data>
   <data name="Sol_UserMgr_Col_RoleCode" xml:space="preserve">
     <value>役割コード</value>
   </data>
   <data name="Sol_UserMgr_Col_Remark" xml:space="preserve">
-    <value>備考</value>
+    <value>备注</value>
   </data>
   <data name="Sol_UserMgr_Col_Status" xml:space="preserve">
-    <value>状態</value>
+    <value>Состояние</value>
   </data>
   <data name="Sol_UserMgr_Col_CreateTime" xml:space="preserve">
-    <value>作成日時</value>
+    <value>Create Time</value>
   </data>
   <data name="Sol_UserMgr_SearchTooltip" xml:space="preserve">
     <value>ユーザー名を検索...</value>
@@ -717,13 +717,13 @@
     <value>ユーザー名</value>
   </data>
   <data name="Sol_UserMgr_Col_Role" xml:space="preserve">
-    <value>役割</value>
+    <value>角色</value>
   </data>
   <data name="Sol_UserMgr_Col_Delete" xml:space="preserve">
-    <value>削除</value>
+    <value>Delete</value>
   </data>
   <data name="Sol_UserMgr_Col_Action" xml:space="preserve">
-    <value>操作</value>
+    <value>Operation</value>
   </data>
   <data name="Sol_UserMgr_EditRoleTooltip" xml:space="preserve">
     <value>役割を編集</value>
@@ -759,7 +759,7 @@
     <value>キャンセル</value>
   </data>
   <data name="Sol_EditRoles_Save" xml:space="preserve">
-    <value>保存</value>
+    <value>Save</value>
   </data>
   <data name="Sol_EditUser_Title" xml:space="preserve">
     <value>ユーザー情報の編集</value>
@@ -774,40 +774,40 @@
     <value>メール</value>
   </data>
   <data name="Sol_EditUser_Phone" xml:space="preserve">
-    <value>電話</value>
+    <value>电话</value>
   </data>
   <data name="Sol_EditUser_PhonePlaceholder" xml:space="preserve">
-    <value>連絡先電話番号</value>
+    <value>联系电话</value>
   </data>
   <data name="Sol_EditUser_Company" xml:space="preserve">
-    <value>会社</value>
+    <value>公司</value>
   </data>
   <data name="Sol_EditUser_CompanyPlaceholder" xml:space="preserve">
-    <value>会社名</value>
+    <value>公司名称</value>
   </data>
   <data name="Sol_EditUser_Dept" xml:space="preserve">
-    <value>部門</value>
+    <value>部门</value>
   </data>
   <data name="Sol_EditUser_DeptPlaceholder" xml:space="preserve">
-    <value>所属部門</value>
+    <value>所属部门</value>
   </data>
   <data name="Sol_EditUser_Position" xml:space="preserve">
-    <value>役職</value>
+    <value>职位</value>
   </data>
   <data name="Sol_EditUser_PositionPlaceholder" xml:space="preserve">
-    <value>役職名</value>
+    <value>职位名称</value>
   </data>
   <data name="Sol_EditUser_Address" xml:space="preserve">
-    <value>住所</value>
+    <value>Address</value>
   </data>
   <data name="Sol_EditUser_AddressPlaceholder" xml:space="preserve">
-    <value>連絡先住所</value>
+    <value>联系Address</value>
   </data>
   <data name="Sol_EditUser_Remark" xml:space="preserve">
-    <value>備考</value>
+    <value>备注</value>
   </data>
   <data name="Sol_EditUser_Save" xml:space="preserve">
-    <value>保存</value>
+    <value>Save</value>
   </data>
   <data name="Sol_EditUser_Cancel" xml:space="preserve">
     <value>キャンセル</value>
@@ -825,22 +825,22 @@
     <value>利用可能な権限</value>
   </data>
   <data name="Sol_PermMgr_SelectAll" xml:space="preserve">
-    <value>✓ 全選択</value>
+    <value>✓ Select All</value>
   </data>
   <data name="Sol_PermMgr_DeselectAll" xml:space="preserve">
-    <value>✗ 全解除</value>
+    <value>✗ 全不选</value>
   </data>
   <data name="Sol_PermMgr_CurrentRole" xml:space="preserve">
     <value>現在の役割：</value>
   </data>
   <data name="Sol_PermMgr_NotSelected" xml:space="preserve">
-    <value>未選択</value>
+    <value>Not Selected</value>
   </data>
   <data name="Sol_PermMgr_Save" xml:space="preserve">
     <value>権限割り当てを保存</value>
   </data>
   <data name="Sol_PermMgr_Ready" xml:space="preserve">
-    <value>準備完了</value>
+    <value>就绪</value>
   </data>
   <data name="Sol_RbacMgr_LoginTooltip" xml:space="preserve">
     <value>クリックしてログインまたはアカウントを切り替え</value>

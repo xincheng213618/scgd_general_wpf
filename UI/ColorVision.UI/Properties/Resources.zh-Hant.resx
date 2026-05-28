@@ -68,7 +68,7 @@
     <value>工具(_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>帮助(_H)</value>
+    <value>幫助(_H)</value>
   </data>
   <data name="GlobalMode" xml:space="preserve">
     <value>全局</value>
@@ -86,7 +86,7 @@
     <value>點擊設置快捷鍵</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文（簡體中文）</value>
+    <value>簡體中文（簡體中文）</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
     <value>繁體中文</value>
@@ -176,7 +176,7 @@
     <value>目前速度：</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
-    <value>打开(_O)</value>
+    <value>打開(_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
     <value>儲存(_S)</value>
@@ -425,7 +425,7 @@
     <value>echo 安排延遲清理臨時目錄與腳本...</value>
   </data>
   <data name="EchoUpdateComplete" xml:space="preserve">
-    <value>echo 更新完成。（清理在後台進行）</value>
+    <value>echo 更新完成。（清理在後臺進行）</value>
   </data>
   <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
     <value>Application.Current 未初始化</value>

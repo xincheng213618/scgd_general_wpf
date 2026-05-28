@@ -133,7 +133,7 @@
     <value>について</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
-    <value>自動起動</value>
+    <value>Автозапуск (может не удаться)</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
@@ -187,7 +187,7 @@
     <value>ColorVision アップデーター</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>負荷</value>
+    <value>Загрузка</value>
   </data>
   <data name="ConfigurationComplete" xml:space="preserve">
     <value>設定が完了しました</value>
@@ -208,7 +208,7 @@
     <value>更新する</value>
   </data>
   <data name="ServiceAgreement" xml:space="preserve">
-    <value>役務契約</value>
+    <value>Соглашение об услугах</value>
   </data>
   <data name="ApplicationExit" xml:space="preserve">
     <value>プログラムは終了します</value>
@@ -232,7 +232,7 @@
     <value>ビルド日</value>
   </data>
   <data name="Search" xml:space="preserve">
-    <value>検索</value>
+    <value>Search</value>
   </data>
   <data name="Debugging" xml:space="preserve">
     <value>デバッグ</value>
@@ -241,10 +241,10 @@
     <value>少し</value>
   </data>
   <data name="ReleaseDate" xml:space="preserve">
-    <value>発売日</value>
+    <value>Дата выпуска</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>消去</value>
+    <value>Delete</value>
   </data>
   <data name="DumpFileSettings" xml:space="preserve">
     <value>ダンプファイルの設定</value>
@@ -298,7 +298,7 @@
     <value>ソフトウェアをロールバックするには、まずソフトウェアをアンインストールしてから再インストールするか、インストール後にパッケージを再インストールする必要があります。</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
-    <value>全画面表示</value>
+    <value>Полный экран</value>
   </data>
   <data name="TerminateUnresponsiveProcess" xml:space="preserve">
     <value>応答しないプロセスを終了する</value>
@@ -334,7 +334,7 @@
     <value>今すぐ更新</value>
   </data>
   <data name="UpdatePreviewUpdatingButtonText" xml:space="preserve">
-    <value>更新中...</value>
+    <value>Обновление...</value>
   </data>
   <data name="UpdatePreviewLaterButtonText" xml:space="preserve">
     <value>後で</value>
@@ -349,10 +349,10 @@
     <value>このバージョンをスキップ</value>
   </data>
   <data name="UpdatePreviewRequiredBadge" xml:space="preserve">
-    <value>必須</value>
+    <value>Обязательно</value>
   </data>
   <data name="UpdatePreviewUnknownVersion" xml:space="preserve">
-    <value>不明</value>
+    <value>Unknown</value>
   </data>
   <data name="UpdatePreviewApplicationUpdateCategory" xml:space="preserve">
     <value>アプリ更新</value>
@@ -478,13 +478,13 @@
     <value>現在のメッセージをコピー</value>
   </data>
   <data name="CopilotRetry" xml:space="preserve">
-    <value>再試行</value>
+    <value>Повторить</value>
   </data>
   <data name="CopilotRegenerateAnswer" xml:space="preserve">
     <value>現在の回答を再生成</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>更新</value>
+    <value>Refresh</value>
   </data>
   <data name="CopilotRefreshWebContext" xml:space="preserve">
     <value>Webコンテキストを再取得して回答を生成</value>
@@ -511,7 +511,7 @@
     <value>会話リストを折りたたむ</value>
   </data>
   <data name="CopilotConversations" xml:space="preserve">
-    <value>会話</value>
+    <value>Сеанс</value>
   </data>
   <data name="Rename" xml:space="preserve">
     <value>名前を変更</value>
@@ -529,7 +529,7 @@
     <value>まずベンダーを選択してから追加します。右側で互換性、アドレス、モデル、システムプロンプトを引き続き変更できます。</value>
   </data>
   <data name="CopilotName" xml:space="preserve">
-    <value>名前</value>
+    <value>Имя</value>
   </data>
   <data name="CopilotVendor" xml:space="preserve">
     <value>ベンダー</value>
@@ -544,7 +544,7 @@
     <value>最大トークン</value>
   </data>
   <data name="CopilotTemperature" xml:space="preserve">
-    <value>温度</value>
+    <value>Температура</value>
   </data>
   <data name="CopilotToolRounds" xml:space="preserve">
     <value>ツールラウンド</value>
@@ -559,10 +559,10 @@
     <value>キャンセル</value>
   </data>
   <data name="Save" xml:space="preserve">
-    <value>保存</value>
+    <value>Save</value>
   </data>
   <data name="CopilotExceptionDiagnosis" xml:space="preserve">
-    <value>例外診断</value>
+    <value>Диагностика исключений</value>
   </data>
   <data name="CopilotUnhandledException" xml:space="preserve">
     <value>ColorVisionが未処理の例外をキャッチしました</value>
@@ -595,13 +595,13 @@
     <value>AIに質問</value>
   </data>
   <data name="CopilotGoogleSearch" xml:space="preserve">
-    <value>Google検索</value>
+    <value>Google Search</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>閉じる</value>
   </data>
   <data name="Input" xml:space="preserve">
-    <value>入力</value>
+    <value>Ввод</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>

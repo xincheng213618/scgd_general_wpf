@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Search" xml:space="preserve">
-    <value>検索</value>
+    <value>Search</value>
   </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>構成管理ウィンドウ</value>
@@ -166,7 +166,7 @@
     <value>OpenViewDllバージョン</value>
   </data>
   <data name="Restart" xml:space="preserve">
-    <value>再起動</value>
+    <value>重启</value>
   </data>
   <data name="UpdateAll" xml:space="preserve">
     <value>すべて更新</value>
@@ -193,10 +193,10 @@
     <value>{0}で並べ替え</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文 (繁体字中国語)</value>
+    <value>繁體中文（繁体中文）</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文 (簡体字中国語)</value>
+    <value>简体中文</value>
   </data>
   <data name="WriteConfigFileFailed" xml:space="preserve">
     <value>構成ファイル{0}の書き込みに失敗しました</value>
@@ -205,7 +205,7 @@
     <value>独立したウィンドウ</value>
   </data>
   <data name="WindowHidden" xml:space="preserve">
-    <value>非表示</value>
+    <value>Hide</value>
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>表示モード9</value>
@@ -346,7 +346,7 @@
     <value>exeNameを空にすることはできません</value>
   </data>
   <data name="Execute" xml:space="preserve">
-    <value>実行</value>
+    <value>执行</value>
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>エラーが発生しました</value>
@@ -397,7 +397,7 @@
     <value>ダウンロード</value>
   </data>
   <data name="Descending" xml:space="preserve">
-    <value>降順</value>
+    <value>降序</value>
   </data>
   <data name="DependencyVersionInsufficient" xml:space="preserve">
     <value>依存関係{0}のバージョンが不足しています、必要: {1}、実際: {2}</value>
@@ -409,19 +409,19 @@
     <value>依存関係{0}のバージョンチェック時に例外が発生しました: {1}</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>消去</value>
+    <value>Delete</value>
   </data>
   <data name="CurrentSpeed" xml:space="preserve">
     <value>現在の速度:</value>
   </data>
   <data name="ConfirmUpdate" xml:space="preserve">
-    <value>更新</value>
+    <value>Confirm Update</value>
   </data>
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>プラグイン{0}を削除しますか？</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>閉鎖</value>
+    <value>Close</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>クリア</value>
@@ -445,7 +445,7 @@
     <value>baseDirを空にすることはできません</value>
   </data>
   <data name="Ascending" xml:space="preserve">
-    <value>昇順</value>
+    <value>升序</value>
   </data>
   <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
     <value>Application.Currentが初期化されていません</value>
@@ -454,7 +454,7 @@
     <value>すべてのファイル (*.*)|*.*</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>負荷</value>
+    <value>Загрузка</value>
   </data>
   <data name="ThirdPartyApps" xml:space="preserve">
     <value>サードパーティ製アプリケーション管理</value>
@@ -499,7 +499,7 @@
     <value>選択した項目を削除</value>
   </data>
   <data name="SearchButton" xml:space="preserve">
-    <value>検索</value>
+    <value>Search</value>
   </data>
   <data name="OpenDownloadFolder" xml:space="preserve">
     <value>ダウンロードディレクトリを開く</value>
@@ -511,7 +511,7 @@
     <value>スケジュール</value>
   </data>
   <data name="StatusHeader" xml:space="preserve">
-    <value>州</value>
+    <value>Состояние</value>
   </data>
   <data name="Speed" xml:space="preserve">
     <value>スピード</value>
@@ -520,7 +520,7 @@
     <value>ファイルサイズ</value>
   </data>
   <data name="CreateTimeHeader" xml:space="preserve">
-    <value>作成時間</value>
+    <value>Create Time</value>
   </data>
   <data name="OpenFile" xml:space="preserve">
     <value>ファイルを開く</value>
@@ -568,13 +568,13 @@
     <value>ダウンロード中</value>
   </data>
   <data name="Completed" xml:space="preserve">
-    <value>完了</value>
+    <value>已完成</value>
   </data>
   <data name="Failed" xml:space="preserve">
-    <value>失敗</value>
+    <value>Failure</value>
   </data>
   <data name="Paused" xml:space="preserve">
-    <value>一時停止中</value>
+    <value>已暂停</value>
   </data>
   <data name="FileDeleted" xml:space="preserve">
     <value>ファイルは削除されました。</value>
@@ -640,7 +640,7 @@
     <value>HTTP/HTTPS/FTPリンク、マグネットリンク (magnet:) に対応、セミコロンまたは改行で区切り</value>
   </data>
   <data name="GlobalSpeed" xml:space="preserve">
-    <value>速度: {0}</value>
+    <value>总速度: {0}</value>
   </data>
   <data name="ConfirmDeleteFile" xml:space="preserve">
     <value>ファイルがディスクに存在します。ファイルも削除しますか？</value>
@@ -661,7 +661,7 @@
     <value>カテゴリ</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>編集</value>
+    <value>Edit</value>
   </data>
   <data name="ConfirmDelete" xml:space="preserve">
     <value>削除の確認</value>

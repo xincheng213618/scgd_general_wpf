@@ -148,7 +148,7 @@
     <value>主題(H)</value>
   </data>
   <data name="ThemeUseSystem" xml:space="preserve">
-    <value>跟随系统</value>
+    <value>跟隨系統</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>透明視窗</value>
@@ -163,7 +163,7 @@
     <value>否</value>
   </data>
   <data name="OK" xml:space="preserve">
-    <value>确认</value>
+    <value>確認</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>

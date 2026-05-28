@@ -118,12 +118,12 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Common_MinThreePoints" xml:space="preserve">
-    <value>至少需要三个点来构建凸包</value>
+    <value>至少需要三個點來構建凸包</value>
   </data>
   <data name="Common_RestartDesktop" xml:space="preserve">
-    <value>切换到Win10的右键菜单需要重启桌面，才能生效</value>
+    <value>切換到Win10的右鍵菜單需要重啓桌面，才能生效</value>
   </data>
   <data name="Common_AdminRestartFailed" xml:space="preserve">
-    <value>无法以管理员权限重新启动程序：</value>
+    <value>無法以管理員權限重新啓動程序：</value>
   </data>
 </root>

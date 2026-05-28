@@ -963,4 +963,31 @@ MaxValue：8-bit -&gt; 255，16-bit -&gt; 65535</value>
   <data name="UnexpectedErrorOccurred" xml:space="preserve">
     <value>发生意外错误：{0}</value>
   </data>
+  <data name="SerialPortUnknownDevice" xml:space="preserve">
+    <value>未知设备</value>
+  </data>
+  <data name="SerialPortChecking" xml:space="preserve">
+    <value>检测中...</value>
+  </data>
+  <data name="SerialPortCheckingDetail" xml:space="preserve">
+    <value>正在检测端口状态...</value>
+  </data>
+  <data name="SerialPortAvailable" xml:space="preserve">
+    <value>可用</value>
+  </data>
+  <data name="SerialPortAvailableDetail" xml:space="preserve">
+    <value>端口空闲，可直接连接</value>
+  </data>
+  <data name="SerialPortOccupiedShort" xml:space="preserve">
+    <value>占用</value>
+  </data>
+  <data name="SerialPortOccupiedDetail" xml:space="preserve">
+    <value>端口已被其他程序占用 (Unauthorized Access)</value>
+  </data>
+  <data name="SerialPortErrorShort" xml:space="preserve">
+    <value>异常</value>
+  </data>
+  <data name="SerialPortOpenFailedDetail" xml:space="preserve">
+    <value>无法打开端口: {0}</value>
+  </data>
 </root>
