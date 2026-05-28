@@ -3804,4 +3804,31 @@ MaxValue : 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
   <data name="Update" xml:space="preserve">
     <value>Mettre à jour</value>
   </data>
+  <data name="SerialPortUnknownDevice" xml:space="preserve">
+    <value>Appareil inconnu</value>
+  </data>
+  <data name="SerialPortChecking" xml:space="preserve">
+    <value>Vérification...</value>
+  </data>
+  <data name="SerialPortCheckingDetail" xml:space="preserve">
+    <value>Vérification de l'état du port...</value>
+  </data>
+  <data name="SerialPortAvailable" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="SerialPortAvailableDetail" xml:space="preserve">
+    <value>Le port est libre et prêt à être connecté</value>
+  </data>
+  <data name="SerialPortOccupiedShort" xml:space="preserve">
+    <value>Occupé</value>
+  </data>
+  <data name="SerialPortOccupiedDetail" xml:space="preserve">
+    <value>Le port est déjà utilisé par un autre programme (Unauthorized Access)</value>
+  </data>
+  <data name="SerialPortErrorShort" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
+  <data name="SerialPortOpenFailedDetail" xml:space="preserve">
+    <value>Impossible d'ouvrir le port : {0}</value>
+  </data>
 </root>

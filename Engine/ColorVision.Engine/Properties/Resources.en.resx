@@ -5728,4 +5728,31 @@ MaxValue: 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
   <data name="Update" xml:space="preserve">
     <value>Update</value>
   </data>
+  <data name="SerialPortUnknownDevice" xml:space="preserve">
+    <value>Unknown device</value>
+  </data>
+  <data name="SerialPortChecking" xml:space="preserve">
+    <value>Checking...</value>
+  </data>
+  <data name="SerialPortCheckingDetail" xml:space="preserve">
+    <value>Checking port status...</value>
+  </data>
+  <data name="SerialPortAvailable" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="SerialPortAvailableDetail" xml:space="preserve">
+    <value>Port is idle and ready to connect</value>
+  </data>
+  <data name="SerialPortOccupiedShort" xml:space="preserve">
+    <value>Busy</value>
+  </data>
+  <data name="SerialPortOccupiedDetail" xml:space="preserve">
+    <value>Port is already in use by another program (Unauthorized Access)</value>
+  </data>
+  <data name="SerialPortErrorShort" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="SerialPortOpenFailedDetail" xml:space="preserve">
+    <value>Unable to open port: {0}</value>
+  </data>
 </root>

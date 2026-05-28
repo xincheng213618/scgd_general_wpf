@@ -63,6 +63,7 @@ namespace ColorVision.Engine.Templates.Flow
         Stopwatch stopwatch = new Stopwatch();
         private int _pendingUiUpdate;
         private CancellationTokenSource _refreshCts;
+        private bool _suppressSelectionRefresh;
 
         public DisplayFlow(FlowEngineManager flowEngineManager)
         {
@@ -106,7 +107,10 @@ namespace ColorVision.Engine.Templates.Flow
                         LastFlowTime = time;
 
                 }
-                _ = DebouncedRefresh();
+                if (!_suppressSelectionRefresh)
+                {
+                    _ = DebouncedRefresh();
+                }
             };
 
 
@@ -156,8 +160,35 @@ namespace ColorVision.Engine.Templates.Flow
             await Refresh();
         }
 
+        private void CancelPendingRefresh()
+        {
+            _refreshCts?.Cancel();
+            _refreshCts?.Dispose();
+            _refreshCts = null;
+        }
+
+        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate, bool waitReady)
+        {
+            CancelPendingRefresh();
+
+            _suppressSelectionRefresh = true;
+            try
+            {
+                ComboBoxFlow.SelectedItem = flowTemplate;
+                FlowEngineManager.SlectFlowParam = flowTemplate.Value;
+                FlowEngineManager.TemplateFlowParamsIndex = TemplateFlow.Params.IndexOf(flowTemplate);
+                FlowEngineConfig.Instance.LastSelectFlow = flowTemplate.Id;
+            }
+            finally
+            {
+                _suppressSelectionRefresh = false;
+            }
+
+            await Refresh(waitReady);
+        }
+
         bool IsRefresh;
-        public async Task Refresh()
+        public async Task Refresh(bool waitReady = false)
         {
             if (IsRefresh) return;
             IsRefresh = true;
@@ -192,7 +223,7 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeEndEvent -= nodeEndEvent;
                 }
                 View.FlowEngineControl.FlowClear();
-                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens, waitReady);
 
                 FlowEngineManager.SlectFlowParam = flowParam;
 
@@ -281,11 +312,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return null;
             }
 
-            ComboBoxFlow.SelectedItem = flowTemplate;
-            FlowEngineManager.SlectFlowParam = flowTemplate.Value;
-            FlowEngineManager.TemplateFlowParamsIndex = TemplateFlow.Params.IndexOf(flowTemplate);
-            FlowEngineConfig.Instance.LastSelectFlow = flowTemplate.Id;
-            await Refresh();
+            await SelectFlowTemplateAsync(flowTemplate, waitReady: true);
             return await RunFlowAndWaitAsync();
         }
 

@@ -703,10 +703,10 @@
     <value>フォーカス分析</value>
   </data>
   <data name="关注点布点" xml:space="preserve">
-    <value>焦点と展開</value>
+    <value>フォーカスポイント配置</value>
   </data>
   <data name="03_1 关注点" xml:space="preserve">
-    <value>031 フォーカス</value>
+    <value>03_1 フォーカス</value>
   </data>
   <data name="通用相机" xml:space="preserve">
     <value>一般的なカメラ</value>
@@ -1040,5 +1040,11 @@
   </data>
   <data name="Bit8" xml:space="preserve">
     <value>Bit8</value>
+  </data>
+  <data name="LockOption" xml:space="preserve">
+    <value>ポートをロック</value>
+  </data>
+  <data name="LockLocation" xml:space="preserve">
+    <value>位置をロック</value>
   </data>
 </root>

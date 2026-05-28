@@ -3801,4 +3801,31 @@ MaxValue: 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
   <data name="Update" xml:space="preserve">
     <value>Обновить</value>
   </data>
+  <data name="SerialPortUnknownDevice" xml:space="preserve">
+    <value>Неизвестное устройство</value>
+  </data>
+  <data name="SerialPortChecking" xml:space="preserve">
+    <value>Проверка...</value>
+  </data>
+  <data name="SerialPortCheckingDetail" xml:space="preserve">
+    <value>Проверка состояния порта...</value>
+  </data>
+  <data name="SerialPortAvailable" xml:space="preserve">
+    <value>Доступен</value>
+  </data>
+  <data name="SerialPortAvailableDetail" xml:space="preserve">
+    <value>Порт свободен и готов к подключению</value>
+  </data>
+  <data name="SerialPortOccupiedShort" xml:space="preserve">
+    <value>Занят</value>
+  </data>
+  <data name="SerialPortOccupiedDetail" xml:space="preserve">
+    <value>Порт уже занят другой программой (Unauthorized Access)</value>
+  </data>
+  <data name="SerialPortErrorShort" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="SerialPortOpenFailedDetail" xml:space="preserve">
+    <value>Не удалось открыть порт: {0}</value>
+  </data>
 </root>

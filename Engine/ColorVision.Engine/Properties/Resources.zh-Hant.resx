@@ -1897,7 +1897,8 @@
   </data>
   <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
     <value>您是否清空已經建立流程
-清空後自動儲存關閉</value>
+
+清空後自動儲存關閉</value>
   </data>
   <data name="FlowEditor" xml:space="preserve">
     <value>流程編輯器</value>
@@ -3804,5 +3805,32 @@ MaxValue：8-bit -&gt; 255，16-bit -&gt; 65535</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>更新</value>
+  </data>
+  <data name="SerialPortUnknownDevice" xml:space="preserve">
+    <value>未知裝置</value>
+  </data>
+  <data name="SerialPortChecking" xml:space="preserve">
+    <value>檢查中...</value>
+  </data>
+  <data name="SerialPortCheckingDetail" xml:space="preserve">
+    <value>正在檢查連接埠狀態...</value>
+  </data>
+  <data name="SerialPortAvailable" xml:space="preserve">
+    <value>可用</value>
+  </data>
+  <data name="SerialPortAvailableDetail" xml:space="preserve">
+    <value>連接埠閒置，可直接連線</value>
+  </data>
+  <data name="SerialPortOccupiedShort" xml:space="preserve">
+    <value>佔用</value>
+  </data>
+  <data name="SerialPortOccupiedDetail" xml:space="preserve">
+    <value>連接埠已被其他程式佔用 (Unauthorized Access)</value>
+  </data>
+  <data name="SerialPortErrorShort" xml:space="preserve">
+    <value>異常</value>
+  </data>
+  <data name="SerialPortOpenFailedDetail" xml:space="preserve">
+    <value>無法開啟連接埠: {0}</value>
   </data>
 </root>

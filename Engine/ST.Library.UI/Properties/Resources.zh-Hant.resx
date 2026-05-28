@@ -963,4 +963,10 @@
   <data name="Bit8" xml:space="preserve">
     <value>Bit8</value>
   </data>
+  <data name="LockOption" xml:space="preserve">
+    <value>鎖定端口</value>
+  </data>
+  <data name="LockLocation" xml:space="preserve">
+    <value>鎖定位置</value>
+  </data>
 </root>

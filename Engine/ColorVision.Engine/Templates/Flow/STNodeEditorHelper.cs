@@ -593,6 +593,36 @@ namespace ColorVision.Engine.Templates.Flow
 
         #region ContextMenu
 
+        private static string LocalizeNodeMenuPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return path;
+
+            string displayPath = path.StartsWith("FlowEngineLib/", StringComparison.Ordinal)
+                ? path.Substring("FlowEngineLib/".Length)
+                : path;
+
+            return string.Join("/", displayPath.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(LocalizeNodeMenuText));
+        }
+
+        private static string LocalizeNodeMenuText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return text;
+
+            string localized = ST.Library.UI.Lang.Get(text);
+            if (IsValidLocalizedMenuText(text, localized))
+                return localized;
+
+            localized = ST.Library.UI.Properties.Resources.ResourceManager.GetString(text);
+            return IsValidLocalizedMenuText(text, localized) ? localized : text;
+        }
+
+        private static bool IsValidLocalizedMenuText(string key, string? value)
+        {
+            return !string.IsNullOrWhiteSpace(value) && !string.Equals(value, $"[{key}]", StringComparison.Ordinal);
+        }
+
         public void AddNodeContext()
         {
             foreach (var item in STNodeEditor.Nodes)
@@ -602,8 +632,8 @@ namespace ColorVision.Engine.Templates.Flow
                     node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
                     node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
                     node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
-                    node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
-                    node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+                    node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockOption)), null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+                    node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockLocation)), null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
                 }
             }
         }
@@ -615,8 +645,8 @@ namespace ColorVision.Engine.Templates.Flow
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
             node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
-            node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
-            node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+            node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockOption)), null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+            node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockLocation)), null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
         }
 
         public void CopySTNode(STNode sTNode)
@@ -672,7 +702,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                     foreach (var nodetype in values.OrderBy(x => x.Key, Comparer<string>.Create((x, y) => Common.NativeMethods.Shlwapi.CompareLogical(x, y))))
                     {
-                        string header = nodetype.Key.Replace("FlowEngineLib/", "");
+                        string header = LocalizeNodeMenuPath(nodetype.Key);
                         var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(header);
 
 
@@ -682,7 +712,7 @@ namespace ColorVision.Engine.Templates.Flow
                             {
                                 if (Activator.CreateInstance(type) is STNode sTNode)
                                 {
-                                    toolStripItem.DropDownItems.Add(sTNode.Title, null, (s, e) =>
+                                    toolStripItem.DropDownItems.Add(LocalizeNodeMenuText(sTNode.Title), null, (s, e) =>
                                     {
                                         STNode sTNode1 = (STNode)Activator.CreateInstance(type);
                                         if (sTNode1 != null)

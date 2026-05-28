@@ -3801,4 +3801,31 @@ MaxValue: 8-bit -&gt; 255、16-bit -&gt; 65535</value>
   <data name="Update" xml:space="preserve">
     <value>更新</value>
   </data>
+  <data name="SerialPortUnknownDevice" xml:space="preserve">
+    <value>不明なデバイス</value>
+  </data>
+  <data name="SerialPortChecking" xml:space="preserve">
+    <value>確認中...</value>
+  </data>
+  <data name="SerialPortCheckingDetail" xml:space="preserve">
+    <value>ポート状態を確認しています...</value>
+  </data>
+  <data name="SerialPortAvailable" xml:space="preserve">
+    <value>利用可能</value>
+  </data>
+  <data name="SerialPortAvailableDetail" xml:space="preserve">
+    <value>ポートは空いており、そのまま接続できます</value>
+  </data>
+  <data name="SerialPortOccupiedShort" xml:space="preserve">
+    <value>使用中</value>
+  </data>
+  <data name="SerialPortOccupiedDetail" xml:space="preserve">
+    <value>ポートは他のプログラムによって使用されています (Unauthorized Access)</value>
+  </data>
+  <data name="SerialPortErrorShort" xml:space="preserve">
+    <value>異常</value>
+  </data>
+  <data name="SerialPortOpenFailedDetail" xml:space="preserve">
+    <value>ポートを開けません: {0}</value>
+  </data>
 </root>

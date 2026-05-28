@@ -42,7 +42,7 @@ namespace ColorVision.Engine.PropertyEditor
 
             Button btnRefresh = new Button
             {
-                Content = "刷新",
+                Content = GetResourceText("Refresh"),
                 Margin = new Thickness(5, 0, 0, 0),
                 MinWidth = 50,
             };
@@ -109,7 +109,7 @@ namespace ColorVision.Engine.PropertyEditor
                     // 降级处理：如果底层获取失败，回退到原生的 GetPortNames
                     foreach (var p in SerialPort.GetPortNames())
                     {
-                        devices.Add(new Win32DeviceMgmt.DeviceInfo { name = p, description = "未知设备", bus_description = "" });
+                        devices.Add(new Win32DeviceMgmt.DeviceInfo { name = p, description = GetResourceText("SerialPortUnknownDevice"), bus_description = "" });
                     }
                 }
 
@@ -118,9 +118,9 @@ namespace ColorVision.Engine.PropertyEditor
                     Name = d.name,
                     // 优先显示 BusDescription，如果没有则显示 Description
                     BusDescription = !string.IsNullOrWhiteSpace(d.bus_description) ? d.bus_description : d.description,
-                    Status = "检测中...",
+                    Status = GetResourceText("SerialPortChecking"),
                     Color = Brushes.Gray,
-                    ErrorDetail = "正在检测端口状态..."
+                    ErrorDetail = GetResourceText("SerialPortCheckingDetail")
                 }).ToList();
 
                 combo.ItemsSource = initialModels;
@@ -140,6 +140,11 @@ namespace ColorVision.Engine.PropertyEditor
             return dockPanel;
         }
 
+        private static string GetResourceText(string key)
+        {
+            return ColorVision.Engine.Properties.Resources.ResourceManager.GetString(key) ?? key;
+        }
+
         private static void CheckPortStatus(SerialPortModel model)
         {
             try
@@ -149,9 +154,9 @@ namespace ColorVision.Engine.PropertyEditor
                     serialPort.Open();
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        model.Status = "可用";
+                        model.Status = GetResourceText("SerialPortAvailable");
                         model.Color = Brushes.Green;
-                        model.ErrorDetail = "端口空闲，可直接连接";
+                        model.ErrorDetail = GetResourceText("SerialPortAvailableDetail");
                     });
                 }
             }
@@ -159,18 +164,18 @@ namespace ColorVision.Engine.PropertyEditor
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    model.Status = "占用";
+                    model.Status = GetResourceText("SerialPortOccupiedShort");
                     model.Color = Brushes.Red;
-                    model.ErrorDetail = "端口已被其他程序占用 (Unauthorized Access)";
+                    model.ErrorDetail = GetResourceText("SerialPortOccupiedDetail");
                 });
             }
             catch (Exception ex)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    model.Status = "异常";
+                    model.Status = GetResourceText("SerialPortErrorShort");
                     model.Color = Brushes.Orange;
-                    model.ErrorDetail = $"无法打开端口: {ex.Message}";
+                    model.ErrorDetail = string.Format(GetResourceText("SerialPortOpenFailedDetail"), ex.Message);
                 });
             }
         }
