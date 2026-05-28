@@ -118,12 +118,12 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Common_MinThreePoints" xml:space="preserve">
-    <value>至少需要三个点来构建凸包</value>
+    <value>볼록 껍질을 구축하려면 최소 3개의 점이 필요합니다</value>
   </data>
   <data name="Common_RestartDesktop" xml:space="preserve">
-    <value>切换到Win10的右键菜单需要重启桌面，才能生效</value>
+    <value>Win10 우클릭 메뉴로 전환하려면 데스크톱을 다시 시작해야 합니다</value>
   </data>
   <data name="Common_AdminRestartFailed" xml:space="preserve">
-    <value>无法以管理员权限重新启动程序：</value>
+    <value>관리자 권한으로 다시 시작하지 못했습니다：</value>
   </data>
 </root>
