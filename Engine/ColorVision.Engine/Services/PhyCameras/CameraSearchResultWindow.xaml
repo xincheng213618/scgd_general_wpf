@@ -65,7 +65,13 @@
                       CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                       Background="Transparent" BorderThickness="0">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding CameraModel}" Width="140"/>
+                    <DataGridTemplateColumn Header="{x:Static properties:Resources.Type}" Width="220">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding SupportedCameraModelsText}" ToolTip="{Binding SupportedCameraModelsText}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Status}" Binding="{Binding StatusText}" Width="90"/>
                     <DataGridTextColumn Header="MD5" Binding="{Binding MD5Id}" Width="270"/>
                     <DataGridTextColumn Header="{x:Static properties:Resources.CameraID}" Binding="{Binding CameraId}" Width="*"/>

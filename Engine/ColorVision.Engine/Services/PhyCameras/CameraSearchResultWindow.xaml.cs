@@ -32,13 +32,35 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Models.Add(new CameraSearchModelViewModel(model));
             }
 
-            foreach (var camera in summary.Cameras.OrderBy(a => a.CameraModel).ThenBy(a => a.CameraId))
+            foreach (var cameraGroup in GroupDiscoveredCameras(summary.Cameras))
             {
-                Cameras.Add(new CameraSearchCameraViewModel(camera, phyCameraManager, existingCodes.Contains(camera.MD5Id)));
+                Cameras.Add(new CameraSearchCameraViewModel(cameraGroup, phyCameraManager, cameraGroup.Any(camera => existingCodes.Contains(camera.MD5Id))));
             }
 
             SummaryText = string.Format(Properties.Resources.FoundCamerasCount, Cameras.Count);
             ElapsedText = string.Format(Properties.Resources.SearchTotalElapsed, FormatElapsed(summary.Elapsed));
+        }
+
+        private static IEnumerable<IReadOnlyList<cvCameraCSLib.CameraDiscoveryItem>> GroupDiscoveredCameras(IEnumerable<cvCameraCSLib.CameraDiscoveryItem> cameras)
+        {
+            return cameras
+                .GroupBy(GetCameraGroupKey, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group
+                    .OrderBy(item => item.CameraModel)
+                    .ThenBy(item => item.CameraId ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ToList())
+                .OrderBy(group => group[0].CameraModel)
+                .ThenBy(group => group[0].CameraId ?? string.Empty, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string GetCameraGroupKey(cvCameraCSLib.CameraDiscoveryItem camera)
+        {
+            if (!string.IsNullOrWhiteSpace(camera.MD5Id))
+            {
+                return $"md5:{camera.MD5Id}";
+            }
+
+            return $"id:{camera.CameraId}|model:{camera.CameraModel}";
         }
 
         public static string FormatElapsed(TimeSpan elapsed)
@@ -72,6 +94,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         private readonly PhyCameraManager _phyCameraManager;
 
         public CameraModel CameraModel { get; }
+        public string SupportedCameraModelsText { get; }
         public string CameraId { get; }
         public string MD5Id { get; }
         public string SearchElapsedText { get; }
@@ -84,13 +107,21 @@ namespace ColorVision.Engine.Services.PhyCameras
         public string StatusText => IsCreated ? Properties.Resources.CameraStatusOnline : Properties.Resources.CameraStatusNotCreated;
         public string ActionText => IsCreated ? Properties.Resources.CameraActionCreated : Properties.Resources.CameraActionCreate;
 
-        public CameraSearchCameraViewModel(cvCameraCSLib.CameraDiscoveryItem camera, PhyCameraManager phyCameraManager, bool isCreated)
+        public CameraSearchCameraViewModel(IReadOnlyList<cvCameraCSLib.CameraDiscoveryItem> cameras, PhyCameraManager phyCameraManager, bool isCreated)
         {
+            if (cameras == null || cameras.Count == 0)
+            {
+                throw new ArgumentException("At least one discovered camera is required.", nameof(cameras));
+            }
+
+            var primaryCamera = cameras[0];
+
             _phyCameraManager = phyCameraManager;
-            CameraModel = camera.CameraModel;
-            CameraId = camera.CameraId;
-            MD5Id = camera.MD5Id;
-            SearchElapsedText = CameraSearchResultViewModel.FormatElapsed(camera.SearchElapsed);
+            CameraModel = primaryCamera.CameraModel;
+            SupportedCameraModelsText = string.Join(" / ", cameras.Select(camera => camera.CameraModel.ToString()).Distinct(StringComparer.Ordinal));
+            CameraId = cameras.Select(camera => camera.CameraId).FirstOrDefault(cameraId => !string.IsNullOrWhiteSpace(cameraId)) ?? string.Empty;
+            MD5Id = cameras.Select(camera => camera.MD5Id).FirstOrDefault(cameraId => !string.IsNullOrWhiteSpace(cameraId)) ?? string.Empty;
+            SearchElapsedText = CameraSearchResultViewModel.FormatElapsed(cameras.Max(camera => camera.SearchElapsed));
             _IsCreated = isCreated;
             CreateCommand = new RelayCommand(a => Create(), a => CanCreate);
         }
