@@ -643,4 +643,464 @@
   <data name="Draw_Edit" xml:space="preserve">
     <value>Редактировать</value>
   </data>
-<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data></root>
+<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
+  <data name="Algorithm_Green" xml:space="preserve">
+    <value>??</value>
+  </data>
+  <data name="Algorithm_GammaValue" xml:space="preserve">
+    <value>gamma value</value>
+  </data>
+  <data name="ThreeD_RenderSettings" xml:space="preserve">
+    <value>render Settings</value>
+  </data>
+  <data name="Sfr_MtfNotFound" xml:space="preserve">
+    <value>?????MTF</value>
+  </data>
+  <data name="ThreeD_Perspective" xml:space="preserve">
+    <value>perspective</value>
+  </data>
+  <data name="Graphic_Count" xml:space="preserve">
+    <value>Count:</value>
+  </data>
+  <data name="ThreeD_HeightScale" xml:space="preserve">
+    <value>HeightZoom</value>
+  </data>
+  <data name="ThreeD_MoveLeftToolTip" xml:space="preserve">
+    <value>left ? (L)</value>
+  </data>
+  <data name="Algorithm_AdjustWhiteBalance" xml:space="preserve">
+    <value>Adjust white balance</value>
+  </data>
+  <data name="Algorithm_Contrast" xml:space="preserve">
+    <value>Contrast</value>
+  </data>
+  <data name="ThreeD_ShowMaterial" xml:space="preserve">
+    <value>show ??</value>
+  </data>
+  <data name="PseudoColor_MinValue" xml:space="preserve">
+    <value>? small value</value>
+  </data>
+  <data name="Graphic_BottomRight" xml:space="preserve">
+    <value>Bottom Right</value>
+  </data>
+  <data name="ThreeD_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Desc_BinaryThresholdAuto" xml:space="preserve">
+    <value>2 value ?? value ，-1????(OTSU)</value>
+  </data>
+  <data name="Graphic_BottomLeft" xml:space="preserve">
+    <value>Bottom Left</value>
+  </data>
+  <data name="Desc_ExpectedCols" xml:space="preserve">
+    <value>? phase ??? number</value>
+  </data>
+  <data name="Desc_MaxKeyArea" xml:space="preserve">
+    <value>? large press ? surface ?( Pixel ), 0?? not limit ?</value>
+  </data>
+  <data name="Graphic_ArrayCountMin1" xml:space="preserve">
+    <value>dot ? number ?? not ? &lt; 1</value>
+  </data>
+  <data name="Graphic_ExportAnnotationsMenu" xml:space="preserve">
+    <value>export label ?</value>
+  </data>
+  <data name="Graphic_Radius" xml:space="preserve">
+    <value>Radius:</value>
+  </data>
+  <data name="Graphic_Top" xml:space="preserve">
+    <value>top :</value>
+  </data>
+  <data name="Graphic_CountMin1" xml:space="preserve">
+    <value>?? ? number not ? &lt; 1</value>
+  </data>
+  <data name="ThreeD_MoveBackToolTip" xml:space="preserve">
+    <value>Back (B)</value>
+  </data>
+  <data name="Algorithm_Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="ThreeD_Bottom" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="ThreeD_CameraPosition" xml:space="preserve">
+    <value>CameraPosition</value>
+  </data>
+  <data name="ThreeD_LeftViewToolTip" xml:space="preserve">
+    <value>left View</value>
+  </data>
+  <data name="PseudoColor_Type" xml:space="preserve">
+    <value>??? Type</value>
+  </data>
+  <data name="Graphic_ExportAnnotations" xml:space="preserve">
+    <value>export label ?</value>
+  </data>
+  <data name="Graphic_RectShape" xml:space="preserve">
+    <value>? shape</value>
+  </data>
+  <data name="ThreeD_Front" xml:space="preserve">
+    <value>front</value>
+  </data>
+  <data name="ThreeD_TargetResolutionX" xml:space="preserve">
+    <value>item label resolution X:</value>
+  </data>
+  <data name="ThreeD_ModelStructure" xml:space="preserve">
+    <value>? model ??</value>
+  </data>
+  <data name="ThreeD_Screenshot" xml:space="preserve">
+    <value>??</value>
+  </data>
+  <data name="PseudoColor_DefaultAutoRange" xml:space="preserve">
+    <value>????? surround</value>
+  </data>
+  <data name="ThreeD_Resolution" xml:space="preserve">
+    <value>Resolution</value>
+  </data>
+  <data name="ThreeD_IsolateSelected" xml:space="preserve">
+    <value>??? mid</value>
+  </data>
+  <data name="Graphic_TopRight" xml:space="preserve">
+    <value>Top Right</value>
+  </data>
+  <data name="PseudoColor_MaxValue" xml:space="preserve">
+    <value>? large value</value>
+  </data>
+  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+    <value>Frequency ?? Error</value>
+  </data>
+  <data name="Algorithm_BrightnessContrastTitle" xml:space="preserve">
+    <value>LuminanceContrastAdjust</value>
+  </data>
+  <data name="ThreeD_BackViewToolTip" xml:space="preserve">
+    <value>back View</value>
+  </data>
+  <data name="ThreeD_LookRightToolTip" xml:space="preserve">
+    <value>right ? (F)</value>
+  </data>
+  <data name="PseudoColor_CurrentDescription" xml:space="preserve">
+    <value>??? front ?? ??? Enable Status 、? front ?? and ? front ? surround 。 here ? modify ????， not ?? occurrence ?? value 。</value>
+  </data>
+  <data name="ThreeD_IsoViewToolTip" xml:space="preserve">
+    <value>rank axis View</value>
+  </data>
+  <data name="ThreeD_ExportModelToolTip" xml:space="preserve">
+    <value>export ? front 3D Grid ? OBJ or STL</value>
+  </data>
+  <data name="ThreeD_LookLeftToolTip" xml:space="preserve">
+    <value>left ? (D)</value>
+  </data>
+  <data name="Algorithm_EdgeDetectionTitle" xml:space="preserve">
+    <value>edge edge ?? (Canny)</value>
+  </data>
+  <data name="Graphic_Bottom" xml:space="preserve">
+    <value>bottom :</value>
+  </data>
+  <data name="ThreeD_ApplyNote" xml:space="preserve">
+    <value>? modify back ? dot ? Apply heavy new render</value>
+  </data>
+  <data name="Graphic_Circle" xml:space="preserve">
+    <value>circle</value>
+  </data>
+  <data name="ThreeD_BottomViewToolTip" xml:space="preserve">
+    <value>bottom View</value>
+  </data>
+  <data name="Algorithm_AdjustThreshold" xml:space="preserve">
+    <value>Adjust ? value</value>
+  </data>
+  <data name="ThreeD_LookDownToolTip" xml:space="preserve">
+    <value>bottom ? (C)</value>
+  </data>
+  <data name="ThreeD_MoveForwardToolTip" xml:space="preserve">
+    <value>Forward (T)</value>
+  </data>
+  <data name="Algorithm_ThresholdValue" xml:space="preserve">
+    <value>? value</value>
+  </data>
+  <data name="Desc_MarginRatio" xml:space="preserve">
+    <value>edge ??? ratio case (0~0.45)， zoom out ?? frame ?? stick ? press ?</value>
+  </data>
+  <data name="Graphic_Rows" xml:space="preserve">
+    <value>? number :</value>
+  </data>
+  <data name="ThreeD_ModelViewer" xml:space="preserve">
+    <value>3D? model ???</value>
+  </data>
+  <data name="ThreeD_ApplyRefresh" xml:space="preserve">
+    <value>Apply ? Refresh</value>
+  </data>
+  <data name="Algorithm_WhiteBalanceTitle" xml:space="preserve">
+    <value>white balance Adjust</value>
+  </data>
+  <data name="Graphic_ImageViewSettings" xml:space="preserve">
+    <value>? image Settings</value>
+  </data>
+  <data name="Sfr_ExportFailed" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Graphic_ImportAnnotations" xml:space="preserve">
+    <value>Import label ?</value>
+  </data>
+  <data name="ThreeD_FrontViewToolTip" xml:space="preserve">
+    <value>front View</value>
+  </data>
+  <data name="Artculation_ParamSettings" xml:space="preserve">
+    <value>clear degree ?? Parameter Settings</value>
+  </data>
+  <data name="ThreeD_Back" xml:space="preserve">
+    <value>back</value>
+  </data>
+  <data name="PseudoColor_DefaultPseudoColor" xml:space="preserve">
+    <value>????? value</value>
+  </data>
+  <data name="PseudoColor_DefaultDescription" xml:space="preserve">
+    <value>?? new ? image or Reset back ?? ????? Type and ??? surround open close ， not ???? lid ? front ?? Status 。</value>
+  </data>
+  <data name="Desc_BeadSize" xml:space="preserve">
+    <value>????</value>
+  </data>
+  <data name="Graphic_Left" xml:space="preserve">
+    <value>left :</value>
+  </data>
+  <data name="Algorithm_Red" xml:space="preserve">
+    <value>??</value>
+  </data>
+  <data name="Algorithm_SigmaStdDev" xml:space="preserve">
+    <value>Sigma ( label ??):</value>
+  </data>
+  <data name="ThreeD_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="Graphic_CenterPoint" xml:space="preserve">
+    <value>mid ? dot</value>
+  </data>
+  <data name="Graphic_Set" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Graphic_Height" xml:space="preserve">
+    <value>Height:</value>
+  </data>
+  <data name="Algorithm_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Graphic_Columns" xml:space="preserve">
+    <value>? number :</value>
+  </data>
+  <data name="ThreeD_Camera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="Algorithm_KernelSizeOdd" xml:space="preserve">
+    <value>? Size ( must ?? number ):</value>
+  </data>
+  <data name="Sfr_ExportSuccess" xml:space="preserve">
+    <value>Export Successful</value>
+  </data>
+  <data name="Algorithm_AdjustBrightnessContrast" xml:space="preserve">
+    <value>AdjustLuminanceandContrast</value>
+  </data>
+  <data name="ThreeD_RestoreAll" xml:space="preserve">
+    <value>Resumeall</value>
+  </data>
+  <data name="ThreeD_TopViewToolTip" xml:space="preserve">
+    <value>top View</value>
+  </data>
+  <data name="ThreeD_RightViewToolTip" xml:space="preserve">
+    <value>right View</value>
+  </data>
+  <data name="ThreeD_Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="ThreeD_LookDirection" xml:space="preserve">
+    <value>?? Direction</value>
+  </data>
+  <data name="Desc_MinKeyArea" xml:space="preserve">
+    <value>? small press ? surface ?( Pixel )</value>
+  </data>
+  <data name="PseudoColor_Group" xml:space="preserve">
+    <value>???</value>
+  </data>
+  <data name="ThreeD_DecreaseHeightToolTip" xml:space="preserve">
+    <value>subtract ? Height (Num- / -)</value>
+  </data>
+  <data name="Algorithm_AdjustGamma" xml:space="preserve">
+    <value>Adjust gamma value</value>
+  </data>
+  <data name="Algorithm_HighThreshold" xml:space="preserve">
+    <value>high ? value :</value>
+  </data>
+  <data name="ThreeD_OpenModel" xml:space="preserve">
+    <value>Open ? model</value>
+  </data>
+  <data name="Algorithm_ThresholdTitle" xml:space="preserve">
+    <value>? value ??</value>
+  </data>
+  <data name="Graphic_Angle" xml:space="preserve">
+    <value>Angle:</value>
+  </data>
+  <data name="ThreeD_Orthographic" xml:space="preserve">
+    <value>positive ?? shadow</value>
+  </data>
+  <data name="Algorithm_SfrMtfAnalysis" xml:space="preserve">
+    <value>SFR/MTF ??</value>
+  </data>
+  <data name="ThreeD_OpenModelToolTip" xml:space="preserve">
+    <value>Open ? model File</value>
+  </data>
+  <data name="Artculation_MenuHeader" xml:space="preserve">
+    <value>clear degree ??</value>
+  </data>
+  <data name="ThreeD_Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Graphic_ImportAnnotationsMenu" xml:space="preserve">
+    <value>Import label ?</value>
+  </data>
+  <data name="ThreeD_Projection" xml:space="preserve">
+    <value>? shadow</value>
+  </data>
+  <data name="Graphic_ClearAll" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="ThreeD_ShowTexture" xml:space="preserve">
+    <value>show stick ?</value>
+  </data>
+  <data name="ThreeD_IncreaseHeightToolTip" xml:space="preserve">
+    <value>? add Height (Num+ / +)</value>
+  </data>
+  <data name="Desc_MinBeadSize" xml:space="preserve">
+    <value>? small ???? ( Pixel )</value>
+  </data>
+  <data name="PseudoColor_AutoRange" xml:space="preserve">
+    <value>??? surround</value>
+  </data>
+  <data name="Graphic_Draw" xml:space="preserve">
+    <value>Draw</value>
+  </data>
+  <data name="ThreeD_ScreenshotToolTip" xml:space="preserve">
+    <value>Save ? front 3D View ?? slice</value>
+  </data>
+  <data name="ThreeD_LookUpToolTip" xml:space="preserve">
+    <value>top ? (A)</value>
+  </data>
+  <data name="Sfr_ExportSuccessMsg" xml:space="preserve">
+    <value>Data exported successfully to:</value>
+  </data>
+  <data name="ThreeD_View3D" xml:space="preserve">
+    <value>3DView</value>
+  </data>
+  <data name="Sfr_MtfInputError" xml:space="preserve">
+    <value>MTF?? Error</value>
+  </data>
+  <data name="Algorithm_LowThreshold" xml:space="preserve">
+    <value>?? value :</value>
+  </data>
+  <data name="Graphic_SetPoiArea" xml:space="preserve">
+    <value>Settings ? dot Region</value>
+  </data>
+  <data name="ThreeD_Rendering" xml:space="preserve">
+    <value>render</value>
+  </data>
+  <data name="Graphic_Quadrilateral" xml:space="preserve">
+    <value>4 edge shape</value>
+  </data>
+  <data name="Desc_MaxBeadSize" xml:space="preserve">
+    <value>? large ???? ( Pixel )</value>
+  </data>
+  <data name="PseudoColor_Enable" xml:space="preserve">
+    <value>Enable ???</value>
+  </data>
+  <data name="ThreeD_TargetResolutionY" xml:space="preserve">
+    <value>item label resolution Y:</value>
+  </data>
+  <data name="Sfr_FreqNotFound" xml:space="preserve">
+    <value>????? Frequency</value>
+  </data>
+  <data name="Artculation_ResultMsg" xml:space="preserve">
+    <value>? image clear degree ?? Result :</value>
+  </data>
+  <data name="PseudoColor_DefaultType" xml:space="preserve">
+    <value>????? Type</value>
+  </data>
+  <data name="ThreeD_ResetView" xml:space="preserve">
+    <value>Reset ??</value>
+  </data>
+  <data name="Graphic_FindLuminousAreaCorner" xml:space="preserve">
+    <value>Find Luminous Area Corners</value>
+  </data>
+  <data name="Algorithm_Brightness" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="ThreeD_View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Desc_BinaryThreshold" xml:space="preserve">
+    <value>2 value ?? value (0-255)</value>
+  </data>
+  <data name="ThreeD_Top" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="ThreeD_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Graphic_TopLeft" xml:space="preserve">
+    <value>Top Left</value>
+  </data>
+  <data name="Algorithm_MedianBlurTitle" xml:space="preserve">
+    <value>mid value Filter</value>
+  </data>
+  <data name="ThreeD_ExportModel" xml:space="preserve">
+    <value>export ? model</value>
+  </data>
+  <data name="ThreeD_PresetViews" xml:space="preserve">
+    <value>????</value>
+  </data>
+  <data name="Histogram_Title" xml:space="preserve">
+    <value>? square ? (Histogram)</value>
+  </data>
+  <data name="Graphic_Right" xml:space="preserve">
+    <value>right :</value>
+  </data>
+  <data name="Graphic_Width" xml:space="preserve">
+    <value>Width:</value>
+  </data>
+  <data name="Algorithm_GammaCorrectionTitle" xml:space="preserve">
+    <value>gamma Calibration</value>
+  </data>
+  <data name="PseudoColor_CurrentPseudoColor" xml:space="preserve">
+    <value>? front ???</value>
+  </data>
+  <data name="ThreeD_ResetViewToolTip" xml:space="preserve">
+    <value>Reset ?? (Home)</value>
+  </data>
+  <data name="Artculation_ResultTitle" xml:space="preserve">
+    <value>clear degree ??</value>
+  </data>
+  <data name="ThreeD_SettingsToolTip" xml:space="preserve">
+    <value>render resolution Settings</value>
+  </data>
+  <data name="Desc_ExpectedRows" xml:space="preserve">
+    <value>? phase ??? number</value>
+  </data>
+  <data name="ThreeD_PseudoColor" xml:space="preserve">
+    <value>???</value>
+  </data>
+  <data name="Graphic_CircleShape" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="ThreeD_Wireframe" xml:space="preserve">
+    <value>line frame ? style</value>
+  </data>
+  <data name="Algorithm_GaussianBlurTitle" xml:space="preserve">
+    <value>gaussian blur</value>
+  </data>
+  <data name="Algorithm_Blue" xml:space="preserve">
+    <value>??</value>
+  </data>
+  <data name="ThreeD_MoveRightToolTip" xml:space="preserve">
+    <value>right ? (R)</value>
+  </data>
+  <data name="ThreeD_Mouse" xml:space="preserve">
+    <value>Mouse</value>
+  </data>
+  <data name="ThreeD_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+</root>

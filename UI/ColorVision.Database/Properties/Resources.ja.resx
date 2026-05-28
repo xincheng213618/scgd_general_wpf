@@ -121,13 +121,13 @@
     <value>データベースを有効にする</value>
   </data>
   <data name="MysqlConnection" xml:space="preserve">
-    <value>MySql接続</value>
+    <value>MySql??</value>
   </data>
   <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>MySql接続設定</value>
+    <value>MySql????</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>消去</value>
+    <value>??</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>新しい設定ファイルを作成する</value>
@@ -142,7 +142,7 @@
     <value>設定ファイルをコピーする</value>
   </data>
   <data name="ConnectionName" xml:space="preserve">
-    <value>接続名</value>
+    <value>???</value>
   </data>
   <data name="UserName" xml:space="preserve">
     <value>ユーザー</value>
@@ -169,7 +169,7 @@
     <value>ログデータベースビューア</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>更新</value>
+    <value>Update</value>
   </data>
   <data name="ClearCache" xml:space="preserve">
     <value>キャッシュをクリア</value>
@@ -181,7 +181,7 @@
     <value>総レコード数:</value>
   </data>
   <data name="Date" xml:space="preserve">
-    <value>日付</value>
+    <value>??</value>
   </data>
   <data name="Level" xml:space="preserve">
     <value>レベル</value>
@@ -196,7 +196,7 @@
     <value>メッセージ</value>
   </data>
   <data name="Exception" xml:space="preserve">
-    <value>例外</value>
+    <value>case outer</value>
   </data>
   <data name="LoadFailed" xml:space="preserve">
     <value>読み込み失敗</value>
@@ -211,19 +211,19 @@
     <value>キャッシュのクリアに失敗しました</value>
   </data>
   <data name="Query" xml:space="preserve">
-    <value>検索</value>
+    <value>??</value>
   </data>
   <data name="StartDate" xml:space="preserve">
-    <value>開始日</value>
+    <value>? start ?</value>
   </data>
   <data name="EndDate" xml:space="preserve">
-    <value>終了日</value>
+    <value>? ?</value>
   </data>
   <data name="ShowDetail" xml:space="preserve">
-    <value>詳細表示</value>
+    <value>????</value>
   </data>
   <data name="DetailInfo" xml:space="preserve">
-    <value>詳細情報</value>
+    <value>????</value>
   </data>
   <data name="PageSize" xml:space="preserve">
     <value>ページサイズ:</value>

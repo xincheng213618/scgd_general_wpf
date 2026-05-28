@@ -86,10 +86,10 @@
     <value>Cliquez pour définir les touches de raccourci</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文 (Chinois simplifié)</value>
+    <value>? volume mid ? (Chinois simplifié)</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文 (Chinois traditionnel)</value>
+    <value>?? mid ? (Chinois traditionnel)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>Suivez le système</value>
@@ -104,7 +104,7 @@
     <value>Français</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>日本語 (Japonais)</value>
+    <value>? root ? (Japonais)</value>
   </data>
   <data name="ko" xml:space="preserve">
     <value>한국어 (Coréen)</value>
@@ -588,4 +588,61 @@
   <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>{0} slower than historical average.</value></data>
   <data name="UpdateRecovery_Restored" xml:space="preserve"><value>Previous update was incomplete. System has been restored to the pre-update version.</value></data>
   <data name="UpdateRecovery_Failed" xml:space="preserve"><value>Previous update was incomplete and automatic recovery failed. Please reinstall manually or check the backup directory.</value></data>
+  <data name="Name1" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ListEditor_ListCount" xml:space="preserve">
+    <value>[ List : {0} item ]</value>
+  </data>
+  <data name="EnableEverythingSearch" xml:space="preserve">
+    <value>EnableEverythingSearch</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteTitle" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="Color1" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Icon1" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ListItemEditor_FolderSelector" xml:space="preserve">
+    <value>File ? Select ?</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteAll" xml:space="preserve">
+    <value>OK ? Delete all {0} item ?？</value>
+  </data>
+  <data name="ListItemEditor_FileSelector" xml:space="preserve">
+    <value>File Select ?</value>
+  </data>
+  <data name="SearchEngine" xml:space="preserve">
+    <value>Search ??</value>
+  </data>
+  <data name="ListItemEditor_NestedList" xml:space="preserve">
+    <value>? sleeve List :</value>
+  </data>
+  <data name="ListItemEditor_Checkbox" xml:space="preserve">
+    <value>?? frame</value>
+  </data>
+  <data name="Bitmap1" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteAllTitle" xml:space="preserve">
+    <value>ConfirmallDelete</value>
+  </data>
+  <data name="ListItemEditor_Textbox" xml:space="preserve">
+    <value>? root frame</value>
+  </data>
+  <data name="EnableBrowserSearch" xml:space="preserve">
+    <value>Enable ??? Search</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteSelected" xml:space="preserve">
+    <value>OK ? Delete ? mid {0} item ?？</value>
+  </data>
+  <data name="ListItemEditor_Dropdown" xml:space="preserve">
+    <value>bottom pull Select</value>
+  </data>
+  <data name="EverythingPath" xml:space="preserve">
+    <value>EverythingPath</value>
+  </data>
 </root>

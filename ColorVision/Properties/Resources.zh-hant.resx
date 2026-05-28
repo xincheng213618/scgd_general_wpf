@@ -612,4 +612,676 @@
   <data name="OpenWithSystemDefault" xml:space="preserve">
     <value>系統預設開啟</value>
   </data>
+  <data name="CopilotChatAssistant" xml:space="preserve">
+    <value>對話助手</value>
+  </data>
+  <data name="AllowMultipleInstances" xml:space="preserve">
+    <value>允許程序多開</value>
+  </data>
+  <data name="CopilotFileNotExist" xml:space="preserve">
+    <value>文件當前不存在，無法讀取。</value>
+  </data>
+  <data name="CopilotReadLogFailed" xml:space="preserve">
+    <value>讀取最近日誌失敗。</value>
+  </data>
+  <data name="UpdatePluginIdLabel" xml:space="preserve">
+    <value>插件 ID：</value>
+  </data>
+  <data name="DesktopPetIdleTip1" xml:space="preserve">
+    <value>我在這兒，有消息會提醒你。</value>
+  </data>
+  <data name="CopilotContentTruncated" xml:space="preserve">
+    <value>...&amp;lt;內容已截斷，僅保留最近 {0} 字符。&amp;gt;</value>
+  </data>
+  <data name="DesktopPetShowMainWindow" xml:space="preserve">
+    <value>顯示主窗口</value>
+  </data>
+  <data name="CopilotModelLabel" xml:space="preserve">
+    <value>模型：</value>
+  </data>
+  <data name="UpdateScope" xml:space="preserve">
+    <value>更新範圍</value>
+  </data>
+  <data name="CopilotFileReadFailed" xml:space="preserve">
+    <value>讀取失敗：{0}</value>
+  </data>
+  <data name="CopilotOccurredTime" xml:space="preserve">
+    <value>發生時間：</value>
+  </data>
+  <data name="CopilotNoRecentLog" xml:space="preserve">
+    <value>未找到最近日誌。</value>
+  </data>
+  <data name="DesktopPetIdleTip2" xml:space="preserve">
+    <value>休息一下眼睛，順手保存當前工作。</value>
+  </data>
+  <data name="CopilotTokenUsageAfterSend" xml:space="preserve">
+    <value>發送後顯示真實 token usage</value>
+  </data>
+  <data name="CopilotContentLargeTruncated" xml:space="preserve">
+    <value>內容較大，顯示已截斷。</value>
+  </data>
+  <data name="CopilotDocsIndexNotPublished" xml:space="preserve">
+    <value>在線文檔索引尚未發佈，請確認 GitHub Pages 已完成最新部署。</value>
+  </data>
+  <data name="ReadUpdateRecordFailed" xml:space="preserve">
+    <value>讀取更新記錄失敗: {0}</value>
+  </data>
+  <data name="ConfigDesktopPetMessageDisplaySeconds" xml:space="preserve">
+    <value>消息顯示秒數</value>
+  </data>
+  <data name="ConfigDesktopPetScale" xml:space="preserve">
+    <value>寵物縮放</value>
+  </data>
+  <data name="DesktopPetIdleTip3" xml:space="preserve">
+    <value>需要我安靜一點，可以右鍵把通知關掉。</value>
+  </data>
+  <data name="CopilotGoogleSearchOpened" xml:space="preserve">
+    <value>已在默認瀏覽器中打開 Google 搜索結果。</value>
+  </data>
+  <data name="CopilotCallerContext" xml:space="preserve">
+    <value># 調用方附加上下文</value>
+  </data>
+  <data name="CopilotDocsDomain" xml:space="preserve">
+    <value>文檔域：</value>
+  </data>
+  <data name="CopilotExceptionDetailsCopied" xml:space="preserve">
+    <value>異常詳情已複製到剪貼板。</value>
+  </data>
+  <data name="CopilotContextPlaced" xml:space="preserve">
+    <value>已把異常上下文放到 AI 輸入框。</value>
+  </data>
+  <data name="CopilotImageNotExist" xml:space="preserve">
+    <value>本地圖片附件不存在：{0}</value>
+  </data>
+  <data name="UpdateMethod" xml:space="preserve">
+    <value>更新方式</value>
+  </data>
+  <data name="DesktopPetExit" xml:space="preserve">
+    <value>退出程序</value>
+  </data>
+  <data name="CopilotRealUsageNote" xml:space="preserve">
+    <value>說明：這裏顯示的是接口真實返回的最近一次請求 usage。</value>
+  </data>
+  <data name="CopilotTitlePrompt" xml:space="preserve">
+    <value>請爲下面這段對話生成一個簡短中文會話標題。</value>
+  </data>
+  <data name="CopilotAgentAccumulated" xml:space="preserve">
+    <value>Agent 模式已累計 planner 和最終回答的多次模型調用。</value>
+  </data>
+  <data name="CopilotMountContext" xml:space="preserve">
+    <value>掛載上下文</value>
+  </data>
+  <data name="ConfigDesktopPet" xml:space="preserve">
+    <value>桌面寵物</value>
+  </data>
+  <data name="CopilotFileAttachment" xml:space="preserve">
+    <value>[文件] {0}</value>
+  </data>
+  <data name="CopilotExceptionDetailsTag" xml:space="preserve">
+    <value>[異常詳情]</value>
+  </data>
+  <data name="CopilotCurrentRequestUsage" xml:space="preserve">
+    <value>說明：當前只顯示接口真實返回的 usage，統計會在本次請求完成後刷新。</value>
+  </data>
+  <data name="CopilotPlannerExecuteTool" xml:space="preserve">
+    <value>優先執行 {0} 獲取缺失信息。</value>
+  </data>
+  <data name="CopilotSend" xml:space="preserve">
+    <value>發送</value>
+  </data>
+  <data name="CopilotDocsIndexFormatError" xml:space="preserve">
+    <value>在線文檔索引格式無法識別：{0}</value>
+  </data>
+  <data name="CopilotSendToAiFailed" xml:space="preserve">
+    <value>發送到 AI 失敗：{0}</value>
+  </data>
+  <data name="CopilotContextTag" xml:space="preserve">
+    <value>[上下文] {0}</value>
+  </data>
+  <data name="CopilotWebPageAttachment" xml:space="preserve">
+    <value>[網頁] {0}</value>
+  </data>
+  <data name="ThumbnailRegistrationSuccess" xml:space="preserve">
+    <value>縮略圖預覽註冊成功！\n重啓資源管理器後，.cvraw 和 .cvcie 文件將顯示圖像縮略圖。</value>
+  </data>
+  <data name="UpdateTargetVersionLabel" xml:space="preserve">
+    <value>目標版本：</value>
+  </data>
+  <data name="DesktopPetReminder" xml:space="preserve">
+    <value>桌寵提醒</value>
+  </data>
+  <data name="CopilotWindowContextNote" xml:space="preserve">
+    <value>以上僅是當前業務窗口的輕量摘要；若當前會話同時掛載了顯式快照，請優先結合該快照回答。</value>
+  </data>
+  <data name="ConfigDesktopPetEnableIdleTips" xml:space="preserve">
+    <value>啓用待機提示</value>
+  </data>
+  <data name="CopilotUserPrefix" xml:space="preserve">
+    <value>用戶：</value>
+  </data>
+  <data name="CopilotAiRequestTag" xml:space="preserve">
+    <value>[AI 請求]</value>
+  </data>
+  <data name="DesktopPetSettings" xml:space="preserve">
+    <value>桌寵設置</value>
+  </data>
+  <data name="CopilotDuplicateException" xml:space="preserve">
+    <value>檢測到同類異常重複 {0} 次，已合併到當前窗口。</value>
+  </data>
+  <data name="CopilotCaptureSource" xml:space="preserve">
+    <value>捕獲來源：</value>
+  </data>
+  <data name="CopilotExceptionTag" xml:space="preserve">
+    <value>[異常]</value>
+  </data>
+  <data name="CopilotContextInjection" xml:space="preserve">
+    <value>以下是當前會話掛載的附加上下文。它們是用戶明確提供的參考信息，回答時請按需使用：</value>
+  </data>
+  <data name="CopilotDocsTitleChain" xml:space="preserve">
+    <value>標題鏈：</value>
+  </data>
+  <data name="CopilotDocsExcerpt" xml:space="preserve">
+    <value>摘錄：</value>
+  </data>
+  <data name="CopilotBase64" xml:space="preserve">
+    <value>Base URL</value>
+  </data>
+  <data name="CopilotAnswer" xml:space="preserve">
+    <value>回答：</value>
+  </data>
+  <data name="CopilotConfigureModelFirst" xml:space="preserve">
+    <value>先點右上角配置添加模型，再開始對話。</value>
+  </data>
+  <data name="CopilotEnterWebPageUrl" xml:space="preserve">
+    <value>輸入要抓取並附加到當前會話的網頁地址</value>
+  </data>
+  <data name="CopilotOpenAiPanel" xml:space="preserve">
+    <value>打開 AI 對話面板</value>
+  </data>
+  <data name="CopilotType" xml:space="preserve">
+    <value>類型：</value>
+  </data>
+  <data name="UpdatePluginDescription" xml:space="preserve">
+    <value>插件說明：</value>
+  </data>
+  <data name="CopilotNoExceptionMessage" xml:space="preserve">
+    <value>未提供異常消息</value>
+  </data>
+  <data name="CopilotDuplicateProfile" xml:space="preserve">
+    <value>{0} 副本</value>
+  </data>
+  <data name="CopilotRequestFailed" xml:space="preserve">
+    <value>請求失敗：{0}</value>
+  </data>
+  <data name="ShellExtensionNotFound" xml:space="preserve">
+    <value>未找到 Shell Extension:\n{0}</value>
+  </data>
+  <data name="CopilotExecutionProcess" xml:space="preserve">
+    <value>執行過程：</value>
+  </data>
+  <data name="CopilotAiGenerating" xml:space="preserve">
+    <value>AI 正在生成，已把異常上下文放到輸入框。</value>
+  </data>
+  <data name="ConfigDesktopPetOpacity" xml:space="preserve">
+    <value>寵物透明度</value>
+  </data>
+  <data name="DesktopPetAlwaysOnTop" xml:space="preserve">
+    <value>始終置頂</value>
+  </data>
+  <data name="CopilotRecentLogSummary" xml:space="preserve">
+    <value>已讀取最近日誌：{0}，保留最近 {1} 行中的 {2} 行。</value>
+  </data>
+  <data name="ConfigDesktopPetIdleTipInterval" xml:space="preserve">
+    <value>待機提示間隔分鐘</value>
+  </data>
+  <data name="ComRegistrationFailed" xml:space="preserve">
+    <value>COM 註冊失敗，請確認已授予管理員權限。</value>
+  </data>
+  <data name="CopilotStatus" xml:space="preserve">
+    <value>狀態：</value>
+  </data>
+  <data name="CopilotReplyCancelled" xml:space="preserve">
+    <value>已取消當前回覆。</value>
+  </data>
+  <data name="CopilotFileTruncated" xml:space="preserve">
+    <value>...&amp;lt;已截斷&amp;gt;</value>
+  </data>
+  <data name="CopilotInvalidUrl" xml:space="preserve">
+    <value>網頁地址格式不正確。</value>
+  </data>
+  <data name="UpdateUnnamedPlugin" xml:space="preserve">
+    <value>未命名插件</value>
+  </data>
+  <data name="RegistryAppliedSuccess" xml:space="preserve">
+    <value>註冊表應用成功</value>
+  </data>
+  <data name="CopilotPasteImageTitle" xml:space="preserve">
+    <value>粘貼圖片 {0}</value>
+  </data>
+  <data name="CopilotDeleteConversationConfirm" xml:space="preserve">
+    <value>確定要刪除會話"{0}"嗎？</value>
+  </data>
+  <data name="DesktopPetTestMessage" xml:space="preserve">
+    <value>這是一條來自桌寵的測試消息。</value>
+  </data>
+  <data name="CopilotDocsPageLink" xml:space="preserve">
+    <value>頁面鏈接：</value>
+  </data>
+  <data name="CopilotNoImageInClipboard" xml:space="preserve">
+    <value>剪貼板裏沒有可掛載的圖片。</value>
+  </data>
+  <data name="CopilotAssistantPrefix" xml:space="preserve">
+    <value>助手：</value>
+  </data>
+  <data name="CopilotAiViewNotReady" xml:space="preserve">
+    <value>主界面的 AI 視圖尚未就緒。</value>
+  </data>
+  <data name="CopilotInvalidLineCount" xml:space="preserve">
+    <value>最近行數輸入無效，已恢復爲 {0} 行。</value>
+  </data>
+  <data name="CopilotInputTokens" xml:space="preserve">
+    <value>輸入 tokens：</value>
+  </data>
+  <data name="UnregistrationFailed" xml:space="preserve">
+    <value>卸載失敗：{0}</value>
+  </data>
+  <data name="ConfigDesktopPetAlwaysOnTop" xml:space="preserve">
+    <value>始終置頂</value>
+  </data>
+  <data name="CopilotCanSendToAi" xml:space="preserve">
+    <value>可以把當前異常與最近日誌直接發送到主界面的 AI 視圖。</value>
+  </data>
+  <data name="CopilotDocsFragmentLink" xml:space="preserve">
+    <value>片段鏈接：</value>
+  </data>
+  <data name="CopilotSupplementaryNote" xml:space="preserve">
+    <value>[補充說明] {0}</value>
+  </data>
+  <data name="CopilotContext" xml:space="preserve">
+    <value>上下文</value>
+  </data>
+  <data name="CopilotAdditionalContext" xml:space="preserve">
+    <value>附加上下文</value>
+  </data>
+  <data name="CopilotDocsHitPages" xml:space="preserve">
+    <value>命中頁面：</value>
+  </data>
+  <data name="CopilotError" xml:space="preserve">
+    <value>錯誤：</value>
+  </data>
+  <data name="DesktopPetHide" xml:space="preserve">
+    <value>隱藏桌寵</value>
+  </data>
+  <data name="UpdateNotes" xml:space="preserve">
+    <value>更新說明：</value>
+  </data>
+  <data name="CopilotNoSearchKeyword" xml:space="preserve">
+    <value>當前異常沒有可搜索的關鍵詞。</value>
+  </data>
+  <data name="DesktopPetInitializerName" xml:space="preserve">
+    <value>桌面寵物</value>
+  </data>
+  <data name="CopilotSource" xml:space="preserve">
+    <value>來源：</value>
+  </data>
+  <data name="CopilotAdditionalExceptionCount" xml:space="preserve">
+    <value>附加異常：{0} 個</value>
+  </data>
+  <data name="CopilotDocsQuery" xml:space="preserve">
+    <value>查詢：</value>
+  </data>
+  <data name="CopilotExtraExceptions" xml:space="preserve">
+    <value>短時間內又捕獲到 {0} 個額外異常，已合併到當前窗口。</value>
+  </data>
+  <data name="CopilotOutputTokens" xml:space="preserve">
+    <value>輸出 tokens：</value>
+  </data>
+  <data name="UpdateVersionNotes" xml:space="preserve">
+    <value>版本說明：</value>
+  </data>
+  <data name="CopilotImagePreviewNote" xml:space="preserve">
+    <value>當前版本會在界面顯示圖片預覽，但不會自動把像素內容上傳給模型。</value>
+  </data>
+  <data name="CopilotSelectModelFirst" xml:space="preserve">
+    <value>請選擇或配置模型後再發送。當前面板只顯示接口真實返回的 token usage。</value>
+  </data>
+  <data name="UpdateCurrentVersion" xml:space="preserve">
+    <value>當前版本</value>
+  </data>
+  <data name="CopilotExecuteAgent" xml:space="preserve">
+    <value>執行 Agent</value>
+  </data>
+  <data name="CopilotNoModelSelected" xml:space="preserve">
+    <value>未選擇模型</value>
+  </data>
+  <data name="CopilotPlannerUnknownTool" xml:space="preserve">
+    <value>規劃器選擇了未知工具 {0}，回退到默認工具選擇。</value>
+  </data>
+  <data name="DesktopPetSendTestReminder" xml:space="preserve">
+    <value>發送測試提醒</value>
+  </data>
+  <data name="UpdateFullPackage" xml:space="preserve">
+    <value>完整安裝包</value>
+  </data>
+  <data name="CopilotStack" xml:space="preserve">
+    <value>堆棧：</value>
+  </data>
+  <data name="ThumbnailUnregistered" xml:space="preserve">
+    <value>縮略圖預覽已卸載。</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>不支持的文件格式</value>
+  </data>
+  <data name="CopilotSelectHistoryOrNew" xml:space="preserve">
+    <value>從右側選擇歷史會話，或點擊 + 新建會話。</value>
+  </data>
+  <data name="DesktopPetSettingsTitle" xml:space="preserve">
+    <value>桌面寵物設置</value>
+  </data>
+  <data name="CopilotStopGeneration" xml:space="preserve">
+    <value>停止生成</value>
+  </data>
+  <data name="CopilotReadTodayLog" xml:space="preserve">
+    <value>已讀取當日日誌：{0}，按關鍵字 {1} 命中 {2} 行。</value>
+  </data>
+  <data name="CopilotDiagnosticPrompt" xml:space="preserve">
+    <value>請幫我分析 ColorVision WPF 客戶端中的未處理異常。請基於異常內容和最近日誌，給出最可能原因、優先排查點，以及最小可行修復方向；如果信息不足，請明確指出還缺什麼。</value>
+  </data>
+  <data name="CopilotDocsPage" xml:space="preserve">
+    <value>頁面：</value>
+  </data>
+  <data name="CopilotLocalWebPageContext" xml:space="preserve">
+    <value>[本地網頁上下文注入]</value>
+  </data>
+  <data name="CopilotTotalTokens" xml:space="preserve">
+    <value>總計 tokens：</value>
+  </data>
+  <data name="ConfigLive2DEnable" xml:space="preserve">
+    <value>啓用 Live2D 渲染</value>
+  </data>
+  <data name="CopilotCurrentWindowContextTag" xml:space="preserve">
+    <value>[當前窗口上下文]</value>
+  </data>
+  <data name="DesktopPetStartupGreeting" xml:space="preserve">
+    <value>ColorVision 已啓動，我會在這裏提醒你。</value>
+  </data>
+  <data name="CopilotEnterNewName" xml:space="preserve">
+    <value>輸入新的會話名稱</value>
+  </data>
+  <data name="CopilotRecentLogsTag" xml:space="preserve">
+    <value>[最近日誌]</value>
+  </data>
+  <data name="ConfigDesktopPetStartupGreeting" xml:space="preserve">
+    <value>啓動問候</value>
+  </data>
+  <data name="ConfigDesktopPetName" xml:space="preserve">
+    <value>寵物名稱</value>
+  </data>
+  <data name="CopilotLocalEstimateRemoved" xml:space="preserve">
+    <value>當前不再做本地預估，只顯示接口真實返回的 token usage。</value>
+  </data>
+  <data name="UpdateExecutionIncremental" xml:space="preserve">
+    <value>執行方式：主體增量包與插件包會先全部下載，再一次性覆蓋更新。</value>
+  </data>
+  <data name="CopilotRenameConversation" xml:space="preserve">
+    <value>重命名會話</value>
+  </data>
+  <data name="ConfigLive2DPath" xml:space="preserve">
+    <value>Live2D 模型或 HTML 路徑</value>
+  </data>
+  <data name="ConfigLive2DRenderScale" xml:space="preserve">
+    <value>Live2D 渲染分辨率</value>
+  </data>
+  <data name="CopilotTitleGeneratorPrompt" xml:space="preserve">
+    <value>你是會話標題生成器。請根據給定對話生成一個簡短、自然的中文標題。只返回標題本身，不要解釋。</value>
+  </data>
+  <data name="CopilotExplicitSnapshot" xml:space="preserve">
+    <value>以下是用戶顯式附加的業務快照。它是在點擊"問 Copilot"或手動附加時抓取的固定內容；回答時應優先基於這些快照分析。</value>
+  </data>
+  <data name="CopilotObservationTruncated" xml:space="preserve">
+    <value>...&amp;lt;觀察內容已截斷&amp;gt;</value>
+  </data>
+  <data name="CopilotAttachToQuestion" xml:space="preserve">
+    <value>附加到提問</value>
+  </data>
+  <data name="CopilotSendToSeeUsage" xml:space="preserve">
+    <value>說明：發送後如果接口返回 usage 字段，這裏會顯示真實的輸入、輸出和總計 tokens。</value>
+  </data>
+  <data name="CopilotAdditionalException" xml:space="preserve">
+    <value>[附加異常 {0}]</value>
+  </data>
+  <data name="CopilotAiNotConfigured" xml:space="preserve">
+    <value>當前 AI 未配置，無法直接發送異常診斷請求。</value>
+  </data>
+  <data name="CopilotLocation" xml:space="preserve">
+    <value>位置：</value>
+  </data>
+  <data name="CopilotDocsSourcePath" xml:space="preserve">
+    <value>源路徑：</value>
+  </data>
+  <data name="PluginLoadFailedPrompt" xml:space="preserve">
+    <value>檢測到軟件上次沒有成功打開，是否禁用插件</value>
+  </data>
+  <data name="CopilotImagePath" xml:space="preserve">
+    <value>本地圖片路徑：{0}</value>
+  </data>
+  <data name="DesktopPetIdleTip4" xml:space="preserve">
+    <value>有本地 Live2D 模型的話，可以在設置裏接進來。</value>
+  </data>
+  <data name="CopilotPlannerOutputUnrecognized" xml:space="preserve">
+    <value>規劃器輸出無法識別，回退到默認工具選擇。</value>
+  </data>
+  <data name="UpdateHostRequirementLabel" xml:space="preserve">
+    <value>宿主要求：</value>
+  </data>
+  <data name="RegistrationFailed" xml:space="preserve">
+    <value>註冊失敗：{0}</value>
+  </data>
+  <data name="CopilotMessage" xml:space="preserve">
+    <value>消息：</value>
+  </data>
+  <data name="UpdateExecutionFull" xml:space="preserve">
+    <value>執行方式：下載完整安裝包，按原來的主體更新流程安裝。\n插件不參與本次自動更新。</value>
+  </data>
+  <data name="UpdatePluginCount" xml:space="preserve">
+    <value>等 {0} 個插件</value>
+  </data>
+  <data name="CopilotApiKey" xml:space="preserve">
+    <value>API Key</value>
+  </data>
+  <data name="CopilotCopyFailed" xml:space="preserve">
+    <value>複製失敗：{0}</value>
+  </data>
+  <data name="CopilotUpdateSnapshot" xml:space="preserve">
+    <value>更新快照</value>
+  </data>
+  <data name="CopilotLocalEstimateNote" xml:space="preserve">
+    <value>說明：當前面板不再做本地預估，只顯示接口真實返回的 usage。最近一次請求沒有返回 usage 字段，所以這裏沒有可顯示的輸入/輸出 token。</value>
+  </data>
+  <data name="CopilotFilterKeyword" xml:space="preserve">
+    <value>[過濾關鍵字] {0}</value>
+  </data>
+  <data name="CopilotNoDisplayText" xml:space="preserve">
+    <value>接口返回成功，但沒有可顯示的文本。</value>
+  </data>
+  <data name="UpdateIncrementalPackage" xml:space="preserve">
+    <value>主體增量包</value>
+  </data>
+  <data name="DesktopPetLive2DError" xml:space="preserve">
+    <value>模型加載失敗，已切換爲內置形象。</value>
+  </data>
+  <data name="CopilotDocsIndexEmpty" xml:space="preserve">
+    <value>在線文檔索引爲空，當前無法回答軟件文檔問題。</value>
+  </data>
+  <data name="UpdateHostRequirement" xml:space="preserve">
+    <value>宿主要求</value>
+  </data>
+  <data name="CopilotResult" xml:space="preserve">
+    <value>結果：</value>
+  </data>
+  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
+    <value>Live2D 輕量動效</value>
+  </data>
+  <data name="CopilotRepeatCount" xml:space="preserve">
+    <value>重複：{0} 次</value>
+  </data>
+  <data name="CopilotEnterContextDescription" xml:space="preserve">
+    <value>輸入要附加到當前會話的上下文說明</value>
+  </data>
+  <data name="CopilotFetchFailed" xml:space="preserve">
+    <value>抓取網頁失敗：{0}</value>
+  </data>
+  <data name="CopilotContextNotInitialized" xml:space="preserve">
+    <value>請求上下文尚未初始化。</value>
+  </data>
+  <data name="CopilotTitleRequirements" xml:space="preserve">
+    <value>要求：6 到 14 個字，直接返回標題，不要解釋，不要引號，不要句號。</value>
+  </data>
+  <data name="CopilotWebPageContextTruncated" xml:space="preserve">
+    <value>...&amp;lt;網頁上下文已截斷&amp;gt;</value>
+  </data>
+  <data name="UpdateIncrementalChain" xml:space="preserve">
+    <value>增量鏈：{0}</value>
+  </data>
+  <data name="UpdateCurrentVersionLabel" xml:space="preserve">
+    <value>當前版本：</value>
+  </data>
+  <data name="CopilotDocsCandidateFragments" xml:space="preserve">
+    <value>候選片段：</value>
+  </data>
+  <data name="ConfigLive2DMaxFps" xml:space="preserve">
+    <value>Live2D 最大幀率</value>
+  </data>
+  <data name="DesktopPetShowNotifications" xml:space="preserve">
+    <value>顯示通知</value>
+  </data>
+  <data name="CopilotSummary" xml:space="preserve">
+    <value>摘要：</value>
+  </data>
+  <data name="CopilotWaitingTokenUsage" xml:space="preserve">
+    <value>正在等待接口返回真實 token usage...</value>
+  </data>
+  <data name="CopilotTodayLogSummary" xml:space="preserve">
+    <value>已讀取當日日誌：{0}，共 {1} 行。</value>
+  </data>
+  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
+    <value>模型加載失敗：{0}</value>
+  </data>
+  <data name="CopilotLatestRequest" xml:space="preserve">
+    <value>最近一次：輸入 {0} · 輸出 {1} · 總計 {2}</value>
+  </data>
+  <data name="CopilotNoFinalAnswer" xml:space="preserve">
+    <value>未收到最終回答，只拿到了執行過程或推理內容。</value>
+  </data>
+  <data name="UpdatePackageCount" xml:space="preserve">
+    <value>更新包數</value>
+  </data>
+  <data name="CopilotNoTokenUsage" xml:space="preserve">
+    <value>最近一次請求未返回 token usage</value>
+  </data>
+  <data name="CopilotFirstSource" xml:space="preserve">
+    <value>首次來源：</value>
+  </data>
+  <data name="CannotFindUpdateRecord" xml:space="preserve">
+    <value>無法找到更新記錄</value>
+  </data>
+  <data name="CopilotReusedContext" xml:space="preserve">
+    <value>複用上次執行得到的上下文，未重新調用工具。</value>
+  </data>
+  <data name="UpdateCompatibilityStability" xml:space="preserve">
+    <value>包含兼容性與穩定性更新。</value>
+  </data>
+  <data name="CopilotReadRecentLog" xml:space="preserve">
+    <value>已讀取最近日誌：{0}，按關鍵字 {1} 命中 {2} 行。</value>
+  </data>
+  <data name="CopilotUnnamedModel" xml:space="preserve">
+    <value>未命名模型</value>
+  </data>
+  <data name="CopilotPlannerContextSufficient" xml:space="preserve">
+    <value>規劃器判斷當前上下文已足夠。</value>
+  </data>
+  <data name="UpdateTargetVersion" xml:space="preserve">
+    <value>目標版本</value>
+  </data>
+  <data name="CopilotModeLabel" xml:space="preserve">
+    <value>模式：</value>
+  </data>
+  <data name="CopilotDocsIndexUrl" xml:space="preserve">
+    <value>索引地址：</value>
+  </data>
+  <data name="CopilotMountWebPage" xml:space="preserve">
+    <value>掛載網頁</value>
+  </data>
+  <data name="UpdatePluginId" xml:space="preserve">
+    <value>插件 ID</value>
+  </data>
+  <data name="CopilotDocsIndexAccessError" xml:space="preserve">
+    <value>無法訪問在線文檔索引：{0}</value>
+  </data>
+  <data name="CopilotLogFile" xml:space="preserve">
+    <value>日誌文件：</value>
+  </data>
+  <data name="CopilotReasoning" xml:space="preserve">
+    <value>推理：</value>
+  </data>
+  <data name="CopilotImageAttachment" xml:space="preserve">
+    <value>[圖片] {0}</value>
+  </data>
+  <data name="CopilotWebPageContextInstruction" xml:space="preserve">
+    <value>以下網頁內容由本地程序在發送前實際抓取。你必須只基於這些抓取結果回答網頁問題，不要再說無法瀏覽互聯網；如果抓取失敗，或抓取內容裏沒有相關信息，必須明確說明無法基於真實網頁內容完成分析，不能假設網頁包含未抓取到的信息。</value>
+  </data>
+  <data name="CopilotCannotAskAi" xml:space="preserve">
+    <value>當前 AI 未配置或主界面尚未就緒，暫時不能直接詢問。</value>
+  </data>
+  <data name="CopilotPlannerFallback" xml:space="preserve">
+    <value>規劃器沒有返回可解析 JSON，回退到默認工具選擇。</value>
+  </data>
+  <data name="CopilotCopyMessageFailed" xml:space="preserve">
+    <value>複製消息失敗：{0}</value>
+  </data>
+  <data name="CopilotNoSendableContent" xml:space="preserve">
+    <value>沒有可發送的異常內容。</value>
+  </data>
+  <data name="CopilotTitlePrefix" xml:space="preserve">
+    <value>標題</value>
+  </data>
+  <data name="CopilotFailed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="CopilotPlannerNoTools" xml:space="preserve">
+    <value>當前沒有可用工具。</value>
+  </data>
+  <data name="CopilotSuccess" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="CopilotAllFiles" xml:space="preserve">
+    <value>所有文件|*.*</value>
+  </data>
+  <data name="UpdateFullApplicationUpdate" xml:space="preserve">
+    <value>主體完整更新</value>
+  </data>
+  <data name="CopilotPasteImageFailed" xml:space="preserve">
+    <value>粘貼圖片失敗：{0}</value>
+  </data>
+  <data name="ConfigDesktopPetShowNotifications" xml:space="preserve">
+    <value>顯示消息通知</value>
+  </data>
+  <data name="ConfigEnableDesktopPet" xml:space="preserve">
+    <value>啓用桌面寵物</value>
+  </data>
+  <data name="CopilotNoLogFile" xml:space="preserve">
+    <value>當前環境沒有發現可讀取的日誌文件。</value>
+  </data>
+  <data name="CopilotSentToAiView" xml:space="preserve">
+    <value>已發送到主界面的 AI 視圖。</value>
+  </data>
+  <data name="CopilotDocsOnlineSearch" xml:space="preserve">
+    <value>[在線文檔檢索]</value>
+  </data>
+  <data name="ConfigDesktopPetCategory" xml:space="preserve">
+    <value>桌面寵物</value>
+  </data>
+  <data name="UpdatePlugin" xml:space="preserve">
+    <value>插件：</value>
+  </data>
 </root>

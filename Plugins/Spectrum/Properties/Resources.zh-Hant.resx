@@ -124,7 +124,7 @@
   <data name="单次测试" xml:space="preserve"><value>單次測試</value></data>
   <data name="单次校零" xml:space="preserve"><value>單次校零</value></data>
   <data name="断开光谱仪" xml:space="preserve"><value>斷開光譜儀</value></data>
-  <data name="峰值波长LpNm" xml:space="preserve"><value>峰值波長Lp(nm)</value></data>
+  <data name="峰值波长LpNm" xml:space="preserve"><value>峯值波長Lp(nm)</value></data>
   <data name="光谱校正" xml:space="preserve"><value>光譜校正</value></data>
   <data name="积分时间011ms10s" xml:space="preserve"><value>積分時間(0.11ms-10s)</value></data>
   <data name="积分时间上限" xml:space="preserve"><value>積分時間上限</value></data>

@@ -121,7 +121,7 @@
     <value>ファイル (_F)</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>消去</value>
+    <value>??</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>
@@ -133,7 +133,7 @@
     <value>テスト接続</value>
   </data>
   <data name="ConnectionName" xml:space="preserve">
-    <value>接続名</value>
+    <value>???</value>
   </data>
   <data name="Host" xml:space="preserve">
     <value>ホスト</value>
@@ -148,7 +148,7 @@
     <value>設定ファイルをコピーする</value>
   </data>
   <data name="ARVRDetect" xml:space="preserve">
-    <value>ARVR検出</value>
+    <value>ARVR? act</value>
   </data>
   <data name="BlackMuraDetect" xml:space="preserve">
     <value>ブラックムラ検出</value>

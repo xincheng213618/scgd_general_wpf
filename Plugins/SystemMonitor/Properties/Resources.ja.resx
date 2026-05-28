@@ -121,25 +121,25 @@
     <value>システムモニター</value>
   </data>
   <data name="UpdateSpeed" xml:space="preserve">
-    <value>更新速度</value>
+    <value>UpdateSpeed</value>
   </data>
   <data name="StorageManagement" xml:space="preserve">
     <value>ストレージ管理</value>
   </data>
   <data name="TotalStorage" xml:space="preserve">
-    <value>総容量</value>
+    <value>?? quantity</value>
   </data>
   <data name="FreeSpace" xml:space="preserve">
     <value>空き容量</value>
   </data>
   <data name="Used" xml:space="preserve">
-    <value>使用量</value>
+    <value>make ? quantity</value>
   </data>
   <data name="PerformanceMonitor" xml:space="preserve">
     <value>パフォーマンスモニター</value>
   </data>
   <data name="TotalUsage" xml:space="preserve">
-    <value>全体使用率</value>
+    <value>? volume make ? rate</value>
   </data>
   <data name="CurrentApp" xml:space="preserve">
     <value>現在のアプリ</value>
@@ -160,22 +160,22 @@
     <value>GPUメモリ</value>
   </data>
   <data name="Uptime" xml:space="preserve">
-    <value>稼働時間</value>
+    <value>????</value>
   </data>
   <data name="TotalRAM" xml:space="preserve">
-    <value>RAM総量</value>
+    <value>RAM? quantity</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>ネットワーク</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>更新</value>
+    <value>Update</value>
   </data>
   <data name="Settings" xml:space="preserve">
-    <value>設定</value>
+    <value>??</value>
   </data>
   <data name="DateFormat" xml:space="preserve">
-    <value>日付形式</value>
+    <value>?? shape style</value>
   </data>
   <data name="ShowTime" xml:space="preserve">
     <value>時刻を表示</value>
@@ -193,7 +193,7 @@
     <value>ローカルディスク</value>
   </data>
   <data name="NotDetected" xml:space="preserve">
-    <value>未検出</value>
+    <value>?? act</value>
   </data>
   <data name="ShowCPU" xml:space="preserve">
     <value>CPUを表示</value>
@@ -223,13 +223,13 @@
     <value>システム稼働時間</value>
   </data>
   <data name="OSBootTime" xml:space="preserve">
-    <value>起動時刻</value>
+    <value>case ???</value>
   </data>
   <data name="AppStartTime" xml:space="preserve">
     <value>アプリ起動時刻</value>
   </data>
   <data name="ScreenResolution" xml:space="preserve">
-    <value>画面解像度</value>
+    <value>? surface ? image degree</value>
   </data>
   <data name="Architecture" xml:space="preserve">
     <value>アーキテクチャ</value>
@@ -274,7 +274,7 @@
     <value>N/A</value>
   </data>
   <data name="DurationWithDaysFormat" xml:space="preserve">
-    <value>{0}日 {1:00}:{2:00}:{3:00}</value>
+    <value>{0}? {1:00}:{2:00}:{3:00}</value>
   </data>
   <data name="StatusBarUsageFormat" xml:space="preserve">
     <value>{0} {1:F1}%</value>

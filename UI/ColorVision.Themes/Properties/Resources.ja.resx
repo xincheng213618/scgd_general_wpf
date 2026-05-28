@@ -118,10 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Maximize" xml:space="preserve">
-    <value>最大化</value>
+    <value>Maximize</value>
   </data>
   <data name="Minimize" xml:space="preserve">
-    <value>最小化</value>
+    <value>Minimize</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>キャンセル</value>

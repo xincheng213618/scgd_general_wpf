@@ -127,7 +127,7 @@
     <value>タスクの作成</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>開始</value>
+    <value>? start</value>
   </data>
   <data name="PauseAll" xml:space="preserve">
     <value>すべて一時停止</value>
@@ -139,7 +139,7 @@
     <value>シャットダウン</value>
   </data>
   <data name="CronExpression" xml:space="preserve">
-    <value>Cron 式</value>
+    <value>Cron style</value>
   </data>
   <data name="GroupName" xml:space="preserve">
     <value>グループ名</value>
@@ -151,25 +151,25 @@
     <value>ステータス</value>
   </data>
   <data name="RunCount" xml:space="preserve">
-    <value>実行回数</value>
+    <value>?? occurrence number</value>
   </data>
   <data name="NextFireTime" xml:space="preserve">
-    <value>次回実行時刻</value>
+    <value>occurrence occurrence ????</value>
   </data>
   <data name="PreviousFireTime" xml:space="preserve">
-    <value>前回実行時刻</value>
+    <value>front occurrence ????</value>
   </data>
   <data name="Stop" xml:space="preserve">
-    <value>停止</value>
+    <value>Stop</value>
   </data>
   <data name="Resume" xml:space="preserve">
-    <value>回復</value>
+    <value>occurrence ?</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>削除</value>
+    <value>? divide</value>
   </data>
   <data name="Command" xml:space="preserve">
-    <value>命令</value>
+    <value>? make</value>
   </data>
   <data name="Sched_ExecHistory" xml:space="preserve">
     <value>Execution History</value>

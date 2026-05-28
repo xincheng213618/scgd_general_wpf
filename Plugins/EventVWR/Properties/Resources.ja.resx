@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Search" xml:space="preserve">
-    <value>検索</value>
+    <value>??</value>
   </data>
   <data name="EventWindow" xml:space="preserve">
     <value>イベントビューアー</value>
@@ -136,7 +136,7 @@
     <value>イベント一覧</value>
   </data>
   <data name="EventVWR_Time" xml:space="preserve">
-    <value>時刻</value>
+    <value>??</value>
   </data>
   <data name="EventVWR_Source" xml:space="preserve">
     <value>ソース</value>
@@ -148,7 +148,7 @@
     <value>イベントを選択して詳細を表示...</value>
   </data>
   <data name="EventVWR_Ready" xml:space="preserve">
-    <value>準備完了</value>
+    <value>???</value>
   </data>
   <data name="EventVWR_PluginName" xml:space="preserve">
     <value>イベントプラグイン</value>

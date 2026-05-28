@@ -612,4 +612,676 @@
   <data name="OpenWithSystemDefault" xml:space="preserve">
     <value>시스템 기본값으로 열기</value>
   </data>
+  <data name="CopilotChatAssistant" xml:space="preserve">
+    <value>Chat Assistant</value>
+  </data>
+  <data name="AllowMultipleInstances" xml:space="preserve">
+    <value>Allow multiple instances</value>
+  </data>
+  <data name="CopilotFileNotExist" xml:space="preserve">
+    <value>File does not exist, cannot read.</value>
+  </data>
+  <data name="CopilotReadLogFailed" xml:space="preserve">
+    <value>Failed to read recent log.</value>
+  </data>
+  <data name="UpdatePluginIdLabel" xml:space="preserve">
+    <value>Plugin ID:</value>
+  </data>
+  <data name="DesktopPetIdleTip1" xml:space="preserve">
+    <value>I'm here, will notify you of messages.</value>
+  </data>
+  <data name="CopilotContentTruncated" xml:space="preserve">
+    <value>...&amp;lt; inner ????，????? {0} word ?。&amp;gt;</value>
+  </data>
+  <data name="DesktopPetShowMainWindow" xml:space="preserve">
+    <value>Show Main Window</value>
+  </data>
+  <data name="CopilotModelLabel" xml:space="preserve">
+    <value>Model:</value>
+  </data>
+  <data name="UpdateScope" xml:space="preserve">
+    <value>Update Scope</value>
+  </data>
+  <data name="CopilotFileReadFailed" xml:space="preserve">
+    <value>Read failed: {0}</value>
+  </data>
+  <data name="CopilotOccurredTime" xml:space="preserve">
+    <value>Occurred at:</value>
+  </data>
+  <data name="CopilotNoRecentLog" xml:space="preserve">
+    <value>No recent log found.</value>
+  </data>
+  <data name="DesktopPetIdleTip2" xml:space="preserve">
+    <value>Take a break, save your current work.</value>
+  </data>
+  <data name="CopilotTokenUsageAfterSend" xml:space="preserve">
+    <value>Show real token usage after sending</value>
+  </data>
+  <data name="CopilotContentLargeTruncated" xml:space="preserve">
+    <value>Content is large, display truncated.</value>
+  </data>
+  <data name="CopilotDocsIndexNotPublished" xml:space="preserve">
+    <value>Online documentation index not yet published, please confirm GitHub Pages has latest deployment.</value>
+  </data>
+  <data name="ReadUpdateRecordFailed" xml:space="preserve">
+    <value>Failed to read update record: {0}</value>
+  </data>
+  <data name="ConfigDesktopPetMessageDisplaySeconds" xml:space="preserve">
+    <value>Message display seconds</value>
+  </data>
+  <data name="ConfigDesktopPetScale" xml:space="preserve">
+    <value>Pet Scale</value>
+  </data>
+  <data name="DesktopPetIdleTip3" xml:space="preserve">
+    <value>Right-click to disable notifications if you need quiet.</value>
+  </data>
+  <data name="CopilotGoogleSearchOpened" xml:space="preserve">
+    <value>Google search results opened in default browser.</value>
+  </data>
+  <data name="CopilotCallerContext" xml:space="preserve">
+    <value># Caller attached context</value>
+  </data>
+  <data name="CopilotDocsDomain" xml:space="preserve">
+    <value>Documentation domain:</value>
+  </data>
+  <data name="CopilotExceptionDetailsCopied" xml:space="preserve">
+    <value>Exception details copied to clipboard.</value>
+  </data>
+  <data name="CopilotContextPlaced" xml:space="preserve">
+    <value>Exception context placed in AI input box.</value>
+  </data>
+  <data name="CopilotImageNotExist" xml:space="preserve">
+    <value>Local image attachment not found: {0}</value>
+  </data>
+  <data name="UpdateMethod" xml:space="preserve">
+    <value>Update Method</value>
+  </data>
+  <data name="DesktopPetExit" xml:space="preserve">
+    <value>Exit Application</value>
+  </data>
+  <data name="CopilotRealUsageNote" xml:space="preserve">
+    <value>Note: This shows the real usage from the most recent API request.</value>
+  </data>
+  <data name="CopilotTitlePrompt" xml:space="preserve">
+    <value>Please ? bottom surface ? stage ?? Generate 1 ?? short mid ? Session label ?。</value>
+  </data>
+  <data name="CopilotAgentAccumulated" xml:space="preserve">
+    <value>Agent ? style ??? planner and ?? occurrence ? ? occurrence ? model ??。</value>
+  </data>
+  <data name="CopilotMountContext" xml:space="preserve">
+    <value>hang ? top bottom ?</value>
+  </data>
+  <data name="ConfigDesktopPet" xml:space="preserve">
+    <value>? surface ? thing</value>
+  </data>
+  <data name="CopilotFileAttachment" xml:space="preserve">
+    <value>[File] {0}</value>
+  </data>
+  <data name="CopilotExceptionDetailsTag" xml:space="preserve">
+    <value>[ Exception ??]</value>
+  </data>
+  <data name="CopilotCurrentRequestUsage" xml:space="preserve">
+    <value>??：? front ? show Interface ?? Back usage， Statistics ? root occurrence Request Complete back Refresh 。</value>
+  </data>
+  <data name="CopilotPlannerExecuteTool" xml:space="preserve">
+    <value>???? {0} Fetch ????。</value>
+  </data>
+  <data name="CopilotSend" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="CopilotDocsIndexFormatError" xml:space="preserve">
+    <value>line Document ?? Format ????：{0}</value>
+  </data>
+  <data name="CopilotSendToAiFailed" xml:space="preserve">
+    <value>Send ? AI Failed ：{0}</value>
+  </data>
+  <data name="CopilotContextTag" xml:space="preserve">
+    <value>[ top bottom ?] {0}</value>
+  </data>
+  <data name="CopilotWebPageAttachment" xml:space="preserve">
+    <value>[? page ] {0}</value>
+  </data>
+  <data name="ThumbnailRegistrationSuccess" xml:space="preserve">
+    <value>??? preview Register Success ！\n heavy ?? source pipe ?? back ，.cvraw and .cvcie File will show ? image ???。</value>
+  </data>
+  <data name="UpdateTargetVersionLabel" xml:space="preserve">
+    <value>item label Version ：</value>
+  </data>
+  <data name="DesktopPetReminder" xml:space="preserve">
+    <value>????</value>
+  </data>
+  <data name="CopilotWindowContextNote" xml:space="preserve">
+    <value>? top ? ? front ?? Window light quantity ??；?? front Session meanwhile hang ? ? style fast photo ， Please ????? fast photo occurrence ?。</value>
+  </data>
+  <data name="ConfigDesktopPetEnableIdleTips" xml:space="preserve">
+    <value>Enable ?? Hint</value>
+  </data>
+  <data name="CopilotUserPrefix" xml:space="preserve">
+    <value>User：</value>
+  </data>
+  <data name="CopilotAiRequestTag" xml:space="preserve">
+    <value>[AI Request]</value>
+  </data>
+  <data name="DesktopPetSettings" xml:space="preserve">
+    <value>?? Settings</value>
+  </data>
+  <data name="CopilotDuplicateException" xml:space="preserve">
+    <value>???? type Exception heavy ? {0} occurrence ，? merge ?? front Window 。</value>
+  </data>
+  <data name="CopilotCaptureSource" xml:space="preserve">
+    <value>??? source ：</value>
+  </data>
+  <data name="CopilotExceptionTag" xml:space="preserve">
+    <value>[Exception]</value>
+  </data>
+  <data name="CopilotContextInjection" xml:space="preserve">
+    <value>? bottom ? front Session hang ? ? add top bottom ?。?? User ???? ????， occurrence ?? Please press ? make ?：</value>
+  </data>
+  <data name="CopilotDocsTitleChain" xml:space="preserve">
+    <value>label ??：</value>
+  </data>
+  <data name="CopilotDocsExcerpt" xml:space="preserve">
+    <value>??：</value>
+  </data>
+  <data name="CopilotBase64" xml:space="preserve">
+    <value>Base URL</value>
+  </data>
+  <data name="CopilotAnswer" xml:space="preserve">
+    <value>occurrence ?：</value>
+  </data>
+  <data name="CopilotConfigureModelFirst" xml:space="preserve">
+    <value>? dot right top ? Configuration ? add ? model ，? Start ??。</value>
+  </data>
+  <data name="CopilotEnterWebPageUrl" xml:space="preserve">
+    <value>??????? add ?? front Session ? page Address</value>
+  </data>
+  <data name="CopilotOpenAiPanel" xml:space="preserve">
+    <value>Open AI ?? Panel</value>
+  </data>
+  <data name="CopilotType" xml:space="preserve">
+    <value>Type：</value>
+  </data>
+  <data name="UpdatePluginDescription" xml:space="preserve">
+    <value>Plugin ??：</value>
+  </data>
+  <data name="CopilotNoExceptionMessage" xml:space="preserve">
+    <value>??? Exception Message</value>
+  </data>
+  <data name="CopilotDuplicateProfile" xml:space="preserve">
+    <value>{0} ? root</value>
+  </data>
+  <data name="CopilotRequestFailed" xml:space="preserve">
+    <value>RequestFailed：{0}</value>
+  </data>
+  <data name="ShellExtensionNotFound" xml:space="preserve">
+    <value>??? Shell Extension:\n{0}</value>
+  </data>
+  <data name="CopilotExecutionProcess" xml:space="preserve">
+    <value>????：</value>
+  </data>
+  <data name="CopilotAiGenerating" xml:space="preserve">
+    <value>AI currently Generate ，? Exception top bottom ? put ??? frame 。</value>
+  </data>
+  <data name="ConfigDesktopPetOpacity" xml:space="preserve">
+    <value>? thing Opacity degree</value>
+  </data>
+  <data name="DesktopPetAlwaysOnTop" xml:space="preserve">
+    <value>start ???</value>
+  </data>
+  <data name="CopilotRecentLogSummary" xml:space="preserve">
+    <value>????? Log ：{0}，???? {1} ? mid {2} ?。</value>
+  </data>
+  <data name="ConfigDesktopPetIdleTipInterval" xml:space="preserve">
+    <value>?? Hint ????</value>
+  </data>
+  <data name="ComRegistrationFailed" xml:space="preserve">
+    <value>COM Register Failed ， Please Acknowledge ??? Administrator Permission 。</value>
+  </data>
+  <data name="CopilotStatus" xml:space="preserve">
+    <value>Status：</value>
+  </data>
+  <data name="CopilotReplyCancelled" xml:space="preserve">
+    <value>? Cancel ? front occurrence ?。</value>
+  </data>
+  <data name="CopilotFileTruncated" xml:space="preserve">
+    <value>...&amp;lt;???&amp;gt;</value>
+  </data>
+  <data name="CopilotInvalidUrl" xml:space="preserve">
+    <value>? page Address Format not positive ?。</value>
+  </data>
+  <data name="UpdateUnnamedPlugin" xml:space="preserve">
+    <value>??? Plugin</value>
+  </data>
+  <data name="RegistryAppliedSuccess" xml:space="preserve">
+    <value>Register ? Apply Success</value>
+  </data>
+  <data name="CopilotPasteImageTitle" xml:space="preserve">
+    <value>Paste ? slice {0}</value>
+  </data>
+  <data name="CopilotDeleteConversationConfirm" xml:space="preserve">
+    <value>OK ? Delete Session "{0}"?？</value>
+  </data>
+  <data name="DesktopPetTestMessage" xml:space="preserve">
+    <value>? 1 regulation ???? Test Message 。</value>
+  </data>
+  <data name="CopilotDocsPageLink" xml:space="preserve">
+    <value>page surface Link ：</value>
+  </data>
+  <data name="CopilotNoImageInClipboard" xml:space="preserve">
+    <value>? stick ??? ? hang ? ? slice 。</value>
+  </data>
+  <data name="CopilotAssistantPrefix" xml:space="preserve">
+    <value>??：</value>
+  </data>
+  <data name="CopilotAiViewNotReady" xml:space="preserve">
+    <value>? Interface AI View ?? ?。</value>
+  </data>
+  <data name="CopilotInvalidLineCount" xml:space="preserve">
+    <value>??? number ????，? Resume ? {0} ?。</value>
+  </data>
+  <data name="CopilotInputTokens" xml:space="preserve">
+    <value>?? tokens：</value>
+  </data>
+  <data name="UnregistrationFailed" xml:space="preserve">
+    <value>UnloadFailed：{0}</value>
+  </data>
+  <data name="ConfigDesktopPetAlwaysOnTop" xml:space="preserve">
+    <value>start ???</value>
+  </data>
+  <data name="CopilotCanSendToAi" xml:space="preserve">
+    <value>can ? front Exception and ?? Log ?? Send ?? Interface AI View 。</value>
+  </data>
+  <data name="CopilotDocsFragmentLink" xml:space="preserve">
+    <value>slice stage Link ：</value>
+  </data>
+  <data name="CopilotSupplementaryNote" xml:space="preserve">
+    <value>[????] {0}</value>
+  </data>
+  <data name="CopilotContext" xml:space="preserve">
+    <value>top bottom ?</value>
+  </data>
+  <data name="CopilotAdditionalContext" xml:space="preserve">
+    <value>? add top bottom ?</value>
+  </data>
+  <data name="CopilotDocsHitPages" xml:space="preserve">
+    <value>? mid page surface ：</value>
+  </data>
+  <data name="CopilotError" xml:space="preserve">
+    <value>Error：</value>
+  </data>
+  <data name="DesktopPetHide" xml:space="preserve">
+    <value>hide ??</value>
+  </data>
+  <data name="UpdateNotes" xml:space="preserve">
+    <value>Update ??：</value>
+  </data>
+  <data name="CopilotNoSearchKeyword" xml:space="preserve">
+    <value>? front Exception ? ? Search close ??。</value>
+  </data>
+  <data name="DesktopPetInitializerName" xml:space="preserve">
+    <value>? surface ? thing</value>
+  </data>
+  <data name="CopilotSource" xml:space="preserve">
+    <value>? source ：</value>
+  </data>
+  <data name="CopilotAdditionalExceptionCount" xml:space="preserve">
+    <value>? add Exception ：{0} ?</value>
+  </data>
+  <data name="CopilotDocsQuery" xml:space="preserve">
+    <value>Query：</value>
+  </data>
+  <data name="CopilotExtraExceptions" xml:space="preserve">
+    <value>short Time inner ???? {0} ?? outer Exception ，? merge ?? front Window 。</value>
+  </data>
+  <data name="CopilotOutputTokens" xml:space="preserve">
+    <value>? act tokens：</value>
+  </data>
+  <data name="UpdateVersionNotes" xml:space="preserve">
+    <value>Version ??：</value>
+  </data>
+  <data name="CopilotImagePreviewNote" xml:space="preserve">
+    <value>? front Version ? Interface show ? slice preview ，? not ??? Pixel inner ? Upload give ? model 。</value>
+  </data>
+  <data name="CopilotSelectModelFirst" xml:space="preserve">
+    <value>Please Select or Configuration ? model back ? Send 。? front Panel ? show Interface ?? Back token usage。</value>
+  </data>
+  <data name="UpdateCurrentVersion" xml:space="preserve">
+    <value>? front Version</value>
+  </data>
+  <data name="CopilotExecuteAgent" xml:space="preserve">
+    <value>?? Agent</value>
+  </data>
+  <data name="CopilotNoModelSelected" xml:space="preserve">
+    <value>? Select ? model</value>
+  </data>
+  <data name="CopilotPlannerUnknownTool" xml:space="preserve">
+    <value>??? Select ?? Tools {0}， Fallback ??? Tools Select 。</value>
+  </data>
+  <data name="DesktopPetSendTestReminder" xml:space="preserve">
+    <value>Send Test ??</value>
+  </data>
+  <data name="UpdateFullPackage" xml:space="preserve">
+    <value>???? package</value>
+  </data>
+  <data name="CopilotStack" xml:space="preserve">
+    <value>Stack：</value>
+  </data>
+  <data name="ThumbnailUnregistered" xml:space="preserve">
+    <value>??? preview ? Unload 。</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>not piece ? File Format</value>
+  </data>
+  <data name="CopilotSelectHistoryOrNew" xml:space="preserve">
+    <value>? right ? Select ?? Session ， or dot ? + new ? Session 。</value>
+  </data>
+  <data name="DesktopPetSettingsTitle" xml:space="preserve">
+    <value>? surface ? thing Settings</value>
+  </data>
+  <data name="CopilotStopGeneration" xml:space="preserve">
+    <value>StopGenerate</value>
+  </data>
+  <data name="CopilotReadTodayLog" xml:space="preserve">
+    <value>????? Log ：{0}， press close ? word {1} ? mid {2} ?。</value>
+  </data>
+  <data name="CopilotDiagnosticPrompt" xml:space="preserve">
+    <value>Please ? ?? ColorVision WPF ?? end mid ??? Exception 。 Please base ? Exception inner ? and ?? Log ， give act ? maybe original ?、???? dot ，? and ? small ???? Direction ； if ?? not ?， Please ??? act ?? what 。</value>
+  </data>
+  <data name="CopilotDocsPage" xml:space="preserve">
+    <value>page surface ：</value>
+  </data>
+  <data name="CopilotLocalWebPageContext" xml:space="preserve">
+    <value>[ root ?? page top bottom ???]</value>
+  </data>
+  <data name="CopilotTotalTokens" xml:space="preserve">
+    <value>?? tokens：</value>
+  </data>
+  <data name="ConfigLive2DEnable" xml:space="preserve">
+    <value>Enable Live2D Rendering</value>
+  </data>
+  <data name="CopilotCurrentWindowContextTag" xml:space="preserve">
+    <value>[Current Window Context]</value>
+  </data>
+  <data name="DesktopPetStartupGreeting" xml:space="preserve">
+    <value>ColorVision started, I will notify you here.</value>
+  </data>
+  <data name="CopilotEnterNewName" xml:space="preserve">
+    <value>Enter new session name</value>
+  </data>
+  <data name="CopilotRecentLogsTag" xml:space="preserve">
+    <value>[Recent Log]</value>
+  </data>
+  <data name="ConfigDesktopPetStartupGreeting" xml:space="preserve">
+    <value>Startup Greeting</value>
+  </data>
+  <data name="ConfigDesktopPetName" xml:space="preserve">
+    <value>Pet Name</value>
+  </data>
+  <data name="CopilotLocalEstimateRemoved" xml:space="preserve">
+    <value>No local estimation, only shows real API-returned token usage.</value>
+  </data>
+  <data name="UpdateExecutionIncremental" xml:space="preserve">
+    <value>Execution: main incremental and plugin packages are all downloaded first, then applied in one update.</value>
+  </data>
+  <data name="CopilotRenameConversation" xml:space="preserve">
+    <value>Rename Session</value>
+  </data>
+  <data name="ConfigLive2DPath" xml:space="preserve">
+    <value>Live2D Model or HTML Path</value>
+  </data>
+  <data name="ConfigLive2DRenderScale" xml:space="preserve">
+    <value>Live2D Render Resolution</value>
+  </data>
+  <data name="CopilotTitleGeneratorPrompt" xml:space="preserve">
+    <value>? Session label ? Generate ?。 Please according to give ??? Generate 1 ?? short 、?? mid ? label ?。? Back label ? root ?， not ???。</value>
+  </data>
+  <data name="CopilotExplicitSnapshot" xml:space="preserve">
+    <value>Business snapshot explicitly attached by user. Captured when clicking "Ask Copilot" or manually attaching; prioritize these snapshots in analysis.</value>
+  </data>
+  <data name="CopilotObservationTruncated" xml:space="preserve">
+    <value>...&amp;lt;?? inner ????&amp;gt;</value>
+  </data>
+  <data name="CopilotAttachToQuestion" xml:space="preserve">
+    <value>Attach to Question</value>
+  </data>
+  <data name="CopilotSendToSeeUsage" xml:space="preserve">
+    <value>Note: After sending, if API returns usage field, real input/output/total tokens are shown here.</value>
+  </data>
+  <data name="CopilotAdditionalException" xml:space="preserve">
+    <value>[Attached Exception {0}]</value>
+  </data>
+  <data name="CopilotAiNotConfigured" xml:space="preserve">
+    <value>AI not configured, cannot send exception diagnostic request directly.</value>
+  </data>
+  <data name="CopilotLocation" xml:space="preserve">
+    <value>Location:</value>
+  </data>
+  <data name="CopilotDocsSourcePath" xml:space="preserve">
+    <value>Source Path:</value>
+  </data>
+  <data name="PluginLoadFailedPrompt" xml:space="preserve">
+    <value>Software did not open successfully last time, disable plugins?</value>
+  </data>
+  <data name="CopilotImagePath" xml:space="preserve">
+    <value>Local image path: {0}</value>
+  </data>
+  <data name="DesktopPetIdleTip4" xml:space="preserve">
+    <value>If you have a local Live2D model, you can connect it in settings.</value>
+  </data>
+  <data name="CopilotPlannerOutputUnrecognized" xml:space="preserve">
+    <value>Planner output unrecognizable, falling back to default tool selection.</value>
+  </data>
+  <data name="UpdateHostRequirementLabel" xml:space="preserve">
+    <value>Host Requirements:</value>
+  </data>
+  <data name="RegistrationFailed" xml:space="preserve">
+    <value>Registration failed: {0}</value>
+  </data>
+  <data name="CopilotMessage" xml:space="preserve">
+    <value>Message:</value>
+  </data>
+  <data name="UpdateExecutionFull" xml:space="preserve">
+    <value>Execution: Download full installer, install following original update process.\nPlugins do not participate in this auto-update.</value>
+  </data>
+  <data name="UpdatePluginCount" xml:space="preserve">
+    <value>Waiting for {0} plugins</value>
+  </data>
+  <data name="CopilotApiKey" xml:space="preserve">
+    <value>API Key</value>
+  </data>
+  <data name="CopilotCopyFailed" xml:space="preserve">
+    <value>Copy failed: {0}</value>
+  </data>
+  <data name="CopilotUpdateSnapshot" xml:space="preserve">
+    <value>Update Snapshot</value>
+  </data>
+  <data name="CopilotLocalEstimateNote" xml:space="preserve">
+    <value>Note: This panel no longer does local estimation, only shows real API-returned usage. Last request did not return usage field, so no input/output tokens to display.</value>
+  </data>
+  <data name="CopilotFilterKeyword" xml:space="preserve">
+    <value>[Filter Keyword] {0}</value>
+  </data>
+  <data name="CopilotNoDisplayText" xml:space="preserve">
+    <value>API returned success, but no displayable text.</value>
+  </data>
+  <data name="UpdateIncrementalPackage" xml:space="preserve">
+    <value>Main Incremental Package</value>
+  </data>
+  <data name="DesktopPetLive2DError" xml:space="preserve">
+    <value>Model loading failed, switched to built-in avatar.</value>
+  </data>
+  <data name="CopilotDocsIndexEmpty" xml:space="preserve">
+    <value>Online documentation index empty, cannot answer software documentation questions.</value>
+  </data>
+  <data name="UpdateHostRequirement" xml:space="preserve">
+    <value>Host Requirements</value>
+  </data>
+  <data name="CopilotResult" xml:space="preserve">
+    <value>Result:</value>
+  </data>
+  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
+    <value>Live2D light quantity ??</value>
+  </data>
+  <data name="CopilotRepeatCount" xml:space="preserve">
+    <value>heavy ?：{0} occurrence</value>
+  </data>
+  <data name="CopilotEnterContextDescription" xml:space="preserve">
+    <value>???? add ?? front Session top bottom ???</value>
+  </data>
+  <data name="CopilotFetchFailed" xml:space="preserve">
+    <value>??? page Failed ：{0}</value>
+  </data>
+  <data name="CopilotContextNotInitialized" xml:space="preserve">
+    <value>Request top bottom ??? Initialize 。</value>
+  </data>
+  <data name="CopilotTitleRequirements" xml:space="preserve">
+    <value>??：6 ? 14 ? word ，?? Back label ?， not ???， not ?? number ， not ? sentence number 。</value>
+  </data>
+  <data name="CopilotWebPageContextTruncated" xml:space="preserve">
+    <value>...&amp;lt;? page top bottom ????&amp;gt;</value>
+  </data>
+  <data name="UpdateIncrementalChain" xml:space="preserve">
+    <value>? quantity ?：{0}</value>
+  </data>
+  <data name="UpdateCurrentVersionLabel" xml:space="preserve">
+    <value>? front Version ：</value>
+  </data>
+  <data name="CopilotDocsCandidateFragments" xml:space="preserve">
+    <value>?? slice stage ：</value>
+  </data>
+  <data name="ConfigLive2DMaxFps" xml:space="preserve">
+    <value>Live2D ? large framerate</value>
+  </data>
+  <data name="DesktopPetShowNotifications" xml:space="preserve">
+    <value>show Notification</value>
+  </data>
+  <data name="CopilotSummary" xml:space="preserve">
+    <value>??：</value>
+  </data>
+  <data name="CopilotWaitingTokenUsage" xml:space="preserve">
+    <value>currently Wait Interface Back ?? token usage...</value>
+  </data>
+  <data name="CopilotTodayLogSummary" xml:space="preserve">
+    <value>????? Log ：{0}，? {1} ?。</value>
+  </data>
+  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
+    <value>? model Loading Failed ：{0}</value>
+  </data>
+  <data name="CopilotLatestRequest" xml:space="preserve">
+    <value>?? 1 occurrence ：?? {0} · ? act {1} · ?? {2}</value>
+  </data>
+  <data name="CopilotNoFinalAnswer" xml:space="preserve">
+    <value>????? occurrence ?，? take ? ???? or push ? inner ?。</value>
+  </data>
+  <data name="UpdatePackageCount" xml:space="preserve">
+    <value>Update package number</value>
+  </data>
+  <data name="CopilotNoTokenUsage" xml:space="preserve">
+    <value>?? 1 occurrence Request ? Back token usage</value>
+  </data>
+  <data name="CopilotFirstSource" xml:space="preserve">
+    <value>? occurrence ? source ：</value>
+  </data>
+  <data name="CannotFindUpdateRecord" xml:space="preserve">
+    <value>???? Update ??</value>
+  </data>
+  <data name="CopilotReusedContext" xml:space="preserve">
+    <value>?? top occurrence ???? top bottom ?，? heavy new ?? Tools 。</value>
+  </data>
+  <data name="UpdateCompatibilityStability" xml:space="preserve">
+    <value>package ???? and stabilization ? Update 。</value>
+  </data>
+  <data name="CopilotReadRecentLog" xml:space="preserve">
+    <value>????? Log ：{0}， press close ? word {1} ? mid {2} ?。</value>
+  </data>
+  <data name="CopilotUnnamedModel" xml:space="preserve">
+    <value>???? model</value>
+  </data>
+  <data name="CopilotPlannerContextSufficient" xml:space="preserve">
+    <value>?????? front top bottom ????。</value>
+  </data>
+  <data name="UpdateTargetVersion" xml:space="preserve">
+    <value>item label Version</value>
+  </data>
+  <data name="CopilotModeLabel" xml:space="preserve">
+    <value>? style ：</value>
+  </data>
+  <data name="CopilotDocsIndexUrl" xml:space="preserve">
+    <value>?? Address ：</value>
+  </data>
+  <data name="CopilotMountWebPage" xml:space="preserve">
+    <value>hang ?? page</value>
+  </data>
+  <data name="UpdatePluginId" xml:space="preserve">
+    <value>Plugin ID</value>
+  </data>
+  <data name="CopilotDocsIndexAccessError" xml:space="preserve">
+    <value>???? line Document ??：{0}</value>
+  </data>
+  <data name="CopilotLogFile" xml:space="preserve">
+    <value>LogFile：</value>
+  </data>
+  <data name="CopilotReasoning" xml:space="preserve">
+    <value>push ?：</value>
+  </data>
+  <data name="CopilotImageAttachment" xml:space="preserve">
+    <value>[? slice ] {0}</value>
+  </data>
+  <data name="CopilotWebPageContextInstruction" xml:space="preserve">
+    <value>? bottom ? page inner ?? root ??? Send front ????。? must ? base ? these ?? Result occurrence ?? page ??， not ??????????； if ?? Failed ， or ?? inner ??? ? close ??， must ?????? base ???? page inner ? Complete ??， not ???? page package ????? ??。</value>
+  </data>
+  <data name="CopilotCannotAskAi" xml:space="preserve">
+    <value>? front AI ? Configuration or ? Interface ?? ?，?? not ?????。</value>
+  </data>
+  <data name="CopilotPlannerFallback" xml:space="preserve">
+    <value>???? Back ? Parse JSON， Fallback ??? Tools Select 。</value>
+  </data>
+  <data name="CopilotCopyMessageFailed" xml:space="preserve">
+    <value>CopyMessageFailed：{0}</value>
+  </data>
+  <data name="CopilotNoSendableContent" xml:space="preserve">
+    <value>? ? Send Exception inner ?。</value>
+  </data>
+  <data name="CopilotTitlePrefix" xml:space="preserve">
+    <value>label ?</value>
+  </data>
+  <data name="CopilotFailed" xml:space="preserve">
+    <value>Failure</value>
+  </data>
+  <data name="CopilotPlannerNoTools" xml:space="preserve">
+    <value>? front ? ?? Tools 。</value>
+  </data>
+  <data name="CopilotSuccess" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="CopilotAllFiles" xml:space="preserve">
+    <value>? File |*.*</value>
+  </data>
+  <data name="UpdateFullApplicationUpdate" xml:space="preserve">
+    <value>? volume ?? Update</value>
+  </data>
+  <data name="CopilotPasteImageFailed" xml:space="preserve">
+    <value>Paste ? slice Failed ：{0}</value>
+  </data>
+  <data name="ConfigDesktopPetShowNotifications" xml:space="preserve">
+    <value>show Message Notification</value>
+  </data>
+  <data name="ConfigEnableDesktopPet" xml:space="preserve">
+    <value>Enable ? surface ? thing</value>
+  </data>
+  <data name="CopilotNoLogFile" xml:space="preserve">
+    <value>? front ring environment ? ????? Log File 。</value>
+  </data>
+  <data name="CopilotSentToAiView" xml:space="preserve">
+    <value>? Send ?? Interface AI View 。</value>
+  </data>
+  <data name="CopilotDocsOnlineSearch" xml:space="preserve">
+    <value>[ line Document ??]</value>
+  </data>
+  <data name="ConfigDesktopPetCategory" xml:space="preserve">
+    <value>? surface ? thing</value>
+  </data>
+  <data name="UpdatePlugin" xml:space="preserve">
+    <value>Plugin：</value>
+  </data>
 </root>

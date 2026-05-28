@@ -68,7 +68,7 @@
     <value>ローパスフィルター</value>
   </data>
   <data name="MovingAverage" xml:space="preserve">
-    <value>移動平均</value>
+    <value>????</value>
   </data>
   <data name="GaussianFilter" xml:space="preserve">
     <value>ガウシアンフィルター</value>
@@ -98,10 +98,10 @@
     <value>キャプチャ</value>
   </data>
   <data name="TabPreprocess" xml:space="preserve">
-    <value>処理</value>
+    <value>??</value>
   </data>
   <data name="TabAnalysis" xml:space="preserve">
-    <value>解析</value>
+    <value>Parse</value>
   </data>
   <data name="GroupData" xml:space="preserve">
     <value>ファイル</value>
@@ -119,25 +119,25 @@
     <value>測定カメラ</value>
   </data>
   <data name="GroupEnable" xml:space="preserve">
-    <value>有効化</value>
+    <value>??</value>
   </data>
   <data name="GroupFilter" xml:space="preserve">
     <value>フィルター</value>
   </data>
   <data name="GroupDisplay" xml:space="preserve">
-    <value>表示</value>
+    <value>??</value>
   </data>
   <data name="GroupExport" xml:space="preserve">
     <value>エクスポート</value>
   </data>
   <data name="GroupGamut" xml:space="preserve">
-    <value>色域</value>
+    <value>Color Gamut</value>
   </data>
   <data name="GroupContrast" xml:space="preserve">
     <value>コントラスト</value>
   </data>
   <data name="GroupConfig" xml:space="preserve">
-    <value>設定</value>
+    <value>??</value>
   </data>
   <data name="GroupOpen" xml:space="preserve">
     <value>開く</value>
@@ -149,19 +149,19 @@
     <value>チャネル</value>
   </data>
   <data name="LabelReference" xml:space="preserve">
-    <value>基準</value>
+    <value>base ?</value>
   </data>
   <data name="LabelStandard" xml:space="preserve">
-    <value>標準</value>
+    <value>??</value>
   </data>
   <data name="LabelAzimuthDeg" xml:space="preserve">
-    <value>方位角 (°)</value>
+    <value>Azimuth (°)</value>
   </data>
   <data name="LabelPolarDeg" xml:space="preserve">
-    <value>極角 (°)</value>
+    <value>?? (°)</value>
   </data>
   <data name="LabelExposure" xml:space="preserve">
-    <value>露光</value>
+    <value>Exposure</value>
   </data>
   <data name="ChannelX" xml:space="preserve">
     <value>X チャネル</value>
@@ -173,19 +173,19 @@
     <value>Z チャネル</value>
   </data>
   <data name="ChannelCieX" xml:space="preserve">
-    <value>x 色度</value>
+    <value>x Chromaticity</value>
   </data>
   <data name="ChannelCieY" xml:space="preserve">
-    <value>y 色度</value>
+    <value>y Chromaticity</value>
   </data>
   <data name="ChannelCieU" xml:space="preserve">
-    <value>u 色度</value>
+    <value>u Chromaticity</value>
   </data>
   <data name="ChannelCieV" xml:space="preserve">
-    <value>v 色度</value>
+    <value>v Chromaticity</value>
   </data>
   <data name="ChannelDeltaUV" xml:space="preserve">
-    <value>Δuv 色差</value>
+    <value>Δuv Color Difference</value>
   </data>
   <data name="ChannelXShort" xml:space="preserve">
     <value>X Ch</value>
@@ -197,34 +197,34 @@
     <value>Z Ch</value>
   </data>
   <data name="ChannelCieXShort" xml:space="preserve">
-    <value>x 色度</value>
+    <value>x Chromaticity</value>
   </data>
   <data name="ChannelCieYShort" xml:space="preserve">
-    <value>y 色度</value>
+    <value>y Chromaticity</value>
   </data>
   <data name="ChannelCieUShort" xml:space="preserve">
-    <value>u 色度</value>
+    <value>u Chromaticity</value>
   </data>
   <data name="ChannelCieVShort" xml:space="preserve">
-    <value>v 色度</value>
+    <value>v Chromaticity</value>
   </data>
   <data name="ChannelDeltaUVShort" xml:space="preserve">
     <value>Δuv</value>
   </data>
   <data name="RefAzimuthLine" xml:space="preserve">
-    <value>方位基準線</value>
+    <value>square ? base ??</value>
   </data>
   <data name="RefPolarCircle" xml:space="preserve">
-    <value>極角基準円</value>
+    <value>?? base ??</value>
   </data>
   <data name="BtnObservationCamera" xml:space="preserve">
     <value>観察カメラ</value>
   </data>
   <data name="BtnSettings" xml:space="preserve">
-    <value>設定</value>
+    <value>??</value>
   </data>
   <data name="BtnExecute" xml:space="preserve">
-    <value>実行</value>
+    <value>??</value>
   </data>
   <data name="BtnCapturePhoto" xml:space="preserve">
     <value>キャプチャ</value>
@@ -263,7 +263,7 @@
     <value>現在のデータをエクスポート</value>
   </data>
   <data name="BtnPolarCoord" xml:space="preserve">
-    <value>極座標</value>
+    <value>? base ?</value>
   </data>
   <data name="BtnFindDevice" xml:space="preserve">
     <value>デバイスを検索</value>
@@ -395,10 +395,10 @@
     <value>断面エクスポートを有効にする</value>
   </data>
   <data name="StatusNotRecorded" xml:space="preserve">
-    <value>未記録</value>
+    <value>???</value>
   </data>
   <data name="StatusExecuting" xml:space="preserve">
-    <value>実行中</value>
+    <value>?? mid</value>
   </data>
   <data name="StatusCapturing" xml:space="preserve">
     <value>キャプチャ中</value>
@@ -476,7 +476,7 @@
     <value>まず極角を選択してください</value>
   </data>
   <data name="TbEdit" xml:space="preserve">
-    <value>編集</value>
+    <value>? episode</value>
   </data>
   <data name="TbEditTip" xml:space="preserve">
     <value>既存のフォーカスポイント円を選択してドラッグします</value>
@@ -494,49 +494,49 @@
     <value>すべてのフォーカスポイントをクリアします</value>
   </data>
   <data name="PanelColorDiff" xml:space="preserve">
-    <value>色差</value>
+    <value>Color Difference</value>
   </data>
   <data name="LabelRefMode" xml:space="preserve">
     <value>基準モード:</value>
   </data>
   <data name="LabelColorDiffCalc" xml:space="preserve">
-    <value>色差計算</value>
+    <value>chromatic aberration ??</value>
   </data>
   <data name="LabelBaseRef" xml:space="preserve">
-    <value>基準:</value>
+    <value>base ?:</value>
   </data>
   <data name="LabelRefCurve" xml:space="preserve">
-    <value>基準曲線</value>
+    <value>base ???</value>
   </data>
   <data name="LabelMode" xml:space="preserve">
     <value>モード</value>
   </data>
   <data name="LabelCurrentValue" xml:space="preserve">
-    <value>現在値</value>
+    <value>? ?</value>
   </data>
   <data name="LabelGraph" xml:space="preserve">
     <value>グラフ</value>
   </data>
   <data name="CbiD65" xml:space="preserve">
-    <value>D65 光源</value>
+    <value>D65 Light Source</value>
   </data>
   <data name="CbiD50" xml:space="preserve">
-    <value>D50 光源</value>
+    <value>D50 Light Source</value>
   </data>
   <data name="CbiA" xml:space="preserve">
-    <value>A 光源</value>
+    <value>A Light Source</value>
   </data>
   <data name="CbiD75" xml:space="preserve">
-    <value>D75 光源</value>
+    <value>D75 Light Source</value>
   </data>
   <data name="CbiCenter50px" xml:space="preserve">
-    <value>画像中心 50px</value>
+    <value>? image mid ? 50px</value>
   </data>
   <data name="CbiCustomCoord" xml:space="preserve">
     <value>カスタム座標</value>
   </data>
   <data name="CbiMeasuredBase" xml:space="preserve">
-    <value>測定基準画像</value>
+    <value>?? base ?? image</value>
   </data>
   <data name="CbiAzimuthExport" xml:space="preserve">
     <value>方位角でエクスポート</value>
@@ -560,13 +560,13 @@
     <value>しきい値 %</value>
   </data>
   <data name="LabelMinArea" xml:space="preserve">
-    <value>最小面積</value>
+    <value>? small surface ?</value>
   </data>
   <data name="LabelMaxArea" xml:space="preserve">
-    <value>最大面積</value>
+    <value>? large surface ?</value>
   </data>
   <data name="LabelRepairRadius" xml:space="preserve">
-    <value>補修半径</value>
+    <value>?? Radius</value>
   </data>
   <data name="CbiDarkSpot" xml:space="preserve">
     <value>ダークスポット</value>
@@ -581,7 +581,7 @@
     <value>有効にすると、画像を開いたときに現在の前処理プリセットが自動適用されます。</value>
   </data>
   <data name="TitlePreprocessSettings" xml:space="preserve">
-    <value>前処理設定</value>
+    <value>front ????</value>
   </data>
   <data name="TitleAdvancedExport" xml:space="preserve">
     <value>詳細エクスポート設定</value>
@@ -590,7 +590,7 @@
     <value>現在のカーブエクスポート設定</value>
   </data>
   <data name="TitleConoscopeSettings" xml:space="preserve">
-    <value>Conoscope 設定</value>
+    <value>Conoscope ??</value>
   </data>
   <data name="TitleMvsCameraView" xml:space="preserve">
     <value>MVS カメラ ビュー</value>
@@ -599,7 +599,7 @@
     <value>観察カメラ設定</value>
   </data>
   <data name="TitleColorGamutResult" xml:space="preserve">
-    <value>色域計算結果</value>
+    <value>color gamut ????</value>
   </data>
   <data name="TitleContrastResult" xml:space="preserve">
     <value>コントラスト結果</value>
@@ -626,7 +626,7 @@
     <value>ヒント: 両方のエクスポート モードを同時に選択できます</value>
   </data>
   <data name="GroupBoxAzimuthSettings" xml:space="preserve">
-    <value>方位角設定</value>
+    <value>square ????</value>
   </data>
   <data name="LabelAzimuthStep" xml:space="preserve">
     <value>方位角ステップ (度):</value>
@@ -638,7 +638,7 @@
     <value>ヒント: 方位角ステップは角度サンプリング密度を、半径方向ステップは中心から端までの密度を制御します</value>
   </data>
   <data name="GroupBoxPolarSettings" xml:space="preserve">
-    <value>極角設定</value>
+    <value>????</value>
   </data>
   <data name="LabelRingStep" xml:space="preserve">
     <value>リング ステップ (度):</value>
@@ -653,16 +653,16 @@
     <value>断面エクスポート (任意)</value>
   </data>
   <data name="RbAzimuthSection" xml:space="preserve">
-    <value>方位角断面</value>
+    <value>square ??? surface</value>
   </data>
   <data name="LabelAzimuthDegLabel" xml:space="preserve">
-    <value>方位角 (度):</value>
+    <value>Azimuth (degrees):</value>
   </data>
   <data name="RbPolarSection" xml:space="preserve">
-    <value>極角断面</value>
+    <value>??? surface</value>
   </data>
   <data name="LabelPolarDegLabel" xml:space="preserve">
-    <value>極角 (度):</value>
+    <value>?? ( degree ):</value>
   </data>
   <data name="HintSectionExport" xml:space="preserve">
     <value>ヒント: 断面エクスポートでは、指定した角度の単一断面のみを出力します</value>
@@ -719,16 +719,16 @@
     <value>サンプリング間隔は 0.01 から 360 の間で指定してください</value>
   </data>
   <data name="GroupBoxGlobalSettings" xml:space="preserve">
-    <value>全般設定</value>
+    <value>????</value>
   </data>
   <data name="GroupBoxPreprocessSettings" xml:space="preserve">
-    <value>前処理設定</value>
+    <value>front ????</value>
   </data>
   <data name="GroupBoxModelParams" xml:space="preserve">
     <value>モデルパラメータ</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>表示</value>
+    <value>??</value>
   </data>
   <data name="MenuShowToolbar" xml:space="preserve">
     <value>ツールバーを表示</value>
@@ -746,7 +746,7 @@
     <value>ソフトトリガー</value>
   </data>
   <data name="LabelExposureMs" xml:space="preserve">
-    <value>露光 (ms)</value>
+    <value>?? (ms)</value>
   </data>
   <data name="LabelGain" xml:space="preserve">
     <value>ゲイン</value>
@@ -761,7 +761,7 @@
     <value>エリアを選択</value>
   </data>
   <data name="StatusExposure" xml:space="preserve">
-    <value>露光: </value>
+    <value>??:</value>
   </data>
   <data name="StatusGain" xml:space="preserve">
     <value>ゲイン: </value>
@@ -770,7 +770,7 @@
     <value>フレームレート: </value>
   </data>
   <data name="StatusImageCount" xml:space="preserve">
-    <value>画像数: </value>
+    <value>? image number :</value>
   </data>
   <data name="TabTestArea" xml:space="preserve">
     <value>テストエリア</value>
@@ -785,10 +785,10 @@
     <value>サイズ係数 (mm/px)</value>
   </data>
   <data name="LabelCenterXPx" xml:space="preserve">
-    <value>中心 X (px)</value>
+    <value>Center X (px)</value>
   </data>
   <data name="LabelCenterYPx" xml:space="preserve">
-    <value>中心 Y (px)</value>
+    <value>Center Y (px)</value>
   </data>
   <data name="ColNumber" xml:space="preserve">
     <value>#</value>
@@ -797,40 +797,40 @@
     <value>フォーカスポイント</value>
   </data>
   <data name="ColAzimuthDeg" xml:space="preserve">
-    <value>方位角 (°)</value>
+    <value>Azimuth (°)</value>
   </data>
   <data name="ColPolarDeg" xml:space="preserve">
-    <value>極角 (°)</value>
+    <value>?? (°)</value>
   </data>
   <data name="ColRadiusDeg" xml:space="preserve">
-    <value>半径 (°)</value>
+    <value>Radius (°)</value>
   </data>
   <data name="ColRChromaticity" xml:space="preserve">
-    <value>R 色度</value>
+    <value>R ? degree</value>
   </data>
   <data name="ColGChromaticity" xml:space="preserve">
-    <value>G 色度</value>
+    <value>G ? degree</value>
   </data>
   <data name="ColBChromaticity" xml:space="preserve">
-    <value>B 色度</value>
+    <value>B ? degree</value>
   </data>
   <data name="ColGamutValue" xml:space="preserve">
-    <value>色域 (%)</value>
+    <value>color gamut (%)</value>
   </data>
   <data name="ColWhiteLuminance" xml:space="preserve">
-    <value>白輝度</value>
+    <value>?? degree</value>
   </data>
   <data name="ColBlackLuminance" xml:space="preserve">
-    <value>黒輝度</value>
+    <value>?? degree</value>
   </data>
   <data name="ColContrast" xml:space="preserve">
     <value>コントラスト</value>
   </data>
   <data name="ColWhiteChromaticity" xml:space="preserve">
-    <value>白色度</value>
+    <value>?? degree</value>
   </data>
   <data name="ColBlackChromaticity" xml:space="preserve">
-    <value>黒色度</value>
+    <value>?? degree</value>
   </data>
   <data name="MenuOpenWithConoscope" xml:space="preserve">
     <value>Conoscope で開く</value>
@@ -851,10 +851,10 @@
     <value>0-{0} の極角を入力し、Enter で適用します</value>
   </data>
   <data name="SlotWhite" xml:space="preserve">
-    <value>白</value>
+    <value>White</value>
   </data>
   <data name="SlotBlack" xml:space="preserve">
-    <value>黒</value>
+    <value>?</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} を記録しました
@@ -889,7 +889,7 @@
     <value>ローパス k{0}</value>
   </data>
   <data name="FilterMean" xml:space="preserve">
-    <value>平均 k{0}</value>
+    <value>?? k{0}</value>
   </data>
   <data name="FilterGaussian" xml:space="preserve">
     <value>ガウシアン k{0}</value>
@@ -919,19 +919,19 @@
     <value>ダーク+ブライト</value>
   </data>
   <data name="TitleGamutCalc" xml:space="preserve">
-    <value>色域計算</value>
+    <value>color gamut ??</value>
   </data>
   <data name="TitleContrastCalc" xml:space="preserve">
     <value>コントラスト計算</value>
   </data>
   <data name="TitleAnalysisRecord" xml:space="preserve">
-    <value>解析記録</value>
+    <value>Parse ??</value>
   </data>
   <data name="TitleError" xml:space="preserve">
     <value>エラー</value>
   </data>
   <data name="TitleSuccess" xml:space="preserve">
-    <value>成功</value>
+    <value>Success</value>
   </data>
   <data name="TitleHint" xml:space="preserve">
     <value>ヒント</value>
@@ -964,10 +964,10 @@
     <value>観察カメラ設定</value>
   </data>
   <data name="Estimated" xml:space="preserve">
-    <value>推定</value>
+    <value>push ?</value>
   </data>
   <data name="ReferenceCurve" xml:space="preserve">
-    <value>基準分布</value>
+    <value>base ???</value>
   </data>
   <data name="XYZDataNotLoaded" xml:space="preserve">
     <value>XYZ データが読み込まれていません</value>
@@ -979,7 +979,7 @@
     <value>フォーカスポイント {0} 個、平均色域 {1}%</value>
   </data>
   <data name="Measured" xml:space="preserve">
-    <value>測定 {0}</value>
+    <value>?? {0}</value>
   </data>
   <data name="FocusPointCountAndAverageContrast" xml:space="preserve">
     <value>フォーカスポイント {0} 個、平均コントラスト {1}:1、最小 {2}:1、最大 {3}:1</value>
@@ -988,7 +988,7 @@
     <value>CVCIE XYZ 画像ファイルを選択してください</value>
   </data>
   <data name="Invalid" xml:space="preserve">
-    <value>無効</value>
+    <value>??</value>
   </data>
   <data name="BlackLuminanceMustBePositive" xml:space="preserve">
     <value>コントラストを計算するには、黒輝度が 0 より大きい必要があります</value>
@@ -1006,43 +1006,43 @@
     <value>色差チャネルには uv 基準が必要です</value>
   </data>
   <data name="UReferenceImage" xml:space="preserve">
-    <value>u 基準画像</value>
+    <value>u base ?? image</value>
   </data>
   <data name="SizeMismatchFormat" xml:space="preserve">
     <value>{0} のサイズが現在の画像と一致しません</value>
   </data>
   <data name="ReferenceFormat" xml:space="preserve">
-    <value>基準: {0}</value>
+    <value>base ?: {0}</value>
   </data>
   <data name="PixelCoordFormat" xml:space="preserve">
     <value>ピクセル: X={0}, Y={1}</value>
   </data>
   <data name="PolarCoordFormat" xml:space="preserve">
-    <value>極座標: 方位角={0}°, 極角={1}°</value>
+    <value>? base ?: square ??={0}°, ??={1}°</value>
   </data>
   <data name="RadiusFormat" xml:space="preserve">
-    <value>半径: {0}</value>
+    <value>Radius: {0}</value>
   </data>
   <data name="FocusPointYUV" xml:space="preserve">
     <value>Y:{0}  u:{1}  v:{2}</value>
   </data>
   <data name="GroupColorDifference" xml:space="preserve">
-    <value>色差</value>
+    <value>Color Difference</value>
   </data>
   <data name="ChannelContrast" xml:space="preserve">
     <value>コントラスト</value>
   </data>
   <data name="BtnReapply" xml:space="preserve">
-    <value>再適用</value>
+    <value>???</value>
   </data>
   <data name="BtnBlackReference" xml:space="preserve">
-    <value>黒基準</value>
+    <value>? base ?</value>
   </data>
   <data name="BtnWhiteReference" xml:space="preserve">
-    <value>白基準</value>
+    <value>? base ?</value>
   </data>
   <data name="BtnColorDifferenceReference" xml:space="preserve">
-    <value>色差基準</value>
+    <value>chromatic aberration base ?</value>
   </data>
   <data name="TipOnlyShowCs200Devices" xml:space="preserve">
     <value>有効にすると、観察カメラ一覧には型番に CS200 を含むデバイスのみ表示されます。</value>
@@ -1087,16 +1087,16 @@
     <value>現在の画像</value>
   </data>
   <data name="ContrastImageBlack" xml:space="preserve">
-    <value>暗画像</value>
+    <value>dark ? image</value>
   </data>
   <data name="ContrastImageWhite" xml:space="preserve">
-    <value>明画像</value>
+    <value>?? image</value>
   </data>
   <data name="ContrastReferenceBlackField" xml:space="preserve">
-    <value>黒場</value>
+    <value>??</value>
   </data>
   <data name="ContrastReferenceWhiteField" xml:space="preserve">
-    <value>白場</value>
+    <value>??</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>元のデータを復元しました。</value>
@@ -1162,7 +1162,7 @@
     <value>解析パラメーター</value>
   </data>
   <data name="GroupComputeActions" xml:space="preserve">
-    <value>計算操作</value>
+    <value>????</value>
   </data>
   <data name="GroupThemeAndLanguage" xml:space="preserve">
     <value>テーマと言語</value>
@@ -1171,16 +1171,16 @@
     <value>テーマ</value>
   </data>
   <data name="LabelLanguage" xml:space="preserve">
-    <value>言語</value>
+    <value>??</value>
   </data>
   <data name="LabelDecimalPlaces" xml:space="preserve">
-    <value>小数点以下桁数:</value>
+    <value>small number dot ? bottom ? number :</value>
   </data>
   <data name="TipRangeLimit" xml:space="preserve">
     <value>有効円内だけに表示マッピングを適用します。オフの場合は画像全体を表示します。</value>
   </data>
   <data name="ChkRangeLimit" xml:space="preserve">
-    <value>範囲制限</value>
+    <value>??? limit</value>
   </data>
   <data name="HintDecimalPlacesDefault4" xml:space="preserve">
     <value>既定は 4、変更可能</value>
@@ -1210,7 +1210,7 @@
     <value>空の測定データがあるため、注視点を整列できません</value>
   </data>
   <data name="StateNotSaved" xml:space="preserve">
-    <value>未保存</value>
+    <value>? Save</value>
   </data>
   <data name="MsgContrastReferenceMissingStatus" xml:space="preserve">
     <value>現在の{0}には{1}基準がありません。</value>
@@ -1239,4 +1239,47 @@
     <value>{0} データに注視点 {1} がありません。
 ソース: {2}</value>
   </data>
-<data name="Conoscope_AllFocusPoints" xml:space="preserve"><value>All Focus Points</value></data><data name="Conoscope_AngleDegrees" xml:space="preserve"><value>Angle (°)</value></data><data name="Conoscope_CalculateAllFocusPoints" xml:space="preserve"><value>Calculate All Focus Points</value></data><data name="Conoscope_CalculateFocusPoint" xml:space="preserve"><value>Calculate Focus Point: {0}</value></data><data name="Conoscope_CircleAngleDegrees" xml:space="preserve"><value>Circle Angle (°)</value></data><data name="Conoscope_CircleDistributionTitle" xml:space="preserve"><value>Polar {0}° {1} Circle Distribution</value></data><data name="Conoscope_ClearAllFocusPoints" xml:space="preserve"><value>Clear All Focus Points</value></data><data name="Conoscope_ClearFocusPoint" xml:space="preserve"><value>Clear Focus Point</value></data><data name="Conoscope_ContrastChannel" xml:space="preserve"><value>Contrast</value></data><data name="Conoscope_ContrastNeedsReference" xml:space="preserve"><value>Contrast channel requires saving white or black field reference first</value></data><data name="Conoscope_ContrastReferenceImage" xml:space="preserve"><value>Contrast Reference Image</value></data><data name="Conoscope_CustomUv" xml:space="preserve"><value>Custom: u={0:F4}, v={1:F4}</value></data><data name="Conoscope_CvcieFileFilter" xml:space="preserve"><value>CVCIE Files (*.cvcie)|*.cvcie</value></data><data name="Conoscope_EditByAngleLength" xml:space="preserve"><value>Edit by Angle/Length...</value></data><data name="Conoscope_FocusPointInfo" xml:space="preserve"><value>{0}  Azimuth {1:F2}°  Polar {2:F2}°  R {3:F1}px/{4:F2}°</value></data><data name="Conoscope_FocusPointTemplateName" xml:space="preserve"><value>ConoscopeFocusPoint_{0}</value></data><data name="Conoscope_GlobalReference" xml:space="preserve"><value>Global Reference: {0}</value></data><data name="Conoscope_NoGlobalReference" xml:space="preserve"><value>No Global Color Difference Reference Saved</value></data><data name="Conoscope_OverallAverage" xml:space="preserve"><value>Overall Average</value></data><data name="Conoscope_PolarDistributionTitle" xml:space="preserve"><value>Azimuth {0}° {1} Distribution</value></data><data name="Conoscope_SaveGlobalReference" xml:space="preserve"><value>Save Global Reference</value></data><data name="Conoscope_ScaleCoefficientNotConfigured" xml:space="preserve"><value>Observation camera scale coefficient not configured</value></data><data name="Conoscope_TestAreaNotDisplayed" xml:space="preserve"><value>Test area not displayed</value></data><data name="Conoscope_UpdateGlobalReference" xml:space="preserve"><value>Update Global Reference</value></data><data name="Conoscope_VReferenceImage" xml:space="preserve"><value>v Reference Image</value></data><data name="Conoscope_TestAreaSizeInvalid" xml:space="preserve"><value>Test area size is invalid</value></data><data name="Con_Category_FOV" xml:space="preserve"><value>Field of View</value></data><data name="Con_Category_FocusPoint" xml:space="preserve"><value>Focus Point</value></data><data name="Con_Category_Position" xml:space="preserve"><value>Position</value></data><data name="Con_Category_Size" xml:space="preserve"><value>Size</value></data><data name="Con_Category_CoordAxis" xml:space="preserve"><value>Coordinate Axis</value></data><data name="Con_Category_RefLine" xml:space="preserve"><value>Reference Line</value></data><data name="Con_Category_Mask" xml:space="preserve"><value>Mask</value></data><data name="Con_Category_Text" xml:space="preserve"><value>Text</value></data><data name="Con_Category_Display" xml:space="preserve"><value>Display</value></data><data name="Con_Category_Export" xml:space="preserve"><value>Export</value></data><data name="Con_Category_Preprocess" xml:space="preserve"><value>Preprocessing</value></data><data name="Con_Category_Filter" xml:space="preserve"><value>Filter</value></data><data name="Con_Category_Dust" xml:space="preserve"><value>Dust Removal</value></data><data name="Con_Category_Model" xml:space="preserve"><value>Model</value></data><data name="Con_Category_ObserveCam" xml:space="preserve"><value>Observation Camera</value></data><data name="Con_FOV_Angle" xml:space="preserve"><value>FOV Angle(deg)</value></data><data name="Con_FOV_Pixels" xml:space="preserve"><value>Full Pixels(px)</value></data><data name="Con_FOV_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(deg/px)</value></data><data name="Con_FOV_AngleDesc" xml:space="preserve"><value>Field of view angle</value></data><data name="Con_FP_Name" xml:space="preserve"><value>Name</value></data><data name="Con_FP_Azimuth" xml:space="preserve"><value>Azimuth(°)</value></data><data name="Con_FP_Polar" xml:space="preserve"><value>Polar Angle(°)</value></data><data name="Con_FP_Distance" xml:space="preserve"><value>Distance(px)</value></data><data name="Con_FP_RadiusPx" xml:space="preserve"><value>Radius(px)</value></data><data name="Con_FP_RadiusDeg" xml:space="preserve"><value>Radius(°)</value></data><data name="Con_Axis_EnableInteract" xml:space="preserve"><value>Enable Interaction</value></data><data name="Con_Axis_MaxAngle" xml:space="preserve"><value>Max Angle</value></data><data name="Con_Axis_CenterX" xml:space="preserve"><value>Center X</value></data><data name="Con_Axis_CenterY" xml:space="preserve"><value>Center Y</value></data><data name="Con_Axis_Radius" xml:space="preserve"><value>Axis Radius</value></data><data name="Con_Axis_AzimuthStep" xml:space="preserve"><value>Azimuth Step</value></data><data name="Con_Axis_PolarStep" xml:space="preserve"><value>Polar Step</value></data><data name="Con_Axis_LineWidth" xml:space="preserve"><value>Line Width</value></data><data name="Con_Axis_Color" xml:space="preserve"><value>Axis Color</value></data><data name="Con_Axis_RefMode" xml:space="preserve"><value>Reference Mode</value></data><data name="Con_Axis_RefAzimuth" xml:space="preserve"><value>Reference Azimuth</value></data><data name="Con_Axis_RefPolar" xml:space="preserve"><value>Reference Polar</value></data><data name="Con_Axis_RefLineWidth" xml:space="preserve"><value>Reference Line Width</value></data><data name="Con_Axis_RefColor" xml:space="preserve"><value>Reference Line Color</value></data><data name="Con_Axis_ShowMask" xml:space="preserve"><value>Show Mask</value></data><data name="Con_Axis_MaskOpacity" xml:space="preserve"><value>Mask Opacity(0-255)</value></data><data name="Con_Axis_MaskColor" xml:space="preserve"><value>Mask Color</value></data><data name="Con_Axis_ShowText" xml:space="preserve"><value>Show Text</value></data><data name="Con_Axis_TextSize" xml:space="preserve"><value>Text Size</value></data><data name="Con_Axis_TextColor" xml:space="preserve"><value>Text Color</value></data><data name="Con_Axis_AzimuthLine" xml:space="preserve"><value>Azimuth Line</value></data><data name="Con_Axis_PolarCircle" xml:space="preserve"><value>Polar Circle</value></data><data name="Con_Cfg_DisplayChannel" xml:space="preserve"><value>Display Channel</value></data><data name="Con_Cfg_PseudoColor" xml:space="preserve"><value>Pseudo Color Map</value></data><data name="Con_Cfg_UsePseudoColor" xml:space="preserve"><value>Use Pseudo Color</value></data><data name="Con_Cfg_SampleInterval" xml:space="preserve"><value>Current Curve Sample Interval(deg)</value></data><data name="Con_Cfg_ExportMetadata" xml:space="preserve"><value>Current Curve Export Metadata</value></data><data name="Con_Cfg_Decimals" xml:space="preserve"><value>Export Data Decimal Places</value></data><data name="Con_Cfg_FixNonPositiveXYZ" xml:space="preserve"><value>Fix Non-positive XYZ on Load</value></data><data name="Con_Cfg_FilterType" xml:space="preserve"><value>Filter Type</value></data><data name="Con_Cfg_KernelSize" xml:space="preserve"><value>Kernel Size</value></data><data name="Con_Cfg_GaussianSigma" xml:space="preserve"><value>Gaussian Sigma</value></data><data name="Con_Cfg_BilateralD" xml:space="preserve"><value>Bilateral d</value></data><data name="Con_Cfg_BilateralSigmaColor" xml:space="preserve"><value>Bilateral SigmaColor</value></data><data name="Con_Cfg_BilateralSigmaSpace" xml:space="preserve"><value>Bilateral SigmaSpace</value></data><data name="Con_Cfg_EnableDust" xml:space="preserve"><value>Enable Dust Removal</value></data><data name="Con_Cfg_DustType" xml:space="preserve"><value>Dust Type</value></data><data name="Con_Cfg_DetectThreshold" xml:space="preserve"><value>Detection Threshold(%)</value></data><data name="Con_Cfg_MinArea" xml:space="preserve"><value>Min Area(px)</value></data><data name="Con_Cfg_MaxArea" xml:space="preserve"><value>Max Area(px)</value></data><data name="Con_Cfg_RepairRadius" xml:space="preserve"><value>Repair Radius(px)</value></data><data name="Con_Model_FOV" xml:space="preserve"><value>FOV Angle(deg)</value></data><data name="Con_Model_Pixels" xml:space="preserve"><value>Full Pixels(px)</value></data><data name="Con_Model_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(deg/px)</value></data><data name="Con_Model_EnableObsCam" xml:space="preserve"><value>Enable Observation Camera</value></data><data name="Con_Model_SizeCoeff" xml:space="preserve"><value>Size Coefficient(mm/px)</value></data><data name="Con_Model_CenterX" xml:space="preserve"><value>Center X(px)</value></data><data name="Con_Model_CenterY" xml:space="preserve"><value>Center Y(px)</value></data></root>
+<data name="Conoscope_AllFocusPoints" xml:space="preserve"><value>All Focus Points</value></data><data name="Conoscope_AngleDegrees" xml:space="preserve"><value>Angle (°)</value></data><data name="Conoscope_CalculateAllFocusPoints" xml:space="preserve"><value>Calculate All Focus Points</value></data><data name="Conoscope_CalculateFocusPoint" xml:space="preserve"><value>Calculate Focus Point: {0}</value></data><data name="Conoscope_CircleAngleDegrees" xml:space="preserve"><value>Circle Angle (°)</value></data><data name="Conoscope_CircleDistributionTitle" xml:space="preserve"><value>Polar {0}° {1} Circle Distribution</value></data><data name="Conoscope_ClearAllFocusPoints" xml:space="preserve"><value>Clear All Focus Points</value></data><data name="Conoscope_ClearFocusPoint" xml:space="preserve"><value>Clear Focus Point</value></data><data name="Conoscope_ContrastChannel" xml:space="preserve"><value>Contrast</value></data><data name="Conoscope_ContrastNeedsReference" xml:space="preserve"><value>Contrast channel requires saving white or black field reference first</value></data><data name="Conoscope_ContrastReferenceImage" xml:space="preserve"><value>Contrast Reference Image</value></data><data name="Conoscope_CustomUv" xml:space="preserve"><value>Custom: u={0:F4}, v={1:F4}</value></data><data name="Conoscope_CvcieFileFilter" xml:space="preserve"><value>CVCIE Files (*.cvcie)|*.cvcie</value></data><data name="Conoscope_EditByAngleLength" xml:space="preserve"><value>Edit by Angle/Length...</value></data><data name="Conoscope_FocusPointInfo" xml:space="preserve"><value>{0}  Azimuth {1:F2}°  Polar {2:F2}°  R {3:F1}px/{4:F2}°</value></data><data name="Conoscope_FocusPointTemplateName" xml:space="preserve"><value>ConoscopeFocusPoint_{0}</value></data><data name="Conoscope_GlobalReference" xml:space="preserve"><value>Global Reference: {0}</value></data><data name="Conoscope_NoGlobalReference" xml:space="preserve"><value>No Global Color Difference Reference Saved</value></data><data name="Conoscope_OverallAverage" xml:space="preserve"><value>Overall Average</value></data><data name="Conoscope_PolarDistributionTitle" xml:space="preserve"><value>Azimuth {0}° {1} Distribution</value></data><data name="Conoscope_SaveGlobalReference" xml:space="preserve"><value>Save Global Reference</value></data><data name="Conoscope_ScaleCoefficientNotConfigured" xml:space="preserve"><value>Observation camera scale coefficient not configured</value></data><data name="Conoscope_TestAreaNotDisplayed" xml:space="preserve"><value>Test area not displayed</value></data><data name="Conoscope_UpdateGlobalReference" xml:space="preserve"><value>Update Global Reference</value></data><data name="Conoscope_VReferenceImage" xml:space="preserve"><value>v Reference Image</value></data><data name="Conoscope_TestAreaSizeInvalid" xml:space="preserve"><value>Test area size is invalid</value></data><data name="Con_Category_FOV" xml:space="preserve"><value>Field of View</value></data><data name="Con_Category_FocusPoint" xml:space="preserve"><value>Focus Point</value></data><data name="Con_Category_Position" xml:space="preserve"><value>Position</value></data><data name="Con_Category_Size" xml:space="preserve"><value>Size</value></data><data name="Con_Category_CoordAxis" xml:space="preserve"><value>Coordinate Axis</value></data><data name="Con_Category_RefLine" xml:space="preserve"><value>Reference Line</value></data><data name="Con_Category_Mask" xml:space="preserve"><value>Mask</value></data><data name="Con_Category_Text" xml:space="preserve"><value>Text</value></data><data name="Con_Category_Display" xml:space="preserve"><value>Display</value></data><data name="Con_Category_Export" xml:space="preserve"><value>Export</value></data><data name="Con_Category_Preprocess" xml:space="preserve"><value>Preprocessing</value></data><data name="Con_Category_Filter" xml:space="preserve"><value>Filter</value></data><data name="Con_Category_Dust" xml:space="preserve"><value>Dust Removal</value></data><data name="Con_Category_Model" xml:space="preserve"><value>Model</value></data><data name="Con_Category_ObserveCam" xml:space="preserve"><value>Observation Camera</value></data><data name="Con_FOV_Angle" xml:space="preserve"><value>FOV Angle(deg)</value></data><data name="Con_FOV_Pixels" xml:space="preserve"><value>Full Pixels(px)</value></data><data name="Con_FOV_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(deg/px)</value></data><data name="Con_FOV_AngleDesc" xml:space="preserve"><value>Field of view angle</value></data><data name="Con_FP_Name" xml:space="preserve"><value>Name</value></data><data name="Con_FP_Azimuth" xml:space="preserve"><value>Azimuth(°)</value></data><data name="Con_FP_Polar" xml:space="preserve"><value>Polar Angle(°)</value></data><data name="Con_FP_Distance" xml:space="preserve"><value>Distance(px)</value></data><data name="Con_FP_RadiusPx" xml:space="preserve"><value>Radius(px)</value></data><data name="Con_FP_RadiusDeg" xml:space="preserve"><value>Radius(°)</value></data><data name="Con_Axis_EnableInteract" xml:space="preserve"><value>Enable Interaction</value></data><data name="Con_Axis_MaxAngle" xml:space="preserve"><value>Max Angle</value></data><data name="Con_Axis_CenterX" xml:space="preserve"><value>Center X</value></data><data name="Con_Axis_CenterY" xml:space="preserve"><value>Center Y</value></data><data name="Con_Axis_Radius" xml:space="preserve"><value>Axis Radius</value></data><data name="Con_Axis_AzimuthStep" xml:space="preserve"><value>Azimuth Step</value></data><data name="Con_Axis_PolarStep" xml:space="preserve"><value>Polar Step</value></data><data name="Con_Axis_LineWidth" xml:space="preserve"><value>Line Width</value></data><data name="Con_Axis_Color" xml:space="preserve"><value>Axis Color</value></data><data name="Con_Axis_RefMode" xml:space="preserve"><value>Reference Mode</value></data><data name="Con_Axis_RefAzimuth" xml:space="preserve"><value>Reference Azimuth</value></data><data name="Con_Axis_RefPolar" xml:space="preserve"><value>Reference Polar</value></data><data name="Con_Axis_RefLineWidth" xml:space="preserve"><value>Reference Line Width</value></data><data name="Con_Axis_RefColor" xml:space="preserve"><value>Reference Line Color</value></data><data name="Con_Axis_ShowMask" xml:space="preserve"><value>Show Mask</value></data><data name="Con_Axis_MaskOpacity" xml:space="preserve"><value>Mask Opacity(0-255)</value></data><data name="Con_Axis_MaskColor" xml:space="preserve"><value>Mask Color</value></data><data name="Con_Axis_ShowText" xml:space="preserve"><value>Show Text</value></data><data name="Con_Axis_TextSize" xml:space="preserve"><value>Text Size</value></data><data name="Con_Axis_TextColor" xml:space="preserve"><value>Text Color</value></data><data name="Con_Axis_AzimuthLine" xml:space="preserve"><value>Azimuth Line</value></data><data name="Con_Axis_PolarCircle" xml:space="preserve"><value>Polar Circle</value></data><data name="Con_Cfg_DisplayChannel" xml:space="preserve"><value>Display Channel</value></data><data name="Con_Cfg_PseudoColor" xml:space="preserve"><value>Pseudo Color Map</value></data><data name="Con_Cfg_UsePseudoColor" xml:space="preserve"><value>Use Pseudo Color</value></data><data name="Con_Cfg_SampleInterval" xml:space="preserve"><value>Current Curve Sample Interval(deg)</value></data><data name="Con_Cfg_ExportMetadata" xml:space="preserve"><value>Current Curve Export Metadata</value></data><data name="Con_Cfg_Decimals" xml:space="preserve"><value>Export Data Decimal Places</value></data><data name="Con_Cfg_FixNonPositiveXYZ" xml:space="preserve"><value>Fix Non-positive XYZ on Load</value></data><data name="Con_Cfg_FilterType" xml:space="preserve"><value>Filter Type</value></data><data name="Con_Cfg_KernelSize" xml:space="preserve"><value>Kernel Size</value></data><data name="Con_Cfg_GaussianSigma" xml:space="preserve"><value>Gaussian Sigma</value></data><data name="Con_Cfg_BilateralD" xml:space="preserve"><value>Bilateral d</value></data><data name="Con_Cfg_BilateralSigmaColor" xml:space="preserve"><value>Bilateral SigmaColor</value></data><data name="Con_Cfg_BilateralSigmaSpace" xml:space="preserve"><value>Bilateral SigmaSpace</value></data><data name="Con_Cfg_EnableDust" xml:space="preserve"><value>Enable Dust Removal</value></data><data name="Con_Cfg_DustType" xml:space="preserve"><value>Dust Type</value></data><data name="Con_Cfg_DetectThreshold" xml:space="preserve"><value>Detection Threshold(%)</value></data><data name="Con_Cfg_MinArea" xml:space="preserve"><value>Min Area(px)</value></data><data name="Con_Cfg_MaxArea" xml:space="preserve"><value>Max Area(px)</value></data><data name="Con_Cfg_RepairRadius" xml:space="preserve"><value>Repair Radius(px)</value></data><data name="Con_Model_FOV" xml:space="preserve"><value>FOV Angle(deg)</value></data><data name="Con_Model_Pixels" xml:space="preserve"><value>Full Pixels(px)</value></data><data name="Con_Model_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(deg/px)</value></data><data name="Con_Model_EnableObsCam" xml:space="preserve"><value>Enable Observation Camera</value></data><data name="Con_Model_SizeCoeff" xml:space="preserve"><value>Size Coefficient(mm/px)</value></data><data name="Con_Model_CenterX" xml:space="preserve"><value>Center X(px)</value></data><data name="Con_Model_CenterY" xml:space="preserve"><value>Center Y(px)</value></data>
+  <data name="MsgNoFixedLightSource" xml:space="preserve">
+    <value>? front chromatic aberration base ? No ??? source</value>
+  </data>
+  <data name="MsgFocusPointNotReady" xml:space="preserve">
+    <value>? front ? image ????? close ? dot ??。</value>
+  </data>
+  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
+    <value>Please ??? close ? dot circle 。</value>
+  </data>
+  <data name="MsgNoPixelsInCenter" xml:space="preserve">
+    <value>? image mid ? 50px close ? dot inner ? ?? Pixel</value>
+  </data>
+  <data name="MsgPolarExportSuccess" xml:space="preserve">
+    <value>extreme ? {0}° export Success</value>
+  </data>
+  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
+    <value>?? base ?? need Save base ?? back ? dot ??</value>
+  </data>
+  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
+    <value>Save chromatic aberration base ?? Failed : {0}</value>
+  </data>
+  <data name="MsgInvalidCustomUV" xml:space="preserve">
+    <value>Please ?? ? ??? u/v base ? Coordinate</value>
+  </data>
+  <data name="TbCircleTip" xml:space="preserve">
+    <value>??? new close ? dot circle</value>
+  </data>
+  <data name="MsgImageSizeMismatch" xml:space="preserve">
+    <value>? front ? image ?? and chromatic aberration base ?? not 1 ?，??? dot ??</value>
+  </data>
+  <data name="Msg3DViewNotReady" xml:space="preserve">
+    <value>? front ? image ????? 3D View</value>
+  </data>
+  <data name="MsgFocusPointNoPixels" xml:space="preserve">
+    <value>{0} ? ?? Pixel 。</value>
+  </data>
+  <data name="Msg3DViewOpenFailed" xml:space="preserve">
+    <value>Open 3D ViewFailed: {0}</value>
+  </data>
+  <data name="TbEditFocusPointTip" xml:space="preserve">
+    <value>open ? back Enter close ? dot Tools ? style ...</value>
+  </data>
+</root>
