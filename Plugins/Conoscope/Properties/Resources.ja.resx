@@ -98,10 +98,10 @@
     <value>キャプチャ</value>
   </data>
   <data name="TabPreprocess" xml:space="preserve">
-    <value>处理</value>
+    <value>処理</value>
   </data>
   <data name="TabAnalysis" xml:space="preserve">
-    <value>分析</value>
+    <value>解析</value>
   </data>
   <data name="GroupData" xml:space="preserve">
     <value>ファイル</value>
@@ -119,7 +119,7 @@
     <value>測定カメラ</value>
   </data>
   <data name="GroupEnable" xml:space="preserve">
-    <value>Enabled</value>
+    <value>有効化</value>
   </data>
   <data name="GroupFilter" xml:space="preserve">
     <value>フィルター</value>
@@ -131,13 +131,13 @@
     <value>エクスポート</value>
   </data>
   <data name="GroupGamut" xml:space="preserve">
-    <value>Color Gamut</value>
+    <value>色域</value>
   </data>
   <data name="GroupContrast" xml:space="preserve">
     <value>コントラスト</value>
   </data>
   <data name="GroupConfig" xml:space="preserve">
-    <value>Configuration</value>
+    <value>設定</value>
   </data>
   <data name="GroupOpen" xml:space="preserve">
     <value>開く</value>
@@ -149,19 +149,19 @@
     <value>チャネル</value>
   </data>
   <data name="LabelReference" xml:space="preserve">
-    <value>参考</value>
+    <value>基準</value>
   </data>
   <data name="LabelStandard" xml:space="preserve">
-    <value>标准</value>
+    <value>標準</value>
   </data>
   <data name="LabelAzimuthDeg" xml:space="preserve">
-    <value>方位角(°)</value>
+    <value>方位角 (°)</value>
   </data>
   <data name="LabelPolarDeg" xml:space="preserve">
-    <value>极角(°)</value>
+    <value>極角 (°)</value>
   </data>
   <data name="LabelExposure" xml:space="preserve">
-    <value>Exposure</value>
+    <value>露光</value>
   </data>
   <data name="ChannelX" xml:space="preserve">
     <value>X チャネル</value>
@@ -185,7 +185,7 @@
     <value>v 色度</value>
   </data>
   <data name="ChannelDeltaUV" xml:space="preserve">
-    <value>Color Difference Δuv</value>
+    <value>Δuv 色差</value>
   </data>
   <data name="ChannelXShort" xml:space="preserve">
     <value>X Ch</value>
@@ -197,34 +197,34 @@
     <value>Z Ch</value>
   </data>
   <data name="ChannelCieXShort" xml:space="preserve">
-    <value>x色度</value>
+    <value>x 色度</value>
   </data>
   <data name="ChannelCieYShort" xml:space="preserve">
-    <value>y色度</value>
+    <value>y 色度</value>
   </data>
   <data name="ChannelCieUShort" xml:space="preserve">
-    <value>u色度</value>
+    <value>u 色度</value>
   </data>
   <data name="ChannelCieVShort" xml:space="preserve">
-    <value>v色度</value>
+    <value>v 色度</value>
   </data>
   <data name="ChannelDeltaUVShort" xml:space="preserve">
     <value>Δuv</value>
   </data>
   <data name="RefAzimuthLine" xml:space="preserve">
-    <value>方位角直线</value>
+    <value>方位基準線</value>
   </data>
   <data name="RefPolarCircle" xml:space="preserve">
-    <value>极角圆</value>
+    <value>極角基準円</value>
   </data>
   <data name="BtnObservationCamera" xml:space="preserve">
     <value>観察カメラ</value>
   </data>
   <data name="BtnSettings" xml:space="preserve">
-    <value>Settings</value>
+    <value>設定</value>
   </data>
   <data name="BtnExecute" xml:space="preserve">
-    <value>执行</value>
+    <value>実行</value>
   </data>
   <data name="BtnCapturePhoto" xml:space="preserve">
     <value>キャプチャ</value>
@@ -263,7 +263,7 @@
     <value>現在のデータをエクスポート</value>
   </data>
   <data name="BtnPolarCoord" xml:space="preserve">
-    <value>极坐标</value>
+    <value>極座標</value>
   </data>
   <data name="BtnFindDevice" xml:space="preserve">
     <value>デバイスを検索</value>
@@ -395,10 +395,10 @@
     <value>断面エクスポートを有効にする</value>
   </data>
   <data name="StatusNotRecorded" xml:space="preserve">
-    <value>未记录</value>
+    <value>未記録</value>
   </data>
   <data name="StatusExecuting" xml:space="preserve">
-    <value>执行中</value>
+    <value>実行中</value>
   </data>
   <data name="StatusCapturing" xml:space="preserve">
     <value>キャプチャ中</value>
@@ -476,7 +476,7 @@
     <value>まず極角を選択してください</value>
   </data>
   <data name="TbEdit" xml:space="preserve">
-    <value>Edit</value>
+    <value>編集</value>
   </data>
   <data name="TbEditTip" xml:space="preserve">
     <value>既存のフォーカスポイント円を選択してドラッグします</value>
@@ -494,49 +494,49 @@
     <value>すべてのフォーカスポイントをクリアします</value>
   </data>
   <data name="PanelColorDiff" xml:space="preserve">
-    <value>Color Difference</value>
+    <value>色差</value>
   </data>
   <data name="LabelRefMode" xml:space="preserve">
     <value>基準モード:</value>
   </data>
   <data name="LabelColorDiffCalc" xml:space="preserve">
-    <value>Color Difference Calculation</value>
+    <value>色差計算</value>
   </data>
   <data name="LabelBaseRef" xml:space="preserve">
-    <value>Reference:</value>
+    <value>基準:</value>
   </data>
   <data name="LabelRefCurve" xml:space="preserve">
-    <value>参考曲线</value>
+    <value>基準曲線</value>
   </data>
   <data name="LabelMode" xml:space="preserve">
     <value>モード</value>
   </data>
   <data name="LabelCurrentValue" xml:space="preserve">
-    <value>Current Value</value>
+    <value>現在値</value>
   </data>
   <data name="LabelGraph" xml:space="preserve">
     <value>グラフ</value>
   </data>
   <data name="CbiD65" xml:space="preserve">
-    <value>D65 Light Source</value>
+    <value>D65 光源</value>
   </data>
   <data name="CbiD50" xml:space="preserve">
-    <value>D50 Light Source</value>
+    <value>D50 光源</value>
   </data>
   <data name="CbiA" xml:space="preserve">
-    <value>A Light Source</value>
+    <value>A 光源</value>
   </data>
   <data name="CbiD75" xml:space="preserve">
-    <value>D75 Light Source</value>
+    <value>D75 光源</value>
   </data>
   <data name="CbiCenter50px" xml:space="preserve">
-    <value>Image Center 50px</value>
+    <value>画像中心 50px</value>
   </data>
   <data name="CbiCustomCoord" xml:space="preserve">
     <value>カスタム座標</value>
   </data>
   <data name="CbiMeasuredBase" xml:space="preserve">
-    <value>实测基准图</value>
+    <value>測定基準画像</value>
   </data>
   <data name="CbiAzimuthExport" xml:space="preserve">
     <value>方位角でエクスポート</value>
@@ -560,13 +560,13 @@
     <value>しきい値 %</value>
   </data>
   <data name="LabelMinArea" xml:space="preserve">
-    <value>Minimum Area</value>
+    <value>最小面積</value>
   </data>
   <data name="LabelMaxArea" xml:space="preserve">
-    <value>Maximum Area</value>
+    <value>最大面積</value>
   </data>
   <data name="LabelRepairRadius" xml:space="preserve">
-    <value>Repair Radius</value>
+    <value>補修半径</value>
   </data>
   <data name="CbiDarkSpot" xml:space="preserve">
     <value>ダークスポット</value>
@@ -590,7 +590,7 @@
     <value>現在のカーブエクスポート設定</value>
   </data>
   <data name="TitleConoscopeSettings" xml:space="preserve">
-    <value>Conoscope Settings</value>
+    <value>Conoscope 設定</value>
   </data>
   <data name="TitleMvsCameraView" xml:space="preserve">
     <value>MVS カメラ ビュー</value>
@@ -599,7 +599,7 @@
     <value>観察カメラ設定</value>
   </data>
   <data name="TitleColorGamutResult" xml:space="preserve">
-    <value>Color Gamut Calculation Result</value>
+    <value>色域計算結果</value>
   </data>
   <data name="TitleContrastResult" xml:space="preserve">
     <value>コントラスト結果</value>
@@ -626,7 +626,7 @@
     <value>ヒント: 両方のエクスポート モードを同時に選択できます</value>
   </data>
   <data name="GroupBoxAzimuthSettings" xml:space="preserve">
-    <value>Azimuth Settings</value>
+    <value>方位角設定</value>
   </data>
   <data name="LabelAzimuthStep" xml:space="preserve">
     <value>方位角ステップ (度):</value>
@@ -638,7 +638,7 @@
     <value>ヒント: 方位角ステップは角度サンプリング密度を、半径方向ステップは中心から端までの密度を制御します</value>
   </data>
   <data name="GroupBoxPolarSettings" xml:space="preserve">
-    <value>Polar Angle Settings</value>
+    <value>極角設定</value>
   </data>
   <data name="LabelRingStep" xml:space="preserve">
     <value>リング ステップ (度):</value>
@@ -653,16 +653,16 @@
     <value>断面エクスポート (任意)</value>
   </data>
   <data name="RbAzimuthSection" xml:space="preserve">
-    <value>Azimuth Cross-section</value>
+    <value>方位角断面</value>
   </data>
   <data name="LabelAzimuthDegLabel" xml:space="preserve">
-    <value>Azimuth (degrees):</value>
+    <value>方位角 (度):</value>
   </data>
   <data name="RbPolarSection" xml:space="preserve">
-    <value>Polar Angle Cross-section</value>
+    <value>極角断面</value>
   </data>
   <data name="LabelPolarDegLabel" xml:space="preserve">
-    <value>Polar Angle (degrees):</value>
+    <value>極角 (度):</value>
   </data>
   <data name="HintSectionExport" xml:space="preserve">
     <value>ヒント: 断面エクスポートでは、指定した角度の単一断面のみを出力します</value>
@@ -719,7 +719,7 @@
     <value>サンプリング間隔は 0.01 から 360 の間で指定してください</value>
   </data>
   <data name="GroupBoxGlobalSettings" xml:space="preserve">
-    <value>グローバル設定</value>
+    <value>全般設定</value>
   </data>
   <data name="GroupBoxPreprocessSettings" xml:space="preserve">
     <value>前処理設定</value>
@@ -728,7 +728,7 @@
     <value>モデルパラメータ</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>View</value>
+    <value>表示</value>
   </data>
   <data name="MenuShowToolbar" xml:space="preserve">
     <value>ツールバーを表示</value>
@@ -746,7 +746,7 @@
     <value>ソフトトリガー</value>
   </data>
   <data name="LabelExposureMs" xml:space="preserve">
-    <value>Exposure (ms)</value>
+    <value>露光 (ms)</value>
   </data>
   <data name="LabelGain" xml:space="preserve">
     <value>ゲイン</value>
@@ -761,7 +761,7 @@
     <value>エリアを選択</value>
   </data>
   <data name="StatusExposure" xml:space="preserve">
-    <value>Exposure: </value>
+    <value>露光: </value>
   </data>
   <data name="StatusGain" xml:space="preserve">
     <value>ゲイン: </value>
@@ -770,7 +770,7 @@
     <value>フレームレート: </value>
   </data>
   <data name="StatusImageCount" xml:space="preserve">
-    <value>图像数: </value>
+    <value>画像数: </value>
   </data>
   <data name="TabTestArea" xml:space="preserve">
     <value>テストエリア</value>
@@ -785,10 +785,10 @@
     <value>サイズ係数 (mm/px)</value>
   </data>
   <data name="LabelCenterXPx" xml:space="preserve">
-    <value>中心 X(px)</value>
+    <value>中心 X (px)</value>
   </data>
   <data name="LabelCenterYPx" xml:space="preserve">
-    <value>中心 Y(px)</value>
+    <value>中心 Y (px)</value>
   </data>
   <data name="ColNumber" xml:space="preserve">
     <value>#</value>
@@ -797,40 +797,40 @@
     <value>フォーカスポイント</value>
   </data>
   <data name="ColAzimuthDeg" xml:space="preserve">
-    <value>方位角(°)</value>
+    <value>方位角 (°)</value>
   </data>
   <data name="ColPolarDeg" xml:space="preserve">
-    <value>极角(°)</value>
+    <value>極角 (°)</value>
   </data>
   <data name="ColRadiusDeg" xml:space="preserve">
-    <value>Radius(°)</value>
+    <value>半径 (°)</value>
   </data>
   <data name="ColRChromaticity" xml:space="preserve">
-    <value>R 色坐标</value>
+    <value>R 色度</value>
   </data>
   <data name="ColGChromaticity" xml:space="preserve">
-    <value>G 色坐标</value>
+    <value>G 色度</value>
   </data>
   <data name="ColBChromaticity" xml:space="preserve">
-    <value>B 色坐标</value>
+    <value>B 色度</value>
   </data>
   <data name="ColGamutValue" xml:space="preserve">
-    <value>Color GamutValue(%)</value>
+    <value>色域 (%)</value>
   </data>
   <data name="ColWhiteLuminance" xml:space="preserve">
     <value>白輝度</value>
   </data>
   <data name="ColBlackLuminance" xml:space="preserve">
-    <value>黑Brightness</value>
+    <value>黒輝度</value>
   </data>
   <data name="ColContrast" xml:space="preserve">
     <value>コントラスト</value>
   </data>
   <data name="ColWhiteChromaticity" xml:space="preserve">
-    <value>白色坐标</value>
+    <value>白色度</value>
   </data>
   <data name="ColBlackChromaticity" xml:space="preserve">
-    <value>黑色坐标</value>
+    <value>黒色度</value>
   </data>
   <data name="MenuOpenWithConoscope" xml:space="preserve">
     <value>Conoscope で開く</value>
@@ -854,7 +854,7 @@
     <value>白</value>
   </data>
   <data name="SlotBlack" xml:space="preserve">
-    <value>黑</value>
+    <value>黒</value>
   </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} を記録しました
@@ -889,7 +889,7 @@
     <value>ローパス k{0}</value>
   </data>
   <data name="FilterMean" xml:space="preserve">
-    <value>平均値カーネル{0}</value>
+    <value>平均 k{0}</value>
   </data>
   <data name="FilterGaussian" xml:space="preserve">
     <value>ガウシアン k{0}</value>
@@ -919,19 +919,19 @@
     <value>ダーク+ブライト</value>
   </data>
   <data name="TitleGamutCalc" xml:space="preserve">
-    <value>Color GamutCalculate</value>
+    <value>色域計算</value>
   </data>
   <data name="TitleContrastCalc" xml:space="preserve">
     <value>コントラスト計算</value>
   </data>
   <data name="TitleAnalysisRecord" xml:space="preserve">
-    <value>分析记录</value>
+    <value>解析記録</value>
   </data>
   <data name="TitleError" xml:space="preserve">
     <value>エラー</value>
   </data>
   <data name="TitleSuccess" xml:space="preserve">
-    <value>Success</value>
+    <value>成功</value>
   </data>
   <data name="TitleHint" xml:space="preserve">
     <value>ヒント</value>
@@ -964,10 +964,10 @@
     <value>観察カメラ設定</value>
   </data>
   <data name="Estimated" xml:space="preserve">
-    <value>预计</value>
+    <value>推定</value>
   </data>
   <data name="ReferenceCurve" xml:space="preserve">
-    <value>参考曲线 (Reference Distribution)</value>
+    <value>基準分布</value>
   </data>
   <data name="XYZDataNotLoaded" xml:space="preserve">
     <value>XYZ データが読み込まれていません</value>
@@ -979,7 +979,7 @@
     <value>フォーカスポイント {0} 個、平均色域 {1}%</value>
   </data>
   <data name="Measured" xml:space="preserve">
-    <value>实测 {0}</value>
+    <value>測定 {0}</value>
   </data>
   <data name="FocusPointCountAndAverageContrast" xml:space="preserve">
     <value>フォーカスポイント {0} 個、平均コントラスト {1}:1、最小 {2}:1、最大 {3}:1</value>
@@ -988,7 +988,7 @@
     <value>CVCIE XYZ 画像ファイルを選択してください</value>
   </data>
   <data name="Invalid" xml:space="preserve">
-    <value>无效</value>
+    <value>無効</value>
   </data>
   <data name="BlackLuminanceMustBePositive" xml:space="preserve">
     <value>コントラストを計算するには、黒輝度が 0 より大きい必要があります</value>
@@ -1006,40 +1006,40 @@
     <value>色差チャネルには uv 基準が必要です</value>
   </data>
   <data name="UReferenceImage" xml:space="preserve">
-    <value>u 基准图</value>
+    <value>u 基準画像</value>
   </data>
   <data name="SizeMismatchFormat" xml:space="preserve">
     <value>{0} のサイズが現在の画像と一致しません</value>
   </data>
   <data name="ReferenceFormat" xml:space="preserve">
-    <value>参考: {0}</value>
+    <value>基準: {0}</value>
   </data>
   <data name="PixelCoordFormat" xml:space="preserve">
     <value>ピクセル: X={0}, Y={1}</value>
   </data>
   <data name="PolarCoordFormat" xml:space="preserve">
-    <value>极坐标: 方位={0}°, 极角={1}°</value>
+    <value>極座標: 方位角={0}°, 極角={1}°</value>
   </data>
   <data name="RadiusFormat" xml:space="preserve">
-    <value>Radius: {0}</value>
+    <value>半径: {0}</value>
   </data>
   <data name="FocusPointYUV" xml:space="preserve">
     <value>Y:{0}  u:{1}  v:{2}</value>
   </data>
   <data name="GroupColorDifference" xml:space="preserve">
-    <value>Color Difference</value>
+    <value>色差</value>
   </data>
   <data name="ChannelContrast" xml:space="preserve">
     <value>コントラスト</value>
   </data>
   <data name="BtnReapply" xml:space="preserve">
-    <value>重新应用</value>
+    <value>再適用</value>
   </data>
   <data name="BtnBlackReference" xml:space="preserve">
-    <value>黑基准</value>
+    <value>黒基準</value>
   </data>
   <data name="BtnWhiteReference" xml:space="preserve">
-    <value>白基准</value>
+    <value>白基準</value>
   </data>
   <data name="BtnColorDifferenceReference" xml:space="preserve">
     <value>色差基準</value>
@@ -1087,16 +1087,16 @@
     <value>現在の画像</value>
   </data>
   <data name="ContrastImageBlack" xml:space="preserve">
-    <value>暗图</value>
+    <value>暗画像</value>
   </data>
   <data name="ContrastImageWhite" xml:space="preserve">
-    <value>亮图</value>
+    <value>明画像</value>
   </data>
   <data name="ContrastReferenceBlackField" xml:space="preserve">
-    <value>黑场</value>
+    <value>黒場</value>
   </data>
   <data name="ContrastReferenceWhiteField" xml:space="preserve">
-    <value>白场</value>
+    <value>白場</value>
   </data>
   <data name="MsgOriginalDataRestored" xml:space="preserve">
     <value>元のデータを復元しました。</value>
@@ -1162,7 +1162,7 @@
     <value>解析パラメーター</value>
   </data>
   <data name="GroupComputeActions" xml:space="preserve">
-    <value>計算アクション</value>
+    <value>計算操作</value>
   </data>
   <data name="GroupThemeAndLanguage" xml:space="preserve">
     <value>テーマと言語</value>
@@ -1171,10 +1171,10 @@
     <value>テーマ</value>
   </data>
   <data name="LabelLanguage" xml:space="preserve">
-    <value>语言</value>
+    <value>言語</value>
   </data>
   <data name="LabelDecimalPlaces" xml:space="preserve">
-    <value>数据小数位数:</value>
+    <value>小数点以下桁数:</value>
   </data>
   <data name="TipRangeLimit" xml:space="preserve">
     <value>有効円内だけに表示マッピングを適用します。オフの場合は画像全体を表示します。</value>

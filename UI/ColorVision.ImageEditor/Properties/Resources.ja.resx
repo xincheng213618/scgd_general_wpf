@@ -62,10 +62,10 @@
     <value>ズームツール</value>
   </data>
   <data name="ZoomIn" xml:space="preserve">
-    <value>放大</value>
+    <value>拡大</value>
   </data>
   <data name="ZoomOut" xml:space="preserve">
-    <value>缩小</value>
+    <value>縮小</value>
   </data>
   <data name="ZoomNone" xml:space="preserve">
     <value>元のサイズ</value>
@@ -74,7 +74,7 @@
     <value>画面に適応する</value>
   </data>
   <data name="Property" xml:space="preserve">
-    <value>Property(_R)</value>
+    <value>属性</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>開ける</value>
@@ -92,16 +92,16 @@
     <value>右に回す</value>
   </data>
   <data name="FlipHorizontal" xml:space="preserve">
-    <value>水平翻转(_H)</value>
+    <value>水平反転</value>
   </data>
   <data name="FlipVertical" xml:space="preserve">
-    <value>垂直翻转(_V)</value>
+    <value>垂直反転</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
-    <value>Полный экран</value>
+    <value>全画面</value>
   </data>
   <data name="Print" xml:space="preserve">
-    <value>打印</value>
+    <value>印刷</value>
   </data>
   <data name="SaveAsImage" xml:space="preserve">
     <value>スクリーンショット</value>
@@ -110,10 +110,10 @@
     <value>ビットマップ拡大縮小モード</value>
   </data>
   <data name="Invert" xml:space="preserve">
-    <value>反相</value>
+    <value>反転</value>
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
-    <value>切面图</value>
+    <value>断面</value>
   </data>
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>画像アルゴリズム</value>
@@ -122,16 +122,16 @@
     <value>オンライン</value>
   </data>
   <data name="Internal" xml:space="preserve">
-    <value>内切</value>
+    <value>切開</value>
   </data>
   <data name="External" xml:space="preserve">
-    <value>外切</value>
+    <value>外切開</value>
   </data>
   <data name="Absolute" xml:space="preserve">
-    <value>AbsoluteValue</value>
+    <value>絶対値</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>RelativeValue</value>
+    <value>相対価値</value>
   </data>
   <data name="AutoLevelsAdjustment" xml:space="preserve">
     <value>自動レベル調整</value>
@@ -146,7 +146,7 @@
     <value>明るさとコントラストの調整</value>
   </data>
   <data name="ThresholdProcessing" xml:space="preserve">
-    <value>しきい値処理</value>
+    <value>閾値処理</value>
   </data>
   <data name="MoireRemove" xml:space="preserve">
     <value>モアレパターンを除去する</value>
@@ -167,7 +167,7 @@
     <value>ヒストグラム均等化</value>
   </data>
   <data name="ColormapTypes" xml:space="preserve">
-    <value>疑似カラー</value>
+    <value>偽色</value>
   </data>
   <data name="IsShowText" xml:space="preserve">
     <value>表示テキスト</value>
@@ -203,19 +203,19 @@
     <value>モード</value>
   </data>
   <data name="Draw_Color" xml:space="preserve">
-    <value>颜色</value>
+    <value>色</value>
   </data>
   <data name="Draw_LineWidth" xml:space="preserve">
-    <value>线宽</value>
+    <value>線幅</value>
   </data>
   <data name="Draw_Angle" xml:space="preserve">
-    <value>Angle</value>
+    <value>角度</value>
   </data>
   <data name="Draw_CenterX" xml:space="preserve">
-    <value>中心点X</value>
+    <value>中心X</value>
   </data>
   <data name="Draw_CenterY" xml:space="preserve">
-    <value>中心点Y</value>
+    <value>中心Y</value>
   </data>
   <data name="Draw_MaskSettings" xml:space="preserve">
     <value>マスク設定</value>
@@ -275,7 +275,7 @@
     <value>フォント</value>
   </data>
   <data name="Draw_Position" xml:space="preserve">
-    <value>Позиция</value>
+    <value>位置</value>
   </data>
   <data name="Draw_Background" xml:space="preserve">
     <value>背景</value>
@@ -314,22 +314,22 @@
     <value>ラスタライズ</value>
   </data>
   <data name="Ruler_StartPoint" xml:space="preserve">
-    <value>起点</value>
+    <value>始点</value>
   </data>
   <data name="Ruler_TotalLength" xml:space="preserve">
-    <value>总长</value>
+    <value>総長</value>
   </data>
   <data name="Ruler_MeasureWithRealUnits" xml:space="preserve">
     <value>測定に実際の単位を有効にする</value>
   </data>
   <data name="Ruler_Calculate" xml:space="preserve">
-    <value>Calculate</value>
+    <value>計算</value>
   </data>
   <data name="Ruler_PhysicalScale" xml:space="preserve">
     <value>物理スケール</value>
   </data>
   <data name="Ruler_PhysicalUnit" xml:space="preserve">
-    <value>物理单位</value>
+    <value>物理単位</value>
   </data>
   <data name="Ruler_PixelRepresents" xml:space="preserve">
     <value>1ピクセルは実際の</value>
@@ -452,10 +452,10 @@
     <value>明示的なスコープにまだ移行されていないレガシーキーです。整理をお勧めします。</value>
   </data>
   <data name="Cie_Title" xml:space="preserve">
-    <value>CIE 色度图</value>
+    <value>CIE 色度図</value>
   </data>
   <data name="Cie_CoordinateSystem" xml:space="preserve">
-    <value>坐标系</value>
+    <value>座標系</value>
   </data>
   <data name="Cie_Fit" xml:space="preserve">
     <value>フィット</value>
@@ -476,13 +476,13 @@
     <value>クリア</value>
   </data>
   <data name="Cie_ColorGamut" xml:space="preserve">
-    <value>Color Gamut</value>
+    <value>色域</value>
   </data>
   <data name="Cie_WhitePointLightSource" xml:space="preserve">
-    <value>白点 / 光源</value>
+    <value>白色点 / 光源</value>
   </data>
   <data name="Cie_ReferenceLines" xml:space="preserve">
-    <value>参考线</value>
+    <value>基準線</value>
   </data>
   <data name="Cie_CurrentPoint" xml:space="preserve">
     <value>現在のポイント</value>
@@ -638,9 +638,9 @@
     <value>Controls loading strategies such as converting Gray32Float TIFF to Gray16 when opening.</value>
   </data>
   <data name="Draw_Delete" xml:space="preserve">
-    <value>Delete</value>
+    <value>削除</value>
   </data>
   <data name="Draw_Edit" xml:space="preserve">
-    <value>Edit</value>
+    <value>編集</value>
   </data>
 <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data></root>

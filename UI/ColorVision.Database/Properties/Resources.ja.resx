@@ -121,13 +121,13 @@
     <value>データベースを有効にする</value>
   </data>
   <data name="MysqlConnection" xml:space="preserve">
-    <value>MysqlConnect</value>
+    <value>MySql接続</value>
   </data>
   <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>MysqlConnectConfiguration</value>
+    <value>MySql接続設定</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>Delete</value>
+    <value>消去</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>新しい設定ファイルを作成する</value>
@@ -142,7 +142,7 @@
     <value>設定ファイルをコピーする</value>
   </data>
   <data name="ConnectionName" xml:space="preserve">
-    <value>Connection Name</value>
+    <value>接続名</value>
   </data>
   <data name="UserName" xml:space="preserve">
     <value>ユーザー</value>
@@ -169,7 +169,7 @@
     <value>ログデータベースビューア</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>Refresh</value>
+    <value>更新</value>
   </data>
   <data name="ClearCache" xml:space="preserve">
     <value>キャッシュをクリア</value>
@@ -211,7 +211,7 @@
     <value>キャッシュのクリアに失敗しました</value>
   </data>
   <data name="Query" xml:space="preserve">
-    <value>查询</value>
+    <value>検索</value>
   </data>
   <data name="StartDate" xml:space="preserve">
     <value>開始日</value>
@@ -220,7 +220,7 @@
     <value>終了日</value>
   </data>
   <data name="ShowDetail" xml:space="preserve">
-    <value>显示详情</value>
+    <value>詳細表示</value>
   </data>
   <data name="DetailInfo" xml:space="preserve">
     <value>詳細情報</value>

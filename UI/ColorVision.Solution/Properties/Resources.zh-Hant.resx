@@ -255,7 +255,7 @@
     <value>使用者管理</value>
   </data>
   <data name="Status" xml:space="preserve">
-    <value>狀態</value>
+    <value>状態</value>
   </data>
   <data name="LoginOrSwitch" xml:space="preserve">
     <value>登入/切換</value>

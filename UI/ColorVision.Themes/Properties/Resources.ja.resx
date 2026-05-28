@@ -121,7 +121,7 @@
     <value>最大化</value>
   </data>
   <data name="Minimize" xml:space="preserve">
-    <value>Minimize</value>
+    <value>最小化</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>キャンセル</value>

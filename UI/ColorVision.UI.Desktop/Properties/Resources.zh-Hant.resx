@@ -196,7 +196,7 @@
     <value>繁體中文</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>簡體中文（簡體中文）</value>
+    <value>简体中文（簡體中文）</value>
   </data>
   <data name="WriteConfigFileFailed" xml:space="preserve">
     <value>寫入配置文件 {0} 失敗</value>
@@ -358,7 +358,7 @@
     <value>echo 使用 XCOPY 回退複製...</value>
   </data>
   <data name="EchoUpdateComplete" xml:space="preserve">
-    <value>echo 更新完成。（清理在後臺進行）</value>
+    <value>echo 更新完成。（清理在後台進行）</value>
   </data>
   <data name="EchoTerminatingProcess" xml:space="preserve">
     <value>echo 正在結束進程: {0}</value>
