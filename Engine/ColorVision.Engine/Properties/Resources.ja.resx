@@ -96,7 +96,7 @@
     <value>開発中</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
-    <value>透明な窓</value>
+    <value>透明ウィンドウ</value>
   </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>送信チャンネル</value>
@@ -132,7 +132,7 @@
     <value>購読済みのトピック</value>
   </data>
   <data name="Submit" xml:space="preserve">
-    <value>提出する</value>
+    <value>送信</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
     <value>プロセスの停止</value>
@@ -213,7 +213,7 @@
     <value>登録センター</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>リフレッシュする</value>
+    <value>更新</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>受信チャンネル</value>
@@ -501,10 +501,10 @@
     <value>データベースを有効にする</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>編集する</value>
+    <value>編集</value>
   </data>
   <data name="Duration" xml:space="preserve">
-    <value>時間コスト</value>
+    <value>時間</value>
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
     <value>ダウンロードがキャンセルされました</value>
@@ -522,7 +522,7 @@
     <value>デバイスはオフラインです。最初にカメラ ID を設定してください</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>消去</value>
+    <value>削除</value>
   </data>
   <data name="DefaultExportStorageFormat" xml:space="preserve">
     <value>デフォルトのエクスポート保存形式</value>
@@ -609,7 +609,7 @@
     <value>校正</value>
   </data>
   <data name="Calculate" xml:space="preserve">
-    <value>計算する</value>
+    <value>計算</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>バッチ番号</value>
@@ -636,7 +636,7 @@
     <value>追加</value>
   </data>
   <data name="Acquire" xml:space="preserve">
-    <value>コレクション</value>
+    <value>取得</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>について</value>
@@ -876,13 +876,13 @@
     <value>物理カメラをバインドするためのコード</value>
   </data>
   <data name="FlowTemplate" xml:space="preserve">
-    <value>プロセステンプレート</value>
+    <value>フローテンプレート</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
     <value>検索結果</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
-    <value>プロセス結果管理</value>
+    <value>フロー結果管理</value>
   </data>
   <data name="ParsingManagement" xml:space="preserve">
     <value>解析管理</value>
@@ -1014,7 +1014,7 @@
     <value>両眼融合</value>
   </data>
   <data name="CharacterBrghtnessInsp" xml:space="preserve">
-    <value>キーボード検出</value>
+    <value>キーボード検査</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
     <value>サブピクセルレベルのLED検出</value>
@@ -1155,7 +1155,7 @@
     <value>ポイント時間</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
-    <value>自動ポイント</value>
+    <value>自動積分</value>
   </data>
   <data name="AutoZeroCalibration" xml:space="preserve">
     <value>自動ゼロ設定</value>
@@ -1656,7 +1656,7 @@
     <value>消す</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>始める</value>
+    <value>開始</value>
   </data>
   <data name="End" xml:space="preserve">
     <value>終了</value>
@@ -1701,7 +1701,7 @@
     <value>走査</value>
   </data>
   <data name="Blue" xml:space="preserve">
-    <value>青色光</value>
+    <value>青</value>
   </data>
   <data name="fx" xml:space="preserve">
     <value>色度×</value>
@@ -1896,7 +1896,7 @@
     <value>すでに作成されたプロセスをクリアしますか?\n\rクリア後、自動的に保存して閉じます。</value>
   </data>
   <data name="FlowEditor" xml:space="preserve">
-    <value>プロセスエディター</value>
+    <value>フローエディター</value>
   </data>
   <data name="SaveSucess" xml:space="preserve">
     <value>保存に成功しました</value>
@@ -2373,7 +2373,7 @@
     <value>実行はキャンセルされました。</value>
   </data>
   <data name="FlowWindows" xml:space="preserve">
-    <value>プロセスウィンドウ</value>
+    <value>フローウィンドウ</value>
   </data>
   <data name="Processing" xml:space="preserve">
     <value>処理...</value>
@@ -3656,5 +3656,149 @@ MaxValue: 8-bit -&gt; 255、16-bit -&gt; 65535</value>
   </data>
   <data name="UnexpectedErrorOccurred" xml:space="preserve">
     <value>予期しないエラーが発生しました: {0}</value>
+  </data>
+  <data name="Flow_CreateTemplateBeforeSelection" xml:space="preserve">
+    <value>選択する前に、対応するテンプレートを作成してください</value>
+  </data>
+  <data name="Flow_Elapsed" xml:space="preserve">
+    <value>経過時間:</value>
+  </data>
+  <data name="Flow_ElapsedTimeLabel" xml:space="preserve">
+    <value>実行済み:</value>
+  </data>
+  <data name="Flow_EndNodeNotFound" xml:space="preserve">
+    <value>プロセス終了ノードが見つかりません</value>
+  </data>
+  <data name="Flow_EstimatedRemainingLabel" xml:space="preserve">
+    <value>推定残り:</value>
+  </data>
+  <data name="Flow_ExecutingNodeLabel" xml:space="preserve">
+    <value>実行中のノード:</value>
+  </data>
+  <data name="Flow_ExportFlowFilter" xml:space="preserve">
+    <value>プロセスパッケージ (*.cvflow)|*.cvflow|STNファイル (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_FlowNotStartedMessage" xml:space="preserve">
+    <value>プロセスを開始できませんでした: 検証に失敗したか、プロセスが既に実行中か、テンプレートが選択されていません</value>
+  </data>
+  <data name="Flow_ImportFlowFilter" xml:space="preserve">
+    <value>プロセスファイル (*.cvflow;*.stn)|*.cvflow;*.stn|プロセスパッケージ (*.cvflow)|*.cvflow|STNファイル (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_ImportFlowPackageError" xml:space="preserve">
+    <value>プロセスパッケージのインポート中にエラーが発生しました: {0}</value>
+  </data>
+  <data name="Flow_LastExecutionLabel" xml:space="preserve">
+    <value>前回の実行:</value>
+  </data>
+  <data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve">
+    <value>すべてのアーカイブコマンドが送信されました</value>
+  </data>
+  <data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve">
+    <value>アーカイブコマンドが送信されました</value>
+  </data>
+  <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
+    <value>バッチ {0} 結果</value>
+  </data>
+  <data name="Flow_MeasureBatch_ClassificationLabel" xml:space="preserve">
+    <value>分類:</value>
+  </data>
+  <data name="Flow_MeasureBatch_ConfigOptions" xml:space="preserve">
+    <value>構成オプション</value>
+  </data>
+  <data name="Flow_MeasureBatch_DescriptionLabel" xml:space="preserve">
+    <value>説明:</value>
+  </data>
+  <data name="Flow_MeasureBatch_ExecutePostProcess" xml:space="preserve">
+    <value>後処理を実行</value>
+  </data>
+  <data name="Flow_MeasureBatch_NameLabel" xml:space="preserve">
+    <value>名前:</value>
+  </data>
+  <data name="Flow_MeasureBatch_NotSelected" xml:space="preserve">
+    <value>未選択</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessError" xml:space="preserve">
+    <value>処理エラー: {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessFailed" xml:space="preserve">
+    <value>処理失敗: {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessInfo" xml:space="preserve">
+    <value>処理情報</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessResult" xml:space="preserve">
+    <value>処理結果</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessSuccess" xml:space="preserve">
+    <value>処理成功: {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessType" xml:space="preserve">
+    <value>処理タイプを選択:</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessTypeToViewConfig" xml:space="preserve">
+    <value>処理タイプを選択して構成を表示してください</value>
+  </data>
+  <data name="Flow_NoAvailableTemplates" xml:space="preserve">
+    <value>(利用可能なテンプレートなし)</value>
+  </data>
+  <data name="Flow_NoPathFromStartToEnd" xml:space="preserve">
+    <value>開始ノードから終了ノードへの有効なパスが見つかりません</value>
+  </data>
+  <data name="Flow_NoValidFlowTemplateSelected" xml:space="preserve">
+    <value>有効なプロセステンプレートが選択されていません</value>
+  </data>
+  <data name="Flow_NodeLabel" xml:space="preserve">
+    <value>ノード:</value>
+  </data>
+  <data name="Flow_NotStarted" xml:space="preserve">
+    <value>未開始</value>
+  </data>
+  <data name="Flow_ParseFlowSampleError" xml:space="preserve">
+    <value>プロセスサンプルの解析中にエラーが発生しました: {0}</value>
+  </data>
+  <data name="Flow_PreProcess_AllTemplates" xml:space="preserve">
+    <value>すべてのテンプレート</value>
+  </data>
+  <data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve">
+    <value>適用済みテンプレート</value>
+  </data>
+  <data name="Flow_PreProcess_Category" xml:space="preserve">
+    <value>カテゴリ</value>
+  </data>
+  <data name="Flow_PreProcess_DisabledStatus" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledCountFormat" xml:space="preserve">
+    <value>{0} 件有効</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledStatus" xml:space="preserve">
+    <value>有効</value>
+  </data>
+  <data name="Flow_PreProcess_Processor" xml:space="preserve">
+    <value>プロセッサ</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorConfig" xml:space="preserve">
+    <value>前処理プロセッサの構成</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorCountFormat" xml:space="preserve">
+    <value>{0} 個のプロセッサ</value>
+  </data>
+  <data name="Flow_PreProcess_SaveNow" xml:space="preserve">
+    <value>今すぐ保存</value>
+  </data>
+  <data name="Flow_PreProcess_SelectProcessorToViewConfig" xml:space="preserve">
+    <value>前処理プロセッサを選択して構成を表示してください</value>
+  </data>
+  <data name="Flow_PreprocessFailedCancelled" xml:space="preserve">
+    <value>前処理が失敗したため、プロセスの実行がキャンセルされました</value>
+  </data>
+  <data name="Flow_StartNodeNotFound" xml:space="preserve">
+    <value>プロセス開始ノードが見つかりません</value>
+  </data>
+  <data name="Flow_StartupException" xml:space="preserve">
+    <value>起動例外</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>更新</value>
   </data>
 </root>

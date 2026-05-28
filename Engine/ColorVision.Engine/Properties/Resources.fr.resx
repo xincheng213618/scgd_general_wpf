@@ -87,7 +87,7 @@
     <value>utilisateur</value>
   </data>
   <data name="Upload" xml:space="preserve">
-    <value>télécharger</value>
+    <value>Téléverser</value>
   </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Se désabonner</value>
@@ -96,13 +96,13 @@
     <value>En développement</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
-    <value>fenêtre transparente</value>
+    <value>Fenêtre transparente</value>
   </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>envoyer le canal</value>
   </data>
   <data name="Topic" xml:space="preserve">
-    <value>sujet</value>
+    <value>Sujet</value>
   </data>
   <data name="Timeout" xml:space="preserve">
     <value>Temps mort</value>
@@ -126,7 +126,7 @@
     <value>Démarrage (peut échouer)</value>
   </data>
   <data name="Success" xml:space="preserve">
-    <value>succès</value>
+    <value>Succès</value>
   </data>
   <data name="SubscribedTopic" xml:space="preserve">
     <value>Sujets abonnés</value>
@@ -135,7 +135,7 @@
     <value>abonnement</value>
   </data>
   <data name="Submit" xml:space="preserve">
-    <value>soumettre</value>
+    <value>Soumettre</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
     <value>Arrêter le processus</value>
@@ -150,7 +150,7 @@
     <value>Service de démarrage</value>
   </data>
   <data name="Size" xml:space="preserve">
-    <value>taille</value>
+    <value>Taille</value>
   </data>
   <data name="SimulateSend" xml:space="preserve">
     <value>Envoi analogique</value>
@@ -186,7 +186,7 @@
     <value>Veuillez sélectionner la ressource que vous souhaitez charger :</value>
   </data>
   <data name="Search" xml:space="preserve">
-    <value>recherche</value>
+    <value>Rechercher</value>
   </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>Enregistrer la disposition des fenêtres</value>
@@ -195,7 +195,7 @@
     <value>Enregistrer la colonne de données</value>
   </data>
   <data name="Save" xml:space="preserve">
-    <value>sauvegarder</value>
+    <value>Enregistrer</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>résultat</value>
@@ -210,13 +210,13 @@
     <value>Réinitialiser</value>
   </data>
   <data name="Reset" xml:space="preserve">
-    <value>réinitialiser</value>
+    <value>Réinitialiser</value>
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>Centre d'inscription</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>rafraîchir</value>
+    <value>Actualiser</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>canal de réception</value>
@@ -255,7 +255,7 @@
     <value>Ouvrir</value>
   </data>
   <data name="OK" xml:space="preserve">
-    <value>Bien sûr</value>
+    <value>OK</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>Aucun élément associé trouvé</value>
@@ -264,7 +264,7 @@
     <value>Nouveau</value>
   </data>
   <data name="Name" xml:space="preserve">
-    <value>nom</value>
+    <value>Nom</value>
   </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>Ma licence(R)</value>
@@ -402,13 +402,13 @@
     <value>gérer</value>
   </data>
   <data name="Male" xml:space="preserve">
-    <value>mâle</value>
+    <value>Homme</value>
   </data>
   <data name="Local" xml:space="preserve">
-    <value>locale</value>
+    <value>Local</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>charger</value>
+    <value>Chargement</value>
   </data>
   <data name="LicenseManagement" xml:space="preserve">
     <value>Gestion des licences</value>
@@ -432,7 +432,7 @@
     <value>Licence d'importation</value>
   </data>
   <data name="Import" xml:space="preserve">
-    <value>importer</value>
+    <value>Importer</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>source d'images</value>
@@ -468,10 +468,10 @@
     <value>document</value>
   </data>
   <data name="Female" xml:space="preserve">
-    <value>femelle</value>
+    <value>Femme</value>
   </data>
   <data name="Failure" xml:space="preserve">
-    <value>échouer</value>
+    <value>Échec</value>
   </data>
   <data name="ExposureR" xml:space="preserve">
     <value>Exposition R</value>
@@ -504,10 +504,10 @@
     <value>Activer la base de données</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>modifier</value>
+    <value>Modifier</value>
   </data>
   <data name="Duration" xml:space="preserve">
-    <value>coût du temps</value>
+    <value>Durée</value>
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
     <value>Téléchargement annulé</value>
@@ -525,13 +525,13 @@
     <value>L'appareil est hors ligne, veuillez d'abord configurer l'ID de la caméra</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>supprimer</value>
+    <value>Supprimer</value>
   </data>
   <data name="DefaultExportStorageFormat" xml:space="preserve">
     <value>Format de stockage d'exportation par défaut</value>
   </data>
   <data name="DefaultCreateTemplateName" xml:space="preserve">
-    <value>Défaut</value>
+    <value>défaut</value>
   </data>
   <data name="Deadline" xml:space="preserve">
     <value>Date limite</value>
@@ -546,7 +546,7 @@
     <value>La version actuelle est déjà la dernière version</value>
   </data>
   <data name="CurrentSpeed" xml:space="preserve">
-    <value>AdaptiveZeroCalibration</value>
+    <value>Vitesse actuelle :</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>mesurer le temps</value>
@@ -558,7 +558,7 @@
     <value>Créer un appareil</value>
   </data>
   <data name="Create" xml:space="preserve">
-    <value>créer</value>
+    <value>Créer</value>
   </data>
   <data name="CopySerialNumber" xml:space="preserve">
     <value>Copier le numéro de série</value>
@@ -582,10 +582,10 @@
     <value>Programme de mise à jour ColorVision</value>
   </data>
   <data name="Code" xml:space="preserve">
-    <value>logo</value>
+    <value>Code</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>fermeture</value>
+    <value>Fermer</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>Effacer les données</value>
@@ -612,7 +612,7 @@
     <value>Étalonnage</value>
   </data>
   <data name="Calculate" xml:space="preserve">
-    <value>calculer</value>
+    <value>Calculer</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>numéro de lot</value>
@@ -636,10 +636,10 @@
     <value>réglages avancés</value>
   </data>
   <data name="Add" xml:space="preserve">
-    <value>Ajouter à</value>
+    <value>Ajouter</value>
   </data>
   <data name="Acquire" xml:space="preserve">
-    <value>collection</value>
+    <value>Acquérir</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
@@ -651,10 +651,10 @@
     <value>choisir</value>
   </data>
   <data name="IsDefaultOpenService" xml:space="preserve">
-    <value>EstDefaultOpenService</value>
+    <value>Ouvrir le service au démarrage</value>
   </data>
   <data name="IsRetorePlayControls" xml:space="preserve">
-    <value>IsRetorePlayControls</value>
+    <value>Restaurer la fenêtre de capture au démarrage</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>installation</value>
@@ -744,13 +744,13 @@
     <value>Seuil</value>
   </data>
   <data name="Copy" xml:space="preserve">
-    <value>copier</value>
+    <value>Copier</value>
   </data>
   <data name="Lock" xml:space="preserve">
     <value>verrouiller</value>
   </data>
   <data name="ConfirmDelete" xml:space="preserve">
-    <value>ConfirmerSupprimer</value>
+    <value>Confirmer la suppression</value>
   </data>
   <data name="CalibrationCorrection" xml:space="preserve">
     <value>Outils d'étalonnage</value>
@@ -780,7 +780,7 @@
     <value>Commande</value>
   </data>
   <data name="ProjectName" xml:space="preserve">
-    <value>NomDuProjet</value>
+    <value>Nom du projet</value>
   </data>
   <data name="Workflow" xml:space="preserve">
     <value>Flux de travail</value>
@@ -885,7 +885,7 @@
     <value>Résultats de recherche</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
-    <value>Gestion des résultats des processus</value>
+    <value>Gestion des résultats du processus</value>
   </data>
   <data name="ParsingManagement" xml:space="preserve">
     <value>Gestion de l'analyse syntaxique</value>
@@ -1017,7 +1017,7 @@
     <value>Fusion binoculaire</value>
   </data>
   <data name="CharacterBrghtnessInsp" xml:space="preserve">
-    <value>Détection du clavier</value>
+    <value>Inspection du clavier</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
     <value>Détection de LED au niveau du sous-pixel</value>
@@ -1158,7 +1158,7 @@
     <value>Points Temps</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
-    <value>Points automatiques</value>
+    <value>Intégration automatique</value>
   </data>
   <data name="AutoZeroCalibration" xml:space="preserve">
     <value>Mise à zéro automatique</value>
@@ -1197,7 +1197,7 @@
     <value>Configuration des fichiers</value>
   </data>
   <data name="CalibrationFile" xml:space="preserve">
-    <value>Documents de correction</value>
+    <value>Fichier de calibration</value>
   </data>
   <data name="CameraType" xml:space="preserve">
     <value>Modèle d'appareil photo</value>
@@ -1308,7 +1308,7 @@
     <value>Gain maximal</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>Afficher les valeurs par défaut</value>
+    <value>Temps d'exposition par défaut</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
     <value>exposition minimale</value>
@@ -1503,7 +1503,7 @@
     <value>Enregistrer dans un fichier</value>
   </data>
   <data name="Radius" xml:space="preserve">
-    <value>rayon</value>
+    <value>Rayon</value>
   </data>
   <data name="DataCorrectionFilePath" xml:space="preserve">
     <value>chemin d'accès au fichier de correction des données</value>
@@ -1539,10 +1539,10 @@
     <value>Définir la zone de placement des points</value>
   </data>
   <data name="Count" xml:space="preserve">
-    <value>quantité</value>
+    <value>Nombre</value>
   </data>
   <data name="Angle" xml:space="preserve">
-    <value>angle</value>
+    <value>Angle</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
     <value>Détecter la zone lumineuse</value>
@@ -1551,7 +1551,7 @@
     <value>Remplir la zone</value>
   </data>
   <data name="Width" xml:space="preserve">
-    <value>largeur</value>
+    <value>Largeur</value>
   </data>
   <data name="height" xml:space="preserve">
     <value>Hauteur</value>
@@ -1587,7 +1587,7 @@
     <value>Ligne brisée</value>
   </data>
   <data name="Value" xml:space="preserve">
-    <value>valeur</value>
+    <value>Valeur</value>
   </data>
   <data name="Circle" xml:space="preserve">
     <value>rond</value>
@@ -1659,7 +1659,7 @@
     <value>Éteindre</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>Commencer</value>
+    <value>Démarrer</value>
   </data>
   <data name="End" xml:space="preserve">
     <value>Fin</value>
@@ -1704,7 +1704,7 @@
     <value>balayage</value>
   </data>
   <data name="Blue" xml:space="preserve">
-    <value>Lumière bleue</value>
+    <value>Bleu</value>
   </data>
   <data name="fx" xml:space="preserve">
     <value>Chromaticité x</value>
@@ -3659,5 +3659,149 @@ MaxValue : 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
   </data>
   <data name="UnexpectedErrorOccurred" xml:space="preserve">
     <value>Une erreur inattendue s'est produite : {0}</value>
+  </data>
+  <data name="Flow_CreateTemplateBeforeSelection" xml:space="preserve">
+    <value>Veuillez créer le modèle correspondant avant de sélectionner</value>
+  </data>
+  <data name="Flow_Elapsed" xml:space="preserve">
+    <value>Temps écoulé :</value>
+  </data>
+  <data name="Flow_ElapsedTimeLabel" xml:space="preserve">
+    <value>Déjà exécuté :</value>
+  </data>
+  <data name="Flow_EndNodeNotFound" xml:space="preserve">
+    <value>Nœud de fin du processus introuvable</value>
+  </data>
+  <data name="Flow_EstimatedRemainingLabel" xml:space="preserve">
+    <value>Estimation restante :</value>
+  </data>
+  <data name="Flow_ExecutingNodeLabel" xml:space="preserve">
+    <value>Exécution du nœud :</value>
+  </data>
+  <data name="Flow_ExportFlowFilter" xml:space="preserve">
+    <value>Package de processus (*.cvflow)|*.cvflow|Fichier STN (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_FlowNotStartedMessage" xml:space="preserve">
+    <value>Le processus n'a pas démarré : la validation a peut-être échoué, le processus est déjà en cours d'exécution ou aucun modèle n'est sélectionné</value>
+  </data>
+  <data name="Flow_ImportFlowFilter" xml:space="preserve">
+    <value>Fichier de processus (*.cvflow;*.stn)|*.cvflow;*.stn|Package de processus (*.cvflow)|*.cvflow|Fichier STN (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_ImportFlowPackageError" xml:space="preserve">
+    <value>Erreur lors de l'importation du package de processus : {0}</value>
+  </data>
+  <data name="Flow_LastExecutionLabel" xml:space="preserve">
+    <value>Dernière exécution :</value>
+  </data>
+  <data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve">
+    <value>Toutes les commandes d'archivage ont été envoyées</value>
+  </data>
+  <data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve">
+    <value>La commande d'archivage a été envoyée</value>
+  </data>
+  <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
+    <value>Résultats du lot {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ClassificationLabel" xml:space="preserve">
+    <value>Classification :</value>
+  </data>
+  <data name="Flow_MeasureBatch_ConfigOptions" xml:space="preserve">
+    <value>Options de configuration</value>
+  </data>
+  <data name="Flow_MeasureBatch_DescriptionLabel" xml:space="preserve">
+    <value>Description :</value>
+  </data>
+  <data name="Flow_MeasureBatch_ExecutePostProcess" xml:space="preserve">
+    <value>Exécuter le post-traitement</value>
+  </data>
+  <data name="Flow_MeasureBatch_NameLabel" xml:space="preserve">
+    <value>Nom :</value>
+  </data>
+  <data name="Flow_MeasureBatch_NotSelected" xml:space="preserve">
+    <value>Non sélectionné</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessError" xml:space="preserve">
+    <value>Erreur de traitement : {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessFailed" xml:space="preserve">
+    <value>Échec du traitement : {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessInfo" xml:space="preserve">
+    <value>Informations de traitement</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessResult" xml:space="preserve">
+    <value>Résultat du traitement</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessSuccess" xml:space="preserve">
+    <value>Traitement réussi : {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessType" xml:space="preserve">
+    <value>Sélectionner le type de traitement :</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessTypeToViewConfig" xml:space="preserve">
+    <value>Veuillez sélectionner un type de traitement pour afficher la configuration</value>
+  </data>
+  <data name="Flow_NoAvailableTemplates" xml:space="preserve">
+    <value>(Aucun modèle disponible)</value>
+  </data>
+  <data name="Flow_NoPathFromStartToEnd" xml:space="preserve">
+    <value>Impossible de trouver un chemin valide du nœud de départ au nœud de fin</value>
+  </data>
+  <data name="Flow_NoValidFlowTemplateSelected" xml:space="preserve">
+    <value>Aucun modèle de processus valide sélectionné</value>
+  </data>
+  <data name="Flow_NodeLabel" xml:space="preserve">
+    <value>Nœud :</value>
+  </data>
+  <data name="Flow_NotStarted" xml:space="preserve">
+    <value>Non démarré</value>
+  </data>
+  <data name="Flow_ParseFlowSampleError" xml:space="preserve">
+    <value>Erreur lors de l'analyse de l'exemple de processus : {0}</value>
+  </data>
+  <data name="Flow_PreProcess_AllTemplates" xml:space="preserve">
+    <value>Tous les modèles</value>
+  </data>
+  <data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve">
+    <value>Modèles appliqués</value>
+  </data>
+  <data name="Flow_PreProcess_Category" xml:space="preserve">
+    <value>Catégorie</value>
+  </data>
+  <data name="Flow_PreProcess_DisabledStatus" xml:space="preserve">
+    <value>Désactivé</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledCountFormat" xml:space="preserve">
+    <value>{0} activés</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledStatus" xml:space="preserve">
+    <value>Activé</value>
+  </data>
+  <data name="Flow_PreProcess_Processor" xml:space="preserve">
+    <value>Processeur</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorConfig" xml:space="preserve">
+    <value>Configuration du préprocesseur</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorCountFormat" xml:space="preserve">
+    <value>{0} processeurs</value>
+  </data>
+  <data name="Flow_PreProcess_SaveNow" xml:space="preserve">
+    <value>Enregistrer maintenant</value>
+  </data>
+  <data name="Flow_PreProcess_SelectProcessorToViewConfig" xml:space="preserve">
+    <value>Veuillez sélectionner un préprocesseur pour afficher la configuration</value>
+  </data>
+  <data name="Flow_PreprocessFailedCancelled" xml:space="preserve">
+    <value>Échec du prétraitement, exécution du processus annulée</value>
+  </data>
+  <data name="Flow_StartNodeNotFound" xml:space="preserve">
+    <value>Nœud de départ du processus introuvable</value>
+  </data>
+  <data name="Flow_StartupException" xml:space="preserve">
+    <value>Exception de démarrage</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Mettre à jour</value>
   </data>
 </root>

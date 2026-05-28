@@ -86,22 +86,22 @@
     <value>Username</value>
   </data>
   <data name="Upload" xml:space="preserve">
-    <value>Point Count</value>
+    <value>Upload</value>
   </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Unsubscribe</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
-    <value>File Export</value>
+    <value>Under Development</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
-    <value>Storage Type</value>
+    <value>Transparent Window</value>
   </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>Send Channel</value>
   </data>
   <data name="Topic" xml:space="preserve">
-    <value>Connection Type</value>
+    <value>Topic</value>
   </data>
   <data name="Timeout" xml:space="preserve">
     <value>Timeout(ms)</value>
@@ -149,7 +149,7 @@
     <value>Starting service</value>
   </data>
   <data name="Size" xml:space="preserve">
-    <value>size</value>
+    <value>Size</value>
   </data>
   <data name="SimulateSend" xml:space="preserve">
     <value>Analog sending</value>
@@ -404,7 +404,7 @@
     <value>Male</value>
   </data>
   <data name="Local" xml:space="preserve">
-    <value>local</value>
+    <value>Local</value>
   </data>
   <data name="Loading" xml:space="preserve">
     <value>Loading</value>
@@ -470,7 +470,7 @@
     <value>Female</value>
   </data>
   <data name="Failure" xml:space="preserve">
-    <value>Fail</value>
+    <value>Failure</value>
   </data>
   <data name="ExposureR" xml:space="preserve">
     <value>Exposure R</value>
@@ -746,7 +746,7 @@
     <value>Copy</value>
   </data>
   <data name="Lock" xml:space="preserve">
-    <value>locked</value>
+    <value>Lock</value>
   </data>
   <data name="ConfirmDelete" xml:space="preserve">
     <value>Confirm Deletion</value>
@@ -779,7 +779,7 @@
     <value>Command</value>
   </data>
   <data name="ProjectName" xml:space="preserve">
-    <value>Name</value>
+    <value>Project Name</value>
   </data>
   <data name="Workflow" xml:space="preserve">
     <value>Workflow</value>
@@ -800,7 +800,7 @@
     <value>Unauthorized or expired camera license</value>
   </data>
   <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
-    <value>PleaseConfigureDllFirst</value>
+    <value>Please configure the camera ID first</value>
   </data>
   <data name="CheckCameraTemperature" xml:space="preserve">
     <value>Check the camera's temperature</value>
@@ -878,13 +878,13 @@
     <value>Bind physical camera code</value>
   </data>
   <data name="FlowTemplate" xml:space="preserve">
-    <value>Process Template</value>
+    <value>Flow Template</value>
   </data>
   <data name="SearchResults" xml:space="preserve">
     <value>Search Results</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
-    <value>Process Result Management</value>
+    <value>Flow Result Management</value>
   </data>
   <data name="ParsingManagement" xml:space="preserve">
     <value>Parsing Management</value>
@@ -1016,7 +1016,7 @@
     <value>Binocular Fusion</value>
   </data>
   <data name="CharacterBrghtnessInsp" xml:space="preserve">
-    <value>Character BrghtnessI nsp</value>
+    <value>Keyboard Inspection</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
     <value>Subpixel-level LED detection</value>
@@ -1157,7 +1157,7 @@
     <value>Integration Time</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
-    <value>Automatic intergation</value>
+    <value>Automatic Integration</value>
   </data>
   <data name="AutoZeroCalibration" xml:space="preserve">
     <value>Automatic zeroing</value>
@@ -1196,7 +1196,7 @@
     <value>File Configuration</value>
   </data>
   <data name="CalibrationFile" xml:space="preserve">
-    <value>Correction documents</value>
+    <value>Calibration File</value>
   </data>
   <data name="CameraType" xml:space="preserve">
     <value>Camera model</value>
@@ -1307,7 +1307,7 @@
     <value>Maximum gain</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>Expose default values</value>
+    <value>Default Exposure Time</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
     <value>Minimum exposure</value>
@@ -1325,10 +1325,10 @@
     <value>Delete group</value>
   </data>
   <data name="ExportCalibration" xml:space="preserve">
-    <value>Export Correction</value>
+    <value>Export Calibration</value>
   </data>
   <data name="CreateCalibration" xml:space="preserve">
-    <value>Create correction</value>
+    <value>Create Calibration</value>
   </data>
   <data name="ExpTime" xml:space="preserve">
     <value>Exposure</value>
@@ -1373,7 +1373,7 @@
     <value>Multicolor</value>
   </data>
   <data name="CalibrationFileManagement" xml:space="preserve">
-    <value>Caliberation File Management</value>
+    <value>Calibration File Management</value>
   </data>
   <data name="UploadCalibrationGroup" xml:space="preserve">
     <value>Upload calibration group</value>
@@ -1388,7 +1388,7 @@
     <value>Calibration parameter settings</value>
   </data>
   <data name="EditCalibration" xml:space="preserve">
-    <value>Edit Calibration file</value>
+    <value>Edit Calibration File</value>
   </data>
   <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
     <value>Before using the calibration, please configure the corresponding physical camera.</value>
@@ -1514,10 +1514,10 @@
     <value>Top Left</value>
   </data>
   <data name="DownLeft" xml:space="preserve">
-    <value>BottomLeft</value>
+    <value>Bottom Left</value>
   </data>
   <data name="DownRight" xml:space="preserve">
-    <value>BottomRight</value>
+    <value>Bottom Right</value>
   </data>
   <data name="SetToGlobalCache" xml:space="preserve">
     <value>Set as Global Cache</value>
@@ -1895,7 +1895,7 @@
     <value>Do you want to clear the already created processes?\n\rAfter clearing, automatically save and close.</value>
   </data>
   <data name="FlowEditor" xml:space="preserve">
-    <value>Process Editor</value>
+    <value>Flow Editor</value>
   </data>
   <data name="SaveSucess" xml:space="preserve">
     <value>Saved successfully</value>
@@ -2372,7 +2372,7 @@
     <value>The execution has been cancelled.</value>
   </data>
   <data name="FlowWindows" xml:space="preserve">
-    <value>Process Window</value>
+    <value>Flow Window</value>
   </data>
   <data name="Processing" xml:space="preserve">
     <value>Processing...</value>
@@ -5715,5 +5715,8 @@ MaxValue: 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
   </data>
   <data name="UnexpectedErrorOccurred" xml:space="preserve">
     <value>An unexpected error occurred: {0}</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Update</value>
   </data>
 </root>

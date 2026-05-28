@@ -87,22 +87,22 @@
     <value>пользователь</value>
   </data>
   <data name="Upload" xml:space="preserve">
-    <value>загрузить</value>
+    <value>Загрузить</value>
   </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Отписаться</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
-    <value>В развитие</value>
+    <value>В разработке</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
-    <value>прозрачное окно</value>
+    <value>Прозрачное окно</value>
   </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>отправить канал</value>
   </data>
   <data name="Topic" xml:space="preserve">
-    <value>тема</value>
+    <value>Тема</value>
   </data>
   <data name="Timeout" xml:space="preserve">
     <value>Тайм-аут</value>
@@ -126,7 +126,7 @@
     <value>Запуск (может быть неудачным)</value>
   </data>
   <data name="Success" xml:space="preserve">
-    <value>успех</value>
+    <value>Успех</value>
   </data>
   <data name="SubscribedTopic" xml:space="preserve">
     <value>Подписанные темы</value>
@@ -135,7 +135,7 @@
     <value>подписка</value>
   </data>
   <data name="Submit" xml:space="preserve">
-    <value>представлять на рассмотрение</value>
+    <value>Отправить</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
     <value>Остановить процесс</value>
@@ -150,7 +150,7 @@
     <value>Запуск службы</value>
   </data>
   <data name="Size" xml:space="preserve">
-    <value>размер</value>
+    <value>Размер</value>
   </data>
   <data name="SimulateSend" xml:space="preserve">
     <value>Аналоговая отправка</value>
@@ -186,7 +186,7 @@
     <value>Пожалуйста, выберите ресурс, который вы хотите загрузить:</value>
   </data>
   <data name="Search" xml:space="preserve">
-    <value>поиск</value>
+    <value>Поиск</value>
   </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>Сохранить макет окна</value>
@@ -195,7 +195,7 @@
     <value>Сохранить столбец данных</value>
   </data>
   <data name="Save" xml:space="preserve">
-    <value>сохранять</value>
+    <value>Сохранить</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>результат</value>
@@ -210,13 +210,13 @@
     <value>Сброс завершен</value>
   </data>
   <data name="Reset" xml:space="preserve">
-    <value>перезагрузить</value>
+    <value>Сброс</value>
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>Регистрационный центр</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>обновить</value>
+    <value>Обновить</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>канал приема</value>
@@ -432,7 +432,7 @@
     <value>Импорт лицензии</value>
   </data>
   <data name="Import" xml:space="preserve">
-    <value>Импортировать</value>
+    <value>Импорт</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>источник изображения</value>
@@ -468,10 +468,10 @@
     <value>Файл</value>
   </data>
   <data name="Female" xml:space="preserve">
-    <value>женский</value>
+    <value>Женщина</value>
   </data>
   <data name="Failure" xml:space="preserve">
-    <value>неудача</value>
+    <value>Ошибка</value>
   </data>
   <data name="ExposureR" xml:space="preserve">
     <value>Экспозиция R</value>
@@ -507,7 +507,7 @@
     <value>Редактировать</value>
   </data>
   <data name="Duration" xml:space="preserve">
-    <value>затраты времени</value>
+    <value>Длительность</value>
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
     <value>Загрузка отменена</value>
@@ -519,7 +519,7 @@
     <value>Идентификация оборудования</value>
   </data>
   <data name="DeviceCode" xml:space="preserve">
-    <value>熄灭</value>
+    <value>Код устройства</value>
   </data>
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>Устройство не в сети. Сначала настройте идентификатор камеры.</value>
@@ -609,7 +609,7 @@
     <value>Калибровка</value>
   </data>
   <data name="Calculate" xml:space="preserve">
-    <value>вычислить</value>
+    <value>Вычислить</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>серийный номер</value>
@@ -633,10 +633,10 @@
     <value>расширенные настройки</value>
   </data>
   <data name="Add" xml:space="preserve">
-    <value>Добавлять</value>
+    <value>Добавить</value>
   </data>
   <data name="Acquire" xml:space="preserve">
-    <value>коллекция</value>
+    <value>Получить</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>о</value>
@@ -741,7 +741,7 @@
     <value>порог</value>
   </data>
   <data name="Copy" xml:space="preserve">
-    <value>копировать</value>
+    <value>Копировать</value>
   </data>
   <data name="Lock" xml:space="preserve">
     <value>блокировка</value>
@@ -777,7 +777,7 @@
     <value>Команда</value>
   </data>
   <data name="ProjectName" xml:space="preserve">
-    <value>НазваниеПроекта</value>
+    <value>Название проекта</value>
   </data>
   <data name="Workflow" xml:space="preserve">
     <value>Рабочий процесс</value>
@@ -1014,7 +1014,7 @@
     <value>Бинокулярное слияние</value>
   </data>
   <data name="CharacterBrghtnessInsp" xml:space="preserve">
-    <value>Распознавание клавиатуры</value>
+    <value>Проверка клавиатуры</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
     <value>Обнаружение светодиодов на уровне субпикселей</value>
@@ -1155,7 +1155,7 @@
     <value>Очки Время</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
-    <value>Автоматические баллы</value>
+    <value>Автоматическая интеграция</value>
   </data>
   <data name="AutoZeroCalibration" xml:space="preserve">
     <value>Автоматическое обнуление</value>
@@ -1500,7 +1500,7 @@
     <value>Сохранить в файл</value>
   </data>
   <data name="Radius" xml:space="preserve">
-    <value>радиус</value>
+    <value>Радиус</value>
   </data>
   <data name="DataCorrectionFilePath" xml:space="preserve">
     <value>Путь к файлу исправления данных</value>
@@ -1539,7 +1539,7 @@
     <value>Количество</value>
   </data>
   <data name="Angle" xml:space="preserve">
-    <value>угол</value>
+    <value>Угол</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
     <value>Найти светящуюся область</value>
@@ -1548,7 +1548,7 @@
     <value>Заливка области</value>
   </data>
   <data name="Width" xml:space="preserve">
-    <value>ширина</value>
+    <value>Ширина</value>
   </data>
   <data name="height" xml:space="preserve">
     <value>Высота</value>
@@ -1563,10 +1563,10 @@
     <value>Найдите угол светящейся области</value>
   </data>
   <data name="Left" xml:space="preserve">
-    <value>Левый</value>
+    <value>Лево</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>Правый</value>
+    <value>Право</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>Отображение</value>
@@ -1620,7 +1620,7 @@
     <value>Трехканальный</value>
   </data>
   <data name="Absolute" xml:space="preserve">
-    <value>абсолютный</value>
+    <value>Абсолютный</value>
   </data>
   <data name="Relative" xml:space="preserve">
     <value>Относительный</value>
@@ -1656,7 +1656,7 @@
     <value>Тушить</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>Начинать</value>
+    <value>Начать</value>
   </data>
   <data name="End" xml:space="preserve">
     <value>Конец</value>
@@ -1701,7 +1701,7 @@
     <value>сканирование</value>
   </data>
   <data name="Blue" xml:space="preserve">
-    <value>Синий свет</value>
+    <value>Синий</value>
   </data>
   <data name="fx" xml:space="preserve">
     <value>Цветность x</value>
@@ -3656,5 +3656,149 @@ MaxValue: 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
   </data>
   <data name="UnexpectedErrorOccurred" xml:space="preserve">
     <value>Произошла непредвиденная ошибка: {0}</value>
+  </data>
+  <data name="Flow_CreateTemplateBeforeSelection" xml:space="preserve">
+    <value>Пожалуйста, создайте соответствующий шаблон перед выбором</value>
+  </data>
+  <data name="Flow_Elapsed" xml:space="preserve">
+    <value>Прошло:</value>
+  </data>
+  <data name="Flow_ElapsedTimeLabel" xml:space="preserve">
+    <value>Уже выполнено:</value>
+  </data>
+  <data name="Flow_EndNodeNotFound" xml:space="preserve">
+    <value>Конечный узел процесса не найден</value>
+  </data>
+  <data name="Flow_EstimatedRemainingLabel" xml:space="preserve">
+    <value>Осталось (оценка):</value>
+  </data>
+  <data name="Flow_ExecutingNodeLabel" xml:space="preserve">
+    <value>Выполняется узел:</value>
+  </data>
+  <data name="Flow_ExportFlowFilter" xml:space="preserve">
+    <value>Пакет процесса (*.cvflow)|*.cvflow|Файл STN (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_FlowNotStartedMessage" xml:space="preserve">
+    <value>Процесс не удалось запустить: возможно, проверка не пройдена, процесс уже выполняется или шаблон не выбран</value>
+  </data>
+  <data name="Flow_ImportFlowFilter" xml:space="preserve">
+    <value>Файл процесса (*.cvflow;*.stn)|*.cvflow;*.stn|Пакет процесса (*.cvflow)|*.cvflow|Файл STN (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_ImportFlowPackageError" xml:space="preserve">
+    <value>Ошибка импорта пакета процесса: {0}</value>
+  </data>
+  <data name="Flow_LastExecutionLabel" xml:space="preserve">
+    <value>Последнее выполнение:</value>
+  </data>
+  <data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve">
+    <value>Все команды архивирования отправлены</value>
+  </data>
+  <data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve">
+    <value>Команда архивирования отправлена</value>
+  </data>
+  <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
+    <value>Результаты пакета {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ClassificationLabel" xml:space="preserve">
+    <value>Классификация:</value>
+  </data>
+  <data name="Flow_MeasureBatch_ConfigOptions" xml:space="preserve">
+    <value>Параметры конфигурации</value>
+  </data>
+  <data name="Flow_MeasureBatch_DescriptionLabel" xml:space="preserve">
+    <value>Описание:</value>
+  </data>
+  <data name="Flow_MeasureBatch_ExecutePostProcess" xml:space="preserve">
+    <value>Выполнить постобработку</value>
+  </data>
+  <data name="Flow_MeasureBatch_NameLabel" xml:space="preserve">
+    <value>Имя:</value>
+  </data>
+  <data name="Flow_MeasureBatch_NotSelected" xml:space="preserve">
+    <value>Не выбрано</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessError" xml:space="preserve">
+    <value>Ошибка обработки: {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessFailed" xml:space="preserve">
+    <value>Обработка не удалась: {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessInfo" xml:space="preserve">
+    <value>Информация об обработке</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessResult" xml:space="preserve">
+    <value>Результат обработки</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessSuccess" xml:space="preserve">
+    <value>Обработка выполнена: {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessType" xml:space="preserve">
+    <value>Выберите тип обработки:</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessTypeToViewConfig" xml:space="preserve">
+    <value>Выберите тип обработки для просмотра конфигурации</value>
+  </data>
+  <data name="Flow_NoAvailableTemplates" xml:space="preserve">
+    <value>(Нет доступных шаблонов)</value>
+  </data>
+  <data name="Flow_NoPathFromStartToEnd" xml:space="preserve">
+    <value>Не удалось найти действительный путь от начального узла к конечному</value>
+  </data>
+  <data name="Flow_NoValidFlowTemplateSelected" xml:space="preserve">
+    <value>Не выбран действительный шаблон процесса</value>
+  </data>
+  <data name="Flow_NodeLabel" xml:space="preserve">
+    <value>Узел:</value>
+  </data>
+  <data name="Flow_NotStarted" xml:space="preserve">
+    <value>Не запущен</value>
+  </data>
+  <data name="Flow_ParseFlowSampleError" xml:space="preserve">
+    <value>Ошибка разбора примера процесса: {0}</value>
+  </data>
+  <data name="Flow_PreProcess_AllTemplates" xml:space="preserve">
+    <value>Все шаблоны</value>
+  </data>
+  <data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve">
+    <value>Применённые шаблоны</value>
+  </data>
+  <data name="Flow_PreProcess_Category" xml:space="preserve">
+    <value>Категория</value>
+  </data>
+  <data name="Flow_PreProcess_DisabledStatus" xml:space="preserve">
+    <value>Отключено</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledCountFormat" xml:space="preserve">
+    <value>{0} включено</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledStatus" xml:space="preserve">
+    <value>Включено</value>
+  </data>
+  <data name="Flow_PreProcess_Processor" xml:space="preserve">
+    <value>Процессор</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorConfig" xml:space="preserve">
+    <value>Конфигурация препроцессора</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorCountFormat" xml:space="preserve">
+    <value>{0} процессоров</value>
+  </data>
+  <data name="Flow_PreProcess_SaveNow" xml:space="preserve">
+    <value>Сохранить сейчас</value>
+  </data>
+  <data name="Flow_PreProcess_SelectProcessorToViewConfig" xml:space="preserve">
+    <value>Выберите препроцессор для просмотра конфигурации</value>
+  </data>
+  <data name="Flow_PreprocessFailedCancelled" xml:space="preserve">
+    <value>Предобработка не удалась, выполнение процесса отменено</value>
+  </data>
+  <data name="Flow_StartNodeNotFound" xml:space="preserve">
+    <value>Начальный узел процесса не найден</value>
+  </data>
+  <data name="Flow_StartupException" xml:space="preserve">
+    <value>Исключение при запуске</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Обновить</value>
   </data>
 </root>
