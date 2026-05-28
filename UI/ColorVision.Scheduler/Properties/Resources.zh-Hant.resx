@@ -142,7 +142,7 @@
     <value>Cron 表達式</value>
   </data>
   <data name="GroupName" xml:space="preserve">
-    <value>羣組名稱</value>
+    <value>群組名稱</value>
   </data>
   <data name="JobName" xml:space="preserve">
     <value>任務名稱</value>

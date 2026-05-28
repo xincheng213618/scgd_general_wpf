@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Search" xml:space="preserve">
-    <value>??</value>
+    <value>検索</value>
   </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>構成管理ウィンドウ</value>
@@ -166,7 +166,7 @@
     <value>OpenViewDllバージョン</value>
   </data>
   <data name="Restart" xml:space="preserve">
-    <value>? case ?</value>
+    <value>再起動</value>
   </data>
   <data name="UpdateAll" xml:space="preserve">
     <value>すべて更新</value>
@@ -193,10 +193,10 @@
     <value>{0}で並べ替え</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>?? mid ? (? volume word mid ??)</value>
+    <value>繁體中文 (繁体字中国語)</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>? volume mid ? (? volume word mid ??)</value>
+    <value>简体中文 (簡体字中国語)</value>
   </data>
   <data name="WriteConfigFileFailed" xml:space="preserve">
     <value>構成ファイル{0}の書き込みに失敗しました</value>
@@ -205,7 +205,7 @@
     <value>独立したウィンドウ</value>
   </data>
   <data name="WindowHidden" xml:space="preserve">
-    <value>non-??</value>
+    <value>非表示</value>
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>表示モード9</value>
@@ -346,7 +346,7 @@
     <value>exeNameを空にすることはできません</value>
   </data>
   <data name="Execute" xml:space="preserve">
-    <value>??</value>
+    <value>実行</value>
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>エラーが発生しました</value>
@@ -397,7 +397,7 @@
     <value>ダウンロード</value>
   </data>
   <data name="Descending" xml:space="preserve">
-    <value>??</value>
+    <value>降順</value>
   </data>
   <data name="DependencyVersionInsufficient" xml:space="preserve">
     <value>依存関係{0}のバージョンが不足しています、必要: {1}、実際: {2}</value>
@@ -409,19 +409,19 @@
     <value>依存関係{0}のバージョンチェック時に例外が発生しました: {1}</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>??</value>
+    <value>消去</value>
   </data>
   <data name="CurrentSpeed" xml:space="preserve">
     <value>現在の速度:</value>
   </data>
   <data name="ConfirmUpdate" xml:space="preserve">
-    <value>Update</value>
+    <value>更新</value>
   </data>
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>プラグイン{0}を削除しますか？</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>??</value>
+    <value>閉鎖</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>クリア</value>
@@ -445,7 +445,7 @@
     <value>baseDirを空にすることはできません</value>
   </data>
   <data name="Ascending" xml:space="preserve">
-    <value>??</value>
+    <value>昇順</value>
   </data>
   <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
     <value>Application.Currentが初期化されていません</value>
@@ -454,7 +454,7 @@
     <value>すべてのファイル (*.*)|*.*</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>??</value>
+    <value>負荷</value>
   </data>
   <data name="ThirdPartyApps" xml:space="preserve">
     <value>サードパーティ製アプリケーション管理</value>
@@ -499,7 +499,7 @@
     <value>選択した項目を削除</value>
   </data>
   <data name="SearchButton" xml:space="preserve">
-    <value>??</value>
+    <value>検索</value>
   </data>
   <data name="OpenDownloadFolder" xml:space="preserve">
     <value>ダウンロードディレクトリを開く</value>
@@ -511,7 +511,7 @@
     <value>スケジュール</value>
   </data>
   <data name="StatusHeader" xml:space="preserve">
-    <value>?</value>
+    <value>州</value>
   </data>
   <data name="Speed" xml:space="preserve">
     <value>スピード</value>
@@ -520,7 +520,7 @@
     <value>ファイルサイズ</value>
   </data>
   <data name="CreateTimeHeader" xml:space="preserve">
-    <value>????</value>
+    <value>作成時間</value>
   </data>
   <data name="OpenFile" xml:space="preserve">
     <value>ファイルを開く</value>
@@ -568,13 +568,13 @@
     <value>ダウンロード中</value>
   </data>
   <data name="Completed" xml:space="preserve">
-    <value>?</value>
+    <value>完了</value>
   </data>
   <data name="Failed" xml:space="preserve">
-    <value>??</value>
+    <value>失敗</value>
   </data>
   <data name="Paused" xml:space="preserve">
-    <value>1 ? Stop mid</value>
+    <value>一時停止中</value>
   </data>
   <data name="FileDeleted" xml:space="preserve">
     <value>ファイルは削除されました。</value>
@@ -625,7 +625,7 @@
     <value>接続済み</value>
   </data>
   <data name="Aria2cDisconnected" xml:space="preserve">
-    <value>???</value>
+    <value>未接続</value>
   </data>
   <data name="ConfigApplied" xml:space="preserve">
     <value>設定が適用されました</value>
@@ -640,7 +640,7 @@
     <value>HTTP/HTTPS/FTPリンク、マグネットリンク (magnet:) に対応、セミコロンまたは改行で区切り</value>
   </data>
   <data name="GlobalSpeed" xml:space="preserve">
-    <value>Speed: {0}</value>
+    <value>速度: {0}</value>
   </data>
   <data name="ConfirmDeleteFile" xml:space="preserve">
     <value>ファイルがディスクに存在します。ファイルも削除しますか？</value>
@@ -661,7 +661,7 @@
     <value>カテゴリ</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>? episode</value>
+    <value>編集</value>
   </data>
   <data name="ConfirmDelete" xml:space="preserve">
     <value>削除の確認</value>
@@ -764,214 +764,4 @@
   <data name="CfgApp_Custom" xml:space="preserve"><value>Custom</value></data>
   <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>
   <data name="CfgApp_QuickScript" xml:space="preserve"><value>Quick Script</value></data>
-  <data name="MarketplaceRequiresFormat" xml:space="preserve">
-    <value>Depends on {0}</value>
-  </data>
-  <data name="FeedbackEmptyWarning" xml:space="preserve">
-    <value>Please enter feedback or add attachment</value>
-  </data>
-  <data name="MarketplaceDownloadCountFormat" xml:space="preserve">
-    <value>Download {0}</value>
-  </data>
-  <data name="MarketplaceDescription" xml:space="preserve">
-    <value>??</value>
-  </data>
-  <data name="MarketplaceArchivedVersions" xml:space="preserve">
-    <value>Version History</value>
-  </data>
-  <data name="MarketplaceVersionSha256Label" xml:space="preserve">
-    <value>SHA256</value>
-  </data>
-  <data name="MarketplaceInstalledVersion" xml:space="preserve">
-    <value>Installed Version</value>
-  </data>
-  <data name="MarketplaceChangelogEmpty" xml:space="preserve">
-    <value>No CHANGELOG available</value>
-  </data>
-  <data name="MarketplaceNoUpdates" xml:space="preserve">
-    <value>No updatable plugins</value>
-  </data>
-  <data name="MarketplaceNoMatches" xml:space="preserve">
-    <value>No matching plugins</value>
-  </data>
-  <data name="MarketplaceReadmeEmpty" xml:space="preserve">
-    <value>No README available</value>
-  </data>
-  <data name="MarketplaceRequires" xml:space="preserve">
-    <value>Dependency Version</value>
-  </data>
-  <data name="MarketplaceUpdated" xml:space="preserve">
-    <value>Last Updated</value>
-  </data>
-  <data name="Sending" xml:space="preserve">
-    <value>Sending</value>
-  </data>
-  <data name="Uploading" xml:space="preserve">
-    <value>Uploading {0}%</value>
-  </data>
-  <data name="MarketplacePackageColumn" xml:space="preserve">
-    <value>Package</value>
-  </data>
-  <data name="ThirdPartyAppsLocalApps" xml:space="preserve">
-    <value>Local Application</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>All Categories</value>
-  </data>
-  <data name="MarketplaceCategory" xml:space="preserve">
-    <value>Category</value>
-  </data>
-  <data name="MarketplaceOffline" xml:space="preserve">
-    <value> (Offline)</value>
-  </data>
-  <data name="PackLogs" xml:space="preserve">
-    <value>Packaging Log</value>
-  </data>
-  <data name="MarketplaceCurrentPackages" xml:space="preserve">
-    <value>Current Package Count</value>
-  </data>
-  <data name="MarketplaceDependentsHeader" xml:space="preserve">
-    <value>Dependencies</value>
-  </data>
-  <data name="FeedbackSent" xml:space="preserve">
-    <value>Feedback sent successfully, thank you!</value>
-  </data>
-  <data name="CollectingLogs" xml:space="preserve">
-    <value>Collecting: {0}...</value>
-  </data>
-  <data name="MarketplaceDownloads" xml:space="preserve">
-    <value>Downloads</value>
-  </data>
-  <data name="MarketplaceDetailInfoHeader" xml:space="preserve">
-    <value>Details</value>
-  </data>
-  <data name="SendFailed" xml:space="preserve">
-    <value>Send failed: {0}</value>
-  </data>
-  <data name="DiagnosticItems" xml:space="preserve">
-    <value>Diagnostic Items</value>
-  </data>
-  <data name="MarketplaceOpenProjectUrl" xml:space="preserve">
-    <value>Open Link</value>
-  </data>
-  <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
-    <value>One-click Update</value>
-  </data>
-  <data name="MarketplaceArchive" xml:space="preserve">
-    <value>History</value>
-  </data>
-  <data name="MarketplaceLatestVersion" xml:space="preserve">
-    <value>Latest Version</value>
-  </data>
-  <data name="MarketplaceStatus" xml:space="preserve">
-    <value>Status</value>
-  </data>
-  <data name="Attachments" xml:space="preserve">
-    <value>? piece</value>
-  </data>
-  <data name="Marketplace" xml:space="preserve">
-    <value>????</value>
-  </data>
-  <data name="MarketplaceStatusMarketplaceOnly" xml:space="preserve">
-    <value>Store only</value>
-  </data>
-  <data name="MarketplaceCurrent" xml:space="preserve">
-    <value>Current</value>
-  </data>
-  <data name="MarketplaceStatusInstalledUpdate" xml:space="preserve">
-    <value>Installed · Updatable</value>
-  </data>
-  <data name="FeedbackPlaceholder" xml:space="preserve">
-    <value>Please ????? ?? or ??...</value>
-  </data>
-  <data name="MarketplaceLatest" xml:space="preserve">
-    <value>Latest</value>
-  </data>
-  <data name="CaptureScreenshot" xml:space="preserve">
-    <value>??</value>
-  </data>
-  <data name="ServerAddressNotConfigured" xml:space="preserve">
-    <value>?? OK Service ? Address</value>
-  </data>
-  <data name="MarketplaceUpdateVersionFormat" xml:space="preserve">
-    <value>Update to v{0}</value>
-  </data>
-  <data name="MarketplaceHistoryPackages" xml:space="preserve">
-    <value>?? package Count</value>
-  </data>
-  <data name="MarketplaceInstalledVersionFormat" xml:space="preserve">
-    <value>??? v{0}</value>
-  </data>
-  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>?? Update</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>Downloads</value>
-  </data>
-  <data name="SendFeedback" xml:space="preserve">
-    <value>Send ??</value>
-  </data>
-  <data name="MarketplaceReadmeHeader" xml:space="preserve">
-    <value>README</value>
-  </data>
-  <data name="MarketplaceStatusInstalled" xml:space="preserve">
-    <value>???</value>
-  </data>
-  <data name="MarketplaceChangelogHeader" xml:space="preserve">
-    <value>CHANGELOG</value>
-  </data>
-  <data name="LogsPackaged" xml:space="preserve">
-    <value>Log ? Package : {0}</value>
-  </data>
-  <data name="MarketplaceDownloadVerificationFailed" xml:space="preserve">
-    <value>Download File ?? Failed : {0} v{1}</value>
-  </data>
-  <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
-    <value>Select Update package</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="MarketplaceBulkUpdateConfirm" xml:space="preserve">
-    <value>??? {0} ? Plugin ?? Update ， ? all Update ？</value>
-  </data>
-  <data name="MarketplaceUpdateAvailable" xml:space="preserve">
-    <value>? Update</value>
-  </data>
-  <data name="MarketplaceOpenLocalPath" xml:space="preserve">
-    <value>Open root ? Directory</value>
-  </data>
-  <data name="MarketplaceAuthor" xml:space="preserve">
-    <value>??</value>
-  </data>
-  <data name="MarketplacePluginCount" xml:space="preserve">
-    <value>? {0} ? Plugin</value>
-  </data>
-  <data name="Installed" xml:space="preserve">
-    <value>???</value>
-  </data>
-  <data name="ScreenshotCaptured" xml:space="preserve">
-    <value>???? add</value>
-  </data>
-  <data name="MarketplacePluginId" xml:space="preserve">
-    <value>Plugin ID</value>
-  </data>
-  <data name="MarketplaceLoadFailed" xml:space="preserve">
-    <value>Loading ?? Failed</value>
-  </data>
-  <data name="MarketplaceProjectUrl" xml:space="preserve">
-    <value>item item Address</value>
-  </data>
-  <data name="MarketplaceHasUpdateTooltip" xml:space="preserve">
-    <value>?? Update</value>
-  </data>
-  <data name="AddFile" xml:space="preserve">
-    <value>? add File</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>close ? word</value>
-  </data>
-  <data name="MarketplaceCurrentVersions" xml:space="preserve">
-    <value>? front Version</value>
-  </data>
 </root>

@@ -145,7 +145,7 @@
     <value>メッセージをクリア</value>
   </data>
   <data name="Settings" xml:space="preserve">
-    <value>??</value>
+    <value>設定</value>
   </data>
   <data name="ConnectedClients" xml:space="preserve">
     <value>クライアントの接続</value>
@@ -163,10 +163,10 @@
     <value>メッセージログ</value>
   </data>
   <data name="Time" xml:space="preserve">
-    <value>??</value>
+    <value>時間</value>
   </data>
   <data name="Direction" xml:space="preserve">
-    <value>Direction</value>
+    <value>方向</value>
   </data>
   <data name="Client" xml:space="preserve">
     <value>クライアント</value>
@@ -181,10 +181,10 @@
     <value>コピー</value>
   </data>
   <data name="Resend" xml:space="preserve">
-    <value>? send ?</value>
+    <value>再送信</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>??</value>
+    <value>消去</value>
   </data>
   <data name="MessageDetail" xml:space="preserve">
     <value>メッセージの詳細</value>
@@ -211,22 +211,22 @@
     <value>{0} クライアント</value>
   </data>
   <data name="Disabled" xml:space="preserve">
-    <value>??</value>
+    <value>無効</value>
   </data>
   <data name="Enabled" xml:space="preserve">
-    <value>?</value>
+    <value>有効</value>
   </data>
   <data name="EnabledStatus" xml:space="preserve">
-    <value>? state ?</value>
+    <value>有効状態</value>
   </data>
   <data name="FilterAll" xml:space="preserve">
     <value>すべて</value>
   </data>
   <data name="FilterReceived" xml:space="preserve">
-    <value>??</value>
+    <value>受信</value>
   </data>
   <data name="FilterSent" xml:space="preserve">
-    <value>send ?</value>
+    <value>送信</value>
   </data>
   <data name="MessageCountFormat" xml:space="preserve">
     <value>{0} 件のメッセージ</value>
@@ -250,7 +250,7 @@
     <value>サービスオープン</value>
   </data>
   <data name="PrettyPrintView" xml:space="preserve">
-    <value>? shape ??</value>
+    <value>整形表示</value>
   </data>
   <data name="ProtocolAndClients" xml:space="preserve">
     <value>プロトコル / クライアント</value>
@@ -265,7 +265,7 @@
     <value>サービス設定</value>
   </data>
   <data name="Starting" xml:space="preserve">
-    <value>? start mid</value>
+    <value>開始中</value>
   </data>
   <data name="StartService" xml:space="preserve">
     <value>サービス開始</value>
@@ -274,7 +274,7 @@
     <value>未オープン</value>
   </data>
   <data name="Stopping" xml:space="preserve">
-    <value>Stop mid</value>
+    <value>停止中</value>
   </data>
   <data name="StopServerFailedFormat" xml:space="preserve">
     <value>サービス停止に失敗しました: {0}</value>
@@ -283,7 +283,7 @@
     <value>サービス停止</value>
   </data>
   <data name="UpdatedAtFormat" xml:space="preserve">
-    <value>Update ?? {0:yyyy-MM-dd HH:mm:ss}</value>
+    <value>更新日時 {0:yyyy-MM-dd HH:mm:ss}</value>
   </data>
   <data name="ListenAddress" xml:space="preserve">
     <value>リッスンアドレス</value>

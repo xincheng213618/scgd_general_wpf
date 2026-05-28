@@ -68,7 +68,7 @@
     <value>工具(_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>幫助(_H)</value>
+    <value>帮助(_H)</value>
   </data>
   <data name="GlobalMode" xml:space="preserve">
     <value>全局</value>
@@ -86,7 +86,7 @@
     <value>點擊設置快捷鍵</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>簡體中文（簡體中文）</value>
+    <value>简体中文（簡體中文）</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
     <value>繁體中文</value>
@@ -176,7 +176,7 @@
     <value>目前速度：</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
-    <value>打開(_O)</value>
+    <value>打开(_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
     <value>儲存(_S)</value>
@@ -425,7 +425,7 @@
     <value>echo 安排延遲清理臨時目錄與腳本...</value>
   </data>
   <data name="EchoUpdateComplete" xml:space="preserve">
-    <value>echo 更新完成。（清理在後臺進行）</value>
+    <value>echo 更新完成。（清理在後台進行）</value>
   </data>
   <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
     <value>Application.Current 未初始化</value>
@@ -588,61 +588,4 @@
   <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>{0} slower than historical average.</value></data>
   <data name="UpdateRecovery_Restored" xml:space="preserve"><value>Previous update was incomplete. System has been restored to the pre-update version.</value></data>
   <data name="UpdateRecovery_Failed" xml:space="preserve"><value>Previous update was incomplete and automatic recovery failed. Please reinstall manually or check the backup directory.</value></data>
-  <data name="Name1" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="ListEditor_ListCount" xml:space="preserve">
-    <value>[列表: {0} 項]</value>
-  </data>
-  <data name="EnableEverythingSearch" xml:space="preserve">
-    <value>啓用Everything搜索</value>
-  </data>
-  <data name="ListEditor_ConfirmDeleteTitle" xml:space="preserve">
-    <value>確認刪除</value>
-  </data>
-  <data name="Color1" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Icon1" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="ListItemEditor_FolderSelector" xml:space="preserve">
-    <value>文件夾選擇器</value>
-  </data>
-  <data name="ListEditor_ConfirmDeleteAll" xml:space="preserve">
-    <value>確定要刪除全部 {0} 項嗎？</value>
-  </data>
-  <data name="ListItemEditor_FileSelector" xml:space="preserve">
-    <value>文件選擇器</value>
-  </data>
-  <data name="SearchEngine" xml:space="preserve">
-    <value>搜索引擎</value>
-  </data>
-  <data name="ListItemEditor_NestedList" xml:space="preserve">
-    <value>嵌套列表:</value>
-  </data>
-  <data name="ListItemEditor_Checkbox" xml:space="preserve">
-    <value>複選框</value>
-  </data>
-  <data name="Bitmap1" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="ListEditor_ConfirmDeleteAllTitle" xml:space="preserve">
-    <value>確認全部刪除</value>
-  </data>
-  <data name="ListItemEditor_Textbox" xml:space="preserve">
-    <value>文本框</value>
-  </data>
-  <data name="EnableBrowserSearch" xml:space="preserve">
-    <value>啓用瀏覽器搜索</value>
-  </data>
-  <data name="ListEditor_ConfirmDeleteSelected" xml:space="preserve">
-    <value>確定要刪除選中的 {0} 項嗎？</value>
-  </data>
-  <data name="ListItemEditor_Dropdown" xml:space="preserve">
-    <value>下拉選擇</value>
-  </data>
-  <data name="EverythingPath" xml:space="preserve">
-    <value>Everything路徑</value>
-  </data>
 </root>

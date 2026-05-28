@@ -121,7 +121,7 @@
     <value>やめる</value>
   </data>
   <data name="停止" xml:space="preserve">
-    <value>Stop</value>
+    <value>停止</value>
   </data>
   <data name="连续测试" xml:space="preserve">
     <value>継続的なテスト</value>
@@ -178,28 +178,28 @@
     <value>クロマv</value>
   </data>
   <data name="相关色温K" xml:space="preserve">
-    <value>??? Temperature (K)</value>
+    <value>相関色温度(K)</value>
   </data>
   <data name="主波长LdNm" xml:space="preserve">
-    <value>??? Ld(nm)</value>
+    <value>主波長 Ld(nm)</value>
   </data>
   <data name="色纯度" xml:space="preserve">
-    <value>?? degree (%)</value>
+    <value>色純度(%)</value>
   </data>
   <data name="峰值波长LpNm" xml:space="preserve">
     <value>ピーク波長 Lp(nm)</value>
   </data>
   <data name="显色性指数Ra" xml:space="preserve">
-    <value>???Ra</value>
+    <value>演色性Ra</value>
   </data>
   <data name="验证数据0" xml:space="preserve">
     <value>検証データ：0</value>
   </data>
   <data name="积分时间上限" xml:space="preserve">
-    <value>????? limit</value>
+    <value>統合時間制限</value>
   </data>
   <data name="设置" xml:space="preserve">
-    <value>??</value>
+    <value>設定</value>
   </data>
   <data name="滤波校正" xml:space="preserve">
     <value>フィルター補正</value>
@@ -211,7 +211,7 @@
     <value>スペクトル補正</value>
   </data>
   <data name="校正" xml:space="preserve">
-    <value>? positive</value>
+    <value>修正</value>
   </data>
   <data name="清空数据" xml:space="preserve">
     <value>データのクリア</value>
@@ -223,13 +223,13 @@
     <value>データ</value>
   </data>
   <data name="积分时间011ms10s" xml:space="preserve">
-    <value>???? (0.11ms～10s)</value>
+    <value>積分時間 (0.11ms～10s)</value>
   </data>
   <data name="自动积分" xml:space="preserve">
     <value>自動ポイント</value>
   </data>
   <data name="平均次数" xml:space="preserve">
-    <value>????</value>
+    <value>平均時間</value>
   </data>
   <data name="相对光谱曲线" xml:space="preserve">
     <value>相対スペクトル曲線</value>
@@ -238,7 +238,7 @@
     <value>相対スペクトル</value>
   </data>
   <data name="波长Nm" xml:space="preserve">
-    <value>??[nm]</value>
+    <value>波長[nm]</value>
   </data>
   <data name="连接成功" xml:space="preserve">
     <value>接続に成功しました</value>
@@ -262,7 +262,7 @@
     <value>刻み幅</value>
   </data>
   <data name="平均次数1100" xml:space="preserve">
-    <value>???? (1 ～ 100):</value>
+    <value>平均時間 (1 ～ 100):</value>
   </data>
   <data name="开始校零" xml:space="preserve">
     <value>ゼロ校正を開始する</value>
@@ -295,40 +295,40 @@
     <value>積分時間の上限 (ms):</value>
   </data>
   <data name="自动积分时间起始" xml:space="preserve">
-    <value>??????</value>
+    <value>自動積分時間</value>
   </data>
   <data name="SpectrumWindowTitle" xml:space="preserve"><value>分光計ソフトウェア</value></data>
   <data name="ControlPanel" xml:space="preserve"><value>コントロール パネル</value></data>
-  <data name="SpectrometerConnection" xml:space="preserve"><value>?????</value></data>
+  <data name="SpectrometerConnection" xml:space="preserve"><value>分光計接続</value></data>
   <data name="GetDeviceList" xml:space="preserve"><value>デバイス一覧を取得</value></data>
   <data name="SerialPortConnection" xml:space="preserve"><value>シリアルポート接続</value></data>
   <data name="SerialPort" xml:space="preserve"><value>シリアルポート</value></data>
   <data name="BaudRate" xml:space="preserve"><value>ボーレート</value></data>
   <data name="CalibrationFiles" xml:space="preserve"><value>キャリブレーションファイル</value></data>
-  <data name="Manage" xml:space="preserve"><value>pipe ?...</value></data>
+  <data name="Manage" xml:space="preserve"><value>管理...</value></data>
   <data name="LoadGroup" xml:space="preserve"><value>グループを読み込む</value></data>
   <data name="CurrentGroup" xml:space="preserve"><value>現在のグループ:</value></data>
   <data name="Load" xml:space="preserve"><value>読み込む</value></data>
-  <data name="WavelengthCalibration" xml:space="preserve"><value>?? Calibration</value></data>
-  <data name="MagnitudeCalibration" xml:space="preserve"><value>?? Calibration</value></data>
+  <data name="WavelengthCalibration" xml:space="preserve"><value>波長校正</value></data>
+  <data name="MagnitudeCalibration" xml:space="preserve"><value>振幅校正</value></data>
   <data name="MeasurementParameters" xml:space="preserve"><value>測定パラメータ</value></data>
-  <data name="IntegrationTimeMs" xml:space="preserve"><value>???? (ms)</value></data>
+  <data name="IntegrationTimeMs" xml:space="preserve"><value>積分時間 (ms)</value></data>
   <data name="TestSection" xml:space="preserve"><value>テスト</value></data>
   <data name="ZeroCalibration" xml:space="preserve"><value>ゼロ校正</value></data>
-  <data name="IntervalMs" xml:space="preserve"><value>?? (ms)</value></data>
-  <data name="MeasurementCount" xml:space="preserve"><value>?? occurrence number</value></data>
-  <data name="Progress" xml:space="preserve"><value>??</value></data>
-  <data name="Elapsed" xml:space="preserve"><value>??:</value></data>
+  <data name="IntervalMs" xml:space="preserve"><value>間隔 (ms)</value></data>
+  <data name="MeasurementCount" xml:space="preserve"><value>測定回数</value></data>
+  <data name="Progress" xml:space="preserve"><value>進捗</value></data>
+  <data name="Elapsed" xml:space="preserve"><value>経過:</value></data>
   <data name="Remaining" xml:space="preserve"><value>残り見込み:</value></data>
   <data name="Shutter" xml:space="preserve"><value>シャッター</value></data>
-  <data name="Connect" xml:space="preserve"><value>??</value></data>
-  <data name="Disconnect" xml:space="preserve"><value>switch ?</value></data>
+  <data name="Connect" xml:space="preserve"><value>接続</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>切断</value></data>
   <data name="OpenShutter" xml:space="preserve"><value>シャッターを開く</value></data>
   <data name="CloseShutter" xml:space="preserve"><value>シャッターを閉じる</value></data>
   <data name="FilterWheel" xml:space="preserve"><value>フィルターホイール</value></data>
-  <data name="CurrentPosition" xml:space="preserve"><value>? Position :</value></data>
-  <data name="Query" xml:space="preserve"><value>photo ?</value></data>
-  <data name="SwitchPosition" xml:space="preserve"><value>Position switch ?:</value></data>
+  <data name="CurrentPosition" xml:space="preserve"><value>現在位置:</value></data>
+  <data name="Query" xml:space="preserve"><value>照会</value></data>
+  <data name="SwitchPosition" xml:space="preserve"><value>位置切替:</value></data>
   <data name="SpectrumChart" xml:space="preserve"><value>スペクトルチャート</value></data>
   <data name="AbsoluteSpectrum" xml:space="preserve"><value>絶対スペクトル</value></data>
   <data name="GenericQuery" xml:space="preserve"><value>汎用クエリ</value></data>
@@ -336,25 +336,25 @@
   <data name="ClearRecords" xml:space="preserve"><value>レコードをクリア</value></data>
   <data name="ResetDatabase" xml:space="preserve"><value>データベースをリセット</value></data>
   <data name="LoadCount" xml:space="preserve"><value>読み込み件数:</value></data>
-  <data name="TotalDurationMs" xml:space="preserve"><value>?????(ms)</value></data>
-  <data name="ExcitationPurity" xml:space="preserve"><value>? case ? degree (%)</value></data>
-  <data name="HalfWidth" xml:space="preserve"><value>???</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>総所要時間(ms)</value></data>
+  <data name="ExcitationPurity" xml:space="preserve"><value>励起純度(%)</value></data>
+  <data name="HalfWidth" xml:space="preserve"><value>半値幅</value></data>
   <data name="Log" xml:space="preserve"><value>ログ</value></data>
   <data name="NativeSpectrumLog" xml:space="preserve"><value>分光計ネイティブログ</value></data>
-  <data name="CieChromaticityDiagram" xml:space="preserve"><value>CIE? degree ?</value></data>
-  <data name="Wavelength" xml:space="preserve"><value>??</value></data>
+  <data name="CieChromaticityDiagram" xml:space="preserve"><value>CIE色度図</value></data>
+  <data name="Wavelength" xml:space="preserve"><value>波長</value></data>
   <data name="AutoZeroCalibration" xml:space="preserve"><value>自動ゼロ校正</value></data>
   <data name="OpenCalibrationGroupTooltip" xml:space="preserve"><value>校正グループ管理ウィンドウを開く</value></data>
   <data name="ApplyCalibrationGroupTooltip" xml:space="preserve"><value>現在選択中のグループの校正ファイルを読み込む</value></data>
   <data name="EqeParameterConfig" xml:space="preserve"><value>光束パラメータ設定</value></data>
-  <data name="VoltageLabel" xml:space="preserve"><value>?? (V)</value></data>
-  <data name="CurrentMilliampLabel" xml:space="preserve"><value>?? (mA)</value></data>
+  <data name="VoltageLabel" xml:space="preserve"><value>電圧 (V)</value></data>
+  <data name="CurrentMilliampLabel" xml:space="preserve"><value>電流 (mA)</value></data>
   <data name="RecalculateEqe" xml:space="preserve"><value>EQEを再計算</value></data>
   <data name="SmuSourceMeter" xml:space="preserve"><value>ソースメータ(SMU)</value></data>
   <data name="SmuConnectionSettingsHint" xml:space="preserve"><value>接続パラメータを変更するには先に切断してください</value></data>
-  <data name="VoltageSource" xml:space="preserve"><value>?? source</value></data>
+  <data name="VoltageSource" xml:space="preserve"><value>電圧源</value></data>
   <data name="ChannelA" xml:space="preserve"><value>チャンネルA</value></data>
-  <data name="SmuMeasureOrSet" xml:space="preserve"><value>dot ?/??</value></data>
+  <data name="SmuMeasureOrSet" xml:space="preserve"><value>点灯/設定</value></data>
   <data name="CloseOutput" xml:space="preserve"><value>出力をオフ</value></data>
   <data name="ToggleSpectrumTypeTooltip" xml:space="preserve"><value>相対/絶対スペクトルを切り替える</value></data>
   <data name="QueryDataTooltip" xml:space="preserve"><value>データを照会</value></data>
@@ -362,9 +362,9 @@
   <data name="DeleteAllRecordsTooltip" xml:space="preserve"><value>データベース内の全レコードを削除</value></data>
   <data name="ResetDatabaseTooltip" xml:space="preserve"><value>データベースファイルを削除して再作成</value></data>
   <data name="LoadCountTooltip" xml:space="preserve"><value>既定の読み込み件数 (-1 はすべて)</value></data>
-  <data name="LuminousFlux" xml:space="preserve"><value>? bundle (lm)</value></data>
-  <data name="RadiantFlux" xml:space="preserve"><value>put ? bundle (W)</value></data>
-  <data name="LuminousEfficacy" xml:space="preserve"><value>??? rate (lm/W)</value></data>
+  <data name="LuminousFlux" xml:space="preserve"><value>光束(lm)</value></data>
+  <data name="RadiantFlux" xml:space="preserve"><value>放射束(W)</value></data>
+  <data name="LuminousEfficacy" xml:space="preserve"><value>発光効率(lm/W)</value></data>
   <data name="DataSource" xml:space="preserve"><value>データソース</value></data>
   <data name="AbsoluteSpectrumCurve" xml:space="preserve"><value>絶対スペクトル曲線</value></data>
   <data name="NativeLogPlaceholder" xml:space="preserve"><value>分光器のネイティブログファイルはまだ生成されていません。分光器接続後にログが自動表示されます。</value></data>
@@ -389,17 +389,17 @@
   <data name="MeasureAndReadSourceMeter" xml:space="preserve"><value>点灯してソースメータを読み取る</value></data>
   <data name="CloseSourceMeterOutput" xml:space="preserve"><value>ソースメータ出力を停止</value></data>
   <data name="SelectDataToRecalculate" xml:space="preserve"><value>再計算するデータを先に選択してください</value></data>
-  <data name="ConnectionFailedTitle" xml:space="preserve"><value>????</value></data>
-  <data name="DisconnectionFailedTitle" xml:space="preserve"><value>switch ???</value></data>
+  <data name="ConnectionFailedTitle" xml:space="preserve"><value>接続失敗</value></data>
+  <data name="DisconnectionFailedTitle" xml:space="preserve"><value>切断失敗</value></data>
   <data name="ReadFailedTitle" xml:space="preserve"><value>読み取り失敗</value></data>
   <data name="SourceMeterConnectFailedCheckSettings" xml:space="preserve"><value>ソースメータへの接続に失敗しました。デバイス名と接続方法を確認してください</value></data>
   <data name="SourceMeterReadFailed" xml:space="preserve"><value>ソースメータの読み取りに失敗しました</value></data>
-  <data name="CloseOutputFailedTitle" xml:space="preserve"><value>act Force Stop ??</value></data>
+  <data name="CloseOutputFailedTitle" xml:space="preserve"><value>出力停止失敗</value></data>
   <data name="SourceMeterCloseOutputFailed" xml:space="preserve"><value>ソースメータ出力の停止に失敗しました</value></data>
-  <data name="SourceValueVoltage" xml:space="preserve"><value>source ? (V)</value></data>
-  <data name="SourceValueCurrentMilliamp" xml:space="preserve"><value>source ? (mA)</value></data>
-  <data name="LimitMilliamp" xml:space="preserve"><value>? limit (mA)</value></data>
-  <data name="LimitVoltage" xml:space="preserve"><value>? limit (V)</value></data>
+  <data name="SourceValueVoltage" xml:space="preserve"><value>源値 (V)</value></data>
+  <data name="SourceValueCurrentMilliamp" xml:space="preserve"><value>源値 (mA)</value></data>
+  <data name="LimitMilliamp" xml:space="preserve"><value>制限 (mA)</value></data>
+  <data name="LimitVoltage" xml:space="preserve"><value>制限 (V)</value></data>
   <data name="VoltageSourceModeHint" xml:space="preserve"><value>電圧源モード: 測定値の単位は V、制限値の単位は mA</value></data>
   <data name="CurrentSourceModeHint" xml:space="preserve"><value>電流源モード: 測定値の単位は mA、制限値の単位は V</value></data>
   <data name="LuminousFluxMode" xml:space="preserve"><value>光束モード</value></data>
