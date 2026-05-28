@@ -359,7 +359,7 @@
     <value>이미지 소스가 읽을 수 있는 WriteableBitmap 형식이 아닙니다.</value>
   </data>
   <data name="Draw_Tip" xml:space="preserve">
-    <value>提示</value>
+    <value>힌트</value>
   </data>
   <data name="Draw_Warning" xml:space="preserve">
     <value>경고</value>
