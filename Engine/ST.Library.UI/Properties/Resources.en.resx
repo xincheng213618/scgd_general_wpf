@@ -394,7 +394,7 @@
     <value>Template</value>
   </data>
   <data name="源表" xml:space="preserve">
-    <value>Source Table</value>
+    <value>SMU</value>
   </data>
   <data name="校正" xml:space="preserve">
     <value>Calibration</value>
@@ -430,7 +430,7 @@
     <value>Red channel exposure time (ms)</value>
   </data>
   <data name="04 源表" xml:space="preserve">
-    <value>04 Source Table</value>
+    <value>04 SMU</value>
   </data>
   <data name="00 全局" xml:space="preserve">
     <value>00 Global</value>
@@ -955,18 +955,12 @@
     <value>SMU-Scan-Temp</value>
   </data>
   <data name="12 第三方算法" xml:space="preserve">
-    <value>12 Third-Party Algorithms</value>
+    <value>12 TPAlgorithm</value>
   </data>
   <data name="StartV5_MQTT" xml:space="preserve">
     <value>StartV5_MQTT</value>
   </data>
   <data name="Bit8" xml:space="preserve">
     <value>Bit8</value>
-  </data>
-  <data name="LockOption" xml:space="preserve">
-    <value>Lock ports</value>
-  </data>
-  <data name="LockLocation" xml:space="preserve">
-    <value>Lock position</value>
   </data>
 </root>

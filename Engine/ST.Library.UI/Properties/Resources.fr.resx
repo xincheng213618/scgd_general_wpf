@@ -505,7 +505,7 @@
     <value>temps d'exposition du canal R (ms)</value>
   </data>
   <data name="04 源表" xml:space="preserve">
-    <value>04 Tableau source</value>
+    <value>Tableau source 04</value>
   </data>
   <data name="00 全局" xml:space="preserve">
     <value>00 Global</value>
@@ -514,7 +514,7 @@
     <value>01 Calcul</value>
   </data>
   <data name="02 相机" xml:space="preserve">
-    <value>02 Caméra</value>
+    <value>Caméra 02</value>
   </data>
   <data name="Spectrometer" xml:space="preserve">
     <value>Spectromètre</value>
@@ -706,7 +706,7 @@
     <value>Points clés et déploiement</value>
   </data>
   <data name="03_1 关注点" xml:space="preserve">
-    <value>03_1 Focus</value>
+    <value>031 Focus</value>
   </data>
   <data name="通用相机" xml:space="preserve">
     <value>caméra générale</value>
@@ -1040,11 +1040,5 @@
   </data>
   <data name="Bit8" xml:space="preserve">
     <value>Bit8</value>
-  </data>
-  <data name="LockOption" xml:space="preserve">
-    <value>Verrouiller les ports</value>
-  </data>
-  <data name="LockLocation" xml:space="preserve">
-    <value>Verrouiller la position</value>
   </data>
 </root>

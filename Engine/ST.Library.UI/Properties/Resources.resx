@@ -963,10 +963,4 @@
   <data name="03_3 第三方算法" xml:space="preserve">
     <value>03_3 第三方算法</value>
   </data>
-  <data name="LockOption" xml:space="preserve">
-    <value>锁定端口</value>
-  </data>
-  <data name="LockLocation" xml:space="preserve">
-    <value>锁定位置</value>
-  </data>
 </root>

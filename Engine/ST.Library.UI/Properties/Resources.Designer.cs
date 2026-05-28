@@ -772,24 +772,6 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 锁定位置 的本地化字符串。
-        /// </summary>
-        public static string LockLocation {
-            get {
-                return ResourceManager.GetString("LockLocation", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 锁定端口 的本地化字符串。
-        /// </summary>
-        public static string LockOption {
-            get {
-                return ResourceManager.GetString("LockOption", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 LoopName 的本地化字符串。
         /// </summary>
         public static string LoopName {
