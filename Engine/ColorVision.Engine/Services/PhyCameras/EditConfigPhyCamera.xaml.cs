@@ -64,9 +64,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             var imageChannelTypeList = new[]
             {
-                new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
-                new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),
-                new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_B")
+                new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, Properties.Resources.ChannelR),
+                new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, Properties.Resources.ChannelG),
+                new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, Properties.Resources.ChannelB)
             };
 
             chType1.ItemsSource = imageChannelTypeList;
@@ -234,7 +234,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 return;
             }
 
-            if (MessageBox1.Show(string.Format(Properties.Resources.AutoCopyFolderConfirm, sourceDir, newBasePath), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox1.Show(string.Format(Properties.Resources.AutoCopyFolderConfirm, sourceDir, newBasePath), Properties.Resources.TitleEditCameraConfig, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 if (!Directory.Exists(newBasePath))
                 {

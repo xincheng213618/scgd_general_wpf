@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (SelectedCameraModels.Length == 0)
             {
-                MessageBox.Show(this, "请选择至少一种相机类型", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, Properties.Resources.SelectCameraType, Properties.Resources.Search, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

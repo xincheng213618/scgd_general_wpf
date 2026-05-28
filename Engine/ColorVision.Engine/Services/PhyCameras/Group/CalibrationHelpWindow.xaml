@@ -82,7 +82,7 @@
                         <Run Text="  →  "/>
                         <Run FontWeight="Bold" Text="{x:Static properties:Resources.HelpPipelineCorrectedImage}"/>
                         <Run Text="{x:Static properties:Resources.HelpPipelineColorConversion}"/>
-                        <Run FontWeight="Bold" Text="CIE XYZ / Lv"/>
+                        <Run FontWeight="Bold" Text="{x:Static properties:Resources.HelpPipelineOutputLabel}"/>
                     </TextBlock>
                 </Border>
 
@@ -93,7 +93,7 @@
                 <TextBlock Style="{StaticResource SubHeader}" Text="{x:Static properties:Resources.HelpDarkNoiseTitle}"/>
                 <TextBlock Style="{StaticResource Body}" Text="{x:Static properties:Resources.HelpDarkNoiseDesc}"/>
                 <TextBlock Style="{StaticResource Body}" Text="{x:Static properties:Resources.HelpFormulaLabel}"/>
-                <TextBlock Style="{StaticResource Formula}" Text="pixel_out = min(pixel_in × DarkNoiseRatio, MaxValue)&#x0a;&#x0a;MaxValue:  8-bit → 255,  16-bit → 65535"/>
+                <TextBlock Style="{StaticResource Formula}" Text="{x:Static properties:Resources.HelpFormulaDarkNoiseText}"/>
                 <TextBlock Style="{StaticResource Body}" Text="{x:Static properties:Resources.HelpFileFormatJSON}"/>
                 <TextBlock Style="{StaticResource FileFormat}" Text='{}{  "bpp": 16, "DarkNoiseRatio": 0.95 }'/>
                 <TextBlock Style="{StaticResource Body}" Text="{x:Static properties:Resources.HelpDarkNoiseNote}"/>

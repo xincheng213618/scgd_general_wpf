@@ -117,7 +117,7 @@
                 <Border Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
                     <StackPanel>
                         <TextBlock Text="{x:Static properties:Resources.LabelFrameCropROI}" Style="{StaticResource SectionTitleStyle}"/>
-                        <Expander Header="PhyCameraCfg" Style="{StaticResource ExpanderHeaderStyle}">
+                        <Expander Header="{x:Static properties:Resources.CameraParam}" Style="{StaticResource ExpanderHeaderStyle}">
                             <StackPanel x:Name="CameraCfgPanel" Margin="0,8,0,0"/>
                         </Expander>
                     </StackPanel>
@@ -356,7 +356,7 @@
                         <Border Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
                             <StackPanel>
                                 <TextBlock Text="{x:Static properties:Resources.SectionMotorParams}" Style="{StaticResource SectionTitleStyle}"/>
-                                <Expander Header="MotorConfig" IsExpanded="True" Style="{StaticResource ExpanderHeaderStyle}">
+                                <Expander Header="{x:Static properties:Resources.MotorConfig}" IsExpanded="True" Style="{StaticResource ExpanderHeaderStyle}">
                                     <StackPanel x:Name="MotorConfigPanel" Margin="0,8,0,0"/>
                                 </Expander>
                             </StackPanel>
@@ -365,7 +365,7 @@
                         <Border Style="{StaticResource SectionPanelStyle}" Margin="0,0,0,12">
                             <StackPanel>
                                 <TextBlock Text="{x:Static properties:Resources.SectionParamLimits}" Style="{StaticResource SectionTitleStyle}"/>
-                                <Expander Header="CameraParameterLimit" Style="{StaticResource ExpanderHeaderStyle}">
+                                <Expander Header="{x:Static properties:Resources.SectionParamLimits}" Style="{StaticResource ExpanderHeaderStyle}">
                                     <StackPanel x:Name="CameraParameterLimitPanel" Margin="0,8,0,0"/>
                                 </Expander>
                             </StackPanel>

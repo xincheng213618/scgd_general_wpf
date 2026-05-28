@@ -125,7 +125,7 @@
                                     <TextBox Width="80" HorizontalAlignment="Left" Text="{Binding Config.Gain}" />
                                 </DockPanel>
                                 <DockPanel Margin="5">
-                                    <TextBlock Width="80" DockPanel.Dock="Left" Text="ND Filter" />
+                                    <TextBlock Width="80" DockPanel.Dock="Left" Text="{x:Static properties:Resources.NDFilter}" />
                                     <TextBox Width="80" HorizontalAlignment="Left" Text="{Binding Config.NDShow}" />
                                 </DockPanel>
                                 <DockPanel Margin="5">
@@ -164,7 +164,7 @@
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DSNU" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
                                     <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDSNUShort}">
-                                        <Run Text="DSNU" />
+                                        <Run Text="{x:Static properties:Resources.DSNU}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDSNUShort}" />
                                     </TextBlock>
@@ -222,7 +222,7 @@
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
                                     <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipLineArityShort}">
-                                        <Run Text="LineArity" />
+                                        <Run Text="{x:Static properties:Resources.LineArity}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionLineArityShort}" />
                                     </TextBlock>
@@ -247,7 +247,7 @@
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
                                     <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipAngleShiftShort}">
-                                        <Run Text="AngleShift" />
+                                        <Run Text="{x:Static properties:Resources.AngleShift}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionAngleShiftShort}" />
                                     </TextBlock>

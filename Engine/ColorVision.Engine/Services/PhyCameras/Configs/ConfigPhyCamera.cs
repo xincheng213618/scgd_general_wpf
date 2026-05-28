@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Utilities;
 using cvColorVision;
 using System;
 using System.ComponentModel;
@@ -77,46 +79,48 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
     }
 
+    [LocalizedDisplayName(typeof(Resources), "SectionParamLimits")]
     public class CameraParameterLimit : ViewModelBase
     {
-        [DisplayName("DefaultGain")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.DefaultGain))]
         public float GainDefault { get => _GainDefault; set { _GainDefault = value; OnPropertyChanged(); } }
         private float _GainDefault = 10;
-        [DisplayName("MinGain")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MinGain))]
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
         private float _GainMin;
-        [DisplayName("MaxGain")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MaxGain))]
         public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
         private float _GainMax = 100;
 
-        [DisplayName("DefaultExpTime")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.DefaultExpTime))]
         public float ExpDefalut { get => _ExpDefalut; set { _ExpDefalut = value; OnPropertyChanged(); } }
         private float _ExpDefalut = 100;
 
-        [DisplayName("MinExpTime")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MinExpTime))]
         public float ExpMin { get => _ExpMin; set { _ExpMin = value; OnPropertyChanged(); } }
         private float _ExpMin = 1;
-        [DisplayName("MaxExpTime")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MaxExpTime))]
         public float ExpMax { get => _ExpMax; set { _ExpMax = value; OnPropertyChanged(); } }
         private float _ExpMax = 60000;
 
     }
 
+    [LocalizedDisplayName(typeof(Resources), "SectionFileService")]
     public class FileSeviceConfig :ViewModelBase
     {
-        [DisplayName("DataSavePath"),PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.DataSavePath)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; OnPropertyChanged(); } }
         private string _FileBasePath = "D:\\CVTest";
         /// <summary>
         /// 端口地址
         /// </summary>
-        [DisplayName("PortAddress")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.PortAddress))]
         public string Endpoint { get => _Endpoint; set { _Endpoint = value; OnPropertyChanged(); } }
         private string _Endpoint = "127.0.0.1";
         /// <summary>
         /// 端口范围
         /// </summary>
-        [DisplayName("PortRange")]
+        [LocalizedDisplayName(typeof(Resources), nameof(Resources.PortRange))]
         public string PortRange { get => _PortRange; set { _PortRange = value; OnPropertyChanged(); } }
         private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600; return string.Format("{0}-{1}", fromPort, fromPort + 5); }))();
 

@@ -105,15 +105,15 @@
                 <StackPanel>
                     <TextBlock Text="{x:Static properties:Resources.LicenseManager}" FontSize="22"
                                FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding Licenses.Count, Mode=OneWay, StringFormat={}{0} licenses}"
+                    <TextBlock Text="{Binding LicenseCountText}"
                                FontSize="12" Opacity="0.62" Margin="0,5,0,0"/>
                 </StackPanel>
                 <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="GetCameraLicense" Command="{Binding GetCameraLicenseCommand}"
+                    <Button Content="{x:Static properties:Resources.GetCameraLicense}" Command="{Binding GetCameraLicenseCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
-                    <Button Content="GetSpectrumLicense" Command="{Binding GetSpectrumLicenseCommand}"
+                    <Button Content="{x:Static properties:Resources.GetSpectrumLicense}" Command="{Binding GetSpectrumLicenseCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
-                    <Button Content="SaveToLincense" Command="{Binding SaveToLincenseCommand}"
+                    <Button Content="{x:Static properties:Resources.SaveToLicenseFolder}" Command="{Binding SaveToLincenseCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
                     <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"
                             Style="{StaticResource PrimaryToolbarButtonStyle}"/>
@@ -123,7 +123,7 @@
                             Style="{StaticResource DangerToolbarButtonStyle}"/>
                     <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
-                    <Button Content="License Notice" Command="{Binding EditLicenseNotificationConfigCommand}"
+                    <Button Content="{x:Static properties:Resources.LicenseNotice}" Command="{Binding EditLicenseNotificationConfigCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
                 </WrapPanel>
             </Grid>
@@ -144,12 +144,12 @@
                       ColumnHeaderStyle="{StaticResource LicenseGridHeaderStyle}"
                       BorderThickness="0">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
-                    <DataGridTextColumn Header="MAC/SN" Binding="{Binding MacAddress}" Width="190"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.Id}" Binding="{Binding Id}" Width="60"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.MacOrSn}" Binding="{Binding MacAddress}" Width="190"/>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding LiceTypeString}" Width="100"/>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Model}" Binding="{Binding Model1}" Width="140"/>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Customer}" Binding="{Binding CusTomerName}" Width="160"/>
-                    <DataGridTextColumn Header="ExpiryDate" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="120"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.PhyCamera_Detail_ExpiryDate}" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="120"/>
                     <DataGridTemplateColumn Header="{x:Static properties:Resources.Status}" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>

@@ -107,4 +107,31 @@ namespace ColorVision.Engine.Utilities
             }
         }
     }
+
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+    public class LocalizedCategoryAttribute : CategoryAttribute
+    {
+        private readonly string _resourceKey;
+        private readonly ResourceManager _resourceManager;
+
+        public LocalizedCategoryAttribute(Type resourceType, string resourceKey)
+            : base(resourceKey)
+        {
+            _resourceKey = resourceKey;
+            _resourceManager = new ResourceManager(resourceType);
+        }
+
+        protected override string GetLocalizedString(string value)
+        {
+            try
+            {
+                string localizedString = _resourceManager.GetString(_resourceKey);
+                return string.IsNullOrEmpty(localizedString) ? _resourceKey : localizedString;
+            }
+            catch (Exception)
+            {
+                return _resourceKey;
+            }
+        }
+    }
 }

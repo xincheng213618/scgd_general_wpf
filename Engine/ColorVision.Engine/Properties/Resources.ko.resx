@@ -3529,4 +3529,132 @@ Error details: {0}</value></data><data name="OpenCvSharpFixFailed" xml:space="pr
   <data name="UseZ" xml:space="preserve">
     <value>Use Z</value>
   </data>
+  <data name="PhyCamera_MvsLog" xml:space="preserve">
+    <value>MVS Log</value>
+  </data>
+  <data name="PhyCamera_Detail_CameraModel" xml:space="preserve">
+    <value>Camera Model</value>
+  </data>
+  <data name="PhyCamera_Detail_CameraMode" xml:space="preserve">
+    <value>Camera Mode</value>
+  </data>
+  <data name="PhyCamera_Detail_Channel" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="PhyCamera_Detail_ImageBpp" xml:space="preserve">
+    <value>Image Bit Depth</value>
+  </data>
+  <data name="PhyCamera_Detail_DeviceMode" xml:space="preserve">
+    <value>Device Mode</value>
+  </data>
+  <data name="PhyCamera_Detail_IssueDate" xml:space="preserve">
+    <value>Issue Date</value>
+  </data>
+  <data name="PhyCamera_Detail_ExpiryDate" xml:space="preserve">
+    <value>Expiry Date</value>
+  </data>
+  <data name="PhyCamera_Detail_Licensee" xml:space="preserve">
+    <value>Licensee</value>
+  </data>
+  <data name="LabelCameraCode" xml:space="preserve">
+    <value>카메라 코드</value>
+  </data>
+  <data name="DSNU" xml:space="preserve">
+    <value>DSNU</value>
+  </data>
+  <data name="LineArity" xml:space="preserve">
+    <value>선형도</value>
+  </data>
+  <data name="AngleShift" xml:space="preserve">
+    <value>각도 이동</value>
+  </data>
+  <data name="NDFilter" xml:space="preserve">
+    <value>ND 필터</value>
+  </data>
+  <data name="FilterWheelHoleMapping" xml:space="preserve">
+    <value>홀 매핑</value>
+  </data>
+  <data name="FilterWheelHoleIndex" xml:space="preserve">
+    <value>홀 인덱스</value>
+  </data>
+  <data name="FilterWheelHoleName" xml:space="preserve">
+    <value>홀 이름</value>
+  </data>
+  <data name="FilterWheelHoleDefaultNameFormat" xml:space="preserve">
+    <value>홀 {0}</value>
+  </data>
+  <data name="GetCameraLicense" xml:space="preserve">
+    <value>카메라 라이선스 가져오기</value>
+  </data>
+  <data name="GetSpectrumLicense" xml:space="preserve">
+    <value>분광기 라이선스 가져오기</value>
+  </data>
+  <data name="SaveToLicenseFolder" xml:space="preserve">
+    <value>라이선스 폴더에 저장</value>
+  </data>
+  <data name="LicenseNotice" xml:space="preserve">
+    <value>라이선스 알림</value>
+  </data>
+  <data name="LicenseCountFormat" xml:space="preserve">
+    <value>라이선스 {0}개</value>
+  </data>
+  <data name="Id" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="MacOrSn" xml:space="preserve">
+    <value>MAC/SN</value>
+  </data>
+  <data name="HelpPipelineOutputLabel" xml:space="preserve">
+    <value>CIE XYZ / Lv</value>
+  </data>
+  <data name="HelpFormulaDarkNoiseText" xml:space="preserve">
+    <value>pixel_out = min(pixel_in × DarkNoiseRatio, MaxValue)
+
+MaxValue: 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
+  </data>
+  <data name="ObLeft" xml:space="preserve">
+    <value>제외 영역 왼쪽</value>
+  </data>
+  <data name="ObRight" xml:space="preserve">
+    <value>제외 영역 오른쪽</value>
+  </data>
+  <data name="ObTop" xml:space="preserve">
+    <value>제외 영역 위쪽</value>
+  </data>
+  <data name="ObBottom" xml:space="preserve">
+    <value>제외 영역 아래쪽</value>
+  </data>
+  <data name="Roi" xml:space="preserve">
+    <value>ROI</value>
+  </data>
+  <data name="RoiX" xml:space="preserve">
+    <value>ROI X</value>
+  </data>
+  <data name="RoiY" xml:space="preserve">
+    <value>ROI Y</value>
+  </data>
+  <data name="RoiWidth" xml:space="preserve">
+    <value>ROI 너비</value>
+  </data>
+  <data name="RoiHeight" xml:space="preserve">
+    <value>ROI 높이</value>
+  </data>
+  <data name="EnableVidMapping" xml:space="preserve">
+    <value>VID 매핑 사용</value>
+  </data>
+  <data name="MappingFile" xml:space="preserve">
+    <value>매핑 파일</value>
+  </data>
+  <data name="FitOrder" xml:space="preserve">
+    <value>피팅 차수</value>
+  </data>
+  <data name="MvsLogViewerNotFound" xml:space="preserve">
+    <value>예상 위치에서 MVS LogViewer를 찾을 수 없습니다.</value>
+  </data>
+  <data name="MvsLogViewerStartFailed" xml:space="preserve">
+    <value>MVS LogViewer 시작 실패: {0}</value>
+  </data>
+  <data name="UnexpectedErrorOccurred" xml:space="preserve">
+    <value>예기치 않은 오류가 발생했습니다: {0}</value>
+  </data>
 </root>

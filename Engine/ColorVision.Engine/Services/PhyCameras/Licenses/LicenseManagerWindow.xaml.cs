@@ -56,8 +56,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public LicenseNotificationConfig LicenseNotificationConfig { get; set; }
 
+        public string LicenseCountText => string.Format(Properties.Resources.LicenseCountFormat, Licenses.Count);
+
         public LicenseManagerViewModel()
         {
+            Licenses.CollectionChanged += (_, _) => OnPropertyChanged(nameof(LicenseCountText));
             RefreshCommand = new RelayCommand(a => LoadLicenses());
             ImportCommand = new RelayCommand(a => ImportLicense());
             ExportSelectedCommand = new RelayCommand(a => ExportSelected(), a => SelectedLicense != null);
@@ -93,7 +96,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             Microsoft.Win32.OpenFolderDialog dialog = new();
 
             dialog.Multiselect = false;
-            dialog.Title = "Select a folder";
+            dialog.Title = Properties.Resources.SelectSaveFolder;
             dialog.DefaultDirectory = AppDomain.CurrentDomain.BaseDirectory;
             dialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
             // Show open folder dialog box
@@ -233,11 +236,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                     if (ret == 1)
                     {
                         string cameraIdsMd5 = snBuilder.ToString();
-                        MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox1.Show(cameraIdsMd5, Properties.Resources.GetCameraLicense, MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
-                        MessageBox1.Show(Properties.Resources.GetCameraIdMd5Failed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox1.Show(Properties.Resources.GetCameraIdMd5Failed, Properties.Resources.GetCameraLicense, MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 });
             }));
@@ -262,11 +265,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             string sn = stringBuilder.ToString();
             if (string.IsNullOrWhiteSpace(sn))
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoDeviceDetected, Properties.Resources.Spectrometer);
             }
             else
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), Properties.Resources.Spectrometer);
             }
         }
 
@@ -279,6 +282,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             {
                 Licenses.Add(new LicenseViewModel(license));
             }
+
+            OnPropertyChanged(nameof(LicenseCountText));
         }
 
         public void ImportLicense()
@@ -318,12 +323,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     File.WriteAllText(saveFileDialog.FileName, SelectedLicense.Model.LicenseValue, Encoding.UTF8);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, Properties.Resources.ExportLicense);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", Properties.Resources.ExportLicense);
             }
         }
 
@@ -334,7 +339,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(), 
                 Properties.Resources.ConfirmDelete, 
-                "ColorVision", 
+                Properties.Resources.LicenseManager, 
                 MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 PhyLicenseDao.Instance.DeleteById(SelectedLicense.Model.Id);
@@ -346,18 +351,18 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         {
             if (SelectedLicense == null || string.IsNullOrEmpty(SelectedLicense.Model.LicenseValue))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, Properties.Resources.CopyLicense);
                 return;
             }
 
             try
             {
                 Common.NativeMethods.Clipboard.SetText(SelectedLicense.Model.LicenseValue);
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, Properties.Resources.CopyLicense);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", Properties.Resources.CopyLicense);
             }
         }
     }

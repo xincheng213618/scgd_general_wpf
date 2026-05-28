@@ -114,7 +114,7 @@
                         <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDSNU}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.DSNU.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.DSNU.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="DSNU"/>
+                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.DSNU}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.DSNU.FilePath}"/>
                         </DockPanel>
 
@@ -149,21 +149,21 @@
                         <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipLineArity}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.LineArity.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.LineArity.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="LineArity"/>
+                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.LineArity}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.LineArity.FilePath}"/>
                         </DockPanel>
 
                         <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipColorDiff}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.ColorDiff.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.ColorDiff.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="ColorDiff"/>
+                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.ColorDiff}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.ColorDiff.FilePath}"/>
                         </DockPanel>
 
                         <DockPanel ToolTip="{x:Static properties:Resources.ToolTipAngleShift}">
                             <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.AngleShift.IsExitFile, Mode=OneWay}"/>
                             <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.AngleShift.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="AngleShift"/>
+                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.AngleShift}"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.AngleShift.FilePath}"/>
                         </DockPanel>
                     </StackPanel>

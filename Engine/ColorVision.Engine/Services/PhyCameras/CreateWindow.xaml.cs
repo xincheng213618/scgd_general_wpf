@@ -126,9 +126,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                                            select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
 
             var ImageChannelTypeList = new[]{
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_B")
+                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, Properties.Resources.ChannelR),
+                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, Properties.Resources.ChannelG),
+                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, Properties.Resources.ChannelB)
             };
             chType1.ItemsSource = ImageChannelTypeList;
             chType2.ItemsSource = ImageChannelTypeList;
@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (string.IsNullOrWhiteSpace(CreateConfig.Code))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.CannotCreateCameraWithoutCode, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.CannotCreateCameraWithoutCode, Properties.Resources.CreateDevice, MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 

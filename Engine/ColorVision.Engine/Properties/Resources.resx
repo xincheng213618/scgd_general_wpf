@@ -835,4 +835,132 @@ Z[i] = (c / Tz·Gz) × B[i]
   <data name="Update" xml:space="preserve">
     <value>更新</value>
   </data>
+  <data name="PhyCamera_MvsLog" xml:space="preserve">
+    <value>MVS 日志</value>
+  </data>
+  <data name="PhyCamera_Detail_CameraModel" xml:space="preserve">
+    <value>相机型号</value>
+  </data>
+  <data name="PhyCamera_Detail_CameraMode" xml:space="preserve">
+    <value>相机模式</value>
+  </data>
+  <data name="PhyCamera_Detail_Channel" xml:space="preserve">
+    <value>通道</value>
+  </data>
+  <data name="PhyCamera_Detail_ImageBpp" xml:space="preserve">
+    <value>图像位深</value>
+  </data>
+  <data name="PhyCamera_Detail_DeviceMode" xml:space="preserve">
+    <value>设备模式</value>
+  </data>
+  <data name="PhyCamera_Detail_IssueDate" xml:space="preserve">
+    <value>签发日期</value>
+  </data>
+  <data name="PhyCamera_Detail_ExpiryDate" xml:space="preserve">
+    <value>到期日期</value>
+  </data>
+  <data name="PhyCamera_Detail_Licensee" xml:space="preserve">
+    <value>被许可方</value>
+  </data>
+  <data name="LabelCameraCode" xml:space="preserve">
+    <value>相机编码</value>
+  </data>
+  <data name="DSNU" xml:space="preserve">
+    <value>DSNU</value>
+  </data>
+  <data name="LineArity" xml:space="preserve">
+    <value>线性度</value>
+  </data>
+  <data name="AngleShift" xml:space="preserve">
+    <value>角度偏移</value>
+  </data>
+  <data name="NDFilter" xml:space="preserve">
+    <value>ND 滤镜</value>
+  </data>
+  <data name="FilterWheelHoleMapping" xml:space="preserve">
+    <value>孔位映射</value>
+  </data>
+  <data name="FilterWheelHoleIndex" xml:space="preserve">
+    <value>孔位索引</value>
+  </data>
+  <data name="FilterWheelHoleName" xml:space="preserve">
+    <value>孔位名称</value>
+  </data>
+  <data name="FilterWheelHoleDefaultNameFormat" xml:space="preserve">
+    <value>孔位 {0}</value>
+  </data>
+  <data name="GetCameraLicense" xml:space="preserve">
+    <value>读取相机许可证</value>
+  </data>
+  <data name="GetSpectrumLicense" xml:space="preserve">
+    <value>读取光谱仪许可证</value>
+  </data>
+  <data name="SaveToLicenseFolder" xml:space="preserve">
+    <value>导出到许可证目录</value>
+  </data>
+  <data name="LicenseNotice" xml:space="preserve">
+    <value>许可证提醒</value>
+  </data>
+  <data name="LicenseCountFormat" xml:space="preserve">
+    <value>{0} 个许可证</value>
+  </data>
+  <data name="Id" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="MacOrSn" xml:space="preserve">
+    <value>MAC/SN</value>
+  </data>
+  <data name="HelpPipelineOutputLabel" xml:space="preserve">
+    <value>CIE XYZ / Lv</value>
+  </data>
+  <data name="HelpFormulaDarkNoiseText" xml:space="preserve">
+    <value>pixel_out = min(pixel_in × DarkNoiseRatio, MaxValue)
+
+MaxValue：8-bit -&gt; 255，16-bit -&gt; 65535</value>
+  </data>
+  <data name="ObLeft" xml:space="preserve">
+    <value>屏蔽区域左</value>
+  </data>
+  <data name="ObRight" xml:space="preserve">
+    <value>屏蔽区域右</value>
+  </data>
+  <data name="ObTop" xml:space="preserve">
+    <value>屏蔽区域上</value>
+  </data>
+  <data name="ObBottom" xml:space="preserve">
+    <value>屏蔽区域下</value>
+  </data>
+  <data name="Roi" xml:space="preserve">
+    <value>ROI</value>
+  </data>
+  <data name="RoiX" xml:space="preserve">
+    <value>ROI X</value>
+  </data>
+  <data name="RoiY" xml:space="preserve">
+    <value>ROI Y</value>
+  </data>
+  <data name="RoiWidth" xml:space="preserve">
+    <value>ROI 宽</value>
+  </data>
+  <data name="RoiHeight" xml:space="preserve">
+    <value>ROI 高</value>
+  </data>
+  <data name="EnableVidMapping" xml:space="preserve">
+    <value>启用 VID 映射</value>
+  </data>
+  <data name="MappingFile" xml:space="preserve">
+    <value>映射文件</value>
+  </data>
+  <data name="FitOrder" xml:space="preserve">
+    <value>拟合阶数</value>
+  </data>
+  <data name="MvsLogViewerNotFound" xml:space="preserve">
+    <value>未在预期位置找到 MVS LogViewer。</value>
+  </data>
+  <data name="MvsLogViewerStartFailed" xml:space="preserve">
+    <value>启动 MVS LogViewer 失败：{0}</value>
+  </data>
+  <data name="UnexpectedErrorOccurred" xml:space="preserve">
+    <value>发生意外错误：{0}</value>
+  </data>
 </root>

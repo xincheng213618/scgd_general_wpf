@@ -103,8 +103,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "MVS LogViewer not found at the expected location.",
-                    "ColorVision",
+                    Properties.Resources.MvsLogViewerNotFound,
+                    Properties.Resources.PhyCamera_MvsLog,
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -131,8 +131,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"Failed to start MVS LogViewer:  {ex.Message}",
-                    "ColorVision",
+                    string.Format(Properties.Resources.MvsLogViewerStartFailed, ex.Message),
+                    Properties.Resources.PhyCamera_MvsLog,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -140,8 +140,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"An unexpected error occurred: {ex.Message}",
-                    "ColorVision",
+                    string.Format(Properties.Resources.UnexpectedErrorOccurred, ex.Message),
+                    Properties.Resources.PhyCamera_MvsLog,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -166,7 +166,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.FailedToOpenDeviceManager}: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.FailedToOpenDeviceManager}: {ex.Message}", Properties.Resources.PhysicalCameraManager);
             }
         }
 
@@ -287,7 +287,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (_isSearchingCameras)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SearchingOnlineCameras, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SearchingOnlineCameras, Properties.Resources.PhysicalCameraManager);
                 return;
             }
 
@@ -325,7 +325,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.SearchOnlineCamerasFailed, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.SearchOnlineCamerasFailed, ex.Message), Properties.Resources.PhysicalCameraManager, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -355,7 +355,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             if (Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoUncreatedCameraFound, nameof(PhyCameraManager));
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoUncreatedCameraFound, Properties.Resources.PhysicalCameraManager);
                 SearchCameraIds();
                 return;
             }
@@ -400,12 +400,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
                         else
                         {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, "ColorVision");
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, Properties.Resources.LicenseImport);
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FileProcessFailed, ex.Message), "ColorVision");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FileProcessFailed, ex.Message), Properties.Resources.LicenseImport);
                     }
                 }
             }
@@ -470,7 +470,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     CreatePhysicalCameraFloder(sysDictionaryModel.Code);
                 }
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddPhysicalCameraFailed : Properties.Resources.AddPhysicalCameraSuccess)}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddPhysicalCameraFailed : Properties.Resources.AddPhysicalCameraSuccess)}", Properties.Resources.PhysicalCameraManager);
             }
             else
             {

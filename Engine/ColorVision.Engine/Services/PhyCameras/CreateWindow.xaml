@@ -110,7 +110,7 @@
                                FontSize="12" Opacity="0.62" Margin="0,5,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1">
-                    <TextBlock Text="Camera Code" Style="{StaticResource FieldLabelStyle}"/>
+                    <TextBlock Text="{x:Static properties:Resources.LabelCameraCode}" Style="{StaticResource FieldLabelStyle}"/>
                     <hc:ComboBox x:Name="CameraCode"
                                  IsEditable="True"
                                  SelectedIndex="0"
@@ -239,7 +239,7 @@
                             <UniformGrid Grid.Row="2" Columns="3">
                                 <Border Style="{StaticResource FieldBoxStyle}">
                                     <StackPanel>
-                                        <TextBlock Text="Channel X" Style="{StaticResource FieldLabelStyle}"/>
+                                        <TextBlock Text="{x:Static properties:Resources.ChannelX}" Style="{StaticResource FieldLabelStyle}"/>
                                         <ComboBox x:Name="chType1"
                                                   SelectedValue="{Binding CreateConfig.CFW.ChannelCfgs[0].Chtype}"
                                                   SelectedValuePath="Key"
@@ -259,7 +259,7 @@
                                 </Border>
                                 <Border Style="{StaticResource FieldBoxStyle}">
                                     <StackPanel>
-                                        <TextBlock Text="Channel Y" Style="{StaticResource FieldLabelStyle}"/>
+                                        <TextBlock Text="{x:Static properties:Resources.ChannelY}" Style="{StaticResource FieldLabelStyle}"/>
                                         <ComboBox x:Name="chType2"
                                                   SelectedValue="{Binding CreateConfig.CFW.ChannelCfgs[1].Chtype}"
                                                   SelectedValuePath="Key"
@@ -279,7 +279,7 @@
                                 </Border>
                                 <Border Style="{StaticResource FieldBoxStyle}" Margin="0,0,0,10">
                                     <StackPanel>
-                                        <TextBlock Text="Channel Z" Style="{StaticResource FieldLabelStyle}"/>
+                                        <TextBlock Text="{x:Static properties:Resources.ChannelZ}" Style="{StaticResource FieldLabelStyle}"/>
                                         <ComboBox x:Name="chType3"
                                                   SelectedValue="{Binding CreateConfig.CFW.ChannelCfgs[2].Chtype}"
                                                   SelectedValuePath="Key"

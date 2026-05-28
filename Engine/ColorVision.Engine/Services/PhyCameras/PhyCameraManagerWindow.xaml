@@ -20,6 +20,7 @@
 
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <local:StatusToTextConverter x:Key="StatusToTextConverter"/>
+            <local:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
 
             <Style TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -94,12 +95,6 @@
             <Style x:Key="CameraListConnectionTextStyle" TargetType="{x:Type TextBlock}">
                 <Setter Property="FontSize" Value="11"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Foreground" Value="#FF2EAD4F"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
-                        <Setter Property="Foreground" Value="#FFE53935"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="CameraListLicenseTagStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource StatusBadgeBorderStyle}">
@@ -157,7 +152,7 @@
                                 <MenuItem Header="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
                                 <MenuItem Header="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
                                 <Separator/>
-                                <MenuItem Header="License Notice" Command="{Binding EditLicenseNotificationConfigCommand}"/>
+                                <MenuItem Header="{x:Static properties:Resources.LabelLicenseExpiredNotification}" Command="{Binding EditLicenseNotificationConfigCommand}"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                         <StackPanel Orientation="Horizontal">
@@ -171,7 +166,7 @@
                         <Button.ContextMenu>
                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                 <MenuItem Header="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
-                                <MenuItem Header="MVS Log" Command="{Binding OpenMVSLogViewerCommand}"/>
+                                <MenuItem Header="{x:Static properties:Resources.PhyCamera_MvsLog}" Command="{Binding OpenMVSLogViewerCommand}"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                         <StackPanel Orientation="Horizontal">
@@ -267,6 +262,7 @@
 
                                             <Border Grid.Column="1" Style="{StaticResource CameraListConnectionBadgeStyle}">
                                                 <TextBlock Text="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToTextConverter}}"
+                                                           Foreground="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToBrushConverter}}"
                                                            Style="{StaticResource CameraListConnectionTextStyle}"/>
                                             </Border>
 

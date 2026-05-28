@@ -16,6 +16,7 @@
 
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <local:StatusToTextConverter x:Key="StatusToTextConverter"/>
+            <local:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
 
             <Style TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -45,12 +46,6 @@
             </Style>
 
             <Style x:Key="ConnectionStatusTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
-                <Setter Property="Foreground" Value="#FF2EAD4F"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
-                        <Setter Property="Foreground" Value="#FFE53935"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="LicenseStatusTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
@@ -142,6 +137,7 @@
 
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding SysResourceModel.Remark, Mode=OneWay, Converter={StaticResource StatusToTextConverter}}"
+                                       Foreground="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToBrushConverter}}"
                                        Style="{StaticResource ConnectionStatusTextStyle}"/>
                             <TextBlock Text="·" Style="{StaticResource HeaderStatusTextStyle}" Opacity="0.45" Margin="6,6,0,0"/>
                             <TextBlock Text="{Binding LicenseStatusBadgeText}"
@@ -291,23 +287,23 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Text="CameraID" Style="{StaticResource DetailLabelStyle}"/>
+                                <TextBlock Text="{x:Static properties:Resources.CameraID}" Style="{StaticResource DetailLabelStyle}"/>
                                 <TextBox Grid.Column="1" Text="{Binding Config.CameraID, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}"/>
 
-                                <TextBlock Grid.Row="1" Text="CameraModel" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.PhyCamera_Detail_CameraModel}" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.CameraModel, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="2" Text="CameraMode" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.PhyCamera_Detail_CameraMode}" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.CameraMode, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="3" Text="Channel" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBlock Grid.Row="3" Text="{x:Static properties:Resources.PhyCamera_Detail_Channel}" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Config.Channel, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="4" Text="ImageBpp" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBlock Grid.Row="4" Text="{x:Static properties:Resources.PhyCamera_Detail_ImageBpp}" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Config.ImageBpp, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
                             </Grid>
@@ -329,19 +325,19 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Text="DeviceMode" Style="{StaticResource DetailLabelStyle}"/>
+                                <TextBlock Text="{x:Static properties:Resources.PhyCamera_Detail_DeviceMode}" Style="{StaticResource DetailLabelStyle}"/>
                                 <TextBox Grid.Column="1" Text="{Binding CameraLicenseModel.ColorVisionLicense.DeviceMode, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}"/>
 
-                                <TextBlock Grid.Row="1" Text="IssueDate" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.PhyCamera_Detail_IssueDate}" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding CameraLicenseModel.ColorVisionLicense.IssueDate, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="2" Text="ExpiryDate" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.PhyCamera_Detail_ExpiryDate}" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CameraLicenseModel.ExpiryDate, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
 
-                                <TextBlock Grid.Row="3" Text="Licensee" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
+                                <TextBlock Grid.Row="3" Text="{x:Static properties:Resources.PhyCamera_Detail_Licensee}" Style="{StaticResource DetailLabelStyle}" Margin="0,6,8,0"/>
                                 <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding CameraLicenseModel.ColorVisionLicense.Licensee, Mode=OneWay}"
                                          Style="{StaticResource CopyableValueTextBoxStyle}" Margin="0,6,0,0"/>
                             </Grid>

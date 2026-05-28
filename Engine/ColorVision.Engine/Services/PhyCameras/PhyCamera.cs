@@ -438,7 +438,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                MessageBox.Show(Properties.Resources.DatabaseConnectionFailed, Properties.Resources.CalibrationTemplate);
                 return;
             }
             var ITemplate = new TemplateCalibrationParam(this);
@@ -447,7 +447,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void Reset()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ClearDatabaseItems, "ColorVision", MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ClearDatabaseItems, Properties.Resources.Reset, MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
             {
                 CalibrationParams.Clear();
                 this.VisualChildren.Clear();
@@ -467,7 +467,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public override void Delete()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, Properties.Resources.Delete, MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
 
@@ -819,7 +819,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 DeviceCamera?.RestartRCService();
                             }
 
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.AddSuccess)}", "ColorVision");
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.AddSuccess)}", Properties.Resources.ModifyLicense);
                             if (ret == -1)
                             {
                                 return false;
@@ -830,7 +830,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExtractionFailed} :{ex.Message}", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExtractionFailed} :{ex.Message}", Properties.Resources.ModifyLicense);
                     return false;
                 }
             }
@@ -856,7 +856,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         DeviceCalibration?.RestartRCService();
                         DeviceCamera?.RestartRCService();
                     }
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.UpdateSuccess)}", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.UpdateSuccess)}", Properties.Resources.ModifyLicense);
                     if (ret == -1)
                     {
                         return false;
@@ -865,12 +865,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
                 else
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseNotSupportedForCamera, "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseNotSupportedForCamera, Properties.Resources.ModifyLicense);
                 }
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, Properties.Resources.ModifyLicense);
             }
             return false;
         }
@@ -879,18 +879,18 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, Properties.Resources.CopyLicense);
                 return;
             }
 
             try
             {
                 Common.NativeMethods.Clipboard.SetText(CameraLicenseModel.LicenseValue);
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, Properties.Resources.CopyLicense);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", Properties.Resources.CopyLicense);
             }
         }
 
@@ -898,7 +898,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, Properties.Resources.ExportLicense);
                 return;
             }
 
@@ -915,12 +915,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     File.WriteAllText(saveFileDialog.FileName, CameraLicenseModel.LicenseValue, Encoding.UTF8);
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, Properties.Resources.ExportLicense);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", Properties.Resources.ExportLicense);
             }
         }
 
@@ -1184,7 +1184,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
                             });
                         }
                     }
@@ -1208,7 +1208,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                     Application.Current.Dispatcher.Invoke(() => 
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
                         UploadClosed.Invoke(this, new EventArgs());
                     } );
                     return;

@@ -277,7 +277,7 @@ ON DUPLICATE KEY UPDATE
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CreateDataBase+$"{typeof(CalibrationParam)} "+ ColorVision.Engine.Properties.Resources.TemplateFailed, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CreateDataBase+$"{typeof(CalibrationParam)} "+ ColorVision.Engine.Properties.Resources.TemplateFailed, ColorVision.Engine.Properties.Resources.CalibrationTemplate);
             }
         }
     }

@@ -68,7 +68,7 @@
                     <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding CameraModel}" Width="140"/>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Status}" Binding="{Binding StatusText}" Width="90"/>
                     <DataGridTextColumn Header="MD5" Binding="{Binding MD5Id}" Width="270"/>
-                    <DataGridTextColumn Header="CameraId" Binding="{Binding CameraId}" Width="*"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.CameraID}" Binding="{Binding CameraId}" Width="*"/>
                     <DataGridTextColumn Header="{x:Static properties:Resources.Duration}" Binding="{Binding SearchElapsedText}" Width="100"/>
                     <DataGridTemplateColumn Header="{x:Static properties:Resources.Operation}" Width="120">
                         <DataGridTemplateColumn.CellTemplate>

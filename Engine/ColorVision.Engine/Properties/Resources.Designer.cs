@@ -14322,6 +14322,87 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
+        /// <summary>
+        ///   查找类似 相机模式 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_CameraMode {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_CameraMode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 相机型号 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_CameraModel {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_CameraModel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 通道 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_Channel {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_Channel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 设备模式 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_DeviceMode {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_DeviceMode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 到期日期 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_ExpiryDate {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_ExpiryDate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 图像位深 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_ImageBpp {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_ImageBpp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 签发日期 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_IssueDate {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_IssueDate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 被许可方 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_Detail_Licensee {
+            get {
+                return ResourceManager.GetString("PhyCamera_Detail_Licensee", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 MVS 日志 的本地化字符串。
+        /// </summary>
+        public static string PhyCamera_MvsLog {
+            get {
+                return ResourceManager.GetString("PhyCamera_MvsLog", resourceCulture);
+            }
+        }
+
         // ===== Engine_Msg_* =====
 
         /// <summary>
@@ -15720,6 +15801,132 @@ namespace ColorVision.Engine.Properties {
         public static string ChannelZ {
             get {
                 return ResourceManager.GetString("ChannelZ", resourceCulture);
+            }
+        }
+
+        public static string LabelCameraCode {
+            get {
+                return ResourceManager.GetString("LabelCameraCode", resourceCulture);
+            }
+        }
+
+        public static string DSNU {
+            get {
+                return ResourceManager.GetString("DSNU", resourceCulture);
+            }
+        }
+
+        public static string LineArity {
+            get {
+                return ResourceManager.GetString("LineArity", resourceCulture);
+            }
+        }
+
+        public static string AngleShift {
+            get {
+                return ResourceManager.GetString("AngleShift", resourceCulture);
+            }
+        }
+
+        public static string NDFilter {
+            get {
+                return ResourceManager.GetString("NDFilter", resourceCulture);
+            }
+        }
+
+        public static string FilterWheelHoleMapping {
+            get {
+                return ResourceManager.GetString("FilterWheelHoleMapping", resourceCulture);
+            }
+        }
+
+        public static string FilterWheelHoleIndex {
+            get {
+                return ResourceManager.GetString("FilterWheelHoleIndex", resourceCulture);
+            }
+        }
+
+        public static string FilterWheelHoleName {
+            get {
+                return ResourceManager.GetString("FilterWheelHoleName", resourceCulture);
+            }
+        }
+
+        public static string FilterWheelHoleDefaultNameFormat {
+            get {
+                return ResourceManager.GetString("FilterWheelHoleDefaultNameFormat", resourceCulture);
+            }
+        }
+
+        public static string GetCameraLicense {
+            get {
+                return ResourceManager.GetString("GetCameraLicense", resourceCulture);
+            }
+        }
+
+        public static string GetSpectrumLicense {
+            get {
+                return ResourceManager.GetString("GetSpectrumLicense", resourceCulture);
+            }
+        }
+
+        public static string SaveToLicenseFolder {
+            get {
+                return ResourceManager.GetString("SaveToLicenseFolder", resourceCulture);
+            }
+        }
+
+        public static string LicenseNotice {
+            get {
+                return ResourceManager.GetString("LicenseNotice", resourceCulture);
+            }
+        }
+
+        public static string LicenseCountFormat {
+            get {
+                return ResourceManager.GetString("LicenseCountFormat", resourceCulture);
+            }
+        }
+
+        public static string Id {
+            get {
+                return ResourceManager.GetString("Id", resourceCulture);
+            }
+        }
+
+        public static string MacOrSn {
+            get {
+                return ResourceManager.GetString("MacOrSn", resourceCulture);
+            }
+        }
+
+        public static string HelpPipelineOutputLabel {
+            get {
+                return ResourceManager.GetString("HelpPipelineOutputLabel", resourceCulture);
+            }
+        }
+
+        public static string HelpFormulaDarkNoiseText {
+            get {
+                return ResourceManager.GetString("HelpFormulaDarkNoiseText", resourceCulture);
+            }
+        }
+
+        public static string MvsLogViewerNotFound {
+            get {
+                return ResourceManager.GetString("MvsLogViewerNotFound", resourceCulture);
+            }
+        }
+
+        public static string MvsLogViewerStartFailed {
+            get {
+                return ResourceManager.GetString("MvsLogViewerStartFailed", resourceCulture);
+            }
+        }
+
+        public static string UnexpectedErrorOccurred {
+            get {
+                return ResourceManager.GetString("UnexpectedErrorOccurred", resourceCulture);
             }
         }
 
