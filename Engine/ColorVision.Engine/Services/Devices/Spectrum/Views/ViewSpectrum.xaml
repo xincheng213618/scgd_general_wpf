@@ -146,35 +146,35 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="EQE">
+                            <GridViewColumn x:Name="EqeColumn" Header="EQE">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding Eqe, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.LuminousFlux}">
+                            <GridViewColumn x:Name="LuminousFluxColumn" Header="{x:Static properties:Resources.LuminousFlux}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding LuminousFlux, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.RadiantFlux}" >
+                            <GridViewColumn x:Name="RadiantFluxColumn" Header="{x:Static properties:Resources.RadiantFlux}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RadiantFlux, StringFormat={}{0:F6}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.LuminousEfficacy}">
+                            <GridViewColumn x:Name="LuminousEfficacyColumn" Header="{x:Static properties:Resources.LuminousEfficacy}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding LuminousEfficacy, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.Lv}">
+                            <GridViewColumn x:Name="LvColumn" Header="{x:Static properties:Resources.Lv}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding Lv}"/>
