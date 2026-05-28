@@ -118,6 +118,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Core_UnsupportedFormat" xml:space="preserve">
-    <value>{0} 暂不支持的格式，请联系开发人员</value>
+    <value>{0} はサポートされていない形式です。開発者に連絡してください</value>
   </data>
 </root>
