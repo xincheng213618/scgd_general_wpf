@@ -613,31 +613,31 @@
     <value>시스템 기본값으로 열기</value>
   </data>
   <data name="DesktopPetSendTestReminder" xml:space="preserve">
-    <value>Send Test Reminder</value>
+    <value>테스트 리마인더 보내기</value>
   </data>
   <data name="DesktopPetReminder" xml:space="preserve">
-    <value>Pet Reminder</value>
+    <value>펫 알림</value>
   </data>
   <data name="DesktopPetTestMessage" xml:space="preserve">
-    <value>This is a test message from the desktop pet.</value>
+    <value>이것은 데스크톱 애완동물의 테스트 메시지입니다.</value>
   </data>
   <data name="DesktopPetShowMainWindow" xml:space="preserve">
-    <value>Show Main Window</value>
+    <value>메인 창 표시</value>
   </data>
   <data name="DesktopPetSettings" xml:space="preserve">
-    <value>Pet Settings</value>
+    <value>펫 설정</value>
   </data>
   <data name="DesktopPetAlwaysOnTop" xml:space="preserve">
-    <value>Always on Top</value>
+    <value>항상 위에 표시</value>
   </data>
   <data name="DesktopPetShowNotifications" xml:space="preserve">
-    <value>Show Notifications</value>
+    <value>알림 표시</value>
   </data>
   <data name="DesktopPetHide" xml:space="preserve">
-    <value>Hide Pet</value>
+    <value>펫 숨기기</value>
   </data>
   <data name="DesktopPetExit" xml:space="preserve">
-    <value>Exit Program</value>
+    <value>프로그램 종료</value>
   </data>
   <data name="DesktopPetIdleTip1" xml:space="preserve">
     <value>I'm here, I'll remind you when there are messages.</value>
@@ -661,16 +661,16 @@
     <value>Model loading failed: {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
-    <value>Desktop Pet Settings</value>
+    <value>데스크톱 펫 설정</value>
   </data>
   <data name="DesktopPetInitializerName" xml:space="preserve">
-    <value>Desktop Pet</value>
+    <value>데스크톱 펫</value>
   </data>
   <data name="ConfigDesktopPet" xml:space="preserve">
     <value>Desktop Pet</value>
   </data>
   <data name="ConfigDesktopPetName" xml:space="preserve">
-    <value>Pet Name</value>
+    <value>펫 이름</value>
   </data>
   <data name="ConfigDesktopPetCategory" xml:space="preserve">
     <value>Desktop Pet</value>
@@ -679,10 +679,10 @@
     <value>Always on Top</value>
   </data>
   <data name="ConfigDesktopPetShowNotifications" xml:space="preserve">
-    <value>Show Message Notifications</value>
+    <value>메시지 알림 표시</value>
   </data>
   <data name="ConfigDesktopPetStartupGreeting" xml:space="preserve">
-    <value>Startup Greeting</value>
+    <value>시작 인사</value>
   </data>
   <data name="ConfigDesktopPetEnableIdleTips" xml:space="preserve">
     <value>Enable Idle Tips</value>
@@ -691,19 +691,19 @@
     <value>Idle Tip Interval (Minutes)</value>
   </data>
   <data name="ConfigDesktopPetMessageDisplaySeconds" xml:space="preserve">
-    <value>Message Display Seconds</value>
+    <value>메시지 표시 초</value>
   </data>
   <data name="ConfigDesktopPetScale" xml:space="preserve">
-    <value>Pet Scale</value>
+    <value>펫 크기</value>
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
-    <value>Pet Opacity</value>
+    <value>펫 투명도</value>
   </data>
   <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Enable Live2D Rendering</value>
+    <value>Live2D 렌더링 활성화</value>
   </data>
   <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Live2D Model or HTML Path</value>
+    <value>Live2D 모델 또는 HTML 경로</value>
   </data>
   <data name="ConfigLive2DMaxFps" xml:space="preserve">
     <value>Live2D Max FPS</value>
@@ -715,7 +715,7 @@
     <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
-    <value>Enable Desktop Pet</value>
+    <value>데스크톱 펫 활성화</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
@@ -922,7 +922,7 @@
     <value>Reused context from previous execution, tools were not called again.</value>
   </data>
   <data name="CopilotStatus" xml:space="preserve">
-    <value>Status:</value>
+    <value>상태:</value>
   </data>
   <data name="CopilotSuccess" xml:space="preserve">
     <value>Success</value>
@@ -934,7 +934,7 @@
     <value>Result:</value>
   </data>
   <data name="CopilotError" xml:space="preserve">
-    <value>Error:</value>
+    <value>오류:</value>
   </data>
   <data name="CopilotNoFinalAnswer" xml:space="preserve">
     <value>No final answer received, only execution process or reasoning content.</value>
@@ -1015,7 +1015,7 @@
     <value>Model:</value>
   </data>
   <data name="CopilotModeLabel" xml:space="preserve">
-    <value>Mode:</value>
+    <value>모드:</value>
   </data>
   <data name="CopilotInputTokens" xml:space="preserve">
     <value>Input Tokens:</value>
@@ -1051,7 +1051,7 @@
     <value>Requirements: 6 to 14 characters, return only the title, no explanation, no quotes, no period.</value>
   </data>
   <data name="CopilotUserPrefix" xml:space="preserve">
-    <value>User:</value>
+    <value>사용자:</value>
   </data>
   <data name="CopilotAssistantPrefix" xml:space="preserve">
     <value>Assistant:</value>

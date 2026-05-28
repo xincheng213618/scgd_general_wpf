@@ -613,64 +613,64 @@
     <value>Ouvrir avec le système par défaut</value>
   </data>
   <data name="DesktopPetSendTestReminder" xml:space="preserve">
-    <value>Send Test Reminder</value>
+    <value>Envoyer un rappel de test</value>
   </data>
   <data name="DesktopPetReminder" xml:space="preserve">
-    <value>Pet Reminder</value>
+    <value>Rappel de l'animal de compagnie</value>
   </data>
   <data name="DesktopPetTestMessage" xml:space="preserve">
-    <value>This is a test message from the desktop pet.</value>
+    <value>Ceci est un message de test de l'animal de compagnie du bureau.</value>
   </data>
   <data name="DesktopPetShowMainWindow" xml:space="preserve">
-    <value>Show Main Window</value>
+    <value>Afficher la fenêtre principale</value>
   </data>
   <data name="DesktopPetSettings" xml:space="preserve">
-    <value>Pet Settings</value>
+    <value>Paramètres de l'animal de compagnie</value>
   </data>
   <data name="DesktopPetAlwaysOnTop" xml:space="preserve">
-    <value>Always on Top</value>
+    <value>Toujours au premier plan</value>
   </data>
   <data name="DesktopPetShowNotifications" xml:space="preserve">
-    <value>Show Notifications</value>
+    <value>Afficher les notifications</value>
   </data>
   <data name="DesktopPetHide" xml:space="preserve">
-    <value>Hide Pet</value>
+    <value>Masquer l'animal de compagnie</value>
   </data>
   <data name="DesktopPetExit" xml:space="preserve">
-    <value>Exit Program</value>
+    <value>Quitter le programme</value>
   </data>
   <data name="DesktopPetIdleTip1" xml:space="preserve">
-    <value>I'm here, I'll remind you when there are messages.</value>
+    <value>Je suis là, je vous rappellerai quand il y aura des messages.</value>
   </data>
   <data name="DesktopPetIdleTip2" xml:space="preserve">
-    <value>Take a break for your eyes, and save your current work.</value>
+    <value>Reposez vos yeux et enregistrez votre travail actuel.</value>
   </data>
   <data name="DesktopPetIdleTip3" xml:space="preserve">
-    <value>If you need me to be quiet, right-click to turn off notifications.</value>
+    <value>Si vous avez besoin que je sois silencieux, faites un clic droit pour désactiver les notifications.</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>If you have a local Live2D model, you can connect it in settings.</value>
+    <value>Si vous avez un modèle Live2D local, vous pouvez le connecter dans les paramètres.</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
-    <value>ColorVision has started, I'll be here to remind you.</value>
+    <value>ColorVision a démarré, je serai là pour vous rappeler.</value>
   </data>
   <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>Model loading failed, switched to built-in appearance.</value>
+    <value>Échec du chargement du modèle, basculé vers l'apparence intégrée.</value>
   </data>
   <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>Model loading failed: {0}</value>
+    <value>Échec du chargement du modèle : {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
-    <value>Desktop Pet Settings</value>
+    <value>Paramètres de l'animal de compagnie du bureau</value>
   </data>
   <data name="DesktopPetInitializerName" xml:space="preserve">
-    <value>Desktop Pet</value>
+    <value>Animal de compagnie du bureau</value>
   </data>
   <data name="ConfigDesktopPet" xml:space="preserve">
     <value>Desktop Pet</value>
   </data>
   <data name="ConfigDesktopPetName" xml:space="preserve">
-    <value>Pet Name</value>
+    <value>Nom de l'animal de compagnie</value>
   </data>
   <data name="ConfigDesktopPetCategory" xml:space="preserve">
     <value>Desktop Pet</value>
@@ -679,10 +679,10 @@
     <value>Always on Top</value>
   </data>
   <data name="ConfigDesktopPetShowNotifications" xml:space="preserve">
-    <value>Show Message Notifications</value>
+    <value>Afficher les notifications de message</value>
   </data>
   <data name="ConfigDesktopPetStartupGreeting" xml:space="preserve">
-    <value>Startup Greeting</value>
+    <value>Salutation de démarrage</value>
   </data>
   <data name="ConfigDesktopPetEnableIdleTips" xml:space="preserve">
     <value>Enable Idle Tips</value>
@@ -691,19 +691,19 @@
     <value>Idle Tip Interval (Minutes)</value>
   </data>
   <data name="ConfigDesktopPetMessageDisplaySeconds" xml:space="preserve">
-    <value>Message Display Seconds</value>
+    <value>Secondes d'affichage du message</value>
   </data>
   <data name="ConfigDesktopPetScale" xml:space="preserve">
-    <value>Pet Scale</value>
+    <value>Échelle de l'animal de compagnie</value>
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
-    <value>Pet Opacity</value>
+    <value>Opacité de l'animal de compagnie</value>
   </data>
   <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Enable Live2D Rendering</value>
+    <value>Activer le rendu Live2D</value>
   </data>
   <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Live2D Model or HTML Path</value>
+    <value>Chemin du modèle Live2D ou HTML</value>
   </data>
   <data name="ConfigLive2DMaxFps" xml:space="preserve">
     <value>Live2D Max FPS</value>
@@ -715,7 +715,7 @@
     <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
-    <value>Enable Desktop Pet</value>
+    <value>Activer l'animal de compagnie du bureau</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
@@ -847,7 +847,7 @@
     <value>Context</value>
   </data>
   <data name="CopilotSummary" xml:space="preserve">
-    <value>Summary:</value>
+    <value>Résumé :</value>
   </data>
   <data name="CopilotChatAssistant" xml:space="preserve">
     <value>Chat Assistant</value>
@@ -859,7 +859,7 @@
     <value>No readable log files found in the current environment.</value>
   </data>
   <data name="CopilotFilterKeyword" xml:space="preserve">
-    <value>[Filter Keyword] {0}</value>
+    <value>[Mot-clé de filtre] {0}</value>
   </data>
   <data name="CopilotContentTruncated" xml:space="preserve">
     <value>...&amp;lt;Content truncated, only the last {0} characters are retained.&amp;gt;</value>
@@ -886,7 +886,7 @@
     <value>Update Snapshot</value>
   </data>
   <data name="CopilotAttachToQuestion" xml:space="preserve">
-    <value>Attach to Question</value>
+    <value>Joindre à la question</value>
   </data>
   <data name="CopilotSelectHistoryOrNew" xml:space="preserve">
     <value>Select a history session from the right, or click + to create a new session.</value>
@@ -922,7 +922,7 @@
     <value>Reused context from previous execution, tools were not called again.</value>
   </data>
   <data name="CopilotStatus" xml:space="preserve">
-    <value>Status:</value>
+    <value>Statut :</value>
   </data>
   <data name="CopilotSuccess" xml:space="preserve">
     <value>Success</value>
@@ -934,7 +934,7 @@
     <value>Result:</value>
   </data>
   <data name="CopilotError" xml:space="preserve">
-    <value>Error:</value>
+    <value>Erreur :</value>
   </data>
   <data name="CopilotNoFinalAnswer" xml:space="preserve">
     <value>No final answer received, only execution process or reasoning content.</value>
@@ -958,13 +958,13 @@
     <value>All Files|*.*</value>
   </data>
   <data name="CopilotMountContext" xml:space="preserve">
-    <value>Mount Context</value>
+    <value>Monter le contexte</value>
   </data>
   <data name="CopilotEnterContextDescription" xml:space="preserve">
     <value>Enter context description to attach to the current session</value>
   </data>
   <data name="CopilotMountWebPage" xml:space="preserve">
-    <value>Mount Web Page</value>
+    <value>Monter la page web</value>
   </data>
   <data name="CopilotEnterWebPageUrl" xml:space="preserve">
     <value>Enter web page URL to fetch and attach to the current session</value>
@@ -1015,16 +1015,16 @@
     <value>Model:</value>
   </data>
   <data name="CopilotModeLabel" xml:space="preserve">
-    <value>Mode:</value>
+    <value>Mode :</value>
   </data>
   <data name="CopilotInputTokens" xml:space="preserve">
-    <value>Input Tokens:</value>
+    <value>Jetons d'entrée :</value>
   </data>
   <data name="CopilotOutputTokens" xml:space="preserve">
-    <value>Output Tokens:</value>
+    <value>Jetons de sortie :</value>
   </data>
   <data name="CopilotTotalTokens" xml:space="preserve">
-    <value>Total Tokens:</value>
+    <value>Total des jetons :</value>
   </data>
   <data name="CopilotRealUsageNote" xml:space="preserve">
     <value>Note: This shows the real token usage from the most recent API request.</value>
@@ -1051,13 +1051,13 @@
     <value>Requirements: 6 to 14 characters, return only the title, no explanation, no quotes, no period.</value>
   </data>
   <data name="CopilotUserPrefix" xml:space="preserve">
-    <value>User:</value>
+    <value>Utilisateur :</value>
   </data>
   <data name="CopilotAssistantPrefix" xml:space="preserve">
     <value>Assistant:</value>
   </data>
   <data name="CopilotTitlePrefix" xml:space="preserve">
-    <value>Title</value>
+    <value>Titre</value>
   </data>
   <data name="CopilotAdditionalContext" xml:space="preserve">
     <value>Additional Context</value>
@@ -1066,13 +1066,13 @@
     <value>The following is the additional context mounted in the current session. They are reference information explicitly provided by the user. Please use them as needed when answering:</value>
   </data>
   <data name="CopilotContextTag" xml:space="preserve">
-    <value>[Context] {0}</value>
+    <value>[Contexte] {0}</value>
   </data>
   <data name="CopilotExplicitSnapshot" xml:space="preserve">
     <value>The following is an explicit business snapshot attached by the user. It was captured when clicking "Ask Copilot" or manually attaching; answers should prioritize analysis based on these snapshots.</value>
   </data>
   <data name="CopilotFileAttachment" xml:space="preserve">
-    <value>[File] {0}</value>
+    <value>[Fichier] {0}</value>
   </data>
   <data name="CopilotFileNotExist" xml:space="preserve">
     <value>File does not exist, cannot read.</value>
@@ -1099,7 +1099,7 @@
     <value>[Web Page] {0}</value>
   </data>
   <data name="CopilotSource" xml:space="preserve">
-    <value>Source:</value>
+    <value>Source :</value>
   </data>
   <data name="CopilotLocalWebPageContext" xml:space="preserve">
     <value>[Local Web Page Context Injection]</value>
@@ -1111,7 +1111,7 @@
     <value>...&amp;lt;Web page context truncated&amp;gt;</value>
   </data>
   <data name="CopilotCurrentWindowContextTag" xml:space="preserve">
-    <value>[Current Window Context]</value>
+    <value>[Contexte de la fenêtre actuelle]</value>
   </data>
   <data name="CopilotLocation" xml:space="preserve">
     <value>Location:</value>
@@ -1153,25 +1153,25 @@
     <value>{0} additional exceptions caught in a short time, merged into the current window.</value>
   </data>
   <data name="CopilotExceptionDetailsTag" xml:space="preserve">
-    <value>[Exception Details]</value>
+    <value>[Détails de l'exception]</value>
   </data>
   <data name="CopilotRecentLogsTag" xml:space="preserve">
     <value>[Recent Logs]</value>
   </data>
   <data name="CopilotAiRequestTag" xml:space="preserve">
-    <value>[AI Request]</value>
+    <value>[Requête IA]</value>
   </data>
   <data name="CopilotNoExceptionMessage" xml:space="preserve">
     <value>No exception message provided</value>
   </data>
   <data name="CopilotCaptureSource" xml:space="preserve">
-    <value>Capture Source:</value>
+    <value>Source de capture :</value>
   </data>
   <data name="CopilotOccurredTime" xml:space="preserve">
     <value>Occurred At:</value>
   </data>
   <data name="CopilotFirstSource" xml:space="preserve">
-    <value>First Source:</value>
+    <value>Première source :</value>
   </data>
   <data name="CopilotRepeatCount" xml:space="preserve">
     <value>Repeated: {0} times</value>
@@ -1180,13 +1180,13 @@
     <value>Additional Exceptions: {0}</value>
   </data>
   <data name="CopilotType" xml:space="preserve">
-    <value>Type:</value>
+    <value>Type :</value>
   </data>
   <data name="CopilotMessage" xml:space="preserve">
     <value>Message:</value>
   </data>
   <data name="CopilotStack" xml:space="preserve">
-    <value>Stack:</value>
+    <value>Pile :</value>
   </data>
   <data name="CopilotDiagnosticPrompt" xml:space="preserve">
     <value>Please help me analyze the unhandled exception in the ColorVision WPF client. Based on the exception content and recent logs, provide the most likely cause, priority troubleshooting points, and minimal viable fix direction; if information is insufficient, please clearly indicate what is missing.</value>
@@ -1195,16 +1195,16 @@
     <value>[Exception]</value>
   </data>
   <data name="CopilotLogFile" xml:space="preserve">
-    <value>Log File:</value>
+    <value>Fichier journal :</value>
   </data>
   <data name="CopilotSupplementaryNote" xml:space="preserve">
-    <value>[Supplementary Note] {0}</value>
+    <value>[Note complémentaire] {0}</value>
   </data>
   <data name="CopilotOpenAiPanel" xml:space="preserve">
     <value>Open AI Chat Panel</value>
   </data>
   <data name="CopilotDocsOnlineSearch" xml:space="preserve">
-    <value>[Online Documentation Search]</value>
+    <value>[Recherche de documentation en ligne]</value>
   </data>
   <data name="CopilotDocsQuery" xml:space="preserve">
     <value>Query:</value>
@@ -1216,28 +1216,28 @@
     <value>Hit Pages:</value>
   </data>
   <data name="CopilotDocsCandidateFragments" xml:space="preserve">
-    <value>Candidate Fragments:</value>
+    <value>Fragments candidats :</value>
   </data>
   <data name="CopilotDocsPage" xml:space="preserve">
-    <value>Page:</value>
+    <value>Page :</value>
   </data>
   <data name="CopilotDocsDomain" xml:space="preserve">
     <value>Doc Domain:</value>
   </data>
   <data name="CopilotDocsPageLink" xml:space="preserve">
-    <value>Page Link:</value>
+    <value>Lien de page :</value>
   </data>
   <data name="CopilotDocsSourcePath" xml:space="preserve">
     <value>Source Path:</value>
   </data>
   <data name="CopilotDocsTitleChain" xml:space="preserve">
-    <value>Title Chain:</value>
+    <value>Chaîne de titres :</value>
   </data>
   <data name="CopilotDocsFragmentLink" xml:space="preserve">
-    <value>Fragment Link:</value>
+    <value>Lien de fragment :</value>
   </data>
   <data name="CopilotDocsExcerpt" xml:space="preserve">
-    <value>Excerpt:</value>
+    <value>Extrait :</value>
   </data>
   <data name="CopilotDocsIndexNotPublished" xml:space="preserve">
     <value>Online documentation index not published, please confirm GitHub Pages has completed the latest deployment.</value>
