@@ -193,10 +193,10 @@
     <value>Сортировать по {0}</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文 (Традиционный китайский)</value>
+    <value>Традиционный китайский</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文 (Упрощенный китайский)</value>
+    <value>Упрощённый китайский</value>
   </data>
   <data name="WriteConfigFileFailed" xml:space="preserve">
     <value>Не удалось записать файл конфигурации {0}</value>
@@ -828,40 +828,40 @@
     <value>Local apps</value>
   </data>
   <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>最近更新</value>
+    <value>Сортировать по обновлению</value>
   </data>
   <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>下载量</value>
+    <value>Сортировать по загрузкам</value>
   </data>
   <data name="MarketplaceSortName" xml:space="preserve">
-    <value>名称</value>
+    <value>Сортировать по имени</value>
   </data>
   <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>全部分类</value>
+    <value>Все категории</value>
   </data>
   <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>关键字</value>
+    <value>Ключевое слово</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
-    <value>作者</value>
+    <value>Автор</value>
   </data>
   <data name="MarketplaceCategory" xml:space="preserve">
-    <value>分类</value>
+    <value>Категория</value>
   </data>
   <data name="MarketplaceDescription" xml:space="preserve">
-    <value>描述</value>
+    <value>Описание</value>
   </data>
   <data name="MarketplaceOffline" xml:space="preserve">
-    <value> (离线)</value>
+    <value>Офлайн</value>
   </data>
   <data name="MarketplaceNoMatches" xml:space="preserve">
-    <value>没有匹配的插件</value>
+    <value>Подходящие плагины не найдены</value>
   </data>
   <data name="MarketplaceReadmeEmpty" xml:space="preserve">
-    <value>暂无 README</value>
+    <value>README недоступен</value>
   </data>
   <data name="MarketplaceChangelogEmpty" xml:space="preserve">
-    <value>暂无 CHANGELOG</value>
+    <value>CHANGELOG недоступен</value>
   </data>
   <data name="MarketplaceReadmeHeader" xml:space="preserve">
     <value>README</value>
@@ -870,108 +870,108 @@
     <value>CHANGELOG</value>
   </data>
   <data name="MarketplaceDetailInfoHeader" xml:space="preserve">
-    <value>详情</value>
+    <value>Подробности</value>
   </data>
   <data name="MarketplaceDependentsHeader" xml:space="preserve">
-    <value>依赖</value>
+    <value>Зависимости</value>
   </data>
   <data name="MarketplaceOpenProjectUrl" xml:space="preserve">
-    <value>打开链接</value>
+    <value>Открыть URL проекта</value>
   </data>
   <data name="MarketplaceLatest" xml:space="preserve">
-    <value>最新</value>
+    <value>Последняя</value>
   </data>
   <data name="MarketplaceCurrent" xml:space="preserve">
-    <value>当前</value>
+    <value>Текущая</value>
   </data>
   <data name="MarketplaceArchive" xml:space="preserve">
-    <value>历史</value>
+    <value>Архив</value>
   </data>
   <data name="MarketplacePluginId" xml:space="preserve">
-    <value>插件 ID</value>
+    <value>ID плагина</value>
   </data>
   <data name="MarketplaceLatestVersion" xml:space="preserve">
-    <value>最新版本</value>
+    <value>Последняя версия</value>
   </data>
   <data name="MarketplaceInstalledVersion" xml:space="preserve">
-    <value>已安装版本</value>
+    <value>Установленная версия</value>
   </data>
   <data name="MarketplaceStatus" xml:space="preserve">
-    <value>状态</value>
+    <value>Статус</value>
   </data>
   <data name="MarketplaceStatusInstalled" xml:space="preserve">
-    <value>已安装</value>
+    <value>Установлен</value>
   </data>
   <data name="MarketplaceStatusInstalledUpdate" xml:space="preserve">
-    <value>已安装 · 可更新</value>
+    <value>Установлен · Доступно обновление</value>
   </data>
   <data name="MarketplaceStatusMarketplaceOnly" xml:space="preserve">
-    <value>仅商店提供</value>
+    <value>Только маркетплейс</value>
   </data>
   <data name="MarketplaceRequires" xml:space="preserve">
-    <value>依赖版本</value>
+    <value>Требует</value>
   </data>
   <data name="MarketplaceDownloads" xml:space="preserve">
-    <value>下载量</value>
+    <value>Загрузки</value>
   </data>
   <data name="MarketplaceUpdated" xml:space="preserve">
-    <value>更新时间</value>
+    <value>Обновлено</value>
   </data>
   <data name="MarketplaceProjectUrl" xml:space="preserve">
-    <value>项目地址</value>
+    <value>URL проекта</value>
   </data>
   <data name="MarketplaceCurrentPackages" xml:space="preserve">
-    <value>当前包数量</value>
+    <value>Текущие пакеты</value>
   </data>
   <data name="MarketplaceHistoryPackages" xml:space="preserve">
-    <value>历史包数量</value>
+    <value>История пакетов</value>
   </data>
   <data name="MarketplaceCurrentVersions" xml:space="preserve">
-    <value>当前版本</value>
+    <value>Текущие версии</value>
   </data>
   <data name="MarketplaceArchivedVersions" xml:space="preserve">
-    <value>历史版本</value>
+    <value>Архивированные версии</value>
   </data>
   <data name="MarketplaceInstalledVersionFormat" xml:space="preserve">
-    <value>已安装 v{0}</value>
+    <value>Установлено v{0}</value>
   </data>
   <data name="MarketplaceUpdateVersionFormat" xml:space="preserve">
-    <value>更新到 v{0}</value>
+    <value>Обновить до v{0}</value>
   </data>
   <data name="MarketplaceUpdateAvailable" xml:space="preserve">
-    <value>可更新</value>
+    <value>Доступно обновление</value>
   </data>
   <data name="MarketplaceDownloadCountFormat" xml:space="preserve">
-    <value>下载 {0}</value>
+    <value>{0} загрузок</value>
   </data>
   <data name="MarketplaceRequiresFormat" xml:space="preserve">
-    <value>依赖 {0}</value>
+    <value>Требует {0}</value>
   </data>
   <data name="MarketplaceVersionSha256Label" xml:space="preserve">
     <value>SHA256</value>
   </data>
   <data name="MarketplaceNoUpdates" xml:space="preserve">
-    <value>没有可更新的插件</value>
+    <value>Нет доступных обновлений</value>
   </data>
   <data name="MarketplaceBulkUpdateConfirm" xml:space="preserve">
-    <value>检测到 {0} 个插件有可用更新，是否全部更新？</value>
+    <value>Обнаружено {0} плагинов с доступными обновлениями. Обновить все?</value>
   </data>
   <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
-    <value>一键更新</value>
+    <value>Массовое обновление</value>
   </data>
   <data name="MarketplacePackageColumn" xml:space="preserve">
-    <value>包</value>
+    <value>Пакет</value>
   </data>
   <data name="MarketplaceHasUpdateTooltip" xml:space="preserve">
-    <value>有可用更新</value>
+    <value>Доступно обновление</value>
   </data>
   <data name="MarketplaceDownloadVerificationFailed" xml:space="preserve">
-    <value>下载文件校验失败: {0} v{1}</value>
+    <value>Ошибка проверки загруженного файла: {0} v{1}</value>
   </data>
   <data name="MarketplaceOpenLocalPath" xml:space="preserve">
-    <value>打开本地目录</value>
+    <value>Открыть локальный путь</value>
   </data>
   <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
-    <value>选择更新包</value>
+    <value>Выбрать файл обновления</value>
   </data>
 </root>

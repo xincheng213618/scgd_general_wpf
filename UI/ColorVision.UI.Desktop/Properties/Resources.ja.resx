@@ -193,10 +193,10 @@
     <value>{0}で並べ替え</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文 (繁体字中国語)</value>
+    <value>繁体字中国語</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文 (簡体字中国語)</value>
+    <value>簡体字中国語</value>
   </data>
   <data name="WriteConfigFileFailed" xml:space="preserve">
     <value>構成ファイル{0}の書き込みに失敗しました</value>
@@ -828,40 +828,40 @@
     <value>Local apps</value>
   </data>
   <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>最近更新</value>
+    <value>更新日で並べ替え</value>
   </data>
   <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>下载量</value>
+    <value>ダウンロード数で並べ替え</value>
   </data>
   <data name="MarketplaceSortName" xml:space="preserve">
-    <value>名称</value>
+    <value>名前で並べ替え</value>
   </data>
   <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>全部分类</value>
+    <value>すべてのカテゴリ</value>
   </data>
   <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>关键字</value>
+    <value>キーワード</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
-    <value>作者</value>
+    <value>著者</value>
   </data>
   <data name="MarketplaceCategory" xml:space="preserve">
-    <value>分类</value>
+    <value>カテゴリ</value>
   </data>
   <data name="MarketplaceDescription" xml:space="preserve">
-    <value>描述</value>
+    <value>説明</value>
   </data>
   <data name="MarketplaceOffline" xml:space="preserve">
-    <value> (离线)</value>
+    <value>オフライン</value>
   </data>
   <data name="MarketplaceNoMatches" xml:space="preserve">
-    <value>没有匹配的插件</value>
+    <value>一致するプラグインがありません</value>
   </data>
   <data name="MarketplaceReadmeEmpty" xml:space="preserve">
-    <value>暂无 README</value>
+    <value>READMEがありません</value>
   </data>
   <data name="MarketplaceChangelogEmpty" xml:space="preserve">
-    <value>暂无 CHANGELOG</value>
+    <value>CHANGELOGがありません</value>
   </data>
   <data name="MarketplaceReadmeHeader" xml:space="preserve">
     <value>README</value>
@@ -870,108 +870,108 @@
     <value>CHANGELOG</value>
   </data>
   <data name="MarketplaceDetailInfoHeader" xml:space="preserve">
-    <value>详情</value>
+    <value>詳細</value>
   </data>
   <data name="MarketplaceDependentsHeader" xml:space="preserve">
-    <value>依赖</value>
+    <value>依存関係</value>
   </data>
   <data name="MarketplaceOpenProjectUrl" xml:space="preserve">
-    <value>打开链接</value>
+    <value>プロジェクトURLを開く</value>
   </data>
   <data name="MarketplaceLatest" xml:space="preserve">
     <value>最新</value>
   </data>
   <data name="MarketplaceCurrent" xml:space="preserve">
-    <value>当前</value>
+    <value>現在</value>
   </data>
   <data name="MarketplaceArchive" xml:space="preserve">
-    <value>历史</value>
+    <value>アーカイブ</value>
   </data>
   <data name="MarketplacePluginId" xml:space="preserve">
-    <value>插件 ID</value>
+    <value>プラグインID</value>
   </data>
   <data name="MarketplaceLatestVersion" xml:space="preserve">
-    <value>最新版本</value>
+    <value>最新バージョン</value>
   </data>
   <data name="MarketplaceInstalledVersion" xml:space="preserve">
-    <value>已安装版本</value>
+    <value>インストール済みバージョン</value>
   </data>
   <data name="MarketplaceStatus" xml:space="preserve">
-    <value>状态</value>
+    <value>ステータス</value>
   </data>
   <data name="MarketplaceStatusInstalled" xml:space="preserve">
-    <value>已安装</value>
+    <value>インストール済み</value>
   </data>
   <data name="MarketplaceStatusInstalledUpdate" xml:space="preserve">
-    <value>已安装 · 可更新</value>
+    <value>インストール済み・更新可能</value>
   </data>
   <data name="MarketplaceStatusMarketplaceOnly" xml:space="preserve">
-    <value>仅商店提供</value>
+    <value>マーケットプレイスのみ</value>
   </data>
   <data name="MarketplaceRequires" xml:space="preserve">
-    <value>依赖版本</value>
+    <value>必要</value>
   </data>
   <data name="MarketplaceDownloads" xml:space="preserve">
-    <value>下载量</value>
+    <value>ダウンロード数</value>
   </data>
   <data name="MarketplaceUpdated" xml:space="preserve">
-    <value>更新时间</value>
+    <value>更新日</value>
   </data>
   <data name="MarketplaceProjectUrl" xml:space="preserve">
-    <value>项目地址</value>
+    <value>プロジェクトURL</value>
   </data>
   <data name="MarketplaceCurrentPackages" xml:space="preserve">
-    <value>当前包数量</value>
+    <value>現在のパッケージ</value>
   </data>
   <data name="MarketplaceHistoryPackages" xml:space="preserve">
-    <value>历史包数量</value>
+    <value>履歴パッケージ</value>
   </data>
   <data name="MarketplaceCurrentVersions" xml:space="preserve">
-    <value>当前版本</value>
+    <value>現在のバージョン</value>
   </data>
   <data name="MarketplaceArchivedVersions" xml:space="preserve">
-    <value>历史版本</value>
+    <value>アーカイブされたバージョン</value>
   </data>
   <data name="MarketplaceInstalledVersionFormat" xml:space="preserve">
-    <value>已安装 v{0}</value>
+    <value>インストール済み v{0}</value>
   </data>
   <data name="MarketplaceUpdateVersionFormat" xml:space="preserve">
-    <value>更新到 v{0}</value>
+    <value>v{0}に更新</value>
   </data>
   <data name="MarketplaceUpdateAvailable" xml:space="preserve">
-    <value>可更新</value>
+    <value>更新可能</value>
   </data>
   <data name="MarketplaceDownloadCountFormat" xml:space="preserve">
-    <value>下载 {0}</value>
+    <value>{0}回ダウンロード</value>
   </data>
   <data name="MarketplaceRequiresFormat" xml:space="preserve">
-    <value>依赖 {0}</value>
+    <value>{0}が必要</value>
   </data>
   <data name="MarketplaceVersionSha256Label" xml:space="preserve">
     <value>SHA256</value>
   </data>
   <data name="MarketplaceNoUpdates" xml:space="preserve">
-    <value>没有可更新的插件</value>
+    <value>利用可能な更新がありません</value>
   </data>
   <data name="MarketplaceBulkUpdateConfirm" xml:space="preserve">
-    <value>检测到 {0} 个插件有可用更新，是否全部更新？</value>
+    <value>{0}個のプラグインに更新があります。すべて更新しますか？</value>
   </data>
   <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
-    <value>一键更新</value>
+    <value>一括更新</value>
   </data>
   <data name="MarketplacePackageColumn" xml:space="preserve">
-    <value>包</value>
+    <value>パッケージ</value>
   </data>
   <data name="MarketplaceHasUpdateTooltip" xml:space="preserve">
-    <value>有可用更新</value>
+    <value>更新可能</value>
   </data>
   <data name="MarketplaceDownloadVerificationFailed" xml:space="preserve">
-    <value>下载文件校验失败: {0} v{1}</value>
+    <value>ダウンロードファイル検証失敗: {0} v{1}</value>
   </data>
   <data name="MarketplaceOpenLocalPath" xml:space="preserve">
-    <value>打开本地目录</value>
+    <value>ローカルパスを開く</value>
   </data>
   <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
-    <value>选择更新包</value>
+    <value>更新ファイルを選択</value>
   </data>
 </root>
