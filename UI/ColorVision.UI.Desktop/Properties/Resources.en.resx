@@ -193,10 +193,10 @@
     <value>Sort by {0}</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文 (Traditional Chinese)</value>
+    <value>Traditional Chinese</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>简体中文 (Simplified Chinese)</value>
+    <value>Simplified Chinese</value>
   </data>
   <data name="WriteConfigFileFailed" xml:space="preserve">
     <value>Failed to write configuration file {0}</value>
@@ -827,4 +827,151 @@
   <data name="CfgApp_Custom" xml:space="preserve"><value>Custom</value></data>
   <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>
   <data name="CfgApp_QuickScript" xml:space="preserve"><value>Quick Script</value></data>
+  <data name="MarketplaceSortUpdated" xml:space="preserve">
+    <value>Sort by Updated</value>
+  </data>
+  <data name="MarketplaceSortDownloads" xml:space="preserve">
+    <value>Sort by Downloads</value>
+  </data>
+  <data name="MarketplaceSortName" xml:space="preserve">
+    <value>Sort by Name</value>
+  </data>
+  <data name="MarketplaceAllCategories" xml:space="preserve">
+    <value>All Categories</value>
+  </data>
+  <data name="MarketplaceKeyword" xml:space="preserve">
+    <value>Keyword</value>
+  </data>
+  <data name="MarketplaceAuthor" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="MarketplaceCategory" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="MarketplaceDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="MarketplaceOffline" xml:space="preserve">
+    <value>Offline</value>
+  </data>
+  <data name="MarketplaceNoMatches" xml:space="preserve">
+    <value>No matching plugins</value>
+  </data>
+  <data name="MarketplaceReadmeEmpty" xml:space="preserve">
+    <value>No README available</value>
+  </data>
+  <data name="MarketplaceChangelogEmpty" xml:space="preserve">
+    <value>No CHANGELOG available</value>
+  </data>
+  <data name="MarketplaceReadmeHeader" xml:space="preserve">
+    <value>README</value>
+  </data>
+  <data name="MarketplaceChangelogHeader" xml:space="preserve">
+    <value>CHANGELOG</value>
+  </data>
+  <data name="MarketplaceDetailInfoHeader" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="MarketplaceDependentsHeader" xml:space="preserve">
+    <value>Dependencies</value>
+  </data>
+  <data name="MarketplaceOpenProjectUrl" xml:space="preserve">
+    <value>Open Project URL</value>
+  </data>
+  <data name="MarketplaceLatest" xml:space="preserve">
+    <value>Latest</value>
+  </data>
+  <data name="MarketplaceCurrent" xml:space="preserve">
+    <value>Current</value>
+  </data>
+  <data name="MarketplaceArchive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="MarketplacePluginId" xml:space="preserve">
+    <value>Plugin ID</value>
+  </data>
+  <data name="MarketplaceLatestVersion" xml:space="preserve">
+    <value>Latest Version</value>
+  </data>
+  <data name="MarketplaceInstalledVersion" xml:space="preserve">
+    <value>Installed Version</value>
+  </data>
+  <data name="MarketplaceStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="MarketplaceStatusInstalled" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="MarketplaceStatusInstalledUpdate" xml:space="preserve">
+    <value>Installed · Update Available</value>
+  </data>
+  <data name="MarketplaceStatusMarketplaceOnly" xml:space="preserve">
+    <value>Marketplace Only</value>
+  </data>
+  <data name="MarketplaceRequires" xml:space="preserve">
+    <value>Requires</value>
+  </data>
+  <data name="MarketplaceDownloads" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="MarketplaceUpdated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="MarketplaceProjectUrl" xml:space="preserve">
+    <value>Project URL</value>
+  </data>
+  <data name="MarketplaceCurrentPackages" xml:space="preserve">
+    <value>Current Packages</value>
+  </data>
+  <data name="MarketplaceHistoryPackages" xml:space="preserve">
+    <value>History Packages</value>
+  </data>
+  <data name="MarketplaceCurrentVersions" xml:space="preserve">
+    <value>Current Versions</value>
+  </data>
+  <data name="MarketplaceArchivedVersions" xml:space="preserve">
+    <value>Archived Versions</value>
+  </data>
+  <data name="MarketplaceInstalledVersionFormat" xml:space="preserve">
+    <value>Installed v{0}</value>
+  </data>
+  <data name="MarketplaceUpdateVersionFormat" xml:space="preserve">
+    <value>Update to v{0}</value>
+  </data>
+  <data name="MarketplaceUpdateAvailable" xml:space="preserve">
+    <value>Update Available</value>
+  </data>
+  <data name="MarketplaceDownloadCountFormat" xml:space="preserve">
+    <value>{0} downloads</value>
+  </data>
+  <data name="MarketplaceRequiresFormat" xml:space="preserve">
+    <value>Requires {0}</value>
+  </data>
+  <data name="MarketplaceVersionSha256Label" xml:space="preserve">
+    <value>SHA256</value>
+  </data>
+  <data name="MarketplaceNoUpdates" xml:space="preserve">
+    <value>No updates available</value>
+  </data>
+  <data name="MarketplaceBulkUpdateConfirm" xml:space="preserve">
+    <value>Detected {0} plugins with available updates. Update all?</value>
+  </data>
+  <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
+    <value>Bulk Update</value>
+  </data>
+  <data name="MarketplacePackageColumn" xml:space="preserve">
+    <value>Package</value>
+  </data>
+  <data name="MarketplaceHasUpdateTooltip" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="MarketplaceDownloadVerificationFailed" xml:space="preserve">
+    <value>Download file verification failed: {0} v{1}</value>
+  </data>
+  <data name="MarketplaceOpenLocalPath" xml:space="preserve">
+    <value>Open Local Path</value>
+  </data>
+  <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
+    <value>Select Update File</value>
+  </data>
 </root>

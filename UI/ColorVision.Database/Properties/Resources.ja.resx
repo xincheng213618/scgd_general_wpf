@@ -304,7 +304,7 @@
     <value>Page</value>
   </data>
   <data name="DB_PageSuffix" xml:space="preserve">
-    <value></value>
+    <value>ページ</value>
   </data>
   <data name="DB_Ready" xml:space="preserve">
     <value>Ready</value>
