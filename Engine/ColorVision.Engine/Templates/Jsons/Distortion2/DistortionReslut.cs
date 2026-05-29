@@ -41,6 +41,9 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         [JsonProperty("bottomRatio")]
         public double BottomRatio { get; set; }
 
+        [JsonProperty("finalPoints")]
+        public List<Point> FinalPoints { get; set; }
+
         [JsonProperty("keyStoneHoriRatio")]
         public double KeyStoneHoriRatio { get; set; }
 

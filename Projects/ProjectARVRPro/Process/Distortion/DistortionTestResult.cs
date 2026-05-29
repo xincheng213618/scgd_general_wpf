@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using Newtonsoft.Json;
 using System.Windows; // PoiPointResultModel
 
 namespace ProjectARVRPro.Process.Distortion
@@ -19,6 +20,12 @@ namespace ProjectARVRPro.Process.Distortion
         /// 垂直TV畸变(%) 测试项
         /// </summary>
         public ObjectiveTestItem VerticalTVDistortion { get; set; }
+
+        /// <summary>
+        /// 光学畸变(%) 测试项
+        /// </summary>
+        [JsonProperty("Optic_Distortion")]
+        public ObjectiveTestItem OpticDistortion { get; set; }
 
         /// <summary>
         /// 9点上畸变(%) 测试项

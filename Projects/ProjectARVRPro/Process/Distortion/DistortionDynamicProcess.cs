@@ -43,18 +43,23 @@ namespace ProjectARVRPro.Process.Distortion
                             if (distortionData == null)
                                 continue;
 
+                            ApplySelectedPoints(distortionResult, distortionData, Config.PointSource);
+
+                            if (distortionData.OpticDistortion != null)
+                            {
+                                distortionData.OpticDistortion.OpticRatio *= recipeConfig.OpticDistortion.Fix;
+
+                                distortionResult.OpticDistortion = Build(
+                                    "Optic_Distortion",
+                                    distortionData.OpticDistortion.OpticRatio,
+                                    recipeConfig.OpticDistortion.Min,
+                                    recipeConfig.OpticDistortion.Max);
+                            }
+
                             if (distortionData.TVDistortion != null)
                             {
                                 distortionData.TVDistortion.HorizontalRatio *= recipeConfig.HorizontalTVDistortion.Fix;
                                 distortionData.TVDistortion.VerticalRatio *= recipeConfig.VerticalTVDistortion.Fix;
-
-                                if (distortionData.TVDistortion.FinalPoints != null)
-                                {
-                                    foreach (var pt in distortionData.TVDistortion.FinalPoints)
-                                    {
-                                        distortionResult.Points.Add(new System.Windows.Point(pt.X, pt.Y));
-                                    }
-                                }
 
                                 distortionResult.HorizontalTVDistortion = Build(
                                     "HorizontalTVDistortion",
@@ -114,6 +119,7 @@ namespace ProjectARVRPro.Process.Distortion
                                 ctx,
                                 distortionResult.HorizontalTVDistortion,
                                 distortionResult.VerticalTVDistortion,
+                                distortionResult.OpticDistortion,
                                 distortionResult.DistortionTop,
                                 distortionResult.DistortionBottom,
                                 distortionResult.DistortionLeft,
@@ -189,6 +195,19 @@ namespace ProjectARVRPro.Process.Distortion
             Unit = Config.Unit
         };
 
+        private static void ApplySelectedPoints(DistortionViewTestResult distortionResult, DistortionReslut distortionData, DistortionPointSource pointSource)
+        {
+            distortionResult.Points.Clear();
+            var points = DistortionPointSourceHelper.GetPoints(distortionData, pointSource);
+            if (points == null)
+                return;
+
+            foreach (var pt in points)
+            {
+                distortionResult.Points.Add(new System.Windows.Point(pt.X, pt.Y));
+            }
+        }
+
         private static void UpdateResult(IProcessExecutionContext ctx, params ObjectiveTestItem[] items)
         {
             foreach (var item in items)
@@ -203,6 +222,7 @@ namespace ProjectARVRPro.Process.Distortion
             ObservableCollection<ObjectiveTestItem> items = new ObservableCollection<ObjectiveTestItem>();
             AddIfNotNull(items, result.HorizontalTVDistortion);
             AddIfNotNull(items, result.VerticalTVDistortion);
+            AddIfNotNull(items, result.OpticDistortion);
             AddIfNotNull(items, result.DistortionTop);
             AddIfNotNull(items, result.DistortionBottom);
             AddIfNotNull(items, result.DistortionLeft);

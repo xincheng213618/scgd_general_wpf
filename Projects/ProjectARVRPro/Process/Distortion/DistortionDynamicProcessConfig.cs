@@ -10,6 +10,12 @@ namespace ProjectARVRPro.Process.Distortion
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F5";
 
+        [Category("显示配置")]
+        [DisplayName("9点来源")]
+        [Description("结果图绘制使用的9点来源")]
+        public DistortionPointSource PointSource { get => _PointSource; set { _PointSource = value; OnPropertyChanged(); } }
+        private DistortionPointSource _PointSource = DistortionPointSource.TV;
+
         [Category("导出配置")]
         [DisplayName("导出名称")]
         [Description("导出CSV和DynamicTestResults时显示的测试画面名称")]
