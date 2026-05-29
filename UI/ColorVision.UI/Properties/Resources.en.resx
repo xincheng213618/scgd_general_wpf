@@ -244,6 +244,54 @@
   <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>Search Settings</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>Double-click the search icon to open this window. Checked sources participate in Ctrl+F quick search.</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>Indexed Sources</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>These sources are collected into the local quick-search index.</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>Menu Commands</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>Built-in menus and plugin menu entries.</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>Template items provided by the engine search provider.</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>Third-Party Apps</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>Apps discovered from the third-party app launcher.</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>External Search Actions</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>These actions are appended to the result list for the current keyword.</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>Launch Everything with the current keyword.</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>Open the current keyword in a web search engine.</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>Browser Search Engine</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>Double-click to open search settings</value>
+  </data>
   <data name="Update" xml:space="preserve">
     <value>Update</value>
   </data>

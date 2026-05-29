@@ -14,6 +14,7 @@ namespace ColorVision.UI.Serach
         public List<ISearch> GetISearches()
         {
             List<ISearch> searches = new List<ISearch>();
+            var config = SearchConfig.Instance;
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
@@ -21,7 +22,7 @@ namespace ColorVision.UI.Serach
                 {
                     if (Activator.CreateInstance(type) is ISearch iMenuItem)
                     {
-                        if (!string.IsNullOrWhiteSpace(iMenuItem.Header))
+                        if (!string.IsNullOrWhiteSpace(iMenuItem.Header) && config.IsIndexedTypeEnabled(iMenuItem.Type))
                         {
                             searches.Add(iMenuItem);
                         }
@@ -32,7 +33,8 @@ namespace ColorVision.UI.Serach
                 {
                     if (Activator.CreateInstance(type) is  ISearchProvider itemProvider)
                     {
-                        searches.AddRange(itemProvider.GetSearchItems());
+                        searches.AddRange(itemProvider.GetSearchItems()
+                            .Where(item => !string.IsNullOrWhiteSpace(item.Header) && config.IsIndexedTypeEnabled(item.Type)));
                     }
                 }
             }

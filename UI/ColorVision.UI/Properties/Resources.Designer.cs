@@ -1645,11 +1645,155 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 用网页搜索引擎打开当前关键字。 的本地化字符串。
+        /// </summary>
+        public static string SearchBrowserDescription {
+            get {
+                return ResourceManager.GetString("SearchBrowserDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 浏览器搜索引擎 的本地化字符串。
+        /// </summary>
+        public static string SearchBrowserEngine {
+            get {
+                return ResourceManager.GetString("SearchBrowserEngine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 搜索引擎 的本地化字符串。
         /// </summary>
         public static string SearchEngine {
             get {
                 return ResourceManager.GetString("SearchEngine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 使用当前关键字启动 Everything。 的本地化字符串。
+        /// </summary>
+        public static string SearchEverythingDescription {
+            get {
+                return ResourceManager.GetString("SearchEverythingDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 这些动作会根据当前关键字附加到结果列表末尾。 的本地化字符串。
+        /// </summary>
+        public static string SearchExternalActionsDescription {
+            get {
+                return ResourceManager.GetString("SearchExternalActionsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 外部搜索动作 的本地化字符串。
+        /// </summary>
+        public static string SearchExternalActionsTitle {
+            get {
+                return ResourceManager.GetString("SearchExternalActionsTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 双击打开搜索设置 的本地化字符串。
+        /// </summary>
+        public static string SearchIconSettingsTooltip {
+            get {
+                return ResourceManager.GetString("SearchIconSettingsTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 这些来源会被收集到本地快捷搜索索引中。 的本地化字符串。
+        /// </summary>
+        public static string SearchIndexedSourcesDescription {
+            get {
+                return ResourceManager.GetString("SearchIndexedSourcesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 索引来源 的本地化字符串。
+        /// </summary>
+        public static string SearchIndexedSourcesTitle {
+            get {
+                return ResourceManager.GetString("SearchIndexedSourcesTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 菜单命令 的本地化字符串。
+        /// </summary>
+        public static string SearchMenuCommands {
+            get {
+                return ResourceManager.GetString("SearchMenuCommands", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 内置菜单和插件提供的菜单项。 的本地化字符串。
+        /// </summary>
+        public static string SearchMenuCommandsDescription {
+            get {
+                return ResourceManager.GetString("SearchMenuCommandsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 双击搜索图标可打开此窗口。勾选的来源会参与 Ctrl+F 快捷搜索。 的本地化字符串。
+        /// </summary>
+        public static string SearchSettingsHint {
+            get {
+                return ResourceManager.GetString("SearchSettingsHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索设置 的本地化字符串。
+        /// </summary>
+        public static string SearchSettingsTitle {
+            get {
+                return ResourceManager.GetString("SearchSettingsTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 模板 的本地化字符串。
+        /// </summary>
+        public static string SearchTemplates {
+            get {
+                return ResourceManager.GetString("SearchTemplates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 由引擎搜索提供器提供的模板项。 的本地化字符串。
+        /// </summary>
+        public static string SearchTemplatesDescription {
+            get {
+                return ResourceManager.GetString("SearchTemplatesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 第三方应用 的本地化字符串。
+        /// </summary>
+        public static string SearchThirdPartyApps {
+            get {
+                return ResourceManager.GetString("SearchThirdPartyApps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 从第三方应用启动器中发现的应用。 的本地化字符串。
+        /// </summary>
+        public static string SearchThirdPartyAppsDescription {
+            get {
+                return ResourceManager.GetString("SearchThirdPartyAppsDescription", resourceCulture);
             }
         }
         

@@ -16,6 +16,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             {
                 yield return new SearchMeta
                 {
+                    Type = SearchType.ThirdPartyApp,
                     GuidId = BuildSearchId(app),
                     Header = BuildHeader(app),
                     Icon = app.IconSource,

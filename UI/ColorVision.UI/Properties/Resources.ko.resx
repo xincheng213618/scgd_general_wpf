@@ -244,6 +244,54 @@
   <data name="Search" xml:space="preserve">
     <value>찾다</value>
   </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>검색 설정</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>검색 아이콘을 두 번 클릭하면 이 창이 열립니다. 체크된 원본만 Ctrl+F 빠른 검색에 포함됩니다.</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>인덱스 원본</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>이 원본들은 로컬 빠른 검색 인덱스에 수집됩니다.</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>메뉴 명령</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>기본 메뉴와 플러그인이 제공하는 메뉴 항목입니다.</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>템플릿</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>엔진 검색 공급자가 제공하는 템플릿 항목입니다.</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>서드파티 앱</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>서드파티 앱 실행기에서 검색된 앱입니다.</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>외부 검색 동작</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>이 동작들은 현재 키워드 기준으로 결과 목록 끝에 추가됩니다.</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>현재 키워드로 Everything을 실행합니다.</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>현재 키워드를 웹 검색 엔진으로 엽니다.</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>브라우저 검색 엔진</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>두 번 클릭하여 검색 설정 열기</value>
+  </data>
   <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>
   </data>

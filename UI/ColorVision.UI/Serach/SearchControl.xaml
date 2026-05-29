@@ -15,7 +15,9 @@
                     PreviewKeyDown="Searchbox_PreviewKeyDown"
                     Style="{DynamicResource TextBoxPlus.Small}"
                     TextChanged="Searchbox_TextChanged" />
-        <Viewbox Width="12" Height="12" Margin="4,0,0,0" HorizontalAlignment="Left">
+        <Viewbox x:Name="SearchIconViewbox" Width="12" Height="12" Margin="4,0,0,0" HorizontalAlignment="Left"
+             Cursor="Hand"
+                 MouseLeftButtonDown="SearchIconViewbox_MouseLeftButtonDown">
             <Rectangle Width="16" Height="16">
                 <Rectangle.Resources>
                     <SolidColorBrush x:Key="canvas" Opacity="0" />

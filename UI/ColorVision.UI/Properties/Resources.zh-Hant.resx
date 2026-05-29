@@ -244,6 +244,54 @@
   <data name="Search" xml:space="preserve">
     <value>搜尋</value>
   </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>搜尋設定</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>雙擊搜尋圖示可開啟此視窗。勾選的來源會參與 Ctrl+F 快速搜尋。</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>索引來源</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>這些來源會被收集到本機快速搜尋索引中。</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>選單命令</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>內建選單與插件提供的選單項目。</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>模板</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>由引擎搜尋提供器提供的模板項目。</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>第三方應用</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>從第三方應用啟動器中發現的應用程式。</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>外部搜尋動作</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>這些動作會根據目前關鍵字附加到結果清單末尾。</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>使用目前關鍵字啟動 Everything。</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>使用網頁搜尋引擎開啟目前關鍵字。</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>瀏覽器搜尋引擎</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>雙擊開啟搜尋設定</value>
+  </data>
   <data name="Update" xml:space="preserve">
     <value>更新</value>
   </data>

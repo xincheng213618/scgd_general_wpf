@@ -244,6 +244,54 @@
   <data name="Search" xml:space="preserve">
     <value>поиск</value>
   </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>Настройки поиска</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>Дважды щелкните значок поиска, чтобы открыть это окно. Отмеченные источники участвуют в быстром поиске Ctrl+F.</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>Источники индексации</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>Эти источники добавляются в локальный индекс быстрого поиска.</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>Команды меню</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>Встроенные меню и пункты меню, предоставленные плагинами.</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>Шаблоны</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>Элементы шаблонов, предоставляемые поисковым провайдером движка.</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>Сторонние приложения</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>Приложения, найденные средством запуска сторонних приложений.</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>Внешние действия поиска</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>Эти действия добавляются в конец списка результатов для текущего ключевого слова.</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>Запустить Everything с текущим ключевым словом.</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>Открыть текущее ключевое слово в веб-поисковике.</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>Поисковая система браузера</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>Дважды щелкните, чтобы открыть настройки поиска</value>
+  </data>
   <data name="Update" xml:space="preserve">
     <value>возобновлять</value>
   </data>

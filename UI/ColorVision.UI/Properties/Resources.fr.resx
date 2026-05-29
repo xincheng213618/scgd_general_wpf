@@ -244,6 +244,54 @@
   <data name="Search" xml:space="preserve">
     <value>Recherche</value>
   </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>Paramètres de recherche</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>Double-cliquez sur l’icône de recherche pour ouvrir cette fenêtre. Les sources cochées participent à la recherche rapide Ctrl+F.</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>Sources indexées</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>Ces sources sont ajoutées à l’index local de recherche rapide.</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>Commandes de menu</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>Menus intégrés et éléments de menu fournis par les plugins.</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>Modèles</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>Éléments de modèle fournis par le fournisseur de recherche du moteur.</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>Applications tierces</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>Applications détectées par le lanceur d’applications tierces.</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>Actions de recherche externes</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>Ces actions sont ajoutées à la fin des résultats pour le mot-clé courant.</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>Lancer Everything avec le mot-clé courant.</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>Ouvrir le mot-clé courant dans un moteur de recherche web.</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>Moteur de recherche du navigateur</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>Double-cliquez pour ouvrir les paramètres de recherche</value>
+  </data>
   <data name="Update" xml:space="preserve">
     <value>renouveler</value>
   </data>

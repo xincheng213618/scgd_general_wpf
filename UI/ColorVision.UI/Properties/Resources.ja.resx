@@ -244,6 +244,54 @@
   <data name="Search" xml:space="preserve">
     <value>検索</value>
   </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>検索設定</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>検索アイコンをダブルクリックするとこのウィンドウを開きます。チェックしたソースが Ctrl+F のクイック検索に参加します。</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>インデックス対象</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>これらのソースはローカルのクイック検索インデックスに収集されます。</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>メニューコマンド</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>組み込みメニューとプラグインが提供するメニュー項目です。</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>テンプレート</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>エンジンの検索プロバイダーが提供するテンプレート項目です。</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>サードパーティーアプリ</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>サードパーティーアプリランチャーから検出されたアプリです。</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>外部検索アクション</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>これらのアクションは現在のキーワードに対して結果リストの末尾に追加されます。</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>現在のキーワードで Everything を起動します。</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>現在のキーワードをウェブ検索エンジンで開きます。</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>ブラウザー検索エンジン</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>ダブルクリックして検索設定を開く</value>
+  </data>
   <data name="Update" xml:space="preserve">
     <value>更新する</value>
   </data>

@@ -89,7 +89,7 @@ ColorVision/
 - [架构设计](docs/03-architecture/README.md) - 系统设计边界与运行时关系
 - [API 参考](docs/04-api-reference/README.md) - 模块、接口与实现入口
 - [ColorVision.SocketProtocol](docs/04-api-reference/ui-components/ColorVision.SocketProtocol.md) - 本地 TCP 服务、JSON/Text 分发、消息历史和管理窗口
-- [项目结构总览](docs/05-resources/project-structure/README.md) - 仓库目录与文档映射
+- [项目结构总览](docs/05-resources/project-structure/README.md) - 仓库目录与文档映射   
 
 **🌐 在线文档站点**: https://xincheng213618.github.io/scgd_general_wpf/
 

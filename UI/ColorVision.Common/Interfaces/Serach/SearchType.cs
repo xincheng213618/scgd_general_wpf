@@ -4,7 +4,8 @@
     {
         Menu,
         File,
-        Link
+        Link,
+        ThirdPartyApp
     }
 
 }
