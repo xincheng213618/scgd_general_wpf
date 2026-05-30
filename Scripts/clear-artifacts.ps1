@@ -1,9 +1,20 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [string]$Root = $PSScriptRoot
+    [string]$Root
 )
 
-$artifactDirs = Get-ChildItem -Path $Root -Directory -Recurse -Force -Filter artifacts
+if ([string]::IsNullOrWhiteSpace($Root)) {
+    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        $Root = $PSScriptRoot
+    }
+    else {
+        $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+    }
+}
+
+$Root = (Resolve-Path -LiteralPath $Root).Path
+
+$artifactDirs = Get-ChildItem -Path $Root -Directory -Recurse -Force | Where-Object { $_.Name -eq 'artifacts' }
 
 if (-not $artifactDirs) {
     Write-Host "No artifacts directories found under $Root."
