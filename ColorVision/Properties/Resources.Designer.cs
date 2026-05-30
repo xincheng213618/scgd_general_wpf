@@ -385,6 +385,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 启用实验性一体化主窗口标题栏 的本地化字符串。
+        /// </summary>
+        public static string ConfigUseIntegratedMainWindowChrome {
+            get {
+                return ResourceManager.GetString("ConfigUseIntegratedMainWindowChrome", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
         public static string ConfirmUpdate {

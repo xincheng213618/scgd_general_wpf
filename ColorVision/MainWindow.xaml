@@ -34,7 +34,7 @@
                 <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
 
                 <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" />
-                <search:SearchControl x:Name="SearchControl1" Margin="10,1" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <search:SearchControl x:Name="SearchControl1" Width="210" Margin="10,1" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
             </DockPanel>
         </Border>

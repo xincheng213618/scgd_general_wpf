@@ -10,10 +10,22 @@ namespace ColorVision.UI.Serach
 {
     public partial class SearchControl : UserControl
     {
+        public static readonly DependencyProperty SearchBoxHeightProperty = DependencyProperty.Register(
+            nameof(SearchBoxHeight),
+            typeof(double),
+            typeof(SearchControl),
+            new FrameworkPropertyMetadata(double.NaN));
+
         public SearchControl()
         {
             InitializeComponent();
             SearchIconViewbox.ToolTip = GetText("SearchIconSettingsTooltip");
+        }
+
+        public double SearchBoxHeight
+        {
+            get => (double)GetValue(SearchBoxHeightProperty);
+            set => SetValue(SearchBoxHeightProperty, value);
         }
 
         public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();

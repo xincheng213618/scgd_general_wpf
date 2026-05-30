@@ -717,6 +717,9 @@
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>启用桌面宠物</value>
   </data>
+  <data name="ConfigUseIntegratedMainWindowChrome" xml:space="preserve">
+    <value>启用实验性一体化主窗口标题栏</value>
+  </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
   </data>
