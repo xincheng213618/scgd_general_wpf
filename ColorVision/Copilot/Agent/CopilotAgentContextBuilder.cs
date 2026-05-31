@@ -121,22 +121,22 @@ namespace ColorVision.Copilot
             IReadOnlyCollection<string> readableLocalFilePaths)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("你现在要为 Agent 选择下一步动作。只返回 JSON。不要回答用户问题。");
+            builder.AppendLine("Choose the next Agent action. Return JSON only. Do not answer the user.");
             builder.AppendLine();
-            builder.AppendLine("JSON 格式：");
-            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"搜索或应用控制类工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
+            builder.AppendLine("JSON format:");
+            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"tool name or empty string\",\"reason\":\"one short English reason\",\"input\":{\"query\":\"use for search or app-control tools\",\"path\":\"use for ReadLocalFile/ListDirectory\",\"startLine\":0,\"endLine\":0}}");
             builder.AppendLine();
-            builder.AppendLine("决策规则：");
-            builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
-            builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
-            builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog、SearchDocs、FetchUrl、SetTheme、SetLanguage 或 ExecuteMenu 时，尽量填写 input.query；搜索类工具使用更短、更聚焦的关键词，SearchDocs 可直接填写软件问题或功能名，SetTheme/SetLanguage/ExecuteMenu 则直接填写目标主题、目标语言或目标菜单。\n5. 当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n6. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n7. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n8. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("Decision rules:");
+            builder.AppendLine("1. If key facts are still missing and one available tool is likely to provide them, return action=tool.");
+            builder.AppendLine("2. If the context is sufficient to answer, or remaining tools will not add meaningful value, return action=finish.");
+            builder.AppendLine("3. toolName must be selected from the currently available tools.");
+            builder.AppendLine("4. For SearchFiles, GrepText, GetRecentLog, SearchDocs, FetchUrl, SetTheme, SetLanguage, or ExecuteMenu, fill input.query when possible; use short focused search terms, direct product questions for SearchDocs, and the target theme, language, or menu for app-control tools.\n5. For FetchUrl, prefer a complete URL and avoid repeating the whole user question.\n6. For ListDirectory, fill input.path when possible; the path must come from the allowed local directory list.\n7. For ReadLocalFile, leave input.path empty when analyzing a directory or candidate set; fill input.path/startLine/endLine only for close reading of one file or line range.\n8. Keep reason to one short English sentence.");
             builder.AppendLine();
-            builder.AppendLine("# 用户问题");
+            builder.AppendLine("# User question");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
 
             builder.AppendLine();
-            builder.AppendLine("# 当前可用工具");
+            builder.AppendLine("# Available tools");
             foreach (var tool in availableTools)
             {
                 builder.Append("- ")

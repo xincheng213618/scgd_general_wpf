@@ -116,6 +116,11 @@ namespace ColorVision.Copilot
 
         public static async Task<CopilotCapabilityResult> ExecuteMenuAsync(string? sourceText, CancellationToken cancellationToken)
         {
+            return await ExecuteMenuAsync(sourceText, dryRun: false, allowConfirmationRequired: true, cancellationToken);
+        }
+
+        public static async Task<CopilotCapabilityResult> ExecuteMenuAsync(string? sourceText, bool dryRun, bool allowConfirmationRequired, CancellationToken cancellationToken)
+        {
             cancellationToken.ThrowIfCancellationRequested();
             if (Application.Current == null)
             {
@@ -134,7 +139,7 @@ namespace ColorVision.Copilot
                 {
                     Success = false,
                     Summary = "没有找到可执行的菜单匹配项。",
-                    Content = BuildCandidateList(matchResult.Suggestions),
+                    Content = BuildMenuOperationContent(null, matchResult.Suggestions, dryRun, "not_found"),
                     ErrorMessage = "请把菜单名说得更具体，例如“打开选项”、“打开 VAM”或“检查更新”。",
                 };
             }
@@ -145,19 +150,41 @@ namespace ColorVision.Copilot
                 {
                     Success = false,
                     Summary = $"匹配到多个候选菜单，暂不自动执行“{matchResult.BestCandidate.DisplayHeader}”。",
-                    Content = BuildCandidateList(matchResult.Candidates),
+                    Content = BuildMenuOperationContent(matchResult.BestCandidate, matchResult.Candidates, dryRun, "ambiguous"),
                     ErrorMessage = "请补充更具体的菜单名或完整路径。",
                 };
             }
 
             var selectedCandidate = matchResult.BestCandidate;
+            if (dryRun)
+            {
+                return new CopilotCapabilityResult
+                {
+                    Success = true,
+                    Summary = $"已完成菜单 dry-run：“{selectedCandidate.DisplayPath}”。",
+                    Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "dry_run_only"),
+                };
+            }
+
+            if (string.Equals(selectedCandidate.RiskLevel, CopilotMenuToolSupport.ConfirmationRequired, StringComparison.OrdinalIgnoreCase)
+                && !allowConfirmationRequired)
+            {
+                return new CopilotCapabilityResult
+                {
+                    Success = false,
+                    Summary = $"菜单“{selectedCandidate.DisplayPath}”需要用户确认，MCP 默认不会执行。",
+                    Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "confirmation_required"),
+                    ErrorMessage = "该菜单可能修改应用状态、文件、设备或运行流程；请由用户在界面中确认执行。",
+                };
+            }
+
             if (!selectedCandidate.CanExecute || selectedCandidate.MenuItem.Command?.CanExecute(null) != true)
             {
                 return new CopilotCapabilityResult
                 {
                     Success = false,
                     Summary = $"菜单“{selectedCandidate.DisplayPath}”当前不可执行。",
-                    Content = BuildCandidateList(matchResult.Candidates),
+                    Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "cannot_execute"),
                     ErrorMessage = "该菜单可能受权限、当前状态或上下文限制。",
                 };
             }
@@ -178,11 +205,7 @@ namespace ColorVision.Copilot
             {
                 Success = true,
                 Summary = $"已调度执行菜单“{selectedCandidate.DisplayPath}”。",
-                Content = string.Join(Environment.NewLine, new[]
-                {
-                    $"[目标菜单] {selectedCandidate.DisplayPath}",
-                    "[执行状态] 已通过 UI 线程调度执行",
-                }),
+                Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "scheduled"),
             };
         }
 
@@ -319,7 +342,7 @@ namespace ColorVision.Copilot
 
             var lines = candidates
                 .Take(5)
-                .Select((candidate, index) => $"{index + 1}. {candidate.DisplayPath}{(candidate.CanExecute ? string.Empty : " [当前不可执行]")}")
+                .Select((candidate, index) => $"{index + 1}. {candidate.DisplayPath} [display_name={candidate.DisplayHeader}; source_type={candidate.SourceType}; risk_level={candidate.RiskLevel}; can_execute={candidate.CanExecute}]")
                 .ToArray();
 
             return string.Join(Environment.NewLine, new[]
@@ -327,6 +350,35 @@ namespace ColorVision.Copilot
                 "[候选菜单]",
                 string.Join(Environment.NewLine, lines),
             });
+        }
+
+        private static string BuildMenuOperationContent(
+            CopilotMenuToolSupport.MenuMatchCandidate? selectedCandidate,
+            System.Collections.Generic.IReadOnlyList<CopilotMenuToolSupport.MenuMatchCandidate> candidates,
+            bool dryRun,
+            string executionStatus)
+        {
+            var wouldExecute = selectedCandidate != null
+                && selectedCandidate.CanExecute
+                && string.Equals(selectedCandidate.RiskLevel, CopilotMenuToolSupport.LowRiskAction, StringComparison.OrdinalIgnoreCase);
+            var lines = new System.Collections.Generic.List<string>
+            {
+                $"dry_run: {dryRun}",
+                $"would_execute: {wouldExecute}",
+                $"execution_status: {executionStatus}",
+            };
+
+            if (selectedCandidate != null)
+            {
+                lines.Add($"matched_menu_path: {selectedCandidate.DisplayPath}");
+                lines.Add($"display_name: {selectedCandidate.DisplayHeader}");
+                lines.Add($"source_type: {selectedCandidate.SourceType}");
+                lines.Add($"risk_level: {selectedCandidate.RiskLevel}");
+                lines.Add($"can_execute: {selectedCandidate.CanExecute}");
+            }
+
+            lines.Add(BuildCandidateList(candidates));
+            return string.Join(Environment.NewLine, lines);
         }
     }
 }

@@ -21,6 +21,18 @@ namespace ColorVision.Copilot.Mcp
         [JsonPropertyName("description")]
         public string Description { get; init; } = string.Empty;
 
+        [JsonPropertyName("category")]
+        public string Category { get; init; } = string.Empty;
+
+        [JsonPropertyName("riskLevel")]
+        public string RiskLevel { get; init; } = string.Empty;
+
+        [JsonPropertyName("usageExample")]
+        public string UsageExample { get; init; } = string.Empty;
+
+        [JsonPropertyName("annotations")]
+        public IReadOnlyDictionary<string, object> Annotations { get; init; } = new Dictionary<string, object>();
+
         [JsonPropertyName("inputSchema")]
         public object InputSchema { get; init; } = new { type = "object" };
     }
@@ -126,7 +138,7 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? OpenPanelHandler { get; init; }
 
-        public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? ExecuteMenuHandler { get; init; }
+        public Func<string, bool, CancellationToken, Task<CopilotMcpToolCallResult>>? ExecuteMenuHandler { get; init; }
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? SetThemeHandler { get; init; }
 

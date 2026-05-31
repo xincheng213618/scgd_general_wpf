@@ -54,6 +54,7 @@ namespace ColorVision.Copilot.Mcp
         {
             lock (_syncRoot)
             {
+                var previousPort = _settings.Port;
                 _settings = settings ?? new CopilotMcpRuntimeSettings();
 
                 if (!_settings.Enabled)
@@ -62,7 +63,13 @@ namespace ColorVision.Copilot.Mcp
                     return;
                 }
 
-                if (IsRunning && _listener != null)
+                if (string.IsNullOrWhiteSpace(_settings.BearerToken))
+                {
+                    StopNoLock("ColorVision MCP server token is missing.");
+                    return;
+                }
+
+                if (IsRunning && _listener != null && previousPort == _settings.Port)
                 {
                     LastStatusMessage = $"ColorVision MCP server is running at {_settings.Endpoint}.";
                     return;
@@ -93,6 +100,13 @@ namespace ColorVision.Copilot.Mcp
                 LastStatusMessage = $"ColorVision MCP server is running at {_settings.Endpoint}.";
                 Log.Info(LastStatusMessage);
                 _acceptLoopTask = Task.Run(() => AcceptLoopAsync(_cts.Token));
+            }
+            catch (SocketException ex)
+            {
+                IsRunning = false;
+                LastStatusMessage = $"ColorVision MCP server port unavailable at {_settings.Endpoint}: {ex.Message}";
+                Log.Error(LastStatusMessage, ex);
+                StopNoLock(LastStatusMessage);
             }
             catch (Exception ex)
             {

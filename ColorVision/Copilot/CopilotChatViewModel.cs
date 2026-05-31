@@ -1,5 +1,6 @@
 using ColorVision.Solution;
 using ColorVision.Solution.Workspace;
+using ColorVision.Copilot.Mcp;
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Microsoft.Win32;
@@ -32,6 +33,7 @@ namespace ColorVision.Copilot
         private readonly CopilotChatStateStore _stateStore;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
+        private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly IReadOnlyList<CopilotAgentModeOption> _agentModes = CopilotAgentModeOption.CreateDefaultOptions();
         private CancellationTokenSource? _currentRequestCts;
         private CopilotLiveContext? _currentLiveContext;
@@ -60,6 +62,8 @@ namespace ColorVision.Copilot
             WorkspaceManager.ContentIdSelected += WorkspaceManager_ContentIdSelected;
             CopilotLiveContextRegistry.CurrentChanged -= CopilotLiveContextRegistry_CurrentChanged;
             CopilotLiveContextRegistry.CurrentChanged += CopilotLiveContextRegistry_CurrentChanged;
+            CopilotMcpConfirmationStore.Instance.ActionsChanged -= ConfirmationStore_ActionsChanged;
+            CopilotMcpConfirmationStore.Instance.ActionsChanged += ConfirmationStore_ActionsChanged;
 
             if (_config.EnsureInitialized())
                 PersistConfig();
@@ -94,7 +98,10 @@ namespace ColorVision.Copilot
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
+            ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(ApprovePendingAction, action => action?.IsPending == true);
+            RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
 
+            RefreshPendingActions();
             RefreshComposerTokenEstimate();
         }
 
@@ -105,6 +112,10 @@ namespace ColorVision.Copilot
         public ObservableCollection<CopilotChatMessage> Messages => SelectedConversation?.Messages ?? _emptyMessages;
 
         public ObservableCollection<CopilotAttachmentItem> Attachments => SelectedConversation?.Attachments ?? _emptyAttachments;
+
+        public ObservableCollection<ConfirmableAction> PendingActions => _pendingActions;
+
+        public bool HasPendingActions => _pendingActions.Count > 0;
 
         public IReadOnlyList<CopilotAgentModeOption> AgentModes => _agentModes;
 
@@ -141,6 +152,10 @@ namespace ColorVision.Copilot
         public ICommand DeleteConversationCommand { get; }
 
         public ICommand TogglePinConversationCommand { get; }
+
+        public ICommand ApprovePendingActionCommand { get; }
+
+        public ICommand RejectPendingActionCommand { get; }
 
         public bool IsConversationEmpty => Messages.Count == 0;
 
@@ -491,6 +506,45 @@ namespace ColorVision.Copilot
 
             _currentLiveContext = CopilotLiveContextRegistry.Current;
             OnCurrentLiveContextStateChanged();
+        }
+
+        private void ConfirmationStore_ActionsChanged(object? sender, EventArgs e)
+        {
+            if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => ConfirmationStore_ActionsChanged(sender, e)));
+                return;
+            }
+
+            RefreshPendingActions();
+        }
+
+        private void RefreshPendingActions()
+        {
+            _pendingActions.Clear();
+            foreach (var action in CopilotMcpConfirmationStore.Instance.GetPendingActions())
+                _pendingActions.Add(action);
+
+            OnPropertyChanged(nameof(HasPendingActions));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void ApprovePendingAction(ConfirmableAction? action)
+        {
+            if (action == null)
+                return;
+
+            CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _);
+            RefreshPendingActions();
+        }
+
+        private void RejectPendingAction(ConfirmableAction? action)
+        {
+            if (action == null)
+                return;
+
+            CopilotMcpConfirmationStore.Instance.Reject(action.ActionId, out _);
+            RefreshPendingActions();
         }
 
         private void OnCurrentLiveContextStateChanged()
@@ -1045,7 +1099,7 @@ namespace ColorVision.Copilot
 
             try
             {
-                requestProfile.SystemPrompt = "你是会话标题生成器。请根据给定对话生成一个简短、自然的中文标题。只返回标题本身，不要解释。";
+                requestProfile.SystemPrompt = "You are a conversation title generator. Generate a short, natural English title for the given conversation. Return only the title itself, with no explanation.";
                 requestProfile.MaxTokens = Math.Min(requestProfile.MaxTokens, 32);
                 requestProfile.Temperature = 0.2;
 
@@ -1687,7 +1741,7 @@ namespace ColorVision.Copilot
             if (!string.IsNullOrWhiteSpace(SelectedProfile?.DisplayLabel))
                 return SelectedProfile.DisplayLabel;
 
-            return "未命名模型";
+            return "Unnamed model";
         }
 
         private CopilotAgentMode ResolveLastRequestMode(CopilotConversationRecord conversation)
@@ -1709,10 +1763,10 @@ namespace ColorVision.Copilot
 
             return string.Join(Environment.NewLine, new[]
             {
-                "请为下面这段对话生成一个简短中文会话标题。",
-                "要求：6 到 14 个字，直接返回标题，不要解释，不要引号，不要句号。",
-                $"用户：{TruncateForTitlePrompt(firstUserMessage.Content, 180)}",
-                $"助手：{TruncateForTitlePrompt(firstAssistantMessage.Content, 260)}",
+                "Generate a short English title for the conversation below.",
+                "Requirements: 3 to 8 words, return only the title, no explanation, no quotes, no trailing period.",
+                $"User: {TruncateForTitlePrompt(firstUserMessage.Content, 180)}",
+                $"Assistant: {TruncateForTitlePrompt(firstAssistantMessage.Content, 260)}",
             });
         }
 

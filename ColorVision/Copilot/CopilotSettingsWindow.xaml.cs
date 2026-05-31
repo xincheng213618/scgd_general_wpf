@@ -14,6 +14,11 @@ namespace ColorVision.Copilot
 
         private CopilotSettingsViewModel ViewModel => (CopilotSettingsViewModel)DataContext;
 
+        private void ApplyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.Save();
+        }
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             if (!ViewModel.Save())

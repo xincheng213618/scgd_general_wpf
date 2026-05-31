@@ -126,6 +126,100 @@ namespace ColorVision.UI.Tests
             Assert.Contains(Path.Combine(_downloadDirectory, "PluginB-2.0.0.cvxp"), paths);
         }
 
+        [Fact]
+        public async Task EnsurePackageAvailableAsync_CancelsPendingDownload()
+        {
+            var client = new FakeMarketplacePackageClient();
+            var downloader = new FakeMarketplacePackageDownloader
+            {
+                CompleteImmediately = false,
+            };
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+            using var cancellationTokenSource = new CancellationTokenSource();
+
+            Task<string?> packageTask = service.EnsurePackageAvailableAsync(
+                CreateRequest("PluginA", "1.0.0"),
+                showFailureDialog: false,
+                cancellationToken: cancellationTokenSource.Token);
+
+            Assert.Single(downloader.Invocations);
+
+            cancellationTokenSource.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => packageTask);
+            Assert.Single(downloader.CancelledTasks);
+            Assert.Empty(installer.InstallCalls);
+            Assert.Empty(ui.Warnings);
+            Assert.Empty(ui.Errors);
+        }
+
+        [Fact]
+        public async Task EnsurePackagesAvailableAsync_CancelledBatchCancelsStartedDownloads()
+        {
+            var client = new FakeMarketplacePackageClient();
+            var downloader = new FakeMarketplacePackageDownloader
+            {
+                CompleteImmediately = false,
+            };
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+            using var cancellationTokenSource = new CancellationTokenSource();
+
+            Task<IReadOnlyList<string>> packagesTask = service.EnsurePackagesAvailableAsync(
+                new[]
+                {
+                    CreateRequest("PluginA", "1.0.0"),
+                    CreateRequest("PluginB", "2.0.0"),
+                },
+                showFailureDialog: false,
+                cancellationToken: cancellationTokenSource.Token);
+
+            Assert.Equal(2, downloader.Invocations.Count);
+
+            cancellationTokenSource.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => packagesTask);
+            Assert.Equal(2, downloader.CancelledTasks.Count);
+            Assert.Empty(installer.InstallCalls);
+        }
+
+        [Fact]
+        public async Task EnsurePackagesAvailableAsync_ReturnsSuccessfulPackagesWhenOneDownloadFails()
+        {
+            var client = new FakeMarketplacePackageClient();
+            var downloader = new FakeMarketplacePackageDownloader
+            {
+                DownloadFactory = invocation => new DownloadTask
+                {
+                    Status = invocation.FileName.StartsWith("PluginA", StringComparison.OrdinalIgnoreCase)
+                        ? DownloadStatus.Completed
+                        : DownloadStatus.Failed,
+                    ErrorMessage = "network down",
+                    SavePath = Path.Combine(invocation.DownloadDirectory, invocation.FileName),
+                },
+            };
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+
+            IReadOnlyList<string> paths = await service.EnsurePackagesAvailableAsync(
+                new[]
+                {
+                    CreateRequest("PluginA", "1.0.0"),
+                    CreateRequest("PluginB", "2.0.0"),
+                },
+                showFailureDialog: false);
+
+            Assert.Single(paths);
+            Assert.Equal(Path.Combine(_downloadDirectory, "PluginA-1.0.0.cvxp"), paths[0]);
+            Assert.Equal(2, downloader.Invocations.Count);
+            Assert.Empty(ui.Warnings);
+            Assert.Empty(installer.InstallCalls);
+        }
+
         public void Dispose()
         {
             if (Directory.Exists(_downloadDirectory))
@@ -189,9 +283,11 @@ namespace ColorVision.UI.Tests
         private sealed class FakeMarketplacePackageDownloader : IMarketplacePackageDownloader
         {
             public List<DownloadInvocation> Invocations { get; } = new();
+            public List<DownloadTask> CancelledTasks { get; } = new();
             public Func<DownloadInvocation, DownloadTask>? DownloadFactory { get; set; }
+            public bool CompleteImmediately { get; set; } = true;
 
-            public void AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName)
+            public DownloadTask AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName)
             {
                 var invocation = new DownloadInvocation(url, downloadDirectory, authorization, fileName);
                 Invocations.Add(invocation);
@@ -202,7 +298,17 @@ namespace ColorVision.UI.Tests
                     SavePath = Path.Combine(downloadDirectory, fileName),
                 };
 
-                onCompleted(task);
+                if (CompleteImmediately)
+                {
+                    onCompleted(task);
+                }
+
+                return task;
+            }
+
+            public void CancelDownload(DownloadTask task)
+            {
+                CancelledTasks.Add(task);
             }
         }
 

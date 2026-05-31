@@ -270,7 +270,101 @@
             </Border>
 
             <Grid Grid.Row="1">
-                <TextBlock HorizontalAlignment="Center"
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0"
+                        Margin="18,12,18,0"
+                        Padding="12,10"
+                        Style="{StaticResource CopilotInsetBorderStyle}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Visibility="{Binding HasPendingActions, Converter={StaticResource bool2VisibilityConverter}}">
+                    <StackPanel>
+                        <DockPanel LastChildFill="False">
+                            <TextBlock VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Text="Pending Actions" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Opacity="0.62"
+                                       Text="Approve in ColorVision before MCP can execute" />
+                        </DockPanel>
+
+                        <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding PendingActions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,8"
+                                            Padding="10,8"
+                                            Style="{StaticResource CopilotSurfaceBorderStyle}"
+                                            BorderThickness="1"
+                                            CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel>
+                                                <DockPanel LastChildFill="False">
+                                                    <TextBlock MaxWidth="360"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Text="{Binding Title}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Margin="8,0,0,0"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.66"
+                                                               Text="{Binding RiskLevel}" />
+                                                    <TextBlock Margin="8,0,0,0"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.52"
+                                                               Text="{Binding ExpiresAtLabel, StringFormat=expires {0}}" />
+                                                </DockPanel>
+                                                <TextBlock Margin="0,3,0,0"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Opacity="0.74"
+                                                           Text="{Binding Description}"
+                                                           TextWrapping="Wrap" />
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Opacity="0.58"
+                                                           Text="{Binding ArgumentsSummary}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1"
+                                                        Margin="12,0,0,0"
+                                                        Orientation="Horizontal"
+                                                        VerticalAlignment="Center">
+                                                <Button Margin="0,0,6,0"
+                                                        Padding="10,4"
+                                                        Command="{Binding DataContext.ApprovePendingActionCommand, Source={x:Reference Root}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Approve" />
+                                                <Button Padding="10,4"
+                                                        Command="{Binding DataContext.RejectPendingActionCommand, Source={x:Reference Root}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Reject" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Row="1"
+                           HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            MaxWidth="320"
                            Foreground="{DynamicResource GlobalTextBrush}"
@@ -280,7 +374,7 @@
                            TextWrapping="Wrap"
                            Visibility="{Binding IsConversationEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
 
-                <ScrollViewer x:Name="MessagesScrollViewer" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <ItemsControl Margin="18,14,18,14" ItemsSource="{Binding Messages}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:CopilotChatMessage}">

@@ -42,19 +42,31 @@ For Codex builds that support streamable HTTP MCP servers, add an entry like thi
 ```toml
 [mcp_servers.colorvision]
 url = "http://127.0.0.1:38473/mcp"
-headers = { Authorization = "Bearer <token from ColorVision settings>" }
+bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 ```
 
-If your Codex build uses an explicit transport field, keep the same URL and header and set the transport to streamable HTTP:
+If your Codex build uses an explicit transport field, keep the same URL and set the transport to streamable HTTP:
 
 ```toml
 [mcp_servers.colorvision]
 transport = "streamable_http"
 url = "http://127.0.0.1:38473/mcp"
-headers = { Authorization = "Bearer <token from ColorVision settings>" }
+bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 ```
 
-Restart the Codex session after editing the config so it reloads MCP servers.
+Set the token in PowerShell before starting Codex:
+
+```powershell
+$env:COLORVISION_MCP_TOKEN = "<token from ColorVision settings>"
+```
+
+For a persistent user-level environment variable:
+
+```powershell
+[Environment]::SetEnvironmentVariable("COLORVISION_MCP_TOKEN", "<token from ColorVision settings>", "User")
+```
+
+Restart the Codex session after editing the config or changing the environment variable so it reloads MCP servers.
 
 ## Tools
 
@@ -99,3 +111,18 @@ Every MCP tool call is logged through the `ColorVision.Copilot.McpAudit` logger 
 Pure capability tests live in `Test/ColorVision.UI.Tests/CopilotCapabilitiesTests.cs`.
 
 Offline MCP request/dispatcher tests live in `Test/ColorVision.UI.Tests/CopilotMcpTests.cs` and cover authorization, disabled-server behavior, tool listing, allowed-root search/grep/read, and outside-root rejection.
+
+Minimal validation commands:
+
+```powershell
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj --filter "CopilotCapabilitiesTests|CopilotMcpTests" -v minimal
+dotnet build ColorVision/ColorVision.csproj -v minimal
+```
+
+Troubleshooting checklist:
+
+- Not saved: save Copilot settings after changing the MCP port or token.
+- Port unavailable: pick a different local port and save again.
+- Token mismatch: copy the current token, update `COLORVISION_MCP_TOKEN`, and restart Codex.
+- Codex needs restart: restart Codex after changing `config.toml` or environment variables.
+- Disabled server: enable `Enable local MCP server` and save.

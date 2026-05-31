@@ -35,8 +35,9 @@ namespace ColorVision.Copilot.Mcp
             if (!string.Equals(request.Path, "/mcp", StringComparison.OrdinalIgnoreCase))
                 return JsonErrorResponse(404, null, -32004, "The requested MCP endpoint was not found.");
 
-            if (!IsAuthorized(request.Headers, settings.BearerToken))
+            if (!IsAuthorized(request.Headers, settings.BearerToken, out var authorizationFailureReason))
             {
+                CopilotMcpAuditLogger.AuthenticationFailed(request.CallerSource, authorizationFailureReason);
                 return JsonErrorResponse(401, null, -32001, "Unauthorized ColorVision MCP request.", new Dictionary<string, string>
                 {
                     ["WWW-Authenticate"] = "Bearer",
@@ -216,16 +217,33 @@ namespace ColorVision.Copilot.Mcp
             };
         }
 
-        private static bool IsAuthorized(IReadOnlyDictionary<string, string> headers, string token)
+        private static bool IsAuthorized(IReadOnlyDictionary<string, string> headers, string token, out string failureReason)
         {
+            failureReason = string.Empty;
             if (string.IsNullOrWhiteSpace(token))
+            {
+                failureReason = "server token missing";
                 return false;
+            }
 
             if (!headers.TryGetValue("Authorization", out var value))
+            {
+                failureReason = "missing bearer token";
                 return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(value) || !value.TrimStart().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                failureReason = "invalid authorization scheme";
+                return false;
+            }
 
             var expected = "Bearer " + token.Trim();
-            return string.Equals(value?.Trim(), expected, StringComparison.Ordinal);
+            if (string.Equals(value.Trim(), expected, StringComparison.Ordinal))
+                return true;
+
+            failureReason = "invalid bearer token";
+            return false;
         }
 
         private static object? ReadId(JsonElement request)

@@ -175,14 +175,20 @@
                     <TextBlock Grid.Row="13" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Bearer token" />
                     <DockPanel Grid.Row="13" Grid.Column="1" Margin="0,0,0,10">
                         <Button DockPanel.Dock="Right" Margin="8,0,0,0" Padding="10,4" Command="{Binding RegenerateMcpTokenCommand}" Content="Regenerate token" />
-                        <TextBox IsReadOnly="True" Text="{Binding McpBearerToken, Mode=OneWay}" />
+                        <Button DockPanel.Dock="Right" Margin="8,0,0,0" Padding="10,4" Command="{Binding CopyMcpTokenCommand}" Content="Copy" />
+                        <TextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" Text="{Binding McpBearerToken, Mode=OneWay}" />
                     </DockPanel>
 
                     <TextBlock Grid.Row="14" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Status" />
-                    <TextBlock Grid.Row="14" Grid.Column="1" Margin="0,4,0,10" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding McpStatusText}" TextWrapping="Wrap" />
+                    <DockPanel Grid.Row="14" Grid.Column="1" Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Margin="8,0,0,0" Padding="10,4" Command="{Binding TestMcpConnectionCommand}" Content="Test Connection" IsEnabled="{Binding CanTestMcpConnection}" />
+                        <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding McpStatusText}" TextWrapping="Wrap" />
+                    </DockPanel>
 
-                    <TextBlock Grid.Row="15" Margin="0,8,12,0" VerticalAlignment="Top" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
-                    <TextBox Grid.Row="15"
+                    <TextBlock Grid.Row="15" Grid.Column="1" Margin="0,0,0,10" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding McpConnectionTestText}" TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="16" Margin="0,8,12,0" VerticalAlignment="Top" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
+                    <TextBox Grid.Row="16"
                              Grid.Column="1"
                              AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto"
@@ -199,11 +205,13 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{x:Static properties:Resources.CopilotSettingsHint}" TextWrapping="Wrap" />
                 <Button Grid.Column="1" Margin="0,0,8,0" Padding="14,6" Click="CancelButton_Click" Content="{x:Static properties:Resources.Cancel}" />
-                <Button Grid.Column="2" Padding="14,6" Click="SaveButton_Click" Content="{x:Static properties:Resources.Save}" />
+                <Button Grid.Column="2" Margin="0,0,8,0" Padding="14,6" Click="ApplyButton_Click" Content="Apply" />
+                <Button Grid.Column="3" Padding="14,6" Click="SaveButton_Click" Content="{x:Static properties:Resources.Save}" />
             </Grid>
         </Border>
     </Grid>

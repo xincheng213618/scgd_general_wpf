@@ -12,6 +12,8 @@ namespace ColorVision.Copilot
     {
         private const int StrongMatchScore = 700;
         private const int AmbiguousScoreGap = 60;
+        public const string LowRiskAction = "low-risk-action";
+        public const string ConfirmationRequired = "confirmation-required";
 
         private static readonly Regex HotkeySuffixRegex = new(@"\((_|&).\)", RegexOptions.Compiled);
         private static readonly string[] IntentKeywords =
@@ -45,6 +47,84 @@ namespace ColorVision.Copilot
             "set",
             "check",
             "menu",
+        };
+
+        private static readonly string[] ConfirmationRequiredTerms =
+        {
+            "删除",
+            "移除",
+            "清空",
+            "保存",
+            "导出",
+            "导入",
+            "更新",
+            "安装",
+            "卸载",
+            "启动",
+            "运行",
+            "执行",
+            "停止",
+            "重启",
+            "复位",
+            "校准",
+            "采集",
+            "拍照",
+            "下载",
+            "上传",
+            "delete",
+            "remove",
+            "clear",
+            "save",
+            "export",
+            "import",
+            "update",
+            "install",
+            "uninstall",
+            "start",
+            "run",
+            "execute",
+            "stop",
+            "restart",
+            "reset",
+            "calibration",
+            "calibrate",
+            "capture",
+            "acquire",
+            "download",
+            "upload",
+        };
+
+        private static readonly string[] LowRiskTerms =
+        {
+            "打开",
+            "显示",
+            "查看",
+            "日志",
+            "帮助",
+            "关于",
+            "选项",
+            "设置",
+            "配置",
+            "主题",
+            "语言",
+            "文档",
+            "面板",
+            "copilot",
+            "open",
+            "show",
+            "view",
+            "log",
+            "help",
+            "about",
+            "option",
+            "options",
+            "setting",
+            "settings",
+            "config",
+            "theme",
+            "language",
+            "document",
+            "panel",
         };
 
         private static readonly string[] SearchStopWords =
@@ -103,9 +183,13 @@ namespace ColorVision.Copilot
 
             public string DisplayPath { get; init; } = string.Empty;
 
+            public string SourceType { get; init; } = string.Empty;
+
             public int Score { get; init; }
 
             public bool CanExecute { get; init; }
+
+            public string RiskLevel { get; init; } = ConfirmationRequired;
         }
 
         internal sealed class MenuMatchResult
@@ -151,8 +235,10 @@ namespace ColorVision.Copilot
                             MenuItem = candidate.MenuItem,
                             DisplayHeader = candidate.DisplayHeader,
                             DisplayPath = candidate.DisplayPath,
+                            SourceType = candidate.SourceType,
                             Score = 0,
                             CanExecute = candidate.CanExecute,
+                            RiskLevel = candidate.RiskLevel,
                         })
                         .ToArray(),
                 };
@@ -164,8 +250,10 @@ namespace ColorVision.Copilot
                     MenuItem = candidate.MenuItem,
                     DisplayHeader = candidate.DisplayHeader,
                     DisplayPath = candidate.DisplayPath,
+                    SourceType = candidate.SourceType,
                     Score = searchTexts.Max(searchText => ScoreCandidate(searchText, candidate.Aliases)),
                     CanExecute = candidate.CanExecute,
+                    RiskLevel = candidate.RiskLevel,
                 })
                 .Where(candidate => candidate.Score > 0)
                 .OrderByDescending(candidate => candidate.Score)
@@ -238,9 +326,41 @@ namespace ColorVision.Copilot
                 MenuItem = menuItem,
                 DisplayHeader = displayHeader,
                 DisplayPath = displayPath,
+                SourceType = GetSourceType(menuItem),
                 Aliases = aliases.ToArray(),
                 CanExecute = menuItem.Command?.CanExecute(null) ?? false,
+                RiskLevel = ClassifyRisk(menuItem, displayHeader, displayPath),
             };
+        }
+
+        private static string GetSourceType(IMenuItem menuItem)
+        {
+            return menuItem.TargetName switch
+            {
+                MenuItemConstants.MainWindowTarget => "main-window-menu",
+                MenuItemConstants.GlobalTarget => "global-menu",
+                _ => string.IsNullOrWhiteSpace(menuItem.TargetName) ? "menu" : menuItem.TargetName,
+            };
+        }
+
+        private static string ClassifyRisk(IMenuItem menuItem, string displayHeader, string displayPath)
+        {
+            var text = NormalizeText(string.Join(" ", new[]
+            {
+                displayHeader,
+                displayPath,
+                menuItem.GuidId ?? string.Empty,
+                menuItem.OwnerGuid ?? string.Empty,
+                GetFriendlyTypeName(menuItem.GetType().Name),
+            }));
+
+            if (ContainsAny(text, ConfirmationRequiredTerms))
+                return ConfirmationRequired;
+
+            if (ContainsAny(text, LowRiskTerms))
+                return LowRiskAction;
+
+            return ConfirmationRequired;
         }
 
         private static IEnumerable<string> GetExtraAliases(IMenuItem menuItem)
@@ -449,9 +569,13 @@ namespace ColorVision.Copilot
 
             public string DisplayPath { get; init; } = string.Empty;
 
+            public string SourceType { get; init; } = string.Empty;
+
             public IReadOnlyList<string> Aliases { get; init; } = Array.Empty<string>();
 
             public bool CanExecute { get; init; }
+
+            public string RiskLevel { get; init; } = ConfirmationRequired;
         }
     }
 }
