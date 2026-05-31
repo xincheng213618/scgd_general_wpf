@@ -527,6 +527,12 @@
   <data name="Sol_NewTerminalTooltip" xml:space="preserve">
     <value>Start a new terminal session</value>
   </data>
+  <data name="Terminal_NewPowerShell" xml:space="preserve">
+    <value>New PowerShell</value>
+  </data>
+  <data name="Terminal_NewCmd" xml:space="preserve">
+    <value>New CMD</value>
+  </data>
   <data name="Sol_ClearScreen" xml:space="preserve">
     <value>Clear Screen</value>
   </data>

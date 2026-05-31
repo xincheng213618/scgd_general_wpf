@@ -527,6 +527,12 @@
   <data name="Sol_NewTerminalTooltip" xml:space="preserve">
     <value>啟動新的終端機會話</value>
   </data>
+  <data name="Terminal_NewPowerShell" xml:space="preserve">
+    <value>新建 PowerShell</value>
+  </data>
+  <data name="Terminal_NewCmd" xml:space="preserve">
+    <value>新建 CMD</value>
+  </data>
   <data name="Sol_ClearScreen" xml:space="preserve">
     <value>清除螢幕</value>
   </data>

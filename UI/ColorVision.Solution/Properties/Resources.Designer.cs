@@ -2743,6 +2743,24 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 新建 CMD 的本地化字符串。
+        /// </summary>
+        public static string Terminal_NewCmd {
+            get {
+                return ResourceManager.GetString("Terminal_NewCmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建 PowerShell 的本地化字符串。
+        /// </summary>
+        public static string Terminal_NewPowerShell {
+            get {
+                return ResourceManager.GetString("Terminal_NewPowerShell", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 未知 的本地化字符串。
         /// </summary>
         public static string Unknown {

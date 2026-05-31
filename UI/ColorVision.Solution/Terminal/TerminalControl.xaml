@@ -8,10 +8,10 @@
              xmlns:uiProperties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
-             Background="#1E1E1E"
+             Background="{DynamicResource TerminalBackgroundBrush}"
     Loaded="UserControl_Loaded">
     <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->
-    <Grid x:Name="TerminalRoot" Background="#1E1E1E">
+    <Grid x:Name="TerminalRoot" Background="{DynamicResource TerminalBackgroundBrush}">
         <Grid.ContextMenu>
             <ContextMenu Opened="TerminalContextMenu_Opened">
                 <MenuItem x:Name="MenuCopy"
@@ -24,10 +24,10 @@
                           Click="MenuPaste_Click"/>
                 <Separator/>
                 <MenuItem x:Name="MenuNewPowerShell"
-                          Header="新建 PowerShell"
+                          Header="{x:Static properties:Resources.Terminal_NewPowerShell}"
                           Click="MenuNewPowerShell_Click"/>
                 <MenuItem x:Name="MenuNewCmd"
-                          Header="新建 CMD"
+                          Header="{x:Static properties:Resources.Terminal_NewCmd}"
                           Click="MenuNewCmd_Click"/>
                 <MenuItem x:Name="MenuClear"
                           Header="{x:Static properties:Resources.Sol_ClearScreen}"
@@ -40,7 +40,7 @@
             </ContextMenu>
         </Grid.ContextMenu>
         <ScrollViewer x:Name="TerminalScrollViewer"
-                      Background="#1E1E1E"
+                      Background="{DynamicResource TerminalBackgroundBrush}"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       Focusable="True"
@@ -50,6 +50,11 @@
                       MouseDown="TerminalScrollViewer_MouseDown"
                       GotFocus="TerminalScrollViewer_GotFocus">
             <local:TerminalView x:Name="TerminalDisplay"
+                                DefaultBackgroundColor="{DynamicResource TerminalBackgroundColor}"
+                                DefaultForegroundColor="{DynamicResource TerminalForegroundColor}"
+                                CursorBrush="{DynamicResource TerminalCursorBrush}"
+                                SelectionBrush="{DynamicResource TerminalSelectionBrush}"
+                                UrlBrush="{DynamicResource TerminalUrlBrush}"
                                 Focusable="False"/>
         </ScrollViewer>
         <!-- Invisible TextBox positioned at cursor for correct IME candidate window placement -->

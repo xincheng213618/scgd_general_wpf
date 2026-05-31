@@ -21,6 +21,14 @@
     <Color x:Key="UpdateDialogAccentColor">#007ACC</Color>
     <Color x:Key="UpdateDialogAccentHoverColor">#007ACC</Color>
 
+    <Color x:Key="TerminalBackgroundColor">#F3F5F7</Color>
+    <Color x:Key="TerminalForegroundColor">#1F2933</Color>
+    <SolidColorBrush x:Key="TerminalBackgroundBrush" Color="{StaticResource TerminalBackgroundColor}"/>
+    <SolidColorBrush x:Key="TerminalForegroundBrush" Color="{StaticResource TerminalForegroundColor}"/>
+    <SolidColorBrush x:Key="TerminalCursorBrush" Color="#8037475A"/>
+    <SolidColorBrush x:Key="TerminalSelectionBrush" Color="#663A8DDE"/>
+    <SolidColorBrush x:Key="TerminalUrlBrush" Color="#0969DA"/>
+
 
     <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
     <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>
