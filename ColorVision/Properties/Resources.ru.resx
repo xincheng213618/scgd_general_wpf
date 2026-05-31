@@ -414,6 +414,9 @@
   <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
     <value>Версия основного приложения {0}</value>
   </data>
+  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
+    <value>Версия основного приложения</value>
+  </data>
   <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
     <value>Следующие обновления скрыты из-за требований совместимости: {0}</value>
   </data>

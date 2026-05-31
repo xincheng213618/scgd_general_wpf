@@ -8,7 +8,7 @@
         Height="580"
         MinWidth="860"
         MinHeight="520"
-        Title="{x:Static local:UpdatePreviewText.WindowTitle}"
+        Title="{Binding WindowTitle}"
         ResizeMode="NoResize"
         SizeToContent="Manual"
         Background="{DynamicResource UpdateDialog.WindowBorder}"
@@ -61,11 +61,11 @@
                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                            TextWrapping="Wrap"
                            Visibility="{Binding HostVersionVisibility}">
-                    <Run Text="{Binding HostVersionLabelText, Mode=OneWay}" />
+                    <Run Text="{Binding HostVersionLabel, Mode=OneWay}" />
                     <Run Text=" " />
                     <Run Foreground="{DynamicResource UpdateDialog.TextPrimary}"
                          FontWeight="SemiBold"
-                         Text="{Binding HostVersionValueText, Mode=OneWay}" />
+                        Text="{Binding HostVersionValue, Mode=OneWay}" />
                 </TextBlock>
             </Grid>
 

@@ -414,6 +414,9 @@
   <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
     <value>メインアプリのバージョン {0}</value>
   </data>
+  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
+    <value>メインアプリのバージョン</value>
+  </data>
   <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
     <value>次の更新は互換性要件のため表示されていません: {0}</value>
   </data>

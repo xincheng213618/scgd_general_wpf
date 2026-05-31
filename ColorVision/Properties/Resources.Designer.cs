@@ -3265,6 +3265,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 主程序版本 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewHostVersionLabel {
+            get {
+                return ResourceManager.GetString("UpdatePreviewHostVersionLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 稍后 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewLaterButtonText {

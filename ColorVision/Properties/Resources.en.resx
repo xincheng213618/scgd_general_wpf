@@ -414,6 +414,9 @@
   <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
     <value>Main app version {0}</value>
   </data>
+  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
+    <value>Main app version</value>
+  </data>
   <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
     <value>The following updates are hidden because of compatibility requirements: {0}</value>
   </data>

@@ -476,16 +476,11 @@ namespace ColorVision.Update
                 CheckingTitle = UpdatePreviewText.ScanningTitle,
                 CheckingSummary = UpdatePreviewText.CheckingSummary,
                 StateGlyph = "\uE895",
-                HostVersionText = UpdatePreviewText.HostVersion(AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion),
+                HostVersionLabel = UpdatePreviewText.HostVersionLabel,
+                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion,
                 ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
                 CancelButtonText = UpdatePreviewText.CancelButtonText,
                 SecondaryButtonText = null,
-                WindowWidth = 780,
-                WindowHeight = 360,
-                WindowMinWidth = 760,
-                WindowMinHeight = 320,
-                WindowMaxHeight = 380,
-                WindowAutoSizeHeight = false,
                 IsChecking = true,
             };
         }
@@ -506,16 +501,11 @@ namespace ColorVision.Update
                 EmptyStateTitle = UpdatePreviewText.AlreadyLatestHeading,
                 EmptyStateMessage = emptyMessage,
                 StateGlyph = "\uE73E",
-                HostVersionText = UpdatePreviewText.HostVersion(AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion),
+                HostVersionLabel = UpdatePreviewText.HostVersionLabel,
+                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion,
                 ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
                 CancelButtonText = UpdatePreviewText.CloseButtonText,
                 SecondaryButtonText = null,
-                WindowWidth = 780,
-                WindowHeight = 360,
-                WindowMinWidth = 760,
-                WindowMinHeight = 320,
-                WindowMaxHeight = 380,
-                WindowAutoSizeHeight = false,
                 IsChecking = false,
             };
         }
@@ -533,14 +523,15 @@ namespace ColorVision.Update
             pluginPlan.Updates.RemoveAll(item => !selectedPluginIds.Contains(GetPluginItemId(item)));
         }
 
-        private static async Task<UpdatePreviewDialogContext> BuildUpdatePreviewContextAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
+        private static Task<UpdatePreviewDialogContext> BuildUpdatePreviewContextAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
         {
             UpdatePreviewDialogContext context = new()
             {
                 WindowTitle = UpdatePreviewText.WindowTitle,
                 Heading = BuildPreviewHeading(applicationPlan, pluginPlan),
                 Summary = BuildDialogSummary(applicationPlan, pluginPlan),
-                HostVersionText = UpdatePreviewText.HostVersion((applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion)?.ToString() ?? UpdatePreviewText.UnknownVersion),
+                HostVersionLabel = UpdatePreviewText.HostVersionLabel,
+                HostVersionValue = (applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion)?.ToString() ?? UpdatePreviewText.UnknownVersion,
                 ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
                 CancelButtonText = isStartupCheck ? UpdatePreviewText.LaterButtonText : UpdatePreviewText.CancelButtonText,
                 SecondaryButtonText = allowSkipVersion ? UpdatePreviewText.SkipVersionButtonText : null,
@@ -559,34 +550,9 @@ namespace ColorVision.Update
                         : UpdatePreviewText.ApplicationFullPackageLabel,
                     CurrentVersion = applicationPlan.CurrentVersion.ToString(),
                     TargetVersion = applicationPlan.LatestVersion.ToString(),
-                    VersionSummary = $"{applicationPlan.CurrentVersion} -> {applicationPlan.LatestVersion}",
                     Summary = BuildApplicationCardSummary(applicationPlan),
-                    DetailText = await BuildApplicationDetailTextAsync(applicationPlan),
                     IsSelectable = false,
                 };
-
-                previewItem.Facts.Add(new UpdatePreviewFact
-                {
-                    Label = Properties.Resources.UpdateCurrentVersion,
-                    Value = applicationPlan.CurrentVersion.ToString(),
-                });
-                previewItem.Facts.Add(new UpdatePreviewFact
-                {
-                    Label = Properties.Resources.UpdateTargetVersion,
-                    Value = applicationPlan.LatestVersion.ToString(),
-                });
-                previewItem.Facts.Add(new UpdatePreviewFact
-                {
-                    Label = Properties.Resources.UpdateMethod,
-                    Value = applicationPlan.IsIncremental ? Properties.Resources.UpdateIncrementalPackage : Properties.Resources.UpdateFullPackage,
-                });
-                previewItem.Facts.Add(new UpdatePreviewFact
-                {
-                    Label = applicationPlan.IsIncremental ? Properties.Resources.UpdatePackageCount : Properties.Resources.UpdateScope,
-                    Value = applicationPlan.IsIncremental
-                        ? applicationPlan.VersionsToApply.Count.ToString()
-                        : Properties.Resources.UpdateFullApplicationUpdate,
-                });
 
                 context.Items.Add(previewItem);
             }
@@ -611,50 +577,16 @@ namespace ColorVision.Update
                         HostRequirement = string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion)
                             ? string.Empty
                             : item.VersionInfo.RequiresVersion,
-                        VersionSummary = $"{currentVersion} -> {item.VersionInfo.Version}",
                         Summary = BuildPluginCardSummary(item),
-                        DetailText = BuildPluginDetailText(item),
                         IsSelectable = true,
                         IsSelected = true,
                     };
-
-                    previewItem.Facts.Add(new UpdatePreviewFact
-                    {
-                        Label = Properties.Resources.UpdatePluginId,
-                        Value = item.Plugin.PackageName ?? "Unknown",
-                    });
-                    previewItem.Facts.Add(new UpdatePreviewFact
-                    {
-                        Label = Properties.Resources.UpdateCurrentVersion,
-                        Value = currentVersion,
-                    });
-                    previewItem.Facts.Add(new UpdatePreviewFact
-                    {
-                        Label = Properties.Resources.UpdateTargetVersion,
-                        Value = item.VersionInfo.Version,
-                    });
-
-                    if (!string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion))
-                    {
-                        previewItem.Facts.Add(new UpdatePreviewFact
-                        {
-                            Label = Properties.Resources.UpdateHostRequirement,
-                            Value = item.VersionInfo.RequiresVersion,
-                        });
-                    }
 
                     context.Items.Add(previewItem);
                 }
             }
 
-            if (context.SelectedItem == null && context.Items.Count > 0)
-            {
-                context.SelectedItem = context.Items[0];
-            }
-
-            ApplyWindowMetrics(context);
-
-            return context;
+            return Task.FromResult(context);
         }
 
         private static string BuildDialogSummary(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
@@ -711,11 +643,6 @@ namespace ColorVision.Update
                 : UpdatePreviewText.WindowTitle;
         }
 
-        private static string BuildPreviewSummary(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
-        {
-            return BuildDialogSummary(applicationPlan, pluginPlan);
-        }
-
         private static List<string> BuildUpdateKinds(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
             List<string> kinds = new();
@@ -727,21 +654,6 @@ namespace ColorVision.Update
                 kinds.Add(UpdatePreviewText.UpdateKindPlugin);
 
             return kinds;
-        }
-
-        private static void ApplyWindowMetrics(UpdatePreviewDialogContext context)
-        {
-            context.WindowWidth = 900;
-            context.WindowHeight = context.Items.Count switch
-            {
-                <= 1 => 520d,
-                <= 4 => 600d,
-                _ => 680d,
-            };
-            context.WindowMinWidth = 860;
-            context.WindowMinHeight = 460;
-            context.WindowMaxHeight = 720;
-            context.WindowAutoSizeHeight = true;
         }
 
         private static string BuildPluginSecondaryLabel(CombinedPluginUpdateItem item, string pluginName)
@@ -830,149 +742,6 @@ namespace ColorVision.Update
                 ?? GetPluginDisplayName(item);
         }
 
-        private static string BuildPluginNamesPreview(IEnumerable<CombinedPluginUpdateItem> items)
-        {
-            List<string> names = items
-                .Select(GetPluginDisplayName)
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (names.Count <= 4)
-                return string.Join("、", names);
-
-            return $"{string.Join("、", names.Take(4))} {string.Format(Properties.Resources.UpdatePluginCount, names.Count)}";
-        }
-
-        private static async Task<string> BuildApplicationDetailTextAsync(AutoUpdatePlan applicationPlan)
-        {
-            StringBuilder builder = new();
-            builder.AppendLine($"{Properties.Resources.UpdateCurrentVersionLabel}{applicationPlan.CurrentVersion}");
-            builder.AppendLine($"{Properties.Resources.UpdateTargetVersionLabel}{applicationPlan.LatestVersion}");
-
-            if (applicationPlan.IsIncremental)
-            {
-                builder.AppendLine(string.Format(Properties.Resources.UpdateIncrementalChain, string.Join(" -> ", applicationPlan.VersionsToApply)));
-                builder.AppendLine(Properties.Resources.UpdateExecutionIncremental);
-            }
-            else
-            {
-                builder.AppendLine(Properties.Resources.UpdateExecutionFull);
-            }
-
-            IReadOnlyList<ChangeLogEntry> changeLogEntries = await TryLoadRemoteChangeLogEntriesAsync();
-            List<ChangeLogEntry> relevantEntries = SelectRelevantChangelogEntries(applicationPlan, changeLogEntries);
-            if (relevantEntries.Count > 0)
-            {
-                builder.AppendLine();
-                builder.AppendLine(Properties.Resources.UpdateNotes);
-                builder.Append(BuildChangeLogText(relevantEntries));
-            }
-
-            return builder.ToString().TrimEnd();
-        }
-
-        private static async Task<IReadOnlyList<ChangeLogEntry>> TryLoadRemoteChangeLogEntriesAsync()
-        {
-            try
-            {
-                string? changeLogText = await AutoUpdater.GetChangeLog(AutoUpdater.CHANGELOGUrl);
-                if (string.IsNullOrWhiteSpace(changeLogText))
-                    return Array.Empty<ChangeLogEntry>();
-
-                return ChangelogWindow.Parse(changeLogText).ToList();
-            }
-            catch (Exception ex)
-            {
-                log.Warn($"Load remote changelog failed: {ex.Message}");
-                return Array.Empty<ChangeLogEntry>();
-            }
-        }
-
-        private static List<ChangeLogEntry> SelectRelevantChangelogEntries(AutoUpdatePlan applicationPlan, IReadOnlyList<ChangeLogEntry> entries)
-        {
-            List<(ChangeLogEntry Entry, Version Version)> parsedEntries = entries
-                .Select(entry => (Entry: entry, Version: TryParseVersion(entry.Version)))
-                .Where(item => item.Version != null)
-                .Select(item => (item.Entry, item.Version!))
-                .ToList();
-
-            if (applicationPlan.IsIncremental)
-            {
-                HashSet<string> targetVersions = applicationPlan.VersionsToApply
-                    .Select(version => version.ToString())
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                return parsedEntries
-                    .Where(item => targetVersions.Contains(item.Entry.Version))
-                    .OrderBy(item => item.Version)
-                    .Select(item => item.Entry)
-                    .ToList();
-            }
-
-            return parsedEntries
-                .Where(item => item.Version > applicationPlan.CurrentVersion && item.Version <= applicationPlan.LatestVersion)
-                .OrderBy(item => item.Version)
-                .Select(item => item.Entry)
-                .ToList();
-        }
-
-        private static Version? TryParseVersion(string? value)
-        {
-            return Version.TryParse(value, out Version? version) ? version : null;
-        }
-
-        private static string BuildChangeLogText(IEnumerable<ChangeLogEntry> entries)
-        {
-            StringBuilder builder = new();
-            foreach (ChangeLogEntry entry in entries)
-            {
-                builder.AppendLine($"## {entry.Version}  {entry.ReleaseDate:yyyy/MM/dd}");
-                if (!string.IsNullOrWhiteSpace(entry.ChangeLog))
-                {
-                    builder.AppendLine(entry.ChangeLog.Trim());
-                }
-                builder.AppendLine();
-            }
-
-            return builder.ToString().TrimEnd();
-        }
-
-        private static string BuildPluginDetailText(CombinedPluginUpdateItem item)
-        {
-            StringBuilder builder = new();
-            string pluginName = GetPluginDisplayName(item);
-
-            builder.AppendLine($"{Properties.Resources.UpdatePlugin}{pluginName}");
-            builder.AppendLine($"{Properties.Resources.UpdatePluginIdLabel}{item.Plugin.PackageName}");
-            builder.AppendLine($"{Properties.Resources.UpdateCurrentVersionLabel}{item.Plugin.AssemblyVersion?.ToString() ?? "Unknown"}");
-            builder.AppendLine($"{Properties.Resources.UpdateTargetVersionLabel}{item.VersionInfo.Version}");
-
-            if (!string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion))
-            {
-                builder.AppendLine($"{Properties.Resources.UpdateHostRequirementLabel}{item.VersionInfo.RequiresVersion}");
-            }
-
-            if (!string.IsNullOrWhiteSpace(item.Plugin.Description))
-            {
-                builder.AppendLine();
-                builder.AppendLine(Properties.Resources.UpdatePluginDescription);
-                builder.AppendLine(item.Plugin.Description.Trim());
-            }
-
-            string? changeLog = !string.IsNullOrWhiteSpace(item.VersionInfo.ChangeLog)
-                ? item.VersionInfo.ChangeLog
-                : item.Plugin.PluginInfo?.ChangeLog;
-
-            if (!string.IsNullOrWhiteSpace(changeLog))
-            {
-                builder.AppendLine();
-                builder.AppendLine(Properties.Resources.UpdateVersionNotes);
-                builder.AppendLine(changeLog.Trim());
-            }
-
-            return builder.ToString().TrimEnd();
-        }
 
         private static void ShowNoUpdatesMessage(CombinedPluginUpdatePlan? pluginPlan)
         {

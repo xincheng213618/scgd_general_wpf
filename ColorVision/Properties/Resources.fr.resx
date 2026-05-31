@@ -414,6 +414,9 @@
   <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
     <value>Version de l'application principale {0}</value>
   </data>
+  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
+    <value>Version de l'application principale</value>
+  </data>
   <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
     <value>Les mises à jour suivantes sont masquées en raison des exigences de compatibilité : {0}</value>
   </data>

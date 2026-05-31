@@ -414,6 +414,9 @@
   <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
     <value>主程式版本 {0}</value>
   </data>
+  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
+    <value>主程式版本</value>
+  </data>
   <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
     <value>以下更新因相容性要求未顯示：{0}</value>
   </data>
