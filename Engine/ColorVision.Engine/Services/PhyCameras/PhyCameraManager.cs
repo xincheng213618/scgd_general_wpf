@@ -71,7 +71,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
             RefreshEmptyCamera();
-            PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
+            PhyCameras.CollectionChanged += (s, e) =>
+            {
+                RefreshEmptyCamera();
+                RefreshCameraSummary();
+            };
             if(PhyCameras.Count > 0)
             {
                 PhyCameras[0].IsSelected = true;
@@ -185,6 +189,16 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
+
+        public int OnlineCameraCount => PhyCameras.Count(IsOnline);
+
+        public int AttentionCameraCount => PhyCameras.Count(RequiresAttention);
+
+        public void RefreshCameraSummary()
+        {
+            OnPropertyChanged(nameof(OnlineCameraCount));
+            OnPropertyChanged(nameof(AttentionCameraCount));
+        }
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
 
@@ -548,6 +562,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
             Loaded?.Invoke(this, EventArgs.Empty);
+            RefreshCameraSummary();
+        }
+
+        private static bool IsOnline(PhyCamera camera)
+        {
+            return string.Equals(camera.SysResourceModel?.Remark, "Online", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool RequiresAttention(PhyCamera camera)
+        {
+            return !IsOnline(camera) || camera.HasLicenseAlert || camera.VisualChildren.Count == 0;
         }
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)
