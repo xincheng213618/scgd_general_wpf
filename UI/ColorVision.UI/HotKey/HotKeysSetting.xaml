@@ -1,36 +1,46 @@
-﻿<UserControl x:Class="ColorVision.UI.HotKey.HotKeysSetting"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.UI.HotKey"
-        xmlns:properties="clr-namespace:ColorVision.UI.Properties"
-        mc:Ignorable="d"
-        d:Height  ="200" d:Width="500" Initialized="UserControl_Initialized">
+<UserControl x:Class="ColorVision.UI.HotKey.HotKeysSetting"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:properties="clr-namespace:ColorVision.UI.Properties"
+             mc:Ignorable="d"
+             d:Height="360"
+             d:Width="760"
+             Initialized="UserControl_Initialized">
     <UserControl.Resources>
-        <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Margin" Value="10,10,15,5"/>
-            <Setter Property="CornerRadius" Value="8"/>
+        <Style x:Key="HotkeyCommandButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="MinWidth" Value="96"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="14,4"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
         </Style>
     </UserControl.Resources>
-    <Grid >
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Border  Style="{StaticResource BorderModuleArea}" >
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
-                <StackPanel x:Name="HotKeyStackPanel"  Margin="10,5" />
-            </ScrollViewer>
+
+    <StackPanel>
+        <Border Background="{DynamicResource GlobalBackground}"
+                BorderBrush="{DynamicResource GlobalBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="7"
+                SnapsToDevicePixels="True">
+            <StackPanel x:Name="HotKeyStackPanel"/>
         </Border>
 
-        <UniformGrid Grid.Row="1" Columns="3"  Width="300" HorizontalAlignment="Right" Margin="10">
-            <Button Content="{x:Static properties:Resources.HotKey_RestoreDefault}" Width="80" Click="SetDefault_Click" />
-            <Button Content="{x:Static properties:Resources.HotKey_SaveHotkey}" Width="80" Click="ButtonSave_Click" />
-            <Button Content="{x:Static properties:Resources.HotKey_LoadHotkey}" Width="80" Click="ButtonLoad_Click" />
-        </UniformGrid>
-    </Grid>
+        <StackPanel Margin="0,12,0,0"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+            <Button Content="{x:Static properties:Resources.HotKey_LoadHotkey}"
+                    Style="{StaticResource HotkeyCommandButtonStyle}"
+                    Click="ButtonLoad_Click"/>
+            <Button Content="{x:Static properties:Resources.HotKey_RestoreDefault}"
+                    Style="{StaticResource HotkeyCommandButtonStyle}"
+                    Click="SetDefault_Click"/>
+            <Button Content="{x:Static properties:Resources.HotKey_SaveHotkey}"
+                    Style="{StaticResource HotkeyCommandButtonStyle}"
+                    Background="{StaticResource PrimaryBrush}"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Click="ButtonSave_Click"/>
+        </StackPanel>
+    </StackPanel>
 </UserControl>

@@ -27,29 +27,7 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        /// <summary>
-        /// 向原子表中添加全局原子
-        /// </summary>
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern short GlobalAddAtom(string lpString);
-
-        /// <summary>
-        /// 在表中搜索全局原子
-        /// </summary>
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern short GlobalFindAtom(string lpString);
-
-        /// <summary>
-        /// 在表中删除全局原子
-        /// </summary>
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern short GlobalDeleteAtom(short nAtom);
-
-
-
-        static Dictionary<int, HotKeyCallBackHanlder> keymap = new();
-        static List<HwndSource> HwndHook = new();
-        static int keyid;
+        private static readonly Dictionary<IntPtr, HwndHotkeyScope> Scopes = new();
 
         /// <summary>
         /// 注册快捷键
@@ -58,68 +36,23 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         /// <param name="fsModifiers">组合键</param>
         /// <param name="key">快捷键</param>
         /// <param name="callBack">回调函数</param>
-        public static bool Register(IntPtr hwnd, ModifierKeys fsModifiers, Key key, HotKeyCallBackHanlder callBack)
+        public static IHotkeyRegistration? Register(IntPtr hwnd, ModifierKeys fsModifiers, Key key, HotKeyCallBackHanlder callBack)
         {
-            HwndSource _hwndSource = HwndSource.FromHwnd(hwnd);
-            if (!HwndHook.Contains(_hwndSource))
-            {
-                _hwndSource.AddHook(WndProc);
-                HwndHook.Add(_hwndSource);
-            }
-            int id = keyid++;
-            int vk = KeyInterop.VirtualKeyFromKey(key);
+            if (key == Key.None) return null;
 
-            if (!RegisterHotKey(hwnd, id, fsModifiers, (uint)vk))
-            {
-                return false;
-            }
-            else
-            {
-                keymap[id] = callBack;
-                return true;
-            }
+            var scope = GetOrCreateScope(hwnd);
+            return scope?.Register(fsModifiers, key, callBack);
         }
 
         /// <summary>
         /// 可以自定义id
         /// </summary>
-        public static bool Register(IntPtr hwnd, int id , ModifierKeys fsModifiers, Key key, HotKeyCallBackHanlder callBack)
+        public static IHotkeyRegistration? Register(IntPtr hwnd, int id , ModifierKeys fsModifiers, Key key, HotKeyCallBackHanlder callBack)
         {
-            HwndSource _hwndSource = HwndSource.FromHwnd(hwnd);
-            if (!HwndHook.Contains(_hwndSource))
-            {
-                _hwndSource.AddHook(WndProc);
-                HwndHook.Add(_hwndSource);
-            }
-            int vk = KeyInterop.VirtualKeyFromKey(key);
-            if (!RegisterHotKey(hwnd, id, fsModifiers, (uint)vk))
-            {
-                UnregisterHotKey(hwnd, id);
-                return false;
-            }
-            else
-            {
-                keymap[id] = callBack;
-                return true;
-            }
-        }
+            if (key == Key.None) return null;
 
-        /// <summary>
-        /// 快捷键消息处理
-        /// </summary>
-        /// 这里用一个就可以，不管开了几个窗口，最后触发的都是绑定的事件
-        static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            //https://wiki.winehq.org/List_Of_Windows_Messages
-            if (msg == WMHOTKEY)
-            {
-                int id = wParam.ToInt32();
-                if (keymap.TryGetValue(id, out var callback))
-                {
-                    callback();
-                }
-            }
-            return IntPtr.Zero;
+            var scope = GetOrCreateScope(hwnd);
+            return scope?.Register(id, fsModifiers, key, callBack);
         }
 
         /// <summary>
@@ -129,11 +62,146 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         /// <param name="callBack">回调函数</param>
         public static void UnRegister(IntPtr hWnd, HotKeyCallBackHanlder callBack)
         {
-            var keysToRemove = keymap.Where(kv => kv.Value == callBack).Select(kv => kv.Key).ToList();
-            foreach (var key in keysToRemove)
+            if (!Scopes.TryGetValue(hWnd, out var scope)) return;
+
+            foreach (var registration in scope.FindByCallback(callBack))
             {
-                UnregisterHotKey(hWnd, key);
-                keymap.Remove(key);
+                registration.Dispose();
+            }
+        }
+
+        public static bool UnRegister(IHotkeyRegistration registration)
+        {
+            if (registration is not GlobalHotkeyRegistration globalRegistration || !globalRegistration.IsRegistered)
+            {
+                return false;
+            }
+
+            globalRegistration.Dispose();
+            return true;
+        }
+
+        private static HwndHotkeyScope? GetOrCreateScope(IntPtr hwnd)
+        {
+            if (Scopes.TryGetValue(hwnd, out var scope))
+            {
+                return scope;
+            }
+
+            HwndSource? source = HwndSource.FromHwnd(hwnd);
+            if (source == null) return null;
+
+            scope = new HwndHotkeyScope(hwnd, source, RemoveScope);
+            Scopes.Add(hwnd, scope);
+            return scope;
+        }
+
+        private static void RemoveScope(IntPtr hwnd)
+        {
+            Scopes.Remove(hwnd);
+        }
+
+        private sealed class HwndHotkeyScope
+        {
+            private readonly Dictionary<int, GlobalHotkeyRegistration> _registrations = new();
+            private readonly HwndSource _source;
+            private readonly HwndSourceHook _hook;
+            private readonly Action<IntPtr> _removeScope;
+            private int _nextId;
+
+            public HwndHotkeyScope(IntPtr hwnd, HwndSource source, Action<IntPtr> removeScope)
+            {
+                HWnd = hwnd;
+                _source = source;
+                _removeScope = removeScope;
+                _hook = WndProc;
+                _source.AddHook(_hook);
+            }
+
+            public IntPtr HWnd { get; }
+
+            public GlobalHotkeyRegistration? Register(ModifierKeys modifiers, Key key, HotKeyCallBackHanlder callback)
+            {
+                return Register(_nextId++, modifiers, key, callback);
+            }
+
+            public GlobalHotkeyRegistration? Register(int id, ModifierKeys modifiers, Key key, HotKeyCallBackHanlder callback)
+            {
+                if (_registrations.ContainsKey(id)) return null;
+
+                int virtualKey = KeyInterop.VirtualKeyFromKey(key);
+                if (!RegisterHotKey(HWnd, id, modifiers, (uint)virtualKey))
+                {
+                    UnregisterHotKey(HWnd, id);
+                    return null;
+                }
+
+                var registration = new GlobalHotkeyRegistration(this, id, new Hotkey(key, modifiers), callback);
+                _registrations.Add(id, registration);
+                return registration;
+            }
+
+            public List<GlobalHotkeyRegistration> FindByCallback(HotKeyCallBackHanlder callback)
+            {
+                return _registrations.Values.Where(registration => registration.Callback == callback).ToList();
+            }
+
+            public void Remove(GlobalHotkeyRegistration registration)
+            {
+                UnregisterHotKey(HWnd, registration.Id);
+                _registrations.Remove(registration.Id);
+                if (_registrations.Count == 0)
+                {
+                    _source.RemoveHook(_hook);
+                    _removeScope(HWnd);
+                }
+            }
+
+            private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+            {
+                if (msg == WMHOTKEY)
+                {
+                    int id = wParam.ToInt32();
+                    if (_registrations.TryGetValue(id, out var registration))
+                    {
+                        registration.Callback();
+                    }
+                }
+
+                return IntPtr.Zero;
+            }
+        }
+
+        private sealed class GlobalHotkeyRegistration : IHotkeyRegistration
+        {
+            private HwndHotkeyScope? _scope;
+
+            public GlobalHotkeyRegistration(HwndHotkeyScope scope, int id, Hotkey hotkey, HotKeyCallBackHanlder callback)
+            {
+                _scope = scope;
+                Id = id;
+                Hotkey = hotkey;
+                Callback = callback;
+                IsRegistered = true;
+            }
+
+            public int Id { get; }
+            public HotKeyCallBackHanlder Callback { get; }
+            public Hotkey Hotkey { get; }
+            public bool IsRegistered { get; private set; }
+
+            public void Dispose()
+            {
+                if (!IsRegistered) return;
+
+                _scope?.Remove(this);
+                _scope = null;
+                MarkUnregistered();
+            }
+
+            internal void MarkUnregistered()
+            {
+                IsRegistered = false;
             }
         }
 

@@ -8,23 +8,24 @@ namespace ColorVision.UI.HotKey
 
     public static class HotKeyExtension
     {
-        public static int ToInt(this Hotkey hotkey) => Hotkey.ToInt(hotkey);
-        public static bool IsNullOrEmpty(this Hotkey hotkey) => Hotkey.IsNullOrEmpty(hotkey);
+        public static int ToInt(this Hotkey? hotkey) => Hotkey.ToInt(hotkey);
+        public static bool IsNullOrEmpty(this Hotkey? hotkey) => Hotkey.IsNullOrEmpty(hotkey);
     }
 
 
     [Serializable]
-    public class Hotkey
+    public class Hotkey : IEquatable<Hotkey>
     {
         
         #region static
         public readonly static Hotkey None = new(Key.None,ModifierKeys.None);
-        public static bool IsNullOrEmpty(Hotkey hotkey) => hotkey == null || hotkey == None;
-        public static int ToInt(Hotkey hotkey) => ((int)hotkey.Modifiers << 8) + (int)hotkey.Key;
+        public static bool IsNullOrEmpty(Hotkey? hotkey) => hotkey == null || hotkey.IsEmpty;
+        public static int ToInt(Hotkey? hotkey) => hotkey == null ? 0 : ((int)hotkey.Modifiers << 8) + (int)hotkey.Key;
         #endregion
 
         public Key Key { get; set; } = Key.None;
         public ModifierKeys Modifiers { get; set; } = ModifierKeys.None;
+        public bool IsEmpty => Key == Key.None && Modifiers == ModifierKeys.None;
 
         public Hotkey()
         {
@@ -36,9 +37,34 @@ namespace ColorVision.UI.HotKey
             Modifiers = modifiers;
         }
 
+        public bool Equals(Hotkey? other)
+        {
+            return other != null && Key == other.Key && Modifiers == other.Modifiers;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Hotkey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Key, Modifiers);
+        }
+
+        public static bool operator ==(Hotkey? left, Hotkey? right)
+        {
+            return EqualityComparer<Hotkey>.Default.Equals(left, right);
+        }
+
+        public static bool operator !=(Hotkey? left, Hotkey? right)
+        {
+            return !(left == right);
+        }
+
         public override string ToString()
         {
-            if (Key == Key.None && Modifiers == ModifierKeys.None)
+            if (IsEmpty)
                 return "<None>";
 
             var str = new StringBuilder();

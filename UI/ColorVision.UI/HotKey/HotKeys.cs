@@ -1,10 +1,6 @@
-﻿using ColorVision.UI.HotKey.GlobalHotKey;
-using ColorVision.UI.HotKey.WindowHotKey;
-using Newtonsoft.Json;
-using System.Collections.ObjectModel;
+﻿using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -13,22 +9,10 @@ namespace ColorVision.UI.HotKey
     [Serializable]
     public class HotKeys : INotifyPropertyChanged
     {
-        public static readonly ObservableCollection<HotKeys> HotKeysList = new ObservableCollection<HotKeys>();
-        public static readonly Dictionary<HotKeys,Hotkey> HotKeysDefaultHotkey = new();
-
-        /// <summary>
-        /// 设置为默认方法
-        /// </summary>
+        [Obsolete("Use HotkeyService.GetInstance().SetDefault() instead.")]
         public static void SetDefault()
         {
-            foreach (var item in HotKeysDefaultHotkey)
-            {
-                item.Key.Hotkey = Hotkey.None;
-            }
-            foreach (var item in HotKeysDefaultHotkey)
-            {
-                item.Key.Hotkey = item.Value;
-            }
+            HotkeyService.GetInstance().SetDefault();
         }
 
         public HotKeys()
@@ -40,36 +24,37 @@ namespace ColorVision.UI.HotKey
         /// </summary>
         public HotKeys(string name, Hotkey hotkey , HotKeyCallBackHanlder hotKeyCallBackHanlder)
         {
-            HotKeysList.Add(this);
-            HotKeysDefaultHotkey.Add(this,hotkey);
             Name = name;
             Hotkey = hotkey;
+            DefaultHotkey = hotkey;
             HotKeyHandler += hotKeyCallBackHanlder;
         }
         [JsonIgnore]
-        public Control Control { get; set; }
+        public Control? Control { get; set; }
+
+        public string Id { get => _Id; set { if (value == _Id) return; _Id = value; NotifyPropertyChanged(); } }
+        private string _Id = string.Empty;
 
         public string Name { get => _Name; set { if (value == _Name) return; _Name = value; NotifyPropertyChanged(); } }
         private string _Name = string.Empty;
         [JsonIgnore]
-        public HotKeyCallBackHanlder HotKeyHandler { get; set; }
+        public HotKeyCallBackHanlder? HotKeyHandler { get; set; }
+
+        [JsonIgnore]
+        public Hotkey DefaultHotkey { get; set; } = Hotkey.None;
+
+        [JsonIgnore]
+        public HotKeyKinds DefaultKinds { get; set; } = HotKeyKinds.Windows;
+
+        [JsonIgnore]
+        internal IHotkeyRegistration? Registration { get; set; }
 
         public Hotkey Hotkey
         {
             get => _Hotkey;  set  
             {
                 if (value == _Hotkey) return; 
-                _Hotkey = value;
-                //如果已经注册，在修改方法的时候，检测是否注册成功
-                if (Control!=null)
-                    if (Kinds == HotKeyKinds.Global)
-                    {
-                        IsRegistered = GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).ModifiedHotkey(this);
-                    }
-                    else
-                    {
-                        IsRegistered = WindowHotKeyManager.GetInstance(Control).ModifiedHotkey(this);
-                    }
+                _Hotkey = value ?? Hotkey.None;
                 NotifyPropertyChanged(); 
             }
         }
@@ -79,26 +64,6 @@ namespace ColorVision.UI.HotKey
             get => _Kinds; set
             {
                 if (value == _Kinds) return;
-                if (Control != null)
-                {
-                    if (_Kinds == HotKeyKinds.Global)
-                    {
-                        GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).UnRegister(this);
-                    }
-                    else
-                    {
-                        WindowHotKeyManager.GetInstance(Control).UnRegister(this);
-                    }
-                    _Kinds = value;
-                    if (_Kinds == HotKeyKinds.Global)
-                    {
-                        IsRegistered = GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).Register(this);
-                    }
-                    else
-                    {
-                        IsRegistered = WindowHotKeyManager.GetInstance(Control).Register(this);
-                    }
-                }
                 _Kinds = value;
                 NotifyPropertyChanged(nameof(IsGlobal));
                 NotifyPropertyChanged();

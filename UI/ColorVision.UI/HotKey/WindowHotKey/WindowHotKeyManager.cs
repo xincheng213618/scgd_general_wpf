@@ -15,7 +15,8 @@ namespace ColorVision.UI.HotKey.WindowHotKey
         {
             control = window;
             Instances.Add(window, this);
-            HotKeysList = new List<HotKeys>();
+            Registrations = new Dictionary<HotKeys, IHotkeyRegistration>();
+            CallbackRegistrations = new Dictionary<HotKeyCallBackHanlder, IHotkeyRegistration>();
             if (window is Window win)
             {
                 win.Closed += Window_Closed;
@@ -24,11 +25,12 @@ namespace ColorVision.UI.HotKey.WindowHotKey
 
         private void Window_Closed(object? sender, EventArgs e)
         {
-            // Unregister all hotkeys and remove the instance from the dictionary
-            foreach (var hotkey in HotKeysList)
+            foreach (var registration in Registrations.Values.Concat(CallbackRegistrations.Values).Distinct().ToList())
             {
-                WindowHotKey.UnRegister(hotkey.HotKeyHandler);
+                registration.Dispose();
             }
+            Registrations.Clear();
+            CallbackRegistrations.Clear();
             Instances.Remove(control);
         }
 
@@ -48,42 +50,60 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             }
         }
 
-
-
-
-        public List<HotKeys> HotKeysList { get; set; }
+        private Dictionary<HotKeys, IHotkeyRegistration> Registrations { get; }
+        private Dictionary<HotKeyCallBackHanlder, IHotkeyRegistration> CallbackRegistrations { get; }
 
 
         public bool Register(HotKeys hotkeys)
         {
+            return RegisterHandle(hotkeys)?.IsRegistered == true;
+        }
+
+        public IHotkeyRegistration? RegisterHandle(HotKeys hotkeys)
+        {
+            if (hotkeys.HotKeyHandler == null) return null;
+
             hotkeys.Control = control;
-            hotkeys.IsRegistered = WindowHotKey.Register(control, hotkeys.Hotkey, hotkeys.HotKeyHandler);
-            HotKeysList.Add(hotkeys);
-            return hotkeys.IsRegistered;
+            var registration = WindowHotKey.Register(control, hotkeys.Hotkey, hotkeys.HotKeyHandler);
+            hotkeys.Registration = registration;
+            hotkeys.IsRegistered = registration?.IsRegistered == true;
+            if (registration != null)
+            {
+                Registrations[hotkeys] = registration;
+            }
+
+            return registration;
         }
 
         public bool Register(Hotkey hotkey, HotKeyCallBackHanlder callBack)
         {
-            if (!WindowHotKey.Register(control, hotkey, callBack))
+            var registration = WindowHotKey.Register(control, hotkey, callBack);
+            if (registration == null)
                 return false;
-            HotKeysList.Add(new HotKeys() { Hotkey =hotkey,HotKeyHandler = callBack});
+            CallbackRegistrations[callBack] = registration;
             return true;
         }
 
         public bool UnRegister(HotKeys hotkeys)
         {
-            WindowHotKey.UnRegister(hotkeys.HotKeyHandler);
-            HotKeysList.Remove(hotkeys);
+            if (Registrations.Remove(hotkeys, out var registration))
+            {
+                registration.Dispose();
+            }
+            else
+            {
+                hotkeys.Registration?.Dispose();
+            }
+            hotkeys.Registration = null;
+            hotkeys.IsRegistered = false;
             return true;
         }
 
         public bool UnRegister(HotKeyCallBackHanlder callBack)
         {
-            WindowHotKey.UnRegister(callBack);
-            var itemsToRemove = HotKeysList.Where(item => callBack == item.HotKeyHandler).ToList();
-            foreach (var item in itemsToRemove)
+            if (CallbackRegistrations.Remove(callBack, out var registration))
             {
-                HotKeysList.Remove(item);
+                registration.Dispose();
             }
             return true;
         }
@@ -91,21 +111,14 @@ namespace ColorVision.UI.HotKey.WindowHotKey
 
         public bool ModifiedHotkey(HotKeys hotkeys)
         {
-            WindowHotKey.UnRegister(hotkeys.HotKeyHandler);
-            return WindowHotKey.Register(control, hotkeys.Hotkey, hotkeys.HotKeyHandler);
+            UnRegister(hotkeys);
+            return Register(hotkeys);
         }
 
         public void ModifiedHotkey(Hotkey hotkey, HotKeyCallBackHanlder callBack)
         {
-            WindowHotKey.UnRegister(callBack);
-            WindowHotKey.Register(control, hotkey, callBack);
-
-            var itemsToRemove = HotKeysList.Where(item => callBack == item.HotKeyHandler).ToList();
-            foreach (var item in itemsToRemove)
-            {
-                HotKeysList.Remove(item);
-            }
-            HotKeysList.Add(new HotKeys() { Hotkey = hotkey, HotKeyHandler = callBack });
+            UnRegister(callBack);
+            Register(hotkey, callBack);
         }
 
     }
