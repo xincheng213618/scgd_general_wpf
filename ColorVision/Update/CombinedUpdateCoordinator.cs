@@ -25,14 +25,15 @@ namespace ColorVision.Update
 
         private static CombinedUpdateWorkflowConfig WorkflowConfig => CombinedUpdateWorkflowConfig.Instance;
 
-        public static async Task StartInteractiveAsync()
+        public static async Task StartInteractiveAsync(CancellationToken cancellationToken = default)
         {
-            await _locker.WaitAsync();
+            await _locker.WaitAsync(cancellationToken);
             try
             {
                 AutoUpdatePlan? applicationPlan = null;
                 CombinedPluginUpdatePlan? pluginPlan = null;
                 UpdatePreviewDialogContext context = CreateCheckingContext();
+                using CancellationTokenSource previewCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
                 UpdatePreviewWindow window = new(context, async currentWindow =>
                 {
@@ -41,7 +42,8 @@ namespace ColorVision.Update
                         (applicationPlan, pluginPlan) = await BuildUpdatePlansAsync(
                             includeApplicationUpdates: true,
                             includePluginUpdates: true,
-                            respectSkippedVersion: false);
+                            respectSkippedVersion: false,
+                            previewCancellation.Token);
 
                         if (currentWindow.IsClosed)
                             return;
@@ -58,6 +60,13 @@ namespace ColorVision.Update
 
                         context.CopyFrom(loadedContext);
                     }
+                    catch (OperationCanceledException)
+                    {
+                        if (!currentWindow.IsClosed)
+                        {
+                            context.IsChecking = false;
+                        }
+                    }
                     catch
                     {
                         if (currentWindow.IsClosed)
@@ -73,6 +82,7 @@ namespace ColorVision.Update
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 };
 
+                window.Closed += (_, _) => previewCancellation.Cancel();
                 window.ShowDialog();
                 await window.InitializationTask;
 
@@ -90,6 +100,10 @@ namespace ColorVision.Update
                 ApplySelectedPluginUpdates(pluginPlan, context);
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
             }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Interactive update check canceled.");
+            }
             catch (Exception ex)
             {
                 log.Error(ex);
@@ -103,7 +117,7 @@ namespace ColorVision.Update
             }
         }
 
-        public static async Task CheckForUpdatesOnStartupAsync()
+        public static async Task CheckForUpdatesOnStartupAsync(CancellationToken cancellationToken = default)
         {
             if (Debugger.IsAttached)
                 return;
@@ -117,7 +131,7 @@ namespace ColorVision.Update
             if (!includeApplicationUpdates && !includePluginUpdates)
                 return;
 
-            await _locker.WaitAsync();
+            await _locker.WaitAsync(cancellationToken);
             try
             {
                 if (WorkflowConfig.IsActive)
@@ -126,7 +140,8 @@ namespace ColorVision.Update
                 (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
                     includeApplicationUpdates,
                     includePluginUpdates,
-                    respectSkippedVersion: true);
+                    respectSkippedVersion: true,
+                    cancellationToken);
 
                 if (!HasUpdates(applicationPlan, pluginPlan))
                     return;
@@ -151,6 +166,10 @@ namespace ColorVision.Update
                 }
 
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Startup update check canceled.");
             }
             catch (Exception ex)
             {
@@ -179,12 +198,12 @@ namespace ColorVision.Update
             }
         }
 
-        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(bool includeApplicationUpdates, bool includePluginUpdates, bool respectSkippedVersion)
+        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(bool includeApplicationUpdates, bool includePluginUpdates, bool respectSkippedVersion, CancellationToken cancellationToken = default)
         {
             AutoUpdatePlan? applicationPlan = null;
             if (includeApplicationUpdates)
             {
-                applicationPlan = await AutoUpdater.GetInstance().GetUpdatePlanAsync();
+                applicationPlan = await AutoUpdater.GetInstance().GetUpdatePlanAsync(cancellationToken);
                 if (respectSkippedVersion && ShouldSkipApplicationPlan(applicationPlan))
                 {
                     applicationPlan = null;
@@ -197,7 +216,7 @@ namespace ColorVision.Update
                 Version? hostVersion = applicationPlan?.LatestVersion ?? AutoUpdater.CurrentVersion;
                 if (hostVersion != null)
                 {
-                    pluginPlan = await MarketplaceManager.GetInstance().BuildCombinedUpdatePlanAsync(hostVersion);
+                    pluginPlan = await MarketplaceManager.GetInstance().BuildCombinedUpdatePlanAsync(hostVersion, cancellationToken);
                 }
             }
 
@@ -260,6 +279,30 @@ namespace ColorVision.Update
         {
             ClearWorkflowState();
             MessageBox.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewPackageDownloadFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        private static void PostToUiThread(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                RunUiAction(action);
+                return;
+            }
+
+            dispatcher.InvokeAsync(() => RunUiAction(action));
+        }
+
+        private static void RunUiAction(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Combined update UI action failed.", ex);
+            }
         }
 
         private static async Task StartPluginUpdateAsync(CombinedPluginUpdatePlan pluginPlan, bool showNoUpdatesMessage)
@@ -360,16 +403,16 @@ namespace ColorVision.Update
                 if (!readyToFinalize)
                     return;
 
-                Application.Current?.Dispatcher.Invoke(() =>
+                if (failed || orderedApplicationPaths == null || orderedPluginPaths == null)
                 {
-                    if (failed || orderedApplicationPaths == null || orderedPluginPaths == null)
+                    PostToUiThread(() =>
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewCombinedPackageIncomplete, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
+                    });
+                    return;
+                }
 
-                    AutoUpdater.RestartIsIncrementApplication(orderedApplicationPaths, orderedPluginPaths);
-                });
+                AutoUpdater.RestartIsIncrementApplication(orderedApplicationPaths, orderedPluginPaths);
             }
 
             if (applicationPackagesToDownload.Count == 0 && pluginsToDownload.Count == 0)

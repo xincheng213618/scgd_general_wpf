@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Linq;
@@ -104,30 +105,66 @@ namespace ColorVision.Update
                 else
                 {
                     log.Error($"Download failed via IDownloadService: {downloadUrl}");
-                    Application.Current?.Dispatcher.Invoke(() => downloadFailedAction?.Invoke());
+                    PostToUiThread(() => downloadFailedAction?.Invoke());
                 }
             };
             DownloadWindow.ShowInstance();
             Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, DownloadPath, "1:1", taskCallback);
         }
 
-        public async Task ForceUpdate()
+        public async Task ForceUpdate(CancellationToken cancellationToken = default)
         {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
             if (LatestVersion == new Version()) return;
-            Application.Current.Dispatcher.Invoke(() =>
+            await InvokeOnUiThreadAsync(() =>
             {
                 Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
             });
         }
 
-        public async Task CheckAndUpdateV1(bool detection = true,bool skipped =false)
+        private static Task InvokeOnUiThreadAsync(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(action).Task;
+        }
+
+        private static void PostToUiThread(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                RunUiAction(action);
+                return;
+            }
+
+            dispatcher.InvokeAsync(() => RunUiAction(action));
+        }
+
+        private static void RunUiAction(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                log.Error("AutoUpdater UI action failed.", ex);
+            }
+        }
+
+        public async Task CheckAndUpdateV1(bool detection = true, bool skipped = false, CancellationToken cancellationToken = default)
         {
             // 获取本地版本
             try
             {
                 // 获取服务器版本
-                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
                 log.Info(LatestVersion);
                 if (LatestVersion == new Version()) return;
 
@@ -168,7 +205,7 @@ namespace ColorVision.Update
 
 
 
-                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
+                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl, cancellationToken);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);
                     string msg = string.Empty;
@@ -183,7 +220,7 @@ namespace ColorVision.Update
                         msg = $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}{ColorVision.Properties.Resources.ClickYesToUpdateNow}";
                     }
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    await InvokeOnUiThreadAsync(() =>
                     {
                         MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), msg, $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
                         if (result == MessageBoxResult.Yes)
@@ -201,12 +238,17 @@ namespace ColorVision.Update
                 {
                     if (detection)
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        await InvokeOnUiThreadAsync(() =>
                         {
                             MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, Version?.ToString() ?? string.Empty, MessageBoxButton.OK);
                         });
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("CheckAndUpdateV1 canceled.");
+                throw;
             }
             catch (Exception ex)
             {
@@ -217,13 +259,13 @@ namespace ColorVision.Update
         }
 
 
-        public async Task CheckAndUpdate(bool detection = true,bool IsIncrement = false)
+        public async Task CheckAndUpdate(bool detection = true, bool IsIncrement = false, CancellationToken cancellationToken = default)
         {
             // 获取本地版本
             try
             {
                 // 获取服务器版本
-                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
                 if (LatestVersion == new Version()) return;
 
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -234,7 +276,7 @@ namespace ColorVision.Update
                         LatestVersion = new Version(LatestVersion.Major, LatestVersion.Minor, LatestVersion.Build + 1, 1);
                     }
 
-                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
+                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl, cancellationToken);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG??string.Empty, versionPattern, RegexOptions.Singleline);
                     if (match.Success)
@@ -242,7 +284,7 @@ namespace ColorVision.Update
                         // 如果找到匹配项，提取变更日志
                         string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
 
-                        Application.Current.Dispatcher.Invoke(() =>
+                        await InvokeOnUiThreadAsync(() =>
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
@@ -252,7 +294,7 @@ namespace ColorVision.Update
                     }
                     else
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        await InvokeOnUiThreadAsync(() =>
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
@@ -263,13 +305,18 @@ namespace ColorVision.Update
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    await InvokeOnUiThreadAsync(() =>
                     {
                         if (detection)
                             MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("CheckAndUpdate canceled.");
+                throw;
             }
             catch (Exception ex)
             {
@@ -278,7 +325,7 @@ namespace ColorVision.Update
             }
         }
 
-        public static async Task<string?> GetChangeLog(string url)
+        public static async Task<string?> GetChangeLog(string url, CancellationToken cancellationToken = default)
         {
             string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
@@ -291,9 +338,13 @@ namespace ColorVision.Update
             {
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
                 ApplyAuthorizationHeader(request);
-                using HttpResponseMessage response = await _metadataClient.SendAsync(request);
+                using HttpResponseMessage response = await _metadataClient.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
-                versionString = await response.Content.ReadAsStringAsync();
+                versionString = await response.Content.ReadAsStringAsync(cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (HttpRequestException ex)
             {
@@ -317,7 +368,7 @@ namespace ColorVision.Update
 
 
 
-        public static async Task<Version> GetLatestVersionNumber(string url)
+        public static async Task<Version> GetLatestVersionNumber(string url, CancellationToken cancellationToken = default)
         {
             string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
@@ -330,10 +381,14 @@ namespace ColorVision.Update
             {
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
                 ApplyAuthorizationHeader(request);
-                using HttpResponseMessage response = await _metadataClient.SendAsync(request);
+                using HttpResponseMessage response = await _metadataClient.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
-                string payload = await response.Content.ReadAsStringAsync();
+                string payload = await response.Content.ReadAsStringAsync(cancellationToken);
                 versionString = ExtractVersionString(payload);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (HttpRequestException ex)
             {
@@ -360,9 +415,9 @@ namespace ColorVision.Update
             return new Version(versionString.Trim());
         }
 
-        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync()
+        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync(CancellationToken cancellationToken = default)
         {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
             if (LatestVersion == new Version())
                 return null;
 
@@ -450,17 +505,17 @@ namespace ColorVision.Update
                 if (!readyToFinalize)
                     return;
 
-                Application.Current?.Dispatcher.Invoke(() =>
+                if (failed || orderedPaths == null)
                 {
-                    if (failed || orderedPaths == null)
+                    PostToUiThread(() =>
                     {
                         downloadFailedAction?.Invoke();
                         MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resources.UpdateFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
+                    });
+                    return;
+                }
 
-                    UpdateIncrementalApplications(orderedPaths);
-                });
+                UpdateIncrementalApplications(orderedPaths);
             }
 
             DownloadWindow.ShowInstance();
@@ -495,11 +550,8 @@ namespace ColorVision.Update
 
         private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ConfigHandler.GetInstance().SaveConfigs();
-                RestartIsIncrementApplication(downloadPaths);
-            });
+            ConfigHandler.GetInstance().SaveConfigs();
+            RestartIsIncrementApplication(downloadPaths);
         }
 
         private static List<Version> BuildIncrementalUpdateChain(Version currentVersion, Version latestVersion)
@@ -582,19 +634,16 @@ namespace ColorVision.Update
 
         private static void UpdateApplication(string downloadPath, bool isIncrement)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ConfigHandler.GetInstance().SaveConfigs();
+            ConfigHandler.GetInstance().SaveConfigs();
 
-                if (isIncrement)
-                {
-                    RestartIsIncrementApplication(downloadPath);
-                }
-                else
-                {
-                    RestartApplication(downloadPath);
-                }
-            });
+            if (isIncrement)
+            {
+                RestartIsIncrementApplication(downloadPath);
+            }
+            else
+            {
+                RestartApplication(downloadPath);
+            }
         }
 
 

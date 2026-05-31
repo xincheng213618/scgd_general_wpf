@@ -267,18 +267,18 @@ namespace ColorVision.UI.Desktop.Marketplace
         public bool CanGoNext => !IsLoading && TotalPages > 0 && Page < TotalPages;
         public string PageDisplayText => $"{Resources.Page} {Math.Max(Page, 1)}/{Math.Max(TotalPages, 1)}";
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             if (_isInitialized)
                 return;
 
             _isInitialized = true;
-            await RefreshAsync(forceReload: true);
+            await RefreshAsync(forceReload: true, cancellationToken);
         }
 
-        public Task RefreshAsync(bool forceReload = false)
+        public Task RefreshAsync(bool forceReload = false, CancellationToken cancellationToken = default)
         {
-            return LoadPageAsync(forceReload, CancellationToken.None);
+            return LoadPageAsync(forceReload, cancellationToken);
         }
 
         private void QueueRefresh(bool resetPage, int debounceMilliseconds)

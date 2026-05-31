@@ -47,6 +47,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 using var response = await _httpClient.GetAsync($"{baseUrl}/api/plugins/categories", cancellationToken);
                 return response.IsSuccessStatusCode;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch
             {
                 return false;
@@ -81,6 +85,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 string json = await response.Content.ReadAsStringAsync(cancellationToken);
                 return JsonConvert.DeserializeObject<MarketplacePluginDetail>(json);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 log.Debug($"GetPluginDetailAsync failed for {pluginId}: {ex.Message}");
@@ -99,6 +107,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 response.EnsureSuccessStatusCode();
                 string version = await response.Content.ReadAsStringAsync(cancellationToken);
                 return version?.Trim();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -131,6 +143,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
                 return result;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 log.Debug($"BatchVersionCheckAsync failed: {ex.Message}");
@@ -154,6 +170,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 response.EnsureSuccessStatusCode();
                 string json = await response.Content.ReadAsStringAsync(cancellationToken);
                 return JsonConvert.DeserializeObject<List<string>>(json) ?? new List<string>();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

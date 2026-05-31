@@ -36,7 +36,8 @@ namespace ColorVision.UI.Desktop.Marketplace
 
     public interface IMarketplacePackageDownloader
     {
-        void AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName);
+        DownloadTask AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName);
+        void CancelDownload(DownloadTask task);
     }
 
     public interface IMarketplacePackageInstaller
@@ -86,9 +87,14 @@ namespace ColorVision.UI.Desktop.Marketplace
 
     internal sealed class MarketplacePackageDownloaderAdapter : IMarketplacePackageDownloader
     {
-        public void AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName)
+        public DownloadTask AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName)
         {
-            Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDirectory, authorization, onCompleted, fileName);
+            return Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDirectory, authorization, onCompleted, fileName);
+        }
+
+        public void CancelDownload(DownloadTask task)
+        {
+            Aria2cDownloadManager.GetInstance().CancelDownload(task);
         }
     }
 
@@ -102,6 +108,8 @@ namespace ColorVision.UI.Desktop.Marketplace
 
     internal sealed class MarketplacePackageUiAdapter : IMarketplacePackageUi
     {
+        private static readonly ILog AdapterLog = LogManager.GetLogger(typeof(MarketplacePackageUiAdapter));
+
         public string DownloadDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
         public string? Authorization => DownloadFileConfig.Instance.Authorization;
@@ -128,19 +136,32 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private static void RunOnUiThread(Action action)
         {
-            if (Application.Current?.Dispatcher == null)
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
             {
                 action();
                 return;
             }
 
-            if (Application.Current.Dispatcher.CheckAccess())
+            if (dispatcher.CheckAccess())
             {
                 action();
                 return;
             }
 
-            Application.Current.Dispatcher.Invoke(action);
+            dispatcher.InvokeAsync(() => RunSafely(action, AdapterLog));
+        }
+
+        private static void RunSafely(Action action, ILog logger)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Marketplace UI action failed.", ex);
+            }
         }
     }
 
@@ -190,11 +211,17 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (string.IsNullOrWhiteSpace(pluginId))
                 return null;
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
                 string? version = await _client.GetLatestVersionAsync(pluginId, cancellationToken).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(version))
                     return version.Trim();
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -217,6 +244,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 string legacyVersion = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 return string.IsNullOrWhiteSpace(legacyVersion) ? null : legacyVersion.Trim();
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 log.Debug($"ResolveLatestVersionAsync legacy fallback failed for {pluginId}: {ex.Message}");
@@ -229,6 +260,8 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (string.IsNullOrWhiteSpace(pluginId) || string.IsNullOrWhiteSpace(version))
                 return null;
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
                 MarketplacePluginDetail? detail = await _client.GetPluginDetailAsync(pluginId, cancellationToken).ConfigureAwait(false);
@@ -236,6 +269,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                     .Concat(detail.ArchivedVersions)
                     .FirstOrDefault(item => string.Equals(item.Version, version, StringComparison.OrdinalIgnoreCase))
                     ?.FileHash;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -247,6 +284,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public async Task<string?> EnsurePackageAvailableAsync(MarketplacePackageRequest request, bool showFailureDialog = true, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(request);
+            cancellationToken.ThrowIfCancellationRequested();
             Directory.CreateDirectory(_ui.DownloadDirectory);
 
             string? existingFile = _client.GetExistingFileIfValid(_ui.DownloadDirectory, request.PluginId, request.Version, request.ExpectedHash);
@@ -256,12 +294,14 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return existingFile;
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             _ui.ShowDownloadWindow();
             return await StartDownloadAsync(request, showFailureDialog, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<string>> EnsurePackagesAvailableAsync(IEnumerable<MarketplacePackageRequest> requests, bool showFailureDialog = false, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             List<MarketplacePackageRequest> distinctRequests = requests
                 .Where(item => !string.IsNullOrWhiteSpace(item.PluginId) && !string.IsNullOrWhiteSpace(item.Version))
                 .GroupBy(item => $"{item.PluginId}|{item.Version}", StringComparer.OrdinalIgnoreCase)
@@ -277,6 +317,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             List<MarketplacePackageRequest> missingRequests = new();
             foreach (MarketplacePackageRequest request in distinctRequests)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string? existingFile = _client.GetExistingFileIfValid(_ui.DownloadDirectory, request.PluginId, request.Version, request.ExpectedHash);
                 if (existingFile != null)
                 {
@@ -324,27 +365,33 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (string.IsNullOrWhiteSpace(packagePath))
                 return false;
 
+            cancellationToken.ThrowIfCancellationRequested();
             _installer.Install(restartArguments, packagePath);
             return true;
         }
 
-        public void StartBackgroundBatchInstall(IEnumerable<MarketplacePackageRequest> requests, string? restartArguments = null, Action? onEmpty = null)
+        public void StartBackgroundBatchInstall(IEnumerable<MarketplacePackageRequest> requests, string? restartArguments = null, Action? onEmpty = null, CancellationToken cancellationToken = default)
         {
-            _ = StartBackgroundBatchInstallCoreAsync(requests, restartArguments, onEmpty);
+            _ = StartBackgroundBatchInstallCoreAsync(requests, restartArguments, onEmpty, cancellationToken);
         }
 
-        private async Task StartBackgroundBatchInstallCoreAsync(IEnumerable<MarketplacePackageRequest> requests, string? restartArguments, Action? onEmpty)
+        private async Task StartBackgroundBatchInstallCoreAsync(IEnumerable<MarketplacePackageRequest> requests, string? restartArguments, Action? onEmpty, CancellationToken cancellationToken)
         {
             try
             {
-                IReadOnlyList<string> packagePaths = await EnsurePackagesAvailableAsync(requests).ConfigureAwait(false);
+                IReadOnlyList<string> packagePaths = await EnsurePackagesAvailableAsync(requests, cancellationToken: cancellationToken).ConfigureAwait(false);
                 if (packagePaths.Count == 0)
                 {
                     RunOnUIThread(() => onEmpty?.Invoke());
                     return;
                 }
 
+                cancellationToken.ThrowIfCancellationRequested();
                 _installer.Install(restartArguments, packagePaths.ToArray());
+            }
+            catch (OperationCanceledException)
+            {
+                log.Info("Marketplace background batch install canceled.");
             }
             catch (Exception ex)
             {
@@ -358,56 +405,112 @@ namespace ColorVision.UI.Desktop.Marketplace
             string downloadUrl = _client.GetDownloadUrl(request.PluginId, request.Version);
             string fileName = $"{request.PluginId}-{request.Version}.cvxp";
             var completionSource = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            DownloadTask? downloadTask = null;
 
-            using CancellationTokenRegistration registration = cancellationToken.Register(() => completionSource.TrySetCanceled(cancellationToken));
-
-            _downloader.AddDownload(downloadUrl, _ui.DownloadDirectory, _ui.Authorization, task =>
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
-                if (task.Status != DownloadStatus.Completed)
+                try
                 {
-                    log.Error($"Marketplace package download failed for {request.PluginId} v{request.Version}: {task.ErrorMessage}");
-                    if (showFailureDialog)
+                    if (downloadTask != null)
                     {
-                        _ui.ShowWarning(task.ErrorMessage ?? Resources.MarketplaceLoadFailed, Resources.PluginManagerWindow);
+                        _downloader.CancelDownload(downloadTask);
                     }
-
-                    completionSource.TrySetResult(null);
-                    return;
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Cancel marketplace download failed for {request.PluginId} v{request.Version}: {ex.Message}");
                 }
 
-                if (!_client.VerifyFileHash(task.SavePath, request.ExpectedHash))
+                completionSource.TrySetCanceled(cancellationToken);
+            });
+
+            try
+            {
+                downloadTask = _downloader.AddDownload(downloadUrl, _ui.DownloadDirectory, _ui.Authorization, task =>
                 {
-                    log.Error($"Marketplace package hash verification failed for {request.PluginId} v{request.Version}.");
-                    if (showFailureDialog)
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        _ui.ShowError(string.Format(null, DownloadVerificationFailedFormat, request.PluginId, request.Version), Resources.PluginManagerWindow);
+                        completionSource.TrySetCanceled(cancellationToken);
+                        return;
                     }
 
-                    completionSource.TrySetResult(null);
-                    return;
+                    if (task.Status != DownloadStatus.Completed)
+                    {
+                        log.Error($"Marketplace package download failed for {request.PluginId} v{request.Version}: {task.ErrorMessage}");
+                        if (showFailureDialog)
+                        {
+                            _ui.ShowWarning(task.ErrorMessage ?? Resources.MarketplaceLoadFailed, Resources.PluginManagerWindow);
+                        }
+
+                        completionSource.TrySetResult(null);
+                        return;
+                    }
+
+                    if (!_client.VerifyFileHash(task.SavePath, request.ExpectedHash))
+                    {
+                        log.Error($"Marketplace package hash verification failed for {request.PluginId} v{request.Version}.");
+                        if (showFailureDialog)
+                        {
+                            _ui.ShowError(string.Format(null, DownloadVerificationFailedFormat, request.PluginId, request.Version), Resources.PluginManagerWindow);
+                        }
+
+                        completionSource.TrySetResult(null);
+                        return;
+                    }
+
+                    completionSource.TrySetResult(task.SavePath);
+                }, fileName);
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    _downloader.CancelDownload(downloadTask);
+                    completionSource.TrySetCanceled(cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                completionSource.TrySetCanceled(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Failed to start marketplace package download for {request.PluginId} v{request.Version}.", ex);
+                if (showFailureDialog)
+                {
+                    _ui.ShowWarning(ex.Message, Resources.PluginManagerWindow);
                 }
 
-                completionSource.TrySetResult(task.SavePath);
-            }, fileName);
+                completionSource.TrySetResult(null);
+            }
 
             return await completionSource.Task.ConfigureAwait(false);
         }
 
         private static void RunOnUIThread(Action action)
         {
-            if (Application.Current?.Dispatcher == null)
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
             {
                 action();
                 return;
             }
 
-            if (Application.Current.Dispatcher.CheckAccess())
+            if (dispatcher.CheckAccess())
             {
                 action();
                 return;
             }
 
-            Application.Current.Dispatcher.Invoke(action);
+            dispatcher.InvokeAsync(() =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Marketplace UI callback failed.", ex);
+                }
+            });
         }
     }
 }

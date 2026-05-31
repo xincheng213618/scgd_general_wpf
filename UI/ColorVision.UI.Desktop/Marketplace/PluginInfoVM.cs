@@ -8,6 +8,7 @@ using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -63,6 +64,9 @@ namespace ColorVision.UI.Desktop.Marketplace
         public Visibility OpenProjectUrlVisibility => Visibility.Collapsed;
         public string PrimaryActionText => Resources.Update;
 
+        public bool IsBusy { get => _isBusy; private set { _isBusy = value; OnPropertyChanged(); RaiseUpdateCommandCanExecuteChanged(); } }
+        private bool _isBusy;
+
         public PluginInfo PluginInfo { get; set; }
 
 
@@ -77,6 +81,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 OnPropertyChanged(nameof(UpdateBadgeVisibility));
                 OnPropertyChanged(nameof(UpdateBadgeText));
                 OnPropertyChanged(nameof(PrimaryActionVisibility));
+                RaiseUpdateCommandCanExecuteChanged();
             }
         }
         private Version _LastVersion;
@@ -104,14 +109,14 @@ namespace ColorVision.UI.Desktop.Marketplace
             Icon = pluginInfo.Icon ?? new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
 
             DeleteCommand = new RelayCommand(a => Delete());
-            UpdateCommand = new AsyncRelayCommand(_ => UpdateAsync(), logger: log);
+            UpdateCommand = new AsyncRelayCommand(_ => UpdateAsync(), _ => !IsBusy && HasUpdate, logger: log);
             OpenLocalPathCommand = new RelayCommand(a => OpenLocalPath());
             ExtractPluginCommand = new RelayCommand(a => ExtractPlugin());
             ContextMenu = new ContextMenu();
 
             if (PluginInfo.Enabled && !skipIndividualCheck)
             {
-                Task.Run(CheckVersionAsync);
+                _ = RunInitialVersionCheckAsync();
             }
 
             ContextMenu = new ContextMenu();
@@ -122,6 +127,30 @@ namespace ColorVision.UI.Desktop.Marketplace
 
 
 
+        }
+
+        private void RaiseUpdateCommandCanExecuteChanged()
+        {
+            if (UpdateCommand is AsyncRelayCommand command)
+            {
+                command.RaiseCanExecuteChanged();
+            }
+        }
+
+        private async Task RunInitialVersionCheckAsync()
+        {
+            try
+            {
+                await CheckVersionAsync().ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug($"Initial version check canceled for {PackageName}.");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Initial version check failed for {PackageName}.", ex);
+            }
         }
 
         /// <summary>
@@ -193,34 +222,22 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public async Task CheckVersionAsync()
+        public async Task CheckVersionAsync(CancellationToken cancellationToken = default)
         {
-            // Try marketplace API first
             try
             {
-                var client = MarketplaceClient.GetInstance();
-                string? version = await client.GetLatestVersionAsync(PackageName);
+                cancellationToken.ThrowIfCancellationRequested();
+                string? version = string.IsNullOrWhiteSpace(PackageName)
+                    ? null
+                    : await _packageDownloadService.ResolveLatestVersionAsync(PackageName, cancellationToken).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(version))
                 {
                     LastVersion = new Version(version.Trim());
-                    return;
                 }
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
             {
-                log.Debug($"Marketplace API check failed for {PackageName}, falling back to legacy: {ex.Message}");
-            }
-
-            // Fallback to legacy LATEST_RELEASE file
-            string LatestReleaseUrl = MarketplaceConfig.BuildLegacyPluginUrl($"{PackageName}/LATEST_RELEASE");
-            try
-            {
-                using var httpClient = new System.Net.Http.HttpClient();
-                var byteArray = System.Text.Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-                string versionString = await httpClient.GetStringAsync(LatestReleaseUrl);
-                if (!string.IsNullOrWhiteSpace(versionString))
-                    LastVersion = new Version(versionString.Trim());
+                throw;
             }
             catch (Exception ex)
             {
@@ -229,20 +246,38 @@ namespace ColorVision.UI.Desktop.Marketplace
         }
 
 
-        public async Task UpdateAsync()
+        public async Task UpdateAsync(CancellationToken cancellationToken = default)
         {
             if (!HasUpdate || LastVersion == null) return;
+            if (IsBusy) return;
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmUpdate, Name, MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
 
-            string? expectedHash = await _packageDownloadService.ResolveExpectedHashAsync(PackageName!, LastVersion.ToString());
-            await _packageDownloadService.InstallPackageAsync(new MarketplacePackageRequest
+            IsBusy = true;
+            try
             {
-                PluginId = PackageName!,
-                Version = LastVersion.ToString(),
-                ExpectedHash = expectedHash,
-            });
+                cancellationToken.ThrowIfCancellationRequested();
+                string? expectedHash = await _packageDownloadService.ResolveExpectedHashAsync(PackageName!, LastVersion.ToString(), cancellationToken);
+                await _packageDownloadService.InstallPackageAsync(new MarketplacePackageRequest
+                {
+                    PluginId = PackageName!,
+                    Version = LastVersion.ToString(),
+                    ExpectedHash = expectedHash,
+                }, cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Info($"Plugin update canceled for {PackageName}.");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Plugin update failed for {PackageName}.", ex);
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
 

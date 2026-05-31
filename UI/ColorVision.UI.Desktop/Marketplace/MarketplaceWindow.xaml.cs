@@ -8,6 +8,7 @@ using ColorVision.UI.Menus;
 using log4net;
 using System.ComponentModel;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -32,6 +33,9 @@ namespace ColorVision.UI.Desktop.Marketplace
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceWindow));
         private MarketplaceManager? _manager;
         private bool _isRefreshingVersions;
+        private CancellationTokenSource? _windowCancellation = new();
+        private CancellationTokenSource? _selectionCancellation;
+        private CancellationTokenSource? _refreshCancellation;
 
         public MarketplaceWindow()
         {
@@ -44,6 +48,11 @@ namespace ColorVision.UI.Desktop.Marketplace
                 {
                     _manager.PropertyChanged -= Manager_PropertyChanged;
                 }
+
+                _manager?.CancelActiveOperations();
+                CancelAndDispose(ref _selectionCancellation);
+                CancelAndDispose(ref _refreshCancellation);
+                CancelAndDispose(ref _windowCancellation);
             };
         }
 
@@ -74,16 +83,35 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (_manager == null)
                 return;
 
-            _manager.IsMarketplaceTabActive = MainTabControl.SelectedIndex == 1;
-            IsRefreshChangedX = false;
-            IsRefreshChangedY = false;
+            CancellationTokenSource operationCancellation = CreateLinkedOperationCancellation(ref _selectionCancellation);
+            CancellationToken cancellationToken = operationCancellation.Token;
 
-            if (_manager.IsMarketplaceTabActive)
+            try
             {
-                await _manager.EnsureMarketplaceCatalogLoadedAsync();
-            }
+                _manager.IsMarketplaceTabActive = MainTabControl.SelectedIndex == 1;
+                IsRefreshChangedX = false;
+                IsRefreshChangedY = false;
 
-            await RefreshSelectedDetailAsync();
+                if (_manager.IsMarketplaceTabActive)
+                {
+                    await _manager.EnsureMarketplaceCatalogLoadedAsync(cancellationToken);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await RefreshSelectedDetailAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace tab selection refresh canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Marketplace tab selection refresh failed.", ex);
+            }
+            finally
+            {
+                ClearOperationCancellation(ref _selectionCancellation, operationCancellation);
+            }
         }
 
         private async void RefreshVersionsButton_Click(object sender, RoutedEventArgs e)
@@ -91,32 +119,40 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (_isRefreshingVersions)
                 return;
 
+            CancellationTokenSource operationCancellation = CreateLinkedOperationCancellation(ref _refreshCancellation);
+            CancellationToken cancellationToken = operationCancellation.Token;
+
             _isRefreshingVersions = true;
             if (sender is Button button)
                 button.IsEnabled = false;
 
             try
             {
-                await MarketplaceManager.GetInstance().RefreshVersionsAsync();
+                await MarketplaceManager.GetInstance().RefreshVersionsAsync(cancellationToken);
 
                 if (_manager?.IsMarketplaceTabActive == true)
                 {
-                    await _manager.RefreshMarketplaceCatalogAsync();
+                    await _manager.RefreshMarketplaceCatalogAsync(cancellationToken);
                 }
                 else
                 {
-                    await RefreshSelectedDetailAsync();
+                    await RefreshSelectedDetailAsync(cancellationToken);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace version refresh canceled.");
             }
             catch (Exception ex)
             {
-                log.Debug($"RefreshVersionsButton_Click failed: {ex.Message}");
+                log.Error("RefreshVersionsButton_Click failed.", ex);
             }
             finally
             {
                 if (sender is Button button2)
                     button2.IsEnabled = true;
                 _isRefreshingVersions = false;
+                ClearOperationCancellation(ref _refreshCancellation, operationCancellation);
             }
         }
 
@@ -125,19 +161,20 @@ namespace ColorVision.UI.Desktop.Marketplace
             return MarketplaceMarkdownPresenter.RenderAsync(webView, markdown, emptyMessage);
         }
 
-        private async Task RefreshSelectedDetailAsync()
+        private async Task RefreshSelectedDetailAsync(CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             switch (BorderContent.DataContext)
             {
                 case PluginInfoVM pluginInfoVM:
                     SetDetailPanelMode(DetailPanelMode.Installed);
                     MarketplaceDetailScrollViewer.DataContext = null;
-                    await RefreshInstalledPluginDetailAsync(pluginInfoVM);
+                    await RefreshInstalledPluginDetailAsync(pluginInfoVM, cancellationToken);
                     break;
                 case MarketplaceDetailContext marketplaceDetail:
                     SetDetailPanelMode(DetailPanelMode.Marketplace);
                     MarketplaceDetailScrollViewer.DataContext = marketplaceDetail;
-                    await RefreshMarketplaceDetailAsync(marketplaceDetail);
+                    await RefreshMarketplaceDetailAsync(marketplaceDetail, cancellationToken);
                     break;
                 default:
                     SetDetailPanelMode(DetailPanelMode.None);
@@ -148,18 +185,20 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        private async Task RefreshMarketplaceDetailAsync(MarketplaceDetailContext context)
+        private async Task RefreshMarketplaceDetailAsync(MarketplaceDetailContext context, CancellationToken cancellationToken)
         {
             if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
             {
                 IsRefreshChangedX = true;
                 await RenderMarkdownAsync(webViewReadMe, context.Readme, DesktopResources.MarketplaceReadmeEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
             {
                 IsRefreshChangedY = true;
                 await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 3)
@@ -168,18 +207,20 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        private async Task RefreshInstalledPluginDetailAsync(PluginInfoVM pluginInfoVM)
+        private async Task RefreshInstalledPluginDetailAsync(PluginInfoVM pluginInfoVM, CancellationToken cancellationToken)
         {
             if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
             {
                 IsRefreshChangedX = true;
                 await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README, DesktopResources.MarketplaceReadmeEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
             {
                 IsRefreshChangedY = true;
                 await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 2)
@@ -308,7 +349,18 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             if (e.Source != TabControl1) return;
 
-            await RefreshSelectedDetailAsync();
+            try
+            {
+                await RefreshSelectedDetailAsync(_windowCancellation?.Token ?? CancellationToken.None);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace detail tab refresh canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Marketplace detail tab refresh failed.", ex);
+            }
         }
 
         private async void Manager_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -318,13 +370,58 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             IsRefreshChangedX = false;
             IsRefreshChangedY = false;
-            await RefreshSelectedDetailAsync();
+            try
+            {
+                await RefreshSelectedDetailAsync(_windowCancellation?.Token ?? CancellationToken.None);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace manager detail refresh canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Marketplace manager detail refresh failed.", ex);
+            }
         }
 
         private void SetDetailPanelMode(DetailPanelMode mode)
         {
             InstalledDetailScrollViewer.Visibility = mode == DetailPanelMode.Installed ? Visibility.Visible : Visibility.Collapsed;
             MarketplaceDetailScrollViewer.Visibility = mode == DetailPanelMode.Marketplace ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private CancellationTokenSource CreateLinkedOperationCancellation(ref CancellationTokenSource? operationCancellation)
+        {
+            CancelAndDispose(ref operationCancellation);
+            CancellationToken windowToken = _windowCancellation?.Token ?? CancellationToken.None;
+            operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(windowToken);
+            return operationCancellation;
+        }
+
+        private static void ClearOperationCancellation(ref CancellationTokenSource? currentCancellation, CancellationTokenSource operationCancellation)
+        {
+            if (!ReferenceEquals(currentCancellation, operationCancellation))
+                return;
+
+            operationCancellation.Dispose();
+            currentCancellation = null;
+        }
+
+        private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
+        {
+            if (cancellationTokenSource == null)
+                return;
+
+            try
+            {
+                cancellationTokenSource.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = null;
         }
     }
 }
