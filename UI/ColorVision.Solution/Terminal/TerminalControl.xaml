@@ -37,6 +37,7 @@
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
                           Focusable="True"
+                          SizeChanged="TerminalScrollViewer_SizeChanged"
                           PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
                           PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
                           MouseDown="TerminalScrollViewer_MouseDown"

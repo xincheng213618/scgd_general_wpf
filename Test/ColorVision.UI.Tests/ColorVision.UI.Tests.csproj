@@ -7,6 +7,8 @@
     <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <XunitRunnerVisualStudioVersion>3.1.5</XunitRunnerVisualStudioVersion>
+    <VSTestTestAdapterPath>$(NuGetPackageRoot)xunit.runner.visualstudio\$(XunitRunnerVisualStudioVersion)\build\net8.0</VSTestTestAdapterPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +18,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioVersion)">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -27,9 +29,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="$(VSTestTestAdapterPath)\*.dll" CopyToOutputDirectory="PreserveNewest" Visible="False" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\ColorVision\ColorVision.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\..\Engine\ST.Library.UI\ST.Library.UI.csproj" />
   </ItemGroup>
 

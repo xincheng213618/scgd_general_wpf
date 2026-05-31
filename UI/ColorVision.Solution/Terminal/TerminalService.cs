@@ -24,14 +24,21 @@ namespace ColorVision.Solution.Terminal
             _terminalControl = control;
         }
 
+        internal void ClearTerminalControl(TerminalControl control)
+        {
+            if (ReferenceEquals(_terminalControl, control))
+                _terminalControl = null;
+        }
+
         /// <summary>
         /// Run a script file in the terminal panel and activate it.
         /// </summary>
         public void RunScript(string filePath)
         {
-            if (_terminalControl == null) return;
+            var terminalControl = GetActiveTerminalControl();
+            if (terminalControl == null) return;
             ActivatePanel();
-            _terminalControl.RunScript(filePath);
+            terminalControl.RunScript(filePath);
         }
 
         /// <summary>
@@ -39,9 +46,18 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         public void SendCommand(string command)
         {
-            if (_terminalControl == null) return;
+            var terminalControl = GetActiveTerminalControl();
+            if (terminalControl == null) return;
             ActivatePanel();
-            _terminalControl.SendCommand(command);
+            terminalControl.SendCommand(command);
+        }
+
+        private TerminalControl? GetActiveTerminalControl()
+        {
+            if (_terminalControl?.IsDisposed == true)
+                _terminalControl = null;
+
+            return _terminalControl;
         }
 
         private void ActivatePanel()

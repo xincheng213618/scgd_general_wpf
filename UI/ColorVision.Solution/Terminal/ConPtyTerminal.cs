@@ -136,8 +136,12 @@ namespace ColorVision.Solution.Terminal
 
         public void Resize(short cols, short rows)
         {
-            if (_hPC != IntPtr.Zero)
-                ResizePseudoConsole(_hPC, new COORD { X = cols, Y = rows });
+            if (_disposed || _hPC == IntPtr.Zero || cols <= 0 || rows <= 0)
+                return;
+
+            int hr = ResizePseudoConsole(_hPC, new COORD { X = cols, Y = rows });
+            if (hr != 0)
+                log.Debug($"ConPTY resize failed: 0x{hr:X8} ({cols}x{rows})");
         }
 
         public void Kill()
