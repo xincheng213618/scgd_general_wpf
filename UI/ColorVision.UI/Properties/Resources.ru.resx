@@ -124,6 +124,9 @@
   <data name="Language" xml:space="preserve">
     <value>язык пользовательского интерфейса</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>Выберите язык интерфейса. При следовании системе используется системный язык.</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>Автоматически переключать выбранные представления</value>
   </data>
@@ -261,6 +264,15 @@
   </data>
   <data name="SettingsPageLoadFailed" xml:space="preserve">
     <value>Не удалось загрузить страницу настроек</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>Проверять обновления при запуске</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>При запуске проверять обновления основного приложения, плагинов и тем.</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>обновление приложения обновление плагинов обновление темы запуск проверка автообновление check plugin updates startup update</value>
   </data>
   <data name="SettingsSectionBasic" xml:space="preserve">
     <value>Основное</value>
@@ -576,6 +588,9 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>тема</value>
+  </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>Выберите цветовую тему интерфейса приложения.</value>
   </data>
   <data name="MenuTreemapViewer" xml:space="preserve">
     <value>Просмотр Treemap</value>

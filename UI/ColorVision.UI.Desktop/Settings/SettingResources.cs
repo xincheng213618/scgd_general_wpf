@@ -12,6 +12,9 @@ namespace ColorVision.UI.Desktop.Settings
         public static string PageTypeInvalid => GetString("SettingsPageTypeInvalid");
         public static string PageUnavailable => GetString("SettingsPageUnavailable");
         public static string PageLoadFailed => GetString("SettingsPageLoadFailed");
+        public static string StartupCheckUpdates => GetString("SettingsStartupCheckUpdates");
+        public static string StartupCheckUpdatesDescription => GetString("SettingsStartupCheckUpdatesDescription");
+        public static string StartupCheckUpdatesSearchAliases => GetString("SettingsStartupCheckUpdatesSearchAliases");
         public static string SectionBasic => GetString("SettingsSectionBasic");
         public static string SectionSearch => GetString("SettingsSectionSearch");
         public static string SectionFileArchive => GetString("SettingsSectionFileArchive");

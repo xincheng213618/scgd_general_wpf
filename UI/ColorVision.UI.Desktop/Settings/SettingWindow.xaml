@@ -176,9 +176,8 @@
             <ScrollViewer Grid.Row="1"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Grid MaxWidth="760"
-                      HorizontalAlignment="Left"
-                      Margin="28,20,28,28">
+                <Grid HorizontalAlignment="Stretch"
+                      Margin="28,16,28,28">
                     <StackPanel x:Name="SettingsContentPanel"/>
                 </Grid>
             </ScrollViewer>

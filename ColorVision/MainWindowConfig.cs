@@ -30,6 +30,7 @@ namespace ColorVision
         private bool _IsFull;
 
         [DisplayName("ConfigEnableDesktopPet")]
+        [Description("ConfigEnableDesktopPetDescription")]
         public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; OnPropertyChanged(); FloatingBall(); } }
         private bool _OpenFloatingBall;
 
@@ -60,6 +61,7 @@ namespace ColorVision
 
         [JsonIgnore]
         [DisplayName("Win10ClassicDesktopMenu")]
+        [Description("Win10ClassicDesktopMenuDescription")]
         public bool IsWindows10ContextMenu { get => !Tool.IsWindows11ContextMenu(); set
             {
                 if (value != Tool.IsWindows11ContextMenu()) return;

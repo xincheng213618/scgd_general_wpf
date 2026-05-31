@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Démarrer la disposition de l’interface de récupération</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>Restaure au démarrage la position et la taille de la fenêtre principale avant sa dernière fermeture.</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Une version de logiciel</value>
   </data>
@@ -260,6 +263,9 @@
   </data>
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Menu classique du bureau Windows 10</value>
+  </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>Utilise le menu contextuel classique du bureau sur les systèmes pris en charge.</value>
   </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>Enregistrer la configuration</value>
@@ -722,6 +728,9 @@
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>Activer l'animal de compagnie du bureau</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>Affiche ou masque le composant d'animal de compagnie du bureau.</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
@@ -1289,5 +1298,8 @@
   </data>
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>Allow Multiple Instances</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>Autorise l'exécution simultanée de plusieurs instances de ColorVision.</value>
   </data>
 </root>

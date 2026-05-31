@@ -25,6 +25,7 @@ namespace ColorVision
     {
         [ConfigSetting]
         [DisplayName("AllowMultipleInstances")]
+        [Description("AllowMultipleInstancesDescription")]
         public bool IsMute { get => _IsMute; set { _IsMute = value; OnPropertyChanged(); } }
         private bool _IsMute = true;
     }

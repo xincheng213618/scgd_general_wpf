@@ -17,6 +17,7 @@ namespace ColorVision.SocketProtocol
         public event EventHandler<bool> ServerEnabledChanged;
 
         [DisplayName("IsServerEnabled")]
+        [Description("IsServerEnabledDescription")]
         public bool IsServerEnabled  { get => _IsServerEnabled; set { _IsServerEnabled = value; OnPropertyChanged(); ServerEnabledChanged?.Invoke(this, _IsServerEnabled); } }
         private bool _IsServerEnabled;
 
@@ -24,6 +25,7 @@ namespace ColorVision.SocketProtocol
         /// IP地址
         /// </summary>
         [DisplayName("IPAddress")]
+        [Description("IPAddressDescription")]
         public string IPAddress { get => _IPAddress; set { _IPAddress = value; OnPropertyChanged(); } }
         private string _IPAddress = "0.0.0.0";
 
@@ -31,6 +33,7 @@ namespace ColorVision.SocketProtocol
         /// 端口地址
         /// </summary>
         [DisplayName("ServerPort")]
+        [Description("ServerPortDescription")]
         public int ServerPort
         {
             get => _ServerPort; 
@@ -42,11 +45,13 @@ namespace ColorVision.SocketProtocol
         }
         private int _ServerPort = 6666;
 
-        [DisplayName(nameof(SocketBufferSize))] 
+        [DisplayName("SocketBufferSize")]
+        [Description("SocketBufferSizeDescription")]
         public int SocketBufferSize { get => _SocketBufferSize; set { _SocketBufferSize = value; OnPropertyChanged(); } }
         private int _SocketBufferSize = 10240;
 
-        [DisplayName(nameof(SocketPhraseType))]
+        [DisplayName("SocketPhraseType")]
+        [Description("SocketPhraseTypeDescription")]
         public SocketPhraseType SocketPhraseType { get => _SocketPhraseType; set { _SocketPhraseType = value; OnPropertyChanged(); } }
         private SocketPhraseType _SocketPhraseType = SocketPhraseType.Json;
 

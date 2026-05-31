@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>啟動復原介面佈局</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>啟動時恢復主視窗上次關閉前的位置和尺寸。</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>軟體版本</value>
   </data>
@@ -260,6 +263,9 @@
   </data>
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Win10桌面經典選單</value>
+  </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>在支援的系統上使用經典桌面右鍵選單。</value>
   </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>儲存配置</value>
@@ -722,6 +728,9 @@
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>啓用桌面寵物</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>顯示或隱藏桌面寵物元件。</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
@@ -1289,5 +1298,8 @@
   </data>
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>允許程序多開</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>允許同時啟動多個 ColorVision 實例。</value>
   </data>
 </root>

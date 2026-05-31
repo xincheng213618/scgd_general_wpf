@@ -124,6 +124,9 @@
   <data name="Language" xml:space="preserve">
     <value>言語</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>インターフェイスの表示言語を選択します。システムに従う場合はシステム言語を使用します。</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>選択したビューを自動的に切り替える</value>
   </data>
@@ -261,6 +264,15 @@
   </data>
   <data name="SettingsPageLoadFailed" xml:space="preserve">
     <value>設定ページの読み込みに失敗しました</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>起動時に更新を確認</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>アプリ起動時に本体、プラグイン、テーマの更新を確認します。</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>プラグイン更新 本体更新 テーマ更新 起動時確認 自動更新 check plugin updates startup update</value>
   </data>
   <data name="SettingsSectionBasic" xml:space="preserve">
     <value>基本</value>
@@ -576,6 +588,9 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>テーマ</value>
+  </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>アプリケーション インターフェイスのカラーテーマを選択します。</value>
   </data>
   <data name="MenuTreemapViewer" xml:space="preserve">
     <value>Treemap ビューアー</value>

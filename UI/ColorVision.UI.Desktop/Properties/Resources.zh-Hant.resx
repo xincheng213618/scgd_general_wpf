@@ -432,6 +432,9 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>檢測插件更新</value>
   </data>
+  <data name="CheckPluginUpdatesDescription" xml:space="preserve">
+    <value>啟動時自動檢查外掛市場是否有可用更新。</value>
+  </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在檢索是否存在附加項目</value>
   </data>

@@ -120,14 +120,38 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>通信プロトコル</value>
   </data>
+  <data name="CommunicationProtocolDescription" xml:space="preserve">
+    <value>ローカル通信サービスの待ち受けアドレス、ポート、データ形式を設定します。</value>
+  </data>
   <data name="ServerPort" xml:space="preserve">
     <value>ポート</value>
+  </data>
+  <data name="ServerPortDescription" xml:space="preserve">
+    <value>Socket サービスが待ち受けるポートです。範囲は 0 から 65535 です。</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
     <value>IPアドレス</value>
   </data>
+  <data name="IPAddressDescription" xml:space="preserve">
+    <value>待ち受けるローカルアドレスです。0.0.0.0 はすべてのネットワークアダプターで待ち受けます。</value>
+  </data>
   <data name="IsServerEnabled" xml:space="preserve">
     <value>サーバーが有効</value>
+  </data>
+  <data name="IsServerEnabledDescription" xml:space="preserve">
+    <value>ローカル Socket 通信サービスを有効または無効にします。</value>
+  </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>Socket バッファサイズ</value>
+  </data>
+  <data name="SocketBufferSizeDescription" xml:space="preserve">
+    <value>1 回の受信処理で使用するバッファサイズです。</value>
+  </data>
+  <data name="SocketPhraseType" xml:space="preserve">
+    <value>メッセージ解析形式</value>
+  </data>
+  <data name="SocketPhraseTypeDescription" xml:space="preserve">
+    <value>通信メッセージに使用する解析形式です。</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>ソケット接続マネージャー</value>

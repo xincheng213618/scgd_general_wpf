@@ -124,6 +124,9 @@
   <data name="Language" xml:space="preserve">
     <value>langue de l'interface utilisateur</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>Sélectionnez la langue d'affichage de l'interface. En mode système, la langue du système est utilisée.</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>Changer automatiquement les vues sélectionnées</value>
   </data>
@@ -261,6 +264,15 @@
   </data>
   <data name="SettingsPageLoadFailed" xml:space="preserve">
     <value>Impossible de charger la page de paramètres</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>Rechercher les mises à jour au démarrage</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>Recherche au démarrage les mises à jour de l'application principale, des plugins et des thèmes.</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>mise à jour application plugin thème démarrage recherche mises à jour automatiques check plugin updates</value>
   </data>
   <data name="SettingsSectionBasic" xml:space="preserve">
     <value>Base</value>
@@ -576,6 +588,9 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>thème</value>
+  </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>Sélectionnez le thème de couleur de l'interface de l'application.</value>
   </data>
   <data name="MenuTreemapViewer" xml:space="preserve">
     <value>Visionneuse Treemap</value>

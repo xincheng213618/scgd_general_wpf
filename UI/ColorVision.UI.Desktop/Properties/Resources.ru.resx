@@ -432,6 +432,9 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>Проверить обновления плагинов</value>
   </data>
+  <data name="CheckPluginUpdatesDescription" xml:space="preserve">
+    <value>Автоматически проверять наличие обновлений в магазине плагинов при запуске.</value>
+  </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Проверка дополнительных проектов</value>
   </data>

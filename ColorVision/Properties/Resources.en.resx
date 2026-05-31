@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Start recovery interface layout</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>Restore the main window position and size from before it was last closed at startup.</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Software Version</value>
   </data>
@@ -260,6 +263,9 @@
   </data>
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Windows 10 desktop classic menu</value>
+  </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>Use the classic desktop context menu on supported systems.</value>
   </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>Save configuration</value>
@@ -722,6 +728,9 @@
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>Enable Desktop Pet</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>Show or hide the desktop pet component.</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
@@ -1289,5 +1298,8 @@
   </data>
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>Allow Multiple Instances</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>Allow multiple ColorVision instances to run at the same time.</value>
   </data>
 </root>

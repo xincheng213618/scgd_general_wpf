@@ -412,6 +412,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 启动时自动检查插件市场是否有可用更新。 的本地化字符串。
+        /// </summary>
+        public static string CheckPluginUpdatesDescription {
+            get {
+                return ResourceManager.GetString("CheckPluginUpdatesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 清理备份文件失败 的本地化字符串。
         /// </summary>
         public static string CleanupBackupFailed {

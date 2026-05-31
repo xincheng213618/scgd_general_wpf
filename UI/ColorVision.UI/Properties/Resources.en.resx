@@ -124,6 +124,9 @@
   <data name="Language" xml:space="preserve">
     <value>Language</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>Select the interface display language. When following the system, the system language is used.</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>Automatically switch selected views</value>
   </data>
@@ -261,6 +264,15 @@
   </data>
   <data name="SettingsPageLoadFailed" xml:space="preserve">
     <value>Failed to load the settings page</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>Check for updates at startup</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>Check whether updates are available for the main application, plugins, and themes when the app starts.</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>application update plugin updates theme update startup check detect updates when software starts check plugin updates</value>
   </data>
   <data name="SettingsSectionBasic" xml:space="preserve">
     <value>Basic</value>
@@ -576,6 +588,9 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>Theme</value>
+  </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>Select the color theme for the application interface.</value>
   </data>
   <data name="SearchEngine" xml:space="preserve">
     <value>Search Engine</value>

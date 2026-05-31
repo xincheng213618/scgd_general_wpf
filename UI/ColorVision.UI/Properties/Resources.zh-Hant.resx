@@ -124,6 +124,9 @@
   <data name="Language" xml:space="preserve">
     <value>語言</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>選擇介面顯示語言，跟隨系統時使用系統語言。</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>自動切換選取視圖</value>
   </data>
@@ -261,6 +264,15 @@
   </data>
   <data name="SettingsPageLoadFailed" xml:space="preserve">
     <value>設定頁載入失敗</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>啟動時檢查更新</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>啟動應用程式時檢查主程式、外掛程式和主題是否有可用更新。</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>外掛程式更新 主程式更新 啟動檢查 軟體啟動時檢查更新 檢查外掛程式更新 自動更新 主題更新</value>
   </data>
   <data name="SettingsSectionBasic" xml:space="preserve">
     <value>基礎</value>
@@ -576,6 +588,9 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>主題</value>
+  </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>選擇應用介面的顏色主題。</value>
   </data>
   <data name="MenuTreemapViewer" xml:space="preserve">
     <value>Treemap 檢視器</value>

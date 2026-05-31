@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>恢复上次退出时窗口的大小和位置</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>启动时恢复主窗口上次关闭前的位置和尺寸。</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>软件版本</value>
   </data>
@@ -260,6 +263,9 @@
   </data>
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Win10桌面经典菜单</value>
+  </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>在支持的系统上使用经典桌面右键菜单。</value>
   </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>保存配置</value>
@@ -722,6 +728,9 @@
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>启用桌面宠物</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>显示或隐藏桌面宠物组件。</value>
   </data>
   <data name="ConfigUseIntegratedMainWindowChrome" xml:space="preserve">
     <value>启用实验性一体化主窗口标题栏</value>
@@ -1292,5 +1301,8 @@
   </data>
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>允许程序多开</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>允许同时启动多个 ColorVision 实例。</value>
   </data>
 </root>

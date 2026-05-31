@@ -432,6 +432,9 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>플러그인 업데이트 확인</value>
   </data>
+  <data name="CheckPluginUpdatesDescription" xml:space="preserve">
+    <value>시작 시 플러그인 마켓플레이스에서 사용 가능한 업데이트가 있는지 자동으로 확인합니다.</value>
+  </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>추가 프로젝트 확인 중</value>
   </data>

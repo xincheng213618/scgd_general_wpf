@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>Восстанавливать положение и размер главного окна при запуске из состояния перед последним закрытием.</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Версия ПО</value>
   </data>
@@ -260,6 +263,9 @@
   </data>
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Классическое меню рабочего стола Windows 10</value>
+  </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>Использовать классическое контекстное меню рабочего стола в поддерживаемых системах.</value>
   </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>Сохранить конфигурацию</value>
@@ -722,6 +728,9 @@
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>Включить рабочего питомца</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>Показать или скрыть компонент рабочего питомца.</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
@@ -1289,5 +1298,8 @@
   </data>
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>Allow Multiple Instances</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>Разрешить одновременный запуск нескольких экземпляров ColorVision.</value>
   </data>
 </root>

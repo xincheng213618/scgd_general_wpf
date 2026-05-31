@@ -24,6 +24,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         /// 
         [ConfigSetting(Order = 999)]
         [DisplayName("CheckPluginUpdates")]
+        [Description("CheckPluginUpdatesDescription")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
     }

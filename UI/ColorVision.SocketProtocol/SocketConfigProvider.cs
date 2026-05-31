@@ -9,7 +9,8 @@ namespace ColorVision.SocketProtocol
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = ColorVision.SocketProtocol.Properties.Resources.CommunicationProtocol,
+                                Name = "CommunicationProtocol",
+                                Description = "CommunicationProtocolDescription",
                                 Order =1,
                                 Type = ConfigSettingType.Class,
                                 Source = SocketConfig.Instance

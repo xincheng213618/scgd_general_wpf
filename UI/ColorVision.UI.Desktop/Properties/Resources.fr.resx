@@ -432,6 +432,9 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>Vérifier les mises à jour des plugins</value>
   </data>
+  <data name="CheckPluginUpdatesDescription" xml:space="preserve">
+    <value>Vérifie automatiquement au démarrage si des mises à jour sont disponibles sur la place de marché des plugins.</value>
+  </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Vérification des projets supplémentaires</value>
   </data>

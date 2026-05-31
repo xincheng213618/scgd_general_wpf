@@ -120,14 +120,38 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>通訊協定</value>
   </data>
+  <data name="CommunicationProtocolDescription" xml:space="preserve">
+    <value>設定本機通訊服務的監聽位址、連接埠和資料格式。</value>
+  </data>
   <data name="ServerPort" xml:space="preserve">
     <value>連接埠</value>
+  </data>
+  <data name="ServerPortDescription" xml:space="preserve">
+    <value>Socket 服務監聽的連接埠，範圍為 0 到 65535。</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
     <value>IP位址</value>
   </data>
+  <data name="IPAddressDescription" xml:space="preserve">
+    <value>服務監聽的本機位址，0.0.0.0 表示監聽所有網路介面卡。</value>
+  </data>
   <data name="IsServerEnabled" xml:space="preserve">
     <value>伺服器啟用狀態</value>
+  </data>
+  <data name="IsServerEnabledDescription" xml:space="preserve">
+    <value>啟用或關閉本機 Socket 通訊服務。</value>
+  </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>Socket 緩衝區大小</value>
+  </data>
+  <data name="SocketBufferSizeDescription" xml:space="preserve">
+    <value>單次接收資料時使用的緩衝區大小。</value>
+  </data>
+  <data name="SocketPhraseType" xml:space="preserve">
+    <value>訊息解析格式</value>
+  </data>
+  <data name="SocketPhraseTypeDescription" xml:space="preserve">
+    <value>通訊訊息的解析格式。</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket 連線管理器</value>

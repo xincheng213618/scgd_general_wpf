@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>起動時に、前回閉じる前のメイン ウィンドウの位置とサイズを復元します。</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>ソフトウェアバージョン</value>
   </data>
@@ -260,6 +263,9 @@
   </data>
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Windows 10 デスクトップのクラシックメニュー</value>
+  </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>サポートされているシステムでクラシックなデスクトップ右クリック メニューを使用します。</value>
   </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>設定を保存</value>
@@ -722,6 +728,9 @@
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>デスクトップペットを有効にする</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>デスクトップ ペット コンポーネントを表示または非表示にします。</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
@@ -1289,5 +1298,8 @@
   </data>
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>Allow Multiple Instances</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>複数の ColorVision インスタンスを同時に起動できるようにします。</value>
   </data>
 </root>

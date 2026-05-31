@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>복구 인터페이스 레이아웃 시작</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>시작 시 마지막으로 닫기 전의 기본 창 위치와 크기를 복원합니다.</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>소프트웨어 버전</value>
   </data>
@@ -260,6 +263,9 @@
   </data>
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Windows 10 데스크톱 클래식 메뉴</value>
+  </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>지원되는 시스템에서 클래식 데스크톱 오른쪽 클릭 메뉴를 사용합니다.</value>
   </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>구성 저장</value>
@@ -722,6 +728,9 @@
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>데스크톱 펫 활성화</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>데스크톱 펫 구성 요소를 표시하거나 숨깁니다.</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
@@ -1289,5 +1298,8 @@
   </data>
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>Allow Multiple Instances</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>여러 ColorVision 인스턴스를 동시에 시작할 수 있도록 허용합니다.</value>
   </data>
 </root>

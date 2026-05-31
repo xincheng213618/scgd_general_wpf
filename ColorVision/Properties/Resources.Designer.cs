@@ -79,6 +79,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 允许同时启动多个 ColorVision 实例。 的本地化字符串。
+        /// </summary>
+        public static string AllowMultipleInstancesDescription {
+            get {
+                return ResourceManager.GetString("AllowMultipleInstancesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 程序关闭 的本地化字符串。
         /// </summary>
         public static string ApplicationExit {
@@ -165,6 +174,15 @@ namespace ColorVision.Properties {
         public static string CheckUpdatesOnStartup {
             get {
                 return ResourceManager.GetString("CheckUpdatesOnStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启动软件时自动检测是否有可用更新。 的本地化字符串。
+        /// </summary>
+        public static string CheckUpdatesOnStartupDescription {
+            get {
+                return ResourceManager.GetString("CheckUpdatesOnStartupDescription", resourceCulture);
             }
         }
         
@@ -318,6 +336,15 @@ namespace ColorVision.Properties {
         public static string ConfigEnableDesktopPet {
             get {
                 return ResourceManager.GetString("ConfigEnableDesktopPet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示或隐藏桌面宠物组件。 的本地化字符串。
+        /// </summary>
+        public static string ConfigEnableDesktopPetDescription {
+            get {
+                return ResourceManager.GetString("ConfigEnableDesktopPetDescription", resourceCulture);
             }
         }
         
@@ -2788,6 +2815,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 启动时恢复主窗口上次关闭前的位置和尺寸。 的本地化字符串。
+        /// </summary>
+        public static string StartRecoverUILayoutDescription {
+            get {
+                return ResourceManager.GetString("StartRecoverUILayoutDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 步骤 的本地化字符串。
         /// </summary>
         public static string Step {
@@ -3576,6 +3612,15 @@ namespace ColorVision.Properties {
         public static string Win10ClassicDesktopMenu {
             get {
                 return ResourceManager.GetString("Win10ClassicDesktopMenu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 在支持的系统上使用经典桌面右键菜单。 的本地化字符串。
+        /// </summary>
+        public static string Win10ClassicDesktopMenuDescription {
+            get {
+                return ResourceManager.GetString("Win10ClassicDesktopMenuDescription", resourceCulture);
             }
         }
     }

@@ -12,7 +12,7 @@ namespace ColorVision.UI.Desktop.Settings
         public static SettingEntry CreateEntry(ConfigSettingMetadata metadata, PropertyInfo? propertyInfo)
         {
             string title = ResolveTitle(metadata, propertyInfo);
-            string description = ResolveDescription(metadata, propertyInfo);
+            string description = ResolveDescription(metadata, propertyInfo, title);
             string group = ResolveNavigationGroup(metadata, title);
             string groupDisplayName = ResolveGroupDisplayName(metadata, group, title);
             string sectionKey = ResolveSectionKey(metadata);
@@ -107,7 +107,7 @@ namespace ColorVision.UI.Desktop.Settings
             return ToFriendlyName(title);
         }
 
-        private static string ResolveDescription(ConfigSettingMetadata metadata, PropertyInfo? propertyInfo)
+        private static string ResolveDescription(ConfigSettingMetadata metadata, PropertyInfo? propertyInfo, string title)
         {
             string? description = ResolveResourceText(metadata.Description, metadata.Source);
             ResourceManager? resourceManager = metadata.Source == null ? null : PropertyEditorHelper.GetResourceManager(metadata.Source);
@@ -121,6 +121,8 @@ namespace ColorVision.UI.Desktop.Settings
             {
                 description = GetDisplayAttributeDescription(propertyInfo);
             }
+
+            if (IsRepeatedText(description, title)) return string.Empty;
 
             return description ?? string.Empty;
         }
@@ -288,6 +290,32 @@ namespace ColorVision.UI.Desktop.Settings
         private static bool ContainsCjk(string text)
         {
             return text.Any(ch => ch >= '\u4e00' && ch <= '\u9fff');
+        }
+
+        private static bool IsRepeatedText(string? text, string title)
+        {
+            string? normalizedText = NormalizeForComparison(text);
+            string? normalizedTitle = NormalizeForComparison(title);
+            return !string.IsNullOrEmpty(normalizedText)
+                && !string.IsNullOrEmpty(normalizedTitle)
+                && string.Equals(normalizedText, normalizedTitle, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string? NormalizeForComparison(string? value)
+        {
+            string? text = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(text)) return null;
+
+            var builder = new StringBuilder(text.Length);
+            foreach (char current in text)
+            {
+                if (char.IsLetterOrDigit(current))
+                {
+                    builder.Append(char.ToUpperInvariant(current));
+                }
+            }
+
+            return builder.Length == 0 ? null : builder.ToString();
         }
 
         private static string? NormalizeText(string? value)

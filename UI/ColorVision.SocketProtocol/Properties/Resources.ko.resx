@@ -120,14 +120,38 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>통신 프로토콜</value>
   </data>
+  <data name="CommunicationProtocolDescription" xml:space="preserve">
+    <value>로컬 통신 서비스의 수신 주소, 포트, 데이터 형식을 설정합니다.</value>
+  </data>
   <data name="ServerPort" xml:space="preserve">
     <value>포트</value>
+  </data>
+  <data name="ServerPortDescription" xml:space="preserve">
+    <value>Socket 서비스가 수신 대기할 포트입니다. 범위는 0부터 65535까지입니다.</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
     <value>IP 주소</value>
   </data>
+  <data name="IPAddressDescription" xml:space="preserve">
+    <value>서비스가 수신 대기할 로컬 주소입니다. 0.0.0.0은 모든 네트워크 어댑터를 의미합니다.</value>
+  </data>
   <data name="IsServerEnabled" xml:space="preserve">
     <value>서버 활성화됨</value>
+  </data>
+  <data name="IsServerEnabledDescription" xml:space="preserve">
+    <value>로컬 Socket 통신 서비스를 켜거나 끕니다.</value>
+  </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>Socket 버퍼 크기</value>
+  </data>
+  <data name="SocketBufferSizeDescription" xml:space="preserve">
+    <value>한 번의 수신 작업에 사용하는 버퍼 크기입니다.</value>
+  </data>
+  <data name="SocketPhraseType" xml:space="preserve">
+    <value>메시지 구문 분석 형식</value>
+  </data>
+  <data name="SocketPhraseTypeDescription" xml:space="preserve">
+    <value>통신 메시지에 사용할 구문 분석 형식입니다.</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>소켓 연결 관리자</value>

@@ -163,6 +163,9 @@
   <data name="Language" xml:space="preserve">
     <value>用户界面语言</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>选择界面显示语言，跟随系统时使用系统语言。</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>自动切换选中视图</value>
   </data>
@@ -300,6 +303,15 @@
   </data>
   <data name="SettingsPageLoadFailed" xml:space="preserve">
     <value>设置页加载失败</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>启动时检查更新</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>启动应用时检查主程序、插件和主题是否有可用更新。</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>插件更新 主程序更新 启动检测 软件启动时检测更新 检查插件更新 自动更新 主题更新</value>
   </data>
   <data name="SettingsSectionBasic" xml:space="preserve">
     <value>基础</value>
@@ -615,6 +627,9 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>主题</value>
+  </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>选择应用界面的颜色主题。</value>
   </data>
   <data name="SearchEngine" xml:space="preserve">
     <value>搜索引擎</value>

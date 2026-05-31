@@ -120,14 +120,38 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>Protocol</value>
   </data>
+  <data name="CommunicationProtocolDescription" xml:space="preserve">
+    <value>Configure the local communication service listening address, port, and data format.</value>
+  </data>
   <data name="IsServerEnabled" xml:space="preserve">
     <value>Enable Server</value>
+  </data>
+  <data name="IsServerEnabledDescription" xml:space="preserve">
+    <value>Enable or disable the local Socket communication service.</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
     <value>IP Address</value>
   </data>
+  <data name="IPAddressDescription" xml:space="preserve">
+    <value>The local address to listen on. Use 0.0.0.0 to listen on all network adapters.</value>
+  </data>
   <data name="ServerPort" xml:space="preserve">
     <value>Server Port</value>
+  </data>
+  <data name="ServerPortDescription" xml:space="preserve">
+    <value>The port used by the Socket service, from 0 to 65535.</value>
+  </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>Socket Buffer Size</value>
+  </data>
+  <data name="SocketBufferSizeDescription" xml:space="preserve">
+    <value>The buffer size used for each receive operation.</value>
+  </data>
+  <data name="SocketPhraseType" xml:space="preserve">
+    <value>Message Parse Format</value>
+  </data>
+  <data name="SocketPhraseTypeDescription" xml:space="preserve">
+    <value>The parse format used for communication messages.</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket Connection Manager</value>

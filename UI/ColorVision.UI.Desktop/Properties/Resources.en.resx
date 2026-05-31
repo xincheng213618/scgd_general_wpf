@@ -438,6 +438,9 @@
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>Check for plugin updates</value>
   </data>
+  <data name="CheckPluginUpdatesDescription" xml:space="preserve">
+    <value>Automatically check the plugin marketplace for available updates at startup.</value>
+  </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Checking for additional projects</value>
   </data>
