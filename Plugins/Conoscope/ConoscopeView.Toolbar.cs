@@ -29,23 +29,12 @@ namespace Conoscope
 
         internal void OpenCieForCurrentView()
         {
-            OpenCieWindow();
-        }
-
-        private void OpenCieWindow()
-        {
             if (!HasXyzData() || currentBitmapSource == null || coordinateAxisController == null)
             {
                 MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            EnsureCieWindow();
-            SyncCieWindowFromCurrentPointer();
-        }
-
-        private void EnsureCieWindow()
-        {
             if (cieWindow == null)
             {
                 cieWindow = new WindowCIE();
@@ -60,6 +49,7 @@ namespace Conoscope
 
             cieWindow.Show();
             cieWindow.Activate();
+            SyncCieWindowFromCurrentPointer();
         }
 
         private void SyncCieWindowFromCurrentPointer()
@@ -204,7 +194,16 @@ namespace Conoscope
 
             try
             {
-                WriteableBitmap heightBitmap = Create3DHeightBitmapForCurrentView();
+                OpenCvSharp.Mat fallback = YMat!;
+                WriteableBitmap heightBitmap = ConoscopePseudoColorRenderer.CreateHeightMapBitmap(
+                    XMat!,
+                    YMat!,
+                    ZMat!,
+                    GetSelectedDisplayChannel(),
+                    () => CreateColorDifferenceMat() ?? fallback,
+                    () => CreateContrastMat() ?? fallback,
+                    currentImageCenter,
+                    currentImageRadius);
                 Window3D window3D = new(heightBitmap, Conoscope3DInitialHeightScale)
                 {
                     Owner = Window.GetWindow(this)
@@ -216,20 +215,6 @@ namespace Conoscope
                 log.Error("打开 Conoscope 3D 视图失败", ex);
                 MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.Msg3DViewOpenFailed, ex.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-        }
-
-        private WriteableBitmap Create3DHeightBitmapForCurrentView()
-        {
-            OpenCvSharp.Mat fallback = YMat!;
-            return ConoscopePseudoColorRenderer.CreateHeightMapBitmap(
-                XMat!,
-                YMat!,
-                ZMat!,
-                GetSelectedDisplayChannel(),
-                () => CreateColorDifferenceMat() ?? fallback,
-                () => CreateContrastMat() ?? fallback,
-                currentImageCenter,
-                currentImageRadius);
         }
     }
 }

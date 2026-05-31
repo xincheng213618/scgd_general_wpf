@@ -96,11 +96,6 @@ namespace Conoscope
                 ?? new CalibrationParam { Id = -1, Name = string.Empty };
         }
 
-        private TemplateModel<CalibrationParam>? GetSelectedCalibrationTemplate()
-        {
-            return cbCalibrationTemplate.SelectedItem as TemplateModel<CalibrationParam>;
-        }
-
         private bool ShouldReuseActiveViewOnCapture()
         {
             return chkReuseActiveViewOnCapture?.IsChecked == true && ActiveView != null;

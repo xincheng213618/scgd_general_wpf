@@ -2,6 +2,7 @@ using Conoscope.Analysis;
 using Conoscope.ApplicationServices.Analysis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,19 +12,7 @@ namespace Conoscope
     public partial class ConoscopeWindow
     {
         private readonly ConoscopeAnalysisWorkflow analysisWorkflow = new();
-        private readonly Dictionary<Button, RecordButtonVisualState> recordButtonVisualStates = new();
-
-        private sealed class RecordButtonVisualState
-        {
-            public RecordButtonVisualState(object? content, object? toolTip)
-            {
-                Content = content;
-                ToolTip = toolTip;
-            }
-
-            public object? Content { get; }
-            public object? ToolTip { get; }
-        }
+        private readonly Dictionary<Button, (object? Content, object? ToolTip)> recordButtonVisualStates = new();
 
         private void InitializeAnalysisRibbonControls()
         {
@@ -33,17 +22,8 @@ namespace Conoscope
             }
 
             cbRibbonGamutStandard.ItemsSource = ColorGamutStandards.All;
-            ColorGamutStandard? selectedStandard = null;
-            for (int index = 0; index < ColorGamutStandards.All.Count; index++)
-            {
-                ColorGamutStandard standard = ColorGamutStandards.All[index];
-                if (string.Equals(standard.Name, "sRGB", StringComparison.OrdinalIgnoreCase))
-                {
-                    selectedStandard = standard;
-                    break;
-                }
-            }
-
+            ColorGamutStandard? selectedStandard = ColorGamutStandards.All
+                .FirstOrDefault(standard => string.Equals(standard.Name, "sRGB", StringComparison.OrdinalIgnoreCase));
             cbRibbonGamutStandard.SelectedItem = selectedStandard ?? (ColorGamutStandards.All.Count > 0 ? ColorGamutStandards.All[0] : null);
             RefreshAnalysisRibbonState(ActiveView);
         }
@@ -75,21 +55,21 @@ namespace Conoscope
             UpdateRecordButton(btnRecordContrastBlack, analysisWorkflow.ContrastBlackCapture, Color.FromRgb(90, 90, 90), Properties.Resources.SlotBlack);
         }
 
-        private RecordButtonVisualState GetRecordButtonVisualState(Button button)
+        private (object? Content, object? ToolTip) GetRecordButtonVisualState(Button button)
         {
-            if (recordButtonVisualStates.TryGetValue(button, out RecordButtonVisualState? state))
+            if (recordButtonVisualStates.TryGetValue(button, out var state))
             {
                 return state;
             }
 
-            state = new RecordButtonVisualState(button.Content, button.ToolTip);
+            state = (button.Content, button.ToolTip);
             recordButtonVisualStates.Add(button, state);
             return state;
         }
 
         private void UpdateRecordButton(Button button, MeasurementCapture? capture, Color accentColor, string slotName)
         {
-            RecordButtonVisualState baseState = GetRecordButtonVisualState(button);
+            var baseState = GetRecordButtonVisualState(button);
             button.Content = baseState.Content;
 
             if (capture == null)

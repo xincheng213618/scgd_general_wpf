@@ -16,7 +16,9 @@ namespace Conoscope.MVS
 
         private void AddGratingDiameter_Click(object sender, RoutedEventArgs e)
         {
-            if (!TryParseDoubleText(tbNewGratingDiameter.Text, out double diameterMillimeters) || diameterMillimeters <= 0)
+            if (!(double.TryParse(tbNewGratingDiameter.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double diameterMillimeters)
+                    || double.TryParse(tbNewGratingDiameter.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out diameterMillimeters))
+                || diameterMillimeters <= 0)
             {
                 MessageBox.Show(Properties.Resources.TestAreaSizeMustBePositive, Properties.Resources.ObservationCameraSettings, MessageBoxButton.OK, MessageBoxImage.Warning);
                 tbNewGratingDiameter.Focus();
@@ -41,16 +43,6 @@ namespace Conoscope.MVS
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             Close();
-        }
-
-        private static bool TryParseDoubleText(string? text, out double value)
-        {
-            if (double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
-            {
-                return true;
-            }
-
-            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
         }
     }
 }

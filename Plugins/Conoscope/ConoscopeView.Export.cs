@@ -378,7 +378,32 @@ namespace Conoscope
 
                 if (settings.EnableCrossSection)
                 {
-                    ExportCrossSectionToFolder(exportContext, settings, timestamp, outputFolder, ref filesExported);
+                    ConoscopeCrossSectionExportOptions exportOptions = new ConoscopeCrossSectionExportOptions
+                    {
+                        StepDegrees = settings.CrossSectionType == CrossSectionType.Azimuth
+                            ? settings.RadialStep
+                            : settings.CircumferentialStep,
+                        IncludeMetadata = true,
+                        DecimalPlaces = settings.DecimalPlaces
+                    };
+                    string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
+                    foreach (ExportChannel channel in settings.Channels)
+                    {
+                        string filename = $"{settings.FilePrefix}_CrossSection_{sectionType}_{settings.CrossSectionAngle}deg_{channel}_{timestamp}.csv";
+                        string filePath = Path.Combine(outputFolder, filename);
+
+                        if (settings.CrossSectionType == CrossSectionType.Azimuth)
+                        {
+                            ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
+                        }
+                        else
+                        {
+                            ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
+                        }
+
+                        filesExported++;
+                        log.Info($"截面导出成功: {filePath}");
+                    }
                 }
 
                 MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportDone, filesExported, outputFolder), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
@@ -388,44 +413,6 @@ namespace Conoscope
             {
                 log.Error($"高级导出执行失败: {ex.Message}", ex);
                 MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ExportCrossSectionToFolder(ConoscopeExportContext exportContext, AdvancedExportSettings settings, string timestamp, string outputFolder, ref int filesExported)
-        {
-            try
-            {
-                ConoscopeCrossSectionExportOptions exportOptions = new ConoscopeCrossSectionExportOptions
-                {
-                    StepDegrees = settings.CrossSectionType == CrossSectionType.Azimuth
-                        ? settings.RadialStep
-                        : settings.CircumferentialStep,
-                    IncludeMetadata = true,
-                    DecimalPlaces = settings.DecimalPlaces
-                };
-                foreach (ExportChannel channel in settings.Channels)
-                {
-                    string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
-                    string filename = $"{settings.FilePrefix}_CrossSection_{sectionType}_{settings.CrossSectionAngle}deg_{channel}_{timestamp}.csv";
-                    string filePath = Path.Combine(outputFolder, filename);
-
-                    if (settings.CrossSectionType == CrossSectionType.Azimuth)
-                    {
-                        ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
-                    }
-                    else
-                    {
-                        ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
-                    }
-
-                    filesExported++;
-                    log.Info($"截面导出成功: {filePath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"截面导出失败: {ex.Message}", ex);
-                throw;
             }
         }
 

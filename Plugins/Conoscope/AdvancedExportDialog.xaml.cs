@@ -31,7 +31,6 @@ namespace Conoscope
         {
             try
             {
-                // Validate inputs
                 if (!ValidateInputs())
                 {
                     return;
@@ -45,7 +44,6 @@ namespace Conoscope
                     return;
                 }
 
-                // Export modes
                 bool exportAzimuth = chkExportAzimuth.IsChecked == true;
                 bool exportPolar = chkExportPolar.IsChecked == true;
 
@@ -93,48 +91,44 @@ namespace Conoscope
 
         private bool ValidateInputs()
         {
-            // Validate file prefix
             if (string.IsNullOrWhiteSpace(txtFilePrefix.Text))
             {
                 MessageBox.Show(Properties.Resources.MsgEnterFilePrefix, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
-            // Validate azimuth step
             if (!TryParseDouble(txtAzimuthStep.Text, out double azimuthStep) || azimuthStep < 0.01 || azimuthStep > 180)
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidAzimuthStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            // Validate radial step
             if (!TryParseDouble(txtRadialStep.Text, out double radialStep) || radialStep < 0.01 || radialStep > 80)
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidRadialStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            // Validate polar step
             if (!TryParseDouble(txtPolarStep.Text, out double polarStep) || polarStep < 0.01 || polarStep > 80)
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidRingStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            // Validate circumferential step
             if (!TryParseDouble(txtCircumferentialStep.Text, out double circumStep) || circumStep < 0.01 || circumStep > 360)
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidCircularStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if (!TryParseDecimalPlaces(txtDecimalPlaces.Text, out _))
+            if (!int.TryParse(txtDecimalPlaces.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int decimalPlaces)
+                || decimalPlaces < 0
+                || decimalPlaces > 8)
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidDecimalPlaces, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            // Validate cross-section settings if enabled
             if (chkEnableCrossSection.IsChecked == true)
             {
                 if (rbCrossSectionAzimuth.IsChecked == true)
@@ -209,7 +203,7 @@ namespace Conoscope
                 RadialStep = NormalizeValue(settings?.RadialStep ?? 1, 0.01, 80, 1),
                 PolarStep = NormalizeValue(settings?.PolarStep ?? 1, 0.01, 80, 1),
                 CircumferentialStep = NormalizeValue(settings?.CircumferentialStep ?? 1, 0.01, 360, 1),
-                DecimalPlaces = NormalizeDecimalPlaces(settings?.DecimalPlaces ?? defaultDecimalPlaces),
+                DecimalPlaces = Math.Clamp(settings?.DecimalPlaces ?? defaultDecimalPlaces, 0, 8),
                 EnableCrossSection = settings?.EnableCrossSection ?? false,
                 CrossSectionType = crossSectionType,
                 CrossSectionAzimuthAngle = azimuthCrossSectionAngle,
@@ -261,17 +255,6 @@ namespace Conoscope
             return Math.Max(min, Math.Min(value, max));
         }
 
-        private static bool TryParseDecimalPlaces(string? text, out int decimalPlaces)
-        {
-            return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out decimalPlaces)
-                && decimalPlaces >= 0
-                && decimalPlaces <= 8;
-        }
-
-        private static int NormalizeDecimalPlaces(int decimalPlaces)
-        {
-            return Math.Clamp(decimalPlaces, 0, 8);
-        }
     }
 
     /// <summary>

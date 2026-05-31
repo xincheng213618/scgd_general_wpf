@@ -2,7 +2,6 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Conoscope.Core;
-using Conoscope.Presentation.Helpers;
 using Conoscope.Presentation.Formatters;
 using System;
 using System.Linq;
@@ -86,17 +85,6 @@ namespace Conoscope
             fieldWindowFilterD.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
             fieldWindowFilterSigmaColor.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
             fieldWindowFilterSigmaSpace.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private static string FormatDustRemovalMode(DustRemovalMode mode)
-        {
-            return mode switch
-            {
-                DustRemovalMode.DarkSpot => Properties.Resources.DustDarkSpot,
-                DustRemovalMode.BrightSpot => Properties.Resources.DustBrightSpot,
-                DustRemovalMode.Both => Properties.Resources.DustBoth,
-                _ => mode.ToString()
-            };
         }
 
         private void WindowPreprocess_Changed(object sender, RoutedEventArgs e)
@@ -235,58 +223,53 @@ namespace Conoscope
         {
             if (chkWindowEnableFilter.IsChecked == true)
             {
-                int kernelSize = 0;
-                if (fieldWindowFilterKernel.Visibility == Visibility.Visible && !TryParseWindowInt(txtWindowFilterKernelSize, out kernelSize))
-                {
-                    return false;
-                }
-
                 if (fieldWindowFilterKernel.Visibility == Visibility.Visible)
                 {
-                    PreprocessConfig.FilterKernelSize = ConoscopeNumericHelper.NormalizeOddKernelSize(kernelSize);
-                }
+                    if (!TryParseWindowInt(txtWindowFilterKernelSize, out int kernelSize))
+                    {
+                        return false;
+                    }
 
-                double filterSigma = 0;
-                if (fieldWindowFilterSigma.Visibility == Visibility.Visible && !TryParseWindowDouble(txtWindowFilterSigma, out filterSigma))
-                {
-                    return false;
+                    PreprocessConfig.FilterKernelSize = ConoscopeNumericHelper.NormalizeOddKernelSize(kernelSize);
                 }
 
                 if (fieldWindowFilterSigma.Visibility == Visibility.Visible)
                 {
-                    PreprocessConfig.FilterSigma = filterSigma;
-                }
+                    if (!TryParseWindowDouble(txtWindowFilterSigma, out double filterSigma))
+                    {
+                        return false;
+                    }
 
-                int filterD = 0;
-                if (fieldWindowFilterD.Visibility == Visibility.Visible && !TryParseWindowInt(txtWindowFilterD, out filterD))
-                {
-                    return false;
+                    PreprocessConfig.FilterSigma = filterSigma;
                 }
 
                 if (fieldWindowFilterD.Visibility == Visibility.Visible)
                 {
-                    PreprocessConfig.FilterD = filterD;
-                }
+                    if (!TryParseWindowInt(txtWindowFilterD, out int filterD))
+                    {
+                        return false;
+                    }
 
-                double sigmaColor = 0;
-                if (fieldWindowFilterSigmaColor.Visibility == Visibility.Visible && !TryParseWindowDouble(txtWindowFilterSigmaColor, out sigmaColor))
-                {
-                    return false;
+                    PreprocessConfig.FilterD = filterD;
                 }
 
                 if (fieldWindowFilterSigmaColor.Visibility == Visibility.Visible)
                 {
-                    PreprocessConfig.FilterSigmaColor = sigmaColor;
-                }
+                    if (!TryParseWindowDouble(txtWindowFilterSigmaColor, out double sigmaColor))
+                    {
+                        return false;
+                    }
 
-                double sigmaSpace = 0;
-                if (fieldWindowFilterSigmaSpace.Visibility == Visibility.Visible && !TryParseWindowDouble(txtWindowFilterSigmaSpace, out sigmaSpace))
-                {
-                    return false;
+                    PreprocessConfig.FilterSigmaColor = sigmaColor;
                 }
 
                 if (fieldWindowFilterSigmaSpace.Visibility == Visibility.Visible)
                 {
+                    if (!TryParseWindowDouble(txtWindowFilterSigmaSpace, out double sigmaSpace))
+                    {
+                        return false;
+                    }
+
                     PreprocessConfig.FilterSigmaSpace = sigmaSpace;
                 }
             }
