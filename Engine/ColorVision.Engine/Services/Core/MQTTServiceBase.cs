@@ -129,10 +129,6 @@ namespace ColorVision.Engine.Services
         /// <param name="msg"></param>
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double timeout = 30000)
         {
-            if (timeout == 30000)
-            {
-                timeout =MQTTSetting.Instance.DefaultTimeout;
-            }
             Guid guid = Guid.NewGuid();
             msg.MsgID ??= guid.ToString();
             msg.DeviceCode ??= DeviceCode;

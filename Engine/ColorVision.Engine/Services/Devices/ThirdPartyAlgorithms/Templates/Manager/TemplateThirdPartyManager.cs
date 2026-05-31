@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
             SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 List<ThirdPartyAlgorithmsModel> models = new List<ThirdPartyAlgorithmsModel>();
                 if (DLLId > 0)

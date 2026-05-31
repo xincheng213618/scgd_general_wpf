@@ -135,11 +135,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
                 return;
             }
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                return;
-            }
             var ITemplate = new TemplateCalibrationParam(PhyCamera);
             var windowTemplate = new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();

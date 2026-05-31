@@ -8,7 +8,7 @@ using System.Windows;
 
 namespace ColorVision.Database
 {
-    public class MySqlSettingProvider : IConfigSettingProvider, IStatusBarProviderUpdatable
+    public class MySqlSettingProvider : IStatusBarProviderUpdatable
     {
         public event EventHandler StatusBarItemsChanged;
 
@@ -18,18 +18,6 @@ namespace ColorVision.Database
                 StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Group ="Engine",
-                                Order =1,
-                                BindingName = nameof(MySqlSetting.IsUseMySql),
-                                Source = MySqlSetting.Instance
-                            },
-            };
-        }
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
             bool isConnected = MySqlControl.GetInstance().IsConnect;
@@ -52,8 +40,6 @@ namespace ColorVision.Database
 
     }
 
-
-
     public class MySqlSetting : ViewModelBase , IConfigSecure
     {
 
@@ -61,12 +47,6 @@ namespace ColorVision.Database
 
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
         public static bool IsConnect => MySqlControl.IsConnect;
-
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; OnPropertyChanged(); UseMySqlChanged?.Invoke(this,value); } }
-        private bool _IsUseMySql = true;
-
-        public event EventHandler<bool> UseMySqlChanged;
-
 
         /// <summary>
         /// MySql配置

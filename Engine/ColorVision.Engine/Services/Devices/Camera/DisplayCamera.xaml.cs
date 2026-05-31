@@ -655,15 +655,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (Device.PhyCamera == null)
-                            {
+            {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
                 return;
             }
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                return;
-            }
+
             var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
             var windowTemplate = new TemplateEditorWindow(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();

@@ -238,6 +238,60 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>General</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>No matching settings.</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>{0} matching settings</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>{0} settings</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>Setting is unavailable</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>Failed to load this setting</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>Settings page type is invalid</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>Settings page is unavailable</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>Failed to load the settings page</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>Basic</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>File archive</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>Paths</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>Extensions</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>Controls how much detail the application writes to logs.</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>Marketplace service URL</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>Service URL used by the marketplace, update checks, and online package APIs.</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>Name</value>
   </data>

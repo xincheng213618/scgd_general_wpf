@@ -80,7 +80,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
             SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
 
 

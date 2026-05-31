@@ -10,11 +10,6 @@ namespace ColorVision.Engine.Templates.Menus
 
         public override void Execute()
         {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                return;
-            }
             ShowTemplateWindow();
         }
         public abstract ITemplate Template { get; }

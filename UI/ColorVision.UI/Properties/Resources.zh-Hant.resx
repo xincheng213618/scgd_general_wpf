@@ -238,6 +238,60 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>通用設定</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>沒有符合的設定。</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>找到 {0} 項符合設定</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>{0} 項設定</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>設定項不可用</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>設定項載入失敗</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>設定頁類型無效</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>設定頁不可用</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>設定頁載入失敗</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>基礎</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>搜尋</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>檔案封存</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>服務</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>路徑</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>擴充頁面</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>控制應用程式寫入日誌的詳細程度。</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>插件市場服務地址</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>插件市場、更新檢查與線上套件介面使用的服務地址。</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>插件名稱</value>
   </data>

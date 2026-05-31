@@ -12,7 +12,6 @@ namespace ColorVision.Engine.MQTT
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
-        private const string EmptyHostMessage = "MQTT服务器地址为空。";
 
         private static MQTTControl _instance;
         private static readonly object _locker = new();
@@ -42,9 +41,7 @@ namespace ColorVision.Engine.MQTT
 
         private static MqttClientOptions BuildClientOptions(MQTTConfig mqttConfig)
         {
-            ArgumentNullException.ThrowIfNull(mqttConfig);
-
-            var host = NormalizeHost(mqttConfig.Host) ?? throw new InvalidOperationException(EmptyHostMessage);
+            var host = NormalizeHost(mqttConfig.Host);
 
             return new MqttClientOptionsBuilder()
                 .WithTcpServer(host, mqttConfig.Port)
@@ -115,20 +112,6 @@ namespace ColorVision.Engine.MQTT
             IsConnect = false;
             await Task.Delay(3000);
             _ = Connect();
-        }
-
-        private async Task ReConnectAsync()
-        {
-            try
-            {
-                var options = BuildClientOptions(Config);
-                await MQTTClient.ConnectAsync(options);
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-                IsConnect = false;
-            }
         }
 
         public async Task<bool> TestConnect(MQTTConfig mqttConfig)

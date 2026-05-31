@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 List<ModMasterModel> flows = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();

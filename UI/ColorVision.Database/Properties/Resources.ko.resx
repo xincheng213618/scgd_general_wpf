@@ -462,6 +462,9 @@
   <data name="DB_EnableLogging" xml:space="preserve">
     <value>로깅 활성화</value>
   </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>활성화하면 로컬 데이터베이스 로그를 기록합니다.</value>
+  </data>
   <data name="DB_EnableCompress" xml:space="preserve">
     <value>압축 아카이브 활성화</value>
   </data>
@@ -470,6 +473,9 @@
   </data>
   <data name="DB_FileSizeLimit" xml:space="preserve">
     <value>단일 파일 크기 제한 (MB)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>로그 데이터베이스 파일이 이 크기에 도달하면 보관합니다. 단위는 MB입니다.</value>
   </data>
   <data name="DB_ArchiveCount" xml:space="preserve">
     <value>아카이브 보존 수</value>

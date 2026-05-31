@@ -436,11 +436,6 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void CalibrationTemplateOpen(object sender)
         {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Properties.Resources.DatabaseConnectionFailed, Properties.Resources.CalibrationTemplate);
-                return;
-            }
             var ITemplate = new TemplateCalibrationParam(this);
             new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }

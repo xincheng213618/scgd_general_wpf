@@ -238,6 +238,60 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>Общие настройки</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>Подходящие настройки не найдены.</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>Найдено настроек: {0}</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>Настроек: {0}</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>Настройка недоступна</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>Не удалось загрузить настройку</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>Недопустимый тип страницы настроек</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>Страница настроек недоступна</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>Не удалось загрузить страницу настроек</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>Основное</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>Архив файлов</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>Службы</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>Пути</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>Расширения</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>Другое</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>Управляет подробностью записей в журналах приложения.</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>URL службы Marketplace</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>URL службы для marketplace, проверки обновлений и API онлайн-пакетов.</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>название плагина</value>
   </data>

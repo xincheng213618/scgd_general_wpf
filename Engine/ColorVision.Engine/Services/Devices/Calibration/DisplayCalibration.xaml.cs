@@ -224,11 +224,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             if (sender is Button button)
             {
                 TemplateEditorWindow windowTemplate;
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                    return;
-                }
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":

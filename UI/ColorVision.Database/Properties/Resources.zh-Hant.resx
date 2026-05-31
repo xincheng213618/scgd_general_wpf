@@ -462,6 +462,9 @@
   <data name="DB_EnableLogging" xml:space="preserve">
     <value>啟用日誌記錄</value>
   </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>啟用後會記錄本機資料庫日誌。</value>
+  </data>
   <data name="DB_EnableCompress" xml:space="preserve">
     <value>啟用壓縮歸檔</value>
   </data>
@@ -470,6 +473,9 @@
   </data>
   <data name="DB_FileSizeLimit" xml:space="preserve">
     <value>單檔案大小限制 (MB)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>單個日誌資料庫檔案達到該大小後觸發封存，單位 MB。</value>
   </data>
   <data name="DB_ArchiveCount" xml:space="preserve">
     <value>歸檔保留數量</value>

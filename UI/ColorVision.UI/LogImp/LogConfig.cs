@@ -102,7 +102,7 @@ namespace ColorVision.UI
         /// <summary>
         /// 当前日志级别
         /// </summary>
-        [ConfigSetting(Order = 15)]
+        [ConfigSetting(Order = 15, Section = ConfigSettingConstants.SectionBasic, Description = "LogLevelDescription")]
         [JsonIgnore]
         [PropertyEditorTypeAttribute(typeof(LevelPropertiesEditor))]
         public Level LogLevel

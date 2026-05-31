@@ -147,6 +147,9 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>ソフトウェアの起動時にアップデートを検出する</value>
   </data>
+  <data name="CheckUpdatesOnStartupDescription" xml:space="preserve">
+    <value>アプリケーション起動時に利用可能な更新を自動的に確認します。</value>
+  </data>
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>
   </data>

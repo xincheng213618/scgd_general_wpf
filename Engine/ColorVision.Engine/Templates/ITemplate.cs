@@ -298,7 +298,7 @@ namespace ColorVision.Engine.Templates
             SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 

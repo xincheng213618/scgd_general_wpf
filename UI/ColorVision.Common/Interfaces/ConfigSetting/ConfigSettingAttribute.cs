@@ -23,7 +23,7 @@ namespace ColorVision.UI
     ///     [DisplayName("搜索引擎")]
     ///     public SearchEngine SearchEngine { get; set; }
     ///
-    ///     [ConfigSetting(Order = 21)]
+    ///     [ConfigSetting(Order = 21, Section = ConfigSettingConstants.SectionSearch, Description = "SearchBrowserDescription")]
     ///     public bool EnableBrowserSearch { get; set; }
     /// }
     /// </code>
@@ -41,6 +41,21 @@ namespace ColorVision.UI
         /// 设置所属分组（对应设置窗口中的 TabItem）。默认 <see cref="ConfigSettingConstants.Universal"/>。
         /// </summary>
         public string Group { get; set; } = ConfigSettingConstants.Universal;
+
+        /// <summary>
+        /// 设置项显示标题。为空时使用属性上的 DisplayName/Display 元数据或属性名。
+        /// </summary>
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 设置项说明。为空时使用属性上的 Description/Display 元数据。
+        /// </summary>
+        public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 设置项在右侧内容区中的分区。为空时由设置窗口做兜底归类。
+        /// </summary>
+        public string Section { get; set; } = string.Empty;
 
         public ConfigSettingAttribute() { }
     }

@@ -4,6 +4,13 @@ namespace ColorVision.UI
     public static class ConfigSettingConstants
     {
         public const string Universal  = "Universal";
+        public const string SectionBasic = "Basic";
+        public const string SectionSearch = "Search";
+        public const string SectionFileArchive = "FileArchive";
+        public const string SectionAdvancedServices = "Services";
+        public const string SectionLowLevelPaths = "Paths";
+        public const string SectionExtensions = "Extensions";
+        public const string SectionOther = "Other";
 
     }
 
@@ -20,11 +27,20 @@ namespace ColorVision.UI
 
         public string Group { get; set; } = ConfigSettingConstants.Universal;
 
-        public string Name { get; set; }
         /// <summary>
-        /// 描述项，还是要看实现
+        /// Display title shown in the setting row. If empty, the property display metadata is used.
         /// </summary>
-        public string Description { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Description shown under the setting row title.
+        /// </summary>
+        public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Section name used to group settings inside a navigation group.
+        /// </summary>
+        public string Section { get; set; } = string.Empty;
 
         public ConfigSettingType Type { get; set; } = ConfigSettingType.Property;
         /// <summary>

@@ -108,9 +108,7 @@ namespace ColorVision.Engine.Templates.POI
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {
-                if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
-                    PoiParam.LoadPoiDetailFromDB(PoiParam);
-
+                PoiParam.LoadPoiDetailFromDB(PoiParam);
                 if (PoiParam.PoiPoints.Count > 500)
                     PoiConfig.IsLayoutUpdated = false;
 

@@ -238,6 +238,60 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>일반 설정</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>일치하는 설정이 없습니다.</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>일치하는 설정 {0}개</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>설정 {0}개</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>설정을 사용할 수 없습니다</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>설정을 불러오지 못했습니다</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>설정 페이지 형식이 올바르지 않습니다</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>설정 페이지를 사용할 수 없습니다</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>설정 페이지를 불러오지 못했습니다</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>기본</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>검색</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>파일 보관</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>서비스</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>경로</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>확장 페이지</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>기타</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>애플리케이션이 로그에 기록하는 상세 수준을 제어합니다.</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>마켓플레이스 서비스 URL</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>마켓플레이스, 업데이트 확인, 온라인 패키지 API에 사용할 서비스 URL입니다.</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>플러그인 이름</value>
   </data>

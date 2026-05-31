@@ -64,8 +64,6 @@ namespace ColorVision.Engine.Templates.Validate
 
         public override void Load()
         {
-            if (!(MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect))
-                return;
 
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 

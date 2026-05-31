@@ -462,6 +462,9 @@
   <data name="DB_EnableLogging" xml:space="preserve">
     <value>ログを有効にする</value>
   </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>有効にすると、ローカル データベース ログを記録します。</value>
+  </data>
   <data name="DB_EnableCompress" xml:space="preserve">
     <value>圧縮アーカイブを有効にする</value>
   </data>
@@ -470,6 +473,9 @@
   </data>
   <data name="DB_FileSizeLimit" xml:space="preserve">
     <value>単一ファイルサイズ制限 (MB)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>ログ データベース ファイルがこのサイズに達するとアーカイブします。単位は MB です。</value>
   </data>
   <data name="DB_ArchiveCount" xml:space="preserve">
     <value>アーカイブ保持数</value>

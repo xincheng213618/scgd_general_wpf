@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.POI
         public override void Load()
         {
             var backup = Params.ToDictionary(tp => tp.Id, tp => tp);
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", 0}, { "is_delete", 0 } });
                 foreach (var dbModel in poiMasters)

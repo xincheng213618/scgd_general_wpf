@@ -271,11 +271,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             if (sender is Control control)
             {
                 TemplateEditorWindow windowTemplate;
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox1.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                    return;
-                }
                 switch (control.Tag?.ToString() ?? string.Empty)
                 {
 

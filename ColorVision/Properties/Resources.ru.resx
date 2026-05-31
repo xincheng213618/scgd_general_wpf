@@ -147,6 +147,9 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>Обнаружение обновлений при запуске программного обеспечения</value>
   </data>
+  <data name="CheckUpdatesOnStartupDescription" xml:space="preserve">
+    <value>Автоматически проверяет наличие обновлений при запуске приложения.</value>
+  </data>
   <data name="Project" xml:space="preserve">
     <value>проект</value>
   </data>

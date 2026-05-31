@@ -147,6 +147,9 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>소프트웨어가 시작될 때 업데이트 감지</value>
   </data>
+  <data name="CheckUpdatesOnStartupDescription" xml:space="preserve">
+    <value>애플리케이션 시작 시 사용 가능한 업데이트가 있는지 자동으로 확인합니다.</value>
+  </data>
   <data name="Project" xml:space="preserve">
     <value>프로젝트</value>
   </data>

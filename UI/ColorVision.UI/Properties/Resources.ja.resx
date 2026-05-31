@@ -238,6 +238,60 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>一般設定</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>一致する設定はありません。</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>{0} 件の一致する設定</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>{0} 件の設定</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>設定項目は利用できません</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>設定項目の読み込みに失敗しました</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>設定ページの種類が無効です</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>設定ページは利用できません</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>設定ページの読み込みに失敗しました</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>基本</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>検索</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>ファイルアーカイブ</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>サービス</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>パス</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>拡張ページ</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>その他</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>アプリケーションがログに書き込む詳細度を制御します。</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>マーケットプレイス サービス URL</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>マーケットプレイス、更新確認、オンラインパッケージ API で使用するサービス URL。</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>プラグイン名</value>
   </data>

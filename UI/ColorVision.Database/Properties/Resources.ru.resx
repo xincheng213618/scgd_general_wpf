@@ -462,6 +462,9 @@
   <data name="DB_EnableLogging" xml:space="preserve">
     <value>Включить логирование</value>
   </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>При включении записывает журналы локальной базы данных.</value>
+  </data>
   <data name="DB_EnableCompress" xml:space="preserve">
     <value>Включить сжатый архив</value>
   </data>
@@ -470,6 +473,9 @@
   </data>
   <data name="DB_FileSizeLimit" xml:space="preserve">
     <value>Лимит размера файла (МБ)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>Архивирует файл базы данных журнала при достижении этого размера, в МБ.</value>
   </data>
   <data name="DB_ArchiveCount" xml:space="preserve">
     <value>Количество хранимых архивов</value>

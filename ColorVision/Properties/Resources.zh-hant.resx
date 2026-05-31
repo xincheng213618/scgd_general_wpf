@@ -147,6 +147,9 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>軟體啟動時偵測更新</value>
   </data>
+  <data name="CheckUpdatesOnStartupDescription" xml:space="preserve">
+    <value>啟動軟體時自動偵測是否有可用更新。</value>
+  </data>
   <data name="Project" xml:space="preserve">
     <value>工程</value>
   </data>

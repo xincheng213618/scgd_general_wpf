@@ -277,6 +277,60 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>通用设置</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>没有匹配的设置。</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>找到 {0} 项匹配设置</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>{0} 项设置</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>设置项不可用</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>设置项加载失败</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>设置页类型无效</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>设置页不可用</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>设置页加载失败</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>基础</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>文件归档</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>服务</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>路径</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>扩展页面</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>控制应用写入日志的详细程度。</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>插件市场服务地址</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>插件市场、更新检查和在线包接口使用的服务地址。</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>插件名称</value>
   </data>

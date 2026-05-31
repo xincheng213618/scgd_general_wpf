@@ -238,6 +238,60 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>Réglages généraux</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>Aucun paramètre correspondant.</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>{0} paramètres correspondants</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>{0} paramètres</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>Paramètre indisponible</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>Impossible de charger ce paramètre</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>Type de page de paramètres non valide</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>Page de paramètres indisponible</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>Impossible de charger la page de paramètres</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>Base</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>Recherche</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>Archives</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>Chemins</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>Extensions</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>Autre</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>Contrôle le niveau de détail écrit dans les journaux.</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>URL du service Marketplace</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>URL de service utilisée par le marketplace, les recherches de mises à jour et les API de packages en ligne.</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>Nom du plugin</value>
   </data>

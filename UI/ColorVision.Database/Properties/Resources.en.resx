@@ -462,6 +462,9 @@
   <data name="DB_EnableLogging" xml:space="preserve">
     <value>Enable Logging</value>
   </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>Records local database logs when enabled.</value>
+  </data>
   <data name="DB_EnableCompress" xml:space="preserve">
     <value>Enable Compressed Archive</value>
   </data>
@@ -470,6 +473,9 @@
   </data>
   <data name="DB_FileSizeLimit" xml:space="preserve">
     <value>Single File Size Limit (MB)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>Archives a log database file after it reaches this size, in MB.</value>
   </data>
   <data name="DB_ArchiveCount" xml:space="preserve">
     <value>Archive Retention Count</value>

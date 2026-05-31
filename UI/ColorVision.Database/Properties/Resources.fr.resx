@@ -462,6 +462,9 @@
   <data name="DB_EnableLogging" xml:space="preserve">
     <value>Activer la journalisation</value>
   </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>Enregistre les journaux de la base de données locale lorsque cette option est activée.</value>
+  </data>
   <data name="DB_EnableCompress" xml:space="preserve">
     <value>Activer l'archive compressée</value>
   </data>
@@ -470,6 +473,9 @@
   </data>
   <data name="DB_FileSizeLimit" xml:space="preserve">
     <value>Limite de taille de fichier (Mo)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>Archive un fichier de base de données de journal lorsqu'il atteint cette taille, en Mo.</value>
   </data>
   <data name="DB_ArchiveCount" xml:space="preserve">
     <value>Nombre d'archives à conserver</value>

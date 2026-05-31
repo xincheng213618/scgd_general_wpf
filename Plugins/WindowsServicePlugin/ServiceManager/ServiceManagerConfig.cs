@@ -15,24 +15,27 @@ namespace WindowsServicePlugin.ServiceManager
     {
         public static ServiceManagerConfig Instance => ConfigService.Instance.GetRequiredService<ServiceManagerConfig>();
 
-        [ConfigSetting(Order = 522)]
-        [DisplayName("服务安装根目录")]
+        [ConfigSetting(Order = 522, Section = ConfigSettingConstants.SectionAdvancedServices)]
+        [DisplayName("ServiceManagerBaseLocation")]
+        [Description("ServiceManagerBaseLocationDescription")]
         public string BaseLocation { get => _BaseLocation; set { _BaseLocation = value; OnPropertyChanged(); } }
         private string _BaseLocation = string.Empty;
 
-        [ConfigSetting(Order = 523)]
-        [DisplayName("MySQL端口")]
+        [ConfigSetting(Order = 523, Section = ConfigSettingConstants.SectionAdvancedServices)]
+        [DisplayName("ServiceManagerMySqlPort")]
+        [Description("ServiceManagerMySqlPortDescription")]
         public int MySqlPort { get => _MySqlPort; set { _MySqlPort = value; OnPropertyChanged(); } }
         private int _MySqlPort = 3306;
 
-        [ConfigSetting(Order = 524)]
-        [DisplayName("服务更新地址")]
+        [ConfigSetting(Order = 524, Section = ConfigSettingConstants.SectionAdvancedServices)]
+        [DisplayName("ServiceManagerUpdateServerUrl")]
+        [Description("ServiceManagerUpdateServerUrlDescription")]
         public string UpdateServerUrl { get => _UpdateServerUrl; set { _UpdateServerUrl = value; OnPropertyChanged(); } }
         private string _UpdateServerUrl = "http://xc213618.ddns.me:9998";
 
-        [ConfigSetting(Order = 525)]
-        [DisplayName("下载目录")]
-        [Description("服务包、MySQL、MQTT 等在线下载的保存目录")]
+        [ConfigSetting(Order = 525, Section = ConfigSettingConstants.SectionLowLevelPaths)]
+        [DisplayName("ServiceManagerDownloadLocation")]
+        [Description("ServiceManagerDownloadLocationDescription")]
         public string DownloadLocation
         {
             get
@@ -45,18 +48,21 @@ namespace WindowsServicePlugin.ServiceManager
         }
         private string _DownloadLocation = string.Empty;
 
-        [ConfigSetting(Order = 526)]
-        [DisplayName("默认勾选安装服务包")]
+        [ConfigSetting(Order = 526, Section = ConfigSettingConstants.SectionAdvancedServices)]
+        [DisplayName("ServiceManagerInstallServiceChecked")]
+        [Description("ServiceManagerInstallServiceCheckedDescription")]
         public bool InstallServiceChecked { get => _InstallServiceChecked; set { _InstallServiceChecked = value; OnPropertyChanged(); } }
         private bool _InstallServiceChecked = true;
 
-        [ConfigSetting(Order = 527)]
-        [DisplayName("默认勾选安装MySQL")]
+        [ConfigSetting(Order = 527, Section = ConfigSettingConstants.SectionAdvancedServices)]
+        [DisplayName("ServiceManagerInstallMySqlChecked")]
+        [Description("ServiceManagerInstallMySqlCheckedDescription")]
         public bool InstallMySqlChecked { get => _InstallMySqlChecked; set { _InstallMySqlChecked = value; OnPropertyChanged(); } }
         private bool _InstallMySqlChecked;
 
-        [ConfigSetting(Order = 528)]
-        [DisplayName("默认勾选安装MQTT")]
+        [ConfigSetting(Order = 528, Section = ConfigSettingConstants.SectionAdvancedServices)]
+        [DisplayName("ServiceManagerInstallMqttChecked")]
+        [Description("ServiceManagerInstallMqttCheckedDescription")]
         public bool InstallMqttChecked { get => _InstallMqttChecked; set { _InstallMqttChecked = value; OnPropertyChanged(); } }
         private bool _InstallMqttChecked;
 

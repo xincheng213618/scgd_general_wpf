@@ -44,7 +44,7 @@ namespace ColorVision.Update
         /// <summary>
         /// 是否自动更新
         /// </summary>
-        [ConfigSetting(Order = 500)]
+        [ConfigSetting(Order = 500, Section = ConfigSettingConstants.SectionBasic, Description = "CheckUpdatesOnStartupDescription")]
         [DisplayName("CheckUpdatesOnStartup")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;

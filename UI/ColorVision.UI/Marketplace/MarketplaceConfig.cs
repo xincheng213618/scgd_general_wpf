@@ -22,7 +22,7 @@ namespace ColorVision.UI.Marketplace
             }
         }
 
-        [ConfigSetting(Order = 10)]
+        [ConfigSetting(Order = 10, Section = ConfigSettingConstants.SectionAdvancedServices, Description = "MarketplaceServiceBaseUrlDescription")]
         [DisplayName("MarketplaceServiceBaseUrl")]
         public string BaseUrl
         {
