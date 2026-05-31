@@ -1,0 +1,123 @@
+{
+  "Version": "1.0",
+  "MsgID": "",
+  "EventName": "ProjectARVRResult",
+  "SerialNumber": "SN-DEMO-001",
+  "Code": 0,
+  "Msg": "ARVR Test Completed",
+  "Data": {
+    "W51TestResult": {
+      "HorizontalFieldOfViewAngle": {
+        "Name": "Horizontal_Field_Of_View_Angle",
+        "TestValue": "21.63",
+        "Value": 21.63,
+        "LowLimit": 21.0,
+        "UpLimit": 22.0,
+        "Unit": "degree",
+        "TestResult": true
+      },
+      "VerticalFieldOfViewAngle": {
+        "Name": "Vertical_Field of_View_Angle",
+        "TestValue": "15.42",
+        "Value": 15.42,
+        "LowLimit": 15.0,
+        "UpLimit": 16.0,
+        "Unit": "degree",
+        "TestResult": true
+      },
+      "DiagonalFieldOfViewAngle": {
+        "Name": "Diagonal_Field_of_View_Angle",
+        "TestValue": "26.47",
+        "Value": 26.47,
+        "LowLimit": 26.0,
+        "UpLimit": 27.0,
+        "Unit": "degree",
+        "TestResult": true
+      }
+    },
+    "W255TestResult": {
+      "CenterLunimance": {
+        "Name": "CenterLunimance",
+        "TestValue": "812.5",
+        "Value": 812.5,
+        "LowLimit": 700.0,
+        "UpLimit": 900.0,
+        "Unit": "cd/m2",
+        "TestResult": true
+      },
+      "LuminanceUniformity": {
+        "Name": "LuminanceUniformity",
+        "TestValue": "78.4",
+        "Value": 78.4,
+        "LowLimit": 65.0,
+        "UpLimit": 0.0,
+        "Unit": "%",
+        "TestResult": true
+      },
+      "ColorUniformity": {
+        "Name": "ColorUniformity",
+        "TestValue": "0.011",
+        "Value": 0.011,
+        "LowLimit": 0.0,
+        "UpLimit": 0.02,
+        "Unit": "None",
+        "TestResult": true
+      }
+    },
+    "DistortionTestResult": {
+      "HorizontalTVDistortion": {
+        "Name": "HorizontalTVDistortion",
+        "TestValue": "0.31",
+        "Value": 0.31,
+        "LowLimit": 0.0,
+        "UpLimit": 0.5,
+        "Unit": "%",
+        "TestResult": true
+      },
+      "VerticalTVDistortion": {
+        "Name": "VerticalTVDistortion",
+        "TestValue": "0.28",
+        "Value": 0.28,
+        "LowLimit": 0.0,
+        "UpLimit": 0.5,
+        "Unit": "%",
+        "TestResult": true
+      }
+    },
+    "DynamicTestResults": {
+      "MTFH1": [
+        {
+          "Name": "P_1_H_1",
+          "TestValue": "0.72",
+          "Value": 0.72,
+          "LowLimit": 0.65,
+          "UpLimit": 0.0,
+          "Unit": "None",
+          "TestResult": true
+        },
+        {
+          "Name": "P_2_H_1",
+          "TestValue": "0.68",
+          "Value": 0.68,
+          "LowLimit": 0.65,
+          "UpLimit": 0.0,
+          "Unit": "None",
+          "TestResult": true
+        }
+      ],
+      "MTFV1": [
+        {
+          "Name": "P_1_V_1",
+          "TestValue": "0.71",
+          "Value": 0.71,
+          "LowLimit": 0.65,
+          "UpLimit": 0.0,
+          "Unit": "None",
+          "TestResult": true
+        }
+      ]
+    },
+    "TotalResult": true,
+    "TotalResultString": "PASS"
+  }
+}
