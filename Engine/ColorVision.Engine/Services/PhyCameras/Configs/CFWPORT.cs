@@ -22,6 +22,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             copy.ChannelCfgs = ChannelCfgs?
                 .Select(item => new ChannelCfg { Cfwport = item.Cfwport, Chtype = item.Chtype })
                 .ToList() ?? new List<ChannelCfg>();
+            if (copy.IsCOM && copy.IsBingNDDevice)
+            {
+                copy.IsBingNDDevice = false;
+            }
+
             return copy;
         }
 
@@ -83,7 +88,27 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsUseCFW { get => _IsUseCFW; set { _IsUseCFW = value; OnPropertyChanged(); } }
         private bool _IsUseCFW;
 
-        public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsSerialPortVisible)); } }
+        public bool IsBingNDDevice
+        {
+            get => _IsBingNDDevice;
+            set
+            {
+                if (_IsBingNDDevice == value)
+                {
+                    return;
+                }
+
+                _IsBingNDDevice = value;
+                if (value && _IsCOM)
+                {
+                    _IsCOM = false;
+                    OnPropertyChanged(nameof(IsCOM));
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsSerialPortVisible));
+            }
+        }
         private bool _IsBingNDDevice = true;
 
         [PropertyEditorType(typeof(DeviceNameEditor)), DeviceSourceType(typeof(DeviceCfwPort)), PropertyVisibility(nameof(IsBingNDDevice))]
@@ -91,7 +116,27 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private string _NDBindDeviceCode = "";
 
 
-        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsSerialPortVisible)); } }
+        public bool IsCOM
+        {
+            get => _IsCOM;
+            set
+            {
+                if (_IsCOM == value)
+                {
+                    return;
+                }
+
+                _IsCOM = value;
+                if (value && _IsBingNDDevice)
+                {
+                    _IsBingNDDevice = false;
+                    OnPropertyChanged(nameof(IsBingNDDevice));
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsSerialPortVisible));
+            }
+        }
         private bool _IsCOM;
 
         public bool IsSerialPortVisible => IsCOM && !IsBingNDDevice;

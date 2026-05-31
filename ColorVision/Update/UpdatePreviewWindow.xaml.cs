@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
+using ColorVision.Themes;
 
 namespace ColorVision.Update
 {
@@ -699,7 +700,7 @@ namespace ColorVision.Update
         public UpdatePreviewWindow(UpdatePreviewDialogContext context, Func<UpdatePreviewWindow, Task>? initializeAsync = null)
         {
             InitializeComponent();
-
+            this.ApplyCaption();
             Context = context;
             Context.ApplyStandardWindowMetrics();
             DataContext = Context;

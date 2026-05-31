@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -39,6 +40,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             InitializeChannelOptions();
             InitializeGeneratedFields();
             UpdateChannelOptions(false);
+            ConfigTabs.SelectedItem = EditConfig.CameraMode == CameraMode.CV_MODE ? CfwTab : CameraTab;
             _isInitializing = false;
         }
 
@@ -76,39 +78,68 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void InitializeGeneratedFields()
         {
-            AddGeneratedField(CfwConnectionFieldsPanel, EditConfig.CFW, nameof(CFWPORT.NDBindDeviceCode));
-            AddGeneratedField(CfwConnectionFieldsPanel, EditConfig.CFW, nameof(CFWPORT.SzComName));
-            AddGeneratedField(CfwConnectionFieldsPanel, EditConfig.CFW, nameof(CFWPORT.BaudRate));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsUseCFW), Properties.Resources.LabelEnableCFW);
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsBingNDDevice), Properties.Resources.LabelBindNDDevice, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDBindDeviceCode), "ND 设备", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsCOM), Properties.Resources.EnableSerialPort, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.SzComName), Properties.Resources.Serial, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.BaudRate), Properties.Resources.BaudRate, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.CFWNum), Properties.Resources.LabelFilterWheelCount, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.EnableResetND), "重置 ND", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsNDPort), "ND 端口", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDMaxExpTime), "最大曝光", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDMinExpTime), "最小曝光", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDRate), "倍率", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDCaliNameGroups), "校准组", nameof(CFWPORT.IsUseCFW));
 
-            AddGeneratedPanel(FileServerPanel, EditConfig.FileServerCfg);
             AddGeneratedPanel(CameraCfgPanel, EditConfig.CameraCfg);
+            AddGeneratedPanel(FileServerPanel, EditConfig.FileServerCfg);
             AddGeneratedPanel(MotorConfigPanel, EditConfig.MotorConfig);
             AddGeneratedPanel(CameraParameterLimitPanel, EditConfig.CameraParameterLimit);
-
-            AddGeneratedField(CfwAdvancedFieldsPanel, EditConfig.CFW, nameof(CFWPORT.EnableResetND));
-            AddGeneratedField(CfwAdvancedFieldsPanel, EditConfig.CFW, nameof(CFWPORT.IsNDPort));
-            AddGeneratedField(CfwAdvancedFieldsPanel, EditConfig.CFW, nameof(CFWPORT.NDMaxExpTime));
-            AddGeneratedField(CfwAdvancedFieldsPanel, EditConfig.CFW, nameof(CFWPORT.NDMinExpTime));
-            AddGeneratedField(CfwAdvancedFieldsPanel, EditConfig.CFW, nameof(CFWPORT.NDRate));
-            AddGeneratedField(CfwAdvancedFieldsPanel, EditConfig.CFW, nameof(CFWPORT.NDCaliNameGroups));
         }
 
         private void RebuildGeneratedFields()
         {
-            CfwConnectionFieldsPanel.Children.Clear();
-            FileServerPanel.Children.Clear();
+            CfwConfigPanel.Children.Clear();
             CameraCfgPanel.Children.Clear();
+            FileServerPanel.Children.Clear();
             MotorConfigPanel.Children.Clear();
             CameraParameterLimitPanel.Children.Clear();
-            CfwAdvancedFieldsPanel.Children.Clear();
             InitializeGeneratedFields();
         }
 
-        private void AddGeneratedField(Panel panel, object config, string propertyName)
+        private void AddGeneratedField(Panel panel, object config, string propertyName, string? labelText = null, string? visibleWhenProperty = null)
         {
             try
             {
-                panel.Children.Add(PropertyEditorHelper.GenProperties(config, propertyName));
+                var field = PropertyEditorHelper.GenProperties(config, propertyName);
+                field.HorizontalAlignment = HorizontalAlignment.Stretch;
+                field.VerticalAlignment = VerticalAlignment.Top;
+                NormalizeGeneratedText(field);
+
+                if (!string.IsNullOrWhiteSpace(labelText))
+                {
+                    var label = field.Children.OfType<TextBlock>().FirstOrDefault();
+                    if (label != null)
+                    {
+                        label.Text = labelText;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(visibleWhenProperty))
+                {
+                    panel.Children.Add(field);
+                    return;
+                }
+
+                var host = new Border
+                {
+                    Child = field,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Top
+                };
+                BindBoolVisibility(host, config, visibleWhenProperty);
+                panel.Children.Add(host);
             }
             catch
             {
@@ -118,9 +149,70 @@ namespace ColorVision.Engine.Services.PhyCameras
         private void AddGeneratedPanel(Panel panel, object config)
         {
             var editor = PropertyEditorHelper.GenPropertyEditorControl(config);
+            NormalizeGeneratedEditor(editor);
             if (editor.Children.Count > 0)
             {
                 panel.Children.Add(editor);
+            }
+        }
+
+        private void BindBoolVisibility(FrameworkElement element, object source, string path)
+        {
+            var binding = new Binding(path)
+            {
+                Source = source,
+                Mode = BindingMode.OneWay
+            };
+
+            if (TryFindResource("bool2VisibilityConverter") is IValueConverter converter)
+            {
+                binding.Converter = converter;
+            }
+
+            element.SetBinding(UIElement.VisibilityProperty, binding);
+        }
+
+        private static void NormalizeGeneratedEditor(StackPanel editor)
+        {
+            editor.HorizontalAlignment = HorizontalAlignment.Stretch;
+            editor.VerticalAlignment = VerticalAlignment.Top;
+            NormalizeGeneratedText(editor);
+
+            foreach (var border in editor.Children.OfType<Border>())
+            {
+                border.HorizontalAlignment = HorizontalAlignment.Stretch;
+                border.VerticalAlignment = VerticalAlignment.Top;
+                if (border.Child is FrameworkElement child)
+                {
+                    child.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    child.VerticalAlignment = VerticalAlignment.Top;
+                }
+            }
+        }
+
+        private static void NormalizeGeneratedText(DependencyObject element)
+        {
+            if (element is FrameworkElement frameworkElement)
+            {
+                frameworkElement.VerticalAlignment = VerticalAlignment.Top;
+            }
+
+            if (element is Control control)
+            {
+                control.FontWeight = FontWeights.Normal;
+            }
+
+            if (element is TextBlock textBlock)
+            {
+                textBlock.FontWeight = FontWeights.Normal;
+            }
+
+            foreach (var child in LogicalTreeHelper.GetChildren(element))
+            {
+                if (child is DependencyObject dependencyObject)
+                {
+                    NormalizeGeneratedText(dependencyObject);
+                }
             }
         }
 
@@ -173,6 +265,16 @@ namespace ColorVision.Engine.Services.PhyCameras
                 .Select(item => new KeyValuePair<ImageChannel, string>(item, item.ToDescription()));
             ComboxCameraChannel.IsEnabled = EditConfig.CameraMode == CameraMode.BV_MODE;
             ChannelField.Visibility = EditConfig.CameraMode == CameraMode.LV_MODE ? Visibility.Collapsed : Visibility.Visible;
+
+            if (EditConfig.CameraMode == CameraMode.CV_MODE && applyModeDefaults)
+            {
+                ConfigTabs.SelectedItem = CfwTab;
+            }
+
+            if (EditConfig.CameraMode != CameraMode.CV_MODE && ConfigTabs.SelectedItem == CfwTab)
+            {
+                ConfigTabs.SelectedItem = CameraTab;
+            }
         }
 
         private void ResetChannels_Click(object sender, RoutedEventArgs e)
