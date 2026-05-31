@@ -58,9 +58,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Calibration" xml:space="preserve">
-    <value>校正</value>
-  </data>
   <data name="NoFilter" xml:space="preserve">
     <value>無濾波</value>
   </data>
@@ -186,30 +183,6 @@
   </data>
   <data name="ChannelDeltaUV" xml:space="preserve">
     <value>色差 Δuv</value>
-  </data>
-  <data name="ChannelXShort" xml:space="preserve">
-    <value>X通道</value>
-  </data>
-  <data name="ChannelYShort" xml:space="preserve">
-    <value>Y通道</value>
-  </data>
-  <data name="ChannelZShort" xml:space="preserve">
-    <value>Z通道</value>
-  </data>
-  <data name="ChannelCieXShort" xml:space="preserve">
-    <value>x色度</value>
-  </data>
-  <data name="ChannelCieYShort" xml:space="preserve">
-    <value>y色度</value>
-  </data>
-  <data name="ChannelCieUShort" xml:space="preserve">
-    <value>u色度</value>
-  </data>
-  <data name="ChannelCieVShort" xml:space="preserve">
-    <value>v色度</value>
-  </data>
-  <data name="ChannelDeltaUVShort" xml:space="preserve">
-    <value>色差Δuv</value>
   </data>
   <data name="RefAzimuthLine" xml:space="preserve">
     <value>方位角直線</value>
@@ -449,9 +422,6 @@
   </data>
   <data name="MsgPolarExportFailed" xml:space="preserve">
     <value>極角模式匯出失敗: {0}</value>
-  </data>
-  <data name="MsgXyzNotLoaded" xml:space="preserve">
-    <value>XYZ 資料未載入</value>
   </data>
   <data name="MsgAdvancedExportFailed" xml:space="preserve">
     <value>高級匯出失敗: {0}</value>
@@ -882,41 +852,8 @@
   <data name="FocusPointLabel" xml:space="preserve">
     <value>[關注點] {0} - {1}</value>
   </data>
-  <data name="FilterNone" xml:space="preserve">
-    <value>不過濾</value>
-  </data>
-  <data name="FilterLowPass" xml:space="preserve">
-    <value>低通 核{0}</value>
-  </data>
-  <data name="FilterMean" xml:space="preserve">
-    <value>均值 核{0}</value>
-  </data>
-  <data name="FilterGaussian" xml:space="preserve">
-    <value>高斯 核{0}</value>
-  </data>
-  <data name="FilterMedian" xml:space="preserve">
-    <value>中值 核{0}</value>
-  </data>
-  <data name="FilterBilateral" xml:space="preserve">
-    <value>雙邊 d{0}</value>
-  </data>
-  <data name="FilterDefaultParams" xml:space="preserve">
-    <value>使用預設參數</value>
-  </data>
   <data name="DustLabel" xml:space="preserve">
     <value>灰塵</value>
-  </data>
-  <data name="DustOff" xml:space="preserve">
-    <value>灰塵關閉</value>
-  </data>
-  <data name="DustDarkSpot" xml:space="preserve">
-    <value>暗斑</value>
-  </data>
-  <data name="DustBrightSpot" xml:space="preserve">
-    <value>亮斑</value>
-  </data>
-  <data name="DustBoth" xml:space="preserve">
-    <value>暗斑+亮斑</value>
   </data>
   <data name="TitleGamutCalc" xml:space="preserve">
     <value>色域計算</value>
@@ -1239,7 +1176,7 @@
     <value>{0} 資料中缺少關注點 {1}。
 來源: {2}</value>
   </data>
-<data name="Conoscope_AllFocusPoints" xml:space="preserve"><value>All Focus Points</value></data><data name="Conoscope_AngleDegrees" xml:space="preserve"><value>Angle (°)</value></data><data name="Conoscope_CalculateAllFocusPoints" xml:space="preserve"><value>Calculate All Focus Points</value></data><data name="Conoscope_CalculateFocusPoint" xml:space="preserve"><value>Calculate Focus Point: {0}</value></data><data name="Conoscope_CircleAngleDegrees" xml:space="preserve"><value>Circle Angle (°)</value></data><data name="Conoscope_CircleDistributionTitle" xml:space="preserve"><value>Polar {0}° {1} Circle Distribution</value></data><data name="Conoscope_ClearAllFocusPoints" xml:space="preserve"><value>Clear All Focus Points</value></data><data name="Conoscope_ClearFocusPoint" xml:space="preserve"><value>Clear Focus Point</value></data><data name="Conoscope_ContrastChannel" xml:space="preserve"><value>Contrast</value></data><data name="Conoscope_ContrastNeedsReference" xml:space="preserve"><value>Contrast channel requires saving white or black field reference first</value></data><data name="Conoscope_ContrastReferenceImage" xml:space="preserve"><value>Contrast Reference Image</value></data><data name="Conoscope_CustomUv" xml:space="preserve"><value>Custom: u={0:F4}, v={1:F4}</value></data><data name="Conoscope_CvcieFileFilter" xml:space="preserve"><value>CVCIE Files (*.cvcie)|*.cvcie</value></data><data name="Conoscope_EditByAngleLength" xml:space="preserve"><value>Edit by Angle/Length...</value></data><data name="Conoscope_FocusPointInfo" xml:space="preserve"><value>{0}  Azimuth {1:F2}°  Polar {2:F2}°  R {3:F1}px/{4:F2}°</value></data><data name="Conoscope_FocusPointTemplateName" xml:space="preserve"><value>ConoscopeFocusPoint_{0}</value></data><data name="Conoscope_GlobalReference" xml:space="preserve"><value>Global Reference: {0}</value></data><data name="Conoscope_NoGlobalReference" xml:space="preserve"><value>No Global Color Difference Reference Saved</value></data><data name="Conoscope_OverallAverage" xml:space="preserve"><value>Overall Average</value></data><data name="Conoscope_PolarDistributionTitle" xml:space="preserve"><value>Azimuth {0}° {1} Distribution</value></data><data name="Conoscope_SaveGlobalReference" xml:space="preserve"><value>Save Global Reference</value></data><data name="Conoscope_ScaleCoefficientNotConfigured" xml:space="preserve"><value>Observation camera scale coefficient not configured</value></data><data name="Conoscope_TestAreaNotDisplayed" xml:space="preserve"><value>Test area not displayed</value></data><data name="Conoscope_UpdateGlobalReference" xml:space="preserve"><value>Update Global Reference</value></data><data name="Conoscope_VReferenceImage" xml:space="preserve"><value>v Reference Image</value></data><data name="Conoscope_TestAreaSizeInvalid" xml:space="preserve"><value>Test area size is invalid</value></data><data name="Con_Category_FOV" xml:space="preserve"><value>視場</value></data><data name="Con_Category_FocusPoint" xml:space="preserve"><value>關注點</value></data><data name="Con_Category_Position" xml:space="preserve"><value>位置</value></data><data name="Con_Category_Size" xml:space="preserve"><value>大小</value></data><data name="Con_Category_CoordAxis" xml:space="preserve"><value>坐標軸</value></data><data name="Con_Category_RefLine" xml:space="preserve"><value>參考線</value></data><data name="Con_Category_Mask" xml:space="preserve"><value>遮罩</value></data><data name="Con_Category_Text" xml:space="preserve"><value>文字</value></data><data name="Con_Category_Display" xml:space="preserve"><value>顯示</value></data><data name="Con_Category_Export" xml:space="preserve"><value>導出</value></data><data name="Con_Category_Preprocess" xml:space="preserve"><value>預處理</value></data><data name="Con_Category_Filter" xml:space="preserve"><value>濾波</value></data><data name="Con_Category_Dust" xml:space="preserve"><value>灰塵濾除</value></data><data name="Con_Category_Model" xml:space="preserve"><value>型號</value></data><data name="Con_Category_ObserveCam" xml:space="preserve"><value>觀察相機</value></data><data name="Con_FOV_Angle" xml:space="preserve"><value>視場角(度)</value></data><data name="Con_FOV_Pixels" xml:space="preserve"><value>完整像素數(px)</value></data><data name="Con_FOV_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(度/像素)</value></data><data name="Con_FOV_AngleDesc" xml:space="preserve"><value>視場角</value></data><data name="Con_FP_Name" xml:space="preserve"><value>名稱</value></data><data name="Con_FP_Azimuth" xml:space="preserve"><value>方位角(°)</value></data><data name="Con_FP_Polar" xml:space="preserve"><value>極角(°)</value></data><data name="Con_FP_Distance" xml:space="preserve"><value>距離(px)</value></data><data name="Con_FP_RadiusPx" xml:space="preserve"><value>半徑(px)</value></data><data name="Con_FP_RadiusDeg" xml:space="preserve"><value>半徑(°)</value></data><data name="Con_Axis_EnableInteract" xml:space="preserve"><value>啟用交互</value></data><data name="Con_Axis_MaxAngle" xml:space="preserve"><value>最大角度</value></data><data name="Con_Axis_CenterX" xml:space="preserve"><value>圓心X</value></data><data name="Con_Axis_CenterY" xml:space="preserve"><value>圓心Y</value></data><data name="Con_Axis_Radius" xml:space="preserve"><value>坐標半徑</value></data><data name="Con_Axis_AzimuthStep" xml:space="preserve"><value>方位角步進</value></data><data name="Con_Axis_PolarStep" xml:space="preserve"><value>極角步進</value></data><data name="Con_Axis_LineWidth" xml:space="preserve"><value>線寬</value></data><data name="Con_Axis_Color" xml:space="preserve"><value>坐標軸顏色</value></data><data name="Con_Axis_RefMode" xml:space="preserve"><value>參考模式</value></data><data name="Con_Axis_RefAzimuth" xml:space="preserve"><value>參考方位角</value></data><data name="Con_Axis_RefPolar" xml:space="preserve"><value>參考極角</value></data><data name="Con_Axis_RefLineWidth" xml:space="preserve"><value>參考線寬</value></data><data name="Con_Axis_RefColor" xml:space="preserve"><value>參考線顏色</value></data><data name="Con_Axis_ShowMask" xml:space="preserve"><value>顯示遮罩</value></data><data name="Con_Axis_MaskOpacity" xml:space="preserve"><value>遮罩不透明度(0-255)</value></data><data name="Con_Axis_MaskColor" xml:space="preserve"><value>遮罩顏色</value></data><data name="Con_Axis_ShowText" xml:space="preserve"><value>顯示文字</value></data><data name="Con_Axis_TextSize" xml:space="preserve"><value>文字大小</value></data><data name="Con_Axis_TextColor" xml:space="preserve"><value>文字顏色</value></data><data name="Con_Axis_AzimuthLine" xml:space="preserve"><value>方位角直線</value></data><data name="Con_Axis_PolarCircle" xml:space="preserve"><value>極角圓</value></data><data name="Con_Cfg_DisplayChannel" xml:space="preserve"><value>顯示通道</value></data><data name="Con_Cfg_PseudoColor" xml:space="preserve"><value>偽彩色映射</value></data><data name="Con_Cfg_UsePseudoColor" xml:space="preserve"><value>使用偽彩色</value></data><data name="Con_Cfg_SampleInterval" xml:space="preserve"><value>當前曲線採樣間隔(度)</value></data><data name="Con_Cfg_ExportMetadata" xml:space="preserve"><value>當前曲線導出元數據</value></data><data name="Con_Cfg_Decimals" xml:space="preserve"><value>導出數據小數位數</value></data><data name="Con_Cfg_FixNonPositiveXYZ" xml:space="preserve"><value>載入時修正非正 XYZ</value></data><data name="Con_Cfg_FilterType" xml:space="preserve"><value>濾波類型</value></data><data name="Con_Cfg_KernelSize" xml:space="preserve"><value>核大小</value></data><data name="Con_Cfg_GaussianSigma" xml:space="preserve"><value>高斯 Sigma</value></data><data name="Con_Cfg_BilateralD" xml:space="preserve"><value>雙邊 d</value></data><data name="Con_Cfg_BilateralSigmaColor" xml:space="preserve"><value>雙邊 SigmaColor</value></data><data name="Con_Cfg_BilateralSigmaSpace" xml:space="preserve"><value>雙邊 SigmaSpace</value></data><data name="Con_Cfg_EnableDust" xml:space="preserve"><value>啟用灰塵濾除</value></data><data name="Con_Cfg_DustType" xml:space="preserve"><value>灰塵類型</value></data><data name="Con_Cfg_DetectThreshold" xml:space="preserve"><value>檢測閾值(%)</value></data><data name="Con_Cfg_MinArea" xml:space="preserve"><value>最小面積(px)</value></data><data name="Con_Cfg_MaxArea" xml:space="preserve"><value>最大面積(px)</value></data><data name="Con_Cfg_RepairRadius" xml:space="preserve"><value>修復半徑(px)</value></data><data name="Con_Model_FOV" xml:space="preserve"><value>視場角(度)</value></data><data name="Con_Model_Pixels" xml:space="preserve"><value>完整像素數(px)</value></data><data name="Con_Model_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(度/像素)</value></data><data name="Con_Model_EnableObsCam" xml:space="preserve"><value>啟用觀察相機</value></data><data name="Con_Model_SizeCoeff" xml:space="preserve"><value>尺寸係數(mm/像素)</value></data><data name="Con_Model_CenterX" xml:space="preserve"><value>中心點X(像素)</value></data><data name="Con_Model_CenterY" xml:space="preserve"><value>中心點Y(像素)</value></data>
+<data name="Conoscope_AllFocusPoints" xml:space="preserve"><value>All Focus Points</value></data><data name="Conoscope_AngleDegrees" xml:space="preserve"><value>Angle (°)</value></data><data name="Conoscope_CalculateAllFocusPoints" xml:space="preserve"><value>Calculate All Focus Points</value></data><data name="Conoscope_CalculateFocusPoint" xml:space="preserve"><value>Calculate Focus Point: {0}</value></data><data name="Conoscope_CircleAngleDegrees" xml:space="preserve"><value>Circle Angle (°)</value></data><data name="Conoscope_CircleDistributionTitle" xml:space="preserve"><value>Polar {0}° {1} Circle Distribution</value></data><data name="Conoscope_ClearAllFocusPoints" xml:space="preserve"><value>Clear All Focus Points</value></data><data name="Conoscope_ClearFocusPoint" xml:space="preserve"><value>Clear Focus Point</value></data><data name="Conoscope_ContrastChannel" xml:space="preserve"><value>Contrast</value></data><data name="Conoscope_ContrastNeedsReference" xml:space="preserve"><value>Contrast channel requires saving white or black field reference first</value></data><data name="Conoscope_ContrastReferenceImage" xml:space="preserve"><value>Contrast Reference Image</value></data><data name="Conoscope_CustomUv" xml:space="preserve"><value>Custom: u={0:F4}, v={1:F4}</value></data><data name="Conoscope_CvcieFileFilter" xml:space="preserve"><value>CVCIE Files (*.cvcie)|*.cvcie</value></data><data name="Conoscope_EditByAngleLength" xml:space="preserve"><value>Edit by Angle/Length...</value></data><data name="Conoscope_FocusPointInfo" xml:space="preserve"><value>{0}  Azimuth {1:F2}°  Polar {2:F2}°  R {3:F1}px/{4:F2}°</value></data><data name="Conoscope_FocusPointTemplateName" xml:space="preserve"><value>ConoscopeFocusPoint_{0}</value></data><data name="Conoscope_GlobalReference" xml:space="preserve"><value>Global Reference: {0}</value></data><data name="Conoscope_NoGlobalReference" xml:space="preserve"><value>No Global Color Difference Reference Saved</value></data><data name="Conoscope_OverallAverage" xml:space="preserve"><value>Overall Average</value></data><data name="Conoscope_PolarDistributionTitle" xml:space="preserve"><value>Azimuth {0}° {1} Distribution</value></data><data name="Conoscope_SaveGlobalReference" xml:space="preserve"><value>Save Global Reference</value></data><data name="Conoscope_ScaleCoefficientNotConfigured" xml:space="preserve"><value>Observation camera scale coefficient not configured</value></data><data name="Conoscope_TestAreaNotDisplayed" xml:space="preserve"><value>Test area not displayed</value></data><data name="Conoscope_UpdateGlobalReference" xml:space="preserve"><value>Update Global Reference</value></data><data name="Conoscope_VReferenceImage" xml:space="preserve"><value>v Reference Image</value></data><data name="Conoscope_TestAreaSizeInvalid" xml:space="preserve"><value>Test area size is invalid</value></data><data name="Con_Category_FOV" xml:space="preserve"><value>視場</value></data><data name="Con_Category_FocusPoint" xml:space="preserve"><value>關注點</value></data><data name="Con_Category_Position" xml:space="preserve"><value>位置</value></data><data name="Con_Category_Size" xml:space="preserve"><value>大小</value></data><data name="Con_Category_CoordAxis" xml:space="preserve"><value>坐標軸</value></data><data name="Con_Category_RefLine" xml:space="preserve"><value>參考線</value></data><data name="Con_Category_Mask" xml:space="preserve"><value>遮罩</value></data><data name="Con_Category_Text" xml:space="preserve"><value>文字</value></data><data name="Con_Category_Display" xml:space="preserve"><value>顯示</value></data><data name="Con_Category_Export" xml:space="preserve"><value>導出</value></data><data name="Con_Category_Preprocess" xml:space="preserve"><value>預處理</value></data><data name="Con_Category_Filter" xml:space="preserve"><value>濾波</value></data><data name="Con_Category_Dust" xml:space="preserve"><value>灰塵濾除</value></data><data name="Con_Category_Model" xml:space="preserve"><value>型號</value></data><data name="Con_Category_ObserveCam" xml:space="preserve"><value>觀察相機</value></data><data name="Con_FOV_Angle" xml:space="preserve"><value>視場角(度)</value></data><data name="Con_FOV_Pixels" xml:space="preserve"><value>完整像素數(px)</value></data><data name="Con_FOV_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(度/像素)</value></data><data name="Con_FP_Name" xml:space="preserve"><value>名稱</value></data><data name="Con_FP_Azimuth" xml:space="preserve"><value>方位角(°)</value></data><data name="Con_FP_Polar" xml:space="preserve"><value>極角(°)</value></data><data name="Con_FP_Distance" xml:space="preserve"><value>距離(px)</value></data><data name="Con_FP_RadiusPx" xml:space="preserve"><value>半徑(px)</value></data><data name="Con_FP_RadiusDeg" xml:space="preserve"><value>半徑(°)</value></data><data name="Con_Axis_EnableInteract" xml:space="preserve"><value>啟用交互</value></data><data name="Con_Axis_MaxAngle" xml:space="preserve"><value>最大角度</value></data><data name="Con_Axis_CenterX" xml:space="preserve"><value>圓心X</value></data><data name="Con_Axis_CenterY" xml:space="preserve"><value>圓心Y</value></data><data name="Con_Axis_Radius" xml:space="preserve"><value>坐標半徑</value></data><data name="Con_Axis_AzimuthStep" xml:space="preserve"><value>方位角步進</value></data><data name="Con_Axis_PolarStep" xml:space="preserve"><value>極角步進</value></data><data name="Con_Axis_LineWidth" xml:space="preserve"><value>線寬</value></data><data name="Con_Axis_Color" xml:space="preserve"><value>坐標軸顏色</value></data><data name="Con_Axis_RefMode" xml:space="preserve"><value>參考模式</value></data><data name="Con_Axis_RefAzimuth" xml:space="preserve"><value>參考方位角</value></data><data name="Con_Axis_RefPolar" xml:space="preserve"><value>參考極角</value></data><data name="Con_Axis_RefLineWidth" xml:space="preserve"><value>參考線寬</value></data><data name="Con_Axis_RefColor" xml:space="preserve"><value>參考線顏色</value></data><data name="Con_Axis_ShowMask" xml:space="preserve"><value>顯示遮罩</value></data><data name="Con_Axis_MaskOpacity" xml:space="preserve"><value>遮罩不透明度(0-255)</value></data><data name="Con_Axis_MaskColor" xml:space="preserve"><value>遮罩顏色</value></data><data name="Con_Axis_ShowText" xml:space="preserve"><value>顯示文字</value></data><data name="Con_Axis_TextSize" xml:space="preserve"><value>文字大小</value></data><data name="Con_Axis_TextColor" xml:space="preserve"><value>文字顏色</value></data><data name="Con_Axis_AzimuthLine" xml:space="preserve"><value>方位角直線</value></data><data name="Con_Axis_PolarCircle" xml:space="preserve"><value>極角圓</value></data><data name="Con_Cfg_DisplayChannel" xml:space="preserve"><value>顯示通道</value></data><data name="Con_Cfg_PseudoColor" xml:space="preserve"><value>偽彩色映射</value></data><data name="Con_Cfg_UsePseudoColor" xml:space="preserve"><value>使用偽彩色</value></data><data name="Con_Cfg_SampleInterval" xml:space="preserve"><value>當前曲線採樣間隔(度)</value></data><data name="Con_Cfg_ExportMetadata" xml:space="preserve"><value>當前曲線導出元數據</value></data><data name="Con_Cfg_Decimals" xml:space="preserve"><value>導出數據小數位數</value></data><data name="Con_Cfg_FixNonPositiveXYZ" xml:space="preserve"><value>載入時修正非正 XYZ</value></data><data name="Con_Cfg_FilterType" xml:space="preserve"><value>濾波類型</value></data><data name="Con_Cfg_KernelSize" xml:space="preserve"><value>核大小</value></data><data name="Con_Cfg_GaussianSigma" xml:space="preserve"><value>高斯 Sigma</value></data><data name="Con_Cfg_BilateralD" xml:space="preserve"><value>雙邊 d</value></data><data name="Con_Cfg_BilateralSigmaColor" xml:space="preserve"><value>雙邊 SigmaColor</value></data><data name="Con_Cfg_BilateralSigmaSpace" xml:space="preserve"><value>雙邊 SigmaSpace</value></data><data name="Con_Cfg_EnableDust" xml:space="preserve"><value>啟用灰塵濾除</value></data><data name="Con_Cfg_DustType" xml:space="preserve"><value>灰塵類型</value></data><data name="Con_Cfg_DetectThreshold" xml:space="preserve"><value>檢測閾值(%)</value></data><data name="Con_Cfg_MinArea" xml:space="preserve"><value>最小面積(px)</value></data><data name="Con_Cfg_MaxArea" xml:space="preserve"><value>最大面積(px)</value></data><data name="Con_Cfg_RepairRadius" xml:space="preserve"><value>修復半徑(px)</value></data><data name="Con_Model_FOV" xml:space="preserve"><value>視場角(度)</value></data><data name="Con_Model_Pixels" xml:space="preserve"><value>完整像素數(px)</value></data><data name="Con_Model_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(度/像素)</value></data><data name="Con_Model_EnableObsCam" xml:space="preserve"><value>啟用觀察相機</value></data><data name="Con_Model_SizeCoeff" xml:space="preserve"><value>尺寸係數(mm/像素)</value></data><data name="Con_Model_CenterX" xml:space="preserve"><value>中心點X(像素)</value></data><data name="Con_Model_CenterY" xml:space="preserve"><value>中心點Y(像素)</value></data>
   <data name="MsgPolarExportSuccess" xml:space="preserve">
     <value>極角 {0}° 導出成功</value>
   </data>
@@ -1254,9 +1191,6 @@
   </data>
   <data name="MsgNoPixelsInCenter" xml:space="preserve">
     <value>圖像中心 50px 關注點內沒有可用像素</value>
-  </data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
-    <value>保存色差基準圖失敗: {0}</value>
   </data>
   <data name="MsgImageSizeMismatch" xml:space="preserve">
     <value>當前圖像尺寸與色差基準圖不一致，無法逐點計算</value>
