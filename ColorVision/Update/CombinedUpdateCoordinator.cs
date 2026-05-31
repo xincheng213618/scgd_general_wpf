@@ -7,12 +7,14 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Resources = ColorVision.Properties.Resources;
 
 namespace ColorVision.Update
 {
@@ -50,7 +52,7 @@ namespace ColorVision.Update
                             return;
                         }
 
-                        UpdatePreviewDialogContext loadedContext = await BuildUpdatePreviewContextAsync(applicationPlan, pluginPlan, allowSkipVersion: false, isStartupCheck: false);
+                        UpdatePreviewDialogContext loadedContext = BuildUpdatePreviewContext(applicationPlan, pluginPlan, allowSkipVersion: false, isStartupCheck: false);
                         if (currentWindow.IsClosed)
                             return;
 
@@ -257,7 +259,7 @@ namespace ColorVision.Update
         private static void ShowUpdateDownloadFailedMessage()
         {
             ClearWorkflowState();
-            MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.PackageDownloadFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewPackageDownloadFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private static async Task StartPluginUpdateAsync(CombinedPluginUpdatePlan pluginPlan, bool showNoUpdatesMessage)
@@ -276,12 +278,12 @@ namespace ColorVision.Update
                 restartArguments: null,
                 noRestartAction: () =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.PluginDownloadFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewPluginDownloadFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 });
 
             if (!started && showNoUpdatesMessage)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.NoPluginUpdates, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewNoPluginUpdates, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             await Task.CompletedTask;
@@ -362,7 +364,7 @@ namespace ColorVision.Update
                 {
                     if (failed || orderedApplicationPaths == null || orderedPluginPaths == null)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.CombinedPackageIncomplete, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewCombinedPackageIncomplete, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 
@@ -448,7 +450,7 @@ namespace ColorVision.Update
 
         private static async Task<UpdatePreviewAction> ShowUpdatePreviewAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
         {
-            UpdatePreviewDialogContext context = await BuildUpdatePreviewContextAsync(applicationPlan, pluginPlan, allowSkipVersion, isStartupCheck);
+            UpdatePreviewDialogContext context = BuildUpdatePreviewContext(applicationPlan, pluginPlan, allowSkipVersion, isStartupCheck);
 
             UpdatePreviewWindow window = new(context)
             {
@@ -470,16 +472,14 @@ namespace ColorVision.Update
         {
             return new UpdatePreviewDialogContext
             {
-                WindowTitle = UpdatePreviewText.WindowTitle,
-                Heading = UpdatePreviewText.CheckingHeading,
-                Summary = UpdatePreviewText.CheckingSummary,
-                CheckingTitle = UpdatePreviewText.ScanningTitle,
-                CheckingSummary = UpdatePreviewText.CheckingSummary,
+                Heading = Resources.UpdatePreviewCheckingHeading,
+                Summary = Resources.UpdatePreviewCheckingSummary,
+                CheckingTitle = Resources.UpdatePreviewScanningTitle,
+                CheckingSummary = Resources.UpdatePreviewCheckingSummary,
                 StateGlyph = "\uE895",
-                HostVersionLabel = UpdatePreviewText.HostVersionLabel,
-                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion,
-                ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
-                CancelButtonText = UpdatePreviewText.CancelButtonText,
+                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? Resources.UpdatePreviewUnknownVersion,
+                ConfirmButtonText = Resources.UpdatePreviewUpdateNowButtonText,
+                CancelButtonText = Resources.UpdatePreviewCancelButtonText,
                 SecondaryButtonText = null,
                 IsChecking = true,
             };
@@ -487,24 +487,23 @@ namespace ColorVision.Update
 
         private static UpdatePreviewDialogContext CreateNoUpdatesContext(CombinedPluginUpdatePlan? pluginPlan)
         {
+            string listSeparator = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "zh" or "ja" ? "、" : ", ";
             string emptyMessage = pluginPlan?.SkippedIncompatiblePlugins.Count > 0
-                ? UpdatePreviewText.SkippedIncompatibleUpdates(string.Join(UpdatePreviewText.ListSeparator, pluginPlan.SkippedIncompatiblePlugins))
-                : UpdatePreviewText.NoInstallableUpdatesMessage;
+                ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewSkippedIncompatibleUpdatesFormat, string.Join(listSeparator, pluginPlan.SkippedIncompatiblePlugins))
+                : Resources.UpdatePreviewNoInstallableUpdatesMessage;
 
             return new UpdatePreviewDialogContext
             {
-                WindowTitle = UpdatePreviewText.WindowTitle,
-                Heading = UpdatePreviewText.AlreadyLatestHeading,
-                Summary = UpdatePreviewText.DialogSummaryNoUpdates,
-                CheckingTitle = UpdatePreviewText.ScanningTitle,
-                CheckingSummary = UpdatePreviewText.CheckingSummary,
-                EmptyStateTitle = UpdatePreviewText.AlreadyLatestHeading,
+                Heading = Resources.UpdatePreviewAlreadyLatestHeading,
+                Summary = Resources.UpdatePreviewDialogSummaryNoUpdates,
+                CheckingTitle = Resources.UpdatePreviewScanningTitle,
+                CheckingSummary = Resources.UpdatePreviewCheckingSummary,
+                EmptyStateTitle = Resources.UpdatePreviewAlreadyLatestHeading,
                 EmptyStateMessage = emptyMessage,
                 StateGlyph = "\uE73E",
-                HostVersionLabel = UpdatePreviewText.HostVersionLabel,
-                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? UpdatePreviewText.UnknownVersion,
-                ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
-                CancelButtonText = UpdatePreviewText.CloseButtonText,
+                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? Resources.UpdatePreviewUnknownVersion,
+                ConfirmButtonText = Resources.UpdatePreviewUpdateNowButtonText,
+                CancelButtonText = Resources.UpdatePreviewCloseButtonText,
                 SecondaryButtonText = null,
                 IsChecking = false,
             };
@@ -523,18 +522,16 @@ namespace ColorVision.Update
             pluginPlan.Updates.RemoveAll(item => !selectedPluginIds.Contains(GetPluginItemId(item)));
         }
 
-        private static Task<UpdatePreviewDialogContext> BuildUpdatePreviewContextAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
+        private static UpdatePreviewDialogContext BuildUpdatePreviewContext(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
         {
             UpdatePreviewDialogContext context = new()
             {
-                WindowTitle = UpdatePreviewText.WindowTitle,
                 Heading = BuildPreviewHeading(applicationPlan, pluginPlan),
                 Summary = BuildDialogSummary(applicationPlan, pluginPlan),
-                HostVersionLabel = UpdatePreviewText.HostVersionLabel,
-                HostVersionValue = (applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion)?.ToString() ?? UpdatePreviewText.UnknownVersion,
-                ConfirmButtonText = UpdatePreviewText.UpdateNowButtonText,
-                CancelButtonText = isStartupCheck ? UpdatePreviewText.LaterButtonText : UpdatePreviewText.CancelButtonText,
-                SecondaryButtonText = allowSkipVersion ? UpdatePreviewText.SkipVersionButtonText : null,
+                HostVersionValue = (applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion)?.ToString() ?? Resources.UpdatePreviewUnknownVersion,
+                ConfirmButtonText = Resources.UpdatePreviewUpdateNowButtonText,
+                CancelButtonText = isStartupCheck ? Resources.UpdatePreviewLaterButtonText : Resources.UpdatePreviewCancelButtonText,
+                SecondaryButtonText = allowSkipVersion ? Resources.UpdatePreviewSkipVersionButtonText : null,
             };
 
             if (applicationPlan != null)
@@ -543,11 +540,11 @@ namespace ColorVision.Update
                 {
                     ItemId = "application",
                     Kind = applicationPlan.IsIncremental ? UpdatePreviewItemKind.ApplicationIncremental : UpdatePreviewItemKind.Application,
-                    Category = applicationPlan.IsIncremental ? UpdatePreviewText.ApplicationIncrementalCategory : UpdatePreviewText.ApplicationUpdateCategory,
+                    Category = applicationPlan.IsIncremental ? Resources.UpdatePreviewApplicationIncrementalCategory : Resources.UpdatePreviewApplicationUpdateCategory,
                     Name = "ColorVision",
                     SecondaryLabel = applicationPlan.IsIncremental
-                        ? UpdatePreviewText.ApplicationIncrementalPackages(applicationPlan.VersionsToApply.Count)
-                        : UpdatePreviewText.ApplicationFullPackageLabel,
+                        ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationIncrementalPackagesFormat, applicationPlan.VersionsToApply.Count)
+                        : Resources.UpdatePreviewApplicationFullPackageLabel,
                     CurrentVersion = applicationPlan.CurrentVersion.ToString(),
                     TargetVersion = applicationPlan.LatestVersion.ToString(),
                     Summary = BuildApplicationCardSummary(applicationPlan),
@@ -563,13 +560,13 @@ namespace ColorVision.Update
                 {
                     string pluginName = GetPluginDisplayName(item);
                     string pluginItemId = GetPluginItemId(item);
-                    string currentVersion = item.Plugin.AssemblyVersion?.ToString() ?? UpdatePreviewText.UnknownVersion;
+                    string currentVersion = item.Plugin.AssemblyVersion?.ToString() ?? Resources.UpdatePreviewUnknownVersion;
 
                     UpdatePreviewItem previewItem = new()
                     {
                         ItemId = pluginItemId,
                         Kind = UpdatePreviewItemKind.Plugin,
-                        Category = UpdatePreviewText.PluginUpdateCategory,
+                        Category = Resources.UpdatePreviewPluginUpdateCategory,
                         Name = pluginName,
                         SecondaryLabel = BuildPluginSecondaryLabel(item, pluginName),
                         CurrentVersion = currentVersion,
@@ -586,25 +583,26 @@ namespace ColorVision.Update
                 }
             }
 
-            return Task.FromResult(context);
+            return context;
         }
 
         private static string BuildDialogSummary(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
             int updateCount = (applicationPlan != null ? 1 : 0) + (pluginPlan?.Updates.Count ?? 0);
             if (updateCount == 0)
-                return UpdatePreviewText.DialogSummaryNoUpdates;
+                return Resources.UpdatePreviewDialogSummaryNoUpdates;
 
             List<string> updateKinds = BuildUpdateKinds(applicationPlan, pluginPlan);
             StringBuilder builder = new();
+            string listSeparator = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "zh" or "ja" ? "、" : ", ";
 
             if (updateKinds.Count > 1)
-                builder.Append(UpdatePreviewText.DialogSummaryWithKinds(updateCount, string.Join(UpdatePreviewText.ListSeparator, updateKinds)));
+                builder.Append(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummaryWithKinds, updateCount, string.Join(listSeparator, updateKinds)));
             else
-                builder.Append(UpdatePreviewText.DialogSummaryDefault(updateCount));
+                builder.Append(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummaryDefault, updateCount));
 
             if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
-                builder.Append($" {UpdatePreviewText.DialogSummarySkippedCount(pluginPlan.SkippedIncompatiblePlugins.Count)}");
+                builder.Append($" {string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummarySkippedCount, pluginPlan.SkippedIncompatiblePlugins.Count)}");
 
             return builder.ToString();
         }
@@ -612,9 +610,9 @@ namespace ColorVision.Update
         private static string BuildApplicationCardSummary(AutoUpdatePlan applicationPlan)
         {
             if (applicationPlan.IsIncremental)
-                return UpdatePreviewText.ApplicationCardSummaryIncremental(applicationPlan.VersionsToApply.Count);
+                return string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationCardSummaryIncrementalFormat, applicationPlan.VersionsToApply.Count);
 
-            return UpdatePreviewText.ApplicationCardSummaryFull;
+            return Resources.UpdatePreviewApplicationCardSummaryFull;
         }
 
         private static string BuildPluginCardSummary(CombinedPluginUpdateItem item)
@@ -639,8 +637,8 @@ namespace ColorVision.Update
         private static string BuildPreviewHeading(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
             return applicationPlan != null || pluginPlan?.HasUpdates == true
-                ? UpdatePreviewText.FoundUpdatesHeading
-                : UpdatePreviewText.WindowTitle;
+                ? Resources.UpdatePreviewFoundUpdatesHeading
+                : Resources.CheckForUpdates;
         }
 
         private static List<string> BuildUpdateKinds(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
@@ -648,10 +646,10 @@ namespace ColorVision.Update
             List<string> kinds = new();
 
             if (applicationPlan != null)
-                kinds.Add(UpdatePreviewText.UpdateKindApplication);
+                kinds.Add(Resources.UpdatePreviewUpdateKindApplication);
 
             if (pluginPlan?.HasUpdates == true)
-                kinds.Add(UpdatePreviewText.UpdateKindPlugin);
+                kinds.Add(Resources.UpdatePreviewUpdateKindPlugin);
 
             return kinds;
         }
@@ -747,12 +745,14 @@ namespace ColorVision.Update
         {
             if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
             {
-                string skippedPlugins = string.Join(UpdatePreviewText.ListSeparator, pluginPlan.SkippedIncompatiblePlugins);
-                MessageBox.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.ShowNoUpdatesSkippedMessage(skippedPlugins), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                string listSeparator = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "zh" or "ja" ? "、" : ", ";
+                string skippedPlugins = string.Join(listSeparator, pluginPlan.SkippedIncompatiblePlugins);
+                string message = string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewShowNoUpdatesSkippedMessage, skippedPlugins);
+                MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            MessageBox1.Show(Application.Current.GetActiveWindow(), UpdatePreviewText.ShowNoUpdatesLatestMessage, "ColorVision", MessageBoxButton.OK);
+            MessageBox1.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewShowNoUpdatesLatestMessage, "ColorVision", MessageBoxButton.OK);
         }
     }
 

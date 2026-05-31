@@ -4,11 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:ColorVision.Update"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         Width="920"
         Height="580"
         MinWidth="860"
         MinHeight="520"
-        Title="{Binding WindowTitle}"
+       Title="{x:Static properties:Resources.CheckForUpdates}"
         ResizeMode="NoResize"
         SizeToContent="Manual"
         Background="{DynamicResource UpdateDialog.WindowBorder}"
@@ -61,7 +62,7 @@
                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                            TextWrapping="Wrap"
                            Visibility="{Binding HostVersionVisibility}">
-                    <Run Text="{Binding HostVersionLabel, Mode=OneWay}" />
+                    <Run Text="{x:Static properties:Resources.UpdatePreviewHostVersionLabel}" />
                     <Run Text=" " />
                     <Run Foreground="{DynamicResource UpdateDialog.TextPrimary}"
                          FontWeight="SemiBold"
@@ -203,7 +204,7 @@
                                                 <TextBlock FontSize="11"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource UpdateDialog.TagForeground}"
-                                                           Text="{x:Static local:UpdatePreviewText.RequiredBadge}" />
+                                                           Text="{x:Static properties:Resources.UpdatePreviewRequiredBadge}" />
                                             </Border>
                                         </Grid>
 

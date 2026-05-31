@@ -3,8 +3,10 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
+using Resources = ColorVision.Properties.Resources;
 
 namespace ColorVision.Update
 {
@@ -96,7 +98,7 @@ namespace ColorVision.Update
         public string VersionTransitionText => $"{FormatVersion(CurrentVersion)}  →  {FormatVersion(TargetVersion)}";
 
         public string HostRequirementText => HasMeaningfulHostRequirement(HostRequirement)
-            ? UpdatePreviewText.HostRequirement(HostRequirement.Trim())
+            ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHostRequirementFormat, HostRequirement.Trim())
             : string.Empty;
 
         public Visibility HostRequirementVisibility => HasMeaningfulHostRequirement(HostRequirement)
@@ -109,7 +111,7 @@ namespace ColorVision.Update
 
         private static string FormatVersion(string? value)
         {
-            return string.IsNullOrWhiteSpace(value) ? UpdatePreviewText.UnknownVersion : value.Trim();
+            return string.IsNullOrWhiteSpace(value) ? Resources.UpdatePreviewUnknownVersion : value.Trim();
         }
 
         private static bool HasMeaningfulHostRequirement(string? value)
@@ -187,11 +189,8 @@ namespace ColorVision.Update
             OnPropertyChanged(nameof(FooterInfoVisibility));
         }
 
-        public string WindowTitle { get => _windowTitle; set { _windowTitle = value; OnPropertyChanged(); } }
-        private string _windowTitle = UpdatePreviewText.WindowTitle;
-
         public string Heading { get => _heading; set { _heading = value; OnPropertyChanged(); } }
-        private string _heading = UpdatePreviewText.CheckingHeading;
+        private string _heading = Resources.UpdatePreviewCheckingHeading;
 
         public string Summary
         {
@@ -203,19 +202,19 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(HeaderSummaryText));
             }
         }
-        private string _summary = UpdatePreviewText.CheckingSummary;
+        private string _summary = Resources.UpdatePreviewCheckingSummary;
 
         public string CheckingTitle { get => _checkingTitle; set { _checkingTitle = value; OnPropertyChanged(); } }
-        private string _checkingTitle = UpdatePreviewText.ScanningTitle;
+        private string _checkingTitle = Resources.UpdatePreviewScanningTitle;
 
         public string CheckingSummary { get => _checkingSummary; set { _checkingSummary = value; OnPropertyChanged(); } }
-        private string _checkingSummary = UpdatePreviewText.CheckingSummary;
+        private string _checkingSummary = Resources.UpdatePreviewCheckingSummary;
 
         public string EmptyStateTitle { get => _emptyStateTitle; set { _emptyStateTitle = value; OnPropertyChanged(); } }
-        private string _emptyStateTitle = UpdatePreviewText.NoUpdatesTitle;
+        private string _emptyStateTitle = Resources.UpdatePreviewNoUpdatesTitle;
 
         public string EmptyStateMessage { get => _emptyStateMessage; set { _emptyStateMessage = value; OnPropertyChanged(); } }
-        private string _emptyStateMessage = UpdatePreviewText.NoUpdatesMessage;
+        private string _emptyStateMessage = Resources.UpdatePreviewNoUpdatesMessage;
 
         public string StateGlyph { get => _stateGlyph; set { _stateGlyph = value; OnPropertyChanged(); } }
         private string _stateGlyph = "\uE895";
@@ -247,17 +246,6 @@ namespace ColorVision.Update
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        public string HostVersionLabel
-        {
-            get => _hostVersionLabel;
-            set
-            {
-                _hostVersionLabel = value;
-                OnPropertyChanged();
-            }
-        }
-        private string _hostVersionLabel = UpdatePreviewText.HostVersionLabel;
-
         public string HostVersionValue
         {
             get => _hostVersionValue;
@@ -276,14 +264,14 @@ namespace ColorVision.Update
 
         public string ConfirmButtonText
         {
-            get => IsUpdating ? UpdatePreviewText.UpdatingButtonText : _confirmButtonBaseText;
+            get => IsUpdating ? Resources.UpdatePreviewUpdatingButtonText : _confirmButtonBaseText;
             set
             {
                 _confirmButtonBaseText = value;
                 OnPropertyChanged();
             }
         }
-        private string _confirmButtonBaseText = UpdatePreviewText.UpdateNowButtonText;
+        private string _confirmButtonBaseText = Resources.UpdatePreviewUpdateNowButtonText;
 
         public bool IsUpdating
         {
@@ -301,7 +289,7 @@ namespace ColorVision.Update
         private bool _isUpdating;
 
         public string CancelButtonText { get => _cancelButtonText; set { _cancelButtonText = value; OnPropertyChanged(); } }
-        private string _cancelButtonText = UpdatePreviewText.LaterButtonText;
+    private string _cancelButtonText = Resources.UpdatePreviewLaterButtonText;
 
         public string? SecondaryButtonText
         {
@@ -349,23 +337,24 @@ namespace ColorVision.Update
                     return Summary;
 
                 Collection<string> segments = new();
+                string listSeparator = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "zh" or "ja" ? "、" : ", ";
 
                 if (ApplicationUpdateCount > 0)
-                    segments.Add(UpdatePreviewText.HeaderApplicationCount(ApplicationUpdateCount));
+                    segments.Add(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHeaderApplicationCount, ApplicationUpdateCount));
 
                 if (PluginUpdateCount > 0)
-                    segments.Add(UpdatePreviewText.HeaderPluginCount(PluginUpdateCount));
+                    segments.Add(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHeaderPluginCount, PluginUpdateCount));
 
                 if (ThemeUpdateCount > 0)
-                    segments.Add(UpdatePreviewText.HeaderThemeCount(ThemeUpdateCount));
+                    segments.Add(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHeaderThemeCount, ThemeUpdateCount));
 
                 int otherCount = Items.Count - ApplicationUpdateCount - PluginUpdateCount - ThemeUpdateCount;
                 if (otherCount > 0)
-                    segments.Add(UpdatePreviewText.HeaderOtherCount(otherCount));
+                    segments.Add(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHeaderOtherCount, otherCount));
 
                 return segments.Count == 0
-                    ? UpdatePreviewText.DialogSummaryDefault(Items.Count)
-                    : UpdatePreviewText.DialogSummaryWithKinds(Items.Count, string.Join(UpdatePreviewText.ListSeparator, segments));
+                    ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummaryDefault, Items.Count)
+                    : string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummaryWithKinds, Items.Count, string.Join(listSeparator, segments));
             }
         }
 
@@ -379,23 +368,23 @@ namespace ColorVision.Update
                 Collection<string> segments = new();
 
                 if (HasApplicationUpdates)
-                    segments.Add(UpdatePreviewText.SelectionIncludesApplication);
+                    segments.Add(Resources.UpdatePreviewSelectionIncludesApplication);
 
                 if (HasSelectableItems)
                 {
                     segments.Add(AreAllSelectableItemsPlugins
-                        ? UpdatePreviewText.SelectionSelectedPlugins(SelectedSelectableItemCount, SelectableItemCount)
-                        : UpdatePreviewText.SelectionSelectedUpdates(SelectedSelectableItemCount, SelectableItemCount));
+                        ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewSelectionSelectedPluginsFormat, SelectedSelectableItemCount, SelectableItemCount)
+                        : string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewSelectionSelectedUpdatesFormat, SelectedSelectableItemCount, SelectableItemCount));
                 }
                 else if (HasAlwaysIncludedItems && !HasApplicationUpdates)
                 {
-                    segments.Add(UpdatePreviewText.SelectionIncludesRequired);
+                    segments.Add(Resources.UpdatePreviewSelectionIncludesRequired);
                 }
 
                 if (HasApplicationUpdates)
-                    segments.Add(UpdatePreviewText.SelectionRestartRequired);
+                    segments.Add(Resources.UpdatePreviewSelectionRestartRequired);
                 else if (HasSelectableItems || HasAlwaysIncludedItems)
-                    segments.Add(UpdatePreviewText.SelectionBackupAndRestart);
+                    segments.Add(Resources.UpdatePreviewSelectionBackupAndRestart);
 
                 return string.Join(" · ", segments);
             }
@@ -425,7 +414,6 @@ namespace ColorVision.Update
 
         public void CopyFrom(UpdatePreviewDialogContext source)
         {
-            WindowTitle = source.WindowTitle;
             Heading = source.Heading;
             Summary = source.Summary;
             CheckingTitle = source.CheckingTitle;
@@ -433,7 +421,6 @@ namespace ColorVision.Update
             EmptyStateTitle = source.EmptyStateTitle;
             EmptyStateMessage = source.EmptyStateMessage;
             StateGlyph = source.StateGlyph;
-            HostVersionLabel = source.HostVersionLabel;
             HostVersionValue = source.HostVersionValue;
             ConfirmButtonText = source._confirmButtonBaseText;
             CancelButtonText = source.CancelButtonText;
