@@ -301,28 +301,28 @@ namespace ColorVision.Copilot
             if (availableTools.Count == 0)
                 return null;
 
-            if (CopilotMenuToolSupport.HasMenuIntent(request.UserText))
+            if (CopilotApplicationCapability.HasMenuIntent(request.UserText))
             {
                 var menuTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "ExecuteMenu", StringComparison.OrdinalIgnoreCase));
                 if (menuTool != null)
                     return menuTool;
             }
 
-            if (CopilotApplicationControlSupport.HasThemeIntent(request.UserText))
+            if (CopilotApplicationCapability.HasThemeIntent(request.UserText))
             {
                 var themeTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SetTheme", StringComparison.OrdinalIgnoreCase));
                 if (themeTool != null)
                     return themeTool;
             }
 
-            if (CopilotApplicationControlSupport.HasLanguageIntent(request.UserText))
+            if (CopilotApplicationCapability.HasLanguageIntent(request.UserText))
             {
                 var languageTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SetLanguage", StringComparison.OrdinalIgnoreCase));
                 if (languageTool != null)
                     return languageTool;
             }
 
-            if (CopilotDocsToolSupport.HasDocumentationIntent(request.UserText))
+            if (CopilotDocsCapability.HasDocumentationIntent(request.UserText))
             {
                 var docsTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SearchDocs", StringComparison.OrdinalIgnoreCase));
                 if (docsTool != null)

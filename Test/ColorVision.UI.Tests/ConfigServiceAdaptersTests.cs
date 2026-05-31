@@ -175,7 +175,7 @@ namespace ColorVision.UI.Tests
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 adapter.GetRequiredService<SelfManagedConfig>());
 
-            Assert.Contains("not found", ex.Message);
+            Assert.Contains("Failed to resolve IConfig instance", ex.Message);
         }
 
         [Fact]

@@ -6,6 +6,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace ColorVision.Copilot
 {
@@ -17,6 +18,36 @@ namespace ColorVision.Copilot
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; set; } = new();
+
+        public const int DefaultMcpPort = 38473;
+
+        [Browsable(false)]
+        public bool McpEnabled
+        {
+            get => _mcpEnabled;
+            set => SetProperty(ref _mcpEnabled, value);
+        }
+        private bool _mcpEnabled;
+
+        [Browsable(false)]
+        public int McpPort
+        {
+            get => _mcpPort;
+            set => SetProperty(ref _mcpPort, value);
+        }
+        private int _mcpPort = DefaultMcpPort;
+
+        [Browsable(false)]
+        public string McpBearerToken
+        {
+            get => _mcpBearerToken;
+            set => SetProperty(ref _mcpBearerToken, value ?? string.Empty);
+        }
+        private string _mcpBearerToken = string.Empty;
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public string McpEndpoint => $"http://127.0.0.1:{McpPort}/mcp";
 
         [JsonIgnore]
         public bool IsConfigured => Profiles.Any(profile => profile.IsConfigured);
@@ -34,6 +65,18 @@ namespace ColorVision.Copilot
             var changed = false;
 
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
+
+            if (McpPort <= 0 || McpPort > 65535)
+            {
+                McpPort = DefaultMcpPort;
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(McpBearerToken))
+            {
+                McpBearerToken = GenerateMcpBearerToken();
+                changed = true;
+            }
 
             if (Profiles.Count == 0)
             {
@@ -66,6 +109,13 @@ namespace ColorVision.Copilot
                 ?? Profiles.FirstOrDefault();
         }
 
+        public static string GenerateMcpBearerToken()
+        {
+            Span<byte> bytes = stackalloc byte[32];
+            RandomNumberGenerator.Fill(bytes);
+            return Convert.ToHexString(bytes).ToLowerInvariant();
+        }
+
         public void Encryption()
         {
             foreach (var profile in Profiles)
@@ -73,6 +123,9 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(profile.ApiKey))
                     profile.ApiKey = Cryptography.AESEncrypt(profile.ApiKey, ConfigAESKey, ConfigAESVector);
             }
+
+            if (!string.IsNullOrWhiteSpace(McpBearerToken))
+                McpBearerToken = Cryptography.AESEncrypt(McpBearerToken, ConfigAESKey, ConfigAESVector);
         }
 
         public void Decrypt()
@@ -82,6 +135,9 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(profile.ApiKey))
                     profile.ApiKey = Cryptography.AESDecrypt(profile.ApiKey, ConfigAESKey, ConfigAESVector);
             }
+
+            if (!string.IsNullOrWhiteSpace(McpBearerToken))
+                McpBearerToken = Cryptography.AESDecrypt(McpBearerToken, ConfigAESKey, ConfigAESVector);
         }
     }
 }

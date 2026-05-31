@@ -21,7 +21,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             public int Index { get; set; }
             public object? Value { get; set; }
 
-            public Type Type { get; set; }
+            public Type? Type { get; set; }
             
             public string DisplayValue
             {
@@ -35,7 +35,8 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                     {
                         return string.Format(Properties.Resources.ListEditor_ListCount, list.Count);
                     }
-                    if (Type.IsClass)
+                    var valueType = Type ?? Value.GetType();
+                    if (valueType.IsClass && valueType != typeof(string))
                     {
                         return JsonConvert.SerializeObject(Value);
                     }

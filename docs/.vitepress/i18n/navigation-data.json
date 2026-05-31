@@ -577,6 +577,16 @@
                 "ko": "扩展性概览"
               },
               "link": "/02-developer-guide/core-concepts/extensibility"
+            },
+            {
+              "text": {
+                "root": "ColorVision MCP",
+                "en": "ColorVision MCP",
+                "zh-tw": "ColorVision MCP",
+                "ja": "ColorVision MCP",
+                "ko": "ColorVision MCP"
+              },
+              "link": "/02-developer-guide/core-concepts/colorvision-mcp"
             }
           ]
         },

@@ -8,6 +8,8 @@ namespace ColorVision.UI.Tests;
 /// </summary>
 public class NestedListEditorTests
 {
+    private const string RequiresStaWpfTestRunner = "Requires an STA WPF test runner.";
+
     // Test class with nested list properties
     private class TestNestedListConfig
     {
@@ -40,7 +42,7 @@ public class NestedListEditorTests
         };
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListEditorWindow_Constructor_WithNestedIntList_DoesNotThrow()
     {
         // Arrange
@@ -55,7 +57,7 @@ public class NestedListEditorTests
         Assert.NotNull(window);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListEditorWindow_Constructor_WithNestedStringList_DoesNotThrow()
     {
         // Arrange
@@ -70,7 +72,7 @@ public class NestedListEditorTests
         Assert.NotNull(window);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListItemEditorWindow_Constructor_WithListType_DoesNotThrow()
     {
         // Arrange
@@ -82,7 +84,7 @@ public class NestedListEditorTests
         Assert.NotNull(window.EditedValue);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListItemEditorWindow_Constructor_WithEmptyListType_DoesNotThrow()
     {
         // Arrange & Act & Assert
@@ -93,7 +95,7 @@ public class NestedListEditorTests
         Assert.IsAssignableFrom<List<int>>(window.EditedValue);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void PropertyEditorWindow_WithNestedListProperties_DoesNotThrow()
     {
         // Arrange

@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -42,19 +43,67 @@ namespace ColorVision.Copilot
             AddProfileCommand = new RelayCommand(_ => AddProfile());
             DuplicateProfileCommand = new RelayCommand(_ => DuplicateSelectedProfile());
             DeleteProfileCommand = new RelayCommand(_ => DeleteSelectedProfile());
+            RegenerateMcpTokenCommand = new RelayCommand(_ => RegenerateMcpToken());
+
+            McpEnabled = config.McpEnabled;
+            McpPort = config.McpPort;
+            McpEndpoint = BuildMcpEndpoint();
+            McpBearerToken = config.McpBearerToken;
         }
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; } = new();
 
         public IReadOnlyList<CopilotProviderOption> ProviderOptions { get; }
 
-    public IReadOnlyList<CopilotVendorOption> VendorOptions { get; }
+        public IReadOnlyList<CopilotVendorOption> VendorOptions { get; }
 
         public RelayCommand AddProfileCommand { get; }
 
         public RelayCommand DuplicateProfileCommand { get; }
 
         public RelayCommand DeleteProfileCommand { get; }
+
+        public RelayCommand RegenerateMcpTokenCommand { get; }
+
+        public bool McpEnabled
+        {
+            get => _mcpEnabled;
+            set
+            {
+                if (SetProperty(ref _mcpEnabled, value))
+                    OnPropertyChanged(nameof(McpStatusText));
+            }
+        }
+        private bool _mcpEnabled;
+
+        public string McpEndpoint
+        {
+            get => _mcpEndpoint;
+            private set => SetProperty(ref _mcpEndpoint, value ?? string.Empty);
+        }
+        private string _mcpEndpoint = string.Empty;
+
+        public int McpPort
+        {
+            get => _mcpPort;
+            set
+            {
+                if (SetProperty(ref _mcpPort, value))
+                    McpEndpoint = BuildMcpEndpoint();
+            }
+        }
+        private int _mcpPort = CopilotConfig.DefaultMcpPort;
+
+        public string McpBearerToken
+        {
+            get => _mcpBearerToken;
+            set => SetProperty(ref _mcpBearerToken, value ?? string.Empty);
+        }
+        private string _mcpBearerToken = string.Empty;
+
+        public string McpStatusText => McpEnabled
+            ? "The local MCP server will listen on 127.0.0.1 after settings are saved."
+            : "The local MCP server is disabled.";
 
         public CopilotVendorType NewProfileVendorType
         {
@@ -102,8 +151,18 @@ namespace ColorVision.Copilot
                 config.Profiles.Add(profile);
             }
 
+            config.McpEnabled = McpEnabled;
+            config.McpPort = McpPort;
+            config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
+                ? CopilotConfig.GenerateMcpBearerToken()
+                : McpBearerToken.Trim();
+
             config.EnsureInitialized();
+            McpPort = config.McpPort;
+            McpEndpoint = BuildMcpEndpoint();
+            McpBearerToken = config.McpBearerToken;
             ConfigHandler.GetInstance().Save<CopilotConfig>();
+            CopilotMcpServer.Instance.ApplyConfig();
 
             var stateStore = CopilotChatStateStore.Instance;
             var state = stateStore.Load();
@@ -160,6 +219,16 @@ namespace ColorVision.Copilot
             {
                 ApplyProviderPreset(profile);
             }
+        }
+
+        private void RegenerateMcpToken()
+        {
+            McpBearerToken = CopilotConfig.GenerateMcpBearerToken();
+        }
+
+        private string BuildMcpEndpoint()
+        {
+            return $"http://127.0.0.1:{McpPort}/mcp";
         }
 
         private CopilotProfileConfig CreateProfileForVendor(CopilotVendorType vendorType)

@@ -72,27 +72,46 @@ namespace ColorVision.Solution.Explorer
             if (!FileInfo.Exists)
                 return;
 
-            var service = CopilotServiceRegistry.Current;
-            if (service == null || !service.Ask(new CopilotPromptRequest
+            var contextItem = BuildCopilotFileContextItem();
+            CopilotLiveContextRegistry.Publish(new CopilotLiveContext
+            {
+                SourceId = "solution-file-node",
+                Title = contextItem.Title,
+                Summary = contextItem.Summary,
+                AttachmentTitle = contextItem.Title,
+                SnapshotItems = new[] { contextItem },
+            });
+
+            var result = CopilotPromptRequestHelper.Dispatch(new CopilotPromptRequestOptions
                 {
                     Mode = mode,
                     Prompt = diagnose
                         ? $"请诊断这个文件是否包含异常、失败线索或需要优先关注的问题。文件路径：{FileInfo.FullName}。如果它是日志，请提取关键错误；如果它是代码或配置，请指出主要风险和下一步排查建议。"
                         : $"请解释这个文件在当前工作区中的作用、主要结构和建议优先阅读的部分。文件路径：{FileInfo.FullName}。如有必要，请直接读取该文件后再回答。",
-                    ContextItems = new[]
-                    {
-                        new CopilotContextItem
-                        {
-                            Id = "solution-file-node",
-                            Title = "解决方案树选中文件",
-                            Summary = FileInfo.Name,
-                            Content = $"路径：{FileInfo.FullName}{Environment.NewLine}扩展名：{FileInfo.Extension}{Environment.NewLine}大小：{FileInfo.Length} 字节",
-                        },
-                    },
-                }))
+                    ContextItems = new[] { contextItem },
+                });
+
+            if (!result.WasSent)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "Copilot 当前不可用。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), result.StatusMessage, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        private CopilotContextItem BuildCopilotFileContextItem()
+        {
+            return new CopilotContextItem
+            {
+                Id = "solution-file-node",
+                Title = "Selected solution file",
+                Summary = FileInfo.Name,
+                Content = string.Join(Environment.NewLine, new[]
+                {
+                    $"Path: {FileInfo.FullName}",
+                    $"Extension: {FileInfo.Extension}",
+                    $"Size bytes: {FileInfo.Length}",
+                    $"Last modified: {FileInfo.LastWriteTime:O}",
+                }),
+            };
         }
 
         public override void ShowProperty()

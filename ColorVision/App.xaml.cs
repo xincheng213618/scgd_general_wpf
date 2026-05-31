@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot;
+using ColorVision.Copilot.Mcp;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -194,6 +195,8 @@ namespace ColorVision
                 //Environment.Exit(0);
             }
 
+            CopilotMcpServer.Instance.ApplyConfig();
+
             if (!Debugger.IsAttached)
             {
                 //杀死僵尸进程
@@ -252,6 +255,7 @@ namespace ColorVision
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
+            CopilotMcpServer.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
             //Environment.Exit(0);
