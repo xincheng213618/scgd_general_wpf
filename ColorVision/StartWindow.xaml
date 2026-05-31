@@ -61,7 +61,7 @@
 
                     <Border Margin="0,20,20,20" Background="#484d4f" CornerRadius="15" Opacity="0.8" />
 
-                    <TextBox x:Name="logTextBox" Grid.Row="0" Margin="10,30,30,37" Padding="0" VerticalContentAlignment="Top" Background="Transparent" BorderThickness="0" Foreground="White" IsReadOnly="True" Text="" TextChanged="TextBoxMsg_TextChanged" />
+                    <TextBox x:Name="logTextBox" Grid.Row="0" Margin="10,30,30,32" Padding="0" VerticalContentAlignment="Top" Background="Transparent" BorderThickness="0" Foreground="White" IsReadOnly="True" Text="" TextChanged="TextBoxMsg_TextChanged" />
                     <ProgressBar x:Name="startupProgressBar" Margin="10,0,30,32" VerticalAlignment="Bottom" Minimum="0" Maximum="1" Value="0" Style="{StaticResource StartupProgressBarStyle}" />
                 </Grid>
             </Border>

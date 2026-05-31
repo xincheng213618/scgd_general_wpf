@@ -246,6 +246,7 @@ namespace ColorVision
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
             DockViewManager.ShowAllViews();
             HookAcquirePanelActivation();
+            HookTerminalPanelActivation();
 
             foreach (var action in WorkspaceManager.DealyLoad)
             {
@@ -322,6 +323,24 @@ namespace ColorVision
                         DockViewManager.ActivateLastView();
                 };
             }
+        }
+
+        private void HookTerminalPanelActivation()
+        {
+            var terminalPanel = DockingManager1.Layout.Descendents()
+                .OfType<AvalonDock.Layout.LayoutAnchorable>()
+                .FirstOrDefault(a => a.ContentId == ColorVision.Solution.Terminal.TerminalService.PanelId);
+            if (terminalPanel == null)
+                return;
+
+            void ActivateTerminalPanel()
+            {
+                if (terminalPanel.IsActive && !terminalPanel.IsHidden)
+                    ColorVision.Solution.Terminal.TerminalService.GetInstance().NotifyPanelActivated();
+            }
+
+            terminalPanel.IsActiveChanged += (_, _) => ActivateTerminalPanel();
+            ActivateTerminalPanel();
         }
 
         private void ShowChangelogIfUpdated()

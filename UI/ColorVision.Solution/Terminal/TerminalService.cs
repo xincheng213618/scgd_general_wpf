@@ -52,6 +52,12 @@ namespace ColorVision.Solution.Terminal
             terminalControl.SendCommand(command);
         }
 
+        public void NotifyPanelActivated()
+        {
+            var terminalControl = GetActiveTerminalControl();
+            terminalControl?.NotifyPanelActivated();
+        }
+
         private TerminalControl? GetActiveTerminalControl()
         {
             if (_terminalControl?.IsDisposed == true)
@@ -64,6 +70,7 @@ namespace ColorVision.Solution.Terminal
         {
             var layoutManager = WorkspaceManager.LayoutManager;
             layoutManager?.ShowPanel(PanelId);
+            NotifyPanelActivated();
         }
     }
 

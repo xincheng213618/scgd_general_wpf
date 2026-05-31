@@ -220,8 +220,8 @@ namespace ColorVision.Solution.Terminal
             while (col < line.Length)
             {
                 var cell = line.Cells[col];
-                byte bg = cell.IsInverse ? cell.Fg : cell.Bg;
-                if (bg == 0)
+                Color bg = GetEffectiveBackgroundColor(cell);
+                if (bg == DefaultBgColor)
                 {
                     col++;
                     continue;
@@ -231,13 +231,12 @@ namespace ColorVision.Solution.Terminal
                 while (col < line.Length)
                 {
                     var c = line.Cells[col];
-                    byte cbg = c.IsInverse ? c.Fg : c.Bg;
+                    Color cbg = GetEffectiveBackgroundColor(c);
                     if (cbg != bg) break;
                     col++;
                 }
 
-                var rgb = GetCellBgColor(bg);
-                var brush = new SolidColorBrush(Color.FromRgb(rgb.R, rgb.G, rgb.B));
+                var brush = new SolidColorBrush(bg);
                 brush.Freeze();
                 dc.DrawRectangle(brush, null, new Rect(start * _charWidth, y, (col - start) * _charWidth, _lineHeight));
             }
@@ -249,26 +248,24 @@ namespace ColorVision.Solution.Terminal
             while (col < line.Length)
             {
                 var cell = line.Cells[col];
-                byte fg = cell.IsInverse ? cell.Bg : cell.Fg;
+                Color fg = GetEffectiveForegroundColor(cell);
                 byte flags = cell.Flags;
-                if (fg == 0 && cell.IsInverse) fg = 1;
+                bool isBold = cell.IsBold;
 
                 int start = col;
                 var runChars = new System.Text.StringBuilder();
                 while (col < line.Length)
                 {
                     var c = line.Cells[col];
-                    byte cfTmp = c.IsInverse ? c.Bg : c.Fg;
-                    if (cfTmp == 0 && c.IsInverse) cfTmp = 1;
+                    Color cfTmp = GetEffectiveForegroundColor(c);
                     if (cfTmp != fg || c.Flags != flags) break;
                     runChars.Append(c.Char);
                     col++;
                 }
 
-                var color = GetCellFgColor(fg, (flags & 1) != 0);
-                var brush = new SolidColorBrush(color);
+                var brush = new SolidColorBrush(fg);
                 brush.Freeze();
-                var typeface = (flags & 1) != 0 ? BoldTypeface : DefaultTypeface;
+                var typeface = isBold ? BoldTypeface : DefaultTypeface;
 
                 var ft = new FormattedText(runChars.ToString(), CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight, typeface, DefaultFontSize, brush, pixelsPerDip);
@@ -300,6 +297,22 @@ namespace ColorVision.Solution.Terminal
             var selBrush = new SolidColorBrush(Color.FromArgb(80, 58, 150, 221));
             selBrush.Freeze();
             dc.DrawRectangle(selBrush, null, new Rect(x, y, w, _lineHeight));
+        }
+
+        private static Color GetEffectiveForegroundColor(TerminalCell cell)
+        {
+            if (cell.IsInverse)
+                return cell.Bg == 0 ? DefaultBgColor : GetCellBgColor(cell.Bg);
+
+            return GetCellFgColor(cell.Fg, cell.IsBold);
+        }
+
+        private static Color GetEffectiveBackgroundColor(TerminalCell cell)
+        {
+            if (cell.IsInverse)
+                return cell.Fg == 0 ? DefaultFgColor : GetCellFgColor(cell.Fg, cell.IsBold);
+
+            return GetCellBgColor(cell.Bg);
         }
 
         private static Color GetCellFgColor(byte fg, bool bold)
