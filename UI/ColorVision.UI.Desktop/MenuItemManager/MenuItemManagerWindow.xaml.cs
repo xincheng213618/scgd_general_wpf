@@ -1,14 +1,12 @@
-﻿#pragma warning disable CA1854,CA1862
 using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
-    /// <summary>
-    /// Represents an OwnerGuid option with hierarchical path display (e.g. "Menu > Help > Log")
-    /// </summary>
     public class OwnerGuidOption
     {
         public string GuidId { get; set; } = string.Empty;
@@ -17,464 +15,910 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         public override string ToString() => DisplayPath;
     }
 
+    public sealed class MenuItemListRow
+    {
+        public MenuItemListRow(MenuItemSetting setting, string currentPath)
+        {
+            Setting = setting;
+            CurrentPath = currentPath;
+        }
+
+        public MenuItemSetting Setting { get; }
+        public bool IsVisible { get => Setting.IsVisible; set => Setting.IsVisible = value; }
+        public string Header => GetDisplayName(Setting);
+        public string CurrentPath { get; }
+        public int? OrderOverride { get => Setting.OrderOverride; set => Setting.OrderOverride = value; }
+
+        private static string GetDisplayName(MenuItemSetting setting)
+        {
+            return string.IsNullOrWhiteSpace(setting.Header) ? setting.GuidId : setting.Header!;
+        }
+    }
+
     public partial class MenuItemManagerWindow : Window
     {
+        private const string RootGuid = MenuItemConstants.Menu;
+        private const string MenuItemDragFormat = "ColorVision.MenuItemManager.MenuItemGuid";
+
+        private ObservableCollection<MenuItemSetting> _allSettings = new();
+        private readonly HashSet<string> _expandedGuids = new(StringComparer.Ordinal);
+        private string? _selectedOwnerGuid = RootGuid;
+        private MenuItemSetting? _selectedSetting;
+        private Point _dragStartPoint;
+        private string? _dragSourceGuid;
+        private bool _isRefreshing;
+        private bool _isReplacingMenuItemRows;
+        private bool _isSelectingTreeNode;
+        private bool _isUpdatingDetail;
+
         public MenuItemManagerWindow()
         {
             InitializeComponent();
         }
 
-        private ObservableCollection<MenuItemSetting> _allSettings = new();
-        private string? _selectedOwnerGuid;
-
-        /// <summary>
-        /// Available OwnerGuid options for the ComboBox dropdown (multi-level path display)
-        /// </summary>
         public List<OwnerGuidOption> AvailableOwnerGuids { get; set; } = new();
 
-        private static string GetEffectiveOwner(MenuItemSetting s) => s.OwnerGuidOverride ?? s.OwnerGuid ?? "";
+        private static string GetEffectiveOwner(MenuItemSetting setting)
+        {
+            return NormalizeOwnerGuid(setting.OwnerGuidOverride ?? setting.OwnerGuid);
+        }
+
+        private static int GetEffectiveOrder(MenuItemSetting setting)
+        {
+            return setting.OrderOverride ?? setting.DefaultOrder;
+        }
+
+        private static string NormalizeOwnerGuid(string? ownerGuid)
+        {
+            return string.IsNullOrWhiteSpace(ownerGuid) ? RootGuid : ownerGuid;
+        }
+
+        private static string GetDisplayName(MenuItemSetting setting)
+        {
+            return string.IsNullOrWhiteSpace(setting.Header) ? setting.GuidId : setting.Header!;
+        }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            var config = MenuItemManagerConfig.Instance;
+            MenuItemManagerService.ApplySettings();
+            _allSettings = MenuItemManagerConfig.Instance.Settings;
 
-            // Ensure settings are synced
-            MenuItemManagerService.GetInstance().ApplySettings();
-
-            _allSettings = config.Settings;
-
-            RefreshHierarchyView();
-            UpdateStatusText();
-
-            // Restore last selected tree node
+            RefreshEditorPreview(restoreSelection: false);
             RestoreLastSelectedTreeNode();
         }
 
-        private void RefreshHierarchyView()
+        private void RefreshEditorPreview(bool restoreSelection = true)
         {
-            BuildAvailableOwnerGuids();
-            BuildTreeView();
+            if (_isRefreshing) return;
+
+            try
+            {
+                _isRefreshing = true;
+
+                if (restoreSelection)
+                    CaptureExpandedTreeState();
+
+                BuildAvailableOwnerGuids();
+                BuildTreeView();
+
+                if (restoreSelection && !string.IsNullOrEmpty(_selectedOwnerGuid))
+                    SelectTreeNodeQuietly(_selectedOwnerGuid);
+
+                RefreshMenuItemList();
+                ShowSelectedDetail();
+                UpdateStatusText();
+            }
+            finally
+            {
+                _isRefreshing = false;
+            }
+        }
+
+        private Dictionary<string, MenuItemSetting> CreateSettingsByGuid()
+        {
+            return _allSettings
+                .Where(setting => !string.IsNullOrWhiteSpace(setting.GuidId))
+                .GroupBy(setting => setting.GuidId, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        }
+
+        private Dictionary<string, List<MenuItemSetting>> CreateChildrenLookup()
+        {
+            var lookup = new Dictionary<string, List<MenuItemSetting>>(StringComparer.Ordinal);
+            foreach (var setting in _allSettings)
+            {
+                var ownerGuid = GetEffectiveOwner(setting);
+                if (string.IsNullOrWhiteSpace(ownerGuid))
+                    ownerGuid = RootGuid;
+
+                if (!lookup.TryGetValue(ownerGuid, out var children))
+                {
+                    children = new List<MenuItemSetting>();
+                    lookup.Add(ownerGuid, children);
+                }
+
+                children.Add(setting);
+            }
+
+            return lookup;
         }
 
         private void BuildAvailableOwnerGuids()
         {
-            // Build GuidId -> Header lookup from all settings
-            var headerLookup = new Dictionary<string, string>();
-            foreach (var s in _allSettings)
+            var guids = new HashSet<string>(StringComparer.Ordinal) { RootGuid };
+            foreach (var setting in _allSettings)
             {
-                if (!string.IsNullOrEmpty(s.GuidId) && !string.IsNullOrEmpty(s.Header))
-                    headerLookup[s.GuidId] = s.Header;
+                if (!string.IsNullOrWhiteSpace(setting.GuidId))
+                    guids.Add(setting.GuidId);
+                if (!string.IsNullOrWhiteSpace(setting.OwnerGuid))
+                    guids.Add(setting.OwnerGuid);
+                if (!string.IsNullOrWhiteSpace(setting.OwnerGuidOverride))
+                    guids.Add(setting.OwnerGuidOverride);
             }
 
-            // Well-known top-level names
-            headerLookup[MenuItemConstants.Menu] = "Menu";
-
-            // Build GuidId -> OwnerGuid lookup for path traversal
-            var ownerLookup = new Dictionary<string, string>();
-            foreach (var s in _allSettings)
-            {
-                if (!string.IsNullOrEmpty(s.GuidId) && !string.IsNullOrEmpty(s.OwnerGuid))
-                    ownerLookup[s.GuidId] = s.OwnerGuid;
-            }
-
-            // Collect all valid GuidIds
-            var guids = new HashSet<string>
-            {
-                MenuItemConstants.Menu,
-                MenuItemConstants.File,
-                MenuItemConstants.Edit,
-                MenuItemConstants.View,
-                MenuItemConstants.Tool,
-                MenuItemConstants.Help
-            };
-
-            foreach (var s in _allSettings)
-            {
-                if (!string.IsNullOrEmpty(s.GuidId))
-                    guids.Add(s.GuidId);
-                if (!string.IsNullOrEmpty(s.OwnerGuid))
-                    guids.Add(s.OwnerGuid);
-            }
-
-            // Build hierarchical path for each guid
-            var options = new List<OwnerGuidOption>();
-            foreach (var guid in guids)
-            {
-                var path = BuildMenuPath(guid, headerLookup, ownerLookup);
-                options.Add(new OwnerGuidOption { GuidId = guid, DisplayPath = path });
-            }
-
-            AvailableOwnerGuids = options.OrderBy(o => o.DisplayPath).ToList();
-        }
-
-        /// <summary>
-        /// Build a hierarchical path like "Menu > Help > Log" for a given GuidId
-        /// </summary>
-        private static string BuildMenuPath(string guidId, Dictionary<string, string> headerLookup, Dictionary<string, string> ownerLookup)
-        {
-            var parts = new List<string>();
-            var current = guidId;
-            var visited = new HashSet<string>();
-
-            while (!string.IsNullOrEmpty(current) && visited.Add(current))
-            {
-                var display = headerLookup.ContainsKey(current) ? headerLookup[current] : current;
-                parts.Add(display);
-
-                if (ownerLookup.ContainsKey(current))
-                    current = ownerLookup[current];
-                else
-                    break;
-            }
-
-            parts.Reverse();
-            return string.Join(" > ", parts);
-        }
-
-        /// <summary>
-        /// Find GuidId from display path
-        /// </summary>
-        private string? ResolveGuidIdFromDisplayPath(string displayPath)
-        {
-            if (string.IsNullOrEmpty(displayPath)) return null;
-
-            // Direct match first
-            var option = AvailableOwnerGuids.FirstOrDefault(o => o.DisplayPath == displayPath);
-            if (option != null) return option.GuidId;
-
-            // Fallback: treat as raw GuidId
-            var directMatch = AvailableOwnerGuids.FirstOrDefault(o => o.GuidId == displayPath);
-            if (directMatch != null) return directMatch.GuidId;
-
-            // User typed a raw GuidId that's not in the list
-            return displayPath;
-        }
-
-        /// <summary>
-        /// Find display path from GuidId
-        /// </summary>
-        private string GetDisplayPathForGuidId(string? guidId)
-        {
-            if (string.IsNullOrEmpty(guidId)) return "";
-            var option = AvailableOwnerGuids.FirstOrDefault(o => o.GuidId == guidId);
-            return option?.DisplayPath ?? guidId;
+            AvailableOwnerGuids = guids
+                .Select(guid => new OwnerGuidOption { GuidId = guid, DisplayPath = GetPathForGuid(guid) })
+                .OrderBy(option => option.DisplayPath, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private void BuildTreeView()
         {
             MenuTreeView.Items.Clear();
 
-            // Build lookup: effectiveOwnerGuid -> list of settings
-            var effectiveOwnerLookup = new Dictionary<string, List<MenuItemSetting>>();
-            foreach (var s in _allSettings)
-            {
-                var owner = GetEffectiveOwner(s);
-                if (!effectiveOwnerLookup.ContainsKey(owner))
-                    effectiveOwnerLookup[owner] = new List<MenuItemSetting>();
-                effectiveOwnerLookup[owner].Add(s);
-            }
+            var rootNode = CreateTreeNode(RootGuid, "Menu", null, true);
+            rootNode.IsExpanded = true;
+            MenuTreeView.Items.Add(rootNode);
 
-            // Create (All) root node
-            var allNode = new TreeViewItem
+            var childrenLookup = CreateChildrenLookup();
+            AddTreeChildren(rootNode, RootGuid, childrenLookup, new HashSet<string>(StringComparer.Ordinal) { RootGuid });
+        }
+
+        private TreeViewItem CreateTreeNode(string guid, string header, MenuItemSetting? setting, bool isRoot = false)
+        {
+            var displayText = setting == null ? header : GetTreeNodeText(setting);
+            var textBlock = new TextBlock
             {
-                Header = $"(All) ({_allSettings.Count})",
-                Tag = "(All)",
-                IsExpanded = true,
-                Foreground = (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
+                Text = displayText,
+                TextWrapping = TextWrapping.NoWrap,
+                Opacity = setting is { IsVisible: false } ? 0.68 : 1,
+                FontStyle = setting is { IsVisible: false } ? FontStyles.Italic : FontStyles.Normal,
+                ToolTip = setting is { IsVisible: false } ? "Hidden" : null
             };
-            allNode.Selected += TreeNode_Selected;
-            MenuTreeView.Items.Add(allNode);
+            SetForegroundResource(textBlock, setting == null || setting.IsVisible ? "PrimaryTextBrush" : "SecondaryTextBrush");
 
-            // First level: items with OwnerGuid == "Menu" (File, Edit, View, Tool, Help, etc.)
-            var rootGuid = MenuItemConstants.Menu;
-            var rootItems = effectiveOwnerLookup.ContainsKey(rootGuid) ? effectiveOwnerLookup[rootGuid] : new List<MenuItemSetting>();
-
-            foreach (var item in rootItems.OrderBy(s => s.OrderOverride ?? s.DefaultOrder))
+            var node = new TreeViewItem
             {
-                var childCount = 0;
-                if (!string.IsNullOrEmpty(item.GuidId) && effectiveOwnerLookup.ContainsKey(item.GuidId))
-                    childCount = effectiveOwnerLookup[item.GuidId].Count;
+                Header = textBlock,
+                Tag = guid,
+                IsExpanded = isRoot || _expandedGuids.Contains(guid)
+            };
+            node.Selected += TreeNode_Selected;
+            return node;
+        }
 
-                var displayText = item.Header ?? item.GuidId;
-                if (!item.IsVisible)
-                    displayText = $"[Hidden] {displayText}";
-                if (childCount > 0)
-                    displayText = $"{displayText} ({childCount})";
+        private static string GetTreeNodeText(MenuItemSetting setting)
+        {
+            var displayName = GetDisplayName(setting);
+            return setting.IsVisible ? displayName : $"{displayName} (Hidden)";
+        }
 
-                var node = new TreeViewItem
-                {
-                    Header = displayText,
-                    Tag = item.GuidId ?? "",
-                    IsExpanded = false,
-                    Foreground = item.IsVisible
-                        ? (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
-                        : (System.Windows.Media.Brush)Application.Current.FindResource("SecondaryTextBrush")
-                };
-                node.Selected += TreeNode_Selected;
+        private void AddTreeChildren(TreeViewItem parent, string ownerGuid, Dictionary<string, List<MenuItemSetting>> childrenLookup, HashSet<string> visited)
+        {
+            if (!childrenLookup.TryGetValue(ownerGuid, out var children)) return;
 
-                // Second level: direct children of this item (no deeper recursion)
-                if (!string.IsNullOrEmpty(item.GuidId) && effectiveOwnerLookup.ContainsKey(item.GuidId))
-                {
-                    foreach (var child in effectiveOwnerLookup[item.GuidId].OrderBy(s => s.OrderOverride ?? s.DefaultOrder))
-                    {
-                        var childChildCount = 0;
-                        if (!string.IsNullOrEmpty(child.GuidId) && effectiveOwnerLookup.ContainsKey(child.GuidId))
-                            childChildCount = effectiveOwnerLookup[child.GuidId].Count;
+            foreach (var child in children.OrderBy(GetEffectiveOrder).ThenBy(GetDisplayName, StringComparer.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(child.GuidId)) continue;
+                if (visited.Contains(child.GuidId)) continue;
 
-                        var childText = child.Header ?? child.GuidId;
-                        if (!child.IsVisible)
-                            childText = $"[Hidden] {childText}";
-                        if (childChildCount > 0)
-                            childText = $"{childText} ({childChildCount})";
+                var node = CreateTreeNode(child.GuidId, GetDisplayName(child), child);
+                parent.Items.Add(node);
 
-                        var childNode = new TreeViewItem
-                        {
-                            Header = childText,
-                            Tag = child.GuidId ?? "",
-                            Foreground = child.IsVisible
-                                ? (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
-                                : (System.Windows.Media.Brush)Application.Current.FindResource("SecondaryTextBrush")
-                        };
-                        childNode.Selected += TreeNode_Selected;
-                        node.Items.Add(childNode);
-                    }
-                }
+                visited.Add(child.GuidId);
+                AddTreeChildren(node, child.GuidId, childrenLookup, visited);
+                visited.Remove(child.GuidId);
+            }
+        }
 
-                allNode.Items.Add(node);
+        private void CaptureExpandedTreeState()
+        {
+            _expandedGuids.Clear();
+            CaptureExpandedTreeState(MenuTreeView);
+        }
+
+        private void CaptureExpandedTreeState(ItemsControl parent)
+        {
+            foreach (var item in parent.Items)
+            {
+                if (item is not TreeViewItem treeViewItem) continue;
+
+                if (treeViewItem.IsExpanded && treeViewItem.Tag is string guid)
+                    _expandedGuids.Add(guid);
+
+                CaptureExpandedTreeState(treeViewItem);
             }
         }
 
         private void RestoreLastSelectedTreeNode()
         {
             var lastNode = MenuItemManagerConfig.Instance.LastSelectedTreeNode;
-            if (string.IsNullOrEmpty(lastNode))
+            _selectedOwnerGuid = string.IsNullOrWhiteSpace(lastNode) ? RootGuid : lastNode;
+
+            if (!SelectTreeNodeQuietly(_selectedOwnerGuid))
             {
-                // Default: select (All)
-                if (MenuTreeView.Items.Count > 0 && MenuTreeView.Items[0] is TreeViewItem allNode)
-                {
-                    allNode.IsSelected = true;
-                }
-                return;
+                _selectedOwnerGuid = RootGuid;
+                SelectTreeNodeQuietly(RootGuid);
             }
 
-            // Find the node with matching Tag
-            if (SelectTreeNodeByTag(MenuTreeView, lastNode))
-                return;
+            _selectedSetting = FindSetting(_selectedOwnerGuid);
+        }
 
-            // Fallback: select (All)
-            if (MenuTreeView.Items.Count > 0 && MenuTreeView.Items[0] is TreeViewItem fallback)
+        private bool SelectTreeNodeQuietly(string tag)
+        {
+            try
             {
-                fallback.IsSelected = true;
+                _isSelectingTreeNode = true;
+                return SelectTreeNodeByTag(MenuTreeView, tag);
+            }
+            finally
+            {
+                _isSelectingTreeNode = false;
             }
         }
 
         private static bool SelectTreeNodeByTag(ItemsControl parent, string tag)
         {
-            // Two-level iteration: (All) -> first-level -> second-level
             foreach (var item in parent.Items)
             {
-                if (item is TreeViewItem tvi)
+                if (item is not TreeViewItem treeViewItem) continue;
+
+                if (treeViewItem.Tag is string currentTag && string.Equals(currentTag, tag, StringComparison.Ordinal))
                 {
-                    if (tvi.Tag is string t && t == tag)
-                    {
-                        tvi.IsSelected = true;
-                        if (parent is TreeViewItem parentTvi)
-                            parentTvi.IsExpanded = true;
-                        return true;
-                    }
-                    // Check second level
-                    foreach (var child in tvi.Items)
-                    {
-                        if (child is TreeViewItem childTvi && childTvi.Tag is string ct && ct == tag)
-                        {
-                            tvi.IsExpanded = true;
-                            childTvi.IsSelected = true;
-                            return true;
-                        }
-                    }
+                    treeViewItem.IsSelected = true;
+                    return true;
+                }
+
+                if (SelectTreeNodeByTag(treeViewItem, tag))
+                {
+                    treeViewItem.IsExpanded = true;
+                    return true;
                 }
             }
+
             return false;
         }
 
         private void SaveLastSelectedTreeNode()
         {
             MenuItemManagerConfig.Instance.LastSelectedTreeNode = _selectedOwnerGuid;
-            ConfigHandler.GetInstance().SaveConfigs();
         }
 
         private void TreeNode_Selected(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
-            if (sender is TreeViewItem tvi && tvi.Tag is string ownerGuid)
-            {
-                _selectedOwnerGuid = ownerGuid;
-                SaveLastSelectedTreeNode();
-                RefreshMenuItemList();
-            }
+            if (_isRefreshing || _isSelectingTreeNode) return;
+            if (sender is not TreeViewItem treeViewItem || treeViewItem.Tag is not string ownerGuid) return;
+
+            _selectedOwnerGuid = ownerGuid;
+            _selectedSetting = FindSetting(ownerGuid);
+            SaveLastSelectedTreeNode();
+            RefreshMenuItemList();
+            ShowSelectedDetail();
         }
 
-        private void MenuTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private MenuItemSetting? FindSetting(string? guid)
         {
-            // Handled by TreeNode_Selected
+            if (string.IsNullOrWhiteSpace(guid)) return null;
+            return _allSettings.FirstOrDefault(setting => string.Equals(setting.GuidId, guid, StringComparison.Ordinal));
         }
 
         private void RefreshMenuItemList()
         {
-            var searchText = SearchBox?.Text?.Trim()?.ToLowerInvariant() ?? "";
+            var searchText = SearchBox?.Text?.Trim() ?? string.Empty;
+            List<MenuItemSetting> items;
 
-            IEnumerable<MenuItemSetting> filtered = _allSettings;
-
-            if (_selectedOwnerGuid != null && _selectedOwnerGuid != "(All)")
+            if (!string.IsNullOrWhiteSpace(searchText))
             {
-                filtered = filtered.Where(s => GetEffectiveOwner(s) == _selectedOwnerGuid);
+                items = _allSettings
+                    .Where(setting => IsSearchMatch(setting, searchText))
+                    .OrderBy(GetCurrentPath, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                ListTitle.Text = $"Search Results ({items.Count})";
+            }
+            else
+            {
+                var ownerGuid = string.IsNullOrWhiteSpace(_selectedOwnerGuid) ? RootGuid : _selectedOwnerGuid;
+                items = _allSettings
+                    .Where(setting => string.Equals(GetEffectiveOwner(setting), ownerGuid, StringComparison.Ordinal))
+                    .OrderBy(GetEffectiveOrder)
+                    .ThenBy(GetDisplayName, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                ListTitle.Text = ownerGuid == RootGuid ? $"Top-level Menu Items ({items.Count})" : $"Direct Children ({items.Count})";
             }
 
-            if (!string.IsNullOrEmpty(searchText))
+            var rows = items.Select(CreateListRow).ToList();
+            var selectedGuid = _selectedSetting?.GuidId;
+
+            try
             {
-                filtered = filtered.Where(s =>
-                    (s.Header?.ToLowerInvariant().Contains(searchText) == true) ||
-                    (s.GuidId?.ToLowerInvariant().Contains(searchText) == true) ||
-                    (s.OwnerGuid?.ToLowerInvariant().Contains(searchText) == true));
+                _isReplacingMenuItemRows = true;
+                MenuItemDataGrid.ItemsSource = rows;
+
+                if (!string.IsNullOrWhiteSpace(selectedGuid))
+                    MenuItemDataGrid.SelectedItem = rows.FirstOrDefault(row => string.Equals(row.Setting.GuidId, selectedGuid, StringComparison.Ordinal));
+            }
+            finally
+            {
+                _isReplacingMenuItemRows = false;
+            }
+        }
+
+        private bool IsSearchMatch(MenuItemSetting setting, string searchText)
+        {
+            return GetDisplayName(setting).Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                || GetCurrentPath(setting).Contains(searchText, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private MenuItemListRow CreateListRow(MenuItemSetting setting)
+        {
+            return new MenuItemListRow(setting, GetCurrentPath(setting));
+        }
+
+        private string GetCurrentPath(MenuItemSetting setting)
+        {
+            var parts = new List<string> { GetDisplayName(setting) };
+            var settingsByGuid = CreateSettingsByGuid();
+            var currentGuid = GetEffectiveOwner(setting);
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+
+            while (!string.IsNullOrWhiteSpace(currentGuid) && visited.Add(currentGuid))
+            {
+                if (string.Equals(currentGuid, RootGuid, StringComparison.Ordinal))
+                {
+                    parts.Add("Menu");
+                    break;
+                }
+
+                if (!settingsByGuid.TryGetValue(currentGuid, out var parentSetting))
+                {
+                    parts.Add(currentGuid);
+                    break;
+                }
+
+                parts.Add(GetDisplayName(parentSetting));
+                currentGuid = GetEffectiveOwner(parentSetting);
             }
 
-            // Use same logic as MenuManager.GetEffectiveOrder: override first, then default
-            var items = filtered.OrderBy(s => s.OrderOverride ?? s.DefaultOrder).ToList();
-            MenuItemDataGrid.ItemsSource = items;
+            parts.Reverse();
+            return string.Join(" > ", parts);
+        }
 
-            ListTitle.Text = _selectedOwnerGuid != null && _selectedOwnerGuid != "(All)"
-                ? $"Menu Items — {_selectedOwnerGuid} ({items.Count})"
-                : $"Menu Items ({items.Count})";
+        private string GetPathForGuid(string? guid)
+        {
+            if (string.IsNullOrWhiteSpace(guid)) return string.Empty;
+            if (string.Equals(guid, RootGuid, StringComparison.Ordinal)) return "Menu";
+
+            var setting = FindSetting(guid);
+            return setting == null ? guid : GetCurrentPath(setting);
+        }
+
+        private string? ResolveGuidIdFromDisplayPath(string displayPath)
+        {
+            if (string.IsNullOrWhiteSpace(displayPath)) return null;
+
+            var option = AvailableOwnerGuids.FirstOrDefault(o => string.Equals(o.DisplayPath, displayPath, StringComparison.Ordinal));
+            if (option != null) return option.GuidId;
+
+            var directMatch = AvailableOwnerGuids.FirstOrDefault(o => string.Equals(o.GuidId, displayPath, StringComparison.Ordinal));
+            return directMatch?.GuidId ?? displayPath;
         }
 
         private void MenuItemDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (MenuItemDataGrid.SelectedItem is MenuItemSetting setting)
+            if (_isRefreshing || _isReplacingMenuItemRows) return;
+            if (MenuItemDataGrid.SelectedItem is not MenuItemListRow row) return;
+
+            _selectedSetting = row.Setting;
+            ShowSelectedDetail();
+        }
+
+        private void MenuItemDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (_isRefreshing || _isUpdatingDetail || _isReplacingMenuItemRows) return;
+            Dispatcher.InvokeAsync(() =>
             {
-                ShowDetail(setting);
+                if (!_isRefreshing && !_isUpdatingDetail && !_isReplacingMenuItemRows)
+                    RefreshEditorPreview();
+            });
+        }
+
+        private void VisibleCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isRefreshing || _isUpdatingDetail || _isReplacingMenuItemRows) return;
+            if (sender is CheckBox { DataContext: MenuItemListRow row } checkBox)
+                row.Setting.IsVisible = checkBox.IsChecked == true;
+
+            RefreshEditorPreview();
+        }
+
+        private void DragSource_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _dragStartPoint = e.GetPosition(this);
+            _dragSourceGuid = null;
+
+            if (ShouldIgnoreDragSource(e.OriginalSource as DependencyObject))
+                return;
+
+            if (sender == MenuTreeView)
+                _dragSourceGuid = GetTreeNodeGuid(e.OriginalSource as DependencyObject);
+            else if (sender == MenuItemDataGrid)
+                _dragSourceGuid = GetGridRowSetting(e.OriginalSource as DependencyObject)?.GuidId;
+
+            if (string.Equals(_dragSourceGuid, RootGuid, StringComparison.Ordinal))
+                _dragSourceGuid = null;
+        }
+
+        private void DragSource_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (Mouse.LeftButton != MouseButtonState.Pressed) return;
+            if (string.IsNullOrWhiteSpace(_dragSourceGuid)) return;
+
+            var currentPosition = e.GetPosition(this);
+            if (Math.Abs(currentPosition.X - _dragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(currentPosition.Y - _dragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
             }
+
+            var sourceSetting = FindSetting(_dragSourceGuid);
+            if (sourceSetting == null) return;
+
+            DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(MenuItemDragFormat, sourceSetting.GuidId), DragDropEffects.Move);
+            _dragSourceGuid = null;
+        }
+
+        private void MenuTreeView_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = DragDropEffects.None;
+            if (TryGetDraggedSetting(e.Data, out var setting))
+            {
+                var targetOwnerGuid = GetTreeNodeGuid(e.OriginalSource as DependencyObject) ?? RootGuid;
+                if (MenuItemManagerService.IsValidOwnerOverride(setting, targetOwnerGuid))
+                    e.Effects = DragDropEffects.Move;
+            }
+
+            e.Handled = true;
+        }
+
+        private void MenuTreeView_Drop(object sender, DragEventArgs e)
+        {
+            if (!TryGetDraggedSetting(e.Data, out var setting)) return;
+
+            var targetOwnerGuid = GetTreeNodeGuid(e.OriginalSource as DependencyObject) ?? RootGuid;
+            MoveSettingToOwner(setting, targetOwnerGuid);
+            e.Handled = true;
+        }
+
+        private void MenuItemDataGrid_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = DragDropEffects.None;
+            if (TryGetDraggedSetting(e.Data, out var setting))
+            {
+                var targetOwnerGuid = GetDropTargetOwnerGuid(e.OriginalSource as DependencyObject);
+                if (MenuItemManagerService.IsValidOwnerOverride(setting, targetOwnerGuid))
+                    e.Effects = DragDropEffects.Move;
+            }
+
+            e.Handled = true;
+        }
+
+        private void MenuItemDataGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (!TryGetDraggedSetting(e.Data, out var setting)) return;
+
+            var targetRow = FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
+            if (targetRow?.DataContext is MenuItemListRow row && !ReferenceEquals(row.Setting, setting))
+            {
+                var targetOwnerGuid = GetEffectiveOwner(row.Setting);
+                var targetChildren = GetOrderedChildren(targetOwnerGuid).Where(child => !ReferenceEquals(child, setting)).ToList();
+                var targetIndex = targetChildren.FindIndex(child => ReferenceEquals(child, row.Setting));
+                if (targetIndex < 0) targetIndex = targetChildren.Count;
+
+                if (e.GetPosition(targetRow).Y > targetRow.ActualHeight / 2)
+                    targetIndex++;
+
+                MoveSettingToOwner(setting, targetOwnerGuid, targetIndex);
+            }
+            else
+            {
+                MoveSettingToOwner(setting, NormalizeOwnerGuid(_selectedOwnerGuid), int.MaxValue);
+            }
+
+            e.Handled = true;
+        }
+
+        private string GetDropTargetOwnerGuid(DependencyObject? originalSource)
+        {
+            var rowSetting = GetGridRowSetting(originalSource);
+            return rowSetting == null ? NormalizeOwnerGuid(_selectedOwnerGuid) : GetEffectiveOwner(rowSetting);
+        }
+
+        private static bool ShouldIgnoreDragSource(DependencyObject? source)
+        {
+            return FindVisualParent<TextBox>(source) != null
+                || FindVisualParent<CheckBox>(source) != null
+                || FindVisualParent<ComboBox>(source) != null
+                || FindVisualParent<Button>(source) != null;
+        }
+
+        private static string? GetTreeNodeGuid(DependencyObject? source)
+        {
+            var treeViewItem = FindVisualParent<TreeViewItem>(source);
+            return treeViewItem?.Tag as string;
+        }
+
+        private static MenuItemSetting? GetGridRowSetting(DependencyObject? source)
+        {
+            var row = FindVisualParent<DataGridRow>(source);
+            return row?.DataContext is MenuItemListRow listRow ? listRow.Setting : null;
+        }
+
+        private bool TryGetDraggedSetting(IDataObject data, out MenuItemSetting setting)
+        {
+            setting = null!;
+            if (!data.GetDataPresent(MenuItemDragFormat)) return false;
+            if (data.GetData(MenuItemDragFormat) is not string guid) return false;
+
+            setting = FindSetting(guid)!;
+            return setting != null;
+        }
+
+        private static T? FindVisualParent<T>(DependencyObject? source) where T : DependencyObject
+        {
+            while (source != null)
+            {
+                if (source is T target)
+                    return target;
+
+                try
+                {
+                    source = VisualTreeHelper.GetParent(source);
+                }
+                catch (InvalidOperationException)
+                {
+                    source = source switch
+                    {
+                        FrameworkElement frameworkElement => frameworkElement.Parent,
+                        FrameworkContentElement contentElement => contentElement.Parent,
+                        _ => null
+                    };
+                }
+            }
+
+            return null;
+        }
+
+        private void MoveSettingToOwner(MenuItemSetting setting, string targetOwnerGuid, int insertIndex = int.MaxValue)
+        {
+            targetOwnerGuid = NormalizeOwnerGuid(targetOwnerGuid);
+            if (!MenuItemManagerService.IsValidOwnerOverride(setting, targetOwnerGuid)) return;
+
+            var targetChildren = GetOrderedChildren(targetOwnerGuid)
+                .Where(child => !ReferenceEquals(child, setting))
+                .ToList();
+            insertIndex = Math.Clamp(insertIndex, 0, targetChildren.Count);
+
+            var orderSlots = CreateOrderSlots(targetOwnerGuid, targetChildren.Count + 1);
+            targetChildren.Insert(insertIndex, setting);
+
+            setting.OwnerGuidOverride = string.Equals(NormalizeOwnerGuid(setting.OwnerGuid), targetOwnerGuid, StringComparison.Ordinal)
+                ? null
+                : targetOwnerGuid;
+
+            for (var i = 0; i < targetChildren.Count; i++)
+                SetOrderOverride(targetChildren[i], orderSlots[i]);
+
+            _selectedOwnerGuid = targetOwnerGuid;
+            _selectedSetting = setting;
+            _expandedGuids.Add(targetOwnerGuid);
+            SaveLastSelectedTreeNode();
+            RefreshEditorPreview();
+        }
+
+        private List<MenuItemSetting> GetOrderedChildren(string ownerGuid)
+        {
+            ownerGuid = NormalizeOwnerGuid(ownerGuid);
+            return _allSettings
+                .Where(setting => string.Equals(GetEffectiveOwner(setting), ownerGuid, StringComparison.Ordinal))
+                .OrderBy(GetEffectiveOrder)
+                .ThenBy(GetDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private List<int> CreateOrderSlots(string ownerGuid, int requiredCount)
+        {
+            var slots = GetOrderedChildren(ownerGuid)
+                .Select(GetEffectiveOrder)
+                .OrderBy(order => order)
+                .ToList();
+
+            while (slots.Count < requiredCount)
+                slots.Add(slots.Count == 0 ? 0 : slots[^1] + 1);
+
+            for (var i = 1; i < slots.Count; i++)
+            {
+                if (slots[i] <= slots[i - 1])
+                    slots[i] = slots[i - 1] + 1;
+            }
+
+            return slots;
+        }
+
+        private static void SetOrderOverride(MenuItemSetting setting, int order)
+        {
+            setting.OrderOverride = setting.DefaultOrder == order ? null : order;
+        }
+
+        private void ShowSelectedDetail()
+        {
+            if (_selectedSetting == null)
+            {
+                ShowRootDetail();
+                return;
+            }
+
+            ShowDetail(_selectedSetting);
+        }
+
+        private void ShowRootDetail()
+        {
+            DetailTitle.Text = "Menu";
+            DetailPanel.Children.Clear();
+            var textBlock = new TextBlock
+            {
+                Text = "Select a menu item from the tree or list to edit visibility, position, and order.",
+                TextWrapping = TextWrapping.Wrap
+            };
+            SetForegroundResource(textBlock, "SecondaryTextBrush");
+            DetailPanel.Children.Add(textBlock);
         }
 
         private void ShowDetail(MenuItemSetting setting)
         {
-            DetailTitle.Text = setting.Header ?? setting.GuidId;
-            DetailPanel.Children.Clear();
-
-            AddDetailRow("GuidId", setting.GuidId);
-            AddDetailRow("OwnerGuid (default)", GetDisplayPathForGuidId(setting.OwnerGuid));
-            AddDetailRow("OwnerGuid (override)", setting.OwnerGuidOverride != null ? GetDisplayPathForGuidId(setting.OwnerGuidOverride) : "(default)");
-            AddDetailRow("Header", setting.Header ?? "");
-            AddDetailRow("Default Order", setting.DefaultOrder.ToString());
-            AddDetailRow("Order Override", setting.OrderOverride?.ToString() ?? "(default)");
-            AddDetailRow("Visible", setting.IsVisible ? "Yes" : "No");
-            AddDetailRow("Hotkey Override", setting.HotkeyOverride ?? "(none)");
-            AddDetailRow("Source Class", setting.SourceType ?? "Unknown");
-            AddDetailRow("Assembly/Plugin", setting.SourceAssembly ?? "Unknown");
-
-            // Add editable OwnerGuid override section
-            DetailPanel.Children.Add(new Separator { Margin = new Thickness(0, 8, 0, 8) });
-
-            var ownerLabel = new TextBlock
+            _isUpdatingDetail = true;
+            try
             {
-                Text = "Move to (OwnerGuid Override):",
+                DetailTitle.Text = GetDisplayName(setting);
+                DetailPanel.Children.Clear();
+
+                AddInfoRow(DetailPanel, "Current path", GetCurrentPath(setting));
+                AddInfoRow(DetailPanel, "GuidId", setting.GuidId);
+                AddInfoRow(DetailPanel, "Default owner", GetPathForGuid(setting.OwnerGuid));
+                AddInfoRow(DetailPanel, "Current owner", GetPathForGuid(GetEffectiveOwner(setting)));
+                AddInfoRow(DetailPanel, "Source assembly", setting.SourceAssembly ?? "Unknown");
+                AddInfoRow(DetailPanel, "Source type", setting.SourceType ?? "Unknown");
+
+                var visibleCheckBox = new CheckBox
+                {
+                    Content = "Visible",
+                    IsChecked = setting.IsVisible,
+                    Margin = new Thickness(0, 10, 0, 10)
+                };
+                SetForegroundResource(visibleCheckBox, "PrimaryTextBrush");
+                visibleCheckBox.Checked += (_, _) => SetVisibility(setting, true);
+                visibleCheckBox.Unchecked += (_, _) => SetVisibility(setting, false);
+                DetailPanel.Children.Add(visibleCheckBox);
+
+                DetailPanel.Children.Add(CreateSectionLabel("Move to"));
+                var ownerCombo = new ComboBox
+                {
+                    ItemsSource = GetValidOwnerGuidOptions(setting),
+                    DisplayMemberPath = nameof(OwnerGuidOption.DisplayPath),
+                    SelectedValuePath = nameof(OwnerGuidOption.GuidId),
+                    SelectedValue = setting.OwnerGuidOverride ?? setting.OwnerGuid ?? RootGuid,
+                    Margin = new Thickness(0, 0, 0, 8),
+                    HorizontalAlignment = HorizontalAlignment.Stretch
+                };
+                ownerCombo.SelectionChanged += (_, _) => ApplyOwnerGuidFromCombo(setting, ownerCombo);
+                DetailPanel.Children.Add(ownerCombo);
+
+                var resetOwnerButton = new Button
+                {
+                    Content = "Restore Default Position",
+                    Padding = new Thickness(8, 4, 8, 4),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(0, 0, 0, 12),
+                    IsEnabled = !string.IsNullOrWhiteSpace(setting.OwnerGuidOverride),
+                    Opacity = string.IsNullOrWhiteSpace(setting.OwnerGuidOverride) ? 0.64 : 1
+                };
+                resetOwnerButton.Click += (_, _) => RestoreDefaultPosition(setting);
+                DetailPanel.Children.Add(resetOwnerButton);
+
+                DetailPanel.Children.Add(CreateSectionLabel("Order"));
+                AddInfoRow(DetailPanel, "Default order", setting.DefaultOrder.ToString());
+                DetailPanel.Children.Add(CreateSectionLabel("OrderOverride"));
+                var orderPanel = new DockPanel { LastChildFill = true, Margin = new Thickness(0, 0, 0, 12) };
+                var resetOrderButton = new Button
+                {
+                    Content = "Restore Default Order",
+                    Padding = new Thickness(8, 4, 8, 4),
+                    Margin = new Thickness(8, 0, 0, 0),
+                    IsEnabled = setting.OrderOverride.HasValue,
+                    Opacity = setting.OrderOverride.HasValue ? 1 : 0.64
+                };
+                resetOrderButton.Click += (_, _) => RestoreDefaultOrder(setting);
+                DockPanel.SetDock(resetOrderButton, Dock.Right);
+                orderPanel.Children.Add(resetOrderButton);
+
+                var orderTextBox = new TextBox
+                {
+                    Text = setting.OrderOverride?.ToString() ?? string.Empty,
+                    VerticalContentAlignment = VerticalAlignment.Center
+                };
+                orderTextBox.LostFocus += (_, _) => ApplyOrderOverride(setting, orderTextBox);
+                orderTextBox.KeyDown += (_, e) =>
+                {
+                    if (e.Key != Key.Enter) return;
+                    ApplyOrderOverride(setting, orderTextBox);
+                    e.Handled = true;
+                };
+                orderPanel.Children.Add(orderTextBox);
+                DetailPanel.Children.Add(orderPanel);
+            }
+            finally
+            {
+                _isUpdatingDetail = false;
+            }
+        }
+
+        private static TextBlock CreateSectionLabel(string text)
+        {
+            var textBlock = new TextBlock
+            {
+                Text = text,
                 FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 0, 4),
-                Foreground = (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
+                Margin = new Thickness(0, 8, 0, 4)
             };
-            DetailPanel.Children.Add(ownerLabel);
+            SetForegroundResource(textBlock, "PrimaryTextBrush");
+            return textBlock;
+        }
 
-            // Default to original OwnerGuid path when no override is set
-            var currentOverrideGuid = setting.OwnerGuidOverride ?? setting.OwnerGuid;
-            var displayText = GetDisplayPathForGuidId(currentOverrideGuid);
+        private static void AddInfoRow(Panel panel, string label, string value)
+        {
+            var row = new Grid { Margin = new Thickness(0, 3, 0, 3) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(112) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var ownerCombo = new ComboBox
+            var labelText = new TextBlock
             {
-                IsEditable = true,
-                Text = displayText,
-                ItemsSource = AvailableOwnerGuids,
-                DisplayMemberPath = "DisplayPath",
-                Margin = new Thickness(0, 0, 0, 8),
-                Width = double.NaN,
-                HorizontalAlignment = HorizontalAlignment.Stretch
+                Text = label + ": ",
+                FontWeight = FontWeights.SemiBold,
+                TextWrapping = TextWrapping.Wrap
             };
-            ownerCombo.SelectionChanged += (s, _) => ApplyOwnerGuidFromCombo(setting, ownerCombo);
-            ownerCombo.LostFocus += (s, _) => ApplyOwnerGuidFromCombo(setting, ownerCombo);
-            DetailPanel.Children.Add(ownerCombo);
+            SetForegroundResource(labelText, "PrimaryTextBrush");
+            Grid.SetColumn(labelText, 0);
+            row.Children.Add(labelText);
 
-            var clearBtn = new Button
+            var valueText = new TextBlock
             {
-                Content = "Clear OwnerGuid Override",
-                Padding = new Thickness(8, 4, 8, 4),
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Margin = new Thickness(0, 0, 0, 4)
+                Text = value,
+                TextWrapping = TextWrapping.Wrap,
+                TextTrimming = TextTrimming.CharacterEllipsis
             };
-            clearBtn.Click += (s, _) =>
+            SetForegroundResource(valueText, "PrimaryTextBrush");
+            Grid.SetColumn(valueText, 1);
+            row.Children.Add(valueText);
+            panel.Children.Add(row);
+        }
+
+        private static void SetForegroundResource(FrameworkElement element, string resourceKey)
+        {
+            switch (element)
             {
-                setting.OwnerGuidOverride = null;
-                ownerCombo.Text = GetDisplayPathForGuidId(setting.OwnerGuid);
-            };
-            DetailPanel.Children.Add(clearBtn);
+                case TextBlock textBlock:
+                    textBlock.SetResourceReference(TextBlock.ForegroundProperty, resourceKey);
+                    break;
+                case Control control:
+                    control.SetResourceReference(Control.ForegroundProperty, resourceKey);
+                    break;
+            }
+        }
+
+        private void SetVisibility(MenuItemSetting setting, bool isVisible)
+        {
+            if (_isRefreshing || _isUpdatingDetail) return;
+            if (setting.IsVisible == isVisible) return;
+
+            setting.IsVisible = isVisible;
+            RefreshEditorPreview();
+        }
+
+        private void RestoreDefaultPosition(MenuItemSetting setting)
+        {
+            if (_isRefreshing || _isUpdatingDetail) return;
+            if (string.IsNullOrWhiteSpace(setting.OwnerGuidOverride)) return;
+
+            setting.OwnerGuidOverride = null;
+            RefreshEditorPreview();
+        }
+
+        private void RestoreDefaultOrder(MenuItemSetting setting)
+        {
+            if (_isRefreshing || _isUpdatingDetail) return;
+            if (!setting.OrderOverride.HasValue) return;
+
+            setting.OrderOverride = null;
+            RefreshEditorPreview();
+        }
+
+        private List<OwnerGuidOption> GetValidOwnerGuidOptions(MenuItemSetting setting)
+        {
+            return AvailableOwnerGuids
+                .Where(option => MenuItemManagerService.IsValidOwnerOverride(setting, option.GuidId))
+                .ToList();
         }
 
         private void ApplyOwnerGuidFromCombo(MenuItemSetting setting, ComboBox combo)
         {
-            string? guidId = null;
-            if (combo.SelectedItem is OwnerGuidOption option)
-            {
-                guidId = option.GuidId;
-            }
-            else
-            {
-                var text = combo.Text?.Trim();
-                guidId = ResolveGuidIdFromDisplayPath(text ?? "");
-            }
+            if (_isRefreshing || _isUpdatingDetail) return;
+            if (combo.SelectedValue is not string guidId) return;
 
-            // Only set override if it differs from the original
-            if (!string.IsNullOrEmpty(guidId) && guidId != setting.OwnerGuid)
-                setting.OwnerGuidOverride = guidId;
-            else
-                setting.OwnerGuidOverride = null;
+            if (TrySetOwnerGuidOverride(setting, guidId))
+                RefreshEditorPreview();
         }
 
-        private void AddDetailRow(string label, string value)
+        private bool TrySetOwnerGuidOverride(MenuItemSetting setting, string? selectedValue)
         {
-            var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 3, 0, 3) };
-            sp.Children.Add(new TextBlock
+            var guidId = ResolveGuidIdFromDisplayPath(selectedValue ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(guidId) || string.Equals(guidId, setting.OwnerGuid, StringComparison.Ordinal))
             {
-                Text = label + ": ",
-                FontWeight = FontWeights.SemiBold,
-                Width = 140,
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
-            });
-            sp.Children.Add(new TextBlock
+                setting.OwnerGuidOverride = null;
+                return true;
+            }
+
+            if (!MenuItemManagerService.IsValidOwnerOverride(setting, guidId))
+                return false;
+
+            setting.OwnerGuidOverride = guidId;
+            return true;
+        }
+
+        private void ApplyOrderOverride(MenuItemSetting setting, TextBox textBox)
+        {
+            if (_isRefreshing || _isUpdatingDetail) return;
+
+            var text = textBox.Text.Trim();
+            if (string.IsNullOrEmpty(text))
             {
-                Text = value,
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
-            });
-            DetailPanel.Children.Add(sp);
+                if (!setting.OrderOverride.HasValue) return;
+                setting.OrderOverride = null;
+                RefreshEditorPreview();
+                return;
+            }
+
+            if (int.TryParse(text, out var orderOverride))
+            {
+                if (setting.OrderOverride == orderOverride) return;
+                setting.OrderOverride = orderOverride;
+                RefreshEditorPreview();
+                return;
+            }
+
+            textBox.Text = setting.OrderOverride?.ToString() ?? string.Empty;
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (_isRefreshing) return;
             RefreshMenuItemList();
         }
 
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
-            MenuItemManagerService.GetInstance().RebuildMenu();
-
-            var mainWindow = Application.Current.MainWindow;
-            if (mainWindow != null)
-            {
-                MenuItemManagerService.GetInstance().ApplyHotkeys(mainWindow);
-            }
-
+            MenuItemManagerService.RebuildMenu();
             ConfigHandler.GetInstance().SaveConfigs();
-            RefreshHierarchyView();
-            RestoreLastSelectedTreeNode();
-            UpdateStatusText();
+            RefreshEditorPreview();
             MessageBox.Show("Settings applied and menu rebuilt.", "MenuItemManager", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -487,16 +931,14 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             {
                 setting.IsVisible = true;
                 setting.OrderOverride = null;
-                setting.HotkeyOverride = null;
                 setting.OwnerGuidOverride = null;
             }
 
-            MenuItemManagerService.GetInstance().RebuildMenu();
+            _selectedOwnerGuid = RootGuid;
+            _selectedSetting = null;
+            MenuItemManagerService.RebuildMenu();
             ConfigHandler.GetInstance().SaveConfigs();
-            RefreshHierarchyView();
-            RestoreLastSelectedTreeNode();
-            RefreshMenuItemList();
-            UpdateStatusText();
+            RefreshEditorPreview();
         }
 
         private void UpdateStatusText()
@@ -504,9 +946,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             int total = _allSettings.Count;
             int hidden = _allSettings.Count(s => !s.IsVisible);
             int customOrder = _allSettings.Count(s => s.OrderOverride.HasValue);
-            int withHotkey = _allSettings.Count(s => !string.IsNullOrEmpty(s.HotkeyOverride));
             int movedItems = _allSettings.Count(s => !string.IsNullOrEmpty(s.OwnerGuidOverride));
-            StatusText.Text = $"Total: {total} | Hidden: {hidden} | Custom Order: {customOrder} | Moved: {movedItems} | Custom Hotkeys: {withHotkey}";
+            StatusText.Text = $"Total: {total} | Hidden: {hidden} | Custom Order: {customOrder} | Moved: {movedItems}";
         }
     }
 }

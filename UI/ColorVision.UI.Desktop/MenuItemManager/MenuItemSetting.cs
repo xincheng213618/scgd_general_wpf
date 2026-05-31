@@ -27,10 +27,6 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         public int? OrderOverride { get => _orderOverride; set => SetProperty(ref _orderOverride, value); }
         private int? _orderOverride;
 
-        [DisplayName("Hotkey")]
-        public string? HotkeyOverride { get => _hotkeyOverride; set => SetProperty(ref _hotkeyOverride, value); }
-        private string? _hotkeyOverride;
-
         [DisplayName("OwnerGuid Override")]
         public string? OwnerGuidOverride { get => _ownerGuidOverride; set => SetProperty(ref _ownerGuidOverride, value); }
         private string? _ownerGuidOverride;
