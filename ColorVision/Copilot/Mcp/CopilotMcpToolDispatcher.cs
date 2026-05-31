@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,6 +24,8 @@ namespace ColorVision.Copilot.Mcp
         private const int MaxLogLines = 300;
         private const int MaxLogChars = 20000;
         private const int MaxAuditEntries = 80;
+        private const int DefaultDiagnosticBundleChars = 12000;
+        private const int MaxDiagnosticBundleChars = 60000;
         private const string LiveContextResourceUri = "colorvision://live-context/current";
         private const string WorkspaceResourceUri = "colorvision://workspace/current";
         private const string LogsResourceUri = "colorvision://logs/recent";
@@ -44,6 +47,23 @@ namespace ColorVision.Copilot.Mcp
 
         private readonly record struct CopilotPanelTarget(string Alias, string TargetId);
 
+        private sealed class TemplatePatchComputation
+        {
+            public string TemplateIdentifier { get; init; } = string.Empty;
+
+            public string SourceId { get; init; } = string.Empty;
+
+            public string CurrentJson { get; init; } = string.Empty;
+
+            public string ProposedChangesJson { get; init; } = string.Empty;
+
+            public string PatchedJson { get; init; } = string.Empty;
+
+            public IReadOnlyList<string> Changes { get; init; } = Array.Empty<string>();
+
+            public bool IsApplyEligible => !string.IsNullOrWhiteSpace(SourceId);
+        }
+
         public CopilotMcpToolDispatcher(CopilotMcpToolEnvironment? environment = null)
         {
             _environment = environment ?? new CopilotMcpToolEnvironment();
@@ -64,6 +84,10 @@ namespace ColorVision.Copilot.Mcp
                 }), "audit", "read-only", "Call get_audit_log with { \"max_entries\": 20, \"failed_only\": true }."),
                 Tool("get_last_tool_error", "Return the most recent failed MCP tool call, if one is recorded.", EmptySchema(), "audit", "read-only", "Call get_last_tool_error with no arguments."),
                 Tool("get_runtime_environment_summary", "Return a safe summary of the MCP runtime environment, workspace roots, live context, logs, and flow availability.", EmptySchema(), "status", "read-only", "Call get_runtime_environment_summary before diagnostics."),
+                Tool("get_diagnostic_bundle", "Return a size-limited redacted diagnostic bundle with server status, runtime, last error, recent log, live context, and flow summary.", Schema(new Dictionary<string, object>
+                {
+                    ["max_chars"] = IntegerProperty("Maximum characters to return. Defaults to 12000.", 1000, MaxDiagnosticBundleChars),
+                }), "status", "read-only", "Call get_diagnostic_bundle with { \"max_chars\": 12000 } before reporting diagnostics."),
                 Tool("get_live_context", "Return the current ColorVision live Copilot context snapshot, if one is published.", EmptySchema(), "context", "read-only", "Call get_live_context with no arguments."),
                 Tool("get_workspace_context", "Return the current ColorVision solution directory, active document, and allowed search roots.", EmptySchema(), "context", "read-only", "Call get_workspace_context to understand allowed roots."),
                 Tool("get_recent_log", "Read recent ColorVision application log lines. Optional arguments: query, max_lines.", Schema(new Dictionary<string, object>
@@ -119,9 +143,13 @@ namespace ColorVision.Copilot.Mcp
                     },
                     ["current_json"] = StringProperty("Optional current template JSON. If omitted, the active template editor context is used."),
                 }, "template_identifier", "proposed_changes"), "context", "read-only", "Call preview_template_patch with { \"template_identifier\": \"Default\", \"proposed_changes\": { \"Exposure\": 12 } }."),
+                Tool("apply_template_patch", "Create a user-confirmed action that applies a prior preview_template_patch result to the active template JSON editor. Required argument: preview_id.", Schema(new Dictionary<string, object>
+                {
+                    ["preview_id"] = StringProperty("Preview id returned by preview_template_patch."),
+                }, "preview_id"), "app-control", "confirmation-required", "Call preview_template_patch first, then apply_template_patch with the returned preview_id."),
                 Tool("preview_flow_action", "Preview a low-risk flow navigation/inspection action without running or stopping the flow. Required argument: action.", Schema(new Dictionary<string, object>
                 {
-                    ["action"] = StringProperty("Preview action: select_node, open_node_property, inspect_node_errors. start/stop/run requests are refused."),
+                    ["action"] = StringProperty("Preview action: select_node, open_node_property, inspect_node_errors, explain_node, trace_recent_failure. start/stop/run requests are refused."),
                     ["node_id"] = StringProperty("Optional flow node id."),
                     ["node_name"] = StringProperty("Optional flow node name or title."),
                 }, "action"), "context", "read-only", "Call preview_flow_action with { \"action\": \"inspect_node_errors\", \"node_name\": \"Camera\" }."),
@@ -179,6 +207,7 @@ namespace ColorVision.Copilot.Mcp
                     "get_audit_log" => GetAuditLog(arguments),
                     "get_last_tool_error" => GetLastToolError(),
                     "get_runtime_environment_summary" => await GetRuntimeEnvironmentSummaryAsync(cancellationToken),
+                    "get_diagnostic_bundle" => await GetDiagnosticBundleAsync(arguments, callerSource, cancellationToken),
                     "get_live_context" => GetLiveContext(),
                     "get_workspace_context" => GetWorkspaceContext(),
                     "get_recent_log" => GetRecentLog(arguments),
@@ -193,6 +222,7 @@ namespace ColorVision.Copilot.Mcp
                     "execute_menu" => await ExecuteMenuAsync(arguments, cancellationToken),
                     "confirm_action" => await ConfirmActionAsync(arguments, cancellationToken),
                     "preview_template_patch" => PreviewTemplatePatch(arguments),
+                    "apply_template_patch" => await ApplyTemplatePatchAsync(arguments, cancellationToken),
                     "preview_flow_action" => await PreviewFlowActionAsync(arguments, cancellationToken),
                     "set_theme" => await SetThemeAsync(arguments, cancellationToken),
                     "set_language" => await SetLanguageAsync(arguments, cancellationToken),
@@ -334,6 +364,29 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Recent audit entries: {CopilotMcpAuditLogger.GetRecentEntries(MaxAuditEntries).Count}");
             builder.AppendLine($"Pending actions: {CopilotMcpConfirmationStore.Instance.PendingCount}");
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
+        }
+
+        private async Task<CopilotMcpToolCallResult> GetDiagnosticBundleAsync(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource, CancellationToken cancellationToken)
+        {
+            var maxChars = Math.Clamp(GetInt(arguments, "max_chars") ?? DefaultDiagnosticBundleChars, 1000, MaxDiagnosticBundleChars);
+            var recentLog = GetRecentLog(new Dictionary<string, JsonElement>
+            {
+                ["max_lines"] = JsonSerializer.SerializeToElement(120),
+            });
+
+            var builder = new StringBuilder();
+            builder.AppendLine("ColorVision MCP diagnostic bundle");
+            builder.AppendLine($"Generated UTC: {DateTimeOffset.UtcNow:O}");
+            builder.AppendLine($"Max chars: {maxChars}");
+            AppendDiagnosticSection(builder, "server_status", GetServerStatus(callerSource).Text);
+            AppendDiagnosticSection(builder, "runtime_environment_summary", (await GetRuntimeEnvironmentSummaryAsync(cancellationToken)).Text);
+            AppendDiagnosticSection(builder, "last_tool_error", GetLastToolError().Text);
+            AppendDiagnosticSection(builder, "recent_log", recentLog.Text);
+            AppendDiagnosticSection(builder, "live_context", GetLiveContext().Text);
+            AppendDiagnosticSection(builder, "flow_summary", (await GetFlowSummaryAsync(cancellationToken)).Text);
+
+            var redacted = RedactForDiagnostics(builder.ToString().TrimEnd());
+            return CopilotMcpToolCallResult.Ok(TruncateWithLimit(redacted, maxChars));
         }
 
         private CopilotMcpToolCallResult GetLiveContext()
@@ -627,63 +680,68 @@ namespace ColorVision.Copilot.Mcp
 
         private CopilotMcpToolCallResult PreviewTemplatePatch(IReadOnlyDictionary<string, JsonElement>? arguments)
         {
-            var templateIdentifier = FirstNonEmpty(GetString(arguments, "template_identifier"), GetString(arguments, "template"), GetString(arguments, "identifier"));
-            if (string.IsNullOrWhiteSpace(templateIdentifier))
-                return CopilotMcpToolCallResult.Fail("missing_template_identifier", "The preview_template_patch tool requires template_identifier.");
+            if (!TryBuildTemplatePatchComputation(arguments, out var computation, out var errorCode, out var errorMessage))
+                return CopilotMcpToolCallResult.Fail(errorCode, errorMessage);
 
-            if (!TryGetJsonArgument(arguments, "proposed_changes", out var proposedChangesJson, out var proposedChangesError))
-                return CopilotMcpToolCallResult.Fail("missing_proposed_changes", proposedChangesError);
-
-            var currentJson = GetString(arguments, "current_json");
-            if (string.IsNullOrWhiteSpace(currentJson))
-                currentJson = ExtractCurrentTemplateJson();
-
-            if (string.IsNullOrWhiteSpace(currentJson))
-                return CopilotMcpToolCallResult.Fail("template_context_unavailable", "No current template JSON is available. Provide current_json or open a template JSON editor context.");
-
-            try
+            CopilotMcpTemplatePatchPreview? storedPreview = null;
+            if (computation.IsApplyEligible)
             {
-                using var currentDocument = JsonDocument.Parse(currentJson);
-                using var proposedDocument = JsonDocument.Parse(proposedChangesJson);
+                storedPreview = CopilotMcpTemplatePatchPreviewStore.Instance.Create(
+                    computation.TemplateIdentifier,
+                    computation.SourceId,
+                    computation.CurrentJson,
+                    computation.ProposedChangesJson,
+                    computation.PatchedJson,
+                    computation.Changes);
+            }
 
-                if (currentDocument.RootElement.ValueKind != JsonValueKind.Object)
-                    return CopilotMcpToolCallResult.Fail("invalid_template_json", $"The current template JSON root must be an object, but was {currentDocument.RootElement.ValueKind}.");
+            return CopilotMcpToolCallResult.Ok(BuildTemplatePatchPreviewText(computation, storedPreview));
+        }
 
-                if (proposedDocument.RootElement.ValueKind != JsonValueKind.Object)
-                    return CopilotMcpToolCallResult.Fail("invalid_proposed_changes", $"The proposed_changes root must be an object, but was {proposedDocument.RootElement.ValueKind}.");
+        private async Task<CopilotMcpToolCallResult> ApplyTemplatePatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            var previewId = GetString(arguments, "preview_id");
+            if (!CopilotMcpTemplatePatchPreviewStore.Instance.TryGet(previewId, out var preview, out var previewMessage))
+                return CopilotMcpToolCallResult.Fail("template_patch_preview_required", previewMessage);
 
-                if (TryFindSensitiveJsonProperty(proposedDocument.RootElement, out var sensitivePath))
-                    return CopilotMcpToolCallResult.Fail("sensitive_template_field_not_allowed", $"preview_template_patch refuses to modify sensitive fields: {sensitivePath}.");
+            var validationResult = ValidateTemplatePatchPreviewCanApply(preview);
+            if (!validationResult.Success)
+                return validationResult;
 
-                var changes = new List<string>();
-                foreach (var proposedProperty in proposedDocument.RootElement.EnumerateObject())
+            return CreateConfirmableActionResult(
+                "Confirm template patch",
+                $"Apply previewed JSON changes to active template editor: {preview.TemplateIdentifier}",
+                "apply_template_patch",
+                arguments,
+                BuildTemplatePatchConfirmationPreview(preview),
+                token => ExecuteTemplatePatchPreviewAsync(preview.PreviewId, token));
+        }
+
+        private async Task<CopilotMcpToolCallResult> ExecuteTemplatePatchPreviewAsync(string previewId, CancellationToken cancellationToken)
+        {
+            if (!CopilotMcpTemplatePatchPreviewStore.Instance.TryGet(previewId, out var preview, out var previewMessage))
+                return CopilotMcpToolCallResult.Fail("template_patch_preview_expired", previewMessage);
+
+            var validationResult = ValidateTemplatePatchPreviewCanApply(preview);
+            if (!validationResult.Success)
+                return validationResult;
+
+            using var proposedDocument = JsonDocument.Parse(preview.ProposedChangesJson);
+            if (!TryFindSensitiveJsonProperty(proposedDocument.RootElement, out _))
+            {
+                var request = new CopilotTemplatePatchApplyRequest
                 {
-                    currentDocument.RootElement.TryGetProperty(proposedProperty.Name, out var currentValue);
-                    var currentText = currentValue.ValueKind == JsonValueKind.Undefined ? "(missing)" : DescribeJsonValue(currentValue);
-                    var proposedText = DescribeJsonValue(proposedProperty.Value);
-                    if (string.Equals(currentText, proposedText, StringComparison.Ordinal))
-                        continue;
+                    PreviewId = preview.PreviewId,
+                    TemplateIdentifier = preview.TemplateIdentifier,
+                    SourceId = preview.SourceId,
+                    ExpectedCurrentJson = preview.CurrentJson,
+                    PatchedJson = preview.PatchedJson,
+                };
 
-                    changes.Add($"- {proposedProperty.Name}: {currentText} -> {proposedText}");
-                }
+                return await _environment.ApplyTemplatePatchHandler(request, cancellationToken);
+            }
 
-                var builder = new StringBuilder();
-                builder.AppendLine("ColorVision template patch preview");
-                builder.AppendLine($"Template identifier: {templateIdentifier.Trim()}");
-                builder.AppendLine("Mode: preview only");
-                builder.AppendLine("Would save: False");
-                builder.AppendLine("Current JSON valid: True");
-                builder.AppendLine("Proposed changes valid: True");
-                builder.AppendLine($"Changed key fields: {changes.Count}");
-                foreach (var change in changes.Take(80))
-                    builder.AppendLine(change);
-                builder.AppendLine("No template file was saved or mutated.");
-                return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
-            }
-            catch (JsonException ex)
-            {
-                return CopilotMcpToolCallResult.Fail("invalid_template_patch_json", $"Template patch preview failed JSON validation: {ex.Message}");
-            }
+            return CopilotMcpToolCallResult.Fail("sensitive_template_field_not_allowed", "apply_template_patch refuses to modify sensitive template fields.");
         }
 
         private async Task<CopilotMcpToolCallResult> PreviewFlowActionAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
@@ -696,12 +754,12 @@ namespace ColorVision.Copilot.Mcp
             {
                 return CopilotMcpToolCallResult.Fail(
                     "flow_execution_not_supported",
-                    "risk_level: confirmation-required\nwould_execute: False\nexecution_status: not_supported_current_stage\nFlow start/stop/run requests are intentionally not executed by ColorVision MCP v3.");
+                    "risk_level: confirmation-required\nwould_execute: False\nexecution_status: not_supported_current_stage\nFlow start/stop/run requests are intentionally not executed by ColorVision MCP. Suggested next step: inspect the flow summary and preview a node-specific diagnostic action instead.");
             }
 
-            if (action != "select_node" && action != "open_node_property" && action != "inspect_node_errors")
+            if (action != "select_node" && action != "open_node_property" && action != "inspect_node_errors" && action != "explain_node" && action != "trace_recent_failure")
             {
-                return CopilotMcpToolCallResult.Fail("unsupported_flow_preview_action", "Supported preview actions: select_node, open_node_property, inspect_node_errors. Flow start/stop/run is not supported.");
+                return CopilotMcpToolCallResult.Fail("unsupported_flow_preview_action", "Supported preview actions: select_node, open_node_property, inspect_node_errors, explain_node, trace_recent_failure. Flow start/stop/run is not supported.");
             }
 
             var snapshot = await _environment.FlowSnapshotProvider(cancellationToken);
@@ -727,10 +785,18 @@ namespace ColorVision.Copilot.Mcp
                 builder.AppendLine($"Matched node id: {EmptyLabel(matchedNode.NodeId)}");
                 builder.AppendLine($"Matched node type: {EmptyLabel(matchedNode.NodeType)}");
                 builder.AppendLine($"Matched node selected: {matchedNode.IsSelected}");
-                if (action == "inspect_node_errors")
+                if (action == "inspect_node_errors" || action == "trace_recent_failure")
                 {
                     builder.AppendLine($"Node mark: {EmptyLabel(matchedNode.Mark)}");
                     builder.AppendLine($"Recent flow failure summary: {EmptyLabel(snapshot.RecentFailureSummary)}");
+                }
+                if (action == "explain_node")
+                {
+                    builder.AppendLine($"Node active: {matchedNode.IsActive}");
+                    AppendList(builder, "Node inputs", matchedNode.Inputs);
+                    AppendList(builder, "Node outputs", matchedNode.Outputs);
+                    if (matchedNode.Parameters.Count > 0)
+                        builder.AppendLine($"Node parameters: {RedactForDisplay(string.Join(", ", matchedNode.Parameters.Select(item => $"{item.Name}={item.Value}")))}");
                 }
             }
             else if (!string.IsNullOrWhiteSpace(nodeQuery))
@@ -740,6 +806,21 @@ namespace ColorVision.Copilot.Mcp
                 foreach (var node in snapshot.Nodes.Take(20))
                     builder.AppendLine($"- {EmptyLabel(FirstNonEmpty(node.Title, node.NodeName, node.NodeId))} [{EmptyLabel(node.NodeId)}]");
             }
+
+            if (action == "trace_recent_failure")
+            {
+                builder.AppendLine($"Recent failure summary: {EmptyLabel(snapshot.RecentFailureSummary)}");
+                builder.AppendLine($"Last node: {EmptyLabel(snapshot.LastNodeSummary)}");
+                if (!string.IsNullOrWhiteSpace(snapshot.RecentRunMessage))
+                {
+                    builder.AppendLine("Recent run message:");
+                    builder.AppendLine(TrimLong(RedactForDisplay(snapshot.RecentRunMessage), 2000));
+                }
+            }
+
+            builder.AppendLine("Suggested next steps:");
+            foreach (var suggestion in BuildFlowPreviewSuggestions(action, matchedNode, snapshot))
+                builder.AppendLine("- " + suggestion);
 
             builder.AppendLine("No flow was started, stopped, run, rerun, or modified.");
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
@@ -880,6 +961,244 @@ namespace ColorVision.Copilot.Mcp
 
             error = $"The {name} argument must not be empty.";
             return false;
+        }
+
+        private bool TryBuildTemplatePatchComputation(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            out TemplatePatchComputation computation,
+            out string errorCode,
+            out string errorMessage)
+        {
+            computation = new TemplatePatchComputation();
+            errorCode = string.Empty;
+            errorMessage = string.Empty;
+
+            var templateIdentifier = FirstNonEmpty(GetString(arguments, "template_identifier"), GetString(arguments, "template"), GetString(arguments, "identifier"));
+            if (string.IsNullOrWhiteSpace(templateIdentifier))
+            {
+                errorCode = "missing_template_identifier";
+                errorMessage = "The preview_template_patch tool requires template_identifier.";
+                return false;
+            }
+
+            if (!TryGetJsonArgument(arguments, "proposed_changes", out var proposedChangesJson, out var proposedChangesError))
+            {
+                errorCode = "missing_proposed_changes";
+                errorMessage = proposedChangesError;
+                return false;
+            }
+
+            var currentJson = GetString(arguments, "current_json");
+            var sourceId = string.Empty;
+            if (string.IsNullOrWhiteSpace(currentJson))
+            {
+                if (!TryGetActiveTemplateSourceAndJson(out sourceId, out currentJson))
+                {
+                    errorCode = "template_context_unavailable";
+                    errorMessage = "No current active template JSON editor context is available. Open a template JSON editor or provide current_json for preview-only use.";
+                    return false;
+                }
+            }
+
+            try
+            {
+                using var currentDocument = JsonDocument.Parse(currentJson);
+                using var proposedDocument = JsonDocument.Parse(proposedChangesJson);
+
+                if (currentDocument.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    errorCode = "invalid_template_json";
+                    errorMessage = $"The current template JSON root must be an object, but was {currentDocument.RootElement.ValueKind}.";
+                    return false;
+                }
+
+                if (proposedDocument.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    errorCode = "invalid_proposed_changes";
+                    errorMessage = $"The proposed_changes root must be an object, but was {proposedDocument.RootElement.ValueKind}.";
+                    return false;
+                }
+
+                if (TryFindSensitiveJsonProperty(proposedDocument.RootElement, out var sensitivePath))
+                {
+                    errorCode = "sensitive_template_field_not_allowed";
+                    errorMessage = $"preview_template_patch refuses to modify sensitive fields: {sensitivePath}.";
+                    return false;
+                }
+
+                var changes = BuildTemplatePatchChangeLines(currentDocument.RootElement, proposedDocument.RootElement);
+                computation = new TemplatePatchComputation
+                {
+                    TemplateIdentifier = templateIdentifier.Trim(),
+                    SourceId = sourceId,
+                    CurrentJson = currentJson,
+                    ProposedChangesJson = proposedChangesJson,
+                    PatchedJson = CreatePatchedTemplateJson(currentJson, proposedChangesJson),
+                    Changes = changes,
+                };
+                return true;
+            }
+            catch (JsonException ex)
+            {
+                errorCode = "invalid_template_patch_json";
+                errorMessage = $"Template patch preview failed JSON validation: {ex.Message}";
+                return false;
+            }
+        }
+
+        private CopilotMcpToolCallResult ValidateTemplatePatchPreviewCanApply(CopilotMcpTemplatePatchPreview preview)
+        {
+            if (string.IsNullOrWhiteSpace(preview.SourceId))
+                return CopilotMcpToolCallResult.Fail("template_patch_not_applyable", "The preview was not created from the active template editor. Re-run preview_template_patch without current_json while the template editor is active.");
+
+            if (!TryGetActiveTemplateSourceAndJson(out var activeSourceId, out var activeJson))
+                return CopilotMcpToolCallResult.Fail("template_context_unavailable", "No active template JSON editor context is available.");
+
+            if (!string.Equals(activeSourceId, preview.SourceId, StringComparison.OrdinalIgnoreCase))
+                return CopilotMcpToolCallResult.Fail("template_context_mismatch", "The active template editor is not the same editor that created the preview. Re-run preview_template_patch for the current editor.");
+
+            if (!JsonSemanticallyEquals(activeJson, preview.CurrentJson, out var compareError))
+                return CopilotMcpToolCallResult.Fail("template_patch_conflict", string.IsNullOrWhiteSpace(compareError)
+                    ? "The active template JSON changed after preview_template_patch. Re-run preview_template_patch before applying."
+                    : compareError);
+
+            try
+            {
+                using var proposedDocument = JsonDocument.Parse(preview.ProposedChangesJson);
+                if (TryFindSensitiveJsonProperty(proposedDocument.RootElement, out var sensitivePath))
+                    return CopilotMcpToolCallResult.Fail("sensitive_template_field_not_allowed", $"apply_template_patch refuses to modify sensitive fields: {sensitivePath}.");
+
+                using var patchedDocument = JsonDocument.Parse(preview.PatchedJson);
+                if (patchedDocument.RootElement.ValueKind != JsonValueKind.Object)
+                    return CopilotMcpToolCallResult.Fail("invalid_patched_template_json", "The patched template JSON root is not an object.");
+            }
+            catch (JsonException ex)
+            {
+                return CopilotMcpToolCallResult.Fail("invalid_patched_template_json", $"The patched template JSON is invalid: {ex.Message}");
+            }
+
+            return CopilotMcpToolCallResult.Ok("ok");
+        }
+
+        private bool TryGetActiveTemplateSourceAndJson(out string sourceId, out string currentJson)
+        {
+            sourceId = string.Empty;
+            currentJson = string.Empty;
+            var liveContext = _environment.LiveContextProvider();
+            if (liveContext == null || !liveContext.SourceId.StartsWith("template-json-editor:", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            foreach (var item in liveContext.SnapshotItems)
+            {
+                var json = ExtractFencedJson(item.Content);
+                if (string.IsNullOrWhiteSpace(json))
+                    continue;
+
+                sourceId = liveContext.SourceId;
+                currentJson = json;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static IReadOnlyList<string> BuildTemplatePatchChangeLines(JsonElement currentRoot, JsonElement proposedRoot)
+        {
+            var changes = new List<string>();
+            foreach (var proposedProperty in proposedRoot.EnumerateObject())
+            {
+                currentRoot.TryGetProperty(proposedProperty.Name, out var currentValue);
+                var currentText = currentValue.ValueKind == JsonValueKind.Undefined ? "(missing)" : DescribeJsonValue(currentValue);
+                var proposedText = DescribeJsonValue(proposedProperty.Value);
+                if (string.Equals(currentText, proposedText, StringComparison.Ordinal))
+                    continue;
+
+                changes.Add($"- {proposedProperty.Name}: {currentText} -> {proposedText}");
+            }
+
+            return changes;
+        }
+
+        private static string CreatePatchedTemplateJson(string currentJson, string proposedChangesJson)
+        {
+            var currentObject = JsonNode.Parse(currentJson)?.AsObject()
+                ?? throw new JsonException("Current template JSON root must be an object.");
+            var proposedObject = JsonNode.Parse(proposedChangesJson)?.AsObject()
+                ?? throw new JsonException("Proposed changes root must be an object.");
+
+            foreach (var property in proposedObject)
+                currentObject[property.Key] = property.Value?.DeepClone();
+
+            return currentObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+
+        private static string BuildTemplatePatchPreviewText(TemplatePatchComputation computation, CopilotMcpTemplatePatchPreview? storedPreview)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("ColorVision template patch preview");
+            builder.AppendLine($"Template identifier: {computation.TemplateIdentifier}");
+            builder.AppendLine("Mode: preview only");
+            builder.AppendLine("Would save: False");
+            builder.AppendLine("Current JSON valid: True");
+            builder.AppendLine("Proposed changes valid: True");
+            builder.AppendLine($"Apply eligible: {computation.IsApplyEligible}");
+            if (storedPreview != null)
+            {
+                builder.AppendLine($"preview_id: {storedPreview.PreviewId}");
+                builder.AppendLine($"source_id: {storedPreview.SourceId}");
+                builder.AppendLine($"current_json_hash: {storedPreview.CurrentJsonHash}");
+                builder.AppendLine($"preview_expires_at: {storedPreview.ExpiresAt:O}");
+                builder.AppendLine("Next step: call apply_template_patch with this preview_id to create a user-confirmed action.");
+            }
+            else
+            {
+                builder.AppendLine("Next step: open the target template JSON editor and call preview_template_patch without current_json before applying.");
+            }
+            builder.AppendLine($"Changed key fields: {computation.Changes.Count}");
+            foreach (var change in computation.Changes.Take(80))
+                builder.AppendLine(change);
+            builder.AppendLine("No template file was saved or mutated.");
+            return builder.ToString().TrimEnd();
+        }
+
+        private static string BuildTemplatePatchConfirmationPreview(CopilotMcpTemplatePatchPreview preview)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Template patch ready for user confirmation");
+            builder.AppendLine($"preview_id: {preview.PreviewId}");
+            builder.AppendLine($"template_identifier: {preview.TemplateIdentifier}");
+            builder.AppendLine($"source_id: {preview.SourceId}");
+            builder.AppendLine($"current_json_hash: {preview.CurrentJsonHash}");
+            builder.AppendLine($"changed_key_fields: {preview.Changes.Count}");
+            foreach (var change in preview.Changes.Take(80))
+                builder.AppendLine(change);
+            builder.AppendLine("The active template JSON will be revalidated and conflict-checked again when confirm_action executes.");
+            return builder.ToString().TrimEnd();
+        }
+
+        private static bool JsonSemanticallyEquals(string leftJson, string rightJson, out string error)
+        {
+            error = string.Empty;
+            try
+            {
+                using var leftDocument = JsonDocument.Parse(leftJson);
+                using var rightDocument = JsonDocument.Parse(rightJson);
+                if (leftDocument.RootElement.ValueKind != JsonValueKind.Object || rightDocument.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    error = "Template JSON root must be an object.";
+                    return false;
+                }
+
+                return string.Equals(
+                    JsonSerializer.Serialize(leftDocument.RootElement),
+                    JsonSerializer.Serialize(rightDocument.RootElement),
+                    StringComparison.Ordinal);
+            }
+            catch (JsonException ex)
+            {
+                error = $"Template JSON validation failed during conflict check: {ex.Message}";
+                return false;
+            }
         }
 
         private string ExtractCurrentTemplateJson()
@@ -1296,6 +1615,49 @@ namespace ColorVision.Copilot.Mcp
                 return;
 
             builder.Append(label).Append(": ").AppendLine(string.Join("; ", values));
+        }
+
+        private static IReadOnlyList<string> BuildFlowPreviewSuggestions(string action, CopilotFlowNodeContextSnapshot? matchedNode, CopilotFlowContextSnapshot snapshot)
+        {
+            return action switch
+            {
+                "select_node" => matchedNode == null
+                    ? new[] { "Choose one of the listed node_id values and preview select_node again." }
+                    : new[] { "Use open_node_property to inspect the matched node in ColorVision.", "Review get_flow_summary before changing any template parameters." },
+                "open_node_property" => matchedNode == null
+                    ? new[] { "Provide node_id or node_name for the node whose properties should be inspected." }
+                    : new[] { "Open the node property panel in ColorVision for manual review.", "Use explain_node for a read-only parameter summary before editing templates." },
+                "inspect_node_errors" => new[] { "Review node mark and recent failure summary.", "Use trace_recent_failure to correlate the last node and recent run message." },
+                "explain_node" => new[] { "Compare the node parameters with the active template JSON.", "Use preview_template_patch for any proposed template change before applying it." },
+                "trace_recent_failure" => string.IsNullOrWhiteSpace(snapshot.RecentFailureSummary)
+                    ? new[] { "No recent failure summary is available; capture get_recent_log with an error query if needed." }
+                    : new[] { "Inspect the matched or last node before editing parameters.", "Use get_diagnostic_bundle for a compact shareable diagnostic snapshot." },
+                _ => new[] { "Use get_flow_summary for read-only flow context." },
+            };
+        }
+
+        private static void AppendDiagnosticSection(StringBuilder builder, string title, string content)
+        {
+            builder.AppendLine();
+            builder.AppendLine("## " + title);
+            builder.AppendLine(string.IsNullOrWhiteSpace(content) ? "(empty)" : content.Trim());
+        }
+
+        private static string RedactForDiagnostics(string text)
+        {
+            return CopilotMcpAuditLogger.RedactText(RedactForDisplay(text));
+        }
+
+        private static string TruncateWithLimit(string text, int maxChars)
+        {
+            if (text.Length <= maxChars)
+                return text;
+
+            var suffix = $"{Environment.NewLine}...<diagnostic bundle truncated to max_chars={maxChars}>";
+            if (suffix.Length >= maxChars)
+                return text[..maxChars];
+
+            return text[..(maxChars - suffix.Length)] + suffix;
         }
 
         private static CopilotMcpToolDescriptor Tool(string name, string description, object inputSchema, string category, string riskLevel, string usageExample) => new()

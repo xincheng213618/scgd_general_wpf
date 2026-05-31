@@ -1,4 +1,5 @@
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Solution;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
@@ -96,6 +97,19 @@ namespace ColorVision.Copilot.Mcp
         public string Endpoint => $"http://{Host}:{Port}/mcp";
     }
 
+    public sealed class CopilotTemplatePatchApplyRequest
+    {
+        public string PreviewId { get; init; } = string.Empty;
+
+        public string TemplateIdentifier { get; init; } = string.Empty;
+
+        public string SourceId { get; init; } = string.Empty;
+
+        public string ExpectedCurrentJson { get; init; } = string.Empty;
+
+        public string PatchedJson { get; init; } = string.Empty;
+    }
+
     public sealed class CopilotMcpHttpRequest
     {
         public string Method { get; init; } = string.Empty;
@@ -136,6 +150,8 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult> RecentLogProvider { get; init; } = CopilotRecentLogCapability.Capture;
 
+        public Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>> ApplyTemplatePatchHandler { get; init; } = ApplyTemplatePatchToActiveEditorAsync;
+
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? OpenPanelHandler { get; init; }
 
         public Func<string, bool, CancellationToken, Task<CopilotMcpToolCallResult>>? ExecuteMenuHandler { get; init; }
@@ -143,6 +159,19 @@ namespace ColorVision.Copilot.Mcp
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? SetThemeHandler { get; init; }
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? SetLanguageHandler { get; init; }
+
+        private static async Task<CopilotMcpToolCallResult> ApplyTemplatePatchToActiveEditorAsync(CopilotTemplatePatchApplyRequest request, CancellationToken cancellationToken)
+        {
+            var result = await EditTemplateJson.TryApplyCopilotJsonPatchAsync(
+                request.SourceId,
+                request.ExpectedCurrentJson,
+                request.PatchedJson,
+                cancellationToken);
+
+            return result.Success
+                ? CopilotMcpToolCallResult.Ok(result.Message)
+                : CopilotMcpToolCallResult.Fail(result.ErrorCode, result.Message);
+        }
 
         private static CopilotMcpRuntimeSettings CreateDefaultRuntimeSettings()
         {

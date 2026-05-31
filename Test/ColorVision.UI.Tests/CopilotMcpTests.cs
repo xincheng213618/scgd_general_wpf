@@ -19,6 +19,7 @@ public sealed class CopilotMcpTests : IDisposable
     {
         CopilotMcpAuditLogger.ClearForTests();
         CopilotMcpConfirmationStore.Instance.ClearForTests();
+        CopilotMcpTemplatePatchPreviewStore.Instance.ClearForTests();
         _tempRoot = Path.Combine(Path.GetTempPath(), "ColorVisionMcpTests_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempRoot);
     }
@@ -91,7 +92,9 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Contains("search_docs", response.Body, StringComparison.Ordinal);
         Assert.Contains("confirm_action", response.Body, StringComparison.Ordinal);
         Assert.Contains("preview_template_patch", response.Body, StringComparison.Ordinal);
+        Assert.Contains("apply_template_patch", response.Body, StringComparison.Ordinal);
         Assert.Contains("preview_flow_action", response.Body, StringComparison.Ordinal);
+        Assert.Contains("get_diagnostic_bundle", response.Body, StringComparison.Ordinal);
         Assert.Contains("riskLevel", response.Body, StringComparison.Ordinal);
         Assert.Contains("category", response.Body, StringComparison.Ordinal);
         Assert.Contains("annotations", response.Body, StringComparison.Ordinal);
@@ -543,6 +546,175 @@ public sealed class CopilotMcpTests : IDisposable
     }
 
     [Fact]
+    public async Task ApplyTemplatePatch_BeforeUserApproval_DoesNotSave()
+    {
+        var fixture = await CreatePendingTemplatePatchAsync();
+
+        Assert.Equal(0, fixture.ApplyCount());
+        Assert.Contains("\"Exposure\": 10", fixture.CurrentJson(), StringComparison.Ordinal);
+        Assert.Equal(1, CopilotMcpConfirmationStore.Instance.PendingCount);
+        Assert.False(string.IsNullOrWhiteSpace(fixture.ActionId));
+        Assert.False(string.IsNullOrWhiteSpace(fixture.ArgumentsSummary));
+    }
+
+    [Fact]
+    public async Task ApplyTemplatePatch_AfterUserApproval_AppliesPatchOnce()
+    {
+        var fixture = await CreatePendingTemplatePatchAsync();
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(fixture.ActionId, out _));
+
+        var confirmResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
+        {
+            action_id = fixture.ActionId,
+            tool_name = "apply_template_patch",
+            arguments_summary = fixture.ArgumentsSummary,
+        }));
+        var duplicateResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
+        {
+            action_id = fixture.ActionId,
+            tool_name = "apply_template_patch",
+            arguments_summary = fixture.ArgumentsSummary,
+        }));
+
+        Assert.False(confirmResult.IsError);
+        Assert.Equal(1, fixture.ApplyCount());
+        Assert.Contains("\"Exposure\": 12", fixture.CurrentJson(), StringComparison.Ordinal);
+        Assert.True(duplicateResult.IsError);
+        Assert.Equal(1, fixture.ApplyCount());
+    }
+
+    [Fact]
+    public async Task ApplyTemplatePatch_ArgumentsMismatch_DoesNotSave()
+    {
+        var fixture = await CreatePendingTemplatePatchAsync();
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(fixture.ActionId, out _));
+
+        var confirmResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
+        {
+            action_id = fixture.ActionId,
+            tool_name = "apply_template_patch",
+            arguments_summary = fixture.ArgumentsSummary + "; changed=true",
+        }));
+
+        Assert.True(confirmResult.IsError);
+        Assert.Equal(0, fixture.ApplyCount());
+        Assert.Contains("\"Exposure\": 10", fixture.CurrentJson(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ApplyTemplatePatch_RejectedAction_DoesNotSave()
+    {
+        var fixture = await CreatePendingTemplatePatchAsync();
+        Assert.True(CopilotMcpConfirmationStore.Instance.Reject(fixture.ActionId, out _));
+
+        var confirmResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
+        {
+            action_id = fixture.ActionId,
+            tool_name = "apply_template_patch",
+            arguments_summary = fixture.ArgumentsSummary,
+        }));
+
+        Assert.True(confirmResult.IsError);
+        Assert.Equal(0, fixture.ApplyCount());
+    }
+
+    [Fact]
+    public async Task ApplyTemplatePatch_ExpiredAction_DoesNotSave()
+    {
+        CopilotMcpConfirmationStore.Instance.ActionLifetime = TimeSpan.FromMilliseconds(-1);
+        var fixture = await CreatePendingTemplatePatchAsync();
+
+        var confirmResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
+        {
+            action_id = fixture.ActionId,
+            tool_name = "apply_template_patch",
+            arguments_summary = fixture.ArgumentsSummary,
+        }));
+
+        Assert.True(confirmResult.IsError);
+        Assert.Equal(0, fixture.ApplyCount());
+        Assert.Contains("expired", confirmResult.Text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ApplyTemplatePatch_Conflict_DoesNotSave()
+    {
+        var fixture = await CreatePendingTemplatePatchAsync();
+        fixture.SetCurrentJson("{\n  \"TemplateType\": \"CameraRun\",\n  \"Name\": \"CameraTemplate\",\n  \"Exposure\": 11\n}");
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(fixture.ActionId, out _));
+
+        var confirmResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
+        {
+            action_id = fixture.ActionId,
+            tool_name = "apply_template_patch",
+            arguments_summary = fixture.ArgumentsSummary,
+        }));
+
+        Assert.True(confirmResult.IsError);
+        Assert.Equal(0, fixture.ApplyCount());
+        Assert.Contains("changed after preview", confirmResult.Text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ApplyTemplatePatch_RequiresPreviewAndRejectsSensitiveFields()
+    {
+        var handler = CreateHandler();
+
+        var applyWithoutPreview = ReadToolResult(await CallToolAsync(handler, "apply_template_patch", new { preview_id = "missing" }));
+        var sensitivePreview = ReadToolResult(await CallToolAsync(handler, "preview_template_patch", new
+        {
+            template_identifier = "CameraTemplate",
+            current_json = "{ \"Name\": \"CameraTemplate\" }",
+            proposed_changes = new
+            {
+                Authorization = "Bearer secret-value",
+            },
+        }));
+
+        Assert.True(applyWithoutPreview.IsError);
+        Assert.Contains("Call preview_template_patch first", applyWithoutPreview.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.True(sensitivePreview.IsError);
+        Assert.Contains("sensitive", sensitivePreview.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("secret-value", sensitivePreview.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetDiagnosticBundle_RedactsSecretsAndHonorsMaxChars()
+    {
+        const int maxChars = 1200;
+        var liveContext = new CopilotLiveContext
+        {
+            SourceId = "template-json-editor:test",
+            Title = "Template JSON editor - SecretTemplate",
+            SnapshotItems = new[]
+            {
+                new CopilotContextItem
+                {
+                    Title = "SecretTemplate",
+                    Content = "Current JSON:\n```json\n{\n  \"Name\": \"SecretTemplate\",\n  \"ApiKey\": \"secret-value\",\n  \"Password\": \"password-value\"\n}\n```",
+                },
+            },
+        };
+        var handler = CreateHandler(
+            liveContextProvider: () => liveContext,
+            recentLogProvider: (_, _, _, _) => new CopilotCapabilityResult
+            {
+                Success = true,
+                Summary = "Recent log",
+                Content = "token=secret-token-value password=password-value apiKey=secret-value",
+            });
+
+        var result = ReadToolResult(await CallToolAsync(handler, "get_diagnostic_bundle", new { max_chars = maxChars }));
+
+        Assert.False(result.IsError);
+        Assert.True(result.Text.Length <= maxChars, $"Diagnostic bundle exceeded max_chars: {result.Text.Length}");
+        Assert.Contains("ColorVision MCP diagnostic bundle", result.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-value", result.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("password-value", result.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-token-value", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task PreviewFlowAction_InspectsNodeAndRefusesRun()
     {
         var flowSnapshot = new CopilotFlowContextSnapshot
@@ -573,6 +745,43 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.True(runResult.IsError);
         Assert.Contains("risk_level: confirmation-required", runResult.Text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("not_supported_current_stage", runResult.Text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PreviewFlowAction_ExplainsNodeAndTracesFailure()
+    {
+        var flowSnapshot = new CopilotFlowContextSnapshot
+        {
+            FlowName = "InspectionFlow",
+            LastNodeSummary = "Camera Node",
+            RecentRunMessage = "last run failed at Camera Node with timeout",
+            RecentFailureSummary = "Camera Node timeout",
+            Nodes = new[]
+            {
+                new CopilotFlowNodeContextSnapshot
+                {
+                    Title = "Camera Node",
+                    NodeName = "Camera1",
+                    NodeType = "Camera",
+                    NodeId = "node-1",
+                    Mark = "last error: timeout",
+                    Inputs = new[] { "trigger" },
+                    Outputs = new[] { "image" },
+                    Parameters = new[] { new CopilotContextProperty { Name = "Exposure", Value = "12" } },
+                },
+            },
+        };
+        var handler = CreateHandler(flowSnapshotProvider: _ => Task.FromResult<CopilotFlowContextSnapshot?>(flowSnapshot));
+
+        var explainResult = ReadToolResult(await CallToolAsync(handler, "preview_flow_action", new { action = "explain_node", node_name = "Camera" }));
+        var traceResult = ReadToolResult(await CallToolAsync(handler, "preview_flow_action", new { action = "trace_recent_failure", node_name = "Camera" }));
+
+        Assert.False(explainResult.IsError);
+        Assert.Contains("Node parameters:", explainResult.Text, StringComparison.Ordinal);
+        Assert.Contains("Suggested next steps:", explainResult.Text, StringComparison.Ordinal);
+        Assert.False(traceResult.IsError);
+        Assert.Contains("Recent failure summary: Camera Node timeout", traceResult.Text, StringComparison.Ordinal);
+        Assert.Contains("No flow was started", traceResult.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -844,6 +1053,70 @@ public sealed class CopilotMcpTests : IDisposable
         return (handler, ExtractField(toolResult.Text, "action_id"), ExtractField(toolResult.Text, "arguments_summary"), () => executionCount);
     }
 
+    private async Task<(
+        CopilotMcpRequestHandler Handler,
+        string PreviewId,
+        string ActionId,
+        string ArgumentsSummary,
+        Func<string> CurrentJson,
+        Action<string> SetCurrentJson,
+        Func<int> ApplyCount)> CreatePendingTemplatePatchAsync()
+    {
+        var currentJson = "{\n  \"TemplateType\": \"CameraRun\",\n  \"Name\": \"CameraTemplate\",\n  \"Exposure\": 10\n}";
+        var applyCount = 0;
+        var handler = CreateHandler(
+            liveContextProvider: () => CreateTemplateLiveContext(currentJson),
+            applyTemplatePatchHandler: (request, _) =>
+            {
+                applyCount++;
+                currentJson = request.PatchedJson;
+                return Task.FromResult(CopilotMcpToolCallResult.Ok("template patch applied after approval"));
+            });
+
+        var previewResult = ReadToolResult(await CallToolAsync(handler, "preview_template_patch", new
+        {
+            template_identifier = "CameraTemplate",
+            proposed_changes = new
+            {
+                Exposure = 12,
+            },
+        }));
+        Assert.False(previewResult.IsError);
+        Assert.Contains("preview_id:", previewResult.Text, StringComparison.Ordinal);
+        var previewId = ExtractField(previewResult.Text, "preview_id");
+
+        var applyResult = ReadToolResult(await CallToolAsync(handler, "apply_template_patch", new { preview_id = previewId }));
+        Assert.True(applyResult.IsError);
+        Assert.Contains("confirmation_required", applyResult.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, applyCount);
+
+        return (
+            handler,
+            previewId,
+            ExtractField(applyResult.Text, "action_id"),
+            ExtractField(applyResult.Text, "arguments_summary"),
+            () => currentJson,
+            value => currentJson = value,
+            () => applyCount);
+    }
+
+    private static CopilotLiveContext CreateTemplateLiveContext(string currentJson)
+    {
+        return new CopilotLiveContext
+        {
+            SourceId = "template-json-editor:test",
+            Title = "Template JSON editor - CameraTemplate",
+            SnapshotItems = new[]
+            {
+                new CopilotContextItem
+                {
+                    Title = "CameraTemplate",
+                    Content = "Surface: Template JSON editor\nTemplate name: CameraTemplate\nCurrent JSON:\n```json\n" + currentJson + "\n```",
+                },
+            },
+        };
+    }
+
     private static string ExtractField(string text, string fieldName)
     {
         var line = text
@@ -860,7 +1133,9 @@ public sealed class CopilotMcpTests : IDisposable
         Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? openPanelHandler = null,
         Func<string, bool, CancellationToken, Task<CopilotMcpToolCallResult>>? executeMenuHandler = null,
         Func<CopilotLiveContext?>? liveContextProvider = null,
-        Func<CancellationToken, Task<CopilotFlowContextSnapshot?>>? flowSnapshotProvider = null)
+        Func<CancellationToken, Task<CopilotFlowContextSnapshot?>>? flowSnapshotProvider = null,
+        Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? applyTemplatePatchHandler = null,
+        Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult>? recentLogProvider = null)
     {
         var environment = new CopilotMcpToolEnvironment
         {
@@ -881,12 +1156,13 @@ public sealed class CopilotMcpTests : IDisposable
             ExecuteMenuHandler = executeMenuHandler,
             LiveContextProvider = liveContextProvider ?? (() => null),
             FlowSnapshotProvider = flowSnapshotProvider ?? (_ => Task.FromResult<CopilotFlowContextSnapshot?>(null)),
-            RecentLogProvider = (_, _, _, _) => new CopilotCapabilityResult
+            ApplyTemplatePatchHandler = applyTemplatePatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("apply_template_patch_unavailable", "No test apply handler is available."))),
+            RecentLogProvider = recentLogProvider ?? ((_, _, _, _) => new CopilotCapabilityResult
             {
                 Success = false,
                 Summary = "No test log is available.",
                 ErrorMessage = "No test log is available.",
-            },
+            }),
         };
 
         var dispatcher = new CopilotMcpToolDispatcher(environment);
@@ -995,5 +1271,6 @@ public sealed class CopilotMcpTests : IDisposable
         catch
         {
         }
+        CopilotMcpTemplatePatchPreviewStore.Instance.ClearForTests();
     }
 }

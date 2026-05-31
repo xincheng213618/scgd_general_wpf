@@ -4,7 +4,7 @@ ColorVision MCP exposes a local Model Context Protocol endpoint so Codex can ins
 
 The endpoint is local-only, disabled by default, bound to loopback, and protected by a bearer token. It deliberately reuses `ColorVision/Copilot/Capabilities/` so the in-app Agent and external MCP clients share search, grep, file read, docs search, recent log, menu, theme, and language behavior.
 
-MCP v3 adds user-confirmed actions and preview-only business operations. Every exposed MCP tool is categorized, has a risk level, and is audited when called. The operation model remains conservative: inspect first, dry-run actions when possible, execute low-risk UI operations directly, and require the user to approve confirmation-required actions inside ColorVision before `confirm_action` can execute them. Device control, flow execution, shell execution, file deletion, and arbitrary file reads remain outside the MCP surface.
+MCP v4 adds confirmable template patch application and one-shot diagnostic bundles on top of user-confirmed actions and preview business operations. Every exposed MCP tool is categorized, has a risk level, and is audited when called. The operation model remains conservative: inspect first, dry-run or preview actions when possible, execute low-risk UI operations directly, and require the user to approve confirmation-required actions inside ColorVision before `confirm_action` can execute them. Device control, flow execution, shell execution, file deletion, and arbitrary file reads remain outside the MCP surface.
 
 ## Current Status
 
@@ -13,7 +13,7 @@ Implemented:
 - Local HTTP JSON-RPC MCP endpoint at `http://127.0.0.1:38473/mcp` by default.
 - Bearer token authentication, generated and stored through Copilot settings.
 - Tool listing, tool calls, resource listing, and resource reads.
-- Health and diagnostic tools for server status, enabled tools, audit logs, last tool error, and runtime environment summaries.
+- Health and diagnostic tools for server status, enabled tools, audit logs, last tool error, runtime environment summaries, and redacted size-limited diagnostic bundles.
 - `tools/list` metadata with category, risk level, usage example, and MCP annotations.
 - `get_enabled_tools` grouped by `status`, `context`, `search`, `file`, `app-control`, and `audit`.
 - Audit filtering by tool name, action id, and failed-only mode.
@@ -21,9 +21,10 @@ Implemented:
 - Business context capture for template JSON editor, flow and selected flow node state, recent flow failure clues, image editor metadata without pixels, and selected solution file/folder entries.
 - Low-risk app-control helpers for opening known panels, dry-running menu resolution, executing low-risk menus, and refusing confirmation-required menu actions by default.
 - Confirmable actions with `action_id`, title, description, risk level, source tool, redacted argument summary, creation time, and expiry time. Pending actions expire after a short lifetime, currently five minutes.
-- Pending Actions UI in the Copilot panel with Approve and Reject buttons.
+- Pending Actions UI in the Copilot panel with action id/tool name/expiry/argument summary, Copy action_id, Approve, Reject, short feedback, and automatic expiry refresh.
 - `confirm_action` for executing only a previously approved, non-expired, argument-matched confirmation-required action.
-- Preview-only `preview_template_patch` and `preview_flow_action` tools.
+- `preview_template_patch` returns a `preview_id` for the active template JSON editor; `apply_template_patch` creates a pending action and applies only after user approval plus `confirm_action`.
+- `preview_flow_action` previews select/open/inspect/explain/trace actions and returns suggested next steps without running flows.
 - Audit logging for MCP tool calls with timestamp, tool name, redacted argument summary, success/failure, duration, error message, and caller/source when available.
 - Audit logging for `action_created`, `action_approved`, `action_rejected`, `action_expired`, and `action_executed`.
 - Offline smoke tests for auth, disabled server behavior, server status, resources, allowed-root file reads, file search, grep, audit records, and low-risk action routing.
@@ -33,7 +34,6 @@ Intentionally not supported:
 - device control
 - flow execution or flow stop/start
 - config mutation
-- template patch apply/save through MCP v3
 - file deletion
 - arbitrary shell or process execution
 - shell, cmd, PowerShell, batch, Python, or arbitrary command execution tools
@@ -106,7 +106,8 @@ Codex should use this conservative order:
 8. Use `execute_menu` with `dry_run: true` before asking for execution.
 9. Execute directly only when the returned risk is `low-risk-action`.
 10. For `confirmation-required`, expect an `action_id`, ask the user to approve it in ColorVision's Copilot Pending Actions area, then call `confirm_action` with the same `tool_name` and `arguments_summary` returned by the creation response.
-11. Refuse any action that would control devices, execute flows, mutate config without confirmation, delete files, read arbitrary files, or run shell commands.
+11. For template edits, call `preview_template_patch` first while the target template JSON editor is active. Use the returned `preview_id` with `apply_template_patch`; the user must approve the pending action before `confirm_action` applies the JSON patch to the active editor.
+12. Refuse any action that would control devices, execute flows, mutate config without confirmation, delete files, read arbitrary files, or run shell commands.
 
 Recommended menu flow:
 
@@ -132,6 +133,20 @@ If the response says `confirmation_required`, it returns an `action_id` and reda
 
 `confirm_action` checks the action id, expiry time, risk level, tool name, and argument summary. Rejected, expired, already executed, or mismatched actions return a clear status and do not execute.
 
+Recommended template patch flow:
+
+```json
+{ "template_identifier": "CameraTemplate", "proposed_changes": { "Exposure": 12 } }
+```
+
+`preview_template_patch` validates current/proposed JSON, refuses sensitive fields, reports changed keys, and returns `preview_id` only when the preview came from the active template editor. Then call:
+
+```json
+{ "preview_id": "a1b2c3d4e5f6" }
+```
+
+`apply_template_patch` creates a pending action; it does not apply the patch directly. After the user approves it in ColorVision, call `confirm_action` with `tool_name: "apply_template_patch"` and the returned `arguments_summary`. ColorVision revalidates JSON and checks that the active editor did not change since preview before applying.
+
 ## Tools
 
 | Tool | Category | Risk | Example | Notes |
@@ -139,14 +154,16 @@ If the response says `confirmation_required`, it returns an `action_id` and reda
 | `get_server_status` | `status` | `read-only` | `{}` | MCP listener, endpoint, auth, caller/source, pending action count, and safety boundary. |
 | `get_enabled_tools` | `status` | `read-only` | `{}` | Human-readable grouped tool catalog with examples. |
 | `get_runtime_environment_summary` | `status` | `read-only` | `{}` | Version, process/start time, dirs, cultures, theme, workspace, flow, log, and audit summary with secret redaction. |
+| `get_diagnostic_bundle` | `status` | `read-only` | `{ "max_chars": 12000 }` | Redacted size-limited bundle containing server status, runtime summary, last error, recent log, live context, and flow summary. |
 | `get_audit_log` | `audit` | `read-only` | `{ "max_entries": 20, "action_id": "a1b2c3d4e5f6" }` | Recent tool calls and action lifecycle events, optionally filtered by tool, action id, or failed-only. |
 | `get_last_tool_error` | `audit` | `read-only` | `{}` | Latest failed tool call, if any. |
 | `get_live_context` | `context` | `read-only` | `{}` | Current in-app Copilot context snapshot. |
 | `get_workspace_context` | `context` | `read-only` | `{}` | Solution directory, active document, and allowed roots. |
 | `get_active_template_context` | `context` | `read-only` | `{}` | Template editor metadata, template type/name, and key JSON parameters when available. |
 | `get_flow_summary` | `context` | `read-only` | `{}` | Active flow summary, selected nodes, recent run/error clues; never executes flows. |
-| `preview_template_patch` | `context` | `read-only` | `{ "template_identifier": "Default", "proposed_changes": { "Exposure": 12 } }` | Validates current/proposed JSON and reports changed fields. It does not save and refuses secret/token/password/api key fields. |
-| `preview_flow_action` | `context` | `read-only` | `{ "action": "inspect_node_errors", "node_name": "Camera" }` | Previews select/open/inspect flow actions. It refuses start/stop/run flow requests. |
+| `preview_template_patch` | `context` | `read-only` | `{ "template_identifier": "Default", "proposed_changes": { "Exposure": 12 } }` | Validates current/proposed JSON, reports changed fields, and returns `preview_id` for active-editor previews. It does not apply or save and refuses secret/token/password/api key fields. |
+| `apply_template_patch` | `app-control` | `confirmation-required` | `{ "preview_id": "a1b2c3d4e5f6" }` | Requires a prior preview, creates a pending action, and applies only after user approval plus matching `confirm_action`. |
+| `preview_flow_action` | `context` | `read-only` | `{ "action": "trace_recent_failure", "node_name": "Camera" }` | Previews select/open/inspect/explain/trace flow actions and suggests next steps. It refuses start/stop/run flow requests. |
 | `get_recent_log` | `search` | `read-only` | `{ "max_lines": 80, "filter": "error" }` | Recent app log lines with optional literal filter. |
 | `search_docs` | `search` | `read-only` | `{ "query": "MCP", "max_results": 5 }` | ColorVision docs search. |
 | `search_files` | `search` | `read-only` | `{ "query": "Copilot", "max_results": 20 }` | File/path search under allowed roots. |
@@ -164,6 +181,7 @@ Health and diagnostics:
 - `get_server_status` (`status`, `read-only`): reports ColorVision process, MCP enabled state, listener state, endpoint, auth state for the current request, caller/source, pending action count, and safety boundary.
 - `get_enabled_tools` (`status`, `read-only`): lists exposed MCP tools grouped by category with risk and usage examples.
 - `get_runtime_environment_summary` (`status`, `read-only`): summarizes version, process/start time, config/log directories, language, theme, MCP listener status, workspace, live context, flow availability, recent log availability, and audit count. It must not include bearer tokens or API keys.
+- `get_diagnostic_bundle` (`status`, `read-only`): aggregates server status, runtime summary, last tool error, recent log, live context, and flow summary into a redacted size-limited bundle controlled by `max_chars`.
 - `get_audit_log` (`audit`, `read-only`): returns recent MCP tool call and action lifecycle audit entries. Optional arguments: `max_entries`, `tool`, `action_id`, `failed_only`.
 - `get_last_tool_error` (`audit`, `read-only`): returns the latest failed MCP tool call.
 
@@ -173,8 +191,9 @@ Context and search:
 - `get_workspace_context` (`context`, `read-only`): solution directory, active document, and allowed search roots.
 - `get_active_template_context` (`context`, `read-only`): active template editor context when available, including template editor metadata, template type/name, and parsed top-level JSON keys/key parameters when possible.
 - `get_flow_summary` (`context`, `read-only`): read-only active flow summary, selected nodes, and recent run/error clues. It never starts, stops, reruns, or edits a flow.
-- `preview_template_patch` (`context`, `read-only`): validates proposed top-level template JSON changes and reports a diff summary. It never saves and refuses secret/token/password/API key fields.
-- `preview_flow_action` (`context`, `read-only`): previews select node, open node property, and inspect node errors. It refuses start/stop/run flow requests and never executes a flow.
+- `preview_template_patch` (`context`, `read-only`): validates proposed top-level template JSON changes and reports a diff summary. It never applies or saves and refuses secret/token/password/API key fields. Active-editor previews return `preview_id` for confirmable apply.
+- `apply_template_patch` (`app-control`, `confirmation-required`): requires `preview_id` from `preview_template_patch`, creates a pending action, and applies the patch to the same active template editor only after user approval and `confirm_action`. It revalidates JSON and rejects conflicts.
+- `preview_flow_action` (`context`, `read-only`): previews select node, open node property, inspect node errors, explain node, and trace recent failure. It refuses start/stop/run flow requests and never executes a flow.
 - `get_recent_log` (`search`, `read-only`): recent application log lines, optionally filtered.
 - `search_docs` (`search`, `read-only`): published ColorVision documentation search.
 - `search_files` (`search`, `read-only`): file name/path search under allowed roots.
@@ -186,6 +205,7 @@ App-control:
 
 - `open_panel` (`app-control`, `low-risk-action`): opens a known ColorVision panel alias such as `copilot`, `log`, `config`, `solution`, `template`, `flow`, or `device`. Unknown aliases return the supported alias list.
 - `execute_menu` (`app-control`, `confirmation-required`): resolves a visible main-window menu command by name or path. It defaults to `dry_run: true`. Low-risk matches may execute when `dry_run` is false; confirmation-required matches create pending actions and return `action_id`.
+- `apply_template_patch` (`app-control`, `confirmation-required`): creates a pending action from a prior template patch preview. Confirmation applies the already previewed patch to the current active template JSON editor only when the source editor and JSON snapshot still match.
 - `confirm_action` (`app-control`, `confirmation-required`): executes only after the user approves the pending action in ColorVision. The call must provide matching `action_id`, `tool_name`, and `arguments_summary`.
 - `set_theme` (`app-control`, `low-risk-action`): switches the UI theme.
 - `set_language` (`app-control`, `confirmation-required`): switches UI language through the existing app confirmation/restart flow.
@@ -194,7 +214,7 @@ Risk levels:
 
 - `read-only`: returns state, context, logs, docs, or files within allowed roots; no app state changes.
 - `low-risk-action`: UI navigation or easily reversible local UI state, such as opening a panel or changing theme.
-- `confirmation-required`: operation could affect application state, files, updates, restart, or another higher-risk app workflow. MCP creates a short-lived pending action, displays it in ColorVision, and executes it only after user approval and a matching `confirm_action` call. Flow execution and device control are still not implemented as confirmable operations in MCP v3.
+- `confirmation-required`: operation could affect application state, files, updates, restart, or another higher-risk app workflow. MCP creates a short-lived pending action, displays it in ColorVision, and executes it only after user approval and a matching `confirm_action` call. Flow execution and device control are still not implemented as confirmable operations.
 
 ## Confirmation Flow
 

@@ -281,7 +281,7 @@
                         Style="{StaticResource CopilotInsetBorderStyle}"
                         BorderThickness="1"
                         CornerRadius="12"
-                        Visibility="{Binding HasPendingActions, Converter={StaticResource bool2VisibilityConverter}}">
+                        Visibility="{Binding HasPendingActionPanel, Converter={StaticResource bool2VisibilityConverter}}">
                     <StackPanel>
                         <DockPanel LastChildFill="False">
                             <TextBlock VerticalAlignment="Center"
@@ -295,6 +295,13 @@
                                        Opacity="0.62"
                                        Text="Approve in ColorVision before MCP can execute" />
                         </DockPanel>
+
+                        <TextBlock Margin="0,6,0,0"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.72"
+                                   Text="{Binding PendingActionFeedbackText}"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding HasPendingActionFeedback, Converter={StaticResource bool2VisibilityConverter}}" />
 
                         <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding PendingActions}">
                             <ItemsControl.ItemTemplate>
@@ -328,6 +335,38 @@
                                                                Opacity="0.52"
                                                                Text="{Binding ExpiresAtLabel, StringFormat=expires {0}}" />
                                                 </DockPanel>
+                                                <WrapPanel Margin="0,4,0,0">
+                                                    <TextBlock FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.68"
+                                                               Text="action_id:" />
+                                                    <TextBlock Margin="4,0,10,0"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.72"
+                                                               Text="{Binding ActionId}" />
+                                                    <TextBlock FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.68"
+                                                               Text="tool_name:" />
+                                                    <TextBlock Margin="4,0,10,0"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.72"
+                                                               Text="{Binding ToolName}" />
+                                                    <TextBlock FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.68"
+                                                               Text="expires_at:" />
+                                                    <TextBlock Margin="4,0,0,0"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.72"
+                                                               Text="{Binding ExpiresAtLabel}" />
+                                                </WrapPanel>
                                                 <TextBlock Margin="0,3,0,0"
                                                            Foreground="{DynamicResource GlobalTextBrush}"
                                                            Opacity="0.74"
@@ -337,7 +376,7 @@
                                                            FontSize="11"
                                                            Foreground="{DynamicResource GlobalTextBrush}"
                                                            Opacity="0.58"
-                                                           Text="{Binding ArgumentsSummary}"
+                                                           Text="{Binding ArgumentsSummary, StringFormat=params: {0}}"
                                                            TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
 
@@ -345,6 +384,11 @@
                                                         Margin="12,0,0,0"
                                                         Orientation="Horizontal"
                                                         VerticalAlignment="Center">
+                                                    <Button Margin="0,0,6,0"
+                                                        Padding="10,4"
+                                                        Command="{Binding DataContext.CopyPendingActionIdCommand, Source={x:Reference Root}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Copy ID" />
                                                 <Button Margin="0,0,6,0"
                                                         Padding="10,4"
                                                         Command="{Binding DataContext.ApprovePendingActionCommand, Source={x:Reference Root}}"

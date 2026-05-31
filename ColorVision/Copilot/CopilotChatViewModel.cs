@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -34,14 +35,17 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
+        private readonly DispatcherTimer _pendingActionExpiryTimer;
         private readonly IReadOnlyList<CopilotAgentModeOption> _agentModes = CopilotAgentModeOption.CreateDefaultOptions();
         private CancellationTokenSource? _currentRequestCts;
+        private CancellationTokenSource? _pendingActionFeedbackCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
         private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Auto;
         private string _activeDocumentPath = string.Empty;
+        private string _pendingActionFeedbackText = string.Empty;
 
         public CopilotChatViewModel()
             : this(new CopilotChatService())
@@ -98,8 +102,16 @@ namespace ColorVision.Copilot
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
+            CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
             ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(ApprovePendingAction, action => action?.IsPending == true);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
+
+            _pendingActionExpiryTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(5),
+            };
+            _pendingActionExpiryTimer.Tick += (_, _) => RefreshPendingActions();
+            _pendingActionExpiryTimer.Start();
 
             RefreshPendingActions();
             RefreshComposerTokenEstimate();
@@ -116,6 +128,23 @@ namespace ColorVision.Copilot
         public ObservableCollection<ConfirmableAction> PendingActions => _pendingActions;
 
         public bool HasPendingActions => _pendingActions.Count > 0;
+
+        public bool HasPendingActionFeedback => !string.IsNullOrWhiteSpace(PendingActionFeedbackText);
+
+        public bool HasPendingActionPanel => HasPendingActions || HasPendingActionFeedback;
+
+        public string PendingActionFeedbackText
+        {
+            get => _pendingActionFeedbackText;
+            private set
+            {
+                if (SetProperty(ref _pendingActionFeedbackText, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasPendingActionFeedback));
+                    OnPropertyChanged(nameof(HasPendingActionPanel));
+                }
+            }
+        }
 
         public IReadOnlyList<CopilotAgentModeOption> AgentModes => _agentModes;
 
@@ -152,6 +181,8 @@ namespace ColorVision.Copilot
         public ICommand DeleteConversationCommand { get; }
 
         public ICommand TogglePinConversationCommand { get; }
+
+        public ICommand CopyPendingActionIdCommand { get; }
 
         public ICommand ApprovePendingActionCommand { get; }
 
@@ -526,7 +557,24 @@ namespace ColorVision.Copilot
                 _pendingActions.Add(action);
 
             OnPropertyChanged(nameof(HasPendingActions));
+            OnPropertyChanged(nameof(HasPendingActionPanel));
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void CopyPendingActionId(ConfirmableAction? action)
+        {
+            if (action == null || string.IsNullOrWhiteSpace(action.ActionId))
+                return;
+
+            try
+            {
+                Clipboard.SetText(action.ActionId);
+                SetPendingActionFeedback($"Copied action_id {action.ActionId}.");
+            }
+            catch (Exception ex)
+            {
+                SetPendingActionFeedback($"Copy failed: {ex.Message}");
+            }
         }
 
         private void ApprovePendingAction(ConfirmableAction? action)
@@ -534,7 +582,8 @@ namespace ColorVision.Copilot
             if (action == null)
                 return;
 
-            CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _);
+            CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
+            SetPendingActionFeedback($"{action.ActionId}: {message}");
             RefreshPendingActions();
         }
 
@@ -543,8 +592,49 @@ namespace ColorVision.Copilot
             if (action == null)
                 return;
 
-            CopilotMcpConfirmationStore.Instance.Reject(action.ActionId, out _);
+            CopilotMcpConfirmationStore.Instance.Reject(action.ActionId, out var message);
+            SetPendingActionFeedback($"{action.ActionId}: {message}");
             RefreshPendingActions();
+        }
+
+        private void SetPendingActionFeedback(string message)
+        {
+            _pendingActionFeedbackCts?.Cancel();
+            var cts = new CancellationTokenSource();
+            _pendingActionFeedbackCts = cts;
+            PendingActionFeedbackText = message ?? string.Empty;
+            _ = ClearPendingActionFeedbackAsync(cts);
+        }
+
+        private async Task ClearPendingActionFeedbackAsync(CancellationTokenSource cts)
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3), cts.Token);
+                if (!ReferenceEquals(_pendingActionFeedbackCts, cts))
+                    return;
+
+                if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+                {
+                    Application.Current.Dispatcher.BeginInvoke(new Action(() => ClearPendingActionFeedback(cts)));
+                    return;
+                }
+
+                ClearPendingActionFeedback(cts);
+            }
+            catch (TaskCanceledException)
+            {
+            }
+        }
+
+        private void ClearPendingActionFeedback(CancellationTokenSource cts)
+        {
+            if (!ReferenceEquals(_pendingActionFeedbackCts, cts))
+                return;
+
+            _pendingActionFeedbackCts = null;
+            PendingActionFeedbackText = string.Empty;
+            cts.Dispose();
         }
 
         private void OnCurrentLiveContextStateChanged()

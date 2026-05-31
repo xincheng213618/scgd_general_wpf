@@ -2,8 +2,12 @@
 using ColorVision.UI;
 using ColorVision.UI.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -21,9 +25,32 @@ namespace ColorVision.Engine.Templates.Jsons
         public bool UsePropertyEditor { get; set; } = false; // Default to text editor mode
     }
 
+    public sealed class CopilotTemplateJsonPatchApplyResult
+    {
+        public bool Success { get; init; }
+
+        public string ErrorCode { get; init; } = string.Empty;
+
+        public string Message { get; init; } = string.Empty;
+
+        public static CopilotTemplateJsonPatchApplyResult Ok(string message) => new()
+        {
+            Success = true,
+            Message = message ?? string.Empty,
+        };
+
+        public static CopilotTemplateJsonPatchApplyResult Fail(string errorCode, string message) => new()
+        {
+            ErrorCode = errorCode ?? string.Empty,
+            Message = message ?? string.Empty,
+        };
+    }
+
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
         private const int MaxCopilotJsonChars = 16000;
+        private static readonly object CopilotEditorSyncRoot = new();
+        private static readonly Dictionary<string, WeakReference<EditTemplateJson>> CopilotEditors = new(StringComparer.OrdinalIgnoreCase);
         private readonly string _copilotContextSourceId = $"template-json-editor:{Guid.NewGuid():N}";
 
         private string Description { get; set; }
@@ -59,11 +86,13 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private void EditTemplateJson_Loaded(object sender, RoutedEventArgs e)
         {
+            RegisterCopilotEditor();
             PublishCopilotContext();
         }
 
         private void EditTemplateJson_Unloaded(object sender, RoutedEventArgs e)
         {
+            UnregisterCopilotEditor();
             CopilotLiveContextRegistry.Clear(_copilotContextSourceId);
         }
 
@@ -99,6 +128,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             if (param is IEditTemplateJson editTemplateJson)
             {
+                RegisterCopilotEditor();
                 this.DataContext = param; 
                 if (IEditTemplateJson !=null)
                     IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
@@ -361,11 +391,139 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private void PublishCopilotContext()
         {
+            RegisterCopilotEditor();
             var liveContext = BuildCopilotLiveContext();
             if (liveContext == null)
                 return;
 
             CopilotLiveContextRegistry.Publish(liveContext);
+        }
+
+        public static async Task<CopilotTemplateJsonPatchApplyResult> TryApplyCopilotJsonPatchAsync(
+            string sourceId,
+            string expectedCurrentJson,
+            string patchedJson,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (string.IsNullOrWhiteSpace(sourceId))
+                return CopilotTemplateJsonPatchApplyResult.Fail("template_source_missing", "The active template editor source id is missing.");
+
+            if (!TryGetCopilotEditor(sourceId, out var editor))
+                return CopilotTemplateJsonPatchApplyResult.Fail("active_template_editor_not_found", "No loaded active template JSON editor matches the preview source id.");
+
+            if (editor.Dispatcher.CheckAccess())
+                return editor.ApplyCopilotJsonPatch(expectedCurrentJson, patchedJson, cancellationToken);
+
+            return await editor.Dispatcher.InvokeAsync(
+                () => editor.ApplyCopilotJsonPatch(expectedCurrentJson, patchedJson, cancellationToken));
+        }
+
+        private static bool TryGetCopilotEditor(string sourceId, out EditTemplateJson editor)
+        {
+            editor = null;
+            lock (CopilotEditorSyncRoot)
+            {
+                var staleKeys = new List<string>();
+                foreach (var pair in CopilotEditors)
+                {
+                    if (!pair.Value.TryGetTarget(out _))
+                        staleKeys.Add(pair.Key);
+                }
+
+                foreach (var key in staleKeys)
+                    CopilotEditors.Remove(key);
+
+                if (CopilotEditors.TryGetValue(sourceId.Trim(), out var reference) && reference.TryGetTarget(out editor))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void RegisterCopilotEditor()
+        {
+            lock (CopilotEditorSyncRoot)
+            {
+                CopilotEditors[_copilotContextSourceId] = new WeakReference<EditTemplateJson>(this);
+            }
+        }
+
+        private void UnregisterCopilotEditor()
+        {
+            lock (CopilotEditorSyncRoot)
+            {
+                CopilotEditors.Remove(_copilotContextSourceId);
+            }
+        }
+
+        private CopilotTemplateJsonPatchApplyResult ApplyCopilotJsonPatch(string expectedCurrentJson, string patchedJson, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (IEditTemplateJson == null)
+                return CopilotTemplateJsonPatchApplyResult.Fail("template_context_unavailable", "The active template editor has no editable JSON context.");
+
+            var currentJson = GetCurrentJsonForCopilot();
+            if (!TryNormalizeJson(currentJson, out var normalizedCurrentJson, out var currentError))
+                return CopilotTemplateJsonPatchApplyResult.Fail("invalid_active_template_json", $"The active template JSON is invalid: {currentError}");
+
+            if (!TryNormalizeJson(expectedCurrentJson, out var normalizedExpectedJson, out var expectedError))
+                return CopilotTemplateJsonPatchApplyResult.Fail("invalid_preview_template_json", $"The preview template JSON is invalid: {expectedError}");
+
+            if (!string.Equals(normalizedCurrentJson, normalizedExpectedJson, StringComparison.Ordinal))
+                return CopilotTemplateJsonPatchApplyResult.Fail("template_patch_conflict", "The active template JSON changed after preview_template_patch. Re-run preview_template_patch before applying.");
+
+            if (!TryNormalizeJson(patchedJson, out _, out var patchedError))
+                return CopilotTemplateJsonPatchApplyResult.Fail("invalid_patched_template_json", $"The patched template JSON is invalid: {patchedError}");
+
+            textEditor.TextChanged -= TextEditor_TextChanged;
+            try
+            {
+                textEditor.Text = patchedJson;
+                IEditTemplateJson.JsonValue = patchedJson;
+
+                if (_isInPropertyEditorMode)
+                    propertyEditor.SetJson(patchedJson);
+            }
+            finally
+            {
+                textEditor.TextChanged += TextEditor_TextChanged;
+            }
+
+            PublishCopilotContext();
+            return CopilotTemplateJsonPatchApplyResult.Ok("Template JSON patch applied to the active editor. Review and save from ColorVision when ready.");
+        }
+
+        private static bool TryNormalizeJson(string json, out string normalizedJson, out string error)
+        {
+            normalizedJson = string.Empty;
+            error = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                error = "JSON text is empty.";
+                return false;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(json);
+                if (document.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    error = $"JSON root must be an object, but was {document.RootElement.ValueKind}.";
+                    return false;
+                }
+
+                normalizedJson = JsonSerializer.Serialize(document.RootElement);
+                return true;
+            }
+            catch (JsonException ex)
+            {
+                error = ex.Message;
+                return false;
+            }
         }
 
         private CopilotLiveContext? BuildCopilotLiveContext()
