@@ -154,9 +154,6 @@
 
         <Border Grid.Row="0" Style="{StaticResource CardStyle}">
             <StackPanel>
-                <TextBlock Text="{x:Static properties:Resources.EditCameraConfigBasicConfig}"
-                           Style="{StaticResource SectionTitleStyle}"
-                           Margin="0,0,0,10"/>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -266,9 +263,6 @@
                                                 Click="ResetChannels_Click">
                                             <TextBlock Text="{x:Static properties:Resources.ButtonResetChannels}"/>
                                         </Button>
-                                        <TextBlock Text="{x:Static properties:Resources.EditCameraConfigCfwMappingTitle}"
-                                                   Style="{StaticResource GroupCaptionStyle}"
-                                                   Margin="0,6,0,0"/>
                                     </DockPanel>
 
                                     <Grid>
